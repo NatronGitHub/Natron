@@ -149,7 +149,7 @@ public:
         typename key_to_value_type::iterator found =  _key_to_value.find(k);
         if ( found != _key_to_value.end() ) {
             found->second.first.push_back(v);
-        } else  {
+        } else {
             value_type list;
             list.push_back(v);
             // Create the key-value entry,
@@ -263,7 +263,7 @@ public:
         typename container_type::left_iterator found = this->operator ()(k);
         if ( found != _container.left.end() ) {
             found->second.push_back(v);
-        } else  {
+        } else {
             value_type list;
             list.push_back(v);
             _container.insert( typename container_type::value_type(k,list) );
@@ -370,7 +370,7 @@ public:
         typename key_to_value_type::iterator found =  _key_to_value.find(k);
         if ( found != _key_to_value.end() ) {
             found->second.first.push_back(v);
-        } else  {
+        } else {
             value_type list;
             list.push_back(v);
             // Create the key-value entry,
@@ -402,7 +402,7 @@ public:
                     // Erase both elements to completely purge record
                     _key_to_value.erase(it);
                     _key_tracker.pop_front();
-                } else  {
+                } else {
                     it->second.first.erase(it2);
                 }
 
@@ -480,7 +480,7 @@ public:
         typename container_type::left_iterator found = this->operator ()(k);
         if ( found != _container.left.end() ) {
             found->second.push_back(v);
-        } else  {
+        } else {
             value_type list;
             list.push_back(v);
             _container.insert( typename container_type::value_type(k,list) );
@@ -501,7 +501,7 @@ public:
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
                     if (it->first.size() == 1) {
                         _container.right.erase(it);
-                    } else  {
+                    } else {
                         it->first.erase(it2);
                     }
 
@@ -576,7 +576,7 @@ public:
         typename container_type::left_iterator found = this->operator ()(k);
         if ( found != _container.left.end() ) {
             found->second.push_back(v);
-        } else  {
+        } else {
             value_type list;
             list.push_back(v);
             _container.insert( typename container_type::value_type(k,list) );
@@ -597,7 +597,7 @@ public:
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
                     if (it->first.size() == 1) {
                         _container.right.erase(it);
-                    } else   {
+                    } else {
                         it->first.erase(it2);
                     }
 

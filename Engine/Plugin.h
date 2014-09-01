@@ -101,6 +101,7 @@ class Plugin
     int _majorVersion;
     int _minorVersion;
     bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
+
 public:
 
     Plugin()
@@ -121,8 +122,8 @@ public:
            const QString & id,
            const QString & label,
            const QString & iconFilePath,
-           const QString& groupIconFilePath,
-           const QStringList& grouping,
+           const QString & groupIconFilePath,
+           const QStringList & grouping,
            QMutex* lock,
            int majorVersion,
            int minorVersion)
@@ -165,13 +166,13 @@ public:
     {
         return _iconFilePath;
     }
-    
+
     const QString & getGroupIconFilePath() const
     {
         return _groupIconFilePath;
     }
-    
-    const QStringList& getGrouping() const
+
+    const QStringList & getGrouping() const
     {
         return _grouping;
     }
@@ -195,12 +196,12 @@ public:
     {
         return _minorVersion;
     }
-    
+
     void setHasShortcut(bool has)
     {
         _hasShortcutSet = has;
     }
-    
+
     bool getHasShortcut() const
     {
         return _hasShortcutSet;

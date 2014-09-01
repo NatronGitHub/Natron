@@ -447,7 +447,6 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
-
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
@@ -458,7 +457,7 @@ NodeGraph::~NodeGraph()
          ++it) {
         (*it)->discardGraphPointer();
     }
-    
+
     if (_imp->_gui) {
         QGraphicsScene* scene = _imp->_hintInputEdge->scene();
         if (scene) {
@@ -466,7 +465,7 @@ NodeGraph::~NodeGraph()
         }
         _imp->_hintInputEdge->setParentItem(NULL);
         delete _imp->_hintInputEdge;
-        
+
         scene = _imp->_hintOutputEdge->scene();
         if (scene) {
             scene->removeItem(_imp->_hintOutputEdge);
@@ -474,7 +473,7 @@ NodeGraph::~NodeGraph()
         _imp->_hintOutputEdge->setParentItem(NULL);
         delete _imp->_hintOutputEdge;
     }
-    
+
     QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_nodeCreationShortcutEnabled = false;
 
@@ -511,7 +510,6 @@ NodeGraph::discardGuiPointer()
     _imp->_gui = 0;
 }
 
-
 void
 NodeGraph::onProjectNodesCleared()
 {
@@ -521,7 +519,7 @@ NodeGraph::onProjectNodesCleared()
         QMutexLocker l(&_imp->_nodesMutex);
         nodesCpy = _imp->_nodes;
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin() ; it != nodesCpy.end() ; ++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
         deleteNodePermanantly( *it );
     }
 
@@ -888,10 +886,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( buttonDownIsLeft(e) ) {
                 bool nearbyHeader = (*it)->isNearbyHeader(_imp->_lastScenePosClick);
                 bool nearbyResizeHandle = (*it)->isNearbyResizeHandle(_imp->_lastScenePosClick);
-                
-                
+
+
                 if (nearbyHeader || nearbyResizeHandle) {
-                    
                     if ( buttonDownIsLeft(e) ) {
                         didSomething = true;
                         if ( !(*it)->getIsSelected() ) {
@@ -904,22 +901,20 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                                 _imp->_selection.bds.erase(found);
                             }
                         }
-                        
+
                         if (nearbyHeader) {
                             _imp->_evtState = BACKDROP_DRAGGING;
                         } else if (nearbyResizeHandle) {
                             _imp->_backdropResized = *it;
                             _imp->_evtState = BACKDROP_RESIZING;
                         }
-                        
                     } else if ( buttonDownIsRight(e) ) {
                         if ( !(*it)->getIsSelected() ) {
                             selectBackDrop(*it,true); ///< don't wipe the selection
                         }
                     }
-                    break; 
+                    break;
                 }
-                
             }
         }
     }
@@ -1107,7 +1102,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 if ( n->isActive() && n->contains(evpt) ) {
                     selected = n;
                     break;
-                } else  {
+                } else {
                     Edge* edge = n->hasEdgeNearbyPoint(newPos);
                     if (edge) {
                         selectedEdge = edge;
@@ -1134,8 +1129,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         } else {
             _imp->_arrowSelected->dragSource(np);
         }
+        break;
     }
-    break;
     case NODE_DRAGGING:
     case BACKDROP_DRAGGING: {
         if ( !_imp->_selection.nodes.empty() || !_imp->_selection.bds.empty() ) {
@@ -1304,14 +1299,14 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             }
         }
         setCursor( QCursor(Qt::ClosedHandCursor) );
+        break;
     }
-    break;
     case MOVING_AREA: {
         mustUpdateNavigator = true;
         _imp->_root->moveBy(dx, dy);
         setCursor( QCursor(Qt::SizeAllCursor) );
+        break;
     }
-    break;
     case BACKDROP_RESIZING: {
         mustUpdateNavigator = true;
         assert(_imp->_backdropResized);
@@ -1320,8 +1315,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
         _imp->_undoStack->push( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
+        break;
     }
-    break;
     case SELECTION_RECT: {
         QPointF startDrag = _imp->_selectionRect->mapFromScene(_imp->_lastSelectionStartPoint);
         QPointF cur = _imp->_selectionRect->mapFromScene(newPos);
@@ -1330,8 +1325,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         double ymin = std::min( cur.y(),startDrag.y() );
         double ymax = std::max( cur.y(),startDrag.y() );
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
+        break;
     }
-    break;
     default:
         break;
     } // switch
@@ -1467,8 +1462,8 @@ NodeGraph::onNodeCreationDialogFinished()
                     break;
                 }
             }
+            break;
         }
-        break;
         case QDialog::Rejected:
         default:
             break;
@@ -1531,7 +1526,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                     boost::shared_ptr<NodeGui> input = it->second->getSource();
                     if ( input->getIsSelected() && modCASIsShift(e) ) {
                         std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),
-                                                                                        _imp->_selection.nodes.end(),lastSelected);
+                                                                                           _imp->_selection.nodes.end(),lastSelected);
                         if ( found != _imp->_selection.nodes.end() ) {
                             lastSelected->setUserSelected(false);
                             _imp->_selection.nodes.erase(found);
@@ -1560,7 +1555,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                         lastSelected->setUserSelected(false);
                         _imp->_selection.nodes.erase(found);
                     }
-
                 } else {
                     selectNode( output, modCASIsShift(e) );
                 }
@@ -2390,7 +2384,7 @@ NodeGraph::dropEvent(QDropEvent* e)
         //if the path dropped is not a directory append it
         if ( !dir.exists() ) {
             filesList << path;
-        } else  {
+        } else {
             //otherwise append everything inside the dir recursively
             SequenceFileDialog::appendFilesFromDirRecursively(&dir,&filesList);
         }
@@ -2404,7 +2398,7 @@ NodeGraph::dropEvent(QDropEvent* e)
     }
 
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
-	std::locale local;
+    std::locale local;
     for (U32 i = 0; i < files.size(); ++i) {
         ///get all the decoders
         std::map<std::string,std::string> readersForFormat;
@@ -2677,7 +2671,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         boost::shared_ptr<Natron::Node> masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
 
         ///the node could not exist any longer if the user deleted it in the meantime
-        if (masterNode && masterNode->isActivated()) {
+        if ( masterNode && masterNode->isActivated() ) {
             n->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
         }
     }
@@ -2923,6 +2917,7 @@ void
 NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 {
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
+
     assert(internalNode);
     internalNode->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false,true,false);
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
@@ -2939,7 +2934,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
         }
     }
 
-    
+
     n->deleteReferences();
     n->discardGraphPointer();
 

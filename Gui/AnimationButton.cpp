@@ -74,7 +74,7 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         drag->setPixmap( QPixmap::fromImage(dragImg) );
         setDown(false);
         drag->exec();
-    } else  {
+    } else {
         QPushButton::mouseMoveEvent(e);
     }
 }

@@ -163,9 +163,8 @@ OfxClipInstance::getConnected() const
             if ( isMask() && !_nodeInstance->getNode()->isMaskEnabled(inputNb) ) {
                 return false;
             }
-     
+
             return _nodeInstance->getInput(inputNb) != NULL;
-            
         }
     }
 }
@@ -210,23 +209,20 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     RectD rod; // rod is in canonical coordinates
     unsigned int mipmapLevel;
     int view;
-
     Natron::EffectInstance* associatedNode = getAssociatedNode();
-    
+
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
         associatedNode = associatedNode->getNearestNonDisabled();
     }
     ///We don't have to do the same kind of navigation if the effect is identity because the effect is supposed to have
     ///the same RoD as the input if it is identity.
-    
+
     if (!associatedNode) {
         ///Doesn't matter, input is not connected
         mipmapLevel = 0;
         view = 0;
     } else {
-        
-
         ///We're not during an action,just do regular call
         if (associatedNode->getRecursionLevel() == 0) {
             mipmapLevel = associatedNode->getCurrentMipMapLevelRecursive();
@@ -257,7 +253,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         return ret;
     }
 
-    
+
     if (associatedNode) {
         bool isProjectFormat;
 
@@ -713,7 +709,6 @@ OfxClipInstance::discardOutputRoD()
     _lastRenderArgs.localData().rodValid = false;
 }
 
-
 void
 OfxClipInstance::setFrameRange(double first,
                                double last)
@@ -742,3 +737,4 @@ OfxClipInstance::discardFrameRange()
     assert( _lastRenderArgs.hasLocalData() );
     _lastRenderArgs.localData().frameRangeValid = false;
 }
+

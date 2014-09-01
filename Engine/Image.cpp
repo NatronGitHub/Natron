@@ -729,7 +729,7 @@ Image::halveRoIForDepth(const RectI & roi,
     RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
-    
+
 #if 0
     srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
     dstRoI.x1 = srcRoI.x1 / 2;
@@ -783,7 +783,6 @@ Image::halveRoIForDepth(const RectI & roi,
              ++x,
              src += (components + components) - components, // two pixels minus what was done on previous iteration
              dst += (components) - components) { // one pixel minus what was done on previous iteration
-            
 #if 0
             assert(dstBounds.x1 <= dstRoI.x1 + x && dstRoI.x1 + x < dstBounds.x2);
             assert(dstBounds.y1 <= dstRoI.y1 + y && dstRoI.y1 + y < dstBounds.y2);
@@ -791,7 +790,7 @@ Image::halveRoIForDepth(const RectI & roi,
             assert(srcBounds.x1 <= srcRoI.x1 + 2 * x && srcRoI.x1 + 2 * x < srcBounds.x2);
             assert(srcBounds.y1 <= srcRoI.y1 + 2 * y && srcRoI.y1 + 2 * y < srcBounds.y2);
             assert( src == (const PIX*)pixelAt(srcRoI.x1 + 2 * x, srcRoI.y1 + 2 * y) );
-            
+
 #endif
             for (int k = 0; k < components; ++k, ++dst, ++src) {
                 *dst = PIX( (float)( *src +

@@ -74,13 +74,10 @@ struct AppManagerPrivate
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
     mutable QMutex _ofxLogMutex;
     QString _ofxLog;
-
-    
-    size_t maxCacheFiles;//< the maximum number of files the application can open for caching. This is the hard limit * 0.9
-    
+    size_t maxCacheFiles; //< the maximum number of files the application can open for caching. This is the hard limit * 0.9
     size_t currentCacheFilesCount; //< the number of cache files currently opened in the application
     mutable QMutex currentCacheFilesCountMutex; //< protects currentCacheFilesCount
-    
+
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
           , _appInstances()
@@ -119,7 +116,7 @@ struct AppManagerPrivate
     bool checkForCacheDiskStructure(const QString & cachePath);
 
     void cleanUpCacheDiskStructure(const QString & cachePath);
-    
+
     /**
      * @brief Called on startup to initialize the max opened files
      **/
@@ -225,7 +222,6 @@ AppManager::AppManager()
 {
     assert(!_instance);
     _instance = this;
-    
 }
 
 bool
@@ -279,7 +275,7 @@ AppManager::~AppManager()
     if (_imp->_backgroundIPC) {
         delete _imp->_backgroundIPC;
     }
-    
+
     _imp->saveCaches();
 
 
@@ -620,9 +616,11 @@ AppManager::writeToOutputPipe(const QString & longMessage,
 {
     if (!_imp->_backgroundIPC) {
         qDebug() << longMessage;
+
         return false;
     }
     _imp->_backgroundIPC->writeToOutputChannel(shortMessage);
+
     return true;
 }
 
@@ -689,7 +687,7 @@ AppManager::loadAllPlugins()
 
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
-    
+
     onAllPluginsLoaded();
 }
 
@@ -708,15 +706,15 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         std::list<std::string> grouping;
         dotNode->getPluginGrouping(&grouping);
         QStringList qgrouping;
-        
+
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        
+
         Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
                                                      "","",qgrouping,NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion() );
         plugins->push_back(plugin);
-        
+
 
         onPluginLoaded(plugin);
     }
@@ -1367,14 +1365,14 @@ AppManagerPrivate::setMaxCacheFiles()
 {
     /*Default to something reasonnable if the code below would happen to not work for some reason*/
     size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
-    
+
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
-     Avoid 'Too many open files' on Unix.
-     
-     Increase the number of file descriptors that the process can open to the maximum allowed.
-     - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
-     - On Linux, the default limit is usually 1024.
+       Avoid 'Too many open files' on Unix.
+
+       Increase the number of file descriptors that the process can open to the maximum allowed.
+       - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
+       - On Linux, the default limit is usually 1024.
      */
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
@@ -1405,27 +1403,27 @@ AppManagerPrivate::setMaxCacheFiles()
     //_setmaxstdio(2048); // sets the limit for stdio-based calls
     // On Windows there seems to be no limit at all. The following test program can prove it:
     /*
-#include <windows.h>
-    int
-    main(int argc,
+       #include <windows.h>
+       int
+       main(int argc,
          char *argv[])
-    {
+       {
         const int maxFiles = 10000;
-        
+
         std::list<HANDLE> files;
-        
+
         for (int i = 0; i < maxFiles; ++i) {
             std::stringstream ss;
             ss << "C:/Users/Lex/Documents/GitHub/Natron/App/win32/debug/testMaxFiles/file" << i ;
             std::string filename = ss.str();
             HANDLE file_handle = ::CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE,
                                               0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-            
-            
+
+
             if (file_handle != INVALID_HANDLE_VALUE) {
                 files.push_back(file_handle);
                 std::cout << "Good files so far: " << files.size() << std::endl;
-                
+
             } else {
                 char* message ;
                 FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,GetLastError(),0,(LPSTR)&message,0,NULL);
@@ -1437,8 +1435,8 @@ AppManagerPrivate::setMaxCacheFiles()
         for (std::list<HANDLE>::iterator it = files.begin(); it!= files.end();++it) {
             CloseHandle(*it);
         }
-    }
-    */
+       }
+     */
 #endif
 
     maxCacheFiles = hardMax * 0.9;
@@ -1448,6 +1446,7 @@ bool
 AppManager::isNCacheFilesOpenedCapped() const
 {
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+
     return _imp->currentCacheFilesCount >= _imp->maxCacheFiles;
 }
 
@@ -1455,6 +1454,7 @@ size_t
 AppManager::getNCacheFilesOpened() const
 {
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+
     return _imp->currentCacheFilesCount;
 }
 
@@ -1462,6 +1462,7 @@ void
 AppManager::increaseNCacheFilesOpened()
 {
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+
     ++_imp->currentCacheFilesCount;
 #ifdef DEBUG
     if (_imp->currentCacheFilesCount > _imp->maxCacheFiles) {
@@ -1474,6 +1475,7 @@ void
 AppManager::decreaseNCacheFilesOpened()
 {
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+
     --_imp->currentCacheFilesCount;
 }
 

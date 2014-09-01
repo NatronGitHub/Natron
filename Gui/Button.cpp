@@ -34,3 +34,4 @@ Button::initInternal()
 {
     setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
 }
+

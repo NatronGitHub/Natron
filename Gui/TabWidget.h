@@ -44,7 +44,6 @@ class Gui;
 class Splitter;
 
 
-
 class DragPixmap
     : public QWidget
 {
@@ -201,19 +200,19 @@ public:
 
     ///MT-Safe
     bool isFullScreen() const;
-    
+
     ///MT-Safe
     bool isAnchor() const;
-    
+
     void setAsAnchor(bool anchor);
-    
+
     /**
      * @brief Returns true if this tabwidget is part of a floating window
      **/
     bool isFloatingWindowChild() const;
-    
+
     void discardGuiPointer();
-    
+
 public slots:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/
@@ -260,9 +259,8 @@ public slots:
     void closeCurrentWidget();
 
     void closeTab(int index);
-    
-    void onSetAsAnchorActionTriggered();
 
+    void onSetAsAnchorActionTriggered();
 
 private:
 
@@ -283,7 +281,7 @@ private:
      * Otherwise if the parent is a floating window we will insert it as embedded widget of the window.
      **/
     void closeSplitterAndMoveOtherSplitToParent(Splitter* container);
-    
+
     // FIXME: PIMPL
     Gui* _gui;
     QVBoxLayout* _mainLayout;
@@ -302,7 +300,6 @@ private:
 
     ///Protects  _currentWidget, _fullScreen, _isViewerAnchor
     mutable QMutex _tabWidgetStateMutex;
-  
 };
 
 

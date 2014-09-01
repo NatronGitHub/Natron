@@ -103,14 +103,14 @@ QtWriter::getFrameRange(SequenceTime *first,
         EffectInstance* inp = getInput(0);
         if (inp) {
             inp->getFrameRange_public(first, last);
-        } else  {
+        } else {
             *first = 0;
             *last = 0;
         }
-    } else if (index == 1)   {
+    } else if (index == 1) {
         *first = getApp()->getTimeLine()->leftBound();
         *last = getApp()->getTimeLine()->rightBound();
-    } else  {
+    } else {
         *first = _firstFrameKnob->getValue();
         *last = _lastFrameKnob->getValue();
     }

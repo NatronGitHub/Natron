@@ -112,3 +112,4 @@ LineEdit::setDirty(bool b)
     style()->polish(this);
     repaint();
 }
+

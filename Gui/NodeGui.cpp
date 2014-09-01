@@ -221,7 +221,7 @@ NodeGui::initialize(NodeGraph* dag,
         _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
     }
 
-    
+
     ///Refresh the name in the line edit
     onInternalNameChanged( _internalNode->getName().c_str() );
 
@@ -234,14 +234,14 @@ NodeGui::initialize(NodeGraph* dag,
     if ( _internalNode->isNodeDisabled() ) {
         onDisabledKnobToggled(true);
     }
-    
+
     ///Link the position of the node to the position of the parent multi-instance
     const std::string parentMultiInstanceName = _internalNode->getParentMultiInstanceName();
-    if (!parentMultiInstanceName.empty()) {
+    if ( !parentMultiInstanceName.empty() ) {
         boost::shared_ptr<Natron::Node> parentNode = dag->getGui()->getApp()->getNodeByName(parentMultiInstanceName);
         boost::shared_ptr<NodeGui> parentNodeGui = dag->getGui()->getApp()->getNodeGui(parentNode);
         assert(parentNode && parentNodeGui);
-        QObject::connect(parentNodeGui.get(), SIGNAL(positionChanged(int,int)),this,SLOT(onParentMultiInstancePositionChanged(int,int)));
+        QObject::connect( parentNodeGui.get(), SIGNAL( positionChanged(int,int) ),this,SLOT( onParentMultiInstancePositionChanged(int,int) ) );
         QPointF p = parentNodeGui->pos();
         refreshPosition(p.x(), p.y(),true);
     }
@@ -334,7 +334,7 @@ NodeGui::createGui()
     _expressionIndicator->setToolTip( tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links.") );
     _expressionIndicator->setActive(false);
-    
+
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
     _disabledBtmLeftTopRight->hide();
     _disabledTopLeftBtmRight = new QGraphicsLineItem(this);
@@ -430,8 +430,8 @@ NodeGui::updateShape(int width,
     QPointF topLeft = mapFromParent( pos() );
     QRectF labelBbox = _nameItem->boundingRect();
     double realHeight =  std::max( (double)height,labelBbox.height() );
-
     QRectF bbox(topLeft.x(),topLeft.y(),width,realHeight);
+
     _boundingBox->setRect(bbox);
 
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
@@ -456,9 +456,9 @@ NodeGui::updateShape(int width,
         _previewPixmap->setPos(topLeft.x() + width / 2 - NATRON_PREVIEW_WIDTH / 2,
                                topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
     }
-    
-    _disabledBtmLeftTopRight->setLine(QLineF(bbox.bottomLeft(),bbox.topRight()));
-    _disabledTopLeftBtmRight->setLine(QLineF(bbox.topLeft(),bbox.bottomRight()));
+
+    _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
+    _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
     refreshPosition( pos().x(), pos().y() );
 }
 
@@ -922,8 +922,8 @@ NodeGui::refreshCurrentBrush()
         selColor.setRgbF(selectedR, selectedG, selectedB);
         QColor brightenedSelColor;
         brightenedSelColor.setRgbF( Natron::clamp(selColor.redF() * 1.2)
-                                   ,Natron::clamp(selColor.greenF() * 1.2)
-                                   ,Natron::clamp(selColor.blueF() * 1.2) );
+                                    ,Natron::clamp(selColor.greenF() * 1.2)
+                                    ,Natron::clamp(selColor.blueF() * 1.2) );
         _selectedGradient->setColorAt(1, selColor);
         _selectedGradient->setColorAt(0, brightenedSelColor);
         applyBrush(*_selectedGradient);
@@ -934,7 +934,6 @@ NodeGui::refreshCurrentBrush()
             applyBrush(*_defaultGradient);
         }
     }
-    
 }
 
 void
@@ -1006,7 +1005,7 @@ NodeGui::connectEdge(int edgeNumber)
     InputEdgesMap::const_iterator it2 = _inputEdges.find(edgeNumber);
     if ( it2 == _inputEdges.end() ) {
         return false;
-    } else  {
+    } else {
         it2->second->setSource(src);
         it2->second->initLine();
 
@@ -1403,7 +1402,6 @@ NodeGui::paint(QPainter* /*painter*/,
                QWidget* /*parent*/)
 {
     //nothing special
-    
 }
 
 const std::map<boost::shared_ptr<KnobI>,KnobGui*> &
@@ -1625,7 +1623,6 @@ NodeGui::onKnobsLinksChanged()
         }
         if (!found) {
             boost::shared_ptr<NodeGui> master = getDagGui()->getGui()->getApp()->getNodeGui(it->masterNode);
-
             LinkArrow* arrow = new LinkArrow( master.get(),this,parentItem() );
             arrow->setWidth(2);
             arrow->setColor( QColor(143,201,103) );
@@ -1752,7 +1749,7 @@ NodeGui::onDisabledKnobToggled(bool disabled)
     if ( ( sender() == _internalNode.get() ) && _internalNode->isMultiInstance() ) {
         return;
     }
-    
+
     _disabledTopLeftBtmRight->setVisible(disabled);
     _disabledBtmLeftTopRight->setVisible(disabled);
 }
@@ -2176,9 +2173,10 @@ NodeGui::setKnobLinksVisible(bool visible)
         it->arrow->setVisible(visible);
     }
 }
-                         
+
 void
-NodeGui::onParentMultiInstancePositionChanged(int x,int y)
+NodeGui::onParentMultiInstancePositionChanged(int x,
+                                              int y)
 {
     refreshPosition(x, y,true);
 }

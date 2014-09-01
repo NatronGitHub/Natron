@@ -1408,3 +1408,4 @@ Curve::getKeyFramesWithinRect(double l,
         }
     }
 }
+

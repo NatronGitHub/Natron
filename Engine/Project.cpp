@@ -536,7 +536,7 @@ Project::initializeKnobs()
 
     _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
     _imp->formatKnob->setName("outputFormat");
-    
+
     const std::vector<Format*> & appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
@@ -1349,7 +1349,7 @@ boost::shared_ptr<Natron::Node> Project::getNodeByName(const std::string & name)
     QMutexLocker l(&_imp->nodesLock);
 
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if ( _imp->currentNodes[i]->getName() == name ) {
+        if (_imp->currentNodes[i]->getName() == name) {
             return _imp->currentNodes[i];
         }
     }

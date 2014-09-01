@@ -345,7 +345,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _sequenceButton->addItem( tr("File:") );
     if (isSequenceDialog) {
         _sequenceButton->setCurrentIndex(0);
-    } else  {
+    } else {
         _sequenceButton->setCurrentIndex(1);
     }
     QObject::connect( _sequenceButton,SIGNAL( currentIndexChanged(int) ),this,SLOT( sequenceComboBoxSlot(int) ) );
@@ -380,7 +380,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     if (_dialogMode == OPEN_DIALOG) {
         _filterLabel = new QLabel(tr("Filter:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
-    } else if (_dialogMode == SAVE_DIALOG)   {
+    } else if (_dialogMode == SAVE_DIALOG) {
         _filterLabel = new QLabel(tr("File type:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }
@@ -620,7 +620,7 @@ SequenceFileDialog::sequenceComboBoxSlot(int index)
 {
     if (index == 1) {
         enableSequenceMode(false);
-    } else  {
+    } else {
         enableSequenceMode(true);
     }
 }
@@ -1184,7 +1184,7 @@ FavoriteItemDelegate::paint(QPainter * painter,
                             icon.pixmap( icon.actualSize( QSize( iconRect.width(),iconRect.height() ) ) ),
                             r);
         painter->drawText(textRect,Qt::TextSingleLine,str,&r);
-    } else  {
+    } else {
         QStyledItemDelegate::paint(painter,option,index);
     }
 }
@@ -1265,7 +1265,7 @@ SequenceFileDialog::parentFolder()
 
     if ( dir.isRoot() ) {
         newDir = _model->myComputer().toString();
-    } else  {
+    } else {
         dir.cdUp();
         newDir = dir.absolutePath();
     }

@@ -268,8 +268,8 @@ Knob<T>::setValue(const T & v,
 
                 return ret;
             }
+            break;
         }
-        break;
         case KnobHolder::PARAM_EDIT_ON: {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
@@ -286,8 +286,8 @@ Knob<T>::setValue(const T & v,
 
                 return ret;
             }
+            break;
         }
-        break;
         }
 
         ///basically if we enter this if condition, for each dimension the undo stack will create a new command.
@@ -377,8 +377,8 @@ Knob<T>::setValueAtTime(int time,
 
                 return true;
             }
+            break;
         }
-        break;
         case KnobHolder::PARAM_EDIT_ON: {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
@@ -387,8 +387,8 @@ Knob<T>::setValueAtTime(int time,
 
                 return true;
             }
+            break;
         }
-        break;
         }
     }
 
@@ -455,8 +455,8 @@ Knob<std::string>::setValueAtTime(int time,
 
                 return true;
             }
+            break;
         }
-        break;
         case KnobHolder::PARAM_EDIT_ON: {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
@@ -465,8 +465,8 @@ Knob<std::string>::setValueAtTime(int time,
 
                 return true;
             }
+            break;
         }
-        break;
         }
     }
 

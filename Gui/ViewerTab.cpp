@@ -814,11 +814,11 @@ ViewerTab::updateViewsMenu(int count)
     if (count == 1) {
         _imp->_viewsComboBox->hide();
         _imp->_viewsComboBox->addItem( tr("Main") );
-    } else if (count == 2)   {
+    } else if (count == 2) {
         _imp->_viewsComboBox->show();
         _imp->_viewsComboBox->addItem( tr("Left"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_1) );
         _imp->_viewsComboBox->addItem( tr("Right"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_2) );
-    } else  {
+    } else {
         _imp->_viewsComboBox->show();
         for (int i = 0; i < count; ++i) {
             _imp->_viewsComboBox->addItem( QString( tr("View ") ) + QString::number(i + 1),QIcon(),Gui::keySequenceForView(i) );
@@ -826,7 +826,7 @@ ViewerTab::updateViewsMenu(int count)
     }
     if ( ( currentIndex < _imp->_viewsComboBox->count() ) && (currentIndex != -1) ) {
         _imp->_viewsComboBox->setCurrentIndex(currentIndex);
-    } else  {
+    } else {
         _imp->_viewsComboBox->setCurrentIndex(0);
     }
     _imp->_gui->updateViewsActions(count);
@@ -998,7 +998,7 @@ ViewerTab::centerViewer()
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
         _imp->_viewerNode->refreshAndContinueRender(false,true);
-    } else  {
+    } else {
         _imp->viewer->updateGL();
     }
 }

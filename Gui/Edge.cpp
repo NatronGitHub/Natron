@@ -26,7 +26,8 @@
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
-#define kGraphicalContainerOffset 10 //!< number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+#define kGraphicalContainerOffset 10 \
+    //!< number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
 Edge::Edge(int inputNb_,
            double angle_,
@@ -277,9 +278,9 @@ Edge::initLine()
             int yOffset = 0;
             if (cosinus < 0) {
                 yOffset = -40;
-            } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) )          {
+            } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                 yOffset = +5;
-            } else  {
+            } else {
                 yOffset = +10;
             }
 
@@ -329,7 +330,8 @@ Edge::shape() const
     return path;
 }
 
-static inline double sqr(double x)
+static inline double
+sqr(double x)
 {
     return x * x;
 }
@@ -338,12 +340,12 @@ static double
 dist2(const QPointF & p1,
       const QPointF & p2)
 {
-    return sqr(p2.x() - p1.x()) +  sqr(p2.y() - p1.y());
+    return sqr( p2.x() - p1.x() ) +  sqr( p2.y() - p1.y() );
 }
 
 static double
 dist2ToSegment(const QLineF & line,
-              const QPointF & p)
+               const QPointF & p)
 {
     double length = pow(line.length(),2);
     const QPointF & p1 = line.p1();
@@ -355,7 +357,7 @@ dist2ToSegment(const QLineF & line,
     // Consider the line extending the segment, parameterized as p1 + t (p2 - p1).
     // We find projection of point p onto the line.
     // It falls where t = [(p-p1) . (p2-p1)] / |p2-p1|^2
-    double t = ((p.x() - p1.x()) * (p2.x() - p1.x()) + (p.y() - p1.y()) * (p2.y() - p1.y())) / length;
+    double t = ( ( p.x() - p1.x() ) * ( p2.x() - p1.x() ) + ( p.y() - p1.y() ) * ( p2.y() - p1.y() ) ) / length;
     if (t < 0) {
         return dist2(p, p1);
     }
@@ -363,8 +365,8 @@ dist2ToSegment(const QLineF & line,
         return dist2(p, p2);
     }
 
-    return dist2(p, QPointF(p1.x() + t * (p2.x() - p1.x()),
-                            p1.y() + t * (p2.y() - p1.y())));
+    return dist2( p, QPointF( p1.x() + t * ( p2.x() - p1.x() ),
+                              p1.y() + t * ( p2.y() - p1.y() ) ) );
 }
 
 bool
@@ -453,7 +455,7 @@ Edge::paint(QPainter *painter,
         qreal space = 4;
         dashStyle << 3 << space;
         myPen.setDashPattern(dashStyle);
-    } else  {
+    } else {
         myPen.setStyle(Qt::SolidLine);
     }
 
@@ -620,3 +622,4 @@ LinkArrow::paint(QPainter *painter,
     headPath.closeSubpath();
     painter->fillPath(headPath, _headColor);
 }
+

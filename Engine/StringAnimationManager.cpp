@@ -291,3 +291,4 @@ StringAnimationManager::save(std::map<int,std::string>* keyframes) const
         assert(success.second);
     }
 }
+

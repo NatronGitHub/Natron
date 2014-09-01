@@ -101,6 +101,7 @@ public slots:
     void onSettingsPanelClosed(bool closed);
 
     void onItemRightClicked(TableItem* item);
+
 protected:
 
     virtual void appendExtraGui(QVBoxLayout* /*layout*/)
@@ -115,7 +116,7 @@ protected:
     virtual void initializeExtraKnobs()
     {
     }
-    
+
     virtual void showMenuForInstance(Natron::Node* /*instance*/)
     {
     }

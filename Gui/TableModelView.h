@@ -81,12 +81,11 @@ public:
     int column() const;
     void setSelected(bool select);
     bool isSelected() const;
-    
+
     inline Qt::ItemFlags flags() const
     {
         return itemFlags;
     }
-    
 
     void setFlags(Qt::ItemFlags flags);
     inline QString text() const
@@ -195,7 +194,6 @@ public:
 };
 
 
-
 inline void
 TableItem::setText(const QString &atext)
 {
@@ -262,7 +260,7 @@ public:
     void editItem(TableItem *item);
     void openPersistentEditor(TableItem *item);
     void closePersistentEditor(TableItem *item);
-    
+
     bool isItemSelected(const TableItem *item) const;
     void setItemSelected(const TableItem *item, bool select);
 
@@ -277,6 +275,7 @@ signals:
 
     void deleteKeyPressed();
     void itemRightClicked(TableItem* item);
+
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -332,7 +331,7 @@ public:
 
     void setRowCount(int rows);
     void setColumnCount(int columns);
-    
+
     virtual int rowCount( const QModelIndex &parent = QModelIndex() ) const OVERRIDE FINAL;
     virtual int columnCount( const QModelIndex &parent = QModelIndex() ) const OVERRIDE FINAL;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const OVERRIDE FINAL;

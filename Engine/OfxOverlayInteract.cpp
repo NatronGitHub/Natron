@@ -144,3 +144,4 @@ Natron::OfxParamOverlayInteract::getPixelAspect(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
 }
+

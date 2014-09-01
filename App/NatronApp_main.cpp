@@ -29,28 +29,27 @@ int
 main(int argc,
      char *argv[])
 {
-    
-
     bool isBackground;
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
+
     setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
 #if defined(Q_OS_UNIX)
-    if (!projectName.isEmpty()) {
+    if ( !projectName.isEmpty() ) {
         projectName = AppManager::qt_tildeExpansion(projectName);
     }
 #endif
     if (isBackground) {
-        if (projectName.isEmpty()) {
+        if ( projectName.isEmpty() ) {
             ///Autobackground without a project file name is not correct
             AppManager::printUsage();
 
             return 1;
         }
         AppManager manager;
-        if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
+        if ( !manager.load(argc,argv,projectName,writers,mainProcessServerName) ) {
             AppManager::printUsage();
 
             return 1;

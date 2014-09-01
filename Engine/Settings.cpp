@@ -548,7 +548,7 @@ Settings::initializeKnobs()
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
 
     _readersTab = Natron::createKnob<Page_Knob>(this, PLUGIN_GROUP_IMAGE_READERS);
-    _readersTab->setName("readersTab");  
+    _readersTab->setName("readersTab");
 
     _writersTab = Natron::createKnob<Page_Knob>(this, PLUGIN_GROUP_IMAGE_WRITERS);
     _writersTab->setName("writersTab");

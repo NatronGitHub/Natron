@@ -108,23 +108,23 @@ class Variant
             bool v;
             ar & boost::serialization::make_nvp("Value",v);
             setValue<bool>(v);
-        } else if (typeStr == "int")    {
+        } else if (typeStr == "int") {
             int v;
             ar & boost::serialization::make_nvp("Value",v);
             setValue<int>(v);
-        } else if (typeStr == "uint")    {
+        } else if (typeStr == "uint") {
             int v;
             ar & boost::serialization::make_nvp("Value",v);
             setValue<unsigned int>(v);
-        } else if (typeStr == "double")    {
+        } else if (typeStr == "double") {
             double v;
             ar & boost::serialization::make_nvp("Value",v);
             setValue<double>(v);
-        } else if (typeStr == "string")    {
+        } else if (typeStr == "string") {
             std::string str;
             ar & boost::serialization::make_nvp("Value",str);
             setValue<QString>( QString( str.c_str() ) );
-        } else if (typeStr == "stringlist")    {
+        } else if (typeStr == "stringlist") {
             std::list<std::string> list;
             ar & boost::serialization::make_nvp("Value",list);
             QStringList strList;
@@ -132,7 +132,7 @@ class Variant
                 strList.push_back( (*it).c_str() );
             }
             setValue<QStringList>(strList);
-        } else  {
+        } else {
             assert(typeStr == "null");
             //nothing
         }

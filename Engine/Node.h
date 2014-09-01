@@ -303,7 +303,7 @@ public:
      * as they are in the internal inputs vector. Disconnected inputs are
      * represented as empty strings.
      **/
-    void getInputNames(std::vector<std::string>& inputNames) const;
+    void getInputNames(std::vector<std::string> & inputNames) const;
 
     /** @brief Adds the node parent to the input inputNumber of the
      * node. Returns true if it succeeded, false otherwise.

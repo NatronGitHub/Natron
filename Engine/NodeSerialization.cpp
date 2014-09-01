@@ -60,7 +60,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n)
 
         _pluginMinorVersion = n->getMinorVersion();
 
-         n->getInputNames(_inputs);
+        n->getInputNames(_inputs);
 
         boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
         if (masterNode) {

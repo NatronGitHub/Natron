@@ -176,8 +176,8 @@ public slots:
     void onColorDialogColorChanged(const QColor & color);
 
     void setClosed(bool closed);
-    
-    void onRightClickMenuRequested(const QPoint& pos);
+
+    void onRightClickMenuRequested(const QPoint & pos);
 
 signals:
 
@@ -224,8 +224,6 @@ private:
     }
 
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
-
-    
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
 

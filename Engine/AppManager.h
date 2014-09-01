@@ -256,7 +256,7 @@ public:
     size_t getNCacheFilesOpened() const;
     void increaseNCacheFilesOpened();
     void decreaseNCacheFilesOpened();
-    
+
 public slots:
 
     ///Closes the application not saving any projects.
@@ -312,8 +312,10 @@ protected:
     {
     }
 
-    virtual void onAllPluginsLoaded() {}
-    
+    virtual void onAllPluginsLoaded()
+    {
+    }
+
 private:
 
 

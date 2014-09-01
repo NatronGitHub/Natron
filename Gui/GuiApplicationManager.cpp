@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ActionShortcuts.h"
 
 /**
- * @macro Registers a keybind to the application. 
+ * @macro Registers a keybind to the application.
  * @param group The name of the group under which the shortcut should be (e.g: Global, Viewer,NodeGraph...)
  * @param id The ID of the shortcut within the group so that we can find it later. The shorter the better, it isn't visible by the user.
  * @param description The label of the shortcut and the action visible in the GUI. This is what describes the action and what is visible in
@@ -636,12 +636,12 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
 {
     PluginGroupNode* parent = NULL;
     QString shortcutGrouping(kShortcutGroupNodes);
-    const QStringList& groups = plugin->getGrouping();
-    const QString& pluginID = plugin->getPluginID();
-    const QString& pluginLabel = plugin->getPluginLabel();
-    const QString& pluginIconPath = plugin->getIconFilePath();
-    const QString& groupIconPath = plugin->getGroupIconFilePath();
-    
+    const QStringList & groups = plugin->getGrouping();
+    const QString & pluginID = plugin->getPluginID();
+    const QString & pluginLabel = plugin->getPluginLabel();
+    const QString & pluginIconPath = plugin->getIconFilePath();
+    const QString & groupIconPath = plugin->getGroupIconFilePath();
+
     for (int i = 0; i < groups.size(); ++i) {
         PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath);
         if ( parent && (parent != child) ) {
@@ -659,7 +659,6 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     }
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
-    
     bool hasShortcut = false;
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
     if (pluginID == "TransformOFX  [Transform]") {
@@ -943,8 +942,6 @@ GuiApplicationManager::initializeQApp(int &argc,
 
     ///Register all the shortcuts.
     populateShortcuts();
-
-    
 }
 
 void
@@ -1198,18 +1195,17 @@ GuiApplicationManager::loadShortcuts()
             }
             if ( kAction && settings.contains(it2->first + "_Symbol") ) {
                 kAction->currentShortcut = (Qt::Key)settings.value(it2->first + "_Symbol").toInt();
-                
+
                 //If this is a node shortcut, notify the Plugin object that it has a shortcut.
-                if ( kAction->currentShortcut != (Qt::Key)0 &&
-                    it->first.startsWith(kShortcutGroupNodes) ) {
-                    const std::vector<Natron::Plugin*>& allPlugins = getPluginsList();
+                if ( (kAction->currentShortcut != (Qt::Key)0) &&
+                     it->first.startsWith(kShortcutGroupNodes) ) {
+                    const std::vector<Natron::Plugin*> & allPlugins = getPluginsList();
                     for (U32 i = 0; i < allPlugins.size(); ++i) {
                         if (allPlugins[i]->getPluginID() == it2->first) {
                             allPlugins[i]->setHasShortcut(true);
                             break;
                         }
                     }
-                    
                 }
             }
         }
@@ -1246,18 +1242,18 @@ GuiApplicationManager::populateShortcuts()
     registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowAbout, kShortcutDescActionShowAbout, Qt::NoModifier, (Qt::Key)0);
-    
+
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionExportLayout, kShortcutDescActionExportLayout, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionDefaultLayout, kShortcutDescActionDefaultLayout, Qt::NoModifier, (Qt::Key)0);
-    
+
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, Qt::NoModifier, Qt::Key_S);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowOFXLog, kShortcutDescActionShowOFXLog, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, Qt::NoModifier, (Qt::Key)0);
-    
+
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, Qt::ControlModifier, Qt::Key_I);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::ControlModifier | Qt::MetaModifier, Qt::Key_F);
-    
+
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearDiskCache, kShortcutDescActionClearDiskCache, Qt::NoModifier,(Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPlaybackCache, kShortcutDescActionClearPlaybackCache, Qt::NoModifier,(Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearNodeCache, kShortcutDescActionClearNodeCache, Qt::NoModifier,(Qt::Key)0);
@@ -1512,46 +1508,46 @@ GuiApplicationManager::getAllShortcuts() const
 }
 
 void
-GuiApplicationManager::addShortcutAction(const QString& group,
-                                         const QString& actionID,
+GuiApplicationManager::addShortcutAction(const QString & group,
+                                         const QString & actionID,
                                          QAction* action)
 {
     AppShortcuts::iterator foundGroup = _imp->_actionShortcuts.find(group);
-    
+
     if ( foundGroup != _imp->_actionShortcuts.end() ) {
         GroupShortcuts::iterator found = foundGroup->second.find(actionID);
         if ( found != foundGroup->second.end() ) {
-             KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(found->second);
+            KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(found->second);
             if (ka) {
                 ka->actions.push_back(action);
-                return ;
+
+                return;
             }
         }
     }
-
 }
 
 void
-GuiApplicationManager::removeShortcutAction(const QString& group,
-                                            const QString& actionID,
+GuiApplicationManager::removeShortcutAction(const QString & group,
+                                            const QString & actionID,
                                             QAction* action)
 {
     AppShortcuts::iterator foundGroup = _imp->_actionShortcuts.find(group);
-    
+
     if ( foundGroup != _imp->_actionShortcuts.end() ) {
         GroupShortcuts::iterator found = foundGroup->second.find(actionID);
         if ( found != foundGroup->second.end() ) {
             KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(found->second);
             if (ka) {
                 std::list<QAction*>::iterator foundAction = std::find(ka->actions.begin(),ka->actions.end(),action);
-                if (foundAction != ka->actions.end()) {
+                if ( foundAction != ka->actions.end() ) {
                     ka->actions.erase(foundAction);
+
                     return;
                 }
             }
         }
     }
-
 }
 
 void
@@ -1559,10 +1555,10 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 {
     action->updateActionsShortcut();
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
-        if (it->first.startsWith(kShortcutGroupNodes)) {
+        if ( it->first.startsWith(kShortcutGroupNodes) ) {
             for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 if (it2->second == action) {
-                    const std::vector<Natron::Plugin*>& allPlugins = getPluginsList();
+                    const std::vector<Natron::Plugin*> & allPlugins = getPluginsList();
                     for (U32 i = 0; i < allPlugins.size(); ++i) {
                         if (allPlugins[i]->getPluginID() == it2->first) {
                             allPlugins[i]->setHasShortcut(action->currentShortcut != (Qt::Key)0);
@@ -1574,5 +1570,5 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
             }
         }
     }
-
 }
+

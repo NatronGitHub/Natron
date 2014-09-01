@@ -192,14 +192,14 @@ TabWidget::createMenu()
     QAction* floatAction = new QAction(QIcon(pixM),tr("Float pane"),&menu);
     QObject::connect( floatAction, SIGNAL( triggered() ), this, SLOT( floatCurrentWidget() ) );
     menu.addAction(floatAction);
-    
-    
+
+
     if ( (_tabBar->count() == 0) ) {
         floatAction->setEnabled(false);
     }
 
     QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), &menu);
-    closeAction->setEnabled(_closeButton->isEnabled());
+    closeAction->setEnabled( _closeButton->isEnabled() );
     QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
     menu.addAction(closeAction);
     menu.addSeparator();
@@ -208,8 +208,8 @@ TabWidget::createMenu()
     menu.addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
     menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
     menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
-    
-    
+
+
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
     isAnchorAction->setCheckable(true);
     bool isVA = isAnchor();
@@ -217,24 +217,24 @@ TabWidget::createMenu()
     isAnchorAction->setEnabled(!isVA);
     QObject::connect( isAnchorAction, SIGNAL( triggered() ), this, SLOT( onSetAsAnchorActionTriggered() ) );
     menu.addAction(isAnchorAction);
-    
+
     menu.exec( _leftCornerButton->mapToGlobal( QPoint(0,0) ) );
 }
 
 void
 TabWidget::tryCloseFloatingPane()
 {
-    FloatingWidget* parent = dynamic_cast<FloatingWidget*>(parentWidget());
+    FloatingWidget* parent = dynamic_cast<FloatingWidget*>( parentWidget() );
+
     if (parent) {
         parent->close();
     }
 }
 
-
 static void
 getOtherSplitWidget(Splitter* parentSplitter,
-                  QWidget* thisWidget,
-                  QWidget* & other)
+                    QWidget* thisWidget,
+                    QWidget* & other)
 {
     for (int i = 0; i < parentSplitter->count(); ++i) {
         QWidget* w = parentSplitter->widget(i);
@@ -251,29 +251,31 @@ getOtherSplitWidget(Splitter* parentSplitter,
  * If the parent container is a splitter then we will insert it instead of the container.
  * Otherwise if the parent is a floating window we will insert it as embedded widget of the window.
  **/
-void TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
+void
+TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
 {
     QWidget* otherSplit = 0;
+
     /*identifying the other split*/
     getOtherSplitWidget(container,this,otherSplit);
     assert(otherSplit);
-   
+
     Splitter* parentSplitter = dynamic_cast<Splitter*>( container->parentWidget() );
     FloatingWidget* parentWindow = dynamic_cast<FloatingWidget*>( container->parentWidget() );
-    
+
     assert(parentSplitter || parentWindow);
-    
+
     if (parentSplitter) {
         QList<int> mainContainerSizes = parentSplitter->sizes();
-        
+
         /*Removing the splitter container from its parent*/
         int containerIndexInParentSplitter = parentSplitter->indexOf(container);
         parentSplitter->removeChild_mt_safe(container);
-        
+
         /*moving the other split to the mainContainer*/
         parentSplitter->insertChild_mt_safe(containerIndexInParentSplitter, otherSplit);
         otherSplit->setVisible(true);
-        
+
         /*restore the main container sizes*/
         parentSplitter->setSizes_mt_safe(mainContainerSizes);
     } else {
@@ -281,12 +283,11 @@ void TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
         parentWindow->removeEmbeddedWidget();
         parentWindow->setWidget(otherSplit);
     }
-    
+
     /*Remove the container from everywhere*/
     _gui->unregisterSplitter(container);
     container->setParent(NULL);
     delete container;
-
 }
 
 void
@@ -295,32 +296,31 @@ TabWidget::closePane()
     if (!_gui) {
         return;
     }
-    
+
     FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
-    if (isFloating && isFloating->getEmbeddedWidget() == this) {
+    if ( isFloating && (isFloating->getEmbeddedWidget() == this) ) {
         isFloating->close();
     }
 
 
     /*Removing it from the _panes vector*/
-    
-    _gui->unregisterPane(this);
 
+    _gui->unregisterPane(this);
 
 
     ///This is the TabWidget to which we will move all our splits.
     TabWidget* tabToTransferTo = 0;
-    
+
     ///Move living tabs to the viewer anchor TabWidget, this is better than destroying them.
     const std::list<TabWidget*> & panes = _gui->getPanes();
     for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-        if (*it != this && (*it)->isAnchor()) {
+        if ( (*it != this) && (*it)->isAnchor() ) {
             tabToTransferTo = *it;
             break;
         }
     }
-    
-    
+
+
     if (tabToTransferTo) {
         ///move this tab's splits
         while (count() > 0) {
@@ -328,13 +328,13 @@ TabWidget::closePane()
         }
     } else {
         while (count() > 0) {
-            removeTab(tabAt(0));
+            removeTab( tabAt(0) );
         }
     }
 
     ///Hide this
     setVisible(false);
-    
+
     Splitter* container = dynamic_cast<Splitter*>( parentWidget() );
     if (container) {
         closeSplitterAndMoveOtherSplitToParent(container);
@@ -345,20 +345,19 @@ void
 TabWidget::floatPane(QPoint* position)
 {
     FloatingWidget* isParentFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
+
     if (isParentFloating) {
         return;
     }
-    
-    FloatingWidget* floatingW = new FloatingWidget(_gui,_gui);
 
-    
+    FloatingWidget* floatingW = new FloatingWidget(_gui,_gui);
     Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
     setParent(0);
     if (parentSplitter) {
         closeSplitterAndMoveOtherSplitToParent(parentSplitter);
     }
 
-    
+
     floatingW->setWidget(this);
 
     if (position) {
@@ -434,11 +433,10 @@ TabWidget::setTabName(QWidget* tab,
 void
 TabWidget::floatCurrentWidget()
 {
-    
     if ( (_tabs.size() > 1) || !_closeButton->isEnabled() ) {
         ///Make a new tab widget and float it instead
         TabWidget* newPane = new TabWidget(_gui,_gui);
-        newPane->setObjectName_mt_safe(_gui->getAvailablePaneName());
+        newPane->setObjectName_mt_safe( _gui->getAvailablePaneName() );
         moveTab(_currentWidget, newPane);
         newPane->floatPane();
     } else {
@@ -485,13 +483,14 @@ TabWidget::movePropertiesBinHere()
 }
 
 TabWidget*
-TabWidget::splitInternal(bool autoSave,Qt::Orientation orientation)
+TabWidget::splitInternal(bool autoSave,
+                         Qt::Orientation orientation)
 {
-    FloatingWidget* parentIsFloating = dynamic_cast<FloatingWidget*>(parentWidget());
+    FloatingWidget* parentIsFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
     Splitter* parentIsSplitter = dynamic_cast<Splitter*>( parentWidget() );
-    
+
     assert(parentIsSplitter || parentIsFloating);
-    
+
     /*We need to know the position in the container layout of the old tab widget*/
     int oldIndexInParentSplitter;
     QList<int> oldSizeInParentSplitter;
@@ -502,21 +501,21 @@ TabWidget::splitInternal(bool autoSave,Qt::Orientation orientation)
         assert(parentIsFloating);
         parentIsFloating->removeEmbeddedWidget();
     }
-    
+
     Splitter* newSplitter = new Splitter;
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(orientation);
     _gui->registerSplitter(newSplitter);
-    
+
     /*Add this to the new splitter*/
     newSplitter->addWidget_mt_safe(this);
-    
+
     /*Adding now a new TabWidget*/
     TabWidget* newTab = new TabWidget(_gui,newSplitter);
-    newTab->setObjectName_mt_safe(_gui->getAvailablePaneName());
+    newTab->setObjectName_mt_safe( _gui->getAvailablePaneName() );
     _gui->registerPane(newTab);
     newSplitter->insertChild_mt_safe(-1,newTab);
-    
+
     /*Resize the whole thing so each split gets the same size*/
     QSize splitterSize;
     if (parentIsSplitter) {
@@ -524,7 +523,7 @@ TabWidget::splitInternal(bool autoSave,Qt::Orientation orientation)
     } else {
         splitterSize = parentIsFloating->size();
     }
-    
+
     QList<int> sizes;
     if (orientation == Qt::Vertical) {
         sizes << splitterSize.height() / 2;
@@ -536,29 +535,28 @@ TabWidget::splitInternal(bool autoSave,Qt::Orientation orientation)
         assert(false);
     }
     newSplitter->setSizes_mt_safe(sizes);
-    
+
     if (parentIsFloating) {
         parentIsFloating->setWidget(newSplitter);
         parentIsFloating->resize(splitterSize);
     } else {
         /*The parent MUST be a splitter otherwise there's a serious bug!*/
         assert(parentIsSplitter);
-        
+
         /*Inserting back the new splitter at the original index*/
         parentIsSplitter->insertChild_mt_safe(oldIndexInParentSplitter,newSplitter);
-        
+
         /*restore the container original sizes*/
         parentIsSplitter->setSizes_mt_safe(oldSizeInParentSplitter);
     }
-    
-    
+
+
     if (!_gui->getApp()->getProject()->isLoadingProject() && autoSave) {
         _gui->getApp()->triggerAutoSave();
     }
-    
-    return newTab;
 
-}
+    return newTab;
+} // splitInternal
 
 TabWidget*
 TabWidget::splitHorizontally(bool autoSave)
@@ -570,7 +568,7 @@ TabWidget*
 TabWidget::splitVertically(bool autoSave)
 {
     return splitInternal(autoSave, Qt::Vertical);
-} 
+}
 
 bool
 TabWidget::appendTab(QWidget* widget)
@@ -632,7 +630,7 @@ TabWidget::insertTab(int index,
         _tabBar->insertTab(index,icon,title);
         _tabBar->updateGeometry(); //< necessary
         _modifyingTabBar = false;
-    } else  {
+    } else {
         appendTab(widget);
     }
     _floatButton->setEnabled(true);
@@ -730,13 +728,13 @@ TabWidget::makeCurrentTab(int index)
 void
 TabWidget::paintEvent(QPaintEvent* e)
 {
-
     QFrame::paintEvent(e);
+
     if (_drawDropRect) {
         QRect r = rect();
         QPainter p(this);
         QPen pen;
-        pen.setBrush(QColor(243,149,0,255));
+        pen.setBrush( QColor(243,149,0,255) );
         p.setPen(pen);
         //        QPalette* palette = new QPalette();
         //        palette->setColor(QPalette::Foreground,c);
@@ -905,7 +903,7 @@ TabBar::mouseReleaseEvent(QMouseEvent* e)
 void
 TabWidget::stopDragTab(const QPoint & globalPos)
 {
-    if ( count() == 0 ) {
+    if (count() == 0) {
         tryCloseFloatingPane();
     }
 
@@ -981,13 +979,15 @@ bool
 TabWidget::isAnchor() const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
+
     return _isAnchor;
 }
 
 void
 TabWidget::onSetAsAnchorActionTriggered()
 {
-    const std::list<TabWidget*>& allPanes = _gui->getPanes();
+    const std::list<TabWidget*> & allPanes = _gui->getPanes();
+
     for (std::list<TabWidget*>::const_iterator it = allPanes.begin(); it != allPanes.end(); ++it) {
         (*it)->setAsAnchor(*it == this);
     }
@@ -1001,12 +1001,13 @@ TabWidget::setAsAnchor(bool anchor)
         _isAnchor = anchor;
     }
     QPixmap pix;
+
     if (anchor) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR, &pix);
     } else {
         appPTR->getIcon(Natron::NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON, &pix);
     }
-    _leftCornerButton->setIcon(QIcon(pix));
+    _leftCornerButton->setIcon( QIcon(pix) );
 }
 
 void
@@ -1066,7 +1067,6 @@ TabWidget::moveTab(QWidget* what,
     return true;
 }
 
-
 DragPixmap::DragPixmap(const QPixmap & pixmap,
                        const QPoint & offsetFromMouse)
     : QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
@@ -1123,6 +1123,7 @@ void
 TabWidget::setObjectName_mt_safe(const QString & str)
 {
     QMutexLocker l(&_tabWidgetStateMutex);
+
     setObjectName(str);
 }
 
@@ -1130,6 +1131,7 @@ QString
 TabWidget::objectName_mt_safe() const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
+
     return objectName();
 }
 
@@ -1137,6 +1139,7 @@ bool
 TabWidget::isFloatingWindowChild() const
 {
     QWidget* parent = parentWidget();
+
     while (parent) {
         FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(parent);
         if (isFloating) {
@@ -1144,6 +1147,7 @@ TabWidget::isFloatingWindowChild() const
         }
         parent = parent->parentWidget();
     }
+
     return false;
 }
 
@@ -1152,3 +1156,4 @@ TabWidget::discardGuiPointer()
 {
     _gui = 0;
 }
+

@@ -53,14 +53,12 @@ public:
     void setObjectName_mt_safe(const QString & str);
 
     QString objectName_mt_safe() const;
-    
+
     void insertChild_mt_safe(int i,QWidget* w);
-    
+
     void removeChild_mt_safe(QWidget* w);
-    
-    void getChildren_mt_safe(std::list<QWidget*>& children) const;
-    
-    
+
+    void getChildren_mt_safe(std::list<QWidget*> & children) const;
 
 private:
 

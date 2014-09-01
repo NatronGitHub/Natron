@@ -1673,8 +1673,8 @@ Color_KnobGui::updateGUI(int dimension)
                 _aBox->setValue(value);
             }
         }
+        break;
     }
-    break;
     case 1:
         _gBox->setValue(value);
         break;
@@ -2036,7 +2036,7 @@ ColorPickerLabel::setColor(const QColor & color)
         }
         QPixmap pix = QPixmap::fromImage(img); //.scaled(20, 20);
         setPixmap(pix);
-    } else  {
+    } else {
         QImage img(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE, QImage::Format_ARGB32);
         img.fill( color.rgb() );
         QPixmap pix = QPixmap::fromImage(img);
@@ -2057,7 +2057,7 @@ Color_KnobGui::onPickingEnabled(bool enabled)
         boost::shared_ptr<Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>( getKnob() );
         if (enabled) {
             getGui()->registerNewColorPicker(colorKnob);
-        } else  {
+        } else {
             getGui()->removeColorPicker(colorKnob);
         }
     }
@@ -2069,11 +2069,11 @@ Color_KnobGui::setReadOnly(bool readOnly,
 {
     if ( (dimension == 0) && _rBox ) {
         _rBox->setReadOnly(readOnly);
-    } else if ( (dimension == 1) && _gBox )      {
+    } else if ( (dimension == 1) && _gBox ) {
         _gBox->setReadOnly(readOnly);
-    } else if ( (dimension == 2) && _bBox )      {
+    } else if ( (dimension == 2) && _bBox ) {
         _bBox->setReadOnly(readOnly);
-    } else if ( (dimension == 3) && _aBox )      {
+    } else if ( (dimension == 3) && _aBox ) {
         _aBox->setReadOnly(readOnly);
     } else {
         assert(false); //< dim invalid

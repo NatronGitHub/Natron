@@ -405,7 +405,6 @@ EffectInstance::hasOutputConnected() const
 EffectInstance*
 EffectInstance::getInput(int n) const
 {
-
     boost::shared_ptr<Natron::Node> inputNode = _node->getInput(n);
 
     if (inputNode) {
@@ -414,7 +413,6 @@ EffectInstance::getInput(int n) const
 
     return NULL;
 }
-
 
 std::string
 EffectInstance::getInputLabel(int inputNb) const
@@ -445,7 +443,6 @@ EffectInstance::getImage(int inputNb,
 
     ///The input we want the image from
     EffectInstance* n = getInput(inputNb);
-    
     boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
     bool useRotoInput = false;
     if (roto) {
@@ -2908,12 +2905,11 @@ EffectInstance::getNearestNonDisabled() const
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<Natron::EffectInstance*> nonOptionalInputs;
         std::list<Natron::EffectInstance*> optionalInputs;
-        
         int maxInp = getMaxInputCount();
-        
+
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
-        for (int i = maxInp -1; i >= 0; --i) {
+        for (int i = maxInp - 1; i >= 0; --i) {
             Natron::EffectInstance* inp = getInput(i);
             bool optional = isInputOptional(i);
             if (inp) {
@@ -2924,28 +2920,27 @@ EffectInstance::getNearestNonDisabled() const
                 }
             }
         }
-        
+
         ///Cycle through all non optional inputs first
         for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
             Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
-            if ( inputRet ) {
+            if (inputRet) {
                 return inputRet;
             }
         }
-        
+
         ///Cycle through optional inputs...
         for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
             Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
-            if ( inputRet ) {
+            if (inputRet) {
                 return inputRet;
             }
         }
-        
+
         ///We didn't find anything upstream, return
         return NULL;
     }
 }
-
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)

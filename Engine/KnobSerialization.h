@@ -100,30 +100,30 @@ struct ValueSerialization
         if (isInt) {
             int v = isInt->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isBool)   {
+        } else if (isBool) {
             bool v = isBool->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isDouble)   {
+        } else if (isDouble) {
             double v = isDouble->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isChoice)   {
+        } else if (isChoice) {
             int v = isChoice->getValue(_dimension);
             std::string label = isChoice->getEntries()[v];
             ar & boost::serialization::make_nvp("Value", v);
             ar & boost::serialization::make_nvp("Label", label);
-        } else if (isString)   {
+        } else if (isString) {
             std::string v = isString->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isFile)   {
+        } else if (isFile) {
             std::string v = isFile->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isOutputFile)   {
+        } else if (isOutputFile) {
             std::string v = isOutputFile->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isPath)   {
+        } else if (isPath) {
             std::string v = isPath->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isColor)   {
+        } else if (isColor) {
             double v = isColor->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
         }
@@ -171,15 +171,15 @@ struct ValueSerialization
             int v;
             ar & boost::serialization::make_nvp("Value",v);
             isInt->setValue(v,_dimension);
-        } else if (isBool)   {
+        } else if (isBool) {
             bool v;
             ar & boost::serialization::make_nvp("Value",v);
             isBool->setValue(v,_dimension);
-        } else if (isDouble)   {
+        } else if (isDouble) {
             double v;
             ar & boost::serialization::make_nvp("Value",v);
             isDouble->setValue(v,_dimension);
-        } else if (isChoice)   {
+        } else if (isChoice) {
             int v;
             ar & boost::serialization::make_nvp("Value", v);
             assert(v >= 0);
@@ -203,11 +203,11 @@ struct ValueSerialization
                     }
                 }
             }
-        } else if (isString)   {
+        } else if (isString) {
             std::string v;
             ar & boost::serialization::make_nvp("Value",v);
             isString->setValue(v,_dimension);
-        } else if (isFile)   {
+        } else if (isFile) {
             std::string v;
             ar & boost::serialization::make_nvp("Value",v);
 
@@ -218,15 +218,15 @@ struct ValueSerialization
                 content.generatePatternWithFrameNumberAtIndex(content.getPotentialFrameNumbersCount() - 1, &v);
             }
             isFile->setValue(v,_dimension);
-        } else if (isOutputFile)   {
+        } else if (isOutputFile) {
             std::string v;
             ar & boost::serialization::make_nvp("Value",v);
             isOutputFile->setValue(v,_dimension);
-        } else if (isPath)   {
+        } else if (isPath) {
             std::string v;
             ar & boost::serialization::make_nvp("Value",v);
             isPath->setValue(v,_dimension);
-        } else if (isColor)   {
+        } else if (isColor) {
             double v;
             ar & boost::serialization::make_nvp("Value",v);
             isColor->setValue(v,_dimension);

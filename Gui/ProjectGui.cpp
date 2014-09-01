@@ -413,8 +413,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             panel->addRow( (*it)->getNode() );
         }
     }
-    
-    
+
+
     ///now restore opened settings panels
     const std::list<std::string> & openedPanels = obj.getOpenedPanels();
     //reverse the iterator to fill the layout bottom up
@@ -444,8 +444,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         ///will relocate it correctly
         _gui->appendTabToDefaultViewerPane(h);
     }
-
-
 } // load
 
 std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const

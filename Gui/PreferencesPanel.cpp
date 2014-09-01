@@ -128,3 +128,4 @@ PreferencesPanel::keyPressEvent(QKeyEvent* e)
         QWidget::keyPressEvent(e);
     }
 }
+

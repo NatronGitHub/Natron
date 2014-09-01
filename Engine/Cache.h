@@ -573,7 +573,7 @@ public:
         if (_signalEmitter) {
             _signalEmitter->emitAddedEntry(time);
         }
-        
+
         if (storage == Natron::DISK) {
             appPTR->increaseNCacheFilesOpened();
         }
@@ -623,13 +623,13 @@ public:
         if (oldStorage == Natron::RAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
             _diskCacheSize += size;
-            
+
             ///We switched from RAM to DISK that means the MemoryFile object has been destroyed hence the file has been closed.
             appPTR->decreaseNCacheFilesOpened();
         } else {
             _memoryCacheSize += size;
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
-            
+
             ///We switched from DISK to RAM that means the MemoryFile object has been created and the file opened
             appPTR->increaseNCacheFilesOpened();
         }
@@ -640,7 +640,7 @@ public:
             _signalEmitter->emitEntryStorageChanged(time, (int)oldStorage, (int)newStorage);
         }
     }
-    
+
     virtual void backingFileRemoved() const OVERRIDE FINAL
     {
         appPTR->decreaseNCacheFilesOpened();
@@ -823,9 +823,9 @@ public:
                 }
                 totalFreeRAM = getAmountFreePhysicalRAM();
             }
-            
+
             Natron::StorageMode storage = Natron::DISK;
-            
+
             ///If too many files are opened, fall-back on RAM storage.
             if ( appPTR->isNCacheFilesOpenedCapped() ) {
                 storage = Natron::RAM;
@@ -857,7 +857,6 @@ private:
     {
         assert( !_lock.tryLock() );   // must be locked
         EntryTypePtr entryptr;
-
         Natron::StorageMode storage;
         if (params->getCost() == 0) {
             storage = Natron::RAM;
@@ -866,12 +865,12 @@ private:
         } else {
             storage = Natron::NO_STORAGE;
         }
-        
+
         ///If there are too many opened files, fall-back on RAM storage.
         if ( appPTR->isNCacheFilesOpenedCapped() ) {
             storage = Natron::RAM;
         }
-        
+
         ///Before allocating the memory check that there's enough space to fit in memory
         size_t systemRAMToKeepFree = _maxPhysicalRAM * appPTR->getCurrentSettings()->getUnreachableRamPercent();
         size_t totalFreeRAM = getAmountFreePhysicalRAM();
@@ -954,7 +953,7 @@ private:
             /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
             if ( existingDiskCacheEntry == _diskCache.end() ) {
                 _diskCache.insert(evicted.first,evicted.second);
-            } else  {  /*append to the existing list*/
+            } else {   /*append to the existing list*/
                 getValueFromIterator(existingDiskCacheEntry).push_back(evicted.second);
             }
         }

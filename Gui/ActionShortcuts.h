@@ -393,7 +393,7 @@ makeKeySequence(const Qt::KeyboardModifiers & modifiers,
                 Qt::Key key)
 {
     int keys = 0;
-    
+
     if ( modifiers.testFlag(Qt::ControlModifier) ) {
         keys |= Qt::CTRL;
     }
@@ -409,7 +409,7 @@ makeKeySequence(const Qt::KeyboardModifiers & modifiers,
     if (key != (Qt::Key)0) {
         keys |= key;
     }
-    
+
     return QKeySequence(keys);
 }
 
@@ -426,7 +426,7 @@ extractKeySequence(const QKeySequence & seq,
     const QString nativeSHIFTStr = QKeySequence(Qt::SHIFT).toString(QKeySequence::NativeText);
     const QString nativeALTStr = QKeySequence(Qt::ALT).toString(QKeySequence::NativeText);
     QString nativeSeqStr = seq.toString(QKeySequence::NativeText);
-    
+
     if (nativeSeqStr.indexOf(nativeMETAStr) != -1) {
         modifiers |= Qt::MetaModifier;
         nativeSeqStr = nativeSeqStr.remove(nativeMETAStr);
@@ -443,7 +443,7 @@ extractKeySequence(const QKeySequence & seq,
         modifiers |= Qt::AltModifier;
         nativeSeqStr = nativeSeqStr.remove(nativeALTStr);
     }
-    
+
     ///The nativeSeqStr now contains only the symbol
     QKeySequence newSeq(nativeSeqStr,QKeySequence::NativeText);
     if (newSeq.count() > 0) {
@@ -481,7 +481,7 @@ public:
     Qt::Key currentShortcut; //< the actual shortcut for the keybind
     Qt::Key defaultShortcut; //< the default shortcut proposed by the dev team
     std::list<QAction*> actions; //< list of actions using this shortcut
-    
+
     KeyBoundAction()
         : BoundAction()
     {
@@ -490,11 +490,11 @@ public:
     virtual ~KeyBoundAction()
     {
     }
-    
-    void
-    updateActionsShortcut() {
+
+    void updateActionsShortcut()
+    {
         for (std::list<QAction*>::iterator it = actions.begin(); it != actions.end(); ++it) {
-            (*it)->setShortcut(makeKeySequence(modifiers, currentShortcut));
+            (*it)->setShortcut( makeKeySequence(modifiers, currentShortcut) );
         }
     }
 };
@@ -515,7 +515,6 @@ public:
     {
     }
 };
-
 
 
 ///All the shortcuts of a group matched against their

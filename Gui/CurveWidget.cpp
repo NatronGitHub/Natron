@@ -238,7 +238,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
             *x2 = upperWidgetCoord;
 
             return std::make_pair(*upper,true);
-        } else  {
+        } else {
             *x2 = x1 + delta_x;
         }
     }
@@ -270,7 +270,7 @@ CurveGui::drawCurve(int curveIndex,
         if (!isX1AKey.second) {
             x = _curveWidget->toZoomCoordinates(x1,0).x();
             y = evaluate(x);
-        } else  {
+        } else {
             x = isX1AKey.first.getTime();
             y = isX1AKey.first.getValue();
         }
@@ -2488,7 +2488,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
                 }
             }
         }
-    } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) )   {
+    } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
         deleteSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
         constantInterpForSelectedKeyFrames();
@@ -2663,7 +2663,7 @@ CurveWidget::deleteSelectedKeyFrames()
             std::vector< std::pair<CurveGui*,KeyFrame > > newV;
             newV.push_back( std::make_pair( (*it)->curve, (*it)->key ) );
             toRemove.insert( std::make_pair( (*it)->curve->getKnob(), newV ) );
-        } else  {
+        } else {
             foundKnob->second.push_back( std::make_pair( (*it)->curve, (*it)->key ) );
         }
     }

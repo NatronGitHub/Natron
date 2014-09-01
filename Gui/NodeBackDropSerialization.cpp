@@ -36,3 +36,4 @@ NodeBackDropSerialization::initialize(const NodeBackDrop* n)
     selected = n->getIsSelected();
     _isNull = false;
 }
+

@@ -228,7 +228,7 @@ InfoViewerWidget::setResolution(const Format & f)
                .arg( format.height() );
         resolution->setText(reso);
         resolution->setMaximumWidth( resolution->sizeHint().width() );
-    } else  {
+    } else {
         QString reso("<font color=\"#DBE0E0\">");
         reso.append( format.getName().c_str() );
         reso.append("\t");

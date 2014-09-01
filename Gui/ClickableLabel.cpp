@@ -94,3 +94,4 @@ ClickableLabel::setSunken(bool s)
     style()->polish(this);
     repaint();
 }
+

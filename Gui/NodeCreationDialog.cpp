@@ -128,8 +128,8 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
 {
     int key = e->key();
     bool viewVisible = !_imp->listView->isHidden();
-    
-    assert(_imp->listView->model());
+
+    assert( _imp->listView->model() );
     int count = _imp->listView->model()->rowCount();
     QModelIndex currentIndex = _imp->listView->currentIndex();
 

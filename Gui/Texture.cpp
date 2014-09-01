@@ -43,7 +43,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                             GL_BGRA,            // format
                             GL_UNSIGNED_INT_8_8_8_8_REV,        // type
                             0);
-        } else if (_type == Texture::FLOAT)   {
+        } else if (_type == Texture::FLOAT) {
             glTexSubImage2D(_target,
                             0,              // level
                             0, 0,               // xoffset, yoffset
@@ -53,7 +53,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                             0);
         }
         glCheckError();
-    } else  {
+    } else {
         _textureRect = texRect;
         _type = type;
         glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
@@ -72,7 +72,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                          GL_BGRA,       // format
                          GL_UNSIGNED_INT_8_8_8_8_REV,   // type
                          0);            // pixels
-        } else if (type == FLOAT)   {
+        } else if (type == FLOAT) {
             glTexImage2D (_target,
                           0,            // level
                           GL_RGBA32F_ARB, //internalFormat

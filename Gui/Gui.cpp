@@ -158,38 +158,39 @@ getPixmapForGrouping(QPixmap* pixmap,
         appPTR->getIcon(Natron::NATRON_PIXMAP_OTHER_PLUGINS, pixmap);
     }
 }
-    
+
 /**
  * @brief A small class that helps registering an action to a shortcut.
  * Its shortcut also gets updated when the user modifies it.
  **/
-class ActionWithShortcut : public QAction
+class ActionWithShortcut
+    : public QAction
 {
     QString _group;
     QString _actionID;
+
 public:
-    
-    ActionWithShortcut(const QString& group,const QString& actionID,const QString& actionDescription,QObject* parent)
-    : QAction(parent)
-    , _group(group)
-    , _actionID(actionID)
+
+    ActionWithShortcut(const QString & group,
+                       const QString & actionID,
+                       const QString & actionDescription,
+                       QObject* parent)
+        : QAction(parent)
+          , _group(group)
+          , _actionID(actionID)
     {
-        
-        assert (!group.isEmpty() && !actionID.isEmpty()) ;
-        setShortcut(getKeybind(group, actionID));
+        assert ( !group.isEmpty() && !actionID.isEmpty() );
+        setShortcut( getKeybind(group, actionID) );
         appPTR->addShortcutAction(group, actionID, this);
         setShortcutContext(Qt::WindowShortcut);
-        setText( QObject::tr(actionDescription.toStdString().c_str()) );
+        setText( QObject::tr( actionDescription.toStdString().c_str() ) );
     }
-    
-    virtual
-    ~ActionWithShortcut()
+
+    virtual ~ActionWithShortcut()
     {
-        assert (!_group.isEmpty() && !_actionID.isEmpty()) ;
+        assert ( !_group.isEmpty() && !_actionID.isEmpty() );
         appPTR->removeShortcutAction(_group, _actionID, this);
-        
     }
-    
 };
 }
 
@@ -328,10 +329,9 @@ struct GuiPrivate
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
     mutable QMutex _panesMutex;
     std::list<TabWidget*> _panes;
-
     mutable QMutex _floatingWindowMutex;
     std::list<FloatingWidget*> _floatingWindows;
-    
+
     ///All the tabs used in the TabWidgets (used for d&d purpose)
     std::map<std::string,QWidget*> _registeredTabs;
 
@@ -350,20 +350,14 @@ struct GuiPrivate
 
     ///list of the currently opened property panels
     std::list<DockablePanel*> openedPanels;
-    
     QString _openGLVersion;
     QString _glewVersion;
-    
     QToolButton* _toolButtonMenuOpened;
-    
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
-    
     mutable QMutex abortedEnginesMutex;
     std::list<VideoEngine*> abortedEngines;
-    
     TabWidget* fullScreenWidgetDuringSave;
-    
     ShortCutEditor* shortcutEditor;
 
     GuiPrivate(GuiAppInstance* app,
@@ -487,7 +481,6 @@ struct GuiPrivate
     void createNodeGraphGui();
 
     void createCurveEditorGui();
-    
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -533,19 +526,20 @@ GuiPrivate::notifyGuiClosing()
             (*it)->notifyAppClosing();
         }
     }
-    
+
     const std::list<boost::shared_ptr<NodeGui> > allNodes = _nodeGraphArea->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         DockablePanel* panel = (*it)->getSettingPanel();
         if (panel) {
             panel->onGuiClosing();
         }
     }
     _nodeGraphArea->discardGuiPointer();
-    
+
     {
         QMutexLocker k(&_panesMutex);
-        for (std::list<TabWidget*>::iterator it = _panes.begin();it!=_panes.end();++it) {
+        for (std::list<TabWidget*>::iterator it = _panes.begin(); it != _panes.end(); ++it) {
             (*it)->discardGuiPointer();
         }
     }
@@ -670,11 +664,11 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
 
     if (!where) {
         where = getAnchor();
-    } else  {
+    } else {
         _imp->_nextViewerTabPlace = NULL; // < reseting next viewer anchor to default
     }
     assert(where);
-    
+
     ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
     assert(v);
     _imp->_lastSelectedViewer = addNewViewerTab(v, where);
@@ -718,7 +712,7 @@ Gui::createMenuActions()
 {
     _imp->menubar = new QMenuBar(this);
     setMenuBar(_imp->menubar);
-    
+
     _imp->menuFile = new QMenu(QObject::tr("File"),_imp->menubar);
     _imp->menuRecentFiles = new QMenu(QObject::tr("Open recent"),_imp->menuFile);
     _imp->menuEdit = new QMenu(QObject::tr("Edit"),_imp->menubar);
@@ -730,127 +724,127 @@ Gui::createMenuActions()
     _imp->viewerInputsMenu = new QMenu(QObject::tr("Connect Current Viewer"),_imp->viewersMenu);
     _imp->viewersViewMenu = new QMenu(QObject::tr("Display view number"),_imp->viewersMenu);
     _imp->cacheMenu = new QMenu(QObject::tr("Cache"),_imp->menubar);
-    
-    
+
+
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionNewProject,kShortcutDescActionNewProject,this);
     _imp->actionNew_project->setIcon( get_icon("document-new") );
     QObject::connect( _imp->actionNew_project, SIGNAL( triggered() ), this, SLOT( newProject() ) );
-    
+
     _imp->actionOpen_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionOpenProject,kShortcutDescActionOpenProject,this);
     _imp->actionOpen_project->setIcon( get_icon("document-open") );
     QObject::connect( _imp->actionOpen_project, SIGNAL( triggered() ), this, SLOT( openProject() ) );
-    
+
     _imp->actionClose_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionCloseProject,kShortcutDescActionCloseProject,this);
     _imp->actionClose_project->setIcon( get_icon("document-close") );
     QObject::connect( _imp->actionClose_project, SIGNAL( triggered() ), this, SLOT( closeProject() ) );
-    
+
     _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveProject,kShortcutDescActionSaveProject,this);
     _imp->actionSave_project->setIcon( get_icon("document-save") );
     QObject::connect( _imp->actionSave_project, SIGNAL( triggered() ), this, SLOT( saveProject() ) );
-    
+
     _imp->actionSaveAs_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveAsProject,kShortcutDescActionSaveAsProject,this);
     _imp->actionSaveAs_project->setIcon( get_icon("document-save-as") );
     QObject::connect( _imp->actionSaveAs_project, SIGNAL( triggered() ), this, SLOT( saveProjectAs() ) );
-    
+
     _imp->actionPreferences = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionPreferences,kShortcutDescActionPreferences,this);
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
     QObject::connect( _imp->actionPreferences,SIGNAL( triggered() ),this,SLOT( showSettings() ) );
-    
+
     _imp->actionExit = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionQuit,kShortcutDescActionQuit,this);
     _imp->actionExit->setMenuRole(QAction::QuitRole);
     _imp->actionExit->setIcon( get_icon("application-exit") );
     QObject::connect( _imp->actionExit,SIGNAL( triggered() ),appPTR,SLOT( exitApp() ) );
-    
+
     _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionProjectSettings,kShortcutDescActionProjectSettings,this);
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );
     QObject::connect( _imp->actionProject_settings,SIGNAL( triggered() ),this,SLOT( setVisibleProjectSettingsPanel() ) );
-    
+
     _imp->actionShowOfxLog = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionShowOFXLog,kShortcutDescActionShowOFXLog,this);
     QObject::connect( _imp->actionShowOfxLog,SIGNAL( triggered() ),this,SLOT( showOfxLog() ) );
-    
+
     _imp->actionShortcutEditor = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionShowShortcutEditor,kShortcutDescActionShowShortcutEditor,this);
     QObject::connect( _imp->actionShortcutEditor,SIGNAL( triggered() ),this,SLOT( showShortcutEditor() ) );
-    
+
     _imp->actionNewViewer = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionNewViewer,kShortcutDescActionNewViewer,this);
     QObject::connect( _imp->actionNewViewer,SIGNAL( triggered() ),this,SLOT( createNewViewer() ) );
-    
+
     _imp->actionFullScreen = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionFullscreen,kShortcutDescActionFullscreen,this);
     _imp->actionFullScreen->setIcon( get_icon("view-fullscreen") );
     QObject::connect( _imp->actionFullScreen, SIGNAL( triggered() ),this,SLOT( toggleFullScreen() ) );
-    
+
     _imp->actionClearDiskCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearDiskCache,kShortcutDescActionClearDiskCache,this);
     QObject::connect( _imp->actionClearDiskCache, SIGNAL( triggered() ),appPTR,SLOT( clearDiskCache() ) );
-    
+
     _imp->actionClearPlayBackCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearPlaybackCache,kShortcutDescActionClearPlaybackCache,this);
     QObject::connect( _imp->actionClearPlayBackCache, SIGNAL( triggered() ),appPTR,SLOT( clearPlaybackCache() ) );
-    
+
     _imp->actionClearNodeCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearNodeCache,kShortcutDescActionClearNodeCache,this);
     QObject::connect( _imp->actionClearNodeCache, SIGNAL( triggered() ),appPTR,SLOT( clearNodeCache() ) );
     QObject::connect( _imp->actionClearNodeCache, SIGNAL( triggered() ),_imp->_appInstance,SLOT( clearOpenFXPluginsCaches() ) );
-    
+
     _imp->actionClearPluginsLoadingCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearPluginsLoadCache,kShortcutDescActionClearPluginsLoadCache,this);
     QObject::connect( _imp->actionClearPluginsLoadingCache, SIGNAL( triggered() ),appPTR,SLOT( clearPluginsLoadedCache() ) );
-    
+
     _imp->actionClearAllCaches = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearAllCaches,kShortcutDescActionClearAllCaches,this);
     QObject::connect( _imp->actionClearAllCaches, SIGNAL( triggered() ),appPTR,SLOT( clearAllCaches() ) );
-    
+
     _imp->actionShowAboutWindow = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionShowAbout,kShortcutDescActionShowAbout,this);
     _imp->actionShowAboutWindow->setMenuRole(QAction::AboutRole);
     QObject::connect( _imp->actionShowAboutWindow,SIGNAL( triggered() ),this,SLOT( showAbout() ) );
-    
+
     _imp->renderAllWriters = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionRenderAll,kShortcutDescActionRenderAll,this);
     QObject::connect( _imp->renderAllWriters,SIGNAL( triggered() ),this,SLOT( renderAllWriters() ) );
-    
+
     _imp->renderSelectedNode = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionRenderSelected,kShortcutDescActionRenderSelected,this);
     QObject::connect( _imp->renderSelectedNode,SIGNAL( triggered() ),this,SLOT( renderSelectedNode() ) );
-    
-    
+
+
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
         _imp->actionsOpenRecentFile[c] = new QAction(this);
         _imp->actionsOpenRecentFile[c]->setVisible(false);
         connect( _imp->actionsOpenRecentFile[c], SIGNAL( triggered() ),this, SLOT( openRecentFile() ) );
     }
-    
+
     _imp->actionConnectInput1 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput1,kShortcutDescActionConnectViewerToInput1,this);
     QObject::connect( _imp->actionConnectInput1, SIGNAL( triggered() ),this,SLOT( connectInput1() ) );
-    
+
     _imp->actionConnectInput2 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput2,kShortcutDescActionConnectViewerToInput2,this);
     QObject::connect( _imp->actionConnectInput2, SIGNAL( triggered() ),this,SLOT( connectInput2() ) );
-    
+
     _imp->actionConnectInput3 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput3,kShortcutDescActionConnectViewerToInput3,this);
     QObject::connect( _imp->actionConnectInput3, SIGNAL( triggered() ),this,SLOT( connectInput3() ) );
-    
+
     _imp->actionConnectInput4 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput4,kShortcutDescActionConnectViewerToInput4,this);
     QObject::connect( _imp->actionConnectInput4, SIGNAL( triggered() ),this,SLOT( connectInput4() ) );
-    
+
     _imp->actionConnectInput5 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput5,kShortcutDescActionConnectViewerToInput5,this);
     QObject::connect( _imp->actionConnectInput5, SIGNAL( triggered() ),this,SLOT( connectInput5() ) );
-    
-    
+
+
     _imp->actionConnectInput6 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput6,kShortcutDescActionConnectViewerToInput6,this);
     QObject::connect( _imp->actionConnectInput6, SIGNAL( triggered() ),this,SLOT( connectInput6() ) );
-    
+
     _imp->actionConnectInput7 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput7,kShortcutDescActionConnectViewerToInput7,this);
     QObject::connect( _imp->actionConnectInput7, SIGNAL( triggered() ),this,SLOT( connectInput7() ) );
-    
+
     _imp->actionConnectInput8 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput8,kShortcutDescActionConnectViewerToInput8,this);
     QObject::connect( _imp->actionConnectInput8, SIGNAL( triggered() ),this,SLOT( connectInput8() ) );
-    
+
     _imp->actionConnectInput9 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput9,kShortcutDescActionConnectViewerToInput9,this);
-    
+
     _imp->actionConnectInput10 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput10,kShortcutDescActionConnectViewerToInput10,this);
     QObject::connect( _imp->actionConnectInput9, SIGNAL( triggered() ),this,SLOT( connectInput9() ) );
     QObject::connect( _imp->actionConnectInput10, SIGNAL( triggered() ),this,SLOT( connectInput10() ) );
-    
+
     _imp->actionImportLayout = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionImportLayout,kShortcutDescActionImportLayout,this);
     QObject::connect( _imp->actionImportLayout, SIGNAL( triggered() ),this,SLOT( importLayout() ) );
-    
+
     _imp->actionExportLayout = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionExportLayout,kShortcutDescActionExportLayout,this);
     QObject::connect( _imp->actionExportLayout, SIGNAL( triggered() ),this,SLOT( exportLayout() ) );
-    
+
     _imp->actionRestoreDefaultLayout = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionDefaultLayout,kShortcutDescActionDefaultLayout,this);
     QObject::connect( _imp->actionRestoreDefaultLayout, SIGNAL( triggered() ),this,SLOT( restoreDefaultLayout() ) );
-    
+
     _imp->menubar->addAction( _imp->menuFile->menuAction() );
     _imp->menubar->addAction( _imp->menuEdit->menuAction() );
     _imp->menubar->addAction( _imp->menuLayout->menuAction() );
@@ -866,20 +860,20 @@ Gui::createMenuActions()
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
         _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
     }
-    
+
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);
     _imp->menuFile->addAction(_imp->actionSaveAs_project);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionExit);
-    
+
     _imp->menuEdit->addAction(_imp->actionPreferences);
-    
+
     _imp->menuLayout->addAction(_imp->actionImportLayout);
     _imp->menuLayout->addAction(_imp->actionExportLayout);
     _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);
-    
+
     _imp->menuOptions->addAction(_imp->actionProject_settings);
     _imp->menuOptions->addAction(_imp->actionShowOfxLog);
     _imp->menuOptions->addAction(_imp->actionShortcutEditor);
@@ -899,17 +893,17 @@ Gui::createMenuActions()
     _imp->viewerInputsMenu->addAction(_imp->actionConnectInput10);
     _imp->menuDisplay->addSeparator();
     _imp->menuDisplay->addAction(_imp->actionFullScreen);
-    
+
     _imp->menuRender->addAction(_imp->renderAllWriters);
     _imp->menuRender->addAction(_imp->renderSelectedNode);
-    
+
     _imp->cacheMenu->addAction(_imp->actionClearDiskCache);
     _imp->cacheMenu->addAction(_imp->actionClearPlayBackCache);
     _imp->cacheMenu->addAction(_imp->actionClearNodeCache);
     _imp->cacheMenu->addAction(_imp->actionClearAllCaches);
     _imp->cacheMenu->addSeparator();
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
-}
+} // createMenuActions
 
 void
 Gui::setupUi()
@@ -928,7 +922,7 @@ Gui::setupUi()
     QObject::connect( _imp->_undoStacksGroup, SIGNAL( activeStackChanged(QUndoStack*) ), this, SLOT( onCurrentUndoStackChanged(QUndoStack*) ) );
 
     createMenuActions();
-    
+
     /*CENTRAL AREA*/
     //======================
     _imp->_centralWidget = new QWidget(this);
@@ -977,23 +971,23 @@ Gui::setupUi()
     _imp->shortcutEditor = new ShortCutEditor(this);
     _imp->shortcutEditor->hide();
 
-    
+
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     QObject::connect( _imp->_appInstance->getProject().get(),SIGNAL( projectNameChanged(QString) ),this,SLOT( onProjectNameChanged(QString) ) );
-    
-    
+
+
     /*Searches recursively for all child objects of the given object,
-     and connects matching signals from them to slots of object that follow the following form:
-     
+       and connects matching signals from them to slots of object that follow the following form:
+
         void on_<object name>_<signal name>(<signal parameters>);
-     
-    Let's assume our object has a child object of type QPushButton with the object name button1.
-     The slot to catch the button's clicked() signal would be:
-     
-    void on_button1_clicked();
-     
-    If object itself has a properly set object name, its own signals are also connected to its respective slots.
-    */
+
+       Let's assume our object has a child object of type QPushButton with the object name button1.
+       The slot to catch the button's clicked() signal would be:
+
+       void on_button1_clicked();
+
+       If object itself has a properly set object name, its own signals are also connected to its respective slots.
+     */
     QMetaObject::connectSlotsByName(this);
 } // setupUi
 
@@ -1045,9 +1039,9 @@ GuiPrivate::createPropertiesBinGui()
     propertiesAreaButtonsLayout->addStretch();
 
     _layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
-    
+
     _gui->registerTab(_propertiesScrollArea);
-}
+} // createPropertiesBinGui
 
 void
 GuiPrivate::createNodeGraphGui()
@@ -1122,6 +1116,7 @@ Gui::createDefaultLayout1()
 {
     ///First tab widget must be created this way
     TabWidget* mainPane = new TabWidget(this,_imp->_leftRightSplitter);
+
     mainPane->setObjectName(kViewerPaneName);
     mainPane->setAsAnchor(true);
     {
@@ -1165,63 +1160,68 @@ Gui::createDefaultLayout1()
     workshopPane->makeCurrentTab(0);
 }
 
-static void restoreTabWidget(TabWidget* pane,const PaneLayout& serialization)
+static void
+restoreTabWidget(TabWidget* pane,
+                 const PaneLayout & serialization)
 {
-    
     ///Find out if the name is already used
-    QString availableName = pane->getGui()->getAvailablePaneName(serialization.name.c_str());
+    QString availableName = pane->getGui()->getAvailablePaneName( serialization.name.c_str() );
+
     pane->setObjectName_mt_safe(availableName);
     pane->setAsAnchor(serialization.isAnchor);
-    const std::map<std::string,QWidget*>& tabs = pane->getGui()->getRegisteredTabs();
+    const std::map<std::string,QWidget*> & tabs = pane->getGui()->getRegisteredTabs();
     for (std::list<std::string>::const_iterator it = serialization.tabs.begin(); it != serialization.tabs.end(); ++it) {
         std::map<std::string,QWidget*>::const_iterator found = tabs.find(*it);
-        
+
         ///If the tab exists in the current project, move it
-        if (found != tabs.end()) {
+        if ( found != tabs.end() ) {
             TabWidget::moveTab(found->second, pane);
         }
     }
     pane->makeCurrentTab(serialization.currentIndex);
 }
 
-static void restoreSplitterRecursive(Gui* gui,Splitter* splitter,const SplitterSerialization& serialization)
+static void
+restoreSplitterRecursive(Gui* gui,
+                         Splitter* splitter,
+                         const SplitterSerialization & serialization)
 {
     Qt::Orientation qO;
     Natron::Orientation nO = (Natron::Orientation)serialization.orientation;
+
     switch (nO) {
-        case Natron::Horizontal:
-            qO = Qt::Horizontal;
-            break;
-        case Natron::Vertical:
-            qO = Qt::Vertical;
-            break;
-        default:
-            throw std::runtime_error("Unrecognized splitter orientation");
-            break;
+    case Natron::Horizontal:
+        qO = Qt::Horizontal;
+        break;
+    case Natron::Vertical:
+        qO = Qt::Vertical;
+        break;
+    default:
+        throw std::runtime_error("Unrecognized splitter orientation");
+        break;
     }
     splitter->setOrientation(qO);
-    
+
     if (serialization.children.size() != 2) {
         throw std::runtime_error("Splitter has a child count that is not 2");
     }
-    
+
     for (std::vector<SplitterSerialization::Child*>::const_iterator it = serialization.children.begin();
          it != serialization.children.end(); ++it) {
-        if ((*it)->child_asSplitter) {
+        if ( (*it)->child_asSplitter ) {
             Splitter* child = new Splitter(splitter);
             splitter->addWidget_mt_safe(child);
-            restoreSplitterRecursive(gui,child, *((*it)->child_asSplitter));
+            restoreSplitterRecursive( gui,child, *( (*it)->child_asSplitter ) );
         } else {
-            assert((*it)->child_asPane);
+            assert( (*it)->child_asPane );
             TabWidget* pane = new TabWidget(gui,splitter);
             gui->registerPane(pane);
             splitter->addWidget_mt_safe(pane);
-            restoreTabWidget(pane, *((*it)->child_asPane));
+            restoreTabWidget( pane, *( (*it)->child_asPane ) );
         }
     }
-    
-    splitter->restoreNatron(serialization.sizes.c_str());
-    
+
+    splitter->restoreNatron( serialization.sizes.c_str() );
 }
 
 void
@@ -1238,37 +1238,35 @@ Gui::restoreLayout(bool wipePrevious,
     if (enableOldProjectCompatibility) {
         createDefaultLayout1();
     } else {
-        
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
-             it!=layoutSerialization._windows.end(); ++it) {
+             it != layoutSerialization._windows.end(); ++it) {
             QWidget* mainWidget = 0;
-            
+
             ///The window contains only a pane (for the main window it also contains the toolbar)
-            if ((*it)->child_asPane) {
+            if ( (*it)->child_asPane ) {
                 TabWidget* centralWidget = new TabWidget(this);
                 registerPane(centralWidget);
                 restoreTabWidget(centralWidget, *(*it)->child_asPane);
                 mainWidget = centralWidget;
             }
             ///The window contains a splitter as central widget
-            else if ((*it)->child_asSplitter) {
+            else if ( (*it)->child_asSplitter ) {
                 Splitter* centralWidget = new Splitter;
                 restoreSplitterRecursive(this,centralWidget, *(*it)->child_asSplitter);
                 mainWidget = centralWidget;
             }
             ///The child is a dockable panel, restore it later
-            else if (!(*it)->child_asDockablePanel.empty())
-            {
+            else if ( !(*it)->child_asDockablePanel.empty() ) {
                 assert(!(*it)->isMainWindow);
                 floatingDockablePanels.push_back(*it);
                 continue;
             }
-            
+
             assert(mainWidget);
             QWidget* window;
-            if ((*it)->isMainWindow) {
+            if ( (*it)->isMainWindow ) {
                 mainWidget->setParent(_imp->_leftRightSplitter);
                 _imp->_leftRightSplitter->addWidget_mt_safe(mainWidget);
                 window = this;
@@ -1278,36 +1276,36 @@ Gui::restoreLayout(bool wipePrevious,
                 registerFloatingWindow(floatingWindow);
                 window = floatingWindow;
             }
-            
+
             ///Restore geometry
-            window->resize((*it)->w, (*it)->h);
-            window->move(QPoint((*it)->x,(*it)->y));
+            window->resize( (*it)->w, (*it)->h );
+            window->move( QPoint( (*it)->x,(*it)->y ) );
         }
-        
+
         for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
-             it!=floatingDockablePanels.end(); ++it) {
+             it != floatingDockablePanels.end(); ++it) {
             ///Find the node associated to the floating panel if any and float it
-            assert(!(*it)->child_asDockablePanel.empty());
-            if ((*it)->child_asDockablePanel == kNatronProjectSettingsPanelSerializationName) {
+            assert( !(*it)->child_asDockablePanel.empty() );
+            if ( (*it)->child_asDockablePanel == kNatronProjectSettingsPanelSerializationName ) {
                 _imp->_projectGui->getPanel()->floatPanel();
             } else {
                 ///Find a node with the dockable panel name
-                const std::list<boost::shared_ptr<NodeGui> >& nodes = getNodeGraph()->getAllActiveNodes();
+                const std::list<boost::shared_ptr<NodeGui> > & nodes = getNodeGraph()->getAllActiveNodes();
                 DockablePanel* panel = 0;
                 for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
-                    if ((*it2)->getNode()->getName_mt_safe() == (*it)->child_asDockablePanel) {
-                        ((*it2)->getSettingPanel()->floatPanel());
+                    if ( (*it2)->getNode()->getName_mt_safe() == (*it)->child_asDockablePanel ) {
+                        ( (*it2)->getSettingPanel()->floatPanel() );
                         panel = (*it2)->getSettingPanel();
                         break;
                     }
                 }
-                
+
                 if (!panel) {
                     ///try with backdrops setting panels
                     const std::list<NodeBackDrop*> backdrops = getNodeGraph()->getActiveBackDrops();
-                    for (std::list<NodeBackDrop*>::const_iterator it2 = backdrops.begin(); it2!=backdrops.end(); ++it2) {
-                        if ((*it2)->getName_mt_safe() == (*it)->child_asDockablePanel) {
-                            ((*it2)->getSettingsPanel()->floatPanel());
+                    for (std::list<NodeBackDrop*>::const_iterator it2 = backdrops.begin(); it2 != backdrops.end(); ++it2) {
+                        if ( (*it2)->getName_mt_safe() == (*it)->child_asDockablePanel ) {
+                            ( (*it2)->getSettingsPanel()->floatPanel() );
                             panel = (*it2)->getSettingsPanel();
                             break;
                         }
@@ -1316,16 +1314,12 @@ Gui::restoreLayout(bool wipePrevious,
                 if (panel) {
                     FloatingWidget* fWindow = dynamic_cast<FloatingWidget*>( panel->parentWidget() );
                     assert(fWindow);
-                    fWindow->move(QPoint((*it)->x,(*it)->y));
-                    fWindow->resize((*it)->w,(*it)->h);
+                    fWindow->move( QPoint( (*it)->x,(*it)->y ) );
+                    fWindow->resize( (*it)->w,(*it)->h );
                 }
-                
             }
         }
-        
     }
-    
-    
 } // restoreLayout
 
 void
@@ -1366,7 +1360,7 @@ Gui::exportLayout()
             GuiLayoutSerialization s;
             s.initialize(this);
             oArchive << boost::serialization::make_nvp("Layout",s);
-        }catch (...)  {
+        }catch (...) {
             Natron::errorDialog( tr("Error").toStdString()
                                  , tr("Failure when saving the layout").toStdString() );
             ofile.close();
@@ -1812,7 +1806,8 @@ Gui::registerFloatingWindow(FloatingWidget* window)
 {
     QMutexLocker k(&_imp->_floatingWindowMutex);
     std::list<FloatingWidget*>::iterator found = std::find(_imp->_floatingWindows.begin(),_imp->_floatingWindows.end(),window);
-    if (found == _imp->_floatingWindows.end()) {
+
+    if ( found == _imp->_floatingWindows.end() ) {
         _imp->_floatingWindows.push_back(window);
     }
 }
@@ -1822,15 +1817,17 @@ Gui::unregisterFloatingWindow(FloatingWidget* window)
 {
     QMutexLocker k(&_imp->_floatingWindowMutex);
     std::list<FloatingWidget*>::iterator found = std::find(_imp->_floatingWindows.begin(),_imp->_floatingWindows.end(),window);
-    if (found != _imp->_floatingWindows.end()) {
+
+    if ( found != _imp->_floatingWindows.end() ) {
         _imp->_floatingWindows.erase(found);
     }
 }
-                              
+
 std::list<FloatingWidget*>
 Gui::getFloatingWindows() const
 {
     QMutexLocker l(&_imp->_floatingWindowMutex);
+
     return _imp->_floatingWindows;
 }
 
@@ -1922,7 +1919,7 @@ Gui::unregisterPane(TabWidget* pane)
         _imp->_panes.front()->setClosable(false);
     }
 
-    if ( (pane->isAnchor()) && !_imp->_panes.empty() ) {
+    if ( ( pane->isAnchor() ) && !_imp->_panes.empty() ) {
         _imp->_panes.front()->setAsAnchor(true);
     }
 }
@@ -1932,8 +1929,9 @@ Gui::registerPane(TabWidget* pane)
 {
     QMutexLocker l(&_imp->_panesMutex);
     bool hasAnchor = false;
-    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it!=_imp->_panes.end(); ++it) {
-        if ((*it)->isAnchor()) {
+
+    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+        if ( (*it)->isAnchor() ) {
             hasAnchor = true;
             break;
         }
@@ -1984,7 +1982,7 @@ Gui::findExistingTab(const std::string & name) const
 
     if ( it != _imp->_registeredTabs.end() ) {
         return it->second;
-    } else  {
+    } else {
         return NULL;
     }
 }
@@ -2349,7 +2347,7 @@ Gui::saveProject()
         appPTR->updateAllRecentFileMenus();
 
         return true;
-    } else  {
+    } else {
         return saveProjectAs();
     }
 }
@@ -2470,7 +2468,7 @@ Gui::createWriter()
                     }
                 }
             }
-        } else  {
+        } else {
             errorDialog( tr("Writer").toStdString(), tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString() );
         }
     }
@@ -2487,7 +2485,7 @@ Gui::popOpenFileDialog(bool sequenceDialog,
 
     if ( dialog.exec() ) {
         return dialog.selectedFiles();
-    } else  {
+    } else {
         return std::string();
     }
 }
@@ -2501,7 +2499,7 @@ Gui::popSaveFileDialog(bool sequenceDialog,
 
     if ( dialog.exec() ) {
         return dialog.filesToSave();
-    } else  {
+    } else {
         return "";
     }
 }
@@ -2521,9 +2519,9 @@ Gui::saveWarning()
                                                              Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);
         if ( (ret == Natron::Escape) || (ret == Natron::Cancel) ) {
             return 2;
-        } else if (ret == Natron::Discard)   {
+        } else if (ret == Natron::Discard) {
             return 1;
-        } else  {
+        } else {
             return 0;
         }
     }
@@ -3277,27 +3275,26 @@ int
 Gui::getPanesCount() const
 {
     QMutexLocker l(&_imp->_panesMutex);
-    
+
     return (int)_imp->_panes.size();
 }
 
 QString
-Gui::getAvailablePaneName(const QString& baseName) const
+Gui::getAvailablePaneName(const QString & baseName) const
 {
     QString name = baseName;
-    
     QMutexLocker l(&_imp->_panesMutex);
-
     int baseNumber = _imp->_panes.size();
-    if (name.isEmpty()) {
+
+    if ( name.isEmpty() ) {
         name.append("Pane");
-        name.append(QString::number(baseNumber));
+        name.append( QString::number(baseNumber) );
     }
-    
-    for(;;) {
+
+    for (;; ) {
         bool foundName = false;
         for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-            if ((*it)->objectName_mt_safe() == name) {
+            if ( (*it)->objectName_mt_safe() == name ) {
                 foundName = true;
                 break;
             }
@@ -3309,9 +3306,9 @@ Gui::getAvailablePaneName(const QString& baseName) const
             break;
         }
     }
+
     return name;
 }
-
 
 void
 Gui::setUserScrubbingTimeline(bool b)
@@ -3359,6 +3356,7 @@ void
 Gui::appendTabToDefaultViewerPane(QWidget* tab)
 {
     TabWidget* viewerAnchor = getAnchor();
+
     assert(viewerAnchor);
     viewerAnchor->appendTab(tab);
 }
@@ -3367,17 +3365,20 @@ QWidget*
 Gui::getCentralWidget() const
 {
     std::list<QWidget*> children;
+
     _imp->_leftRightSplitter->getChildren_mt_safe(children);
     if (children.size() != 2) {
         ///something is wrong
         return NULL;
     }
-    for (std::list<QWidget*>::iterator it = children.begin() ;it!=children.end();++it) {
+    for (std::list<QWidget*>::iterator it = children.begin(); it != children.end(); ++it) {
         if (*it == _imp->_toolBox) {
             continue;
         }
+
         return *it;
     }
+
     return NULL;
 }
 
@@ -3813,34 +3814,39 @@ Gui::moveEvent(QMoveEvent* e)
 {
     QMainWindow::moveEvent(e);
     QPoint p = pos();
-    setMtSafePosition(p.x(), p.y());
+
+    setMtSafePosition( p.x(), p.y() );
 }
 
 void
 Gui::resizeEvent(QResizeEvent* e)
 {
     QMainWindow::resizeEvent(e);
-    setMtSafeWindowSize(width(), height());
+
+    setMtSafeWindowSize( width(), height() );
 }
 
 TabWidget*
 Gui::getAnchor() const
 {
     QMutexLocker l(&_imp->_panesMutex);
+
     for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-        if ((*it)->isAnchor()) {
+        if ( (*it)->isAnchor() ) {
             return *it;
         }
     }
+
     return NULL;
 }
 
-FloatingWidget::FloatingWidget(Gui* gui,QWidget* parent)
-: QWidget(parent)
-, SerializableWindow()
-, _embeddedWidget(0)
-, _layout(0)
-, _gui(gui)
+FloatingWidget::FloatingWidget(Gui* gui,
+                               QWidget* parent)
+    : QWidget(parent)
+      , SerializableWindow()
+      , _embeddedWidget(0)
+      , _layout(0)
+      , _gui(gui)
 {
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     setAttribute(Qt::WA_DeleteOnClose,true);
@@ -3849,21 +3855,22 @@ FloatingWidget::FloatingWidget(Gui* gui,QWidget* parent)
     setLayout(_layout);
 }
 
-static void closeWidgetRecursively(QWidget* w)
+static void
+closeWidgetRecursively(QWidget* w)
 {
     Splitter* isSplitter = dynamic_cast<Splitter*>(w);
     TabWidget* isTab = dynamic_cast<TabWidget*>(w);
-    
+
     if (!isSplitter && !isTab) {
         return;
     }
-    
+
     if (isTab) {
         isTab->closePane();
     } else {
         assert(isSplitter);
-        for (int i = 0;i < isSplitter->count() ;++i) {
-            closeWidgetRecursively(isSplitter->widget(i));
+        for (int i = 0; i < isSplitter->count(); ++i) {
+            closeWidgetRecursively( isSplitter->widget(i) );
         }
     }
 }
@@ -3879,6 +3886,7 @@ void
 FloatingWidget::setWidget(QWidget* w)
 {
     QSize widgetSize = w->size();
+
     assert(w);
     if (_embeddedWidget) {
         return;
@@ -3911,25 +3919,26 @@ FloatingWidget::moveEvent(QMoveEvent* e)
 {
     QWidget::moveEvent(e);
     QPoint p = pos();
-    setMtSafePosition(p.x(), p.y());
+
+    setMtSafePosition( p.x(), p.y() );
 }
 
 void
 FloatingWidget::resizeEvent(QResizeEvent* e)
 {
     QWidget::resizeEvent(e);
-    setMtSafeWindowSize(width(), height());
+
+    setMtSafeWindowSize( width(), height() );
 }
-
-
 
 void
 FloatingWidget::closeEvent(QCloseEvent* e)
 {
-    
     emit closed();
+
     closeWidgetRecursively(_embeddedWidget);
     removeEmbeddedWidget();
     _gui->unregisterFloatingWindow(this);
     QWidget::closeEvent(e);
 }
+

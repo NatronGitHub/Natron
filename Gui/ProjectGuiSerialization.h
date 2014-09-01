@@ -124,69 +124,64 @@ struct PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE
     std::list<bool> splits;
     std::string parentName;
     std::list<std::string> splitsNames;
-    
+
     PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE()
-    : floating(false)
-    , posx(0), posy(0), width(0), height(0)
-    , parentingCreated(false)
-    , splits()
-    , parentName()
-    , splitsNames()
-    {}
-    
+        : floating(false)
+          , posx(0), posy(0), width(0), height(0)
+          , parentingCreated(false)
+          , splits()
+          , parentName()
+          , splitsNames()
+    {
+    }
+
     ~PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE()
     {
-        
     }
 };
 
 struct PaneLayout
 {
-
     ///These fields are prior to version PANE_SERIALIZATION_MAJOR_OVERHAUL
     std::list<std::string> tabs;
     int currentIndex;
-    
+
     ///Added in PANE_SERIALIZATION_MAJOR_OVERHAUL
     bool isAnchor;
     std::string name;
-    
+
     ///This is only used to restore compatibility with project saved prior to PANE_SERIALIZATION_MAJOR_OVERHAUL
-    
+
     PaneLayout()
-    : tabs()
-    , currentIndex(-1)
-    , isAnchor(false)
-    , name()
+        : tabs()
+          , currentIndex(-1)
+          , isAnchor(false)
+          , name()
     {
-        
     }
-    
+
     ~PaneLayout()
     {
     }
-    
+
     void initialize(TabWidget* tab);
-    
+
     template<class Archive>
     void save(Archive & ar,
-                   const unsigned int /*version*/) const
+              const unsigned int /*version*/) const
     {
-        
         ar & boost::serialization::make_nvp("Tabs",tabs);
         ar & boost::serialization::make_nvp("Index",currentIndex);
         ar & boost::serialization::make_nvp("Name",name);
         ar & boost::serialization::make_nvp("IsAnchor",isAnchor);
-        
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
         if (version < PANE_SERIALIZATION_MAJOR_OVERHAUL) {
             PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE compat1;
-            
             ar & boost::serialization::make_nvp("Floating",compat1.floating);
             ar & boost::serialization::make_nvp("Splits",compat1.splits);
             ar & boost::serialization::make_nvp("ParentName",compat1.parentName);
@@ -211,7 +206,6 @@ struct PaneLayout
         }
     }
 
-    
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
@@ -219,49 +213,54 @@ BOOST_CLASS_VERSION(PaneLayout, PANE_SERIALIZATION_VERSION)
 
 struct SplitterSerialization
 {
-    
     std::string sizes;
     int orientation; //< corresponds to enum Natron::Orientation
-    
-    struct Child {
+    struct Child
+    {
         //One of the 2 ptrs below is NULL. The child can be either one of these.
         SplitterSerialization* child_asSplitter;
         PaneLayout* child_asPane;
-        
-        Child() : child_asSplitter(0) , child_asPane(0) {}
-        
-        ~Child() {
+
+        Child()
+            : child_asSplitter(0), child_asPane(0)
+        {
+        }
+
+        ~Child()
+        {
             delete child_asSplitter;
             delete child_asPane;
         }
     };
-    
+
     std::vector<Child*> children;
-    
+
     SplitterSerialization()
-    : sizes()
-    , orientation(0)
-    , children()
-    {}
-    
+        : sizes()
+          , orientation(0)
+          , children()
+    {
+    }
+
     ~SplitterSerialization()
     {
-        for (std::vector<Child*>::iterator it = children.begin() ; it!=children.end() ;++it) {
+        for (std::vector<Child*>::iterator it = children.begin(); it != children.end(); ++it) {
             delete *it;
         }
     }
-    
+
     /**
      * @brief Called prior to save only
      **/
     void initialize(Splitter* splitter);
-    
+
     template<class Archive>
     void save(Archive & ar,
-                   const unsigned int /*version*/) const
+              const unsigned int /*version*/) const
     {
         ar & boost::serialization::make_nvp("Sizes",sizes);
         ar & boost::serialization::make_nvp("Orientation",orientation);
+
         assert(children.size() == 2);
         for (int i = 0; i < 2; ++i) {
             bool isChildSplitter = children[i]->child_asSplitter != NULL;
@@ -273,14 +272,14 @@ struct SplitterSerialization
             }
         }
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int /*version*/)
     {
-        
         ar & boost::serialization::make_nvp("Sizes",sizes);
         ar & boost::serialization::make_nvp("Orientation",orientation);
+
         for (int i = 0; i < 2; ++i) {
             Child* c = new Child;
             bool isChildSplitter;
@@ -295,9 +294,8 @@ struct SplitterSerialization
             children.push_back(c);
         }
     }
-    
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 BOOST_CLASS_VERSION(SplitterSerialization, SPLITTER_SERIALIZATION_VERSION)
@@ -313,40 +311,38 @@ struct ApplicationWindowSerialization
     SplitterSerialization* child_asSplitter;
     PaneLayout* child_asPane;
     std::string child_asDockablePanel;
-    
+
     //If true, then this is the main-window, otherwise it is considered as a floating window.
     bool isMainWindow;
-    
     int x,y; //< the position of the window.
     int w,h; //< the size of the window
-    
+
     ApplicationWindowSerialization()
-    : child_asSplitter(0)
-    , child_asPane(0)
-    , isMainWindow(false)
-    , x(0)
-    , y(0)
-    , w(0)
-    , h(0)
+        : child_asSplitter(0)
+          , child_asPane(0)
+          , isMainWindow(false)
+          , x(0)
+          , y(0)
+          , w(0)
+          , h(0)
     {
-        
     }
-    
+
     ~ApplicationWindowSerialization()
     {
         delete child_asSplitter;
         delete child_asPane;
     }
-    
+
     ///Used prior to save only
     void initialize(bool isMainWindow,SerializableWindow* widget);
-    
+
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        
         int childrenChoice;
+
         if (child_asSplitter) {
             childrenChoice = 0;
         } else if (child_asPane) {
@@ -368,13 +364,14 @@ struct ApplicationWindowSerialization
         ar & boost::serialization::make_nvp("w",w);
         ar & boost::serialization::make_nvp("h",h);
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int /*version*/)
     {
         int childType;
         ar & boost::serialization::make_nvp("ChildType",childType);
+
         if (childType == 0) {
             child_asSplitter = new SplitterSerialization;
             ar & boost::serialization::make_nvp("Child",child_asSplitter);
@@ -389,11 +386,9 @@ struct ApplicationWindowSerialization
         ar & boost::serialization::make_nvp("y",y);
         ar & boost::serialization::make_nvp("w",w);
         ar & boost::serialization::make_nvp("h",h);
-        
     }
-    
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 BOOST_CLASS_VERSION(ApplicationWindowSerialization, APPLICATION_WINDOW_SERIALIZATION_VERSION)
@@ -409,10 +404,10 @@ public:
     GuiLayoutSerialization()
     {
     }
-    
+
     ~GuiLayoutSerialization()
     {
-        for (std::list<ApplicationWindowSerialization*>::iterator it = _windows.begin() ; it != _windows.end() ;++it) {
+        for (std::list<ApplicationWindowSerialization*>::iterator it = _windows.begin(); it != _windows.end(); ++it) {
             delete *it;
         }
     }
@@ -423,21 +418,22 @@ public:
 
     ///New in GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
     std::list<ApplicationWindowSerialization*> _windows;
-    
-    
+
+
     void initialize(Gui* gui);
-    
+
     template<class Archive>
     void save(Archive & ar,
-                   const unsigned int /*version*/) const
+              const unsigned int /*version*/) const
     {
         int windowsCount = _windows.size();
         ar & boost::serialization::make_nvp("NbWindows",windowsCount);
-        for (std::list<ApplicationWindowSerialization*>::const_iterator it = _windows.begin() ; it != _windows.end() ;++it) {
+
+        for (std::list<ApplicationWindowSerialization*>::const_iterator it = _windows.begin(); it != _windows.end(); ++it) {
             ar & boost::serialization::make_nvp("Window",**it);
         }
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
@@ -455,9 +451,8 @@ public:
             }
         }
     }
-    
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 BOOST_CLASS_VERSION(GuiLayoutSerialization, GUI_LAYOUT_SERIALIZATION_VERSION);
@@ -466,22 +461,22 @@ class ProjectGuiSerialization
 {
     ///All nodes gui data
     std::list< NodeGuiSerialization > _serializedNodes;
-    
+
     ///The layout of the application
     GuiLayoutSerialization _layoutSerialization;
-    
+
     ///Viewers data such as viewport and activated buttons
     std::map<std::string, ViewerData > _viewersData;
-    
+
     ///Active histograms
     std::list<std::string> _histograms;
-    
+
     ///Active backdrops
     std::list<NodeBackDropSerialization> _backdrops;
-    
+
     ///All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
-    
+
     ///The boost version passed to load(), this is not used on save
     unsigned int _version;
 
@@ -512,7 +507,6 @@ class ProjectGuiSerialization
             if (version < PROJECT_GUI_CHANGES_SPLITTERS) {
                 _layoutSerialization._splittersStates.clear();
             }
-            
         } else {
             ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization);
         }
@@ -535,20 +529,19 @@ class ProjectGuiSerialization
 public:
 
     ProjectGuiSerialization()
-    : _serializedNodes()
-    , _layoutSerialization()
-    , _viewersData()
-    , _histograms()
-    , _backdrops()
-    , _openedPanelsOrdered()
-    , _version(0)
+        : _serializedNodes()
+          , _layoutSerialization()
+          , _viewersData()
+          , _histograms()
+          , _backdrops()
+          , _openedPanelsOrdered()
+          , _version(0)
     {
     }
 
     ~ProjectGuiSerialization()
     {
         _serializedNodes.clear();
-        
     }
 
     void initialize(const ProjectGui* projectGui);

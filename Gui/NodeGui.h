@@ -371,6 +371,7 @@ public slots:
     void onSettingsPanelClosedChanged(bool closed);
 
     void onParentMultiInstancePositionChanged(int x,int y);
+
 signals:
 
     void nameChanged(QString);
@@ -434,7 +435,6 @@ private:
     int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
     NodeGuiIndicator* _bitDepthWarning;
-    
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/

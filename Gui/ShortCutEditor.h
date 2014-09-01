@@ -34,7 +34,7 @@ public:
 public slots:
 
     void onSelectionChanged();
-    
+
     void onValidateButtonClicked();
 
     void onClearButtonClicked();
@@ -52,7 +52,6 @@ public slots:
 private:
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
     boost::scoped_ptr<ShortCutEditorPrivate> _imp;
 };
 

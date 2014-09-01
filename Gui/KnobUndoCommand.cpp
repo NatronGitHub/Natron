@@ -87,7 +87,7 @@ PasteUndoCommand::undo()
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
         for (std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin(); it != oldCurves.end(); ++it) {
             internalKnob->getCurve(i)->clone( *(*it) );
-            if ( internalKnob->getKeyFramesCount(i) > 0 ) {
+            if (internalKnob->getKeyFramesCount(i) > 0) {
                 hasKeyframes = true;
             }
             ++i;
@@ -95,13 +95,12 @@ PasteUndoCommand::undo()
         ///parameters are meaningless here, we just want to update the curve editor.
         _knob->onInternalKeySet(0, 0,false);
         _knob->setAllKeyframeMarkersOnTimeline(-1);
-        
+
         if (hasKeyframes) {
             _knob->updateCurveEditorKeyframes();
         }
-        
     }
-    
+
     i = 0;
 
     std::list<Variant>::iterator next = oldValues.begin();
@@ -121,15 +120,15 @@ PasteUndoCommand::undo()
         } else if (isString) {
             isString->setValue(it->toString().toStdString(), i,true);
         }
-        
+
         ++i;
 
-		///On Windows going pass .end() will crash...
-		if ( next == oldValues.end() ) {
-			--next;
-		}
+        ///On Windows going pass .end() will crash...
+        if ( next == oldValues.end() ) {
+            --next;
+        }
     }
-   
+
 
     if (isAnimatingString) {
         isAnimatingString->loadAnimation(oldStringAnimation);
@@ -167,7 +166,6 @@ PasteUndoCommand::redo()
     AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
     int i = 0;
-    
     bool hasKeyframeData = false;
     if ( !newCurves.empty() ) {
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
@@ -179,7 +177,6 @@ PasteUndoCommand::redo()
             ++i;
         }
         _knob->setAllKeyframeMarkersOnTimeline(-1);
-
     }
 
     i = 0;
@@ -201,14 +198,14 @@ PasteUndoCommand::redo()
         } else if (isString) {
             isString->setValue(it->toString().toStdString(), i, true);
         }
-        
+
         ++i;
-		///On Windows going pass .end() will crash...
-		if ( next == newValues.end() ) {
-			--next;
-		}
+        ///On Windows going pass .end() will crash...
+        if ( next == newValues.end() ) {
+            --next;
+        }
     }
-    
+
     if ( _copyAnimation && hasKeyframeData && !newCurves.empty() ) {
         _knob->updateCurveEditorKeyframes();
     }
@@ -453,7 +450,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 }
 
 RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> > & knobs,
-                                                                       QUndoCommand *parent)
+                                               QUndoCommand *parent)
     : QUndoCommand(parent)
       , _knobs(knobs)
 {
@@ -472,7 +469,7 @@ RestoreDefaultsCommand::undo()
     boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
     std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it,++itClone) {
-        (*it)->cloneAndUpdateGui(itClone->get());
+        (*it)->cloneAndUpdateGui( itClone->get() );
 
         if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();

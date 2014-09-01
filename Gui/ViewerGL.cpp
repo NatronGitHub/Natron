@@ -374,15 +374,15 @@ static const GLubyte triangleStrip[28] = {
    0___1___2___3
  |  /|  /|  /|
  | / | / | / |
- ||/  |/  |/  |
+ |||/  |/  |/  |
    4---5---6----7
  |  /|  /|  /|
  | / | / | / |
- ||/  |/  |/  |
+ |||/  |/  |/  |
    8---9--10--11
  |  /|  /|  /|
  | / | / | / |
- ||/  |/  |/  |
+ |||/  |/  |/  |
    12--13--14--15
  */
 static GLfloat
@@ -1734,7 +1734,7 @@ ViewerGL::getPboID(int index)
         _imp->pboIds.push_back(handle);
 
         return handle;
-    } else  {
+    } else {
         return _imp->pboIds[index];
     }
 }
@@ -2364,8 +2364,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         mustRedraw = true;
         // }
         // no need to update the color picker or mouse posn: they should be unchanged
+        break;
     }
-    break;
     case DRAGGING_ROI_BOTTOM_EDGE: {
         QMutexLocker l(&_imp->userRoIMutex);
         if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
@@ -2376,8 +2376,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             }
             mustRedraw = true;
         }
+        break;
     }
-    break;
     case DRAGGING_ROI_LEFT_EDGE: {
         QMutexLocker l(&_imp->userRoIMutex);
         if ( (_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
@@ -2388,8 +2388,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             }
             mustRedraw = true;
         }
+        break;
     }
-    break;
     case DRAGGING_ROI_RIGHT_EDGE: {
         QMutexLocker l(&_imp->userRoIMutex);
         if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
@@ -2400,8 +2400,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             }
             mustRedraw = true;
         }
+        break;
     }
-    break;
     case DRAGGING_ROI_TOP_EDGE: {
         QMutexLocker l(&_imp->userRoIMutex);
         if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
@@ -2412,8 +2412,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             }
             mustRedraw = true;
         }
+        break;
     }
-    break;
     case DRAGGING_ROI_CROSS: {
         {
             QMutexLocker l(&_imp->userRoIMutex);
@@ -2423,8 +2423,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,true);
         }
         mustRedraw = true;
+        break;
     }
-    break;
     case DRAGGING_ROI_TOP_LEFT: {
         QMutexLocker l(&_imp->userRoIMutex);
         if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
@@ -2438,8 +2438,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,true);
         }
         mustRedraw = true;
+        break;
     }
-    break;
     case DRAGGING_ROI_TOP_RIGHT: {
         QMutexLocker l(&_imp->userRoIMutex);
         if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
@@ -2453,8 +2453,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,true);
         }
         mustRedraw = true;
+        break;
     }
-    break;
     case DRAGGING_ROI_BOTTOM_RIGHT: {
         QMutexLocker l(&_imp->userRoIMutex);
         if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
@@ -2468,8 +2468,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,true);
         }
         mustRedraw = true;
+        break;
     }
-    break;
     case DRAGGING_ROI_BOTTOM_LEFT: {
         if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
             _imp->userRoI.y1 -= dySinceLastMove;
@@ -2482,15 +2482,15 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,true);
         }
         mustRedraw = true;
+        break;
     }
-    break;
     case DRAGGING_WIPE_CENTER: {
         QMutexLocker l(&_imp->wipeControlsMutex);
         _imp->wipeCenter.rx() -= dxSinceLastMove;
         _imp->wipeCenter.ry() -= dySinceLastMove;
         mustRedraw = true;
+        break;
     }
-    break;
     case DRAGGING_WIPE_MIX_HANDLE: {
         QMutexLocker l(&_imp->wipeControlsMutex);
         double angle = std::atan2( zoomPos.y() - _imp->wipeCenter.y(), zoomPos.x() - _imp->wipeCenter.x() );
@@ -2499,8 +2499,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         _imp->mixAmount -= (angle - prevAngle);
         _imp->mixAmount = std::max( 0.,std::min(_imp->mixAmount,1.) );
         mustRedraw = true;
+        break;
     }
-    break;
     case ROTATING_WIPE_HANDLE: {
         QMutexLocker l(&_imp->wipeControlsMutex);
         double angle = std::atan2( zoomPos.y() - _imp->wipeCenter.y(), zoomPos.x() - _imp->wipeCenter.x() );
@@ -2513,21 +2513,21 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
 
         mustRedraw = true;
+        break;
     }
-    break;
     case PICKING_COLOR: {
         pickColor( newClick.x(), newClick.y() );
         mustRedraw = true;
+        break;
     }
-    break;
     case BUILDING_PICKER_RECTANGLE: {
         QPointF btmRight = _imp->pickerRect.bottomRight();
         btmRight.rx() -= dxSinceLastMove;
         btmRight.ry() -= dySinceLastMove;
         _imp->pickerRect.setBottomRight(btmRight);
         mustRedraw = true;
+        break;
     }
-    break;
     case SELECTING: {
         _imp->refreshSelectionRectangle(zoomPos);
         mustRedraw = true;
@@ -2538,8 +2538,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
              _imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e) ) {
             mustRedraw = true;
         }
+        break;
     }
-    break;
     } // switch
 
     if (mustRedraw) {
@@ -3010,7 +3010,7 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
             accept = true;
             updateGL();
         }
-    } else  {
+    } else {
         if ( _imp->viewerTab->notifyOverlaysKeyDown(scale, scale, e) ) {
             accept = true;
             updateGL();

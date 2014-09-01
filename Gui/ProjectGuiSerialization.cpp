@@ -67,9 +67,9 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             _viewersData.insert( std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData) );
         }
     }
-    
+
     ///Init windows
-    _layoutSerialization.initialize(projectGui->getGui());
+    _layoutSerialization.initialize( projectGui->getGui() );
 
     ///save histograms
     std::list<Histogram*> histograms = projectGui->getGui()->getHistograms_mt_safe();
@@ -105,8 +105,9 @@ void
 PaneLayout::initialize(TabWidget* tab)
 {
     QStringList children = tab->getTabNames();
+
     for (int i = 0; i < children.size(); ++i) {
-        tabs.push_back(children[i].toStdString());
+        tabs.push_back( children[i].toStdString() );
     }
     currentIndex = tab->activeIndex();
     name = tab->objectName_mt_safe().toStdString();
@@ -120,22 +121,22 @@ SplitterSerialization::initialize(Splitter* splitter)
     Natron::Orientation nO;
     Qt::Orientation qO = splitter->orientation();
     switch (qO) {
-        case Qt::Horizontal:
-            nO = Natron::Horizontal;
-            break;
-        case Qt::Vertical:
-            nO = Natron::Vertical;
-            break;
-        default:
-            assert(false);
-            break;
+    case Qt::Horizontal:
+        nO = Natron::Horizontal;
+        break;
+    case Qt::Vertical:
+        nO = Natron::Vertical;
+        break;
+    default:
+        assert(false);
+        break;
     }
     orientation = (int)nO;
     std::list<QWidget*> ch;
     splitter->getChildren_mt_safe(ch);
     assert(ch.size() == 2);
-    
-    for (std::list<QWidget*>::iterator it = ch.begin(); it!=ch.end(); ++it) {
+
+    for (std::list<QWidget*>::iterator it = ch.begin(); it != ch.end(); ++it) {
         Child *c = new Child;
         Splitter* isSplitter = dynamic_cast<Splitter*>(*it);
         TabWidget* isTabWidget = dynamic_cast<TabWidget*>(*it);
@@ -151,21 +152,22 @@ SplitterSerialization::initialize(Splitter* splitter)
 }
 
 void
-ApplicationWindowSerialization::initialize(bool mainWindow,SerializableWindow* widget)
+ApplicationWindowSerialization::initialize(bool mainWindow,
+                                           SerializableWindow* widget)
 {
     isMainWindow = mainWindow;
     widget->getMtSafePosition(x, y);
     widget->getMtSafeWindowSize(w, h);
-    
+
     if (mainWindow) {
         Gui* gui = dynamic_cast<Gui*>(widget);
         assert(gui);
         QWidget* centralWidget = gui->getCentralWidget();
         Splitter* isSplitter = dynamic_cast<Splitter*>(centralWidget);
         TabWidget* isTabWidget = dynamic_cast<TabWidget*>(centralWidget);
-        
+
         assert(isSplitter || isTabWidget);
-        
+
         if (isSplitter) {
             child_asSplitter = new SplitterSerialization;
             child_asSplitter->initialize(isSplitter);
@@ -176,13 +178,13 @@ ApplicationWindowSerialization::initialize(bool mainWindow,SerializableWindow* w
     } else {
         FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(widget);
         assert(isFloating);
-        
+
         QWidget* embedded = isFloating->getEmbeddedWidget();
         Splitter* isSplitter = dynamic_cast<Splitter*>(embedded);
         TabWidget* isTabWidget = dynamic_cast<TabWidget*>(embedded);
         DockablePanel* isPanel = dynamic_cast<DockablePanel*>(embedded);
         assert(isSplitter || isTabWidget || isPanel);
-        
+
         if (isSplitter) {
             child_asSplitter = new SplitterSerialization;
             child_asSplitter->initialize(isSplitter);
@@ -191,7 +193,7 @@ ApplicationWindowSerialization::initialize(bool mainWindow,SerializableWindow* w
             child_asPane->initialize(isTabWidget);
         } else {
             ///A named knob holder is a knob holder which has a unique name.
-            NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>(isPanel->getHolder());
+            NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>( isPanel->getHolder() );
             if (isNamedHolder) {
                 child_asDockablePanel = isNamedHolder->getName_mt_safe();
             } else {
@@ -200,17 +202,16 @@ ApplicationWindowSerialization::initialize(bool mainWindow,SerializableWindow* w
             }
         }
     }
-    
-
-}
+} // initialize
 
 void
 GuiLayoutSerialization::initialize(Gui* gui)
 {
     ApplicationWindowSerialization* mainWindow = new ApplicationWindowSerialization;
+
     mainWindow->initialize(true, gui);
     _windows.push_back(mainWindow);
-    
+
     std::list<FloatingWidget*> floatingWindows = gui->getFloatingWindows();
     for (std::list<FloatingWidget*>::iterator it = floatingWindows.begin(); it != floatingWindows.end(); ++it) {
         ApplicationWindowSerialization* window = new ApplicationWindowSerialization;
@@ -218,3 +219,4 @@ GuiLayoutSerialization::initialize(Gui* gui)
         _windows.push_back(window);
     }
 }
+

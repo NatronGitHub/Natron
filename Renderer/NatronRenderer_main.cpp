@@ -27,11 +27,11 @@ int
 main(int argc,
      char *argv[])
 {
-
     bool isBackground;
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
+
     setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
 #if defined(Q_OS_UNIX)
@@ -78,5 +78,4 @@ handleShutDownSignal( int /*signalId*/ )
 {
     QCoreApplication::exit(0);
 }
-
 

@@ -354,3 +354,4 @@ MemoryFile::remove()
         _imp->data = 0;
     }
 }
+

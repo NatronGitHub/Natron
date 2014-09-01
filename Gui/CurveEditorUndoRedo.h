@@ -76,20 +76,21 @@ class AddKeysCommand
 {
 public:
 
-    struct KeysForCurve {
+    struct KeysForCurve
+    {
         CurveGui* curve;
         std::vector<KeyFrame> keys;
     };
-    
+
     typedef std::list< boost::shared_ptr<KeysForCurve> > KeysToAddList;
-    
+
     AddKeysCommand(CurveWidget *editor,
-                   const KeysToAddList& keys,
+                   const KeysToAddList & keys,
                    QUndoCommand *parent = 0);
-    
+
     AddKeysCommand(CurveWidget *editor,
                    CurveGui* curve,
-                   const std::vector<KeyFrame>& keys,
+                   const std::vector<KeyFrame> & keys,
                    QUndoCommand *parent = 0);
 
     virtual ~AddKeysCommand() OVERRIDE

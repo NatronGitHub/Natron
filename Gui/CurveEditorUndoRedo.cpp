@@ -26,7 +26,7 @@
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 AddKeysCommand::AddKeysCommand(CurveWidget *editor,
-                               const KeysToAddList& keys,
+                               const KeysToAddList & keys,
                                QUndoCommand *parent)
     : QUndoCommand(parent)
       , _keys(keys)
@@ -35,14 +35,15 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor,
 }
 
 AddKeysCommand::AddKeysCommand(CurveWidget *editor,
-               CurveGui* curve,
-               const std::vector<KeyFrame>& keys,
-               QUndoCommand *parent)
+                               CurveGui* curve,
+                               const std::vector<KeyFrame> & keys,
+                               QUndoCommand *parent)
     : QUndoCommand(parent)
-    , _keys()
-    , _curveWidget(editor)
+      , _keys()
+      , _curveWidget(editor)
 {
     boost::shared_ptr<KeysForCurve> k(new KeysForCurve);
+
     k->curve = curve;
     k->keys = keys;
     _keys.push_back(k);
@@ -52,6 +53,7 @@ void
 AddKeysCommand::addOrRemoveKeyframe(bool add)
 {
     KeysToAddList::iterator next = _keys.begin();
+
     ++next;
     for (KeysToAddList::iterator it = _keys.begin(); it != _keys.end(); ++it,++next) {
         boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>( (*it)->curve->getKnob()->getKnob() );
@@ -59,52 +61,45 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
         bool isUnblocked = false;
         assert( !(*it)->keys.empty() );
         for (U32 i = 0; i < (*it)->keys.size(); ++i) {
-            
-            if ((i == (*it)->keys.size() - 1) && next == _keys.end()) {
+            if ( (i == (*it)->keys.size() - 1) && ( next == _keys.end() ) ) {
                 (*it)->curve->getKnob()->getKnob()->unblockEvaluation();
                 isUnblocked = true;
             }
-            
+
             if (add) {
-                
                 if (isParametric) {
                     Natron::Status st = isParametric->addControlPoint( (*it)->curve->getDimension(),
-                                                                      (*it)->keys[i].getTime(),
-                                                                      (*it)->keys[i].getValue() );
+                                                                       (*it)->keys[i].getTime(),
+                                                                       (*it)->keys[i].getValue() );
                     assert(st == Natron::StatOK);
                     (void)st;
                 } else {
                     (*it)->curve->getKnob()->setKeyframe( (*it)->keys[i].getTime(), (*it)->curve->getDimension() );
                 }
-                
             } else {
-                
                 if (isParametric) {
                     Natron::Status st = isParametric->deleteControlPoint( (*it)->curve->getDimension(),
-                                                                         (*it)->curve->getInternalCurve()->keyFrameIndex(
-                                                                                                (*it)->keys[i].getTime() ) );
+                                                                          (*it)->curve->getInternalCurve()->keyFrameIndex(
+                                                                              (*it)->keys[i].getTime() ) );
                     assert(st == Natron::StatOK);
                     (void)st;
                 } else {
                     (*it)->curve->getKnob()->removeKeyFrame( (*it)->keys[i].getTime(), (*it)->curve->getDimension() );
                 }
-                
             }
-            
         }
-        if (next == _keys.end()) {
+        if ( next == _keys.end() ) {
             --next;
         }
         if (!isUnblocked) {
             (*it)->curve->getKnob()->getKnob()->unblockEvaluation();
         }
-
     }
-    
+
     _curveWidget->update();
 
     setText( QObject::tr("Add multiple keyframes") );
-}
+} // addOrRemoveKeyframe
 
 void
 AddKeysCommand::undo()
@@ -131,16 +126,14 @@ RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
 void
 RemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
- 
     for (U32 i = 0; i < _keys.size(); ++i) {
-        
         bool hasBlocked = false;
-        
+
         if (i != _keys.size() - 1) {
             _keys[i].first->getKnob()->getKnob()->blockEvaluation();
             hasBlocked = true;
         }
-        
+
         if (add) {
             if ( _keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic() ) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( _keys[i].first->getKnob()->getKnob() );
@@ -161,7 +154,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 _keys[i].first->getKnob()->removeKeyFrame( _keys[i].second.getTime(), _keys[i].first->getDimension() );
             }
         }
-        
+
         if (hasBlocked) {
             _keys[i].first->getKnob()->getKnob()->unblockEvaluation();
         }

@@ -142,8 +142,8 @@ public:
     }
 
     void allocate( U64 count,
-                  Natron::StorageMode storage,
-                  std::string path = std::string() )
+                   Natron::StorageMode storage,
+                   std::string path = std::string() )
     {
         /*allocate should be called only once.*/
         assert( _path.empty() );
@@ -151,8 +151,8 @@ public:
         if ( (_buffer.size() > 0) || _backingFile ) {
             return;
         }
-        
-        
+
+
         if (storage == Natron::DISK) {
             _storageMode = DISK;
             _path = path;
@@ -215,6 +215,7 @@ public:
             _backingFile.reset();
             throw std::bad_alloc();
         }
+
         _path = path;
         _storageMode = DISK;
     }
@@ -325,12 +326,12 @@ public:
      * @brief To be called by a CacheEntry on destruction.
      **/
     virtual void notifyEntryDestroyed(int time,size_t size,Natron::StorageMode storage) const = 0;
-    
+
     /**
      * @brief To be called when a backing file has been removed on disk
      **/
     virtual void backingFileRemoved() const = 0;
-    
+
     /**
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
      * it is reallocated in the RAM.
@@ -561,7 +562,7 @@ public:
     {
         _data.removeAnyBackingFile();
         if ( _data.isAllocated() ) {
-            if ( _data.getStorageMode() == Natron::DISK) {
+            if (_data.getStorageMode() == Natron::DISK) {
                 _cache->backingFileRemoved();
             }
             _cache->notifyEntryDestroyed(getTime(), size(),Natron::RAM);
@@ -594,7 +595,7 @@ private:
      * it is private.
      **/
     void allocate( U64 count,
-                  Natron::StorageMode storage,
+                   Natron::StorageMode storage,
                    std::string path = std::string() )
     {
         std::string fileName;

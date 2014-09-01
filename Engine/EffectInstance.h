@@ -399,8 +399,7 @@ public:
      * If this not is not disabled, it will return a pointer to this.
      **/
     Natron::EffectInstance* getNearestNonDisabled() const;
-    
-    
+
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and

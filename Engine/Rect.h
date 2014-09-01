@@ -452,7 +452,7 @@ public:
             for (int i = rect.bottom(); i < rect.top(); ++i) {
                 ret.push_back( RectI(rect.left(),i,rect.right(),i + 1) );
             }
-        } else  {
+        } else {
             //we round to the ceil
             int scanLinesCount = std::ceil( (double)averagePixelsPerSplit / (double)rect.width() );
             int startBox = rect.bottom();
@@ -840,7 +840,8 @@ RectI::toCanonical(unsigned int thisLevel,
 }
 
 void
-RectI::toCanonical_noClipping(unsigned int thisLevel, RectD *rect) const
+RectI::toCanonical_noClipping(unsigned int thisLevel,
+                              RectD *rect) const
 {
     rect->x1 = x1 << thisLevel;
     rect->x2 = x2 << thisLevel;

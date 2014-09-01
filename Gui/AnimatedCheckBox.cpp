@@ -49,3 +49,4 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
         QCheckBox::mousePressEvent(e);
     }
 }
+

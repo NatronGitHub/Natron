@@ -539,3 +539,4 @@ HistogramCPU::run()
         emit histogramProduced();
     }
 } // run
+

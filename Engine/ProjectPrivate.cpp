@@ -110,20 +110,20 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
     /// 3) Restore the nodes
     const std::list< NodeSerialization > & serializedNodes = obj.getNodesSerialization();
     bool hasProjectAWriter = false;
-    
+
     ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
     std::map<boost::shared_ptr<Natron::Node>, std::list<NodeSerialization>::const_iterator > parentsToReconnect;
-    
+
     /*first create all nodes*/
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
-        
-        
+
+
         ///If the node is a multiinstance child find in all the serialized nodes if the parent exists.
         ///If not, create it
 
@@ -137,7 +137,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
             }
             if (!foundParent) {
                 ///Maybe it was created so far by another child who created it so look into the nodes
-                for (std::vector<boost::shared_ptr<Natron::Node> >::iterator it2 = currentNodes.begin(); it2!=currentNodes.end(); ++it2) {
+                for (std::vector<boost::shared_ptr<Natron::Node> >::iterator it2 = currentNodes.begin(); it2 != currentNodes.end(); ++it2) {
                     if ( (*it2)->getName() == it->getMultiInstanceParentName() ) {
                         foundParent = true;
                         break;
@@ -145,12 +145,12 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs(it->getPluginID().c_str(),
-                                                                  "",
-                                                                  it->getPluginMajorVersion(),
-                                                                  it->getPluginMinorVersion()) );
-                    parent->setName(it->getMultiInstanceParentName().c_str());
-                    parentsToReconnect.insert(std::make_pair(parent, it));
+                    boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs( it->getPluginID().c_str(),
+                                                                                                            "",
+                                                                                                            it->getPluginMajorVersion(),
+                                                                                                            it->getPluginMinorVersion() ) );
+                    parent->setName( it->getMultiInstanceParentName().c_str() );
+                    parentsToReconnect.insert( std::make_pair(parent, it) );
                 }
             }
         }
@@ -234,7 +234,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
             }
         }
     }
-    
+
     ///Also reconnect parents of multiinstance nodes that were created on the fly
     for (std::map<boost::shared_ptr<Natron::Node>, std::list<NodeSerialization>::const_iterator >::const_iterator
          it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {

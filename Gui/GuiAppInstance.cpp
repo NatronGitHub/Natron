@@ -565,3 +565,4 @@ void
 GuiAppInstance::autoSaveFinished()
 {
 }
+

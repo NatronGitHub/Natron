@@ -255,8 +255,8 @@ SpinBox::increment(int delta,
             miniD = _imp->mini.toDouble();
             val += inc;
             _imp->currentDelta = 0;
+            break;
         }
-        break;
         case INT_SPINBOX: {
             maxiD = _imp->maxi.toInt();
             miniD = _imp->mini.toInt();
@@ -264,8 +264,8 @@ SpinBox::increment(int delta,
             // Update the current delta, which contains the accumulated error
             _imp->currentDelta -= ( (int)inc ) * 120. / _imp->increment;
             assert(std::abs(_imp->currentDelta) < 120);
+            break;
         }
-        break;
         }
         val = std::max( miniD, std::min(val, maxiD) );
         if (val != oldVal) {
@@ -646,8 +646,8 @@ SpinBox::validateText()
 
             return true;
         }
+        break;
     }
-    break;
     case INT_SPINBOX: {
         QString txt = text();
         int tmp;
@@ -662,8 +662,8 @@ SpinBox::validateText()
 
             return true;
         }
+        break;
     }
-    break;
     }
 
     return false;

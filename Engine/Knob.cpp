@@ -789,7 +789,7 @@ KnobHelper::slaveTo(int dimension,
     if (helper->_signalSlotHandler && _signalSlotHandler) {
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
     }
-    
+
     if (_signalSlotHandler) {
         ///Notify we want to refresh
         if (reason == Natron::PLUGIN_EDITED) {
@@ -863,7 +863,6 @@ KnobHelper::checkAnimationLevel(int dimension)
         }
     }
     setAnimationLevel(dimension,level);
-
 }
 
 void
@@ -1262,9 +1261,9 @@ KnobHolder::slaveAllKnobs(KnobHolder* other)
     }
     ///Call it prior to slaveTo: it will set the master pointer as pointing to other
     onAllKnobsSlaved(true,other);
-    
+
     blockEvaluation();
-    
+
     const std::vector<boost::shared_ptr<KnobI> > & otherKnobs = other->getKnobs();
     const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
     for (U32 i = 0; i < otherKnobs.size(); ++i) {
@@ -1303,8 +1302,8 @@ KnobHolder::unslaveAllKnobs()
     blockEvaluation();
     for (U32 i = 0; i < thisKnobs.size(); ++i) {
         int dims = thisKnobs[i]->getDimension();
-        for (int j = 0; j < dims ; ++j) {
-            if ( (i == thisKnobs.size() - 1) && (j == dims -1) ) {
+        for (int j = 0; j < dims; ++j) {
+            if ( (i == thisKnobs.size() - 1) && (j == dims - 1) ) {
                 unblockEvaluation();
             }
             if ( thisKnobs[i]->isSlave(j) ) {

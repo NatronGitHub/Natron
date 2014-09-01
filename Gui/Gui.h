@@ -77,7 +77,6 @@ class OutputEffectInstance;
 }
 
 
-
 struct GuiPrivate;
 class Gui
     : public QMainWindow, public SerializableWindow, public boost::noncopyable
@@ -108,12 +107,12 @@ public:
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
-    
+
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
      **/
     void setNextViewerAnchor(TabWidget* where);
-    
+
     /**
      * @brief Returns the pane where all viewers are created by default is none was specified via
      * setNextViewerAnchor. It is also the pane that receives all tabs that are moved due to a pane being closed.
@@ -192,29 +191,28 @@ public:
 
     const std::list<TabWidget*> & getPanes() const;
     std::list<TabWidget*> getPanes_mt_safe() const;
-    
+
     int getPanesCount() const;
 
     /**
      * @brief If baseName is already used by another pane or it is empty,this function will return a new pane name that is not already
      * used by another pane. Otherwise it will return baseName.
      **/
-    QString getAvailablePaneName(const QString& baseName = QString()) const;
-    
+    QString getAvailablePaneName( const QString & baseName = QString() ) const;
+
     void registerPane(TabWidget* pane);
     void unregisterPane(TabWidget* pane);
 
     void registerTab(QWidget* tab);
     void unregisterTab(QWidget* tab);
-    
+
     void registerFloatingWindow(FloatingWidget* window);
     void unregisterFloatingWindow(FloatingWidget* window);
-    
-    
-    
+
+
     void registerSplitter(Splitter* s);
     void unregisterSplitter(Splitter* s);
-    
+
     /**
      * @brief MT-Safe
      **/
@@ -236,7 +234,6 @@ public:
      * Mt-safe
      **/
     QWidget* getCentralWidget() const;
-
     std::string popOpenFileDialog(bool sequenceDialog,
                                   const std::vector<std::string> & initialfilters,const std::string & initialDir);
     std::string popSaveFileDialog(bool sequenceDialog,const std::vector<std::string> & initialfilters,const std::string & initialDir);
@@ -380,7 +377,6 @@ public:
 
     void aboutToSave();
     void saveFinished();
-    
 
 signals:
 
@@ -495,46 +491,49 @@ private:
     void wipeLayout();
 
     void createDefaultLayoutInternal(bool wipePrevious);
-    
+
     void createMenuActions();
-    
+
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 
 
 /*This class represents a floating pane that embeds a widget*/
 class FloatingWidget
-: public QWidget, public SerializableWindow
+    : public QWidget, public SerializableWindow
 {
     Q_OBJECT
-    
+
 public:
-    
-    explicit FloatingWidget(Gui* gui,QWidget* parent = 0);
-    
+
+    explicit FloatingWidget(Gui* gui,
+                            QWidget* parent = 0);
+
     virtual ~FloatingWidget();
-    
+
     /*Set the embedded widget. Only 1 widget can be embedded
-     by FloatingWidget. Once set, this function does nothing
-     for subsequent calls..*/
+       by FloatingWidget. Once set, this function does nothing
+       for subsequent calls..*/
     void setWidget(QWidget* w);
-    
+
     void removeEmbeddedWidget();
-    
-    QWidget* getEmbeddedWidget() const { return _embeddedWidget; }
+
+    QWidget* getEmbeddedWidget() const
+    {
+        return _embeddedWidget;
+    }
+
 signals:
-    
+
     void closed();
-    
+
 private:
-    
+
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
-    
     QWidget* _embeddedWidget;
     QVBoxLayout* _layout;
     Gui* _gui;

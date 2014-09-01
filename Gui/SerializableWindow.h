@@ -19,25 +19,25 @@ class SerializableWindow
     mutable QMutex* _lock;
     int _w,_h;
     int _x,_y;
-    
+
 public:
-    
+
     SerializableWindow();
-    
+
     virtual ~SerializableWindow();
-    
+
     /**
      * @brief Should be called in resizeEvent
      **/
     void setMtSafeWindowSize(int w,int h);
-    
+
     /**
      * @brief Should be called in moveEvent
      **/
     void setMtSafePosition(int x,int y);
-    
-    void getMtSafeWindowSize(int &w,int& h);
-    
+
+    void getMtSafeWindowSize(int &w,int & h);
+
     void getMtSafePosition(int &x, int &y);
 };
 

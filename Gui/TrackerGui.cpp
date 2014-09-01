@@ -115,7 +115,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_ENABLED, &pixUpdateViewerEnabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_DISABLED, &pixUpdateViewerDisabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_STOP, &pixStop);
-    
+
     _imp->trackBwButton = new Button(QIcon(pixBw),"",_imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackBwButton->setToolTip(tr("Track selected tracks backward until left bound of the timeline.") +
@@ -136,7 +136,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
                                          "<p><b>" + tr("Keyboard shortcut") + ": Escape</b></p>");
     QObject::connect( _imp->stopTrackingButton,SIGNAL( clicked(bool) ),this,SLOT( onStopButtonClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->stopTrackingButton);
-    
+
     _imp->trackNextButton = new Button(QIcon(pixNext),"",_imp->buttonsBar);
     _imp->trackNextButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackNextButton->setToolTip(tr("Track selected tracks on the next frame.") +

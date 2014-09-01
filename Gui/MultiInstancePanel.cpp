@@ -133,16 +133,16 @@ struct MultiInstancePanelPrivate
         boost::shared_ptr<KnobHelper> ret;
         if ( dynamic_cast<Int_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Int_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<Bool_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<Bool_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Bool_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<Double_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<Double_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Double_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if (isChoice)   {
+        } else if (isChoice) {
             boost::shared_ptr<Choice_Knob> choice = Natron::createKnob<Choice_Knob>(publicInterface,
                                                                                     ref->getDescription(),ref->getDimension(),declaredByPlugin);
             choice->populateChoices( isChoice->getEntries(),isChoice->getEntriesHelp() );
             ret = choice;
-        } else if (isString)   {
+        } else if (isString) {
             boost::shared_ptr<String_Knob> strKnob = Natron::createKnob<String_Knob>(publicInterface,
                                                                                      ref->getDescription(),ref->getDimension(),declaredByPlugin);
             if ( isString->isCustomKnob() ) {
@@ -158,24 +158,24 @@ struct MultiInstancePanelPrivate
                 strKnob->setUsesRichText(true);
             }
             ret = strKnob;
-        } else if ( dynamic_cast<Parametric_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<Parametric_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Parametric_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<Color_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<Color_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Color_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<Path_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<Path_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Path_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<File_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<File_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<File_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<OutputFile_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<OutputFile_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<OutputFile_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if (isButton)   {
+        } else if (isButton) {
             boost::shared_ptr<Button_Knob> btn = Natron::createKnob<Button_Knob>(publicInterface,
                                                                                  ref->getDescription(),ref->getDimension(),declaredByPlugin);
             ///set the name prior to calling setIconForButton
             btn->setName( ref->getName() );
             publicInterface->setIconForButton( btn.get() );
             ret = btn;
-        } else if ( dynamic_cast<Page_Knob*>( ref.get() ) )   {
+        } else if ( dynamic_cast<Page_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Page_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
         }
         assert(ret);
@@ -228,7 +228,7 @@ struct MultiInstancePanelPrivate
     {
         mainInstance->getSettingPanel()->pushUndoCommand(cmd);
     }
-    
+
     boost::shared_ptr<Natron::Node> getInstanceFromItem(TableItem* item) const;
 };
 
@@ -417,7 +417,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->view->setHorizontalHeaderLabels(dimensionNames);
 
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect,0);
-    
+
 #if QT_VERSION < 0x050000
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
@@ -1031,14 +1031,14 @@ MultiInstancePanelPrivate::getNodesFromSelection(const QModelIndexList & indexes
 boost::shared_ptr<Natron::Node>
 MultiInstancePanelPrivate::getInstanceFromItem(TableItem* item) const
 {
-
     assert( item->row() >= 0 && item->row() < (int)instances.size() );
     int i = 0;
-    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end();++it,++i) {
-        if (i == item->row()) {
+    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it,++i) {
+        if ( i == item->row() ) {
             return it->first;
         }
     }
+
     return boost::shared_ptr<Natron::Node>();
 }
 
@@ -1120,8 +1120,9 @@ void
 MultiInstancePanel::onItemRightClicked(TableItem* item)
 {
     boost::shared_ptr<Natron::Node> instance = _imp->getInstanceFromItem(item);
+
     if (instance) {
-        showMenuForInstance(instance.get());
+        showMenuForInstance( instance.get() );
     }
 }
 
@@ -1407,11 +1408,11 @@ struct TrackerPanelPrivate
     Button* exportButton;
     boost::shared_ptr<Page_Knob> transformPage;
     boost::shared_ptr<Int_Knob> referenceFrame;
-    
+
     //Not protected because it is all handled in the main-thread.
     //Set to true when the user presses the stop button.
     bool abortTrackingRequested;
-    
+
     TrackerPanelPrivate(TrackerPanel* publicInterface)
         : publicInterface(publicInterface)
           , averageTracksButton(0)
@@ -1703,11 +1704,11 @@ TrackerPanel::trackBackward()
         handleTrackNextAndPrevious(instanceButtons,cur);
         QCoreApplication::processEvents();
         if ( ( getGui() && !getGui()->progressUpdate( selectedInstances.front()->getLiveInstance(),
-                                                    ( (double)(start - cur) / (double)(start - end) ) ) ) ||
-            _imp->abortTrackingRequested ) {
-            
+                                                      ( (double)(start - cur) / (double)(start - end) ) ) ) ||
+             _imp->abortTrackingRequested ) {
             setKnobsFrozen(false);
             _imp->abortTrackingRequested = false;
+
             return true;
         }
         --cur;
@@ -1757,11 +1758,11 @@ TrackerPanel::trackForward()
         handleTrackNextAndPrevious(instanceButtons,cur);
         QCoreApplication::processEvents();
         if ( ( getGui() && !getGui()->progressUpdate( selectedInstances.front()->getLiveInstance(),
-                                                    ( (double)(cur - start) / (double)(end - start) ) ) ) ||
-            _imp->abortTrackingRequested ) {
-            
+                                                      ( (double)(cur - start) / (double)(end - start) ) ) ) ||
+             _imp->abortTrackingRequested ) {
             setKnobsFrozen(false);
             _imp->abortTrackingRequested = false;
+
             return true;
         }
         ++cur;
@@ -2046,17 +2047,18 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
 void
 TrackerPanel::showMenuForInstance(Natron::Node* instance)
 {
+    QMenu menu( getGui() );
 
-    QMenu menu(getGui());
-    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
-    
+    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+
     QAction* copyTrackAnimation = new QAction(tr("Copy track animation"),&menu);
     menu.addAction(copyTrackAnimation);
-    
-    QAction* ret = menu.exec(QCursor::pos());
+
+    QAction* ret = menu.exec( QCursor::pos() );
     if (ret == copyTrackAnimation) {
         Double_Knob* centerKnob = getCenterKnobForTracker(instance);
         assert(centerKnob);
         centerKnob->copyAnimationToClipboard();
     }
 }
+

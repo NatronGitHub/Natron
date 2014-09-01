@@ -73,7 +73,7 @@ public:
 
         if ( it == _functions.end() ) {
             return std::make_pair(false,(T)0);
-        } else  {
+        } else {
             return std::make_pair(true,(T)it->second);
         }
     }

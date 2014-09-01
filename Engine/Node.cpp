@@ -592,9 +592,10 @@ Node::getOutputs() const
 }
 
 void
-Node::getInputNames(std::vector<std::string>& inputNames) const
+Node::getInputNames(std::vector<std::string> & inputNames) const
 {
     int maxInp = _imp->liveInstance->getMaxInputCount();
+
     for (int i = 0; i < maxInp; ++i) {
         boost::shared_ptr<Node> inp = getInput(i);
         if (inp) {
@@ -937,8 +938,7 @@ Node::getInput(int index) const
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->getInput(index);
     }
-    if( QThread::currentThread() == qApp->thread() ) {
-        
+    if ( QThread::currentThread() == qApp->thread() ) {
         if (!_imp->inputsInitialized) {
             qDebug() << "Node::getInput(): inputs not initialized";
         }
@@ -946,9 +946,8 @@ Node::getInput(int index) const
         if ( ( index >= (int)_imp->inputsQueue.size() ) || (index < 0) ) {
             return boost::shared_ptr<Node>();
         }
-        
+
         return _imp->inputsQueue[index];
-        
     } else {
         assert(_imp->inputsInitialized);
 
@@ -956,7 +955,7 @@ Node::getInput(int index) const
         if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
             return boost::shared_ptr<Node>();
         }
-        
+
         return _imp->inputs[index];
     }
 }
@@ -2382,10 +2381,10 @@ Node::onEffectKnobValueChanged(KnobI* what,
             QString operation = strKnob->getValue().c_str();
             replaceCustomDataInlabel('(' + operation + ')');
         }
-    } else if (what->getName() == "filename" && _imp->liveInstance->isReader()) {
+    } else if ( (what->getName() == "filename") && _imp->liveInstance->isReader() ) {
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
-        computePreviewImage(_imp->liveInstance->getCurrentFrameRecursive());
+        computePreviewImage( _imp->liveInstance->getCurrentFrameRecursive() );
     }
 }
 

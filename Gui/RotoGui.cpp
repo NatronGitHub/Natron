@@ -1610,8 +1610,8 @@ RotoGui::penDown(double /*scaleX*/,
                 didSomething = true;
             }
         }
+        break;
     }
-    break;
     case SELECT_CURVES:
 
         if (nearbyBezier) {
@@ -1737,8 +1737,8 @@ RotoGui::penDown(double /*scaleX*/,
         assert(_imp->rotoData->builtBezier);
         _imp->state = BUILDING_BEZIER_CP_TANGENT;
         didSomething = true;
+        break;
     }
-    break;
     case DRAW_B_SPLINE:
 
         break;
@@ -1751,15 +1751,15 @@ RotoGui::penDown(double /*scaleX*/,
             _imp->state = BUILDING_ELLIPSE;
         }
         didSomething = true;
+        break;
     }
-    break;
     case DRAW_RECTANGLE: {
         pushUndoCommand( new MakeRectangleUndoCommand(this,true,pos.x(),pos.y(),time) );
         _imp->evaluateOnPenUp = true;
         _imp->state = BUILDING_RECTANGLE;
         didSomething = true;
+        break;
     }
-    break;
     default:
         assert(false);
         break;
@@ -1941,8 +1941,8 @@ RotoGui::penMotion(double /*scaleX*/,
         _imp->evaluateOnPenUp = true;
         _imp->computeSelectedCpsBBOX();
         didSomething = true;
+        break;
     }
-    break;
     case DRAGGING_CP: {
         assert(_imp->rotoData->cpBeingDragged.first && _imp->rotoData->cpBeingDragged.second);
         std::list<SelectedCP> toDrag;
@@ -1955,49 +1955,49 @@ RotoGui::penMotion(double /*scaleX*/,
     case BUILDING_BEZIER_CP_TANGENT: {
         assert(_imp->rotoData->builtBezier);
         pushUndoCommand( new MakeBezierUndoCommand(this,_imp->rotoData->builtBezier,false,dx,dy,time) );
+        break;
     }
-    break;
     case BUILDING_ELLIPSE: {
         pushUndoCommand( new MakeEllipseUndoCommand(this,false,false,dx,dy,time) );
 
         didSomething = true;
         _imp->evaluateOnPenUp = true;
+        break;
     }
-    break;
     case BULDING_ELLIPSE_CENTER: {
         pushUndoCommand( new MakeEllipseUndoCommand(this,false,true,dx,dy,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
+        break;
     }
-    break;
     case BUILDING_RECTANGLE: {
         pushUndoCommand( new MakeRectangleUndoCommand(this,false,dx,dy,time) );
         didSomething = true;
         _imp->evaluateOnPenUp = true;
+        break;
     }
-    break;
     case DRAGGING_LEFT_TANGENT: {
         assert(_imp->rotoData->tangentBeingDragged);
         pushUndoCommand( new MoveTangentUndoCommand( this,dx,dy,time,_imp->rotoData->tangentBeingDragged,true,
                                                      modCASIsControl(e) ) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
+        break;
     }
-    break;
     case DRAGGING_RIGHT_TANGENT: {
         assert(_imp->rotoData->tangentBeingDragged);
         pushUndoCommand( new MoveTangentUndoCommand( this,dx,dy,time,_imp->rotoData->tangentBeingDragged,false,
                                                      modCASIsControl(e) ) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
+        break;
     }
-    break;
     case DRAGGING_FEATHER_BAR: {
         pushUndoCommand( new MoveFeatherBarUndoCommand(this,dx,dy,_imp->rotoData->featherBarBeingDragged,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
+        break;
     }
-    break;
     case DRAGGING_BBOX_TOP_LEFT:
     case DRAGGING_BBOX_TOP_RIGHT:
     case DRAGGING_BBOX_BTM_RIGHT:
@@ -2028,8 +2028,8 @@ RotoGui::penMotion(double /*scaleX*/,
         pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
+        break;
     }
-    break;
     case DRAGGING_BBOX_MID_TOP:
     case DRAGGING_BBOX_MID_BTM: {
         QPointF center = _imp->getSelectedCpsBBOXCenter();
@@ -2054,8 +2054,8 @@ RotoGui::penMotion(double /*scaleX*/,
         pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
+        break;
     }
-    break;
     case DRAGGING_BBOX_MID_RIGHT:
     case DRAGGING_BBOX_MID_LEFT: {
         QPointF center = _imp->getSelectedCpsBBOXCenter();
@@ -2081,8 +2081,8 @@ RotoGui::penMotion(double /*scaleX*/,
 
         _imp->evaluateOnPenUp = true;
         didSomething = true;
+        break;
     }
-    break;
     case NONE:
     default:
         break;
@@ -2962,21 +2962,21 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
         }
         _imp->computeSelectedCpsBBOX();
         _imp->viewer->redraw();
-    } else if (ret == deleteCurve)   {
+    } else if (ret == deleteCurve) {
         std::list<boost::shared_ptr<Bezier> > beziers;
         beziers.push_back(curve);
         pushUndoCommand( new RemoveCurveUndoCommand(this,beziers) );
         _imp->viewer->redraw();
-    } else if (ret == openCloseCurve)   {
+    } else if (ret == openCloseCurve) {
         pushUndoCommand( new OpenCloseUndoCommand(this,curve) );
         _imp->viewer->redraw();
-    } else if (ret == smoothAction)   {
+    } else if (ret == smoothAction) {
         smoothSelectedCurve();
-    } else if (ret == cuspAction)   {
+    } else if (ret == cuspAction) {
         cuspSelectedCurve();
-    } else if (ret == removeFeather)   {
+    } else if (ret == removeFeather) {
         removeFeatherForSelectedCurve();
-    } else if (ret == linkTo)   {
+    } else if (ret == linkTo) {
         SelectedCPs points;
         const std::list<boost::shared_ptr<BezierCP> > & cps = curve->getControlPoints();
         const std::list<boost::shared_ptr<BezierCP> > & fps = curve->getFeatherPoints();
@@ -2990,7 +2990,7 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
         }
 
         linkPointTo(points);
-    } else if (ret == unLinkFrom)   {
+    } else if (ret == unLinkFrom) {
         SelectedCPs points;
         const std::list<boost::shared_ptr<BezierCP> > & cps = curve->getControlPoints();
         const std::list<boost::shared_ptr<BezierCP> > & fps = curve->getFeatherPoints();
@@ -3106,7 +3106,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     if (ret == deleteCp) {
         pushUndoCommand( new RemovePointUndoCommand(this,curve,!cp.first->isFeatherPoint() ? cp.first : cp.second) );
         _imp->viewer->redraw();
-    } else if (ret == smoothAction)   {
+    } else if (ret == smoothAction) {
         std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
         SmoothCuspUndoCommand::SmoothCuspCurveData data;
         data.curve = curve;
@@ -3114,7 +3114,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
         datas.push_back(data);
         pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false) );
         _imp->viewer->redraw();
-    } else if (ret == cuspAction)   {
+    } else if (ret == cuspAction) {
         std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
         SmoothCuspUndoCommand::SmoothCuspCurveData data;
         data.curve = curve;
@@ -3122,7 +3122,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
         datas.push_back(data);
         pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true) );
         _imp->viewer->redraw();
-    } else if (ret == removeFeather)   {
+    } else if (ret == removeFeather) {
         std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;
         RemoveFeatherUndoCommand::RemoveFeatherData data;
         data.curve = curve;
@@ -3130,11 +3130,11 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
         datas.push_back(data);
         pushUndoCommand( new RemoveFeatherUndoCommand(this,datas) );
         _imp->viewer->redraw();
-    } else if ( (ret == linkTo) && (ret != NULL) )          {
+    } else if ( (ret == linkTo) && (ret != NULL) ) {
         SelectedCPs points;
         points.push_back(cp);
         linkPointTo(points);
-    } else if ( (ret == unLinkFrom) && (ret != NULL) )          {
+    } else if ( (ret == unLinkFrom) && (ret != NULL) ) {
         SelectedCPs points;
         points.push_back(cp);
         pushUndoCommand( new UnLinkFromTrackUndoCommand(this,points) );

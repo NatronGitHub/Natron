@@ -14,18 +14,17 @@
 //////////////TableItem
 
 namespace {
-    class MetaTypesRegistration
+class MetaTypesRegistration
+{
+public:
+    inline MetaTypesRegistration()
     {
-    public:
-        inline MetaTypesRegistration()
-        {
-            qRegisterMetaType<TableItem*>("TableItem*");
-        }
-    };
+        qRegisterMetaType<TableItem*>("TableItem*");
+    }
+};
 }
 
 static MetaTypesRegistration registration;
-
 TableItem::TableItem(const TableItem & other)
     : values(other.values)
       , view(0)
@@ -51,13 +50,13 @@ TableItem::clone() const
 int
 TableItem::row() const
 {
-    return (view ? view->row(this) : -1);
+    return view ? view->row(this) : -1;
 }
 
 int
 TableItem::column() const
 {
-    return (view ? view->column(this) : -1);
+    return view ? view->column(this) : -1;
 }
 
 void
@@ -71,7 +70,7 @@ TableItem::setSelected(bool aselect)
 bool
 TableItem::isSelected() const
 {
-    return (view ? view->isItemSelected(this) : false);
+    return view ? view->isItemSelected(this) : false;
 }
 
 void
@@ -963,12 +962,12 @@ TableView::mouseReleaseEvent(QMouseEvent* e)
 {
     QModelIndex index = indexAt( e->pos() );
     TableItem* item = itemAt( e->pos() );
+
     if ( triggerButtonisRight(e) && index.isValid() ) {
         emit itemRightClicked(item);
     } else {
         QTreeView::mouseReleaseEvent(e);
     }
-    
 }
 
 void
@@ -986,12 +985,16 @@ bool
 TableView::isItemSelected(const TableItem *item) const
 {
     QModelIndex index = _imp->model->index(item);
+
     return selectionModel()->isSelected(index);
 }
 
 void
-TableView::setItemSelected(const TableItem *item, bool select)
+TableView::setItemSelected(const TableItem *item,
+                           bool select)
 {
     QModelIndex index = _imp->model->index(item);
+
     selectionModel()->select(index, select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect);
 }
+

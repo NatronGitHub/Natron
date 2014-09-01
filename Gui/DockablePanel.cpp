@@ -383,7 +383,7 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_nameLineEdit->setText(initialName);
             QObject::connect( _imp->_nameLineEdit,SIGNAL( editingFinished() ),this,SLOT( onLineEditNameEditingFinished() ) );
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
-        } else  {
+        } else {
             _imp->_nameLabel = new QLabel(initialName,_imp->_headerWidget);
             _imp->_headerLayout->addWidget(_imp->_nameLabel);
         }
@@ -927,7 +927,7 @@ DockablePanelPrivate::addPage(const QString & name)
     } else {
         newTab = new QWidget(_tabWidget);
         newTab->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(newTab,SIGNAL(customContextMenuRequested(QPoint)),_publicInterface,SLOT(onRightClickMenuRequested(QPoint)));
+        QObject::connect( newTab,SIGNAL( customContextMenuRequested(QPoint) ),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
         layoutContainer = newTab;
     }
     newTab->setObjectName(name);
@@ -1086,7 +1086,7 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     _imp->_minimized = toggled;
     if (_imp->_minimized) {
         emit minimized();
-    } else  {
+    } else {
         emit maximized();
     }
     _imp->_tabWidget->setVisible(!_imp->_minimized);
@@ -1130,7 +1130,7 @@ DockablePanel::onNameChanged(const QString & str)
 {
     if (_imp->_nameLabel) {
         _imp->_nameLabel->setText(str);
-    } else if (_imp->_nameLineEdit)   {
+    } else if (_imp->_nameLineEdit) {
         _imp->_nameLineEdit->setText(str);
     }
 }
@@ -1170,7 +1170,6 @@ DockablePanel::getGui() const
 {
     return _imp->_gui;
 }
-
 
 void
 DockablePanel::insertHeaderWidget(int index,
@@ -1292,31 +1291,32 @@ DockablePanel::focusInEvent(QFocusEvent* e)
 }
 
 void
-DockablePanel::onRightClickMenuRequested(const QPoint& pos)
+DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 {
-    QWidget* emitter = qobject_cast<QWidget*>(sender());
+    QWidget* emitter = qobject_cast<QWidget*>( sender() );
+
     assert(emitter);
-    
+
     QMenu menu(this);
-    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
     QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
     menu.addAction(setKeys);
     QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
     menu.addAction(removeAnimation);
-    
+
     int time = getGui()->getApp()->getTimeLine()->currentFrame();
-    QAction* ret = menu.exec(emitter->mapToGlobal(pos));
+    QAction* ret = menu.exec( emitter->mapToGlobal(pos) );
     if (ret == setKeys) {
         AddKeysCommand::KeysToAddList keys;
         for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            for (int i = 0;i < it->first->getDimension(); ++i) {
+            for (int i = 0; i < it->first->getDimension(); ++i) {
                 CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
                 if (!curve) {
                     continue;
                 }
                 boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
                 curveKeys->curve = curve;
-                
+
                 std::vector<KeyFrame> kVec;
                 KeyFrame kf;
                 kf.setTime(time);
@@ -1324,7 +1324,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint& pos)
                 Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
                 AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
                 Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
-                
+
                 if (isInt) {
                     kf.setValue( isInt->getValue(i) );
                 } else if (isBool) {
@@ -1337,18 +1337,17 @@ DockablePanel::onRightClickMenuRequested(const QPoint& pos)
                     isString->stringToKeyFrameValue(time, v, &dv);
                     kf.setValue(dv);
                 }
-                
+
                 kVec.push_back(kf);
                 curveKeys->keys = kVec;
                 keys.push_back(curveKeys);
             }
         }
-        pushUndoCommand(new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keys));
-
+        pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keys) );
     } else if (ret == removeAnimation) {
         std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
         for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            for (int i = 0;i < it->first->getDimension(); ++i) {
+            for (int i = 0; i < it->first->getDimension(); ++i) {
                 CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
                 if (!curve) {
                     continue;
@@ -1359,9 +1358,9 @@ DockablePanel::onRightClickMenuRequested(const QPoint& pos)
                 }
             }
         }
-        pushUndoCommand(new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keysToRemove));
+        pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keysToRemove) );
     }
-}
+} // onRightClickMenuRequested
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                      Gui* gui,

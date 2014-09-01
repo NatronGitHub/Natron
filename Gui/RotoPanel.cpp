@@ -1005,8 +1005,8 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
                 _imp->setChildrenActivatedRecursively(activated, found->treeItem);
             }
             _imp->context->emitRefreshViewerOverlays();
+            break;
         }
-        break;
 
         case COL_LOCKED: {
             bool locked = !it->rotoItem->getLocked();
@@ -1018,8 +1018,8 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
                 found->rotoItem->setLocked(locked,true);
                 _imp->setChildrenLockedRecursively(locked, found->treeItem);
             }
+            break;
         }
-        break;
 
         case COL_OVERLAY: {
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
@@ -1054,8 +1054,8 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
                     }
                 }
             }
+            break;
         }
-        break;
 
         case COL_COLOR: {
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
@@ -1098,8 +1098,8 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
                 _imp->context->getColorKnob()->setValue(shapeColor[1], 1);
                 _imp->context->getColorKnob()->setValue(shapeColor[2], 2);
             }
+            break;
         }
-        break;
 
 #ifdef NATRON_ROTO_INVERTIBLE
         case COL_INVERTED: {
@@ -1126,8 +1126,8 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
             if (!selected.empty() && invertedSet) {
                 _imp->context->getInvertedKnob()->setValue(inverted, 0);
             }
+            break;
         }
-        break;
 #endif
         case 0:
         default:
@@ -1483,8 +1483,8 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                     } else {
                         return false;
                     }
+                    break;
                 }
-                break;
                 case QAbstractItemView::BelowItem: {
                     RotoLayer* intoParentLayer = intoRotoItem->getParentLayer();
                     bool isTargetLayerAParent = false;
@@ -1515,8 +1515,8 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                         ret->newParentLayer = intoParentLayer;
                         ret->newParentItem = into->parent();
                     }
+                    break;
                 }
-                break;
                 case QAbstractItemView::OnItem: {
                     if (isIntoALayer) {
                         ///insert at the end of the layer
@@ -1536,8 +1536,8 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                         ///dropping an item on another item which is not a layer is not accepted
                         return false;
                     }
+                    break;
                 }
-                break;
                 case QAbstractItemView::OnViewport:
                 default:
 

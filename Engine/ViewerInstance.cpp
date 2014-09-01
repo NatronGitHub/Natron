@@ -360,11 +360,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
 
     EffectInstance* activeInputToRender = getInput(activeInputIndex);
-    
+
     if (activeInputToRender) {
         activeInputToRender = activeInputToRender->getNearestNonDisabled();
     }
-    
+
     if (!activeInputToRender) {
         return StatFailed;
     }

@@ -37,3 +37,4 @@ PluginGroupNode::tryAddChild(PluginGroupNode* plugin)
     }
     _children.push_back(plugin);
 }
+

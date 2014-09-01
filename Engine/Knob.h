@@ -456,7 +456,7 @@ public:
      **/
     virtual void setAsInstanceSpecific() = 0;
     virtual bool isInstanceSpecific() const = 0;
-    
+
     /**
      * @brief If this knob has a gui view, then the gui view should set the animation of this knob on the application's knob clipboard.
      **/

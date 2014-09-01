@@ -176,11 +176,10 @@ public:
     void onKeyFrameMoved(int oldTime,int newTime);
 
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
-    
+
     void copyValuesToCliboard();
-    
+
     void pasteValuesFromClipboard();
-    
 
 public slots:
 
@@ -233,7 +232,7 @@ public slots:
 
 
     void onCopyValuesActionTriggered();
-    
+
     void onPasteValuesActionTriggered();
 
     void onCopyAnimationActionTriggered();
@@ -264,6 +263,7 @@ public slots:
     void onFrozenChanged(bool frozen);
 
     void updateCurveEditorKeyframes();
+
 signals:
 
     void knobUndoneChange();

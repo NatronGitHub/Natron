@@ -196,11 +196,11 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
             knobCurve = curveWidget->createCurve( k->getCurve(0),kgui,0,k->getDescription().c_str() );
             if ( !k->getCurve(0)->isAnimated() ) {
                 knobItem->setHidden(true);
-            } else  {
+            } else {
                 hasAtLeast1KnobWithACurveShown = true;
                 hideKnob = false;
             }
-        } else  {
+        } else {
             for (int j = 0; j < k->getDimension(); ++j) {
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText( 0,k->getDimensionName(j).c_str() );
@@ -210,7 +210,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                 _nodeElements.push_back(elem);
                 if ( !dimCurve->getInternalCurve()->isAnimated() ) {
                     dimItem->setHidden(true);
-                } else  {
+                } else {
                     hasAtLeast1KnobWithACurveShown = true;
                     hideKnob = false;
                 }
@@ -396,10 +396,10 @@ CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> > & curves)
                 if ( found != curves.end() ) {
                     curvesGuis.push_back(curve);
                     elems[i]->getTreeItem()->setSelected(true);
-                } else  {
+                } else {
                     elems[i]->getTreeItem()->setSelected(false);
                 }
-            } else  {
+            } else {
                 elems[i]->getTreeItem()->setSelected(false);
             }
         }
