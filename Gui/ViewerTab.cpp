@@ -1257,7 +1257,7 @@ void
 ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
 {
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !_imp->app || _imp->app->isClosing() || isFileDialogViewer()) {
         return;
     }
 
