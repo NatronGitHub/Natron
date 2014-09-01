@@ -481,6 +481,9 @@ struct GuiPrivate
     void createNodeGraphGui();
 
     void createCurveEditorGui();
+    
+    ///If there's only 1 non-floating pane in the main window, return it, otherwise returns NULL
+    TabWidget* getOnly1NonFloatingPane(int & count) const;
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -1906,52 +1909,95 @@ Gui::getHistograms_mt_safe() const
     return _imp->_histograms;
 }
 
+TabWidget*
+GuiPrivate::getOnly1NonFloatingPane(int & count) const
+{
+    assert(!_panesMutex.tryLock());
+    count = 0;
+    if (_panes.empty()) {
+        return NULL;
+    }
+    TabWidget* firstNonFloating = 0;
+    for (std::list<TabWidget*>::const_iterator it = _panes.begin() ;it!= _panes.end(); ++it) {
+        if (!(*it)->isFloatingWindowChild()) {
+            if (!firstNonFloating) {
+                firstNonFloating = *it;
+            }
+            ++count;
+        }
+    }
+    ///there should always be at least 1 non floating window
+    assert(firstNonFloating);
+    return firstNonFloating;
+}
+
 void
 Gui::unregisterPane(TabWidget* pane)
 {
+    {
+        QMutexLocker l(&_imp->_panesMutex);
+        std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
+        
+        if ( found != _imp->_panes.end() ) {
+            _imp->_panes.erase(found);
+        }
+        
+        if ( ( pane->isAnchor() ) && !_imp->_panes.empty() ) {
+            _imp->_panes.front()->setAsAnchor(true);
+        }
+    }
+    checkNumberOfNonFloatingPanes();
+}
+
+void
+Gui::checkNumberOfNonFloatingPanes()
+{
     QMutexLocker l(&_imp->_panesMutex);
-    std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
+    ///If dropping to 1 non floating pane, make it non closable:floatable
+    int nbNonFloatingPanes;
+    TabWidget* nonFloatingPane = _imp->getOnly1NonFloatingPane(nbNonFloatingPanes);
+    
+    ///When there's only 1 tab left make it closable/floatable again
+    if (nbNonFloatingPanes == 1) {
+        assert(nonFloatingPane);
+        nonFloatingPane->setClosable(false);
+    } else {
+        for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+            (*it)->setClosable(true);
+        }
+    }
 
-    if ( found != _imp->_panes.end() ) {
-        _imp->_panes.erase(found);
-    }
-    ///When there's only 1 tab left make it unclosable/floatable
-    if (_imp->_panes.size() == 1) {
-        _imp->_panes.front()->setClosable(false);
-    }
-
-    if ( ( pane->isAnchor() ) && !_imp->_panes.empty() ) {
-        _imp->_panes.front()->setAsAnchor(true);
-    }
 }
 
 void
 Gui::registerPane(TabWidget* pane)
 {
-    QMutexLocker l(&_imp->_panesMutex);
-    bool hasAnchor = false;
-
-    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-        if ( (*it)->isAnchor() ) {
-            hasAnchor = true;
-            break;
+    {
+        QMutexLocker l(&_imp->_panesMutex);
+        bool hasAnchor = false;
+        
+        for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+            if ( (*it)->isAnchor() ) {
+                hasAnchor = true;
+                break;
+            }
+        }
+        std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
+        
+        if ( found == _imp->_panes.end() ) {
+            
+            if ( _imp->_panes.empty() ) {
+                _imp->_leftRightSplitter->addWidget(pane);
+                pane->setClosable(false);
+            }
+            _imp->_panes.push_back(pane);
+            
+            if (!hasAnchor) {
+                pane->setAsAnchor(true);
+            }
         }
     }
-    std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
-
-    if ( found == _imp->_panes.end() ) {
-        int only1Widget = _imp->_panes.size() == 1;
-        if ( _imp->_panes.empty() ) {
-            _imp->_leftRightSplitter->addWidget(pane);
-        }
-        _imp->_panes.push_back(pane);
-        if (only1Widget) {
-            _imp->_panes.front()->setClosable(true);
-        }
-        if (!hasAnchor) {
-            pane->setAsAnchor(true);
-        }
-    }
+    checkNumberOfNonFloatingPanes();
 }
 
 void

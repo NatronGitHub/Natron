@@ -221,6 +221,7 @@ public:
      * @brief MT-Safe
      **/
     std::list<FloatingWidget*> getFloatingWindows() const;
+    
 
 
     /*Returns a valid tab if a tab with a matching name has been
@@ -381,6 +382,8 @@ public:
 
     void aboutToSave();
     void saveFinished();
+    
+    void checkNumberOfNonFloatingPanes();
 
 signals:
 

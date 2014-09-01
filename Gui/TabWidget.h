@@ -182,7 +182,7 @@ public:
      **/
     void startDragTab(int index);
 
-    void stopDragTab(const QPoint & globalPos);
+    bool stopDragTab(const QPoint & globalPos);
 
     void setDrawDropRect(bool draw);
 

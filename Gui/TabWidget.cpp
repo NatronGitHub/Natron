@@ -364,6 +364,7 @@ TabWidget::floatPane(QPoint* position)
         floatingW->move(*position);
     }
     _gui->registerFloatingWindow(floatingW);
+    _gui->checkNumberOfNonFloatingPanes();
 }
 
 void
@@ -437,6 +438,7 @@ TabWidget::floatCurrentWidget()
         ///Make a new tab widget and float it instead
         TabWidget* newPane = new TabWidget(_gui,_gui);
         newPane->setObjectName_mt_safe( _gui->getAvailablePaneName() );
+        _gui->registerPane(newPane);
         moveTab(_currentWidget, newPane);
         newPane->floatPane();
     } else {
@@ -506,7 +508,7 @@ TabWidget::splitInternal(bool autoSave,
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(orientation);
     _gui->registerSplitter(newSplitter);
-
+ 
     /*Add this to the new splitter*/
     newSplitter->addWidget_mt_safe(this);
 
@@ -884,23 +886,23 @@ TabBar::makePixmapForDrag(int index)
 void
 TabBar::mouseReleaseEvent(QMouseEvent* e)
 {
+    bool hasClosedTabWidget = false;
     if ( _tabWidget->getGui()->isDraggingPanel() ) {
         releaseMouse();
         const QPoint & p = e->globalPos();
-        _tabWidget->stopDragTab(p);
+        hasClosedTabWidget = _tabWidget->stopDragTab(p);
         _dragPix->hide();
         delete _dragPix;
         _dragPix = 0;
 
-        const std::list<TabWidget*> panes = _tabWidget->getGui()->getPanes();
-        for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-            (*it)->setDrawDropRect(false);
-        }
+        
     }
-    QTabBar::mouseReleaseEvent(e);
+    if (!hasClosedTabWidget) {
+        QTabBar::mouseReleaseEvent(e);
+    }
 }
 
-void
+bool
 TabWidget::stopDragTab(const QPoint & globalPos)
 {
     if (count() == 0) {
@@ -918,11 +920,36 @@ TabWidget::stopDragTab(const QPoint & globalPos)
         }
     }
 
+    bool ret = false;
     if (!foundTabWidgetUnderneath) {
         ///if we reach here that means the mouse is not over any tab widget, then float the panel
+        
+        
+        
         QPoint windowPos = globalPos;
-        floatPane(&windowPos);
+        FloatingWidget* floatingW = new FloatingWidget(_gui,_gui);
+        TabWidget* newTab = new TabWidget(_gui,floatingW);
+        newTab->setObjectName_mt_safe( _gui->getAvailablePaneName() );
+        _gui->registerPane(newTab);
+        newTab->appendTab(draggedPanel);
+        floatingW->setWidget(newTab);
+        floatingW->move(windowPos);
+        _gui->registerFloatingWindow(floatingW);
+        
+        _gui->checkNumberOfNonFloatingPanes();
+        
+        bool isClosable = _closeButton->isEnabled();
+        if (isClosable && count() == 0) {
+            closePane();
+            ret = true;
+        }
     }
+    
+    
+    for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
+        (*it)->setDrawDropRect(false);
+    }
+    return ret;
 }
 
 void
