@@ -241,7 +241,7 @@ QtWriter::render(SequenceTime time,
                  bool /*isRenderResponseToUserInteraction*/,
                  boost::shared_ptr<Natron::Image> output)
 {
-    boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view, NULL, output->getComponents(), output->getBitDepth(), false);
+    boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view, NULL, output->getComponents(), output->getBitDepth(), false,NULL);
 
     if ( hasOutputConnected() ) {
         output->pasteFrom( *src, src->getBounds() );

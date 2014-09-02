@@ -311,14 +311,16 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.x2 = optionalBounds->x2;
         bounds.y2 = optionalBounds->y2;
     }
+    
+    RectI renderWindow;
     boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
                                                                      optionalBounds ? &bounds : NULL,
                                                                      ofxComponentsToNatronComponents( getComponents() ),
-                                                                     ofxDepthToNatronDepth( getPixelDepth() ),false);
+                                                                     ofxDepthToNatronDepth( getPixelDepth() ),false,&renderWindow);
     if (!image) {
         return NULL;
     } else {
-        return new OfxImage(image,*this);
+        return new OfxImage(image,renderWindow,*this);
     }
 }
 
@@ -403,6 +405,7 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
 }
 
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                   const RectI& renderWindow,
                    OfxClipInstance &clip)
     : OFX::Host::ImageEffect::Image(clip)
       , _bitDepth(OfxImage::eBitDepthFloat)
@@ -415,15 +418,27 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     scale.y = scale.x;
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
+    
+   
+    
     // data ptr
     const RectI & bounds = internalImage->getBounds();
+    
+    ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
+    ///in which case it is just clipped to the RoD.
+    //assert(bounds.contains(renderWindow));
+    RectI pluginsSeenBounds;
+    renderWindow.intersect(bounds, &pluginsSeenBounds);
+    
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
-    setPointerProperty( kOfxImagePropData,internalImage->pixelAt( bounds.left(), bounds.bottom() ) );
-    // bounds and rod
-    setIntProperty(kOfxImagePropBounds, bounds.left(), 0);
-    setIntProperty(kOfxImagePropBounds, bounds.bottom(), 1);
-    setIntProperty(kOfxImagePropBounds, bounds.right(), 2);
-    setIntProperty(kOfxImagePropBounds, bounds.top(), 3);
+    setPointerProperty( kOfxImagePropData,internalImage->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() ) );
+    
+    ///We set the render window that was given to the render thread instead of the actual bounds of the image
+    ///so we're sure the plug-in doesn't attempt to access outside pixels.
+    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.left(), 0);
+    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.bottom(), 1);
+    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.right(), 2);
+    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.top(), 3);
 #pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
     // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImagePropRegionOfDefinition
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
@@ -515,12 +530,14 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     }
     assert( _lastActionData.hasLocalData() );
     if ( isOutput() ) {
-        boost::shared_ptr<Natron::Image> outputImage = _nodeInstance->getThreadLocalRenderedImage();
-        if (!outputImage) {
+        boost::shared_ptr<Natron::Image> outputImage;
+        RectI renderWindow;
+        bool ok = _nodeInstance->getThreadLocalRenderedImage(&outputImage,&renderWindow);
+        if (!ok) {
             return NULL;
         }
 
-        return new OfxImage(outputImage,*this);
+        return new OfxImage(outputImage,renderWindow,*this);
     }
 
     unsigned int mipMapLevel;

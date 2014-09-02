@@ -241,8 +241,9 @@ namespace  {
 
 struct EffectInstance::RenderArgs
 {
-    RectD _rod; //!< the effect's RoD in canonical coordinates
+    RectD _rod; //!< the effect's RoD in CANONICAL coordinates
     RoIMap _regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
+    RectI _renderWindowPixel; //< the current renderWindow in PIXEL coordinates
     SequenceTime _time; //< the time to render
     int _view; //< the view to render
     bool _isSequentialRender; //< is this sequential ?
@@ -262,6 +263,7 @@ struct EffectInstance::RenderArgs
     RenderArgs()
         : _rod()
           , _regionOfInterestResults()
+          , _renderWindowPixel()
           , _time(0)
           , _view(0)
           , _isSequentialRender(false)
@@ -374,6 +376,7 @@ public:
         ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
                          const RoIMap & roiMap,
                          const RectD & rod,
+                         const RectI& renderWindow,
                          SequenceTime time,
                          int view,
                          bool sequential,
@@ -394,6 +397,7 @@ public:
             assert(_dst);
 
             args._rod = rod;
+            args._renderWindowPixel = renderWindow;
             args._time = time;
             args._view = view;
             args._isSequentialRender = sequential;
@@ -451,6 +455,7 @@ public:
         ///RoIMap and frame range are separated because those actions might need
         ///the thread-storage set up in the first pass to work
         void setArgs_firstPass(const RectD & rod,
+                               const RectI& renderWindow,
                                SequenceTime time,
                                int view,
                                bool sequential,
@@ -465,6 +470,7 @@ public:
                                const boost::shared_ptr<Image>& outputImage)
         {
             args._rod = rod;
+            args._renderWindowPixel = renderWindow;
             args._time = time;
             args._view = view;
             args._isSequentialRender = sequential;
@@ -653,7 +659,8 @@ EffectInstance::getImage(int inputNb,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
                          const Natron::ImageComponents comp,
                          const Natron::ImageBitDepth depth,
-                         const bool dontUpscale)
+                         const bool dontUpscale,
+                         RectI* roiPixel)
 {
     bool isMask = isInputMask(inputNb);
 
@@ -773,8 +780,8 @@ EffectInstance::getImage(int inputNb,
 
     ///Both the result of getRegionsOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates
-    RectI roiPixel;
-    roi.toPixelEnclosing(scale, &roiPixel);
+    RectI pixelRoI;
+    roi.toPixelEnclosing(scale, &pixelRoI);
 
     int channelForAlpha = !isMask ? 3 : getMaskChannel(inputNb);
 
@@ -784,10 +791,12 @@ EffectInstance::getImage(int inputNb,
         Natron::ImageComponents outputComps;
         Natron::ImageBitDepth outputDepth;
         getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
-        boost::shared_ptr<Natron::Image> mask =  roto->renderMask(roiPixel, outputComps, nodeHash,rotoAge,
+        boost::shared_ptr<Natron::Image> mask =  roto->renderMask(pixelRoI, outputComps, nodeHash,rotoAge,
                                                                   RectD(), time, depth, view, mipMapLevel, byPassCache);
         _imp->addInputImageTempPointer(mask);
-
+        if (roiPixel) {
+            *roiPixel = pixelRoI;
+        }
         return mask;
     }
 
@@ -806,7 +815,7 @@ EffectInstance::getImage(int inputNb,
                                                                                   scale,
                                                                                   mipMapLevel,
                                                                                   view,
-                                                                                  roiPixel,
+                                                                                  pixelRoI,
                                                                                   isSequentialRender,
                                                                                   isRenderUserInteraction,
                                                                                   byPassCache,
@@ -821,7 +830,9 @@ EffectInstance::getImage(int inputNb,
     if (!inputImg) {
         return inputImg;
     }
-
+    if (roiPixel) {
+        *roiPixel = pixelRoI;
+    }
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
 
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
@@ -846,8 +857,9 @@ EffectInstance::getImage(int inputNb,
 
 void
 EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,SequenceTime /*time*/,
+                                              int /*view*/,
                                               const RenderScale & /*scale*/,
-                                              RectD *rod) const
+                                              RectD *rod)
 {
     Format projectDefault;
 
@@ -904,7 +916,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                                          SequenceTime time,
                                          const RenderScale & scale,
                                          int view,
-                                         RectD* rod) const
+                                         RectD* rod)
 {
     /*If the rod is infinite clip it to the project's default*/
 
@@ -927,7 +939,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
     ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
-        calcDefaultRegionOfDefinition(hash,time, scale, &inputsUnion);
+        calcDefaultRegionOfDefinition(hash,time,view, scale, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
             Natron::EffectInstance* input = getInput(i);
@@ -1280,6 +1292,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         inputsRoI,
                                                         rod,
+                                                        args.roi,
                                                         args.time,
                                                         args.view,
                                                         args.isSequentialRender,
@@ -1307,7 +1320,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                  &canonicalRoI,
                                  inputPrefComps,
                                  inputPrefDepth,
-                                 true);
+                                 true,
+                                 NULL);
                 ///Clear input images pointer because getImage has stored the image .
                 _imp->clearInputImagePointers();
             } else {
@@ -1425,6 +1439,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         inputsRoI,
                                                         rod,
+                                                        args.roi,
                                                         args.time,
                                                         args.view,
                                                         args.isSequentialRender,
@@ -1445,7 +1460,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                 boost::shared_ptr<Image> ret =  getImage(inputNbIdentity, inputTimeIdentity,
-                                                         args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                                                         args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true,NULL);
                 ///Clear input images pointer because getImage has stored ret .
                 _imp->clearInputImagePointers();
 
@@ -1763,6 +1778,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs);
         scopedArgs.setArgs_firstPass(rod,
+                                     downscaledRectToRender,
                                      time,
                                      view,
                                      isSequentialRender,
@@ -2780,23 +2796,22 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             }
         }
         
-        NON_RECURSIVE_ACTION();
         Natron::Status ret;
         
-        try {
+        {
+            NON_RECURSIVE_ACTION();
             ret = getRegionOfDefinition(hash,time, scale, view, rod);
-        } catch (const std::exception & e) {
-            throw e;
+            
+            if ( (ret != StatOK) && (ret != StatReplyDefault) ) {
+                // rod is not valid
+                return ret;
+            }
+            assert( (ret == StatOK || ret == StatReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
+            
         }
-        
-        if ( (ret != StatOK) && (ret != StatReplyDefault) ) {
-            // rod is not valid
-            return ret;
-        }
-        assert( (ret == StatOK || ret == StatReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
-        
         *isProjectFormat = ifInfiniteApplyHeuristic(hash,time, scale, view, rod);
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
+
         _imp->actionsCache.setRoDResult( time, mipMapLevel, *rod);
         return ret;
     }
@@ -2971,16 +2986,18 @@ EffectInstance::getThreadLocalRenderTime() const
     return getApp()->getTimeLine()->currentFrame();
 }
 
-boost::shared_ptr<Natron::Image>
-EffectInstance::getThreadLocalRenderedImage() const
+bool
+EffectInstance::getThreadLocalRenderedImage(boost::shared_ptr<Natron::Image>* image,RectI* renderWindow) const
 {
     if (_imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
-            return args._outputImage;
+            *image = args._outputImage;
+            *renderWindow = args._renderWindowPixel;
+            return true;
         }
     }
-    return boost::shared_ptr<Natron::Image>();
+    return false;
 }
 
 void

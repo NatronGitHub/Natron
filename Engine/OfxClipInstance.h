@@ -232,6 +232,7 @@ public:
 
 
     explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                      const RectI& renderWindow,
                       OfxClipInstance &clip);
 
     virtual ~OfxImage()

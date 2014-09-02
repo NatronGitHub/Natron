@@ -499,15 +499,20 @@ public:
     /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      * @param dontUpscale If the image is retrieved is downscaled but the plug-in doesn't support the user of
      * downscaled images by default we upscale the image. If dontUpscale is true then we don't do this upscaling.
+     *
+     * @param roiPixel If non NULL will be set to the render window used to render the image, that is, either the
+     * region of interest of this effect on the input effect we want to render or the optionalBounds if set, but
+     * converted to pixel coordinates
      */
     boost::shared_ptr<Image> getImage(int inputNb,
-                                      SequenceTime time,
+                                      const SequenceTime time,
                                       const RenderScale & scale,
-                                      int view,
+                                      const int view,
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
-                                      Natron::ImageComponents comp,
-                                      Natron::ImageBitDepth depth,
-                                      bool dontUpscale) WARN_UNUSED_RETURN;
+                                      const Natron::ImageComponents comp,
+                                      const Natron::ImageBitDepth depth,
+                                      const bool dontUpscale,
+                                      RectI* roiPixel) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
 
 protected:
@@ -522,14 +527,14 @@ protected:
      * @returns StatOK, StatReplyDefault, or StatFailed. rod is set except if return value is StatOK or StatReplyDefault.
      **/
     virtual Natron::Status getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
-    virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, RectD *rod) const;
+    virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time,int view, const RenderScale & scale, RectD *rod) ;
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
      * project format.
      * @returns true if the rod is set to the project format.
      **/
-    bool ifInfiniteApplyHeuristic(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) const;
+    bool ifInfiniteApplyHeuristic(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) ;
 
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest
@@ -778,11 +783,12 @@ public:
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
      * otherwise it will return NULL.
+     * This function also returns the current renderWindow that is being rendered on that image
      * To be called exclusively on a render thread.
      *
      * WARNING: This call isexpensive and this function should not be called many times.
      **/
-    boost::shared_ptr<Natron::Image> getThreadLocalRenderedImage() const;
+    bool getThreadLocalRenderedImage(boost::shared_ptr<Natron::Image>* image,RectI* renderWindow) const;
 
     /**
      * @brief Called when the associated node's hash has changed.

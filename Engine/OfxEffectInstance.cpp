@@ -937,7 +937,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                     return StatFailed;
                 }
                 if (stat == kOfxStatReplyDefault) {
-                    calcDefaultRegionOfDefinition(hash,time, scaleOne, rod);
+                    calcDefaultRegionOfDefinition(hash,time,view,scaleOne, rod);
 
                     return StatReplyDefault;
                 }
@@ -948,7 +948,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
         }
 
         if (stat == kOfxStatReplyDefault) {
-            calcDefaultRegionOfDefinition(hash,time, scale, rod);
+            calcDefaultRegionOfDefinition(hash,time,view, scale, rod);
 
             return StatReplyDefault;
         }
@@ -980,23 +980,43 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
 void
 OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                                  SequenceTime time,
+                                                 int view,
                                                  const RenderScale & scale,
-                                                 RectD *rod) const
+                                                 RectD *rod)
 {
     assert(_context != eContextNone);
     if (!_initialized) {
         throw std::runtime_error("OfxEffectInstance not initialized");
     }
-
-    // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
-    // generator context - defaults to the project window,
-    // filter and paint contexts - defaults to the RoD of the 'Source' input clip at the given time,
-    // transition context - defaults to the union of the RoDs of the 'SourceFrom' and 'SourceTo' input clips at the given time,
-    // general context - defaults to the union of the RoDs of all the effect non optional input clips at the given time, if none exist, then it is the project window
-    // retimer context - defaults to the union of the RoD of the 'Source' input clip at the frame directly preceding the value of the 'SourceTime' double parameter and the frame directly after it
-
-    // the following ofxh function does the job
-    OfxRectD ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+    
+    bool skipDiscarding = false;
+    if (getRecursionLevel() > 1) {
+        skipDiscarding = true;
+    }
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    OfxRectD ofxRod;
+    
+    if (getRecursionLevel() == 0) {
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                            skipDiscarding,
+                                            true, //< setView ?
+                                            view,
+                                            true, //< set mipmaplevel?
+                                            mipMapLevel);
+        
+        
+        // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
+        // generator context - defaults to the project window,
+        // filter and paint contexts - defaults to the RoD of the 'Source' input clip at the given time,
+        // transition context - defaults to the union of the RoDs of the 'SourceFrom' and 'SourceTo' input clips at the given time,
+        // general context - defaults to the union of the RoDs of all the effect non optional input clips at the given time, if none exist, then it is the project window
+        // retimer context - defaults to the union of the RoD of the 'Source' input clip at the frame directly preceding the value of the 'SourceTime' double parameter and the frame directly after it
+        
+        // the following ofxh function does the job
+        ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+    } else {
+        ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+    }
     rod->x1 = ofxRod.x1;
     rod->x2 = ofxRod.x2;
     rod->y1 = ofxRod.y1;

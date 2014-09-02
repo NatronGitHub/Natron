@@ -400,12 +400,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
+    RenderScale scaleOne;
+    scaleOne.x = scaleOne.y = 1.;
     EffectInstance::SupportsEnum supportsRS = activeInputToRender->supportsRenderScaleMaybe();
-    if (supportsRS == eSupportsNo) {
-        scale.x = scale.y = 1.;
-    } else {
-        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
-    }
+    scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
+    
+
     closestPowerOf2 = 1 << mipMapLevel;
 
     ImageComponents components;
@@ -531,7 +531,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             registerPluginMemory( inputImage->size() );
         }
     }  else {
-        Status stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time, scale, view, &rod, &isRodProjectFormat);
+        Status stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time,
+                                                                        supportsRS ==  eSupportsNo ? scaleOne : scale,
+                                                                        view, &rod, &isRodProjectFormat);
         if (stat == StatFailed) {
 #ifdef NATRON_LOG
             Natron::Log::print( QString("getRegionOfDefinition returned StatFailed.").toStdString() );
