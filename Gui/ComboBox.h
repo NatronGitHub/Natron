@@ -126,6 +126,7 @@ private:
     void paintEvent(QPaintEvent* e);
     void mousePressEvent(QMouseEvent* e);
     void mouseReleaseEvent(QMouseEvent* e);
+    void wheelEvent(QWheelEvent *e);
 
     void growMaximumWidthFromText(const QString & str);
     void createMenu();

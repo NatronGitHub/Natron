@@ -43,7 +43,12 @@
 #  elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
 #    include <stdio.h>
 #    include <unistd.h>
-#    include <sys/sysinfo.h>
+#    if defined(__FreeBSD__)
+#      include <sys/sysctl.h>
+#      include <sys/types.h>
+#    else
+#      include <sys/sysinfo.h>
+#    endif
 #  endif
 #else
 #  error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
@@ -253,11 +258,22 @@ getAmountFreePhysicalRAM()
     GlobalMemoryStatusEx (&statex);
 
     return statex.ullAvailPhys;
-#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
     struct sysinfo memInfo;
     sysinfo (&memInfo);
     long long totalAvailableRAM = memInfo.freeram;
     totalAvailableRAM *= memInfo.mem_unit;
+
+    return totalAvailableRAM;
+#elif defined(__FreeBSD__)
+    unsigned long pagesize = getpagesize();
+    u_int value;
+    size_t value_size = sizeof(value);
+    unsigned long long totalAvailableRAM;
+    if (sysctlbyname("vm.stats.vm.v_free_count", &value, &value_size, NULL, 0) < 0) {
+        throw std::runtime_error("Unable to get amount of free physical RAM");
+    }
+    totalAvailableRAM = value * (unsigned long long)pagesize;
 
     return totalAvailableRAM;
 #elif defined(__APPLE__) && defined(__MACH__)

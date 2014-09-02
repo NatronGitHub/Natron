@@ -103,6 +103,17 @@ ComboBox::mouseReleaseEvent(QMouseEvent* e)
 }
 
 void
+ComboBox::wheelEvent(QWheelEvent *e)
+{
+    if (e->delta()>0) {
+        this->setCurrentIndex((this->activeIndex()-1 < 0)?this->count()-1:this->activeIndex()-1);
+    }
+    else {
+        this->setCurrentIndex((this->activeIndex()+1)%this->count());
+    }
+}
+
+void
 ComboBox::createMenu()
 {
     _menu->clear();
