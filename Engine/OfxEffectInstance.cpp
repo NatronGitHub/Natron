@@ -100,7 +100,7 @@ public:
             effect->setClipsView(view);
         }
         if (setMipmapLevel) {
-            effect->setClipsMipMapLevel(mipMapLevelSet);
+            effect->setClipsMipMapLevel(mipMapLevel);
         }
     }
 
@@ -1207,7 +1207,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "isIdenity cannot be called recursively as an action. Please check this.";
+            qDebug() << "isIdentity cannot be called recursively as an action. Please check this.";
             skipDiscarding = true;
         }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
