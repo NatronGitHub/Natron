@@ -61,7 +61,7 @@ private:
 
 
     int _cost; //< the cost of the element associated to this key
-    size_t _elementsCount; //< the number of elements the associated cache entry should allocate (relative to the datatype of the entry)
+    std::size_t _elementsCount; //< the number of elements the associated cache entry should allocate (relative to the datatype of the entry)
 };
 }
 

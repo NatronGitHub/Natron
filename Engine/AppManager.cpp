@@ -16,7 +16,7 @@
 #endif
 
 #include <clocale>
-
+#include <cstddef>
 #include <QDebug>
 #include <QAbstractSocket>
 #include <QCoreApplication>
