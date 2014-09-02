@@ -56,7 +56,7 @@ Knob<std::string>::getValue(int dimension) const
         } else {
             Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>( getHolder() );
             if (isEffect) {
-                time = isEffect->getCurrentFrameRecursive();
+                time = isEffect->getThreadLocalRenderTime();
             } else {
                 time = getHolder()->getApp()->getTimeLine()->currentFrame();
             }
@@ -92,7 +92,7 @@ Knob<T>::getValue(int dimension) const
         } else {
             Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>( getHolder() );
             if (isEffect) {
-                time = isEffect->getCurrentFrameRecursive();
+                time = isEffect->getThreadLocalRenderTime();
             } else {
                 time = getHolder()->getApp()->getTimeLine()->currentFrame();
             }
@@ -324,7 +324,7 @@ Knob<T>::setValue(const T & v,
         SequenceTime time;
         Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>( getHolder() );
         if (isEffect) {
-            time = isEffect->getCurrentFrameRecursive();
+            time = isEffect->getThreadLocalRenderTime();
         } else {
             time = getHolder()->getApp()->getTimeLine()->currentFrame();
         }
@@ -790,7 +790,7 @@ Knob<T>::evaluateAnimationChange()
     if ( getHolder() && getHolder()->getApp() ) {
         Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>( getHolder() );
         if (isEffect) {
-            time = isEffect->getCurrentFrameRecursive();
+            time = isEffect->getThreadLocalRenderTime();
         } else {
             time = getHolder()->getApp()->getTimeLine()->currentFrame();
         }
@@ -923,7 +923,7 @@ Knob<double>::resetToDefaultValue(int dimension)
         assert( getHolder() );
         Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
         assert(holder);
-        isDouble->denormalize(dimension, holder->getCurrentFrameRecursive(), &def);
+        isDouble->denormalize(dimension, holder->getThreadLocalRenderTime(), &def);
     }
     (void)setValue(def, dimension,Natron::RESTORE_DEFAULT,NULL);
     if (_signalSlotHandler) {

@@ -223,8 +223,9 @@ double
 OfxImageEffectInstance::getFrameRecursive() const
 {
     assert( getOfxEffectInstance() );
-
-    return getOfxEffectInstance()->getCurrentFrameRecursive();
+    
+    ///Just return the timeline's current time since we're always on the main thread anyway, no render is going on...
+    return getOfxEffectInstance()->getApp()->getTimeLine()->currentFrame();
 }
 
 /// This is called whenever a param is changed by the plugin so that
@@ -549,7 +550,7 @@ OfxImageEffectInstance::timeLineGetTime()
 void
 OfxImageEffectInstance::timeLineGotoTime(double t)
 {
-    _ofxEffectInstance->updateCurrentFrameRecursive( (int)t );
+    _ofxEffectInstance->updateThreadLocalRenderTime( (int)t );
     _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t,NULL );
 }
 
@@ -599,7 +600,21 @@ OfxImageEffectInstance::discardClipsView()
     }
 }
 
+void
+OfxImageEffectInstance::setClipsMipMapLevel(unsigned int mipMapLevel)
+{
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->setMipMapLevel(mipMapLevel);
+    }
+}
 
+void
+OfxImageEffectInstance::discardClipsMipMapLevel()
+{
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->discardMipMapLevel();
+    }
+}
 
 bool
 OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
@@ -612,4 +627,6 @@ OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
 
     return true;
 }
+
+
 

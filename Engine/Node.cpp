@@ -2046,7 +2046,7 @@ Node::refreshPreviewsRecursively()
     assert( QThread::currentThread() == qApp->thread() );
 
     if ( isPreviewEnabled() ) {
-        refreshPreviewImage( _imp->liveInstance->getCurrentFrameRecursive() );
+        refreshPreviewImage( _imp->liveInstance->getApp()->getTimeLine()->currentFrame() );
     }
     for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->outputsQueue.begin(); it != _imp->outputsQueue.end(); ++it) {
         assert(*it);
@@ -2394,7 +2394,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if ( (what->getName() == "filename") && _imp->liveInstance->isReader() ) {
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
-        computePreviewImage( _imp->liveInstance->getCurrentFrameRecursive() );
+        computePreviewImage( getApp()->getTimeLine()->currentFrame() );
     }
 }
 

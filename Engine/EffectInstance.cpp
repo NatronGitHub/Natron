@@ -244,7 +244,6 @@ struct EffectInstance::RenderArgs
     RectD _rod; //!< the effect's RoD in canonical coordinates
     RoIMap _regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
     SequenceTime _time; //< the time to render
-    unsigned int _mipMapLevel; //< the mipmap level to render
     int _view; //< the view to render
     bool _isSequentialRender; //< is this sequential ?
     bool _isRenderResponseToUserInteraction; //< is this a render due to user interaction ?
@@ -264,7 +263,6 @@ struct EffectInstance::RenderArgs
         : _rod()
           , _regionOfInterestResults()
           , _time(0)
-          , _mipMapLevel(0)
           , _view(0)
           , _isSequentialRender(false)
           , _isRenderResponseToUserInteraction(false)
@@ -332,63 +330,39 @@ struct EffectInstance::Implementation
         duringInteractAction = b;
     }
 
-    class ScopedInstanceChangedArgs
-    {
-        RenderArgs args;
-        ThreadStorage<RenderArgs>* _dst;
 
-public:
-
-        ScopedInstanceChangedArgs(ThreadStorage<RenderArgs>* dst,
-                                  SequenceTime time,
-                                  int view,
-                                  unsigned int mipMapLevel,
-                                  const RectD & rod, //!< effect output rod in canonical coordinates
-                                  const RoIMap & inputsRoI,
-                                  bool isSequential,
-                                  bool byPassCache,
-                                  U64 nodeHash,
-                                  U64 rotoAge,
-                                  bool isIdentity,
-                                  SequenceTime identityTime,
-                                  int inputNbIdentity,
-                                  int firstFrame,
-                                  int lastFrame)
-            : args()
-              , _dst(dst)
-        {
-            assert(_dst);
-            args._rod = rod;
-            args._regionOfInterestResults = inputsRoI;
-            args._time = time;
-            args._view = view;
-            args._mipMapLevel = mipMapLevel;
-            args._isSequentialRender = isSequential;
-            args._isRenderResponseToUserInteraction = true;
-            args._byPassCache = byPassCache;
-            args._nodeHash = nodeHash;
-            args._rotoAge = rotoAge;
-            args._channelForAlpha = 3;
-            args._isIdentity = isIdentity;
-            args._identityTime = identityTime;
-            args._identityInputNb = inputNbIdentity;
-            args._firstFrame = firstFrame;
-            args._lastFrame = lastFrame;
-            args._validArgs = true;
-            _dst->setLocalData(args);
-        }
-
-        ~ScopedInstanceChangedArgs()
-        {
-            assert( _dst->hasLocalData() );
-            args._validArgs = false;
-            _dst->setLocalData(args);
-        }
-    };
 
     /**
-     * @brief Small helper class that set the render args and
-     * invalidate them when it is destroyed.
+     * @brief This function sets on the thread storage given in parameter all the arguments which 
+     * are used to render an image.
+     * This is used exclusively on the render thread in the renderRoI function or renderRoIInternal function.
+     * The reason we use thread-storage is because the OpenFX API doesn't give all the parameters to the 
+     * ImageEffect suite functions except the desired time. That is the Host has to maintain an internal state to "guess" what are the
+     * expected parameters in order to respond correctly to the function call. This state is maintained throughout the render thread work
+     * for all these actions:
+     * 
+        - getRegionsOfInterest
+        - getFrameRange
+        - render
+        - beginRender
+        - endRender
+        - isIdentity
+     *
+     * The object that will need to know these datas is OfxClipInstance, more precisely in the following functions:
+        - OfxClipInstance::getRegionOfDefinition
+        - OfxClipInstance::getImage
+     * 
+     * We don't provide these datas for the getRegionOfDefinition with these render args because this action can be called way
+     * prior we have all the other parameters. getRegionOfDefinition only needs the current render view and mipMapLevel if it is
+     * called on a render thread or during an analysis. We provide it by setting those 2 parameters directly on a thread-storage 
+     * object local to the clip.
+     *
+     * For getImage, all the ScopedRenderArgs are active (except for analysis). The view and mipMapLevel parameters will be retrieved
+     * on the clip that needs the image. All the other parameters will be retrieved in EffectInstance::getImage on the ScopedRenderArgs.
+     *
+     * During an analysis effect we don't set any ScopedRenderArgs and call some actions recursively if needed.
+     * WARNING: analysis effect's are set the current view and mipmapLevel to 0 in the OfxEffectInstance::knobChanged function
+     * If we were to have analysis that perform on different views we would have to change that.
      **/
     class ScopedRenderArgs
     {
@@ -402,7 +376,6 @@ public:
                          const RectD & rod,
                          SequenceTime time,
                          int view,
-                         unsigned int mipMapLevel,
                          bool sequential,
                          bool userInteraction,
                          bool bypassCache,
@@ -423,7 +396,6 @@ public:
             args._rod = rod;
             args._time = time;
             args._view = view;
-            args._mipMapLevel = mipMapLevel;
             args._isSequentialRender = sequential;
             args._isRenderResponseToUserInteraction = userInteraction;
             args._byPassCache = bypassCache;
@@ -481,7 +453,6 @@ public:
         void setArgs_firstPass(const RectD & rod,
                                SequenceTime time,
                                int view,
-                               unsigned int mipMapLevel,
                                bool sequential,
                                bool userInteraction,
                                bool bypassCache,
@@ -496,7 +467,6 @@ public:
             args._rod = rod;
             args._time = time;
             args._view = view;
-            args._mipMapLevel = mipMapLevel;
             args._isSequentialRender = sequential;
             args._isRenderResponseToUserInteraction = userInteraction;
             args._byPassCache = bypassCache;
@@ -708,7 +678,7 @@ EffectInstance::getImage(int inputNb,
         optionalBounds = *optionalBoundsParam;
     }
     bool isSequentialRender,isRenderUserInteraction,byPassCache;
-    unsigned int mipMapLevel = 0;
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
     RectD rod;
     bool isIdentity;
@@ -777,7 +747,6 @@ EffectInstance::getImage(int inputNb,
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
         byPassCache = _imp->renderArgs.localData()._byPassCache;
-        mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
         inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
         rod = _imp->renderArgs.localData()._rod;
         isIdentity = _imp->renderArgs.localData()._isIdentity;
@@ -1313,7 +1282,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         rod,
                                                         args.time,
                                                         args.view,
-                                                        args.mipMapLevel,
                                                         args.isSequentialRender,
                                                         args.isRenderUserInteraction,
                                                         byPassCache,
@@ -1459,7 +1427,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         rod,
                                                         args.time,
                                                         args.view,
-                                                        args.mipMapLevel,
                                                         args.isSequentialRender,
                                                         args.isRenderUserInteraction,
                                                         byPassCache,
@@ -1798,7 +1765,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         scopedArgs.setArgs_firstPass(rod,
                                      time,
                                      view,
-                                     mipMapLevel,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
                                      byPassCache,
@@ -2147,7 +2113,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     assert( fullScaleMappedImage->getBounds() == fullScaleImage->getBounds() );
     Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,args);
     const SequenceTime time = args._time;
-    int mipMapLevel = args._mipMapLevel;
+    int mipMapLevel = downscaledImage->getMipMapLevel();
     const int view = args._view;
     const bool isSequentialRender = args._isSequentialRender;
     const bool isRenderResponseToUserInteraction = args._isRenderResponseToUserInteraction;
@@ -2993,7 +2959,7 @@ EffectInstance::onKnobValueChanged(KnobI* /*k*/,
 }
 
 int
-EffectInstance::getCurrentFrameRecursive() const
+EffectInstance::getThreadLocalRenderTime() const
 {
     if (_imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
@@ -3003,37 +2969,6 @@ EffectInstance::getCurrentFrameRecursive() const
     }
 
     return getApp()->getTimeLine()->currentFrame();
-}
-
-int
-EffectInstance::getCurrentViewRecursive() const
-{
-    if (_imp->renderArgs.hasLocalData()) {
-        const RenderArgs& args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            return args._view;
-        }
-    }
-    ///If we reach here, that's means this is not during a call to renderRoI
-
-    ///hence this is probably asked but doesn't matter so just return 0
-    return 0;
-}
-
-int
-EffectInstance::getCurrentMipMapLevelRecursive() const
-{
-    if (_imp->renderArgs.hasLocalData()) {
-        const RenderArgs& args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            return args._mipMapLevel;
-        }
-    }
-
-    ///If we reach here, that's means this is not during a call to renderRoI
-
-    ///hence this is probably asked but doesn't matter so just return 0
-    return 0;
 }
 
 boost::shared_ptr<Natron::Image>
@@ -3049,9 +2984,9 @@ EffectInstance::getThreadLocalRenderedImage() const
 }
 
 void
-EffectInstance::updateCurrentFrameRecursive(int time)
+EffectInstance::updateThreadLocalRenderTime(int time)
 {
-    if (_imp->renderArgs.hasLocalData()) {
+    if (QThread::currentThread() != qApp->thread() && _imp->renderArgs.hasLocalData()) {
          RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
             args._time = time;
@@ -3059,35 +2994,6 @@ EffectInstance::updateCurrentFrameRecursive(int time)
     }
 }
 
-void
-EffectInstance::getClipThreadStorageData(U64 hash,
-                                         SequenceTime time,
-                                         int *view,
-                                         unsigned int *mipMapLevel,
-                                         RectD *outputRoD,
-                                         int* firstFrame,
-                                         int* lastFrame)
-{
-    assert(view && mipMapLevel && outputRoD);
-    *view = getCurrentViewRecursive();
-    *mipMapLevel = getCurrentMipMapLevelRecursive();
-
-    RenderScale scale;
-    scale.x = Image::getScaleFromMipMapLevel(*mipMapLevel);
-    scale.y = scale.x;
-    bool isProjectFormat;
-
-    ///we don't care if it fails
-    Natron::Status stat = getRegionOfDefinition_public(hash,time, scale, *view, outputRoD, &isProjectFormat);
-    if ( (stat != StatOK) && (stat != StatReplyDefault) ) {
-        //throw std::runtime_error("can't get region of definition");
-        outputRoD->x1 = outputRoD->y1 = 0;
-        outputRoD->x2 = outputRoD->y2 = 1;
-    }
-    assert(outputRoD->x2 >= outputRoD->x1 && outputRoD->y2 >= outputRoD->y1);
-    
-    getFrameRange_public(hash, firstFrame, lastFrame);
-}
 
 void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
@@ -3110,9 +3016,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////tries to call getImage it can render with good parameters.
         
         
-        int view = getCurrentViewRecursive();
         RECURSIVE_ACTION();
-        knobChanged(k, reason, view, time);
+        knobChanged(k, reason, /*view*/ 0, time);
     }
     
     ///Clear input images pointers that were stored in getImage() for the main-thread.

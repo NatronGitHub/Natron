@@ -217,18 +217,25 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         mipmapLevel = 0;
         view = 0;
     } else {
-        ///We're not during an action,just do regular call
-        if (_nodeInstance->getRecursionLevel() == 0) {
-            view = _nodeInstance->getCurrentViewRecursive();
-        } else {
-            if (!_lastActionData.hasLocalData() || !_lastActionData.localData().isViewValid) {
-                qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
-                view = associatedNode->getCurrentViewRecursive();
+        if (_lastActionData.hasLocalData()) {
+            const ActionLocalData& args = _lastActionData.localData();
+            if (args.isViewValid) {
+                view = args.view;
             } else {
-                view = _lastActionData.localData().view;
+                view = 0;
             }
+            if (args.isMipmapLevelValid) {
+                mipmapLevel = args.mipMapLevel;
+            } else {
+                 qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
+                mipmapLevel = 0;
+            }
+        } else {
+            qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
+            mipmapLevel = 0;
+            view = 0;
         }
-        mipmapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
+        
     }
 
 
@@ -517,23 +524,34 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     }
 
     unsigned int mipMapLevel;
-    if (hasLocalData && !_lastActionData.localData().isViewValid ) {
+    if (hasLocalData) {
+        const ActionLocalData& args = _lastActionData.localData();
+        if (!args.isViewValid) {
 #ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread()) {
-            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-            "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
-        }
+            if (QThread::currentThread() != qApp->thread()) {
+                qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+                "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+                "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+            }
 #endif
-        view = _nodeInstance->getCurrentViewRecursive();
-    } else {
-        if (view == -1) {
-            view = _lastActionData.localData().view;
+            view = 0;
+        } else {
+            if (view == -1) {
+                view = args.view;
+            }
         }
+        
+        if (!args.isMipmapLevelValid) {
+            mipMapLevel = 0;
+        } else {
+            mipMapLevel = args.mipMapLevel;
+        }
+        
+    } else {
+        view = 0;
+        mipMapLevel = 0;
     }
     
-    mipMapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
-
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
 
@@ -570,3 +588,30 @@ OfxClipInstance::discardView()
     _lastActionData.localData().isViewValid = false;
 }
 
+void
+OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
+{
+    if ( _lastActionData.hasLocalData() ) {
+        ActionLocalData & args = _lastActionData.localData();
+#ifdef DEBUG
+        if (QThread::currentThread() != qApp->thread() && args.isMipmapLevelValid) {
+            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
+        }
+#endif
+        args.mipMapLevel = mipMapLevel;
+        args.isMipmapLevelValid =  true;
+        _lastActionData.setLocalData(args);
+    } else {
+        ActionLocalData args;
+        args.mipMapLevel = mipMapLevel;
+        args.isMipmapLevelValid =  true;
+        _lastActionData.setLocalData(args);
+    }
+}
+
+void
+OfxClipInstance::discardMipMapLevel()
+{
+    assert( _lastActionData.hasLocalData() );
+    _lastActionData.localData().isMipmapLevelValid = false;
+}

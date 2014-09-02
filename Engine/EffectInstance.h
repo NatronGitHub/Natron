@@ -757,33 +757,30 @@ public:
 
     /**
      * @brief Returns the current frame this effect is rendering depending
-     * on the state of the renderer. If no writer is actively rendering this
-     * node then the timeline current time is returned, otherwise the writer's
+     * on the state of the renderer. If it is not actively rendering this
+     * node then returns the timeline current time, otherwise the ongoing render
      * current frame is returned. This function uses thread storage to determine
      * exactly what writer is actively calling this function.
+     *
+     * WARNING: This is MUCH MORE expensive than calling getApp()->getTimeLine()->currentFrame()
+     * so use with caution when you know you're on a render thread and during an action.
      **/
-    int getCurrentFrameRecursive() const;
+    int getThreadLocalRenderTime() const;
 
-    /**
-     * @brief Same as getCurrentFrameRecursive() but for the view index
-     **/
-    int getCurrentViewRecursive() const;
-
-    /**
-     * @brief Same as getCurrentFrameRecursive() but for the mipmap level
-     **/
-    int getCurrentMipMapLevelRecursive() const;
 
     /**
      * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,
      * then all the knobs will retrieve the current time as being the one in the last render args thread-storage.
      * This function is here to update the last render args thread storage.
      **/
-    void updateCurrentFrameRecursive(int time);
+    void updateThreadLocalRenderTime(int time);
     
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
      * otherwise it will return NULL.
+     * To be called exclusively on a render thread.
+     *
+     * WARNING: This call isexpensive and this function should not be called many times.
      **/
     boost::shared_ptr<Natron::Image> getThreadLocalRenderedImage() const;
 
@@ -961,13 +958,8 @@ protected:
     {
         return false;
     }
+   
     
-    /**
-     * @brief Retrieves the current time, the view rendered by the attached viewer , the mipmaplevel of the attached
-     * viewer and the rod of the output.
-     **/
-    void getClipThreadStorageData(U64 hash,SequenceTime time, int *view, unsigned int *mipMapLevel, RectD *outputRoD,
-                                  int* firstFrame,int* lastFrame);
     boost::shared_ptr<Node> _node; //< the node holding this effect
 
 private:

@@ -689,14 +689,10 @@ getInputRoD(EffectInstance* effect,
             double time,
             RectD & rod)
 {
-    int view = effect->getCurrentViewRecursive();
-    unsigned int mipmapLevel = (unsigned int)effect->getCurrentMipMapLevelRecursive();
     RenderScale scale;
-
-    scale.x = Image::getScaleFromMipMapLevel(mipmapLevel);
-    scale.y = scale.x;
+    scale.y = scale.x = 1.;
     bool isProjectFormat;
-    Status stat = effect->getRegionOfDefinition_public(effect->getHash(),time, scale, view, &rod, &isProjectFormat);
+    Status stat = effect->getRegionOfDefinition_public(effect->getHash(),time, scale, /*view*/0, &rod, &isProjectFormat);
     if ( (stat == StatFailed) || ( (rod.x1 == 0) && (rod.y1 == 0) && (rod.x2 == 1) && (rod.y2 == 1) ) ) {
         Format f;
         effect->getRenderFormat(&f);

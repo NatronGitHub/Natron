@@ -160,6 +160,10 @@ public:
     ///Set the view stored in the thread-local storage to be invalid
     void discardView();
 
+    void setMipMapLevel(unsigned int mipMapLevel);
+    
+    void discardMipMapLevel();
+    
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -188,9 +192,13 @@ private:
         bool isViewValid;
         int view;
     
+        bool isMipmapLevelValid;
+        unsigned int mipMapLevel;
         ActionLocalData()
             : isViewValid(false)
               , view(0)
+              , isMipmapLevelValid(false)
+              , mipMapLevel(false)
         {
         }
     };

@@ -88,7 +88,9 @@ public:
     ClipsThreadStorageSetter(OfxImageEffectInstance* effect,
                              bool skipDiscarding,     //< this is in case a recursive action is called
                              bool setView,
-                             int view)
+                             int view,
+                             bool setMipmapLevel,
+                             unsigned int mipMapLevel)
         : effect(effect)
           , skipDiscarding(skipDiscarding)
           , viewSet(setView)
@@ -96,6 +98,9 @@ public:
 
         if (setView) {
             effect->setClipsView(view);
+        }
+        if (setMipmapLevel) {
+            effect->setClipsMipMapLevel(mipMapLevelSet);
         }
     }
 
@@ -106,6 +111,9 @@ public:
             if (viewSet) {
                 effect->discardClipsView();
             }
+            if (mipMapLevelSet) {
+                effect->discardClipsMipMapLevel();
+            }
             
         }
     }
@@ -114,6 +122,7 @@ private:
     OfxImageEffectInstance* effect;
     bool skipDiscarding;
     bool viewSet;
+    bool mipMapLevelSet;
 };
 }
 
@@ -330,6 +339,8 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             ClipsThreadStorageSetter clipSetter(effectInstance(),
                                                 false,
                                                 true, //< setView ?
+                                                0,
+                                                true,
                                                 0);
 
 
@@ -732,7 +743,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     assert(_context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
     assert(clip);
-    double time = _effect->getFrameRecursive();
+    double time = getApp()->getTimeLine()->currentFrame();
     RenderScale s;
     s.x = s.y = 1.;
     _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
@@ -877,6 +888,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
 
     assert(_effect);
 
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
 
     // getRegionOfDefinition may be the first action with renderscale called on any effect.
     // it may have to check for render scale support.
@@ -900,7 +912,9 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            true, //< set mipmaplevel?
+                                            mipMapLevel);
 
         stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
@@ -1023,7 +1037,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
     ///before calling getRoIaction set the relevant infos on the clips
 
-
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -1033,7 +1047,9 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            true,
+                                            mipMapLevel);
         OfxRectD roi;
         rectToOfxRectD(renderWindow, &roi);
         stat = _effect->getRegionOfInterestAction( (OfxTime)time, scale,
@@ -1185,6 +1201,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         throw std::logic_error("isIdentity called with render scale != 1, but effect does not support render scale!");
     }
 
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxStatus stat;
 
     {
@@ -1196,7 +1213,9 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            true,
+                                            mipMapLevel);
 
         // In Natron, we only consider isIdentity for whole images
         RectI roi;
@@ -1272,7 +1291,7 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
     }
 
     OfxStatus stat;
-
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -1282,7 +1301,9 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            true,
+                                            mipMapLevel);
 
         stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     }
@@ -1310,7 +1331,7 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
     }
 
     OfxStatus stat;
-
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -1320,7 +1341,9 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            true,
+                                            mipMapLevel);
 
         stat = effectInstance()->endRenderAction(first, last, step, interactive,scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     }
@@ -1349,7 +1372,7 @@ OfxEffectInstance::render(SequenceTime time,
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
     }
-
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
@@ -1394,7 +1417,9 @@ OfxEffectInstance::render(SequenceTime time,
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            true,//< set mipmaplevel ?
+                                            mipMapLevel);
 
         stat = _effect->renderAction( (OfxTime)time,
                                       field,
@@ -1474,10 +1499,11 @@ OfxEffectInstance::drawOverlay(double /*scaleX*/,
         OfxPointD rs;
         rs.x = 1.; //scaleX;
         rs.y = 1.; //scaleY;
-        OfxTime time = _effect->getFrameRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
 
-        if (getRecursionLevel() == 1) {
-            int view = getCurrentViewRecursive();
+       /* if (getRecursionLevel() == 1) {
+            
+            
             bool skipDiscarding = false;
             if (getRecursionLevel() > 1) {
                 ///This happens sometimes because of dialogs popping from the request of a plug-in (inside an action)
@@ -1487,13 +1513,18 @@ OfxEffectInstance::drawOverlay(double /*scaleX*/,
             }
             ClipsThreadStorageSetter clipSetter(effectInstance(),
                                                 skipDiscarding,
-                                                true, //< setView ?
-                                                view);
-
+                                                false, //< setView ?
+                                                0,
+                                                false,
+                                                0);
+             
             _overlayInteract->drawAction(time, rs);
-        } else {
-            _overlayInteract->drawAction(time, rs);
-        }
+        } else {*/
+        
+        
+        _overlayInteract->drawAction(time, rs);
+        
+        /*}*/
     }
 }
 
@@ -1525,12 +1556,15 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
 
-        OfxTime time = getCurrentFrameRecursive();
-        int view = getCurrentViewRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
+        /*
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             false,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            false,
+                                            0);
+         */
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
 
 
@@ -1563,18 +1597,21 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        OfxTime time = getCurrentFrameRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
+        /*
         if (getRecursionLevel() == 1) {
-            int view = getCurrentViewRecursive();
             ClipsThreadStorageSetter clipSetter(effectInstance(),
                                                 false,
                                                 true, //< setView ?
-                                                view);
+                                                view,
+                                                false,
+                                                0);
             stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
-        } else {
-            stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
-        }
+        } else {*/
+        
+        stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
+        /*}*/
 
         if (stat == kOfxStatOK) {
             return true;
@@ -1603,12 +1640,16 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        OfxTime time = getCurrentFrameRecursive();
-        int view = getCurrentViewRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
+        
+        /*
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             false,
                                             true,
-                                            view);
+                                            view,
+                                            false,
+                                            0);
+         */
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
 
         if (stat == kOfxStatOK) {
@@ -1634,13 +1675,16 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
         OfxPointD rs;
         rs.x = 1.; //scaleX;
         rs.y = 1.; //scaleY;
-        OfxTime time = getCurrentFrameRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
-        int view = getCurrentViewRecursive();
+/*
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             false,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            false,
+                                            0);
+ */
         OfxStatus stat = _overlayInteract->keyDownAction( time, rs, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
@@ -1664,13 +1708,17 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
         OfxPointD rs;
         rs.x = 1.; //scaleX;
         rs.y = 1.; //scaleY;
-        OfxTime time = getCurrentFrameRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
-        int view = getCurrentViewRecursive();
+
+        /*
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             false,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            false,
+                                            0);
+         */
         OfxStatus stat = _overlayInteract->keyUpAction( time, rs, (int)key, keyStr.data() );
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -1696,13 +1744,16 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
         OfxPointD rs;
         rs.x = 1.; //scaleX;
         rs.y = 1.; //scaleY;
-        OfxTime time = getCurrentFrameRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
-        int view = getCurrentViewRecursive();
+/*
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             false,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            false,
+                                            0);
+ */
         OfxStatus stat = _overlayInteract->keyRepeatAction( time, rs, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
@@ -1724,19 +1775,20 @@ OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
         OfxPointD rs;
         rs.x = 1.; //scaleX;
         rs.y = 1.; //scaleY;
-        OfxTime time = getCurrentFrameRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
-
+/*
         if (getRecursionLevel() == 1) {
-            int view = getCurrentViewRecursive();
             ClipsThreadStorageSetter clipSetter(effectInstance(),
                                                 false,
                                                 true, //< setView ?
-                                                view);
+                                                view,
+                                                false,
+                                                0);
             stat = _overlayInteract->gainFocusAction(time, rs);
-        } else {
+        } else {*/
             stat = _overlayInteract->gainFocusAction(time, rs);
-        }
+        /*}*/
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -1757,20 +1809,22 @@ OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,
         OfxPointD rs;
         rs.x = 1.; //scaleX;
         rs.y = 1.; //scaleY;
-        OfxTime time = getCurrentFrameRecursive();
+        OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
-        if (getRecursionLevel() == 1) {
-            int view = getCurrentViewRecursive();
+        
+        /*if (getRecursionLevel() == 1) {
             ClipsThreadStorageSetter clipSetter(effectInstance(),
                                                 false,
                                                 true, //< setView ?
-                                                view);
+                                                view,
+                                                false,
+                                                0);
 
 
             stat = _overlayInteract->loseFocusAction(time, rs);
-        } else {
+        } else {*/
             stat = _overlayInteract->loseFocusAction(time, rs);
-        }
+        /*}*/
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
@@ -1833,14 +1887,16 @@ OfxEffectInstance::knobChanged(KnobI* k,
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     OfxPointD renderScale;
-    _effect->getRenderScaleRecursive(renderScale.x, renderScale.y);
+    renderScale.x = renderScale.y = 1;
     OfxStatus stat = kOfxStatOK;
-
+    
     if (getRecursionLevel() == 1) {
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             false,
                                             true, //< setView ?
-                                            view);
+                                            view,
+                                            false, //< setmipmaplevel?
+                                            0);
         
         stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
     } else {

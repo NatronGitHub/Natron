@@ -2316,7 +2316,7 @@ OfxStatus
 OfxStringInstance::get(std::string &str)
 {
     assert( _node->effectInstance() );
-    int currentFrame = _node->getCurrentFrameRecursive();
+    int currentFrame = _node->getApp()->getTimeLine()->currentFrame();
     if (_fileKnob) {
         str = _fileKnob->getFileName(currentFrame,/*view*/ 0);
     } else if (_outputFileKnob) {
@@ -2998,7 +2998,7 @@ OfxParametricInstance::onCustomBackgroundDrawingRequested()
     if (_overlayInteract) {
         RenderScale s;
         _overlayInteract->getPixelScale(s.x, s.y);
-        _overlayInteract->drawAction(_effect->effectInstance()->getFrameRecursive(), s);
+        _overlayInteract->drawAction(_effect->getApp()->getTimeLine()->currentFrame(), s);
     }
 }
 
