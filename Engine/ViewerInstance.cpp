@@ -382,7 +382,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     ///
     ///Note that we can't yet use the texture cache because we would need the TextureRect identifyin
     ///the texture in order to retrieve from the cache, but to make the TextureRect we need the RoD!
-    boost::shared_ptr<const ImageParams> cachedImgParams;
+    boost::shared_ptr<ImageParams> cachedImgParams;
     boost::shared_ptr<Image> inputImage;
     RenderScale scale;
     int mipMapLevel;
@@ -662,7 +662,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///zillions of textures in the cache, each a few pixels different.
         assert(_imp->uiContext);
         if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
-            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams;
+            boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
             isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
             assert(!isCached || cachedFrameParams);
 
@@ -734,7 +734,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             ramBuffer = (unsigned char*)_imp->buffer;
             usingRAMBuffer = true;
         } else {
-            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams =
+            boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
                 FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);
             bool textureIsCached = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
             if (!params->cachedFrame) {

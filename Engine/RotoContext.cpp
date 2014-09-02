@@ -4834,7 +4834,7 @@ RotoContext::renderMask(const RectI & roi,
     }
 
 
-    boost::shared_ptr<const Natron::ImageParams> params;
+    boost::shared_ptr<Natron::ImageParams> params;
     boost::shared_ptr<Natron::Image> image;
     bool cached = Natron::getImageFromCache(key, &params, &image);
 

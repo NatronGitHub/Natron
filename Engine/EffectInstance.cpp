@@ -1118,7 +1118,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         *hashUsed = nodeHash;
     }
 
-    boost::shared_ptr<const ImageParams> cachedImgParams;
+    boost::shared_ptr<ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
     RectD rod; //!< rod is in canonical coordinates
     bool isProjectFormat = false;
@@ -1571,7 +1571,7 @@ EffectInstance::renderRoI(SequenceTime time,
                           int view,
                           const RectI & renderWindow,
                           const RectD & rod, //!< effect rod in canonical coords
-                          const boost::shared_ptr<const ImageParams> & cachedImgParams,
+                          const boost::shared_ptr<ImageParams> & cachedImgParams,
                           const boost::shared_ptr<Image> & image,
                           const boost::shared_ptr<Image> & downscaledImage,
                           bool isSequentialRender,
@@ -1612,7 +1612,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   int view,
                                   const RectI & renderWindow, //!< seems to be in downscaledImage's pixel coordinates ??
                                   const RectD & rod, //!< effect rod in canonical coords
-                                  const boost::shared_ptr<const ImageParams> & cachedImgParams,
+                                  const boost::shared_ptr<ImageParams> & cachedImgParams,
                                   const boost::shared_ptr<Image> & image,
                                   const boost::shared_ptr<Image> & downscaledImage,
                                   bool isSequentialRender,

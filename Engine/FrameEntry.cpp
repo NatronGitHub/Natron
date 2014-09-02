@@ -109,12 +109,12 @@ FrameEntry::makeKey(SequenceTime time,
     return FrameKey(time,treeVersion,gain,lut,bitDepth,channels,view,textureRect,scale,inputName);
 }
 
-boost::shared_ptr<const FrameParams>
+boost::shared_ptr<FrameParams>
 FrameEntry::makeParams(const RectI & rod,
                        int bitDepth,
                        int texW,
                        int texH)
 {
-    return boost::shared_ptr<const FrameParams>( new FrameParams(rod, bitDepth, texW, texH) );
+    return boost::shared_ptr<FrameParams>( new FrameParams(rod, bitDepth, texW, texH) );
 }
 

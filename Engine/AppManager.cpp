@@ -987,7 +987,7 @@ AppManager::getImage(const Natron::ImageKey & key,
     Log::beginFunction("AppManager","getImage");
     bool ret = _imp->_nodeCache->get(key,&paramsBase,returnValue);
     if (ret) {
-        *params = boost::dynamic_pointer_cast<const Natron::ImageParams>(paramsBase);
+        *params = boost::dynamic_pointer_cast<Natron::ImageParams>(paramsBase);
         Log::print("Image found in cache!");
     } else {
         Log::print("Image not found in cache!");
@@ -998,7 +998,7 @@ AppManager::getImage(const Natron::ImageKey & key,
 #else
     bool ret = _imp->_nodeCache->get(key,&paramsBase, returnValue);
     if (ret) {
-        *params = boost::dynamic_pointer_cast<const Natron::ImageParams>(paramsBase);
+        *params = boost::dynamic_pointer_cast<Natron::ImageParams>(paramsBase);
     }
 
     return ret;
@@ -1038,7 +1038,7 @@ AppManager::getTexture(const Natron::FrameKey & key,
     Log::beginFunction("AppManager","getTexture");
     bool ret = _imp->_viewerCache->get(key,paramsBase, returnValue);
     if (ret) {
-        *params = boost::dynamic_pointer_cast<const Natron::FrameParams>(paramsBase);
+        *params = boost::dynamic_pointer_cast<Natron::FrameParams>(paramsBase);
         Log::print("Texture found in cache!");
     } else {
         Log::print("Texture not found in cache!");

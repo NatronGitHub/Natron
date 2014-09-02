@@ -379,7 +379,7 @@ public:
                    int view,
                    const RectI & renderWindow,
                    const RectD & rod, //!< effect rod in canonical coords
-                   const boost::shared_ptr<const ImageParams> & cachedImgParams,
+                   const boost::shared_ptr<ImageParams> & cachedImgParams,
                    const boost::shared_ptr<Image> & image,
                    const boost::shared_ptr<Image> & downscaledImage,
                    bool isSequentialRender,
@@ -1012,7 +1012,7 @@ private:
                                       int view,
                                       const RectI & renderWindow, //< renderWindow in pixel coordinates
                                       const RectD & rod, //!< rod in canonical coordinates
-                                      const boost::shared_ptr<const ImageParams> & cachedImgParams,
+                                      const boost::shared_ptr<ImageParams> & cachedImgParams,
                                       const boost::shared_ptr<Image> & image,
                                       const boost::shared_ptr<Image> & downscaledImage,
                                       bool isSequentialRender,

@@ -325,7 +325,7 @@ Image::Image(const ImageKey & key,
              const Natron::CacheAPI* cache)
     : CacheEntryHelper<unsigned char, ImageKey>(key, params, cache)
 {
-    const ImageParams* p = dynamic_cast<const ImageParams*>( params.get() );
+     ImageParams* p = dynamic_cast<ImageParams*>( params.get() );
 
     _components = p->getComponents();
     _bitDepth = p->getBitDepth();
@@ -356,7 +356,7 @@ Image::Image(ImageComponents components,
                                                                           std::map<int,std::vector<RangeD> >() ) ),
                   NULL);
 
-    const ImageParams* p = dynamic_cast<const ImageParams*>( _params.get() );
+    ImageParams* p = dynamic_cast<ImageParams*>( _params.get() );
     _components = components;
     _bitDepth = bitdepth;
     _bitmap.initialize( p->getBounds() );

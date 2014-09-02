@@ -136,7 +136,7 @@ public:
                             const TextureRect & textureRect,
                             const RenderScale & scale,
                             const std::string & inputName) WARN_UNUSED_RETURN;
-    static boost::shared_ptr<const FrameParams> makeParams(const RectI & rod,
+    static boost::shared_ptr<FrameParams> makeParams(const RectI & rod,
                                                            int bitDepth,
                                                            int texW,
                                                            int texH) WARN_UNUSED_RETURN;

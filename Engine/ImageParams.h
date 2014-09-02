@@ -153,7 +153,7 @@ private:
 
     virtual bool isEqualToVirtual(const NonKeyParams & other) const OVERRIDE FINAL
     {
-        const ImageParams & imgParams = static_cast<const ImageParams &>(other);
+        const ImageParams & imgParams = dynamic_cast<const ImageParams &>(other);
 
         if ( imgParams._framesNeeded.size() != _framesNeeded.size() ) {
             return false;
