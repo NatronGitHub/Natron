@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include "Global/Macros.h"
 #include <boost/scoped_ptr.hpp>

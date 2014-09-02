@@ -11,6 +11,7 @@
 
 #include "CurveEditorUndoRedo.h"
 
+#include <cmath>
 #include <QDebug>
 
 #include "Global/GlobalDefines.h"
