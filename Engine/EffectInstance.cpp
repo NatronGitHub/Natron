@@ -1904,7 +1904,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         }
 
 #     ifdef DEBUG
-        double scale = Image::getScaleFromMipMapLevel(mipMapLevel);
+        RenderScale scale;
+        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+        scale.y = scale.x;
         // check the dimensions of all input and output images
         for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImages.begin();
              it != inputImages.end();
