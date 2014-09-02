@@ -94,6 +94,7 @@ public:
         : effect(effect)
           , skipDiscarding(skipDiscarding)
           , viewSet(setView)
+          , mipMapLevelSet(mipMapLevelSet)
     {
 
         if (setView) {
