@@ -778,6 +778,7 @@ public:
     void toPixelEnclosing(const RenderScale & scale,
                           RectI *rect) const
     {
+#pragma message WARN("Take PAR into account")
         rect->x1 = std::floor(x1 * scale.x);
         rect->y1 = std::floor(y1 * scale.y);
         rect->x2 = std::ceil(x2 * scale.x);

@@ -765,11 +765,13 @@ Knob<T>::onTimeChanged(SequenceTime time)
 {
     //setValue's calls compression is taken care of above.
     int dims = getDimension();
-
+    if (getIsSecret()) {
+        return;
+    }
     blockEvaluation();
     for (int i = 0; i < dims; ++i) {
         boost::shared_ptr<Curve> c = getCurve(i);
-        if ( (c->getKeyFramesCount() > 0) && !getIsSecret() ) {
+        if ( (c->getKeyFramesCount() > 0) ) {
             T v = getValueAtTime(time,i);
             (void)setValue(v,i,Natron::TIME_CHANGED,NULL);
         }

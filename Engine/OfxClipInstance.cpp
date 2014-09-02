@@ -224,9 +224,9 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         view = 0;
     } else {
         ///We're not during an action,just do regular call
-        if (associatedNode->getRecursionLevel() == 0) {
-            mipmapLevel = associatedNode->getCurrentMipMapLevelRecursive();
-            view = associatedNode->getCurrentViewRecursive();
+        if (_nodeInstance->getRecursionLevel() == 0) {
+            mipmapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
+            view = _nodeInstance->getCurrentViewRecursive();
         } else {
             if (!_lastRenderArgs.hasLocalData() || !_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
                 qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
@@ -296,7 +296,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
                     qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
                 }
                 RenderScale scale;
-                scale.x = scale.y = 1.;
+                scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
                 Natron::Status st = associatedNode->getRegionOfDefinition_public(time, scale, view, &rod, &isProjectFormat);
                 if (st == StatFailed) {
                     ret.x1 = 0.;
