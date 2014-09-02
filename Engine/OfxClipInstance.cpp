@@ -114,18 +114,12 @@ OfxClipInstance::getFrameRange(double &startFrame,
     assert(_nodeInstance);
     EffectInstance* n = getAssociatedNode();
     if (n) {
-        if (_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().frameRangeValid) {
-            startFrame = _lastRenderArgs.localData().firstFrame;
-            endFrame = _lastRenderArgs.localData().lastFrame;
-        } else {
-            if ( (n == _nodeInstance) && _nodeInstance->isCreated() ) {
-                qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getFrameRange. Please investigate this bug.";
-            }
-            SequenceTime first,last;
-            n->getFrameRange_public(&first, &last);
-            startFrame = first;
-            endFrame = last;
-        }
+        SequenceTime first,last;
+        U64 hash = n->getRenderHash();
+        n->getFrameRange_public(hash,&first, &last);
+        startFrame = first;
+        endFrame = last;
+        
     } else {
         assert(_nodeInstance);
         assert( _nodeInstance->getApp() );
@@ -225,18 +219,16 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     } else {
         ///We're not during an action,just do regular call
         if (_nodeInstance->getRecursionLevel() == 0) {
-            mipmapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
             view = _nodeInstance->getCurrentViewRecursive();
         } else {
-            if (!_lastRenderArgs.hasLocalData() || !_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
+            if (!_lastActionData.hasLocalData() || !_lastActionData.localData().isViewValid) {
                 qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
                 view = associatedNode->getCurrentViewRecursive();
-                mipmapLevel = associatedNode->getCurrentMipMapLevelRecursive();
             } else {
-                mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
-                view = _lastRenderArgs.localData().view;
+                view = _lastActionData.localData().view;
             }
         }
+        mipmapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
     }
 
 
@@ -257,66 +249,23 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (associatedNode) {
         bool isProjectFormat;
 
-
-        ///First thing: we try to find in the cache an image with the following key
-        ///so that retrieving the RoD is cheap. If we can't do this then there are
-        ///several cases:
-        ///1) The clip is output, the caller should have set the rod in the clip thread storage
-        /// If not we will call getRoD on the output clip, but this will trigger a recursive action
-        ///2) The clip is input we call getRoD on the source clip.
-        U64 nodeHash;
-        bool foundRenderHash = associatedNode->getRenderHash(&nodeHash);
-        if (!foundRenderHash) {
-            nodeHash = associatedNode->getHash();
-        }
-
-        boost::shared_ptr<const ImageParams> cachedImgParams;
-        boost::shared_ptr<Image> image;
-        Natron::ImageKey key = Natron::Image::makeKey(nodeHash, time,mipmapLevel,view);
-        bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
-        Format f;
-        associatedNode->getRenderFormat(&f);
-
-        ///If the RoD is cached accept it always if it doesn't depend on the project format.
-        ///Otherwise cehck that it is really the current project format.
-        ///Also don't use cached RoDs for identity effects as they contain garbage here (because identity effects allocates
-        ///images with 0 bytes of data (rod null))
-        if ( isCached && ( !cachedImgParams->isRodProjectFormat()
-                           || ( cachedImgParams->isRodProjectFormat() && ( cachedImgParams->getRoD() == static_cast<RectD &>(f) ) ) ) &&
-             ( cachedImgParams->getInputNbIdentity() == -1) ) {
-            rod = cachedImgParams->getRoD();
+        U64 nodeHash = associatedNode->getRenderHash();
+        
+        RenderScale scale;
+        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
+        Natron::Status st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
+        if (st == StatFailed) {
+            ret.x1 = 0.;
+            ret.x2 = 0.;
+            ret.y1 = 0.;
+            ret.y2 = 0.;
+        } else {
             ret.x1 = rod.left();
             ret.x2 = rod.right();
             ret.y1 = rod.bottom();
             ret.y2 = rod.top();
-        } else {
-            bool outputRoDStorageSet = _lastRenderArgs.localData().rodValid;
-            if ( (associatedNode != _nodeInstance) || ( !outputRoDStorageSet && (associatedNode == _nodeInstance) ) ) {
-                if ( (associatedNode == _nodeInstance) && !outputRoDStorageSet ) {
-                    qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
-                }
-                RenderScale scale;
-                scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
-                Natron::Status st = associatedNode->getRegionOfDefinition_public(time, scale, view, &rod, &isProjectFormat);
-                if (st == StatFailed) {
-                    ret.x1 = 0.;
-                    ret.x2 = 0.;
-                    ret.y1 = 0.;
-                    ret.y2 = 0.;
-                } else {
-                    ret.x1 = rod.left();
-                    ret.x2 = rod.right();
-                    ret.y1 = rod.bottom();
-                    ret.y2 = rod.top();
-                }
-            } else {
-                rod = _lastRenderArgs.localData().rod;
-                ret.x1 = rod.left();
-                ret.x2 = rod.right();
-                ret.y1 = rod.bottom();
-                ret.y2 = rod.top();
-            }
         }
+        
     } else {
         ret.x1 = 0.;
         ret.x2 = 0.;
@@ -542,29 +491,24 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
                                       const OfxRectD *optionalBounds)
 {
     OfxPointD scale;
-
+    
     scale.x = scale.y = 1.;
-    if ( !_lastRenderArgs.hasLocalData() ) {
-        qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+    
+    bool hasLocalData = true;
+    if ( !_lastActionData.hasLocalData() ) {
+        hasLocalData = false;
+#ifdef DEBUG
+        if (QThread::currentThread() != qApp->thread()) {
+            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
             "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
             "fix it.";
-    }
-    assert( _lastRenderArgs.hasLocalData() );
-    if ( isOutput() ) {
-        boost::shared_ptr<Natron::Image> outputImage;
-        if (!_lastRenderArgs.localData().isImageValid) {
-            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-                "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-                "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
-            ///try to recover from the mistake of the plug-in.
-            unsigned int mipmapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
-            if (view == -1) {
-                view = _nodeInstance->getCurrentViewRecursive();
-            }
-            outputImage = _nodeInstance->getNode()->getImageBeingRendered(time,mipmapLevel, view);
-        } else {
-            outputImage = _lastRenderArgs.localData().image;
+#endif
+            
         }
+    }
+    assert( _lastActionData.hasLocalData() );
+    if ( isOutput() ) {
+        boost::shared_ptr<Natron::Image> outputImage = _nodeInstance->getThreadLocalRenderedImage();
         if (!outputImage) {
             return NULL;
         }
@@ -573,29 +517,23 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     }
 
     unsigned int mipMapLevel;
-    if (!_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
-        qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+    if (hasLocalData && !_lastActionData.localData().isViewValid ) {
+#ifdef DEBUG
+        if (QThread::currentThread() != qApp->thread()) {
+            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
             "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
             "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
-        std::list<ViewerInstance*> viewersConnected;
-        _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
-        if ( viewersConnected.empty() ) {
-            if (view == -1) {
-                view = 0;
-            }
-            mipMapLevel = 0;
-        } else {
-            if (view == -1) {
-                view = viewersConnected.front()->getCurrentView();
-            }
-            mipMapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
         }
+#endif
+        view = _nodeInstance->getCurrentViewRecursive();
     } else {
         if (view == -1) {
-            view = _lastRenderArgs.localData().view;
+            view = _lastActionData.localData().view;
         }
-        mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
     }
+    
+    mipMapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
+
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
 
@@ -605,136 +543,30 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
 void
 OfxClipInstance::setRenderedView(int view)
 {
-    if ( _lastRenderArgs.hasLocalData() ) {
-        LastRenderArgs & args = _lastRenderArgs.localData();
-        if (args.isViewValid) {
+    if ( _lastActionData.hasLocalData() ) {
+        ActionLocalData & args = _lastActionData.localData();
+#ifdef DEBUG
+        if (QThread::currentThread() != qApp->thread() && args.isViewValid) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
+#endif
         args.view = view;
         args.isViewValid =  true;
-        _lastRenderArgs.setLocalData(args);
+        _lastActionData.setLocalData(args);
     } else {
-        LastRenderArgs args;
+        ActionLocalData args;
         args.view = view;
         args.isViewValid =  true;
-        _lastRenderArgs.setLocalData(args);
+        _lastActionData.setLocalData(args);
     }
 }
 
-void
-OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
-{
-    if ( _lastRenderArgs.hasLocalData() ) {
-        LastRenderArgs & args = _lastRenderArgs.localData();
-        if (args.isMipMapLevelValid) {
-            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
-        }
-        args.mipMapLevel = mipMapLevel;
-        args.isMipMapLevelValid = true;
-        _lastRenderArgs.setLocalData(args);
-    } else {
-        LastRenderArgs args;
-        args.mipMapLevel = mipMapLevel;
-        args.isMipMapLevelValid = true;
-        _lastRenderArgs.setLocalData(args);
-    }
-}
 
 ///Set the view stored in the thread-local storage to be invalid
 void
 OfxClipInstance::discardView()
 {
-    assert( _lastRenderArgs.hasLocalData() );
-    _lastRenderArgs.localData().isViewValid = false;
-}
-
-///Set the mipmap level stored in the thread-local storage to be invalid
-void
-OfxClipInstance::discardMipMapLevel()
-{
-    assert( _lastRenderArgs.hasLocalData() );
-    _lastRenderArgs.localData().isMipMapLevelValid = false;
-}
-
-void
-OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image> & image)
-{
-    if ( _lastRenderArgs.hasLocalData() ) {
-        LastRenderArgs &args = _lastRenderArgs.localData();
-        if (args.isImageValid) {
-            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
-        }
-        args.image = image;
-        args.isImageValid = true;
-        _lastRenderArgs.setLocalData(args);
-    } else {
-        LastRenderArgs args;
-        args.image = image;
-        args.isImageValid = true;
-        _lastRenderArgs.setLocalData(args);
-    }
-}
-
-void
-OfxClipInstance::discardRenderedImage()
-{
-    assert( _lastRenderArgs.hasLocalData() );
-    _lastRenderArgs.localData().isImageValid = false;
-    _lastRenderArgs.localData().image.reset();
-}
-
-void
-OfxClipInstance::setOutputRoD(const RectD & rod) //!< effect rod in canonical coordinates
-{
-    if ( _lastRenderArgs.hasLocalData() ) {
-        LastRenderArgs &args = _lastRenderArgs.localData();
-        if (args.rodValid) {
-            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
-        }
-        args.rod = rod;
-        args.rodValid = true;
-        _lastRenderArgs.setLocalData(args);
-    } else {
-        LastRenderArgs args;
-        args.rod = rod;
-        args.rodValid = true;
-        _lastRenderArgs.setLocalData(args);
-    }
-}
-
-void
-OfxClipInstance::discardOutputRoD()
-{
-    assert( _lastRenderArgs.hasLocalData() );
-    _lastRenderArgs.localData().rodValid = false;
-}
-
-void
-OfxClipInstance::setFrameRange(double first,
-                               double last)
-{
-    if ( _lastRenderArgs.hasLocalData() ) {
-        LastRenderArgs &args = _lastRenderArgs.localData();
-        if (args.frameRangeValid) {
-            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
-        }
-        args.firstFrame = first;
-        args.lastFrame = last;
-        args.frameRangeValid = true;
-        _lastRenderArgs.setLocalData(args);
-    } else {
-        LastRenderArgs args;
-        args.firstFrame = first;
-        args.lastFrame = last;
-        args.frameRangeValid = true;
-        _lastRenderArgs.setLocalData(args);
-    }
-}
-
-void
-OfxClipInstance::discardFrameRange()
-{
-    assert( _lastRenderArgs.hasLocalData() );
-    _lastRenderArgs.localData().frameRangeValid = false;
+    assert( _lastActionData.hasLocalData() );
+    _lastActionData.localData().isViewValid = false;
 }
 

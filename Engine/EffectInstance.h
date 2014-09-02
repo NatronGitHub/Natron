@@ -131,7 +131,7 @@ public:
      * at any time during the same render call.
      * @returns This function returns true if case of success, false otherwise.
      **/
-    bool getRenderHash(U64* hash) const WARN_UNUSED_RETURN;
+    U64 getRenderHash() const WARN_UNUSED_RETURN;
 
     U64 getKnobsAge() const WARN_UNUSED_RETURN;
 
@@ -454,7 +454,8 @@ protected:
 
 public:
 
-    bool isIdentity_public(SequenceTime time,
+    bool isIdentity_public(U64 hash,
+                           SequenceTime time,
                            const RenderScale & scale,
                            const RectD & rod, //!< image rod in canonical coordinates
                            int view,SequenceTime* inputTime,
@@ -520,15 +521,15 @@ protected:
      * In case of failure the plugin should return StatFailed.
      * @returns StatOK, StatReplyDefault, or StatFailed. rod is set except if return value is StatOK or StatReplyDefault.
      **/
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
-    virtual void calcDefaultRegionOfDefinition(SequenceTime time, const RenderScale & scale, RectD *rod) const;
+    virtual Natron::Status getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
+    virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, RectD *rod) const;
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
      * project format.
      * @returns true if the rod is set to the project format.
      **/
-    bool ifInfiniteApplyHeuristic(SequenceTime time, const RenderScale & scale, int view, RectD* rod) const;
+    bool ifInfiniteApplyHeuristic(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) const;
 
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest
@@ -559,7 +560,8 @@ protected:
 
 public:
 
-    Natron::Status getRegionOfDefinition_public(SequenceTime time,
+    Natron::Status getRegionOfDefinition_public(U64 hash,
+                                                SequenceTime time,
                                                 const RenderScale & scale,
                                                 int view,
                                                 RectD* rod,
@@ -573,7 +575,7 @@ public:
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 
-    void getFrameRange_public(SequenceTime *first,SequenceTime *last);
+    void getFrameRange_public(U64 hash,SequenceTime *first,SequenceTime *last);
 
     /**
      * @brief Override to initialize the overlay interact. It is called only on the
@@ -778,7 +780,19 @@ public:
      * This function is here to update the last render args thread storage.
      **/
     void updateCurrentFrameRecursive(int time);
+    
+    /**
+     * @brief If the caller thread is currently rendering an image, it will return a pointer to it
+     * otherwise it will return NULL.
+     **/
+    boost::shared_ptr<Natron::Image> getThreadLocalRenderedImage() const;
 
+    /**
+     * @brief Called when the associated node's hash has changed.
+     * This is always called on the main-thread.
+     **/
+    void onNodeHashChanged(U64 hash);
+    
 protected:
 
 
@@ -789,7 +803,6 @@ protected:
      **/
     virtual void knobChanged(KnobI* /*k*/,
                              Natron::ValueChangedReason /*reason*/,
-                             const RectD & /*rod*/,
                              int /*view*/,
                              SequenceTime /*time*/)
     {
@@ -885,16 +898,14 @@ protected:
     }
 
     virtual void drawOverlay(double /*scaleX*/,
-                             double /*scaleY*/,
-                             const RectD & /*outputRoD*/)
+                             double /*scaleY*/)
     {
     }
 
     virtual bool onOverlayPenDown(double /*scaleX*/,
                                   double /*scaleY*/,
                                   const QPointF & /*viewportPos*/,
-                                  const QPointF & /*pos*/,
-                                  const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                  const QPointF & /*pos*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -902,8 +913,7 @@ protected:
     virtual bool onOverlayPenMotion(double /*scaleX*/,
                                     double /*scaleY*/,
                                     const QPointF & /*viewportPos*/,
-                                    const QPointF & /*pos*/,
-                                    const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                    const QPointF & /*pos*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -911,8 +921,7 @@ protected:
     virtual bool onOverlayPenUp(double /*scaleX*/,
                                 double /*scaleY*/,
                                 const QPointF & /*viewportPos*/,
-                                const QPointF & /*pos*/,
-                                const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                const QPointF & /*pos*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -920,8 +929,7 @@ protected:
     virtual bool onOverlayKeyDown(double /*scaleX*/,
                                   double /*scaleY*/,
                                   Natron::Key /*key*/,
-                                  Natron::KeyboardModifiers /*modifiers*/,
-                                  const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                  Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -929,8 +937,7 @@ protected:
     virtual bool onOverlayKeyUp(double /*scaleX*/,
                                 double /*scaleY*/,
                                 Natron::Key /*key*/,
-                                Natron::KeyboardModifiers /*modifiers*/,
-                                const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -938,31 +945,29 @@ protected:
     virtual bool onOverlayKeyRepeat(double /*scaleX*/,
                                     double /*scaleY*/,
                                     Natron::Key /*key*/,
-                                    Natron::KeyboardModifiers /*modifiers*/,
-                                    const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                    Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayFocusGained(double /*scaleX*/,
-                                      double /*scaleY*/,
-                                      const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                      double /*scaleY*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayFocusLost(double /*scaleX*/,
-                                    double /*scaleY*/,
-                                    const RectD & /*outputRoD*/) WARN_UNUSED_RETURN
+                                    double /*scaleY*/) WARN_UNUSED_RETURN
     {
         return false;
     }
-
+    
     /**
      * @brief Retrieves the current time, the view rendered by the attached viewer , the mipmaplevel of the attached
      * viewer and the rod of the output.
      **/
-    void getClipThreadStorageData(SequenceTime time, int *view, unsigned int *mipMapLevel, RectD *outputRoD);
+    void getClipThreadStorageData(U64 hash,SequenceTime time, int *view, unsigned int *mipMapLevel, RectD *outputRoD,
+                                  int* firstFrame,int* lastFrame);
     boost::shared_ptr<Node> _node; //< the node holding this effect
 
 private:

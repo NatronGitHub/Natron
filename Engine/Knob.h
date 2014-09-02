@@ -1260,6 +1260,7 @@ protected:
      **/
     void decrementRecursionLevel();
 
+        
     /**
      * @brief A small class to help managing the recursion level
      * that can also that an action is not recursive.

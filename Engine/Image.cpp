@@ -321,7 +321,7 @@ Natron::Bitmap::getBitmapAt(int x,
 }
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<const NonKeyParams> & params,
+             const boost::shared_ptr<NonKeyParams> & params,
              const Natron::CacheAPI* cache)
     : CacheEntryHelper<unsigned char, ImageKey>(key, params, cache)
 {
@@ -345,7 +345,7 @@ Image::Image(ImageComponents components,
     : CacheEntryHelper<unsigned char,ImageKey>()
 {
     setCacheEntry(makeKey(0,0,mipMapLevel,0),
-                  boost::shared_ptr<const NonKeyParams>( new ImageParams( 0,
+                  boost::shared_ptr<NonKeyParams>( new ImageParams( 0,
                                                                           regionOfDefinition,
                                                                           bounds,
                                                                           bitdepth,

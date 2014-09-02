@@ -148,10 +148,10 @@ public:
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const WARN_UNUSED_RETURN;
     virtual bool isInputRotoBrush(int inputNb) const WARN_UNUSED_RETURN;
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual void calcDefaultRegionOfDefinition(SequenceTime time, const RenderScale & scale, RectD *rod) const OVERRIDE;
+    virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, RectD *rod) const OVERRIDE;
     virtual Natron::EffectInstance::RoIMap getRegionsOfInterest(SequenceTime time,
                                                                 const RenderScale & scale,
                                                                 const RectD & outputRoD, //!< full RoD in canonical coordinates
@@ -161,21 +161,20 @@ public:
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
-    virtual void drawOverlay(double scaleX, double scaleY, const RectD & rod) OVERRIDE FINAL;
-    virtual bool onOverlayPenDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, const RectD & rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void drawOverlay(double scaleX, double scaleY) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenMotion(double scaleX, double scaleY,
-                                    const QPointF & viewportPos, const QPointF & pos, const RectD & rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, const RectD & rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers, const RectD & rod) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers
-                                , const RectD & rod) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers, const RectD & rod) OVERRIDE FINAL;
-    virtual bool onOverlayFocusGained(double scaleX, double scaleY, const RectD & rod) OVERRIDE FINAL;
-    virtual bool onOverlayFocusLost(double scaleX, double scaleY, const RectD & rod) OVERRIDE FINAL;
+                                    const QPointF & viewportPos, const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(double scaleX, double scaleY) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(double scaleX, double scaleY) OVERRIDE FINAL;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
     virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, const RectD & rod, int view, SequenceTime time) OVERRIDE;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, int view, SequenceTime time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::Status render(SequenceTime time,
                                   const RenderScale & scale,

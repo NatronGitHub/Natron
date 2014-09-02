@@ -422,7 +422,7 @@ GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
     ///validate the frame range to render
     writer->getNode()->updateRenderInputs();
     int firstFrame,lastFrame;
-    writer->getFrameRange_public(&firstFrame, &lastFrame);
+    writer->getFrameRange_public(writer->getHash(),&firstFrame, &lastFrame);
     //if firstframe and lastframe are infinite clamp them to the timeline bounds
     if (firstFrame == INT_MIN) {
         firstFrame = getTimeLine()->firstFrame();

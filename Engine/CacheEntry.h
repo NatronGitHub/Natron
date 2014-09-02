@@ -399,7 +399,7 @@ public:
      * @param cache The cache managing this entry. Can be NULL when the entry has been allocated outside the cache
      **/
     CacheEntryHelper(const KeyType & key,
-                     const boost::shared_ptr<const NonKeyParams> & params,
+                     const boost::shared_ptr<NonKeyParams> & params,
                      const CacheAPI* cache)
         : _key(key)
           , _params(params)
@@ -414,7 +414,7 @@ public:
     }
 
     void setCacheEntry(const KeyType & key,
-                       const boost::shared_ptr<const NonKeyParams> & params,
+                       const boost::shared_ptr<NonKeyParams> & params,
                        const CacheAPI* cache)
     {
         assert(!_params && _cache == NULL);
@@ -635,7 +635,7 @@ private:
 protected:
 
     KeyType _key;
-    boost::shared_ptr<const NonKeyParams> _params;
+    boost::shared_ptr<NonKeyParams> _params;
     Buffer<DataType> _data;
     const CacheAPI* _cache;
 };

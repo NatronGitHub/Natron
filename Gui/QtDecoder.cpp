@@ -153,7 +153,6 @@ QtReader::initializeKnobs()
 void
 QtReader::knobChanged(KnobI* k,
                       Natron::ValueChangedReason /*reason*/,
-                      const RectD & /*rod*/,
                       int /*view*/,
                       SequenceTime /*time*/)
 {
@@ -406,7 +405,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
 }
 
 Natron::Status
-QtReader::getRegionOfDefinition(SequenceTime time,
+QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
                                 const RenderScale & /*scale*/,
                                 int /*view*/,
                                 RectD* rod )

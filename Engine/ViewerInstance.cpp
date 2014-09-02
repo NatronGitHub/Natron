@@ -265,7 +265,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     getActiveInputs(activeInputs[0], activeInputs[1]);
     EffectInstance* n1 = getInput(activeInputs[0]);
     if (n1) {
-        n1->getFrameRange_public(&inpFirst,&inpLast);
+        n1->getFrameRange_public(n1->getRenderHash(),&inpFirst,&inpLast);
     }
     *first = inpFirst;
     *last = inpLast;
@@ -275,7 +275,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
 
     EffectInstance* n2 = getInput(activeInputs[1]);
     if (n2) {
-        n2->getFrameRange_public(&inpFirst,&inpLast);
+        n2->getFrameRange_public(n2->getRenderHash(),&inpFirst,&inpLast);
         if (inpFirst < *first) {
             *first = inpFirst;
         }
@@ -531,7 +531,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             registerPluginMemory( inputImage->size() );
         }
     }  else {
-        Status stat = activeInputToRender->getRegionOfDefinition_public(time, scale, view, &rod, &isRodProjectFormat);
+        Status stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time, scale, view, &rod, &isRodProjectFormat);
         if (stat == StatFailed) {
 #ifdef NATRON_LOG
             Natron::Log::print( QString("getRegionOfDefinition returned StatFailed.").toStdString() );
@@ -826,7 +826,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                       byPassCache,
                                                       rod,
                                                       components,
-                                                      imageDepth) ); //< render the input depth as the viewer can handle it
+                                                      imageDepth), //< render the input depth as the viewer can handle it
+                                                            &inputNodeHash);
 
                     if (!lastRenderedImage) {
                         _node->notifyInputNIsFinishedRendering(activeInputIndex);

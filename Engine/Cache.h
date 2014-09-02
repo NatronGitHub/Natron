@@ -115,7 +115,7 @@ class Cache
 public:
 
 
-    typedef boost::shared_ptr<const NonKeyParams> NonKeyParamsPtr;
+    typedef boost::shared_ptr<NonKeyParams> NonKeyParamsPtr;
     typedef boost::shared_ptr<EntryType> EntryTypePtr;
     typedef typename EntryType::hash_type hash_type;
     typedef typename EntryType::data_t data_t;

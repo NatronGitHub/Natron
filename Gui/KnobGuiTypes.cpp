@@ -225,18 +225,23 @@ void
 Int_KnobGui::reflectAnimationLevel(int dimension,
                                    Natron::AnimationLevel level)
 {
+    int value;
     switch (level) {
-    case Natron::NO_ANIMATION:
-        _spinBoxes[dimension].first->setAnimation(0);
-        break;
-    case Natron::INTERPOLATED_VALUE:
-        _spinBoxes[dimension].first->setAnimation(1);
-        break;
-    case Natron::ON_KEYFRAME:
-        _spinBoxes[dimension].first->setAnimation(2);
-        break;
-    default:
-        break;
+        case Natron::NO_ANIMATION:
+            value = 0;
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            value = 1;
+            break;
+        case Natron::ON_KEYFRAME:
+            value = 2;
+            break;
+        default:
+            value = 0;
+            break;
+    }
+    if (value != _spinBoxes[dimension].first->getAnimation()) {
+        _spinBoxes[dimension].first->setAnimation(value);
     }
 }
 
@@ -396,18 +401,23 @@ void
 Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
                                     Natron::AnimationLevel level)
 {
+    int value;
     switch (level) {
-    case Natron::NO_ANIMATION:
-        _checkBox->setAnimation(0);
-        break;
-    case Natron::INTERPOLATED_VALUE:
-        _checkBox->setAnimation(1);
-        break;
-    case Natron::ON_KEYFRAME:
-        _checkBox->setAnimation(2);
-        break;
-    default:
-        break;
+        case Natron::NO_ANIMATION:
+            value = 0;
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            value = 1;
+            break;
+        case Natron::ON_KEYFRAME:
+            value = 2;
+            break;
+        default:
+            value = 0;
+            break;
+    }
+    if (value != _checkBox->getAnimation()) {
+        _checkBox->setAnimation(value);
     }
 }
 
@@ -675,18 +685,23 @@ void
 Double_KnobGui::reflectAnimationLevel(int dimension,
                                       Natron::AnimationLevel level)
 {
+    int value;
     switch (level) {
-    case Natron::NO_ANIMATION:
-        _spinBoxes[dimension].first->setAnimation(0);
-        break;
-    case Natron::INTERPOLATED_VALUE:
-        _spinBoxes[dimension].first->setAnimation(1);
-        break;
-    case Natron::ON_KEYFRAME:
-        _spinBoxes[dimension].first->setAnimation(2);
-        break;
-    default:
-        break;
+        case Natron::NO_ANIMATION:
+            value = 0;
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            value = 1;
+            break;
+        case Natron::ON_KEYFRAME:
+            value = 2;
+            break;
+        default:
+            value = 0;
+            break;
+    }
+    if (value != _spinBoxes[dimension].first->getAnimation()) {
+        _spinBoxes[dimension].first->setAnimation(value);
     }
 }
 
@@ -953,18 +968,23 @@ void
 Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,
                                       Natron::AnimationLevel level)
 {
+    int value;
     switch (level) {
     case Natron::NO_ANIMATION:
-        _comboBox->setAnimation(0);
+            value = 0;
         break;
     case Natron::INTERPOLATED_VALUE:
-        _comboBox->setAnimation(1);
+            value = 1;
         break;
     case Natron::ON_KEYFRAME:
-        _comboBox->setAnimation(2);
+            value = 2;
         break;
     default:
+            value = 0;
         break;
+    }
+    if (value != _comboBox->getAnimation()) {
+        _comboBox->setAnimation(value);
     }
 }
 
@@ -1728,66 +1748,75 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
                                      Natron::AnimationLevel level)
 {
     switch (level) {
-    case Natron::NO_ANIMATION:
-        switch (dimension) {
-        case 0:
-            _rBox->setAnimation(0);
-            break;
-        case 1:
-            _gBox->setAnimation(0);
-            break;
-        case 2:
-            _bBox->setAnimation(0);
-            break;
-        case 3:
-            _aBox->setAnimation(0);
-            break;
+        case Natron::NO_ANIMATION: {
+            if (_rBox->getAnimation() == 0) {
+                return;
+            }
+            switch (dimension) {
+                case 0:
+                    _rBox->setAnimation(0);
+                    break;
+                case 1:
+                    _gBox->setAnimation(0);
+                    break;
+                case 2:
+                    _bBox->setAnimation(0);
+                    break;
+                case 3:
+                    _aBox->setAnimation(0);
+                    break;
+                default:
+                    assert(false && "Dimension out of range");
+                    break;
+            }
+        }  break;
+        case Natron::INTERPOLATED_VALUE: {
+            switch (dimension) {
+                    if (_rBox->getAnimation() == 1) {
+                        return;
+                    }
+                case 0:
+                    _rBox->setAnimation(1);
+                    break;
+                case 1:
+                    _gBox->setAnimation(1);
+                    break;
+                case 2:
+                    _bBox->setAnimation(1);
+                    break;
+                case 3:
+                    _aBox->setAnimation(1);
+                    break;
+                default:
+                    assert(false && "Dimension out of range");
+                    break;
+            }
+        }    break;
+        case Natron::ON_KEYFRAME: {
+            switch (dimension) {
+                    if (_rBox->getAnimation() == 2) {
+                        return;
+                    }
+                case 0:
+                    _rBox->setAnimation(2);
+                    break;
+                case 1:
+                    _gBox->setAnimation(2);
+                    break;
+                case 2:
+                    _bBox->setAnimation(2);
+                    break;
+                case 3:
+                    _aBox->setAnimation(2);
+                    break;
+                default:
+                    assert(false && "Dimension out of range");
+                    break;
+            }
+        } break;
+            
         default:
-            assert(false && "Dimension out of range");
             break;
-        }
-        break;
-    case Natron::INTERPOLATED_VALUE:
-        switch (dimension) {
-        case 0:
-            _rBox->setAnimation(1);
-            break;
-        case 1:
-            _gBox->setAnimation(1);
-            break;
-        case 2:
-            _bBox->setAnimation(1);
-            break;
-        case 3:
-            _aBox->setAnimation(1);
-            break;
-        default:
-            assert(false && "Dimension out of range");
-            break;
-        }
-        break;
-    case Natron::ON_KEYFRAME:
-        switch (dimension) {
-        case 0:
-            _rBox->setAnimation(2);
-            break;
-        case 1:
-            _gBox->setAnimation(2);
-            break;
-        case 2:
-            _bBox->setAnimation(2);
-            break;
-        case 3:
-            _aBox->setAnimation(2);
-            break;
-        default:
-            assert(false && "Dimension out of range");
-            break;
-        }
-        break;
-
-    default:
-        break;
     } // switch
 } // reflectAnimationLevel
 
@@ -2914,42 +2943,35 @@ void
 String_KnobGui::reflectAnimationLevel(int /*dimension*/,
                                       Natron::AnimationLevel level)
 {
+    int value;
     switch (level) {
-    case Natron::NO_ANIMATION:
-        if ( _knob->isMultiLine() ) {
-            assert(_textEdit);
-            _textEdit->setAnimation(0);
-        } else if ( _knob->isLabel() ) {
-            assert(_label);
-        } else {
-            assert(_lineEdit);
-            _lineEdit->setAnimation(0);
+        case Natron::NO_ANIMATION:
+            value = 0;
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            value = 1;
+            break;
+        case Natron::ON_KEYFRAME:
+            value = 2;
+            
+            break;
+        default:
+            value = 0;
+            break;
+    }
+    
+    if ( _knob->isMultiLine() ) {
+        assert(_textEdit);
+        if (_textEdit->getAnimation() != value) {
+            _textEdit->setAnimation(value);
         }
-        break;
-    case Natron::INTERPOLATED_VALUE:
-        if ( _knob->isMultiLine() ) {
-            assert(_textEdit);
-            _textEdit->setAnimation(1);
-        } else if ( _knob->isLabel() ) {
-            assert(_label);
-        } else {
-            assert(_lineEdit);
-            _lineEdit->setAnimation(1);
+    } else if ( _knob->isLabel() ) {
+        assert(_label);
+    } else {
+        assert(_lineEdit);
+        if (_lineEdit->getAnimation() != value) {
+            _lineEdit->setAnimation(value);
         }
-        break;
-    case Natron::ON_KEYFRAME:
-        if ( _knob->isMultiLine() ) {
-            assert(_textEdit);
-            _textEdit->setAnimation(2);
-        } else if ( _knob->isLabel() ) {
-            assert(_label);
-        } else {
-            assert(_lineEdit);
-            _lineEdit->setAnimation(2);
-        }
-        break;
-    default:
-        break;
     }
 }
 

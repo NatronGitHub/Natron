@@ -67,7 +67,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getDescription() const OVERRIDE;
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,
+    virtual Natron::Status getRegionOfDefinition(U64 hash,SequenceTime time,
                                                  const RenderScale & scale,
                                                  int view,
                                                  RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
@@ -99,7 +99,7 @@ public:
                                   bool /*isSequentialRender*/,
                                   bool /*isRenderResponseToUserInteraction*/,
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, const RectD & rod, int view, SequenceTime time) OVERRIDE FINAL;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, int view, SequenceTime time) OVERRIDE FINAL;
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE
     {
         return Natron::EffectInstance::INSTANCE_SAFE;

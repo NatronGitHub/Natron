@@ -180,25 +180,13 @@ public:
 
     bool areAllNonOptionalClipsConnected() const;
 
-    void setClipsMipMapLevel(unsigned int mipMapLevel);
 
+    
     void setClipsView(int view);
-
-    void discardClipsMipMapLevel();
 
     void discardClipsView();
 
-    void setClipsRenderedImage(const boost::shared_ptr<Natron::Image> & image);
 
-    void discardClipsImage();
-
-    void setClipsOutputRoD(const RectD & rod); //!< rod in canonical coordinates
-
-    void discardClipsOutputRoD();
-
-    void setClipsFrameRange(double first,double last);
-
-    void discardClipsFrameRange();
 
 private:
     OfxEffectInstance* _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //

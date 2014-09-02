@@ -978,10 +978,10 @@ AppManager::setNumberOfThreads(int threadsNb)
 
 bool
 AppManager::getImage(const Natron::ImageKey & key,
-                     boost::shared_ptr<const Natron::ImageParams>* params,
+                     boost::shared_ptr<Natron::ImageParams>* params,
                      boost::shared_ptr<Natron::Image>* returnValue) const
 {
-    boost::shared_ptr<const NonKeyParams> paramsBase;
+    boost::shared_ptr<NonKeyParams> paramsBase;
 
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getImage");
@@ -1007,7 +1007,7 @@ AppManager::getImage(const Natron::ImageKey & key,
 
 bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
-                             boost::shared_ptr<const Natron::ImageParams> params,
+                             boost::shared_ptr<Natron::ImageParams> params,
                              boost::shared_ptr<Natron::Image>* returnValue) const
 {
 #ifdef NATRON_LOG
@@ -1029,10 +1029,10 @@ AppManager::getImageOrCreate(const Natron::ImageKey & key,
 
 bool
 AppManager::getTexture(const Natron::FrameKey & key,
-                       boost::shared_ptr<const Natron::FrameParams>* params,
+                       boost::shared_ptr<Natron::FrameParams>* params,
                        boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
-    boost::shared_ptr<const NonKeyParams> paramsBase;
+    boost::shared_ptr<NonKeyParams> paramsBase;
 
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getTexture");
@@ -1049,7 +1049,7 @@ AppManager::getTexture(const Natron::FrameKey & key,
 #else
     bool ret =  _imp->_viewerCache->get(key, &paramsBase,returnValue);
     if (ret && params) {
-        *params = boost::dynamic_pointer_cast<const Natron::FrameParams>(paramsBase);
+        *params = boost::dynamic_pointer_cast<Natron::FrameParams>(paramsBase);
     }
 
     return ret;
@@ -1059,7 +1059,7 @@ AppManager::getTexture(const Natron::FrameKey & key,
 
 bool
 AppManager::getTextureOrCreate(const Natron::FrameKey & key,
-                               boost::shared_ptr<const Natron::FrameParams> params,
+                               boost::shared_ptr<Natron::FrameParams> params,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
 #ifdef NATRON_LOG

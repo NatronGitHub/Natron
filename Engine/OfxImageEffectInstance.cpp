@@ -583,14 +583,6 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
 }
 
 void
-OfxImageEffectInstance::setClipsMipMapLevel(unsigned int mipMapLevel)
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->setMipMapLevel(mipMapLevel);
-    }
-}
-
-void
 OfxImageEffectInstance::setClipsView(int view)
 {
     for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
@@ -598,13 +590,6 @@ OfxImageEffectInstance::setClipsView(int view)
     }
 }
 
-void
-OfxImageEffectInstance::discardClipsMipMapLevel()
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->discardMipMapLevel();
-    }
-}
 
 void
 OfxImageEffectInstance::discardClipsView()
@@ -614,61 +599,7 @@ OfxImageEffectInstance::discardClipsView()
     }
 }
 
-void
-OfxImageEffectInstance::setClipsRenderedImage(const boost::shared_ptr<Natron::Image> & image)
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        ///Set the rendered image only on the output clip
-        if ( it->second->isOutput() ) {
-            dynamic_cast<OfxClipInstance*>(it->second)->setRenderedImage(image);
-        }
-    }
-}
 
-void
-OfxImageEffectInstance::discardClipsImage()
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        if ( it->second->isOutput() ) {
-            dynamic_cast<OfxClipInstance*>(it->second)->discardRenderedImage();
-        }
-    }
-}
-
-void
-OfxImageEffectInstance::setClipsOutputRoD(const RectD & rod) //!< effect rod in canonical coordinates
-{
-    assert(rod.x2 >= rod.x1 && rod.y2 >= rod.y1);
-
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->setOutputRoD(rod);
-    }
-}
-
-void
-OfxImageEffectInstance::discardClipsOutputRoD()
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->discardOutputRoD();
-    }
-}
-
-void
-OfxImageEffectInstance::setClipsFrameRange(double first,
-                                           double last)
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->setFrameRange(first, last);
-    }
-}
-
-void
-OfxImageEffectInstance::discardClipsFrameRange()
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->discardFrameRange();
-    }
-}
 
 bool
 OfxImageEffectInstance::areAllNonOptionalClipsConnected() const

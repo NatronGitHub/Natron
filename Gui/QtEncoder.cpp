@@ -102,7 +102,7 @@ QtWriter::getFrameRange(SequenceTime *first,
     if (index == 0) {
         EffectInstance* inp = getInput(0);
         if (inp) {
-            inp->getFrameRange_public(first, last);
+            inp->getFrameRange_public(inp->getRenderHash(),first, last);
         } else {
             *first = 0;
             *last = 0;
@@ -154,7 +154,6 @@ QtWriter::initializeKnobs()
 void
 QtWriter::knobChanged(KnobI* k,
                       Natron::ValueChangedReason /*reason*/,
-                      const RectD & /*rod*/,
                       int /*view*/,
                       SequenceTime /*time*/)
 {

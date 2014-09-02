@@ -397,6 +397,8 @@ Node::computeHash()
         assert(*it);
         (*it)->computeHash();
     }
+    _imp->liveInstance->onNodeHashChanged(getHashValue());
+    
 } // computeHash
 
 void
@@ -1662,7 +1664,7 @@ Node::makePreviewImage(SequenceTime time,
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(time, scale, 0, &rod, &isProjectFormat);
+    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == StatFailed) || rod.isNull() ) {
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();

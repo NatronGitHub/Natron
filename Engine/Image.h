@@ -136,7 +136,7 @@ class Image
 public:
 
     Image(const ImageKey & key,
-          const boost::shared_ptr<const NonKeyParams> &  params,
+          const boost::shared_ptr<NonKeyParams> &  params,
           const Natron::CacheAPI* cache);
 
 

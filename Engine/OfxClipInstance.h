@@ -157,27 +157,9 @@ public:
 
     void setRenderedView(int view);
 
-    void setMipMapLevel(unsigned int mipMapLevel);
-
-    void setFrameRange(double first, double last);
-
-    void discardFrameRange();
-
     ///Set the view stored in the thread-local storage to be invalid
     void discardView();
 
-    ///Set the mipmap level stored in the thread-local storage to be invalid
-    void discardMipMapLevel();
-
-    ///Set the image currently rendered
-    void setRenderedImage(const boost::shared_ptr<Natron::Image> & image);
-
-    void discardRenderedImage();
-
-    ///Set the output rod the node has for this thread
-    void setOutputRoD(const RectD & rod);
-
-    void discardOutputRoD();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -193,36 +175,27 @@ private:
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds);
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
-    struct LastRenderArgs
-    {
-        bool isMipMapLevelValid;
-        unsigned int mipMapLevel;
+    
+    /**
+     * @brief These are datas that are local to an action call but that we need in order to perform the API call like
+     * clipGetRegionOfDefinition or clipGetFrameRange, etc...
+     * The mipmapLevel and time are NOT stored here since they can be recovered by other means, that is:
+     * - the thread-storage of the render args of the associated nodes when the thread is rendering (in a render call)
+     * - The current time of the timeline otherwise and 0 for mipMapLevel.
+     **/
+    struct ActionLocalData {
+
         bool isViewValid;
         int view;
-        boost::shared_ptr<Natron::Image> image;
-        bool isImageValid;
-        RectD rod; //!< effect output rod in canonical coordinates
-        bool rodValid;
-        double firstFrame,lastFrame;
-        bool frameRangeValid;
-
-        LastRenderArgs()
-            : isMipMapLevelValid(false)
-              , mipMapLevel(0)
-              , isViewValid(false)
+    
+        ActionLocalData()
+            : isViewValid(false)
               , view(0)
-              , image()
-              , isImageValid(false)
-              , rod()
-              , rodValid(false)
-              , firstFrame(0)
-              , lastFrame(0)
-              , frameRangeValid(false)
         {
         }
     };
 
-    Natron::ThreadStorage<LastRenderArgs> _lastRenderArgs; //< foreach render thread, the args
+    Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
 };
 
 class OfxImage

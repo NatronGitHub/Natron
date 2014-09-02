@@ -703,15 +703,18 @@ VideoEngine::renderFrame(SequenceTime time,
             mainView = _tree.getOutput()->getApp()->getMainView();
         }
 
+        U64 writerHash = _tree.getOutput()->getHash();
+        
         for (int i = 0; i < viewsCount; ++i) {
             if ( isSequentialRender && (i != mainView) ) {
                 ///@see the warning in EffectInstance::evaluate
                 continue;
             }
+            
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
-            stat = _tree.getOutput()->getRegionOfDefinition_public(time, scale, i, &rod, &isProjectFormat);
+            stat = _tree.getOutput()->getRegionOfDefinition_public(writerHash,time, scale, i, &rod, &isProjectFormat);
             if (stat != StatFailed) {
                 ImageComponents components;
                 ImageBitDepth imageDepth;
@@ -728,7 +731,8 @@ VideoEngine::renderFrame(SequenceTime time,
                                                                                   false, //< bypass cache ?
                                                                                   rod, // < any precomputed rod ? in canonical coordinates
                                                                                   components,
-                                                                                  imageDepth) );
+                                                                                  imageDepth),
+                                                                                            &writerHash);
             } else {
                 break;
             }
@@ -1004,7 +1008,7 @@ VideoEngine::getFrameRange()
 
     boost::shared_ptr<TimeLine>  timeline = getTimeline();
     if ( _tree.getOutput() ) {
-        _tree.getOutput()->getFrameRange_public(&_firstFrame, &_lastFrame);
+        _tree.getOutput()->getFrameRange_public(_tree.getOutput()->getHash(),&_firstFrame, &_lastFrame);
         if (_firstFrame == INT_MIN) {
             _firstFrame = timeline->leftBound();
         }

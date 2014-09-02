@@ -72,7 +72,7 @@ public:
         return 1;
     }
 
-    void knobChanged(KnobI* k, Natron::ValueChangedReason reason, const RectD & rod, int view, SequenceTime time) OVERRIDE FINAL;
+    void knobChanged(KnobI* k, Natron::ValueChangedReason reason, int view, SequenceTime time) OVERRIDE FINAL;
     virtual Natron::Status render(SequenceTime time,
                                   const RenderScale & scale,
                                   const RectI & roi,

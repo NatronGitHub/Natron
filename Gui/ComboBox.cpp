@@ -500,6 +500,12 @@ ComboBox::setEnabled_natron(bool enabled)
     _currentText->setEnabled(enabled);
 }
 
+bool
+ComboBox::getAnimation() const
+{
+    return _currentText->getAnimation();
+}
+
 void
 ComboBox::setAnimation(int i)
 {

@@ -454,10 +454,14 @@ KnobHelper::evaluateValueChange(int dimension,
             time = 0;
         }
         if ( ( app && !app->getProject()->isLoadingProject() ) || !app ) {
+            
+            ///Notify that a value has changed, this may lead to this function being called recursively.
             _imp->holder->onKnobValueChanged_public(this, reason, time);
 
+            ///Evaluate the change
             bool significant = (reason != Natron::TIME_CHANGED) && _imp->EvaluateOnChange;
             _imp->holder->evaluate_public(this, significant, reason);
+
         }
     }
 

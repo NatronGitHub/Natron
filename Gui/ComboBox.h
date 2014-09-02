@@ -94,6 +94,7 @@ public:
 
 
     void setDirty(bool b);
+    bool getAnimation() const;
     void setAnimation(int i);
     void setReadOnly(bool readOnly);
 

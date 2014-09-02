@@ -156,18 +156,18 @@ public:
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
      **/
-    bool getImage(const Natron::ImageKey & key,boost::shared_ptr<const Natron::ImageParams>* params,boost::shared_ptr<Natron::Image>* returnValue) const;
+    bool getImage(const Natron::ImageKey & key,boost::shared_ptr<Natron::ImageParams>* params,boost::shared_ptr<Natron::Image>* returnValue) const;
 
     /**
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
-    bool getImageOrCreate(const Natron::ImageKey & key,boost::shared_ptr<const Natron::ImageParams> params,
+    bool getImageOrCreate(const Natron::ImageKey & key,boost::shared_ptr<Natron::ImageParams> params,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
 
-    bool getTexture(const Natron::FrameKey & key,boost::shared_ptr<const Natron::FrameParams>* params,
+    bool getTexture(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams>* params,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
-    bool getTextureOrCreate(const Natron::FrameKey & key,boost::shared_ptr<const Natron::FrameParams> params,
+    bool getTextureOrCreate(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams> params,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     U64 getCachesTotalMemorySize() const;
@@ -351,7 +351,7 @@ boost::shared_ptr<K> createKnob(KnobHolder*  holder,
 
 inline bool
 getImageFromCache(const Natron::ImageKey & key,
-                  boost::shared_ptr<const Natron::ImageParams>* params,
+                  boost::shared_ptr<Natron::ImageParams>* params,
                   boost::shared_ptr<Natron::Image> *returnValue)
 {
     return appPTR->getImage(key,params, returnValue);
@@ -359,7 +359,7 @@ getImageFromCache(const Natron::ImageKey & key,
 
 inline bool
 getImageFromCacheOrCreate(const Natron::ImageKey & key,
-                          boost::shared_ptr<const Natron::ImageParams> params,
+                          boost::shared_ptr<Natron::ImageParams> params,
                           boost::shared_ptr<Natron::Image> *returnValue)
 {
     return appPTR->getImageOrCreate(key,params, returnValue);
@@ -367,7 +367,7 @@ getImageFromCacheOrCreate(const Natron::ImageKey & key,
 
 inline bool
 getTextureFromCache(const Natron::FrameKey & key,
-                    boost::shared_ptr<const Natron::FrameParams>* params,
+                    boost::shared_ptr<Natron::FrameParams>* params,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue)
 {
     return appPTR->getTexture(key,params,returnValue);
@@ -375,7 +375,7 @@ getTextureFromCache(const Natron::FrameKey & key,
 
 inline bool
 getTextureFromCacheOrCreate(const Natron::FrameKey & key,
-                            boost::shared_ptr<const Natron::FrameParams> params,
+                            boost::shared_ptr<Natron::FrameParams> params,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue)
 {
     return appPTR->getTextureOrCreate(key,params,returnValue);
