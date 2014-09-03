@@ -140,6 +140,8 @@ public:
     void invalidateAllNodesParenting();
 
     bool areKnobLinksVisible() const;
+    
+    void refreshNodesKnobsAtTime(SequenceTime time);
 
 public slots:
 
@@ -185,6 +187,8 @@ public slots:
 
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
+    
+    void onGuiFrozenChanged(bool frozen);
 
     void onNodeCreationDialogFinished();
 

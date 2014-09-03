@@ -3161,6 +3161,15 @@ NodeGraph::removeBackDrop(NodeBackDrop* bd)
 }
 
 void
+NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
+{
+    ///Refresh all knobs at the current time
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        (*it)->refreshKnobsAfterTimeChange(time);
+    }
+}
+
+void
 NodeGraph::onTimeChanged(SequenceTime time,
                          int reason)
 {
@@ -3196,6 +3205,15 @@ NodeGraph::onTimeChanged(SequenceTime time,
         }
     }
 }
+
+void
+NodeGraph::onGuiFrozenChanged(bool frozen)
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        (*it)->onGuiFrozenChanged(frozen);
+    }
+}
+
 
 void
 NodeGraph::focusInEvent(QFocusEvent* e)

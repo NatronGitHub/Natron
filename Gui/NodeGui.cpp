@@ -2109,6 +2109,14 @@ NodeGui::refreshKnobsAfterTimeChange(SequenceTime time)
 }
 
 void
+NodeGui::onGuiFrozenChanged(bool frozen)
+{
+    if ( ( _settingsPanel ) ) {
+        _internalNode->getLiveInstance()->onGuiFrozenChange(frozen);
+    }
+}
+
+void
 NodeGui::onSettingsPanelClosedChanged(bool closed)
 {
     if (!_settingsPanel) {

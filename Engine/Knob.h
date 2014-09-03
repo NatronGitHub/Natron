@@ -1205,6 +1205,8 @@ public:
     boost::shared_ptr<KnobI> getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     const std::vector< boost::shared_ptr<KnobI> > & getKnobs() const WARN_UNUSED_RETURN;
 
+    void onGuiFrozenChange(bool frozen);
+    
     void refreshAfterTimeChange(SequenceTime time);
 
     void refreshInstanceSpecificKnobsOnly(SequenceTime time);

@@ -3926,6 +3926,7 @@ Gui::onFreezeUIButtonClicked(bool clicked)
 {
     _imp->_isGUIFrozen = clicked;
     _imp->_freezeUIButton->setDown(clicked);
+    _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
 }
 
 FloatingWidget::FloatingWidget(Gui* gui,

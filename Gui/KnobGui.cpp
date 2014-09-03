@@ -1593,3 +1593,9 @@ KnobGui::onFrozenChanged(bool frozen)
     }
 }
 
+bool
+KnobGui::isGuiFrozenForPlayback() const
+{
+    return getGui()->isGUIFrozen();
+}
+

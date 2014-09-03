@@ -439,6 +439,10 @@ void
 KnobHelper::evaluateValueChange(int dimension,
                                 Natron::ValueChangedReason reason)
 {
+    if ( _imp->gui && _imp->gui->isGuiFrozenForPlayback() ) {
+        return;
+    }
+    
     if ( QThread::currentThread() != qApp->thread() ) {
         _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason);
 
@@ -1221,6 +1225,15 @@ KnobHolder::removeKnob(KnobI* knob)
             break;
         }
     }
+}
+
+void
+KnobHolder::onGuiFrozenChange(bool frozen)
+{
+    ///The issue with this is if the user toggles off the global frozen mode
+    ///and the knobs are already frozen because for instance they are already rendering something
+    ///that would unfrozen them, though this is very unlikely that the user does it.
+    setKnobsFrozen(frozen);
 }
 
 void

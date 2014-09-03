@@ -520,6 +520,7 @@ public:
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
     boost::scoped_ptr<QUndoStack> _undoStack;
+    Gui* _gui;
 
 private:
 
@@ -529,7 +530,6 @@ private:
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
-    Gui* _gui;
 };
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
@@ -562,13 +562,13 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _evaluateOnPenUp(false)
       , _keyDragLastMovement()
       , _undoStack(new QUndoStack)
+      , _gui(gui)
       , _baseAxisColor(118,215,90,255)
       , _scaleColor(67,123,52,255)
       , _keyDragMaxMovement()
       , _timelineTopPoly()
       , _timelineBtmPoly()
       , _widget(widget)
-      , _gui(gui)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -749,6 +749,8 @@ CurveWidgetPrivate::refreshTimelinePositions()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    
+    
     QPointF topLeft = zoomCtx.toZoomCoordinates(0,0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1,_widget->height() - 1);
     QPointF btmCursorBtm( _timeline->currentFrame(),btmRight.y() );
@@ -2783,6 +2785,10 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    if (_imp->_gui->isGUIFrozen()) {
+        return;
+    }
 
     if (!_imp->_timelineEnabled) {
         _imp->_timelineEnabled = true;

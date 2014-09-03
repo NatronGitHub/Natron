@@ -270,6 +270,7 @@ public slots:
     void showAllToolbars();    
     void hideAllToolbars();
     
+    void onVideoEngineStopped();
 private:
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);

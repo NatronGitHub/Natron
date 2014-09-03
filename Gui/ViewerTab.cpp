@@ -2862,4 +2862,12 @@ ViewerTab::getTimeLine() const
     return _imp->_timeLineGui->getTimeline();
 }
 
+void
+ViewerTab::onVideoEngineStopped()
+{
+    ///Refresh knobs
+    if (_imp->_gui->isGUIFrozen()) {
+        _imp->_gui->getNodeGraph()->refreshNodesKnobsAtTime(_imp->_timeLineGui->getTimeline()->currentFrame());
+    }
+}
 

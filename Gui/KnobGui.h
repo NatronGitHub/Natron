@@ -172,6 +172,8 @@ public:
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
 
+    virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
+    
     ///Handler when a keyframe is moved in the curve editor/dope sheet
     void onKeyFrameMoved(int oldTime,int newTime);
 
