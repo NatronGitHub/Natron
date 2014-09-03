@@ -524,9 +524,9 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
             qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
             "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
             "fix it.";
-#endif
             
         }
+#endif
     }
     assert( _lastActionData.hasLocalData() );
     if ( isOutput() ) {
