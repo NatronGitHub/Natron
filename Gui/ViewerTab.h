@@ -164,18 +164,12 @@ public:
 
     bool isFrameRangeLocked() const;
 
-    bool isPlayingForward() const;
-    bool isPlayingBackward() const;
-
     void connectToViewerCache();
 
     void disconnectFromViewerCache();
 
     void clearTimelineCacheLine();
 
-    bool isPlayForwardButtonDown() const;
-    bool isPlayBackwardButtonDown() const;
-    
     bool isInfobarVisible() const;
     bool isTopToolbarVisible() const;
     bool isPlayerVisible() const;
@@ -202,7 +196,7 @@ public slots:
     void firstFrame();
     void lastFrame();
     void centerViewer();
-    void toggleLoopMode(bool);
+    void togglePlaybackMode();
     void onViewerChannelsChanged(int);
     void onClipToProjectButtonToggle(bool);
     void onTimeLineTimeChanged(SequenceTime time,int);
@@ -214,11 +208,6 @@ public slots:
 
     /*makes the viewer black*/
     void disconnectViewer();
-
-
-    void onEngineStarted(bool forward,int frameCount);
-
-    void onEngineStopped();
 
     void refresh();
 

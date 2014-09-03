@@ -203,11 +203,19 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             img.load(NATRON_IMAGES_PATH "removeKF.png");
             *pix = QPixmap::fromImage(img);
             break;
-        case NATRON_PIXMAP_PLAYER_REWIND:
-            img.load(NATRON_IMAGES_PATH "rewind.png");
+        case NATRON_PIXMAP_PLAYER_REWIND_ENABLED:
+            img.load(NATRON_IMAGES_PATH "rewind_enabled.png");
             *pix = QPixmap::fromImage(img);
             break;
-        case NATRON_PIXMAP_PLAYER_PLAY:
+        case NATRON_PIXMAP_PLAYER_REWIND_DISABLED:
+            img.load(NATRON_IMAGES_PATH "rewind.png");
+            *pix = QPixmap::fromImage(img);
+                break;
+        case NATRON_PIXMAP_PLAYER_PLAY_ENABLED:
+            img.load(NATRON_IMAGES_PATH "play_enabled.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_PLAYER_PLAY_DISABLED:
             img.load(NATRON_IMAGES_PATH "play.png");
             *pix = QPixmap::fromImage(img);
             break;
@@ -217,6 +225,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             break;
         case NATRON_PIXMAP_PLAYER_LOOP_MODE:
             img.load(NATRON_IMAGES_PATH "loopmode.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_PLAYER_BOUNCE:
+            img.load(NATRON_IMAGES_PATH "bounce.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_PLAYER_PLAY_ONCE:
+            img.load(NATRON_IMAGES_PATH "playOnce.png");
             *pix = QPixmap::fromImage(img);
             break;
         case NATRON_PIXMAP_MAXIMIZE_WIDGET:
@@ -586,6 +602,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             break;
         case NATRON_PIXMAP_SETTINGS:
             img.load(NATRON_IMAGES_PATH "settings.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_FREEZE_ENABLED:
+            img.load(NATRON_IMAGES_PATH "turbo_on.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_FREEZE_DISABLED:
+            img.load(NATRON_IMAGES_PATH "turbo_off.png");
             *pix = QPixmap::fromImage(img);
             break;
         default:

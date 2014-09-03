@@ -205,6 +205,15 @@ class VideoEngine
 {
     Q_OBJECT
 
+    
+public:
+    
+    enum PlaybackMode {
+        PLAYBACK_LOOP = 0,
+        PLAYBACK_BOUNCE,
+        PLAYBACK_ONCE
+    };
+    
 public slots:
     /**
        @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
@@ -219,8 +228,6 @@ public slots:
     {
         abortRendering(false);
     }
-
-    void toggleLoopMode(bool b);
 
 
     /**
@@ -377,6 +384,10 @@ public:
      **/
     bool isThreadRunning() const;
 
+    
+    void setPlaybackMode(PlaybackMode mode);
+    
+    PlaybackMode getPlaybackMode() const;
 private:
 
     /*The function doing all the processing in a separate thread, called by render()*/
@@ -458,8 +469,8 @@ private:
     mutable QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit; /*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
     bool _hasQuit; /*!< Unlike mustQuit it remains true after the quit was performed, this is to make sure the engine isn't restarted.*/
-    mutable QMutex _loopModeMutex; ///protects _loopMode
-    bool _loopMode; /*!< on if the player will loop*/
+    mutable QMutex _playbackModeMutex; ///protects _playbackMode
+    PlaybackMode _playbackMode; /*!< controls how we should playback*/
 
     /*Accessed and modified only by the run() thread*/
     bool _restart; /*!< if true, the run() function should call startEngine() on the next loop*/

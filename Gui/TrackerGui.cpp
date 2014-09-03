@@ -92,6 +92,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     QObject::connect( parent->getViewer(),SIGNAL( selectionRectangleChanged(bool) ),this,SLOT( updateSelectionFromSelectionRectangle(bool) ) );
     QObject::connect( parent->getViewer(), SIGNAL( selectionCleared() ), this, SLOT( onSelectionCleared() ) );
 
+    QObject::connect( panel.get(), SIGNAL(trackingEnded()), this, SLOT(onTrackingEnded()));
     _imp->buttonsBar = new QWidget(parent);
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsBar);
     _imp->buttonsLayout->setContentsMargins(3, 2, 0, 0);
@@ -104,11 +105,14 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
                                                                    ,Qt::WhiteSpaceNormal).toStdString().c_str() ) );
     _imp->buttonsLayout->addWidget(_imp->addTrackButton);
     QObject::connect( _imp->addTrackButton, SIGNAL( clicked(bool) ), this, SLOT( onAddTrackClicked(bool) ) );
-    QPixmap pixBw,pixPrev,pixNext,pixFw,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND, &pixBw);
+    QPixmap pixPrev,pixNext,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
+    QPixmap bwEnabled,bwDisabled,fwEnabled,fwDisabled;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND_DISABLED, &bwDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND_ENABLED, &bwEnabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY, &pixFw);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &fwDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &fwEnabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
@@ -116,10 +120,15 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_DISABLED, &pixUpdateViewerDisabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_STOP, &pixStop);
 
-    _imp->trackBwButton = new Button(QIcon(pixBw),"",_imp->buttonsBar);
+    QIcon bwIcon;
+    bwIcon.addPixmap(bwEnabled,QIcon::Normal,QIcon::On);
+    bwIcon.addPixmap(bwDisabled,QIcon::Normal,QIcon::Off);
+    _imp->trackBwButton = new Button(bwIcon,"",_imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackBwButton->setToolTip(tr("Track selected tracks backward until left bound of the timeline.") +
                                     "<p><b>" + tr("Keyboard shortcut") + ": Z</b></p>");
+    _imp->trackBwButton->setCheckable(true);
+    _imp->trackBwButton->setChecked(false);
     QObject::connect( _imp->trackBwButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackBwClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->trackBwButton);
 
@@ -144,11 +153,15 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     QObject::connect( _imp->trackNextButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackNextClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->trackNextButton);
 
-
-    _imp->trackFwButton = new Button(QIcon(pixFw),"",_imp->buttonsBar);
+    QIcon fwIcon;
+    fwIcon.addPixmap(fwEnabled,QIcon::Normal,QIcon::On);
+    fwIcon.addPixmap(fwDisabled,QIcon::Normal,QIcon::Off);
+    _imp->trackFwButton = new Button(fwIcon,"",_imp->buttonsBar);
     _imp->trackFwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackFwButton->setToolTip(tr("Track selected tracks forward until right bound of the timeline.") +
                                     "<p><b>" + tr("Keyboard shortcut") + ": V</b></p>");
+    _imp->trackFwButton->setCheckable(true);
+    _imp->trackFwButton->setChecked(false);
     QObject::connect( _imp->trackFwButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackFwClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->trackFwButton);
 
@@ -598,6 +611,7 @@ TrackerGui::onSelectionCleared()
 void
 TrackerGui::onTrackBwClicked()
 {
+    _imp->trackBwButton->setDown(true);
     _imp->panel->trackBackward();
 }
 
@@ -610,6 +624,8 @@ TrackerGui::onTrackPrevClicked()
 void
 TrackerGui::onStopButtonClicked()
 {
+    _imp->trackBwButton->setDown(false);
+    _imp->trackFwButton->setDown(false);
     _imp->panel->stopTracking();
 }
 
@@ -622,6 +638,7 @@ TrackerGui::onTrackNextClicked()
 void
 TrackerGui::onTrackFwClicked()
 {
+    _imp->trackFwButton->setDown(true);
     _imp->panel->trackForward();
 }
 
@@ -631,6 +648,13 @@ TrackerGui::onUpdateViewerClicked(bool clicked)
     _imp->panel->setUpdateViewerOnTracking(clicked);
     _imp->updateViewerButton->setDown(clicked);
     _imp->updateViewerButton->setChecked(clicked);
+}
+
+void
+TrackerGui::onTrackingEnded()
+{
+    _imp->trackBwButton->setDown(false);
+    _imp->trackFwButton->setDown(false);
 }
 
 void

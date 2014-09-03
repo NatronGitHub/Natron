@@ -42,6 +42,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/MenuWithToolTips.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
 
@@ -173,7 +174,7 @@ TabWidget::destroyTab(QWidget* tab)
 void
 TabWidget::createMenu()
 {
-    QMenu menu(_gui);
+    MenuWithToolTips menu(_gui);
 
     menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
     QPixmap pixV,pixM,pixH,pixC,pixA;
@@ -211,6 +212,7 @@ TabWidget::createMenu()
 
 
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
+    isAnchorAction->setToolTip(tr("The anchor pane is where viewers will be created by default."));
     isAnchorAction->setCheckable(true);
     bool isVA = isAnchor();
     isAnchorAction->setChecked(isVA);

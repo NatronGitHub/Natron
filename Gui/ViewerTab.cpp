@@ -133,7 +133,7 @@ struct ViewerTabPrivate
     Button* previousIncrement_Button;
     SpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
-    Button* loopMode_Button;
+    Button* playbackMode_Button;
     LineEdit* frameRangeEdit;
     Button* lockFrameRangeButton;
     mutable QMutex frameRangeLockedMutex;
@@ -469,6 +469,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     tooltip.append("</b></p>");
     _imp->play_Backward_Button->setToolTip(tooltip);
     _imp->play_Backward_Button->setCheckable(true);
+    _imp->play_Backward_Button->setDown(false);
     _imp->_playerLayout->addWidget(_imp->play_Backward_Button);
 
 
@@ -514,6 +515,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     tooltip.append("</b></p>");
     _imp->play_Forward_Button->setToolTip(tooltip);
     _imp->play_Forward_Button->setCheckable(true);
+    _imp->play_Forward_Button->setDown(false);
     _imp->_playerLayout->addWidget(_imp->play_Forward_Button);
 
 
@@ -574,13 +576,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextIncrement_Button->setToolTip(tooltip);
     _imp->_playerLayout->addWidget(_imp->nextIncrement_Button);
 
-    _imp->loopMode_Button = new Button(_imp->_playerButtonsContainer);
-    _imp->loopMode_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->loopMode_Button->setCheckable(true);
-    _imp->loopMode_Button->setChecked(true);
-    _imp->loopMode_Button->setDown(true);
-    _imp->loopMode_Button->setToolTip( tr("Behaviour to adopt when the playback\n hit the end of the range: loop or stop.") );
-    _imp->_playerLayout->addWidget(_imp->loopMode_Button);
+    _imp->playbackMode_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->playbackMode_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->playbackMode_Button->setToolTip( tr("Behaviour to adopt when the playback\n hit the end of the range: loop,bounce or stop.") );
+    _imp->_playerLayout->addWidget(_imp->playbackMode_Button);
 
 
     _imp->_playerLayout->addStretch();
@@ -633,11 +632,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     QPixmap pixFirst;
     QPixmap pixPrevKF;
-    QPixmap pixRewind;
+    QPixmap pixRewindEnabled;
+    QPixmap pixRewindDisabled;
     QPixmap pixBack1;
     QPixmap pixStop;
     QPixmap pixForward1;
-    QPixmap pixPlay;
+    QPixmap pixPlayEnabled;
+    QPixmap pixPlayDisabled;
     QPixmap pixNextKF;
     QPixmap pixLast;
     QPixmap pixPrevIncr;
@@ -654,11 +655,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME,&pixFirst);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,&pixPrevKF);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND,&pixRewind);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED,&pixRewindEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED,&pixRewindDisabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS,&pixBack1);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP,&pixStop);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT,&pixForward1);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY,&pixPlay);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED,&pixPlayEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED,&pixPlayDisabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_KEY,&pixNextKF);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LAST_FRAME,&pixLast);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_INCR,&pixPrevIncr);
@@ -675,18 +678,26 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->firstFrame_Button->setIcon( QIcon(pixFirst) );
     _imp->previousKeyFrame_Button->setIcon( QIcon(pixPrevKF) );
-    _imp->play_Backward_Button->setIcon( QIcon(pixRewind) );
+    
+    QIcon icRewind;
+    icRewind.addPixmap(pixRewindEnabled,QIcon::Normal,QIcon::On);
+    icRewind.addPixmap(pixRewindDisabled,QIcon::Normal,QIcon::Off);
+    _imp->play_Backward_Button->setIcon( icRewind );
     _imp->previousFrame_Button->setIcon( QIcon(pixBack1) );
     _imp->stop_Button->setIcon( QIcon(pixStop) );
     _imp->nextFrame_Button->setIcon( QIcon(pixForward1) );
-    _imp->play_Forward_Button->setIcon( QIcon(pixPlay) );
+    
+    QIcon icPlay;
+    icPlay.addPixmap(pixPlayEnabled,QIcon::Normal,QIcon::On);
+    icPlay.addPixmap(pixPlayDisabled,QIcon::Normal,QIcon::Off);
+    _imp->play_Forward_Button->setIcon( icPlay );
     _imp->nextKeyFrame_Button->setIcon( QIcon(pixNextKF) );
     _imp->lastFrame_Button->setIcon( QIcon(pixLast) );
     _imp->previousIncrement_Button->setIcon( QIcon(pixPrevIncr) );
     _imp->nextIncrement_Button->setIcon( QIcon(pixNextIncr) );
     _imp->_refreshButton->setIcon( QIcon(pixRefresh) );
     _imp->_centerViewerButton->setIcon( QIcon(pixCenterViewer) );
-    _imp->loopMode_Button->setIcon( QIcon(pixLoopMode) );
+    _imp->playbackMode_Button->setIcon( QIcon(pixLoopMode) );
 
     QIcon icClip;
     icClip.addPixmap(pixClipToProjectEnabled,QIcon::Normal,QIcon::On);
@@ -757,7 +768,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->nextIncrement_Button,SIGNAL( clicked() ),this,SLOT( nextIncrement() ) );
     QObject::connect( _imp->firstFrame_Button,SIGNAL( clicked() ),this,SLOT( firstFrame() ) );
     QObject::connect( _imp->lastFrame_Button,SIGNAL( clicked() ),this,SLOT( lastFrame() ) );
-    QObject::connect( _imp->loopMode_Button, SIGNAL( clicked(bool) ), this, SLOT( toggleLoopMode(bool) ) );
+    QObject::connect( _imp->playbackMode_Button, SIGNAL( clicked(bool) ), this, SLOT( togglePlaybackMode() ) );
     
 
     
@@ -768,8 +779,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     manageSlotsForInfoWidget(0,true);
 
-    QObject::connect( vengine, SIGNAL( engineStarted(bool,int) ), this, SLOT( onEngineStarted(bool,int) ) );
-    QObject::connect( vengine, SIGNAL( engineStopped(int) ), this, SLOT( onEngineStopped() ) );
     QObject::connect( _imp->_clipToProjectFormatButton,SIGNAL( clicked(bool) ),this,SLOT( onClipToProjectButtonToggle(bool) ) );
     QObject::connect( _imp->_viewsComboBox,SIGNAL( currentIndexChanged(int) ),this,SLOT( showView(int) ) );
     QObject::connect( _imp->_enableViewerRoI, SIGNAL( clicked(bool) ), this, SLOT( onEnableViewerRoIButtonToggle(bool) ) );
@@ -865,10 +874,26 @@ ViewerTab::getCurrentView() const
 }
 
 void
-ViewerTab::toggleLoopMode(bool b)
+ViewerTab::togglePlaybackMode()
 {
-    _imp->loopMode_Button->setDown(b);
-    _imp->_viewerNode->getVideoEngine()->toggleLoopMode(b);
+    VideoEngine::PlaybackMode mode = _imp->_viewerNode->getVideoEngine()->getPlaybackMode();
+    mode = (VideoEngine::PlaybackMode)(((int)mode + 1) % 3);
+    QPixmap pix;
+    switch (mode) {
+        case VideoEngine::PLAYBACK_LOOP:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
+            break;
+        case VideoEngine::PLAYBACK_BOUNCE:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
+            break;
+        case VideoEngine::PLAYBACK_ONCE:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
+            break;
+        default:
+            break;
+    }
+    _imp->playbackMode_Button->setIcon(QIcon(pix));
+    _imp->_viewerNode->getVideoEngine()->setPlaybackMode(mode);
 }
 
 void
@@ -878,26 +903,6 @@ ViewerTab::onClipToProjectButtonToggle(bool b)
     _imp->viewer->setClipToDisplayWindow(b);
 }
 
-void
-ViewerTab::onEngineStarted(bool forward,
-                           int frameCount)
-{
-    if (frameCount > 1) {
-        _imp->play_Forward_Button->setChecked(forward);
-        _imp->play_Forward_Button->setDown(forward);
-        _imp->play_Backward_Button->setChecked(!forward);
-        _imp->play_Backward_Button->setDown(!forward);
-    }
-}
-
-void
-ViewerTab::onEngineStopped()
-{
-    _imp->play_Forward_Button->setChecked(false);
-    _imp->play_Forward_Button->setDown(false);
-    _imp->play_Backward_Button->setChecked(false);
-    _imp->play_Backward_Button->setDown(false);
-}
 
 void
 ViewerTab::updateZoomComboBox(int value)
@@ -917,6 +922,8 @@ ViewerTab::startPause(bool b)
 {
     abortRendering();
     if (b) {
+        _imp->play_Forward_Button->setDown(true);
+        _imp->play_Forward_Button->setChecked(true);
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                                     true, /*seek timeline ?*/
                                                     true, /*rebuild tree?*/
@@ -929,6 +936,10 @@ ViewerTab::startPause(bool b)
 void
 ViewerTab::abortRendering()
 {
+    _imp->play_Forward_Button->setDown(false);
+    _imp->play_Backward_Button->setDown(false);
+    _imp->play_Forward_Button->setChecked(false);
+    _imp->play_Backward_Button->setChecked(false);
     ///Abort all viewers because they are all synchronised.
     const std::list<boost::shared_ptr<NodeGui> > & activeNodes = _imp->_gui->getNodeGraph()->getAllActiveNodes();
 
@@ -945,6 +956,8 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
+        _imp->play_Backward_Button->setDown(true);
+        _imp->play_Backward_Button->setChecked(true);
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                                     true, /*seek timeline ?*/
                                                     true, /*rebuild tree?*/
@@ -1045,18 +1058,6 @@ ViewerTab::~ViewerTab()
     }
 }
 
-bool
-ViewerTab::isPlayingForward() const
-{
-    return _imp->play_Forward_Button->isDown();
-}
-
-bool
-ViewerTab::isPlayingBackward() const
-{
-    return _imp->play_Backward_Button->isDown();
-}
-
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
@@ -1154,17 +1155,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     }
 } // keyPressEvent
 
-bool
-ViewerTab::isPlayForwardButtonDown() const
-{
-    return _imp->play_Forward_Button->isDown();
-}
-
-bool
-ViewerTab::isPlayBackwardButtonDown() const
-{
-    return _imp->play_Backward_Button->isDown();
-}
 
 void
 ViewerTab::onGainSliderChanged(double v)

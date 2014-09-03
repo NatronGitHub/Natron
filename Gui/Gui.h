@@ -387,6 +387,8 @@ public:
 
     void openProject(const std::string& filename);
     
+    bool isGUIFrozen() const;
+    
 signals:
 
     void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
@@ -485,6 +487,7 @@ public slots:
 
     void restoreDefaultLayout();
 
+    void onFreezeUIButtonClicked(bool clicked);
 private:
 
     /**

@@ -1708,14 +1708,14 @@ TrackerPanel::trackBackward()
              _imp->abortTrackingRequested ) {
             setKnobsFrozen(false);
             _imp->abortTrackingRequested = false;
-
+            emit trackingEnded();
             return true;
         }
         --cur;
     }
     gui->endProgress( selectedInstances.front()->getLiveInstance() );
     setKnobsFrozen(false);
-
+    emit trackingEnded();
     return true;
 } // trackBackward
 
@@ -1762,7 +1762,7 @@ TrackerPanel::trackForward()
              _imp->abortTrackingRequested ) {
             setKnobsFrozen(false);
             _imp->abortTrackingRequested = false;
-
+            emit trackingEnded();
             return true;
         }
         ++cur;
@@ -1770,6 +1770,7 @@ TrackerPanel::trackForward()
     gui->endProgress( selectedInstances.front()->getLiveInstance() );
     setKnobsFrozen(false);
 
+    emit trackingEnded();
     return true;
 } // trackForward
 

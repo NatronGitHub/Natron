@@ -61,8 +61,8 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,
       , _mustQuitMutex()
       , _mustQuit(false)
       , _hasQuit(false)
-      , _loopModeMutex()
-      , _loopMode(true)
+      , _playbackModeMutex()
+      , _playbackMode(PLAYBACK_LOOP)
       , _restart(true)
       , _startCondition()
       , _startMutex()
@@ -557,14 +557,18 @@ VideoEngine::iterateKernel(bool singleThreaded)
                         timeline->incrementCurrentFrame(output);
                         ++currentFrame;
                     } else {
-                        QMutexLocker loopModeLocker(&_loopModeMutex);
-                        if (_loopMode) { // loop only for a viewer
+                        PlaybackMode pMode = getPlaybackMode();
+                        if (pMode == PLAYBACK_LOOP) {
                             currentFrame = firstFrame;
                             timeline->seekFrame(currentFrame,output);
-                        } else {
-                            loopModeLocker.unlock();
-
+                        } else if (pMode == PLAYBACK_BOUNCE) {
+                            --currentFrame;
+                            timeline->seekFrame(currentFrame,output);
+                            _currentRunArgs._forward = false;
+                        } else if (pMode == PLAYBACK_ONCE) {
                             return;
+                        } else {
+                            assert(false);
                         }
                     }
                 } else {
@@ -573,15 +577,20 @@ VideoEngine::iterateKernel(bool singleThreaded)
                         timeline->decrementCurrentFrame(output);
                         --currentFrame;
                     } else {
-                        QMutexLocker loopModeLocker(&_loopModeMutex);
-                        if (_loopMode) { //loop only for a viewer
+                        PlaybackMode pMode = getPlaybackMode();
+                        if (pMode == PLAYBACK_LOOP) {
                             currentFrame = lastFrame;
                             timeline->seekFrame(currentFrame,output);
-                        } else {
-                            loopModeLocker.unlock();
-
+                        } else if (pMode == PLAYBACK_BOUNCE) {
+                            ++currentFrame;
+                            timeline->seekFrame(currentFrame,output);
+                            _currentRunArgs._forward = true;
+                        } else if (pMode == PLAYBACK_ONCE) {
                             return;
+                        } else {
+                            assert(false);
                         }
+
                     }
                 }
             }
@@ -951,10 +960,20 @@ RenderTree::debug() const
 }
 
 void
-VideoEngine::toggleLoopMode(bool b)
+VideoEngine::setPlaybackMode(PlaybackMode mode)
 {
-    _loopMode = b;
+    QMutexLocker l(&_playbackModeMutex);
+    
+    _playbackMode = mode;
 }
+
+VideoEngine::PlaybackMode
+VideoEngine::getPlaybackMode() const
+{
+     QMutexLocker l(&_playbackModeMutex);
+    return _playbackMode;
+}
+
 
 void
 VideoEngine::setDesiredFPS(double d)

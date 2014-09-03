@@ -158,5 +158,11 @@
         <file>Resources/Images/viewer_roiEnabled.png</file>
         <file>Resources/Images/layout_anchor.png</file>
         <file>Resources/Images/settings.png</file>
+        <file>Resources/Images/bounce.png</file>
+        <file>Resources/Images/play_enabled.png</file>
+        <file>Resources/Images/playOnce.png</file>
+        <file>Resources/Images/rewind_enabled.png</file>
+        <file>Resources/Images/turbo_off.png</file>
+        <file>Resources/Images/turbo_on.png</file>
     </qresource>
 </RCC>

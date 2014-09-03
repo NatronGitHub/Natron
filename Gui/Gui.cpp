@@ -310,7 +310,9 @@ struct GuiPrivate
     QVBoxLayout *_layoutPropertiesBin;
     Button* _clearAllPanelsButton;
     SpinBox* _maxPanelsOpenedSpinBox;
-
+    Button* _freezeUIButton;
+    bool _isGUIFrozen;
+    
     ///The menu bar and all the menus
     QMenuBar *menubar;
     QMenu *menuFile;
@@ -431,6 +433,8 @@ struct GuiPrivate
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
+          , _freezeUIButton(0)
+          , _isGUIFrozen(false)
           , menubar(0)
           , menuFile(0)
           , menuRecentFiles(0)
@@ -1021,14 +1025,13 @@ GuiPrivate::createPropertiesBinGui()
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
     _clearAllPanelsButton = new Button(QIcon(closePanelPix),"",propertiesAreaButtonsContainer);
     _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _clearAllPanelsButton->setMaximumSize(15, 15);
     _clearAllPanelsButton->setToolTip( Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
     QObject::connect( _clearAllPanelsButton,SIGNAL( clicked(bool) ),_gui,SLOT( clearAllVisiblePanels() ) );
 
 
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
-    _maxPanelsOpenedSpinBox->setMaximumSize(15,15);
+    _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _maxPanelsOpenedSpinBox->setMinimum(0);
     _maxPanelsOpenedSpinBox->setMaximum(100);
     _maxPanelsOpenedSpinBox->setToolTip( Qt::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
@@ -1038,8 +1041,24 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox,SIGNAL( valueChanged(double) ),_gui,SLOT( onMaxPanelsSpinBoxValueChanged(double) ) );
 
+    QPixmap pixFreezeEnabled,pixFreezeDisabled;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
+    QIcon icFreeze;
+    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
+    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
+    _freezeUIButton = new Button(icFreeze,"",propertiesAreaButtonsContainer);
+    _freezeUIButton->setCheckable(true);
+    _freezeUIButton->setChecked(false);
+    _freezeUIButton->setDown(false);
+    _freezeUIButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _freezeUIButton->setToolTip("<p><b>" + _gui->tr("Turbo mode:") + "</p></b><p>" + _gui->tr("When checked, everything besides the viewer will not be refreshed in the user interface "
+                                         "for maximum efficiency during playback.") + "</p>");
+    QObject::connect( _freezeUIButton, SIGNAL (clicked(bool)), _gui, SLOT(onFreezeUIButtonClicked(bool) ) );
+    
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
+    propertiesAreaButtonsLayout->addWidget(_freezeUIButton);
     propertiesAreaButtonsLayout->addStretch();
 
     _layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
@@ -3891,6 +3910,22 @@ Gui::getAnchor() const
     }
 
     return NULL;
+}
+
+bool
+Gui::isGUIFrozen() const
+{
+    ///Can only be called on the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    return _imp->_isGUIFrozen;
+}
+
+void
+Gui::onFreezeUIButtonClicked(bool clicked)
+{
+    _imp->_isGUIFrozen = clicked;
+    _imp->_freezeUIButton->setDown(clicked);
 }
 
 FloatingWidget::FloatingWidget(Gui* gui,

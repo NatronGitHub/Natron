@@ -86,6 +86,7 @@ public slots:
 
     void onSelectionCleared();
 
+    void onTrackingEnded();
 private:
 
     boost::scoped_ptr<TrackerGuiPrivate> _imp;

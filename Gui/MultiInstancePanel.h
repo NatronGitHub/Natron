@@ -167,6 +167,11 @@ public slots:
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
 
+    
+signals:
+    
+    void trackingEnded();
+    
 private:
 
     virtual void initializeExtraKnobs() OVERRIDE FINAL;
