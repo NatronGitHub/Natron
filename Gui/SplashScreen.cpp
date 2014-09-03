@@ -27,8 +27,20 @@ SplashScreen::SplashScreen(const QString & filePath)
     : QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
       , _pixmap()
       , _text()
-      , _versionString("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS + QObject::tr(" - built on ") + __DATE__ )
+      , _versionString()
 {
+    QString customBuildString(NATRON_CUSTOM_BUILD_USER_NAME);
+    
+    if (customBuildString.isEmpty()) {
+        _versionString = QString("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS + QObject::tr(" - built on ") + __DATE__ );
+    } else {
+        _versionString = QString (NATRON_APPLICATION_NAME +
+                                  QObject::tr(" for ") +
+                                  customBuildString +
+                                  QObject::tr(" - built on ") +
+                                  __DATE__ );
+    }
+    
     setAttribute( Qt::WA_TransparentForMouseEvents );
     setAttribute(Qt::WA_TranslucentBackground, true);
 

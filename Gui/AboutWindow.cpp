@@ -52,34 +52,55 @@ AboutWindow::AboutWindow(Gui* gui,
 
     _aboutText = new QTextBrowser(_tabWidget);
     _aboutText->setOpenExternalLinks(true);
-    QString aboutText =
-        QString("<p>%1 version %2%7.</p>"
-                "<p>This version was generated from the source code branch %5"
-                " at commit %6.</p>"
-                "<p>Copyright (C) 2013 the %1 developers.</p>"
-                "<p>This is free software. You may redistribute copies of it "
-                "under the terms of the <a href=\"http://www.mozilla.org/MPL/2.0/\">"
-                "<font color=\"orange\">MPL Mozilla Public License</font></a>. "
-                "There is NO WARRANTY, to the extent permitted by law.</p>"
-                "<p>See <a href=\"%3\"><font color=\"orange\">%1 's website </font></a>"
-                "for more information on this software.</p>")
-        .arg(NATRON_APPLICATION_NAME) // %1
-        .arg(NATRON_VERSION_STRING) // %2
-        .arg("https://natron.inria.fr") // %3
-        .arg(GIT_BRANCH) // %5
-        .arg(GIT_COMMIT) // %6
+    QString aboutText;
+    QString customBuild(NATRON_CUSTOM_BUILD_USER_NAME);
+    if (!customBuild.isEmpty()) {
+        aboutText = QString("<p>%1 custom build for %2%3.</p>")
+        .arg(NATRON_APPLICATION_NAME)
+        .arg(customBuild)
 #ifdef DEBUG
-        .arg(" (debug)"); //%7
+        .arg(" (debug)");
 #else
 #ifdef NDEBUG
         // release with asserts disabled (should be the *real* release)
-        .arg(""); // %7
+        .arg("");
 #else
         // release with asserts enabled
-        .arg(" (opt)"); // %7
+        .arg(" (opt)");
 #endif
 #endif
-
+    } else {
+        aboutText = QString("<p>%1 version %2%3.</p>")
+        .arg(NATRON_APPLICATION_NAME) // %1
+        .arg(NATRON_VERSION_STRING) // %2
+#ifdef DEBUG
+        .arg(" (debug)");
+#else
+#ifdef NDEBUG
+        // release with asserts disabled (should be the *real* release)
+        .arg("");
+#else
+        // release with asserts enabled
+        .arg(" (opt)");
+#endif
+#endif
+    }
+    QString endAbout =
+    QString("<p>This version was generated from the source code branch %3"
+            " at commit %4.</p>"
+            "<p>Copyright (C) 2013 the %1 developers.</p>"
+            "<p>This is free software. You may redistribute copies of it "
+            "under the terms of the <a href=\"http://www.mozilla.org/MPL/2.0/\">"
+            "<font color=\"orange\">MPL Mozilla Public License</font></a>. "
+            "There is NO WARRANTY, to the extent permitted by law.</p>"
+            "<p>See <a href=\"%2\"><font color=\"orange\">%1 's website </font></a>"
+            "for more information on this software.</p>")
+    .arg(NATRON_APPLICATION_NAME) // %1
+    .arg("https://natron.inria.fr") // %2
+    .arg(GIT_BRANCH) // %3
+    .arg(GIT_COMMIT); // %4
+    aboutText.append(endAbout);
+    
     if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_BETA) {
         QString toAppend = QString("<p>Note: This software is currently under beta testing, meaning there are "
                                    " bugs and untested stuffs. If you feel like reporting a bug, please do so "
@@ -88,7 +109,7 @@ AboutWindow::AboutWindow(Gui* gui,
         ;
         aboutText.append(toAppend);
     }
-    ;
+    
     _aboutText->setText(aboutText);
     _tabWidget->addTab( _aboutText, QObject::tr("About") );
 

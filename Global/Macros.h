@@ -35,6 +35,9 @@
 #define NATRON_VERSION_MINOR 9
 #define NATRON_VERSION_REVISION 6
 
+///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
+#define NATRON_CUSTOM_BUILD_USER_NAME ""
+
 #define NATRON_VERSION_ENCODE(major,minor,revision) ( \
         ( (major) * 10000 ) \
         + ( (minor) * 100 )  \
