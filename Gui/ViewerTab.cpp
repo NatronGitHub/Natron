@@ -1015,6 +1015,15 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
                                  int /*reason*/)
 {
     _imp->_currentFrameBox->setValue(time);
+    
+    if (_imp->_timeLineGui->getTimeline() != _imp->_gui->getApp()->getTimeLine()) {
+        _imp->_viewerNode->getVideoEngine()->render(1, //< frame count
+                       false, //< seek timeline
+                       false, //<refresh tree
+                       true, //< forward
+                       true, // <same frame
+                       false); //< force preview
+    }
 }
 
 void

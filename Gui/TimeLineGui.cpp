@@ -158,7 +158,22 @@ TimeLineGui::~TimeLineGui()
 void
 TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
 {
-    _imp->_timeline = timeline;
+    if (_imp->_timeline) {
+        //connect the internal timeline to the gui
+        QObject::disconnect( _imp->_timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
+        QObject::disconnect( _imp->_timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
+                         this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
+        QObject::disconnect( _imp->_timeline.get(), SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),
+                         this, SLOT( onBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+        
+        
+        //connect the gui to the internal timeline
+        QObject::disconnect( this, SIGNAL( frameChanged(SequenceTime) ), _imp->_timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
+        QObject::disconnect( this, SIGNAL( boundariesChanged(SequenceTime,SequenceTime) ),
+                         _imp->_timeline.get(), SLOT( onBoundariesChanged(SequenceTime,SequenceTime) ) );
+        QObject::disconnect( _imp->_timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+    }
+  
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
     QObject::connect( timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
@@ -172,7 +187,8 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     QObject::connect( this, SIGNAL( boundariesChanged(SequenceTime,SequenceTime) ),
                      timeline.get(), SLOT( onBoundariesChanged(SequenceTime,SequenceTime) ) );
     QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
-    
+    _imp->_timeline = timeline;
+
 
 }
 
