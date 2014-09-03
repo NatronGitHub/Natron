@@ -776,23 +776,28 @@ public:
     }
 
     void toPixelEnclosing(const RenderScale & scale,
+                          /*double par,*/
                           RectI *rect) const
     {
 #pragma message WARN("Take PAR into account")
-        rect->x1 = std::floor(x1 * scale.x);
+        double par = 1.;
+        rect->x1 = std::floor(x1 * scale.x / par);
         rect->y1 = std::floor(y1 * scale.y);
-        rect->x2 = std::ceil(x2 * scale.x);
+        rect->x2 = std::ceil(x2 * scale.x / par);
         rect->y2 = std::ceil(y2 * scale.y);
     }
 
     void toPixelEnclosing(unsigned int mipMapLevel,
+                          /*double par,*/
                           RectI *rect) const
     {
+#pragma message WARN("Take PAR into account")
+        double par = 1.;
         double scale = 1. / (1 << mipMapLevel);
 
-        rect->x1 = std::floor(x1 * scale);
+        rect->x1 = std::floor(x1 * scale / par);
         rect->y1 = std::floor(y1 * scale);
-        rect->x2 = std::ceil(x2 * scale);
+        rect->x2 = std::ceil(x2 * scale / par);
         rect->y2 = std::ceil(y2 * scale);
     }
 
@@ -830,22 +835,24 @@ operator!=(const RectD & b1,
 
 inline void
 RectI::toCanonical(unsigned int thisLevel,
+                   /*double par,*/
                    const RectD & rod,
                    RectD *rect) const
 {
-    rect->x1 = x1 << thisLevel;
-    rect->x2 = x2 << thisLevel;
-    rect->y1 = y1 << thisLevel;
-    rect->y2 = y2 << thisLevel;
+#pragma message WARN("Take PAR into account")
+    toCanonical_noClipping(thisLevel, /*par,*/ rect);
     rect->intersect(rod, rect);
 }
 
 void
 RectI::toCanonical_noClipping(unsigned int thisLevel,
+                              /*double par,*/
                               RectD *rect) const
 {
-    rect->x1 = x1 << thisLevel;
-    rect->x2 = x2 << thisLevel;
+#pragma message WARN("Take PAR into account")
+    double par = 1.;
+    rect->x1 = (x1 << thisLevel) * par;
+    rect->x2 = (x2 << thisLevel) * par;
     rect->y1 = y1 << thisLevel;
     rect->y2 = y2 << thisLevel;
 }
