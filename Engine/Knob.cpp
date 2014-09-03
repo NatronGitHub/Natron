@@ -439,15 +439,17 @@ void
 KnobHelper::evaluateValueChange(int dimension,
                                 Natron::ValueChangedReason reason)
 {
-    if ( _imp->gui && _imp->gui->isGuiFrozenForPlayback() ) {
-        return;
-    }
     
     if ( QThread::currentThread() != qApp->thread() ) {
         _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason);
 
         return;
     }
+    
+    if ( _imp->gui && _imp->gui->isGuiFrozenForPlayback() ) {
+        return;
+    }
+    
 
     if (_imp->holder) {
         int time;

@@ -1412,6 +1412,8 @@ struct TrackerPanelPrivate
     //Not protected because it is all handled in the main-thread.
     //Set to true when the user presses the stop button.
     bool abortTrackingRequested;
+    
+    bool isTracking;
 
     TrackerPanelPrivate(TrackerPanel* publicInterface)
         : publicInterface(publicInterface)
@@ -1424,6 +1426,7 @@ struct TrackerPanelPrivate
           , transformPage()
           , referenceFrame()
           , abortTrackingRequested(false)
+          , isTracking(false)
     {
     }
 
@@ -1645,6 +1648,7 @@ void
 TrackerPanel::handleTrackNextAndPrevious(const std::list<Button_Knob*> & selectedInstances,
                                          SequenceTime currentFrame)
 {
+    
     ///Forward the button click event to all the selected instances
     std::list<Button_Knob*>::const_iterator next = selectedInstances.begin();
 
@@ -1661,17 +1665,22 @@ TrackerPanel::handleTrackNextAndPrevious(const std::list<Button_Knob*> & selecte
 
         (*it)->getHolder()->onKnobValueChanged_public(*it,reason,currentFrame);
     }
+    
 }
 
 bool
 TrackerPanel::trackBackward()
 {
+    if (_imp->isTracking) {
+        return false;
+    }
+    _imp->isTracking = true;
     std::list<Node*> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
         Natron::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
-
+        _imp->isTracking = false;
         return false;
     }
 
@@ -1682,6 +1691,7 @@ TrackerPanel::trackBackward()
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         if ( !(*it)->getLiveInstance() ) {
+            _imp->isTracking = false;
             return true;
         }
         if ( (*it)->isNodeDisabled() ) {
@@ -1709,12 +1719,14 @@ TrackerPanel::trackBackward()
             setKnobsFrozen(false);
             _imp->abortTrackingRequested = false;
             emit trackingEnded();
+            _imp->isTracking = false;
             return true;
         }
         --cur;
     }
     gui->endProgress( selectedInstances.front()->getLiveInstance() );
     setKnobsFrozen(false);
+    _imp->isTracking = false;
     emit trackingEnded();
     return true;
 } // trackBackward
@@ -1722,12 +1734,16 @@ TrackerPanel::trackBackward()
 bool
 TrackerPanel::trackForward()
 {
+    if (_imp->isTracking) {
+        return false;
+    }
+    _imp->isTracking = true;
     std::list<Node*> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
         Natron::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
-
+        _imp->isTracking = false;
         return false;
     }
 
@@ -1735,6 +1751,7 @@ TrackerPanel::trackForward()
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         if ( !(*it)->getLiveInstance() ) {
+            _imp->isTracking = false;
             return true;
         }
         if ( (*it)->isNodeDisabled() ) {
@@ -1763,6 +1780,7 @@ TrackerPanel::trackForward()
             setKnobsFrozen(false);
             _imp->abortTrackingRequested = false;
             emit trackingEnded();
+            _imp->isTracking = false;
             return true;
         }
         ++cur;
@@ -1770,14 +1788,18 @@ TrackerPanel::trackForward()
     gui->endProgress( selectedInstances.front()->getLiveInstance() );
     setKnobsFrozen(false);
 
+    _imp->isTracking = false;
     emit trackingEnded();
+    
     return true;
 } // trackForward
 
 void
 TrackerPanel::stopTracking()
 {
-    _imp->abortTrackingRequested = true;
+    if (_imp->isTracking) {
+        _imp->abortTrackingRequested = true;
+    }
 }
 
 bool
