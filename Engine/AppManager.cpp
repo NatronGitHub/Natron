@@ -1469,6 +1469,7 @@ AppManager::increaseNCacheFilesOpened()
         qDebug() << "Cache has more files opened than the limit allowed: " << _imp->currentCacheFilesCount << " / " << _imp->maxCacheFiles;
     }
 #endif
+    //qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
 }
 
 void
@@ -1477,6 +1478,7 @@ AppManager::decreaseNCacheFilesOpened()
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
 
     --_imp->currentCacheFilesCount;
+    //  qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
 }
 
 void
@@ -1593,6 +1595,43 @@ AppManager::qt_tildeExpansion(const QString &path,
 }
 
 #endif
+
+
+void
+AppManager::checkCacheFreeMemoryIsGoodEnough()
+{
+    ///Before allocating the memory check that there's enough space to fit in memory
+    size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
+    size_t totalFreeRAM = getAmountFreePhysicalRAM();
+    
+    bool attemptToRemoveFromNodeCache = true;
+    bool attemptToRemoveFromViewerCache = true;
+    while (totalFreeRAM <= systemRAMToKeepFree) {
+        
+        bool removedFromNodeCache = false;
+        if (attemptToRemoveFromNodeCache) {
+            removedFromNodeCache = _imp->_nodeCache->evictLRUEntry();
+            if (!removedFromNodeCache) {
+                attemptToRemoveFromNodeCache = false;
+            }
+        }
+        
+        bool removedFromViewerCache = false;
+        if (attemptToRemoveFromViewerCache) {
+            removedFromViewerCache = _imp->_viewerCache->evictLRUEntry();
+            if (!removedFromViewerCache) {
+                attemptToRemoveFromViewerCache = false;
+            }
+        }
+        
+        if (!removedFromNodeCache && !removedFromViewerCache) {
+            break;
+        }
+        
+        totalFreeRAM = getAmountFreePhysicalRAM();
+    }
+
+}
 
 namespace Natron {
 void

@@ -257,6 +257,12 @@ public:
     void increaseNCacheFilesOpened();
     void decreaseNCacheFilesOpened();
 
+    /**
+     * @brief Called by the caches to check that there's enough free memory on the computer to perform the allocation.
+     * WARNING: This functin may remove some entries from the caches.
+     **/
+    void checkCacheFreeMemoryIsGoodEnough();
+    
 public slots:
 
     ///Closes the application not saving any projects.

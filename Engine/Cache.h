@@ -409,6 +409,10 @@ public:
         NonKeyParamsPtr cachedParams;
 
         if ( !get(key,&cachedParams,returnValue) ) {
+            
+            ///Before allocating the memory check that there's enough space to fit in memory
+            appPTR->checkCacheFreeMemoryIsGoodEnough();
+            
             ///lock the cache before writing it.
             QMutexLocker locker(&_lock);
             *returnValue = newEntry(key,params);
@@ -534,6 +538,17 @@ public:
                 copy->push_back(it2->entry);
             }
         }
+    }
+    
+    /**
+     * @brief Removes the last recently used entry from the cache.
+     * This is expensive since it takes the lock. Returns false
+     * if there's nothing left to evict.
+     **/
+    bool evictLRUEntry() const
+    {
+        QMutexLocker locker(&_lock);
+        return tryEvictEntry();
     }
 
     /**
@@ -812,16 +827,17 @@ public:
             }
             EntryType* value = NULL;
 
+            locker.unlock();
             ///Before allocating the memory check that there's enough space to fit in memory
-            size_t systemRAMToKeepFree = _maxPhysicalRAM * appPTR->getCurrentSettings()->getUnreachableRamPercent();
-            size_t totalFreeRAM = getAmountFreePhysicalRAM();
+            appPTR->checkCacheFreeMemoryIsGoodEnough();
+            locker.relock();
+           
             size_t entryDataSize = it->params->getElementsCount() * sizeof(data_t);
 
-            while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) || totalFreeRAM <= systemRAMToKeepFree ) {
+            while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) ) {
                 if ( !tryEvictEntry() ) {
                     break;
                 }
-                totalFreeRAM = getAmountFreePhysicalRAM();
             }
 
             Natron::StorageMode storage = Natron::DISK;
@@ -871,18 +887,15 @@ private:
             storage = Natron::RAM;
         }
 
-        ///Before allocating the memory check that there's enough space to fit in memory
-        size_t systemRAMToKeepFree = _maxPhysicalRAM * appPTR->getCurrentSettings()->getUnreachableRamPercent();
-        size_t totalFreeRAM = getAmountFreePhysicalRAM();
+    
         size_t entryDataSize = params->getElementsCount() * sizeof(data_t);
 
         ///While the current cache size can't fit the new entry, erase the last recently used entries.
         ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
-        while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) || totalFreeRAM <= systemRAMToKeepFree ) {
+        while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize)) {
             if ( !tryEvictEntry() ) {
                 break;
             }
-            totalFreeRAM = getAmountFreePhysicalRAM();
         }
 
         ///At this point there could be nothing in the cache but the condition totalFreeRAM <= systemRAMToKeepFree would still be
