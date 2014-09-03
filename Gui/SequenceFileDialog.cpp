@@ -350,9 +350,13 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _centerAreaLayout->addWidget(_centerSplitter);
     
     if (mode == OPEN_DIALOG && isSequenceDialog) {
-        QPixmap pixPreviewButton;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY, &pixPreviewButton);
-        _togglePreviewButton = new Button(QIcon(pixPreviewButton),"",_centerArea);
+        QPixmap pixPreviewButtonEnabled,pixPreviewButtonDisabled;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &pixPreviewButtonEnabled);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &pixPreviewButtonDisabled);
+        QIcon icPreview;
+        icPreview.addPixmap(pixPreviewButtonEnabled,QIcon::Normal,QIcon::On);
+        icPreview.addPixmap(pixPreviewButtonDisabled,QIcon::Normal,QIcon::Off);
+        _togglePreviewButton = new Button(icPreview,"",_centerArea);
         QObject::connect(_togglePreviewButton, SIGNAL(clicked(bool)), this, SLOT(onTogglePreviewButtonClicked(bool) ) );
         _togglePreviewButton->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
         _togglePreviewButton->setCheckable(true);
@@ -890,16 +894,17 @@ SequenceDialogProxyModel::filterAcceptsRow(int source_row,
         }
     }
 
-    /*If file sequence fetching is disabled, just call the base class version.*/
-    if ( !_fd->sequenceModeEnabled() ) {
-        return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
-    }
+
 
     /*if the item does not match the filter regexp set by the user, discard it*/
     if ( !isAcceptedByUser(absoluteFilePath) ) {
         return false;
     }
 
+    /*If file sequence fetching is disabled, just call the base class version.*/
+    if ( !_fd->sequenceModeEnabled() ) {
+        return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
+    }
 
     ///Store the result of tryInsertFile() in a map so that we don't need to call
     ///any expensive parsing function.
@@ -2669,7 +2674,8 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         currentInput->disconnectOutput(_preview->viewerNode->getNode());
     }
     
-    
+    _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(false);
+
     boost::shared_ptr<NodeGui> reader = findOrCreatePreviewReader(ext);
     if (reader) {
         const std::vector<boost::shared_ptr<KnobI> > & knobs = reader->getNode()->getKnobs();
@@ -2679,7 +2685,6 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
                 fileKnob->setValue(pattern,0);
             }
         }
-        _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(true);
         _preview->viewerNode->getNode()->connectInput(reader->getNode(), 0);
         reader->getNode()->connectOutput(_preview->viewerNode->getNode());
         
