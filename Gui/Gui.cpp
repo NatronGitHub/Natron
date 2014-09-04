@@ -2502,6 +2502,11 @@ Gui::createReader()
                     assert(fk);
 
                     fk->setValue(pattern,0);
+                    
+                    ///We must call it here even though the Node class does it already in the instance changed action
+                    ///It probably didn't finish to setup everything that depends on the filename at that point, so
+                    ///we make sure we can have a clean preview.
+                    ret->computePreviewImage( getApp()->getTimeLine()->currentFrame() );
                     break;
                 }
             }
