@@ -2261,7 +2261,10 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
     bool richText = mode == kOfxParamStringIsRichTextFormat;
 
     if (mode == kOfxParamStringIsFilePath) {
-        int fileIsImage = ( node->isReader() || node->isWriter() ) && (getScriptName() == "filename" || getScriptName() == "proxy");
+        int fileIsImage = ((node->isReader() ||
+                            node->isWriter() ) &&
+                           (getScriptName() == kOfxImageEffectFileParamName ||
+                            getScriptName() == kOfxImageEffectProxyParamName));
         int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
         int filePathSupportsImageSequences = getCanAnimate();
 
@@ -2283,9 +2286,11 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
                 _outputFileKnob->setAnimationEnabled(false);
             }
         }
+
     } else if (mode == kOfxParamStringIsDirectoryPath) {
         _pathKnob = Natron::createKnob<Path_Knob>( node, getParamLabel(this) );
         _pathKnob->setMultiPath(false);
+        
     } else if ( (mode == kOfxParamStringIsSingleLine) || (mode == kOfxParamStringIsLabel) || (mode == kOfxParamStringIsMultiLine) || richText ) {
         _stringKnob = Natron::createKnob<String_Knob>( node, getParamLabel(this) );
         if (mode == kOfxParamStringIsLabel) {

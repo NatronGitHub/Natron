@@ -161,7 +161,7 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("Curve",c);
             ///This is to overcome the change to the animation of file params: They no longer hold keyframes
             ///Don't try to load keyframes
-            convertOldFileKeyframesToPattern = isFile && isFile->getName() == "filename";
+            convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
             if (!convertOldFileKeyframesToPattern) {
                 _knob->getCurve(_dimension)->clone(c);
             }
@@ -340,8 +340,8 @@ class KnobSerialization
             std::map<int,std::string> extraDatas;
             ar & boost::serialization::make_nvp("StringsAnimation",extraDatas);
             ///Don't load animation for input image files: they no longer hold keyframes
-            // in the Reader context, the script name must be "filename", @see kOfxImageEffectContextReader
-            if ( !isFile || ( isFile && (isFile->getName() != "filename") ) ) {
+            // in the Reader context, the script name must be kOfxImageEffectFileParamName, @see kOfxImageEffectContextReader
+            if ( !isFile || ( isFile && (isFile->getName() != kOfxImageEffectFileParamName) ) ) {
                 isStringAnimated->loadAnimation(extraDatas);
             }
         } else if ( (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS) &&
