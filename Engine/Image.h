@@ -373,6 +373,9 @@ public:
      *
      * @param copyBitMap The bitmap will also be copied.
      *
+     * @param requiresUnpremult If true, if a component conversion from RGBA to RGB happens
+     * the RGB channels will be divided by the alpha channel when copied to the output image.
+     *
      * Note that this function is mainly used for the following conversion:
      * RGBA --> Alpha
      * or bit depth conversion
@@ -384,6 +387,7 @@ public:
                          int channelForAlpha,
                          bool invert,
                          bool copyBitMap,
+                         bool requiresUnpremult,
                          Natron::Image* dstImg) const;
 
 private:

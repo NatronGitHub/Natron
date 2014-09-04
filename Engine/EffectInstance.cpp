@@ -1209,10 +1209,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 rod.toPixelEnclosing(args.mipMapLevel, &bounds);
                 boost::shared_ptr<Image> remappedImage( new Image(args.components, rod, bounds, args.mipMapLevel, args.bitdepth) );
                 if (!byPassCache) {
+                    
+                    bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+                    
                     image->convertToFormat( image->getBounds(),
                                             getApp()->getDefaultColorSpaceForBitDepth( image->getBitDepth() ),
                                             getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                            args.channelForAlpha, false, true,
+                                            args.channelForAlpha, false, true,unPremultIfNeeded,
                                             remappedImage.get() );
                 }
                 ///switch the pointer
@@ -2182,10 +2185,11 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         if (renderFullScaleThenDownscale) {
             ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
             if ( (renderMappedImage == fullScaleMappedImage) && (fullScaleMappedImage != fullScaleImage) ) {
+                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
                 renderMappedImage->convertToFormat( renderRectToRender,
                                                     getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
                                                     getApp()->getDefaultColorSpaceForBitDepth( fullScaleMappedImage->getBitDepth() ),
-                                                    channelForAlpha, false, true,
+                                                    channelForAlpha, false, true,unPremultIfNeeded,
                                                     fullScaleImage.get() );
             }
             if (mipMapLevel != 0) {
@@ -2196,10 +2200,11 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             assert(renderMappedImage == downscaledMappedImage);
             assert(renderRectToRender == downscaledRectToRenderMinimal);
             if (renderMappedImage != downscaledImage) {
+                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
                 renderMappedImage->convertToFormat( renderRectToRender,
                                                     getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
                                                     getApp()->getDefaultColorSpaceForBitDepth( downscaledMappedImage->getBitDepth() ),
-                                                    channelForAlpha, false, true,
+                                                    channelForAlpha, false, true,unPremultIfNeeded,
                                                     downscaledImage.get() );
             }
         }

@@ -451,10 +451,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                               inputImage->getBounds(),
                                                               mipMapLevel,
                                                               imageDepth) );
+            bool unPremultIfNeeded = activeInputToRender->getOutputPremultiplication() == ImagePremultiplied;
             inputImage->convertToFormat( inputImage->getBounds(),
                                          getApp()->getDefaultColorSpaceForBitDepth( inputImage->getBitDepth() ),
                                          getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
-                                         3, false, true,
+                                         3, false, true,unPremultIfNeeded,
                                          remappedImage.get() );
 
             ///switch the pointer

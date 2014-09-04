@@ -49,24 +49,76 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
 const std::string &
 OfxClipInstance::getUnmappedBitDepth() const
 {
-#pragma message WARN("TODO: it should return the clip bit depth before Natron converts it using clip preferences")
-    // we always use floats
-    static const std::string v(kOfxBitDepthFloat);
-
-    return v;
+    
+    static const std::string byteStr(kOfxBitDepthByte);
+    static const std::string shortStr(kOfxBitDepthShort);
+    static const std::string floatStr(kOfxBitDepthFloat);
+    static const std::string noneStr(kOfxBitDepthNone);
+    EffectInstance* inputNode = getAssociatedNode();
+    
+    if (inputNode) {
+        ///Get the input node's output preferred bit depth and componentns
+        Natron::ImageComponents comp;
+        Natron::ImageBitDepth depth;
+        inputNode->getPreferredDepthAndComponents(-1, &comp, &depth);
+        
+        
+        
+        
+        switch (depth) {
+            case Natron::IMAGE_BYTE:
+                return byteStr;
+                break;
+            case Natron::IMAGE_SHORT:
+                return shortStr;
+                break;
+            case Natron::IMAGE_FLOAT:
+                return floatStr;
+                break;
+            default:
+                return noneStr;
+                break;
+        }
+    } else {
+        return noneStr;
+    }
+    
 }
 
 const std::string &
 OfxClipInstance::getUnmappedComponents() const
 {
-#pragma message WARN("TODO: it should return the clip components before Natron converts it using clip preferences - the Components could be Alpha, and the UnmappedComponents RGBA (Natron lets the user select which component is converted to Alpha)")
+
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
     static const std::string alphaStr(kOfxImageComponentAlpha);
 
-    ///Default to RGBA, let the plug-in clip prefs inform us of its preferences
-    return rgbaStr;
+    EffectInstance* inputNode = getAssociatedNode();
+    
+    if (inputNode) {
+        ///Get the input node's output preferred bit depth and componentns
+        Natron::ImageComponents comp;
+        Natron::ImageBitDepth depth;
+        inputNode->getPreferredDepthAndComponents(-1, &comp, &depth);
+        
+        switch (comp) {
+            case Natron::ImageComponentRGBA:
+                return rgbaStr;
+                break;
+            case Natron::ImageComponentRGB:
+                return rgbStr;
+                break;
+            case Natron::ImageComponentAlpha:
+                return alphaStr;
+                break;
+            default:
+                return noneStr;
+                break;
+        }
+    } else {
+        return noneStr;
+    }
 }
 
 // PreMultiplication -
@@ -77,15 +129,42 @@ OfxClipInstance::getUnmappedComponents() const
 const std::string &
 OfxClipInstance::getPremult() const
 {
-    static const std::string v(kOfxImagePreMultiplied);
-    OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( getAssociatedNode() );
+    static const std::string premultStr(kOfxImagePreMultiplied);
+    static const std::string unPremultStr(kOfxImageUnPreMultiplied);
+    static const std::string opaqueStr(kOfxImageOpaque);
+    EffectInstance* effect =  getAssociatedNode() ;
 
     if (effect) {
-        return effect->ofxGetOutputPremultiplication();
+        
+        ///Get the input node's output preferred bit depth and componentns
+        Natron::ImageComponents comp;
+        Natron::ImageBitDepth depth;
+        effect->getPreferredDepthAndComponents(-1, &comp, &depth);
+        
+        switch (comp) {
+            case Natron::ImageComponentRGB:
+                return opaqueStr;
+            case Natron::ImageComponentRGBA:
+            case Natron::ImageComponentAlpha:
+            default:
+                break;
+        }
+        Natron::ImagePremultiplication premult = effect->getOutputPremultiplication();
+        
+        switch (premult) {
+            case Natron::ImageOpaque:
+                return opaqueStr;
+            case Natron::ImagePremultiplied:
+                return premultStr;
+            case Natron::ImageUnPremultiplied:
+                return unPremultStr;
+            default:
+                return opaqueStr;
+        }
     }
 
-    ///Default to premultiplied, let the plug-in clip prefs inform us of its preferences
-    return v;
+    ///Default to opaque, input is not connected
+    return opaqueStr;
 }
 
 // Pixel Aspect Ratio -
