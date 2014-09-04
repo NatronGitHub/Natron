@@ -63,17 +63,18 @@ TabWidget::TabWidget(Gui* gui,
       _drawDropRect(false),
       _fullScreen(false),
       _isAnchor(false),
+      _tabBarVisible(true),
       _tabWidgetStateMutex()
 {
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
     _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setContentsMargins(0, 0, 0, 0);
+    _mainLayout->setContentsMargins(0, 5, 0, 0);
     _mainLayout->setSpacing(0);
     setLayout(_mainLayout);
 
-    _header = new QWidget(this);
-
+    _header = new TabWidgetHeader(this);
+    QObject::connect( _header, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()));
     _headerLayout = new QHBoxLayout(_header);
     _headerLayout->setContentsMargins(0, 0, 0, 0);
     _headerLayout->setSpacing(0);
@@ -96,6 +97,7 @@ TabWidget::TabWidget(Gui* gui,
     _tabBar->setShape(QTabBar::RoundedNorth);
     _tabBar->setDrawBase(false);
     QObject::connect( _tabBar, SIGNAL( currentChanged(int) ), this, SLOT( makeCurrentTab(int) ) );
+    QObject::connect( _tabBar, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()));
     _headerLayout->addWidget(_tabBar);
     _headerLayout->addStretch();
     _floatButton = new Button(QIcon(pixM),"",_header);
@@ -203,14 +205,23 @@ TabWidget::createMenu()
     closeAction->setEnabled( _closeButton->isEnabled() );
     QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
     menu.addAction(closeAction);
+    
+    QAction* hideTabbar;
+    if (_tabBarVisible) {
+        hideTabbar = new QAction(tr("Hide tabs header"),&menu);
+    } else {
+        hideTabbar = new QAction(tr("Show tabs header"),&menu);
+    }
+    QObject::connect(hideTabbar, SIGNAL(triggered()), this, SLOT(onShowHideTabBarActionTriggered()));
+    menu.addAction(hideTabbar);
     menu.addSeparator();
     menu.addAction( tr("New viewer"), this, SLOT( addNewViewer() ) );
     menu.addAction( tr("New histogram"), this, SLOT( newHistogramHere() ) );
     menu.addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
     menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
     menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
-
-
+    menu.addSeparator();
+    
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
     isAnchorAction->setToolTip(tr("The anchor pane is where viewers will be created by default."));
     isAnchorAction->setCheckable(true);
@@ -768,6 +779,7 @@ TabBar::TabBar(TabWidget* tabWidget,
       , _dragPos()
       , _dragPix(0)
       , _tabWidget(tabWidget)
+      , _processingLeaveEvent(false)
 {
     setTabsClosable(true);
     setMouseTracking(true);
@@ -781,6 +793,19 @@ TabBar::mousePressEvent(QMouseEvent* e)
         _dragPos = e->pos();
     }
     QTabBar::mousePressEvent(e);
+}
+
+void
+TabBar::leaveEvent(QEvent* e)
+{
+    if (_processingLeaveEvent) {
+        QTabBar::leaveEvent(e);
+    } else {
+        _processingLeaveEvent = true;
+        emit mouseLeftTabBar();
+        QTabBar::leaveEvent(e);
+        _processingLeaveEvent = false;
+    }
 }
 
 void
@@ -1023,6 +1048,13 @@ TabWidget::onSetAsAnchorActionTriggered()
 }
 
 void
+TabWidget::onShowHideTabBarActionTriggered()
+{
+    _tabBarVisible = !_tabBarVisible;
+    _header->setVisible(_tabBarVisible);
+}
+
+void
 TabWidget::setAsAnchor(bool anchor)
 {
     {
@@ -1186,3 +1218,37 @@ TabWidget::discardGuiPointer()
     _gui = 0;
 }
 
+void
+TabWidget::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!_tabBarVisible) {
+        QSize size = _header->sizeHint();
+        if (e->y() <= (size.height() * 1.2)) {
+            if (!_header->isVisible()) {
+                _header->setVisible(true);
+            }
+        } else {
+            if (_header->isVisible()) {
+                _header->setVisible(false);
+            }
+        }
+    }
+    QFrame::mouseMoveEvent(e);
+}
+
+void
+TabWidget::leaveEvent(QEvent* e)
+{
+    onTabBarMouseLeft();
+    QFrame::leaveEvent(e);
+}
+
+void
+TabWidget::onTabBarMouseLeft()
+{
+    if (!_tabBarVisible) {
+        if (_header->isVisible()) {
+            _header->setVisible(false);
+        }
+    }
+}

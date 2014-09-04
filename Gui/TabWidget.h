@@ -80,16 +80,44 @@ public:
     {
     }
 
+    
+signals:
+    
+    void mouseLeftTabBar();
+    
 private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
-
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     QPixmap makePixmapForDrag(int index);
 
     QPoint _dragPos;
     DragPixmap* _dragPix;
     TabWidget* _tabWidget; // ptr to the tabWidget
+    bool _processingLeaveEvent; // to avoid recursions in leaveEvent
+};
+
+class TabWidgetHeader : public QWidget
+{
+    Q_OBJECT
+public:
+    
+    TabWidgetHeader(QWidget* parent)
+    : QWidget(parent)
+    {}
+    
+signals:
+    
+    void mouseLeftTabBar();
+private:
+    
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL
+    {
+        emit mouseLeftTabBar();
+        QWidget::leaveEvent(e);
+    }
+    
 };
 
 class TabWidget
@@ -261,14 +289,18 @@ public slots:
     void closeTab(int index);
 
     void onSetAsAnchorActionTriggered();
+    
+    void onShowHideTabBarActionTriggered();
 
+    void onTabBarMouseLeft();
 private:
 
 
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
-    virtual void keyPressEvent (QKeyEvent* e) OVERRIDE FINAL;
-
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
 private:
@@ -297,7 +329,7 @@ private:
     bool _drawDropRect;
     bool _fullScreen;
     bool _isAnchor;
-
+    bool _tabBarVisible;
     ///Protects  _currentWidget, _fullScreen, _isViewerAnchor
     mutable QMutex _tabWidgetStateMutex;
 };
