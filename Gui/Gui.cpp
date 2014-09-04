@@ -784,6 +784,7 @@ Gui::createMenuActions()
 
     _imp->actionFullScreen = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionFullscreen,kShortcutDescActionFullscreen,this);
     _imp->actionFullScreen->setIcon( get_icon("view-fullscreen") );
+    _imp->actionFullScreen->setShortcutContext(Qt::ApplicationShortcut);
     QObject::connect( _imp->actionFullScreen, SIGNAL( triggered() ),this,SLOT( toggleFullScreen() ) );
 
     _imp->actionClearDiskCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearDiskCache,kShortcutDescActionClearDiskCache,this);

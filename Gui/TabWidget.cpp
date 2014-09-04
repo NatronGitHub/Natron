@@ -42,6 +42,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/ActionShortcuts.h"
 #include "Gui/MenuWithToolTips.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
@@ -1089,6 +1090,9 @@ TabWidget::keyPressEvent (QKeyEvent* e)
         } else {
             _gui->maximize(this);
         }
+    } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, e->modifiers(), e->key())) {
+        _gui->toggleFullScreen();
+        e->accept();
     } else {
         e->ignore();
     }
