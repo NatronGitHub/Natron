@@ -236,6 +236,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             throw std::runtime_error("Could not create effect instance for plugin");
         }
 
+        OfxPointD scaleOne;
+        scaleOne.x = 1.;
+        scaleOne.y = 1.;
         // Try to set renderscale support at plugin creation.
         // This is not always possible (e.g. if a param has a wrong value).
         if (supportsRenderScaleMaybe() == eSupportsMaybe) {
@@ -245,12 +248,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             OfxStatus tdstat = _effect->getTimeDomainAction(range);
             if ( (tdstat == kOfxStatOK) || (tdstat == kOfxStatReplyDefault) ) {
                 double time = range.min;
-                OfxPointD scale;
-                scale.x = 1.;
-                scale.y = 1.;
+             
                 OfxRectD rod;
-                OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                    OfxPointD scale;
                     scale.x = 0.5;
                     scale.y = 0.5;
                     rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
@@ -266,14 +268,16 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         if ( !_effect->getClipPreferences() ) {
             qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }
-#pragma message WARN("FIXME: Check here that bitdepth and components given by getClipPreferences are supported by the effect")
-        // FIXME: Check here that bitdepth and components given by getClipPreferences are supported by the effect.
+        
+        // Check here that bitdepth and components given by getClipPreferences are supported by the effect.
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-
+        checkClipPrefs(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited);
+        
+      
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
-        const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> & clips = effectInstance()->getDescriptor().getClipsByOrder();
+        /*const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> & clips = effectInstance()->getDescriptor().getClipsByOrder();
         for (U32 i = 0; i < clips.size(); ++i) {
             if ( (clips[i]->getProps().findStringPropValueIndex(kOfxImageEffectPropSupportedComponents, kOfxImageComponentRGBA) == -1)
                  && !clips[i]->isOptional() && !clips[i]->isMask() ) {
@@ -281,7 +285,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                + "RGBA components not supported by OFX plugin in context " + QString( context.c_str() ) );
                 throw std::runtime_error(std::string("RGBA components not supported by OFX plugin in context ") + context);
             }
-        }
+        }*/
     } catch (const std::exception & e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
         throw;
@@ -799,15 +803,28 @@ OfxEffectInstance::checkClipPrefs(double time,
     assert( QThread::currentThread() == qApp->thread() );
 
     _effect->runGetClipPrefsConditionally();
-    const std::string & outputClipDepth = _effect->getClip(kOfxImageEffectOutputClipName)->getPixelDepth();
-    QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
-                            "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
-    bool setBitDepthWarning = false;
 
     ///We remap all the input clips components to be the same as the output clip, except for the masks.
     OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(outputClip);
+    
+    
+    std::string outputClipDepth = outputClip->getPixelDepth();
+    QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
+                            "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
+    bool setBitDepthWarning = false;
+
     std::string outputComponents = outputClip->getComponents();
+    
+    if (!isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth))) {
+        outputClipDepth = _effect->bestSupportedDepth(kOfxBitDepthFloat);
+        outputClip->setPixelDepth(outputClipDepth);
+    }
+    
+    ///output clip doesn't support components just remap it, this is probably a plug-in bug.
+    if (!outputClip->isSupportedComponent(outputComponents)) {
+        outputComponents = outputClip->findSupportedComp(kOfxImageComponentRGBA);
+    }
 
     _effect->beginInstanceChangedAction(reason);
 
@@ -2097,6 +2114,7 @@ OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths
         }
     }
 }
+
 
 void
 OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,

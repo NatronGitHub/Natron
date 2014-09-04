@@ -76,13 +76,21 @@ OfxClipInstance::getUnmappedBitDepth() const
                 return floatStr;
                 break;
             default:
-                return noneStr;
                 break;
         }
-    } else {
-        return noneStr;
     }
     
+    ///Return the hightest bit depth supported by the plugin
+    std::string ret = _nodeInstance->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+    if (ret == floatStr) {
+        return floatStr;
+    } else if (ret == shortStr) {
+        return shortStr;
+    } else if (ret == byteStr) {
+        return byteStr;
+    }
+    return noneStr;
+
 }
 
 const std::string &
@@ -113,11 +121,11 @@ OfxClipInstance::getUnmappedComponents() const
                 return alphaStr;
                 break;
             default:
-                return noneStr;
+                return rgbaStr;
                 break;
         }
     } else {
-        return noneStr;
+        return rgbaStr;
     }
 }
 

@@ -46,8 +46,6 @@ getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
     case Natron::IMAGE_NONE:
         break;
     }
-    assert(false);
-
     return 0;
 }
 
