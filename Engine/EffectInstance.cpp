@@ -439,6 +439,7 @@ public:
         ~ScopedRenderArgs()
         {
             assert( _dst->hasLocalData() );
+            args._outputImage.reset();
             args._validArgs = false;
             _dst->setLocalData(args);
         }

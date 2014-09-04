@@ -1478,7 +1478,7 @@ AppManager::decreaseNCacheFilesOpened()
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
 
     --_imp->currentCacheFilesCount;
-    //  qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
+    // qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
 }
 
 void

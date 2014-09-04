@@ -2502,10 +2502,6 @@ Gui::createReader()
                     assert(fk);
 
                     fk->setValue(pattern,0);
-                    if ( ret->isPreviewEnabled() ) {
-                        ret->computePreviewImage( _imp->_appInstance->getTimeLine()->currentFrame() );
-                    }
-
                     break;
                 }
             }

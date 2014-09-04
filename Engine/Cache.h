@@ -428,10 +428,31 @@ public:
         }
     }
 
+    /**
+     * @brief Clears entirely the disk portion and memory portion.
+     **/
     void clear()
     {
-        clearInMemoryPortion();
         clearDiskPortion();
+        
+        
+        if (_signalEmitter) {
+            ///block signals otherwise the we would be spammed of notifications
+            _signalEmitter->blockSignals(true);
+        }
+        QMutexLocker locker(&_lock);
+        std::pair<hash_type,CachedValue> evictedFromMemory = _memoryCache.evict();
+        while (evictedFromMemory.second.entry) {
+            if ( evictedFromMemory.second.entry->isStoredOnDisk() ) {
+                evictedFromMemory.second.entry->removeAnyBackingFile();
+            }
+            evictedFromMemory = _memoryCache.evict();
+        }
+
+        if (_signalEmitter) {
+            _signalEmitter->blockSignals(false);
+            _signalEmitter->emitSignalClearedInMemoryPortion();
+        }
     }
 
     /**
@@ -457,12 +478,16 @@ public:
             evictedFromDisk = _diskCache.evict();
         }
 
+        
         if (_signalEmitter) {
             _signalEmitter->blockSignals(false);
             _signalEmitter->emitClearedDiskPortion();
         }
     }
 
+    /**
+     * @brief Clears the memory portion and moves it to the disk portion if possible
+     **/
     void clearInMemoryPortion()
     {
         if (_signalEmitter) {

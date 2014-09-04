@@ -375,7 +375,7 @@ Image::onMemoryAllocated()
 
 #endif // DEBUG
 
-ImageKey
+ImageKey  
 Image::makeKey(U64 nodeHashKey,
                SequenceTime time,
                unsigned int mipMapLevel,

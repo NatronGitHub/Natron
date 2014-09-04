@@ -235,16 +235,18 @@ public:
         }
     }
 
-    void removeAnyBackingFile() const
+    bool removeAnyBackingFile() const
     {
         if (_storageMode == DISK) {
             if (_backingFile) {
                 _backingFile->remove();
                 _backingFile.reset();
+                return true;
             } else {
-                ::remove( _path.c_str() );
+                return ::remove( _path.c_str() ) == 0;
             }
         }
+        return false;
     }
 
     /**
@@ -524,7 +526,9 @@ public:
                     _cache->notifyEntryStorageChanged( Natron::RAM, Natron::DISK,getTime(), size() );
                 }
             } else {
-                _cache->notifyEntryDestroyed(getTime(),size(),Natron::RAM);
+                if ( _data.isAllocated() ) {
+                    _cache->notifyEntryDestroyed(getTime(),size(),Natron::RAM);
+                }
             }
         }
         _data.deallocate();
@@ -560,14 +564,20 @@ public:
      **/
     void removeAnyBackingFile() const
     {
-        _data.removeAnyBackingFile();
-        if ( _data.isAllocated() ) {
-            if (_data.getStorageMode() == Natron::DISK) {
-                _cache->backingFileRemoved();
-            }
-            _cache->notifyEntryDestroyed(getTime(), size(),Natron::RAM);
+        if (!isStoredOnDisk()) {
+            return;
+        }
+        
+        bool isAlloc = _data.isAllocated();
+        size_t sz = size();
+        bool hasRemovedFile = _data.removeAnyBackingFile();
+        if (hasRemovedFile) {
+            _cache->backingFileRemoved();
+        }
+        if ( isAlloc ) {
+            _cache->notifyEntryDestroyed(getTime(), sz,Natron::RAM);
         } else {
-            _cache->notifyEntryDestroyed(getTime(), size(),Natron::DISK);
+            _cache->notifyEntryDestroyed(getTime(), sz,Natron::DISK);
         }
     }
 
