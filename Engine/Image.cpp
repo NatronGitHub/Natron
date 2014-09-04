@@ -1596,21 +1596,33 @@ convertToFormatInternal(const RectI & renderWindow,
 
 
     for (int y = 0; y < intersection.height(); ++y) {
+        
+        ///Start of the line for error diffusion
         int start = rand() % intersection.width();
+        
         const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
+        
         DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
+        
         const SRCPIX* srcStart = srcPixels;
         DSTPIX* dstStart = dstPixels;
 
         for (int backward = 0; backward < 2; ++backward) {
+            
+            ///We do twice the loop, once from starting point to end and once from starting point - 1 to real start
             int x = backward ? start - 1 : start;
+            
+            //End is pointing to the first pixel outside the line a la stl
             int end = backward ? -1 : intersection.width();
             unsigned error[3] = {
                 0x80,0x80,0x80
             };
 
             while ( x != end && x >= 0 && x < intersection.width() ) {
+                
+                
                 if (dstComp == Natron::ImageComponentAlpha) {
+                    ///If we're converting to alpha, we just have to handle pixel depth conversion
                     assert(channelForAlpha < srcNComp && channelForAlpha >= 0);
                     *dstPixels = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha])
                                  : srcPixels[channelForAlpha];
@@ -1618,7 +1630,9 @@ convertToFormatInternal(const RectI & renderWindow,
                         *dstPixels = dstMaxValue - *dstPixels;
                     }
                 } else {
+                    
                     if (srcImg.getComponents() == Natron::ImageComponentAlpha) {
+                        ///If we're converting from alpha, we just fill all color channels with the alpha value
                         if (dstComp == Natron::ImageComponentRGB) {
                             for (int k = 0; k < dstNComp; ++k) {
                                 DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
@@ -1633,6 +1647,8 @@ convertToFormatInternal(const RectI & renderWindow,
                             dstPixels[3] = invert ? dstMaxValue : pix;
                         }
                     } else {
+                        ///In this case we've RGB or RGBA input and outputs
+                        assert(srcImg.getComponents() != dstImg.getComponents());
                         
                         bool unpremultChannel = srcImg.getComponents() == Natron::ImageComponentRGBA &&
                         dstImg.getComponents() == Natron::ImageComponentRGB &&
@@ -1647,10 +1663,19 @@ convertToFormatInternal(const RectI & renderWindow,
                         }
                         
                         for (int k = 0; k < dstNComp; ++k) {
-                            if (k < srcNComp) {
-                                if ( (k <= 2) && (srcLut || dstLut) ) {
-                                    float pixFloat;
-
+                            if (k < 3) {
+                                ///For RGB channels
+                                float pixFloat;
+                                
+                                ///Unpremult before doing colorspace conversion from linear to X
+                                if (unpremultChannel) {
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    pixFloat = alphaForUnPremult == 0.f ? 0. : pixFloat / alphaForUnPremult;
+                                    if (srcLut) {
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                                    }
+                                } else {
+                                    
                                     if (srcLut) {
                                         if (srcDepth == IMAGE_BYTE) {
                                             pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
@@ -1662,37 +1687,30 @@ convertToFormatInternal(const RectI & renderWindow,
                                     } else {
                                         pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
                                     }
-                                    
-                                    ///Unpremult before doing colorspace conversion from linear to X
-                                    if (unpremultChannel) {
-                                        pixFloat = alphaForUnPremult == 0.f ? 0.f : pixFloat /= alphaForUnPremult;
-                                    }
-
-                                    DSTPIX pix;
-                                    if (dstDepth == IMAGE_BYTE) {
-                                        error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
-                                                                         Color::floatToInt<0xff01>(pixFloat) );
-                                        pix = error[k] >> 8;
-                                    } else if (dstDepth == IMAGE_SHORT) {
-                                        pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
-                                              convertPixelDepth<float, DSTPIX>(pixFloat);
-                                    } else {
-                                        if (dstLut) {
-                                            pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
-                                        } else {
-                                            pix = convertPixelDepth<float, DSTPIX>(pixFloat);
-                                        }
-                                    }
-                                    dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                                }
+                                
+                                ///Apply dst color-space
+                                DSTPIX pix;
+                                if (dstDepth == IMAGE_BYTE) {
+                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                                                                    Color::floatToInt<0xff01>(pixFloat) );
+                                    pix = error[k] >> 8;
+                                } else if (dstDepth == IMAGE_SHORT) {
+                                    pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
+                                    convertPixelDepth<float, DSTPIX>(pixFloat);
                                 } else {
-                                    DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
-                                    dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                                    if (dstLut) {
+                                        pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                                    } else {
+                                        pix = convertPixelDepth<float, DSTPIX>(pixFloat);
+                                    }
                                 }
+                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                                
                             } else {
-                                dstPixels[k] = k == 3 ? dstMaxValue :  0.;
-                                if (invert) {
-                                    dstPixels[k] = dstMaxValue - dstPixels[k];
-                                }
+                                ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
+                                DSTPIX pix = convertPixelDepth<float, DSTPIX>(1.f);
+                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
                             }
                         }
                     }
@@ -1712,7 +1730,7 @@ convertToFormatInternal(const RectI & renderWindow,
             dstPixels = dstStart - dstNComp;
         }
 
-
+        ///Copy bitmap if needed
         if (copyBitmap) {
             const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
             char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
