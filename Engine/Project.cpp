@@ -64,7 +64,7 @@ Project::loadProject(const QString & path,
     reset();
 
     try {
-        loadProjectInternal(path,name);
+        loadProjectInternal(path,name,false,path);
     } catch (const std::exception & e) {
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
@@ -108,7 +108,7 @@ Project::loadProject(const QString & path,
 
 void
 Project::loadProjectInternal(const QString & path,
-                             const QString & name)
+                             const QString & name,bool isAutoSave,const QString& realFilePath)
 {
     QString filePath = path + name;
 
@@ -129,7 +129,9 @@ Project::loadProjectInternal(const QString & path,
         iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
         ProjectSerialization projectSerializationObj( getApp() );
         iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-        load(projectSerializationObj);
+        
+        load(projectSerializationObj,name,path,isAutoSave,realFilePath);
+        
         if (!bgProject) {
             getApp()->loadProjectGui(iArchive);
         }
@@ -142,14 +144,6 @@ Project::loadProjectInternal(const QString & path,
     }
 
     ifile.close();
-
-    QDateTime time = QDateTime::currentDateTime();
-    _imp->autoSetProjectFormat = false;
-    _imp->hasProjectBeenSavedByUser = true;
-    _imp->projectName = name;
-    _imp->projectPath = path;
-    _imp->ageSinceLastSave = time;
-    _imp->lastAutoSave = time;
     emit projectNameChanged(name);
 }
 
@@ -347,6 +341,8 @@ Project::saveProjectInternal(const QString & path,
     } else {
         emit projectNameChanged(name + " (*)");
     }
+    _imp->autoSetProjectDirectory(path);
+    
     _imp->projectPath = path;
     if (!autoSave) {
         _imp->hasProjectBeenSavedByUser = true;
@@ -480,8 +476,13 @@ Project::findAndTryLoadAutoSave()
                     assert(!_imp->isLoadingProject);
                     _imp->isLoadingProject = true;
                 }
+                QString existingFilePath;
+                if (exists && !filename.isEmpty()) {
+                    existingFilePath = QFileInfo(filename).filePath();
+                }
+                
                 try {
-                    loadProjectInternal(savesDir.path() + QDir::separator(), entry);
+                    loadProjectInternal(savesDir.path() + QDir::separator(), entry,true,existingFilePath);
                 } catch (const std::exception & e) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() + ": " + e.what() );
                     getApp()->createNode( CreateNodeArgs("Viewer") );
@@ -534,7 +535,24 @@ Project::initializeKnobs()
 {
     boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Settings");
 
+    _imp->envVars = Natron::createKnob<Path_Knob>(this, "Environment variables");
+    _imp->envVars->setName("envVars");
+    _imp->envVars->setHintToolTip("Specify here environment variables for the project. Any environment variable can be used "
+                                  "in file paths and can be used between brackets, for example: \n"
+                                  "[" NATRON_PROJECT_ENV_VAR_NAME "]MyProject.ntp \n"
+                                  "You can add as many env. variables as you want and can name them as you want. This way it "
+                                  "makes it easy to share your projects and move files around."
+                                  "By default if a file-path is NOT absolute (i.e: not starting with '/' on Unix or a drive name on Windows) "
+                                  "then it will be expanded using the [" NATRON_PROJECT_ENV_VAR_NAME "] environment variable. "
+                                  "Absolute paths are treated as normal."
+                                  " The [" NATRON_PROJECT_ENV_VAR_NAME "] environment variable will be set automatically to "
+                                  " the location of the project file when loading a project.");
+    _imp->envVars->setSecret(false);
+    _imp->envVars->setMultiPath(true);
+    page->addKnob(_imp->envVars);
+    
     _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
+    _imp->formatKnob->setHintToolTip("The project output format is what is used as canvas on the viewers.");
     _imp->formatKnob->setName("outputFormat");
 
     const std::vector<Format*> & appFormats = appPTR->getFormats();
@@ -596,21 +614,24 @@ Project::initializeKnobs()
     _imp->colorSpace8bits->setAnimationEnabled(false);
     _imp->colorSpace8bits->populateChoices(colorSpaces);
     _imp->colorSpace8bits->setDefaultValue(0);
-
+    page->addKnob(_imp->colorSpace8bits);
+    
     _imp->colorSpace16bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16 bits images");
     _imp->colorSpace16bits->setName("16bitCS");
     _imp->colorSpace16bits->setHintToolTip("Defines the color-space in which 16 bits images are assumed to be by default.");
     _imp->colorSpace16bits->setAnimationEnabled(false);
     _imp->colorSpace16bits->populateChoices(colorSpaces);
     _imp->colorSpace16bits->setDefaultValue(2);
-
+    page->addKnob(_imp->colorSpace16bits);
+    
     _imp->colorSpace32bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32 bits fp images");
     _imp->colorSpace32bits->setName("32bitCS");
     _imp->colorSpace32bits->setHintToolTip("Defines the color-space in which 32 bits floating point images are assumed to be by default.");
     _imp->colorSpace32bits->setAnimationEnabled(false);
     _imp->colorSpace32bits->populateChoices(colorSpaces);
     _imp->colorSpace32bits->setDefaultValue(1);
-
+    page->addKnob(_imp->colorSpace32bits);
+    
     emit knobsInitialized();
 } // initializeKnobs
 
@@ -749,48 +770,36 @@ void
 Project::setFrameRange(int first,
                        int last)
 {
-    QMutexLocker l(&_imp->timelineMutex);
-
     _imp->timeline->setFrameRange(first,last);
 }
 
 int
 Project::currentFrame() const
 {
-    QMutexLocker l(&_imp->timelineMutex);
-
     return _imp->timeline->currentFrame();
 }
 
 int
 Project::firstFrame() const
 {
-    QMutexLocker l(&_imp->timelineMutex);
-
     return _imp->timeline->firstFrame();
 }
 
 int
 Project::lastFrame() const
 {
-    QMutexLocker l(&_imp->timelineMutex);
-
     return _imp->timeline->lastFrame();
 }
 
 int
 Project::leftBound() const
 {
-    QMutexLocker l(&_imp->timelineMutex);
-
     return _imp->timeline->leftBound();
 }
 
 int
 Project::rightBound() const
 {
-    QMutexLocker l(&_imp->timelineMutex);
-
     return _imp->timeline->rightBound();
 }
 
@@ -928,16 +937,12 @@ Project::getProjectAgeSinceLastAutosave() const
 bool
 Project::isAutoPreviewEnabled() const
 {
-    QMutexLocker l(&_imp->previewModeMutex);
-
     return _imp->previewMode->getValue();
 }
 
 void
 Project::toggleAutoPreview()
 {
-    QMutexLocker l(&_imp->previewModeMutex);
-
     _imp->previewMode->setValue(!_imp->previewMode->getValue(),0);
 }
 
@@ -985,10 +990,10 @@ Project::save(ProjectSerialization* serializationObject) const
 }
 
 void
-Project::load(const ProjectSerialization & obj)
+Project::load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath)
 {
     _imp->nodeCounters.clear();
-    _imp->restoreFromSerialization(obj);
+    _imp->restoreFromSerialization(obj,name,path,isAutoSave,realFilePath);
     Format f;
     getProjectDefaultFormat(&f);
     emit formatChanged(f);
@@ -1031,7 +1036,7 @@ Project::onKnobValueChanged(KnobI* knob,
         emit mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
         emit autoPreviewChanged( _imp->previewMode->getValue() );
-    }
+    } 
 }
 
 bool
@@ -1419,4 +1424,19 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
         break;
     }
 }
+
+void
+Project::getEnvironmentVariables(std::map<std::string,std::string>& env) const
+{
+    std::string raw = _imp->envVars->getValue();
+    QStringList variables = QString(raw.c_str()).split(';');
+    for (int i = 0; i < variables.size(); ++i) {
+        QStringList split = variables[i].split(':');
+        if (split.size() != 2) {
+            continue;
+        }
+        env.insert(std::make_pair(split[0].toStdString(),split[1].toStdString()));
+    }
+}
+    
 } //namespace Natron

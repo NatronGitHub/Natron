@@ -1358,7 +1358,7 @@ Gui::exportLayout()
     std::vector<std::string> filters;
 
     filters.push_back(".nl");
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString() );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
@@ -1408,7 +1408,7 @@ Gui::importLayout()
     std::vector<std::string> filters;
 
     filters.push_back(".nl");
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString() );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         std::ifstream ifile;

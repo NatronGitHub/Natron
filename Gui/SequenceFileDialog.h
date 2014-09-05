@@ -92,7 +92,7 @@ public:
 
 
     void setUrls(const std::vector<QUrl> &urls);
-    void addUrls(const std::vector<QUrl> &urls, int row = -1, bool move = true);
+    void addUrls(const std::vector<QUrl> &urls, int row = -1,bool removeExisting = false);
     std::vector<QUrl> urls() const;
     void setFileSystemModel(QFileSystemModel *model);
     QFileSystemModel* getFileSystemModel() const
@@ -102,6 +102,12 @@ public:
 
     void setUrl(const QModelIndex &index, const QUrl &url, const QModelIndex &dirIndex);
 
+    int getNUrls() const {
+        return watching.size();
+    }
+    
+    void removeRowIndex(const QModelIndex& index);
+
 public slots:
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void layoutChanged();
@@ -109,6 +115,8 @@ public slots:
 private:
     void changed(const QString &path);
     void addIndexToWatch(const QString &path, const QModelIndex &index);
+    
+    
     QFileSystemModel *fileSystemModel;
     std::vector<std::pair<QModelIndex, QString> > watching;
     std::vector<QUrl> invalidUrls;
@@ -117,13 +125,12 @@ private:
 class FavoriteItemDelegate
     : public QStyledItemDelegate
 {
+    
     QFileSystemModel *_model;
+    std::map<std::string,std::string> envVars;
 
 public:
-    FavoriteItemDelegate(QFileSystemModel *model)
-        : QStyledItemDelegate(),_model(model)
-    {
-    }
+    FavoriteItemDelegate(Gui* gui,QFileSystemModel *model);
 
 private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
@@ -141,7 +148,7 @@ signals:
     void urlRequested(const QUrl &url);
 
 public:
-    explicit FavoriteView(QWidget *parent = 0);
+    explicit FavoriteView(Gui* gui,QWidget *parent = 0);
     void setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls);
     ~FavoriteView();
 
@@ -157,6 +164,10 @@ public:
     {
         urlModel->addUrls(list, row);
     }
+    
+    int getNUrls() const {
+        return urlModel->getNUrls();
+    }
 
     std::vector<QUrl> urls() const
     {
@@ -167,6 +178,7 @@ public:
 
     void rename(const QModelIndex & index,const QString & name);
 
+    
 public slots:
     void clicked(const QModelIndex &index);
     void showMenu(const QPoint &position);
@@ -185,6 +197,7 @@ private:
     }
 
 private:
+    Gui* _gui;
     UrlModel *urlModel;
     FavoriteItemDelegate *_itemDelegate;
 };
@@ -264,12 +277,10 @@ class FileDialogComboBox
     : public QComboBox
 {
 public:
-    explicit FileDialogComboBox(QWidget *parent = 0)
-        : QComboBox(parent), urlModel(0)
-    {
-    }
-
-    void setFileDialogPointer(SequenceFileDialog *p);
+    
+    
+    FileDialogComboBox(SequenceFileDialog *p,QWidget *parent = 0);
+    
     void showPopup();
     void setHistory(const QStringList &paths);
     QStringList history() const
@@ -309,10 +320,10 @@ public:
 
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
                        const std::vector<std::string> & filters, // the user accepted file types. Empty means it supports everything
-                       bool isSequenceDialog = true, // true if this dialog can display sequences
-                       FileDialogMode mode = OPEN_DIALOG, // if it is an open or save dialog
-                       const std::string & currentDirectory = "",  // the directory to show first
-                       Gui* gui = NULL);
+                       bool isSequenceDialog, // true if this dialog can display sequences
+                       FileDialogMode mode, // if it is an open or save dialog
+                       const std::string & currentDirectory,  // the directory to show first
+                       Gui* gui);
 
     virtual ~SequenceFileDialog();
 

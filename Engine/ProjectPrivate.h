@@ -25,6 +25,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 
 class QTimer;
@@ -63,18 +64,21 @@ struct ProjectPrivate
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
     QDateTime projectCreationTime; //< the project creation time
-    boost::shared_ptr<Choice_Knob> formatKnob;
+    
     std::list<Format> builtinFormats;
     std::list<Format> additionalFormats; //< added by the user
-    mutable QMutex formatMutex;
+    mutable QMutex formatMutex; //< protects builtinFormats & additionalFormats
+    
+
+    ///Project parameters (settings)
+    boost::shared_ptr<Path_Knob> envVars;
+    boost::shared_ptr<Choice_Knob> formatKnob; //< built from builtinFormats & additionalFormats
     boost::shared_ptr<Button_Knob> addFormatKnob;
     boost::shared_ptr<Int_Knob> viewsCount;
-    mutable QMutex viewsCountMutex;
     boost::shared_ptr<Int_Knob> mainView;
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
-    mutable QMutex previewModeMutex;
     boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
-    mutable QMutex timelineMutex;
+    
     boost::shared_ptr<TimeLine> timeline; // global timeline
     mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
     std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
@@ -91,9 +95,14 @@ struct ProjectPrivate
     
     ProjectPrivate(Natron::Project* project);
 
-    void restoreFromSerialization(const ProjectSerialization & obj);
+    void restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
 
     bool findFormat(int index,Format* format) const;
+    
+    /**
+     * @brief Auto fills the project directory parameter given the project file path
+     **/
+    void autoSetProjectDirectory(const QString& path);
 };
 }
 

@@ -229,6 +229,10 @@ public:
         return true;
     }
 
+    /**
+     * @brief Returns the user environment variables for the project
+     **/
+    void getEnvironmentVariables(std::map<std::string,std::string>& env) const;
 public slots:
 
     void onAutoSaveTimerTriggered();
@@ -262,7 +266,7 @@ private:
 
     void setProjectDefaultFormat(const Format & f);
 
-    void loadProjectInternal(const QString & path,const QString & name);
+    void loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,const QString& realFilePath);
 
     QDateTime saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
 
@@ -309,7 +313,7 @@ private:
 
     void save(ProjectSerialization* serializationObject) const;
 
-    void load(const ProjectSerialization & obj);
+    void load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;

@@ -276,9 +276,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     }
     _buttonsLayout->addWidget(_lookInLabel);
 
-    _lookInCombobox = new FileDialogComboBox(_buttonsWidget);
+    _lookInCombobox = new FileDialogComboBox(this,_buttonsWidget);
     _buttonsLayout->addWidget(_lookInCombobox);
-    _lookInCombobox->setFileDialogPointer(this);
     QObject::connect( _lookInCombobox, SIGNAL( activated(QString) ), this, SLOT( goToDirectory(QString) ) );
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
     _lookInCombobox->setDuplicatesEnabled(false);
@@ -317,7 +316,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _favoriteWidget = new QWidget(this);
     _favoriteLayout = new QVBoxLayout(_favoriteWidget);
     _favoriteWidget->setLayout(_favoriteLayout);
-    _favoriteView = new FavoriteView(this);
+    _favoriteView = new FavoriteView(_gui,this);
     QObject::connect( _favoriteView,SIGNAL( urlRequested(QUrl) ),this,SLOT( seekUrl(QUrl) ) );
     _favoriteLayout->setSpacing(0);
     _favoriteLayout->setContentsMargins(0, 0, 0, 0);
@@ -468,6 +467,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     resize(900, 400);
 
     std::vector<QUrl> initialBookmarks;
+    initialBookmarks.push_back( QUrl::fromLocalFile( QDir::homePath() ) );
 #ifndef __NATRON_WIN32__
     initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("/") ) );
 #else
@@ -475,7 +475,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("C:") ) );
 
 #endif
-    initialBookmarks.push_back( QUrl::fromLocalFile( QDir::homePath() ) );
+    
     _favoriteView->setModelAndUrls(_favoriteViewModel.get(), initialBookmarks);
 
 
@@ -582,11 +582,42 @@ SequenceFileDialog::restoreState(const QByteArray & state)
         }
         _centerSplitter->setSizes(list);
     }
+    
+    std::map<std::string,std::string> envVar;
+    _gui->getApp()->getProject()->getEnvironmentVariables(envVar);
+    
     std::vector<QUrl> stdBookMarks;
+    
+    
     for (int i = 0; i < bookmarks.count(); ++i) {
-        stdBookMarks.push_back( bookmarks.at(i) );
+        QString urlPath = bookmarks[i].path();
+        if (urlPath.size() > 1 && (urlPath.endsWith('/') || urlPath.endsWith('\\'))) {
+            urlPath = urlPath.remove(urlPath.size() - 1, 1);
+        }
+        bool alreadyFound = false;
+        for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
+            QString var(it->second.c_str());
+            if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
+                var = urlPath.remove(var.size() - 1, 1);
+            }
+            if (var == urlPath) {
+                alreadyFound = true;
+                break;
+            }
+        }
+        if (!alreadyFound) {
+            stdBookMarks.push_back( bookmarks[i] );
+        }
     }
-    _favoriteView->setUrls(stdBookMarks);
+    
+    ///Now add env vars
+    for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
+        QUrl url = QUrl::fromLocalFile(it->second.c_str());
+        stdBookMarks.push_back(url);
+    }
+    if (!stdBookMarks.empty()) {
+        _favoriteView->addUrls(stdBookMarks,_favoriteView->getNUrls());
+    }
     while (history.count() > 5) {
         history.pop_front();
     }
@@ -897,7 +928,7 @@ SequenceDialogProxyModel::filterAcceptsRow(int source_row,
 
 
     /*if the item does not match the filter regexp set by the user, discard it*/
-    if ( !isAcceptedByUser(absoluteFilePath) ) {
+    if ( !isAcceptedByUser(absoluteFilePath) ) { 
         return false;
     }
 
@@ -1199,37 +1230,6 @@ SequenceItemDelegate::paint(QPainter * painter,
     }
 } // paint
 
-void
-FavoriteItemDelegate::paint(QPainter * painter,
-                            const QStyleOptionViewItem & option,
-                            const QModelIndex & index) const
-{
-    if (index.column() == 0) {
-        QString str = index.data().toString();
-        QFileInfo fileInfo(str);
-        QModelIndex modelIndex = _model->index(str);
-        if ( !modelIndex.isValid() ) {
-            return;
-        }
-        str = modelIndex.data().toString();
-        QIcon icon = _model->iconProvider()->icon(fileInfo);
-        int totalSize = option.rect.width();
-        int iconSize = option.decorationSize.width();
-        int textSize = totalSize - iconSize;
-        QRect iconRect( option.rect.x(),option.rect.y(),iconSize,option.rect.height() );
-        QRect textRect( option.rect.x() + iconSize,option.rect.y(),textSize,option.rect.height() );
-        QRect r;
-        if (option.state & QStyle::State_Selected) {
-            painter->fillRect( option.rect, option.palette.highlight() );
-        }
-        painter->drawPixmap(iconRect,
-                            icon.pixmap( icon.actualSize( QSize( iconRect.width(),iconRect.height() ) ) ),
-                            r);
-        painter->drawText(textRect,Qt::TextSingleLine,str,&r);
-    } else {
-        QStyledItemDelegate::paint(painter,option,index);
-    }
-}
 
 bool
 SequenceFileDialog::isDirectory(const QString & name) const
@@ -1913,7 +1913,8 @@ UrlModel::setData(const QModelIndex &index,
         QModelIndex dirIndex = fileSystemModel->index( url.toLocalFile() );
         QStandardItemModel::setData(index, QDir::toNativeSeparators( fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString() ), Qt::ToolTipRole);
         //  QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
-        QStandardItemModel::setData(index, fileSystemModel->data(dirIndex, Qt::DecorationRole),Qt::DecorationRole);
+        QVariant deco = fileSystemModel->data(dirIndex, Qt::DecorationRole);
+        QStandardItemModel::setData(index, deco ,Qt::DecorationRole);
         QStandardItemModel::setData(index, url, UrlRole);
 
         return true;
@@ -1929,7 +1930,7 @@ UrlModel::setUrl(const QModelIndex &index,
 {
     setData(index, url, UrlRole);
     if ( url.path().isEmpty() ) {
-        setData( index, fileSystemModel->myComputer() );
+        setData(index, fileSystemModel->myComputer() );
         setData(index, fileSystemModel->myComputer(Qt::DecorationRole), Qt::DecorationRole);
     } else {
         QString newName;
@@ -1983,44 +1984,76 @@ UrlModel::setUrls(const std::vector<QUrl> &urls)
 
 void
 UrlModel::addUrls(const std::vector<QUrl> &list,
-                  int row,
-                  bool move)
+                  int startRow,bool removeExisting)
 {
-    if (row == -1) {
-        row = rowCount();
+    if (startRow == -1) {
+        startRow = rowCount();
     }
-    row = qMin( row, rowCount() );
-    for (int i = (int)list.size() - 1; i >= 0; --i) {
+    startRow = qMin( startRow,rowCount() );
+    
+    ///Remove already existant URLS
+    ///Result is a pair new Url, clean url path
+    std::vector<std::pair<QUrl,QString> > realList;
+    for (U32 i = 0; i < list.size(); ++i) {
+        
         QUrl url = list[i];
         if ( !url.isValid() || ( url.scheme() != QLatin1String("file") ) ) {
             continue;
         }
-        //this makes sure the url is clean
+        
         const QString cleanUrl = QDir::cleanPath( url.toLocalFile() );
-        url = QUrl::fromLocalFile(cleanUrl);
-
-        for (int j = 0; move && j < rowCount(); ++j) {
-            //QString local = index(j, 0).data(UrlRole).toUrl().toLocalFile();
-            //#if defined(__NATRON_WIN32__)
-            //if (index(j, 0).data(UrlRole).toUrl().toLocalFile().toLower() == cleanUrl.toLower()) {
-            //#else
-            if (index(j, 0).data(UrlRole).toUrl().toLocalFile() == cleanUrl) {
-                //#endif
-                removeRow(j);
-                if (j <= row) {
-                    --row;
-                }
-                break;
-            }
-        }
-        row = qMax(row, 0);
+        
         QModelIndex idx = fileSystemModel->index(cleanUrl);
         if ( !fileSystemModel->isDir(idx) ) {
             continue;
         }
-        insertRows(row, 1);
-        setUrl(index(row, 0), url, idx);
-        watching.push_back( make_pair(idx, cleanUrl) );
+        
+        bool found = false;
+        
+        int rc = rowCount();
+        for (int j = 0; j < rc ; ++j) {
+            if (index(j, 0).data(UrlRole).toUrl().toLocalFile() == cleanUrl) {
+                if (removeExisting) {
+                    if (j < startRow) {
+                        --startRow;
+                    }
+                    removeRow(j);
+                    ///remove it from wacthing too
+                    for (U32 k = 0; k < watching.size();++k) {
+                        if (watching[k].second == cleanUrl) {
+                            watching.erase(watching.begin() + k);
+                            break;
+                        }
+                    }
+                } else {
+                    found = true;
+                }
+                break;
+            }
+        }
+        if (!found) {
+            realList.push_back(std::make_pair(QUrl::fromLocalFile(cleanUrl),cleanUrl));
+        }
+    }
+    if (realList.empty()) {
+        return;
+    }
+    
+    int rc = rowCount();
+    if (startRow < (rc + (int)realList.size())) {
+        insertRows(startRow,realList.size());
+    }
+    
+    int row = startRow;
+    for (int i = 0; i < (int)realList.size(); ++i) {
+        if (row >= rowCount()) {
+            insertRow(row);
+        }
+        QModelIndex idx = fileSystemModel->index(realList[i].second);
+        setUrl(index(row, 0), realList[i].first, idx);
+        watching.push_back( make_pair(idx, realList[i].second) );
+        ++row;
+
     }
 }
 
@@ -2111,8 +2144,92 @@ UrlModel::changed(const QString &path)
     }
 }
 
-FavoriteView::FavoriteView(QWidget *parent)
+
+void
+UrlModel::removeRowIndex(const QModelIndex& index)
+{
+    QString urlPath = index.data(UrlRole).toUrl().path();
+    if (!urlPath.isEmpty()) {
+        removeRow( index.row() );
+        for (U32 j = 0; j < watching.size(); ++j) {
+            if (watching[j].second == urlPath) {
+                watching.erase(watching.begin() + j);
+                break;
+            }
+        }
+    }
+}
+
+
+FavoriteItemDelegate::FavoriteItemDelegate(Gui* gui,QFileSystemModel *model)
+: QStyledItemDelegate(),_model(model)
+{
+    gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+
+}
+
+void
+FavoriteItemDelegate::paint(QPainter * painter,
+                            const QStyleOptionViewItem & option,
+                            const QModelIndex & index) const
+{
+    if (index.column() == 0) {
+        QString str = index.data().toString();
+        
+        ///if str ends with '/' remove it
+        if (str.size() > 1 && (str.endsWith('/') || str.endsWith('\\'))) {
+            str = str.remove(str.size() - 1, 1);
+        }
+        
+        std::map<std::string,std::string>::const_iterator isEnvVar = envVars.end();
+        for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it!=envVars.end(); ++it) {
+            ///if it->second ends with '/' remove it
+            QString var(it->second.c_str());
+            if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
+                var = var.remove(var.size() - 1, 1);
+            }
+            if (var == str) {
+                isEnvVar = it;
+                break;
+            }
+        }
+        
+        QFileInfo fileInfo(str);
+        if (isEnvVar == envVars.end()) {
+            QModelIndex modelIndex = _model->index(str);
+            if ( !modelIndex.isValid() ) {
+                return;
+            }
+            str = modelIndex.data().toString();
+        } else {
+            str.clear();
+            str.append('[');
+            str.append(isEnvVar->first.c_str());
+            str.append(']');
+        }
+        QIcon icon = _model->iconProvider()->icon(fileInfo);
+        int totalSize = option.rect.width();
+        int iconSize = option.decorationSize.width();
+        int textSize = totalSize - iconSize;
+        QRect iconRect( option.rect.x(),option.rect.y(),iconSize,option.rect.height() );
+        QRect textRect( option.rect.x() + iconSize,option.rect.y(),textSize,option.rect.height() );
+        QRect r;
+        if (option.state & QStyle::State_Selected) {
+            painter->fillRect( option.rect, option.palette.highlight() );
+        }
+        painter->drawPixmap(iconRect,
+                            icon.pixmap( icon.actualSize( QSize( iconRect.width(),iconRect.height() ) ) ),
+                            r);
+        painter->drawText(textRect,Qt::TextSingleLine,str,&r);
+    } else {
+        QStyledItemDelegate::paint(painter,option,index);
+    }
+}
+
+
+FavoriteView::FavoriteView(Gui* gui,QWidget *parent)
     : QListView(parent)
+      , _gui(gui)
       , urlModel(0)
       , _itemDelegate(0)
 {
@@ -2129,7 +2246,7 @@ FavoriteView::setModelAndUrls(QFileSystemModel *model,
     urlModel = new UrlModel(this);
     urlModel->setFileSystemModel(model);
     assert(!_itemDelegate);
-    _itemDelegate = new FavoriteItemDelegate(model);
+    _itemDelegate = new FavoriteItemDelegate(_gui,model);
     setItemDelegate(_itemDelegate);
     setModel(urlModel);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -2184,9 +2301,7 @@ FavoriteView::removeEntry()
     }
 
     for (int i = 0; i < indexes.count(); ++i) {
-        if ( !indexes.at(i).data(UrlModel::UrlRole).toUrl().path().isEmpty() ) {
-            model()->removeRow( indexes.at(i).row() );
-        }
+        urlModel->removeRowIndex(indexes[i]);
     }
 }
 
@@ -2289,6 +2404,7 @@ FavoriteView::showMenu(const QPoint &position)
     }
     if (actions.count() > 0) {
         QMenu menu(this);
+        menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
         menu.addActions(actions);
         menu.exec( mapToGlobal(position) );
     }
@@ -2374,7 +2490,7 @@ UrlModel::dropMimeData(const QMimeData *data,
     for (int i = 0; i < data->urls().count(); ++i) {
         urls.push_back( data->urls().at(i) );
     }
-    addUrls(urls, row);
+    addUrls(urls, row,true);
 
     return true;
 }
@@ -2387,14 +2503,15 @@ FavoriteView::dragEnterEvent(QDragEnterEvent* e)
     }
 }
 
-void
-FileDialogComboBox::setFileDialogPointer(SequenceFileDialog *p)
+FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,QWidget *parent)
+: QComboBox(parent)
+, urlModel(new UrlModel(this))
+, dialog(p)
 {
-    dialog = p;
-    urlModel = new UrlModel(this);
     urlModel->setFileSystemModel( p->getFavoriteSystemModel() );
     setModel(urlModel);
 }
+
 
 void
 FileDialogComboBox::showPopup()
@@ -2441,7 +2558,7 @@ FileDialogComboBox::showPopup()
         for (int i = 0; i < urls.count(); ++i) {
             stdUrls.push_back( urls.at(i) );
         }
-        urlModel->addUrls(stdUrls, -1, false);
+        urlModel->addUrls(stdUrls, -1);
     }
     setCurrentIndex(0);
 

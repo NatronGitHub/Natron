@@ -12,7 +12,7 @@
 
 #include <QDebug>
 #include <QTimer>
-
+#include <QDateTime>
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeSerialization.h"
@@ -30,19 +30,17 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , ageSinceLastSave( QDateTime::currentDateTime() )
       , lastAutoSave()
       , projectCreationTime(ageSinceLastSave)
-      , formatKnob()
       , builtinFormats()
       , additionalFormats()
       , formatMutex()
+      , envVars()
+      , formatKnob()
       , addFormatKnob()
       , viewsCount()
-      , viewsCountMutex()
       , previewMode()
-      , previewModeMutex()
       , colorSpace8bits()
       , colorSpace16bits()
       , colorSpace32bits()
-      , timelineMutex()
       , timeline( new TimeLine(project) )
       , autoSetProjectFormat(true)
       , currentNodes()
@@ -59,7 +57,11 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 }
 
 void
-ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
+ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
+                                         const QString& name,
+                                         const QString& path,
+                                         bool isAutoSave,
+                                         const QString& realFilePath)
 {
     /*1st OFF RESTORE THE PROJECT KNOBS*/
 
@@ -100,6 +102,10 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
                 break;
             }
         }
+        if (projectKnobs[i] == envVars) {
+            autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+        }
+
     }
 
 
@@ -248,6 +254,14 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
     }
 
     nodeCounters = obj.getNodeCounters();
+    
+    QDateTime time = QDateTime::currentDateTime();
+    autoSetProjectFormat = false;
+    hasProjectBeenSavedByUser = true;
+    projectName = name;
+    projectPath = isAutoSave ? realFilePath : path;
+    ageSinceLastSave = time;
+    lastAutoSave = time;
 } // restoreFromSerialization
 
 bool
@@ -286,5 +300,45 @@ ProjectPrivate::findFormat(int index,
     }
 
     return false;
+}
+    
+void
+ProjectPrivate::autoSetProjectDirectory(const QString& path)
+{
+    std::string env = envVars->getValue();
+    QStringList variables = QString(env.c_str()).split(';');
+    
+    QStringList newVariables;
+    ///If there was already a project variable, update it, otherwise create it
+    for (int i = 0; i < variables.size(); ++i) {
+        QStringList var = variables[i].split(':');
+        if (var.size() != 2) {
+            ///ignore
+            continue;
+        }
+        
+        ///update the project path
+        if (var[0] == NATRON_PROJECT_ENV_VAR_NAME) {
+            newVariables << QString(NATRON_PROJECT_ENV_VAR_NAME":" + path);
+        } else {
+            newVariables << variables[i];
+        }
+        
+    }
+    
+    if (newVariables.empty()) {
+        newVariables << QString(NATRON_PROJECT_ENV_VAR_NAME":" + path);
+    }
+    
+    std::string newEnv;
+    for (int i = 0 ; i < newVariables.size(); ++i) {
+        newEnv += newVariables[i].toStdString();
+        if (i < (newVariables.size() - 1)) {
+            newEnv += ';';
+        }
+    }
+    if (env != newEnv) {
+        envVars->setValue(newEnv, 0);
+    }
 }
 } // namespace Natron

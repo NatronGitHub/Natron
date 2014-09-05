@@ -323,6 +323,7 @@ public:
 
     ImportExportCurveDialog(bool isExportDialog,
                             const std::vector<CurveGui*> & curves,
+                            Gui* gui,
                             QWidget* parent = 0);
 
     virtual ~ImportExportCurveDialog()
@@ -344,7 +345,7 @@ public slots:
     void open_file();
 
 private:
-
+    Gui* _gui;
     bool _isExportDialog;
     QVBoxLayout* _mainLayout;
 

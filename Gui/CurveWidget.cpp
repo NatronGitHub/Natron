@@ -2936,7 +2936,7 @@ CurveWidget::exportCurveToAscii()
         return;
     }
 
-    ImportExportCurveDialog dialog(true,curves,this);
+    ImportExportCurveDialog dialog(true,curves,_imp->_gui,this);
     if ( dialog.exec() ) {
         double x = dialog.getXStart();
         double end = dialog.getXEnd();
@@ -3006,7 +3006,7 @@ CurveWidget::importCurveFromAscii()
         return;
     }
 
-    ImportExportCurveDialog dialog(false,curves,this);
+    ImportExportCurveDialog dialog(false,curves,_imp->_gui,this);
     if ( dialog.exec() ) {
         QString filePath = dialog.getFilePath();
         if ( !QFile::exists(filePath) ) {
@@ -3113,8 +3113,10 @@ CurveWidget::importCurveFromAscii()
 
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                                                  const std::vector<CurveGui*> & curves,
+                                                 Gui* gui,
                                                  QWidget* parent)
     : QDialog(parent)
+      , _gui(gui)
       , _isExportDialog(isExportDialog)
       , _mainLayout(0)
       , _fileContainer(0)
@@ -3252,13 +3254,13 @@ ImportExportCurveDialog::open_file()
     std::vector<std::string> filters;
     filters.push_back("*");
     if (_isExportDialog) {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::SAVE_DIALOG);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::SAVE_DIALOG,"",_gui);
         if ( dialog.exec() ) {
             std::string file = dialog.filesToSave();
             _fileLineEdit->setText( file.c_str() );
         }
     } else {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG,"",_gui);
         if ( dialog.exec() ) {
             std::string files = dialog.selectedFiles();
             if ( !files.empty() ) {

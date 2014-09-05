@@ -171,10 +171,18 @@ private:
 
 
 /******************************PATH_KNOB**************************************/
+
+
+/**
+ * @brief A Path knob could also be called Environment_variable_Knob. 
+ * The string is encoded the following way:
+ * [VariableName1]:[Value1];[VariableName2]:[Value2] etc...
+ * Split all the ';' characters to get all different variables
+ * then for each variable split the ':' to get the name and the value of the variable.
+ **/
 class Path_Knob
-    :  public QObject, public Knob<std::string>
+    : public Knob<std::string>
 {
-    Q_OBJECT
 
 public:
 
@@ -192,18 +200,11 @@ public:
               bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
-    void open_file()
-    {
-        emit openFile();
-    }
 
     void setMultiPath(bool b);
 
     bool isMultiPath() const;
 
-signals:
-
-    void openFile();
 
 private:
 

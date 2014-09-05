@@ -1951,7 +1951,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
         RECURSIVE_ACTION();
-        _effect->runGetClipPrefsConditionally();
+        checkClipPrefs(time, renderScale, ofxReason);
     }
     if (_overlayInteract) {
         std::vector<std::string> params;

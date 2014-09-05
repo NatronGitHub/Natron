@@ -11,7 +11,7 @@
 
 #ifndef NATRON_GUI_KNOBGUIFILE_H_
 #define NATRON_GUI_KNOBGUIFILE_H_
-
+#include <map>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -37,7 +37,9 @@ class LineEdit;
 class DockablePanel;
 class Button;
 class File_Knob_UndoCommand;
-
+class TableView;
+class TableModel;
+class TableItem;
 //================================
 class File_KnobGui
     : public KnobGui
@@ -162,12 +164,15 @@ public:
 public slots:
 
 
-    void onReturnPressed();
 
-    void onButtonClicked();
-
-    void open_file();
-
+    void onAddButtonClicked();
+    
+    void onRemoveButtonClicked();
+    
+    void onOpenFileButtonClicked();
+    
+    void onItemDataChanged(TableItem* item);
+    
 private:
 
 
@@ -181,11 +186,39 @@ private:
 
     void updateLastOpened(const QString &str);
 
-private:
-    LineEdit *_lineEdit;
-    Button *_openFileButton;
+    /**
+     * @brief A Path knob could also be called Environment_variable_Knob.
+     * The string is encoded the following way:
+     * [VariableName1]:[Value1];[VariableName2]:[Value2] etc...
+     * Split all the ';' characters to get all different variables
+     * then for each variable split the ':' to get the name and the value of the variable.
+     **/
+    std::string rebuildPath() const;
+    
+    void createItem(int row,const QString& value,const QString& varName);
+    
+    struct Row
+    {
+        TableItem* varName;
+        TableItem* value;
+    };
+    typedef std::map<int,Row> Variables;
+    
+ 
+    QWidget* _mainContainer;
+    
+    LineEdit* _lineEdit;
+    Button* _openFileButton;
+    
+    
+    TableView *_table;
+    TableModel* _model;
+    Button *_addPathButton;
+    Button* _removePathButton;
     QString _lastOpened;
     boost::shared_ptr<Path_Knob> _knob;
+    bool _isInsertingItem;
+    Variables _items;
 };
 
 #endif // NATRON_GUI_KNOBGUIFILE_H_
