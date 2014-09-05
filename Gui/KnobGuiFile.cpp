@@ -436,12 +436,12 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         mainLayout->setContentsMargins(0, 0, 0, 0);
         
         _table = new TableView( _mainContainer );
-        //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         //    QObject::connect( _table, SIGNAL( editingFinished() ), this, SLOT( onReturnPressed() ) );
         if ( hasToolTip() ) {
             _table->setToolTip( toolTip() );
         }
-        //    _table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        _table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         _table->setAttribute(Qt::WA_MacShowFocusRect,0);
 
 #if QT_VERSION < 0x050000
