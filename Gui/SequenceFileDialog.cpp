@@ -553,6 +553,33 @@ SequenceFileDialog::saveState() const
     return data;
 }
 
+static void expandVariable(const std::map<std::string,std::string>& env,QString& str)
+{
+    std::string stdStr = str.toStdString();
+    for (;;) {
+        bool found = false;
+        for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
+            
+            if (stdStr.size() > (it->first.size() + 2) &&
+                stdStr[0] == '[' &&
+                stdStr.substr(1,it->first.size()) == it->first &&
+                stdStr[it->first.size() + 1] == ']') {
+                
+                stdStr.erase(stdStr.begin() + it->first.size() + 1);
+                stdStr.erase(stdStr.begin());
+                stdStr.replace(0,it->first.size(),it->second);
+                found = true;
+                break;
+            }
+                
+        }
+        if (!found) {
+            str = stdStr.c_str();
+            return;
+        }
+    }
+}
+
 bool
 SequenceFileDialog::restoreState(const QByteArray & state)
 {
@@ -589,32 +616,46 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     std::vector<QUrl> stdBookMarks;
     
     
+    QStringList expandedVars;
+    for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
+        QString var(it->second.c_str());
+        
+        ///The variable may be nested
+        expandVariable(envVar, var);
+        expandedVars.push_back(var);
+        QUrl url = QUrl::fromLocalFile(var);
+        
+        QDir dir(var);
+        if (dir.exists()) {
+            stdBookMarks.push_back(url);
+        }
+
+    }
+    
     for (int i = 0; i < bookmarks.count(); ++i) {
         QString urlPath = bookmarks[i].path();
         if (urlPath.size() > 1 && (urlPath.endsWith('/') || urlPath.endsWith('\\'))) {
             urlPath = urlPath.remove(urlPath.size() - 1, 1);
         }
         bool alreadyFound = false;
-        for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
-            QString var(it->second.c_str());
-            if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
-                var = urlPath.remove(var.size() - 1, 1);
+        
+        for (int j = 0;j < expandedVars.size();++j) {
+            if (expandedVars[j].size() > 1 && (expandedVars[j].endsWith('/') || expandedVars[j].endsWith('\\'))) {
+                expandedVars[j] = expandedVars[j].remove(expandedVars[j].size() - 1, 1);
             }
-            if (var == urlPath) {
+            if (expandedVars[j] == urlPath) {
                 alreadyFound = true;
                 break;
             }
         }
-        if (!alreadyFound) {
+        
+        QDir dir(urlPath);
+        if (!alreadyFound && dir.exists()) {
             stdBookMarks.push_back( bookmarks[i] );
         }
     }
     
-    ///Now add env vars
-    for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
-        QUrl url = QUrl::fromLocalFile(it->second.c_str());
-        stdBookMarks.push_back(url);
-    }
+
     if (!stdBookMarks.empty()) {
         _favoriteView->addUrls(stdBookMarks,_favoriteView->getNUrls());
     }
@@ -2185,6 +2226,7 @@ FavoriteItemDelegate::paint(QPainter * painter,
         for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it!=envVars.end(); ++it) {
             ///if it->second ends with '/' remove it
             QString var(it->second.c_str());
+            expandVariable(envVars, var);
             if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
                 var = var.remove(var.size() - 1, 1);
             }

@@ -478,7 +478,7 @@ Project::findAndTryLoadAutoSave()
                 }
                 QString existingFilePath;
                 if (exists && !filename.isEmpty()) {
-                    existingFilePath = QFileInfo(filename).filePath();
+                    existingFilePath = QFileInfo(filename).path(); 
                 }
                 
                 try {

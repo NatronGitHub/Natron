@@ -519,7 +519,9 @@ Path_KnobGui::onAddButtonClicked()
     
     if ( dialog.exec() ) {
         QString dirPath = dialog.currentDirectory().absolutePath();
-        
+        if (!dirPath.endsWith('/')) {
+            dirPath.append('/');
+        }
         updateLastOpened(dirPath);
         
         std::string oldValue = _knob->getValue();

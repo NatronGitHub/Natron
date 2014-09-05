@@ -305,6 +305,10 @@ ProjectPrivate::findFormat(int index,
 void
 ProjectPrivate::autoSetProjectDirectory(const QString& path)
 {
+    QString pathCpy = path;
+    if (!path.endsWith('/') && !path.endsWith('\\')) {
+        pathCpy.push_back('/');
+    }
     std::string env = envVars->getValue();
     QStringList variables = QString(env.c_str()).split(';');
     
@@ -319,7 +323,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
         
         ///update the project path
         if (var[0] == NATRON_PROJECT_ENV_VAR_NAME) {
-            newVariables << QString(NATRON_PROJECT_ENV_VAR_NAME":" + path);
+            newVariables << QString(NATRON_PROJECT_ENV_VAR_NAME":" + pathCpy);
         } else {
             newVariables << variables[i];
         }
@@ -327,7 +331,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     }
     
     if (newVariables.empty()) {
-        newVariables << QString(NATRON_PROJECT_ENV_VAR_NAME":" + path);
+        newVariables << QString(NATRON_PROJECT_ENV_VAR_NAME":" + pathCpy);
     }
     
     std::string newEnv;

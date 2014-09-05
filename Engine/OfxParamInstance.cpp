@@ -2325,7 +2325,7 @@ static bool isRelative(const std::string& str)
     return (str.empty() || (!str.empty() && (str[0] != '/')
                                      && (!(str.size() >= 2 && str[1] == ':'))));
 #else  //Unix
-     return (str.empty() || (str[0] == '/'));
+     return (str.empty() || (str[0] != '/'));
 #endif
 }
 
@@ -2347,7 +2347,7 @@ OfxStringInstance::projectEnvVarProxy(std::string& str) const
                 str.at(0) == '[' && /// env var name is bracketed
                 str.at(it->first.size() + 1) == ']') { /// env var name is bracketed
                 
-                str.erase(str.begin() + it->first.size());
+                str.erase(str.begin() + it->first.size() + 1);
                 str.erase(str.begin());
                 str.replace(0, it->first.size(),it->second);
                 
