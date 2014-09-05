@@ -443,7 +443,7 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         }
         //    _table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         _table->setAttribute(Qt::WA_MacShowFocusRect,0);
-        
+
 #if QT_VERSION < 0x050000
         _table->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
@@ -638,6 +638,8 @@ Path_KnobGui::createItem(int row,const QString& value,const QString& varName)
     _table->setItem(row, 0, cell0);
     _table->setItem(row, 1, cell1);
     _isInsertingItem = false;
+    _table->resizeColumnToContents(0);
+    _table->resizeColumnToContents(1);
 }
 
 void
