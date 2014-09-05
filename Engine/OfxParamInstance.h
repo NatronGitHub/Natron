@@ -631,6 +631,12 @@ public slots:
     void onKnobAnimationLevelChanged(int lvl);
 
 private:
+    
+    /**
+     * @brief If str starts with an env var of the project, replace it by the name of the env var
+     **/
+    void projectEnvVarProxy(std::string& str) const;
+    
     OfxEffectInstance* _node;
     boost::shared_ptr<File_Knob> _fileKnob;
     boost::shared_ptr<OutputFile_Knob> _outputFileKnob;

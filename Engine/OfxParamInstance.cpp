@@ -17,9 +17,10 @@
 
 #include <ofxParametricParam.h>
 
+#include <QFileInfo>
 
 #include "Engine/AppManager.h"
-
+#include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
@@ -2317,6 +2318,79 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
     }
 }
 
+
+static bool isRelative(const std::string& str)
+{
+#ifdef __NATRON_WIN32__
+    return (str.empty() || (!str.empty() && (str[0] != '/')
+                                     && (!(str.size() >= 2 && str[1] == ':'))));
+#else  //Unix
+     return (str.empty() || (str[0] == '/'));
+#endif
+}
+
+void
+OfxStringInstance::projectEnvVarProxy(std::string& str) const
+{
+    std::map<std::string,std::string> envvar;
+    _node->getApp()->getProject()->getEnvironmentVariables(envvar);
+    
+    bool startsWithEnvVar = false;
+    
+    ///Loop while we can still expand variables, up to NATRON_PROJECT_ENV_VAR_MAX_RECURSION recursions
+    for (int i = 0; i < NATRON_PROJECT_ENV_VAR_MAX_RECURSION; ++i) {
+        bool foundVariable = false;
+        for (std::map<std::string,std::string>::iterator it = envvar.begin(); it != envvar.end(); ++it) {
+            
+            if (str.size() >= (it->first.size() + 2) && ///can contain the environment variable name
+                str.substr(1, it->first.size()) ==  it->first && /// starts with the environment variable name
+                str.at(0) == '[' && /// env var name is bracketed
+                str.at(it->first.size() + 1) == ']') { /// env var name is bracketed
+                
+                str.erase(str.begin() + it->first.size());
+                str.erase(str.begin());
+                str.replace(0, it->first.size(),it->second);
+                
+                foundVariable = true;
+                if (!startsWithEnvVar) {
+                    startsWithEnvVar = true;
+                }
+                break;
+            }
+        }
+        if (!foundVariable) {
+            break;
+        }
+    }
+    
+    
+    ///Now check if the string is relative
+    if ( !str.empty() && isRelative(str) ) {
+        
+        ///If it doesn't start with an env var but is relative, prepend the project env var
+        std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+        if (foundProject != envvar.end()) {
+            const char& c = foundProject->second[foundProject->second.size() - 1];
+            bool addTrailingSlash = c != '/' && c != '\\';
+            std::string copy = foundProject->second;
+            if (addTrailingSlash) {
+                copy += '/';
+            }
+            copy += str;
+            str = copy;
+        }
+        
+        ///Canonicalize
+        QFileInfo info(str.c_str());
+        QString canonical =  info.canonicalFilePath();
+        if ( canonical.isEmpty() && !str.empty() ) {
+            return;
+        } else {
+            str = canonical.toStdString();
+        }
+    }
+}
+
 OfxStatus
 OfxStringInstance::get(std::string &str)
 {
@@ -2324,12 +2398,15 @@ OfxStringInstance::get(std::string &str)
     int currentFrame = _node->getApp()->getTimeLine()->currentFrame();
     if (_fileKnob) {
         str = _fileKnob->getFileName(currentFrame,/*view*/ 0);
+        projectEnvVarProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
+        projectEnvVarProxy(str);
     } else if (_stringKnob) {
         str = _stringKnob->getValueAtTime(currentFrame,0);
     } else if (_pathKnob) {
         str = _pathKnob->getValue();
+        projectEnvVarProxy(str);
     }
 
     return kOfxStatOK;
@@ -2342,12 +2419,15 @@ OfxStringInstance::get(OfxTime time,
     assert( _node->effectInstance() );
     if (_fileKnob) {
         str = _fileKnob->getFileName(std::floor(time + 0.5),/*view*/ 0);
+        projectEnvVarProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
+        projectEnvVarProxy(str);
     } else if (_stringKnob) {
         str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0);
     } else if (_pathKnob) {
         str = _pathKnob->getValue();
+        projectEnvVarProxy(str);
     }
 
     return kOfxStatOK;

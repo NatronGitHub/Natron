@@ -1124,17 +1124,14 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
     return std::make_pair(localVmin, localVmax);
 } // findAutoContrastVminVmax
 
-template <typename PIX,int maxValue>
+template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                             U32* output,
-                             int rOffset,
-                             int gOffset,
-                             int bOffset,
-                             int nComps)
+                             U32* output)
 {
-    Natron::ImageComponents comps = args.inputImage->getComponents();
+    size_t pixelSize = sizeof(PIX);
+    
     const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
 
     ///offset the output buffer at the starting point
@@ -1163,20 +1160,20 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                 } else {
                     double r,g,b;
                     int a;
-                    switch (comps) {
-                    case Natron::ImageComponentRGBA:
+                    switch (nComps) {
+                    case 4:
                         r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
                         g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
                         b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
                         a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
                         break;
-                    case Natron::ImageComponentRGB:
+                    case 3:
                         r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
                         g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
                         b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
                         a = (src_pixels ? 255 : 0);
                         break;
-                    case Natron::ImageComponentAlpha:
+                    case 1:
                         r = src_pixels ? src_pixels[srcIndex] : 0.;
                         g = b = r;
                         a = src_pixels ? 255 : 0;
@@ -1185,8 +1182,10 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                         assert(false);
                         break;
                     }
-                    switch ( args.inputImage->getBitDepth() ) {
-                    case Natron::IMAGE_BYTE:
+                    
+
+                    switch ( pixelSize ) {
+                    case sizeof(unsigned char): //byte
                         if (args.srcColorSpace) {
                             r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
                             g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
@@ -1197,7 +1196,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                             b = (double)convertPixelDepth<unsigned char, float>( (unsigned char)b );
                         }
                         break;
-                    case Natron::IMAGE_SHORT:
+                    case sizeof(unsigned short): //short
                         if (args.srcColorSpace) {
                             r = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)r );
                             g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
@@ -1208,14 +1207,14 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                             b = (double)convertPixelDepth<unsigned short, float>( (unsigned char)b );
                         }
                         break;
-                    case Natron::IMAGE_FLOAT:
+                    case sizeof(float): //float
                         if (args.srcColorSpace) {
                             r = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
                             g = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
                             b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                         }
                         break;
-                    case Natron::IMAGE_NONE:
+                    default:
                         break;
                     }
 
@@ -1258,75 +1257,125 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
     }
 } // scaleToTexture8bits_internal
 
+
+template <typename PIX,int maxValue,int nComps>
+void
+scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
+                            const RenderViewerArgs & args,
+                            U32* output)
+{
+    switch (args.channels) {
+        case ViewerInstance::RGB:
+        case ViewerInstance::LUMINANCE:
+            switch (nComps) {
+                case 1:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 3:
+                case 4:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 1, 2>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::G:
+            switch (nComps) {
+                case 1:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 3:
+                case 4:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 1, 1, 1>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::B:
+            switch (nComps) {
+                case 1:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 3:
+                case 4:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 2, 2, 2>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::A:
+            switch (nComps) {
+                case 1:
+                case 3:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 4:
+                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 3, 3, 3>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::R:
+        default:
+            scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+            break;
+    }
+}
+
+template <typename PIX,int maxValue>
+void
+scaleToTexture8bitsForDepth(const std::pair<int,int> & yRange,
+                            const RenderViewerArgs & args,
+                            U32* output)
+{
+    Natron::ImageComponents comps = args.inputImage->getComponents();
+    switch (comps) {
+        case Natron::ImageComponentRGBA:
+            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,output);
+            break;
+        case Natron::ImageComponentRGB:
+            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,output);
+            break;
+        case Natron::ImageComponentAlpha:
+            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,output);
+            break;
+        default:
+            break;
+    }
+}
+
 void
 scaleToTexture8bits(std::pair<int,int> yRange,
                     const RenderViewerArgs & args,
                     U32* output)
 {
     assert(output);
-
-    int rOffset, gOffset, bOffset;
-    int nComps = (int)args.inputImage->getComponentsCount();
-    switch (args.channels) {
-    case ViewerInstance::RGB:
-    case ViewerInstance::LUMINANCE:
-        rOffset = 0;
-        gOffset = nComps < 2 ? 0 : 1;
-        bOffset = nComps < 3 ? 0 : 2;
-        break;
-    case ViewerInstance::R:
-        rOffset = 0;
-        gOffset = 0;
-        bOffset = 0;
-        break;
-    case ViewerInstance::G:
-        rOffset = nComps < 2 ? 0 : 1;
-        gOffset = nComps < 2 ? 0 : 1;
-        bOffset = nComps < 2 ? 0 : 1;
-        break;
-    case ViewerInstance::B:
-        rOffset = nComps < 3 ? 0 : 2;
-        gOffset = nComps < 3 ? 0 : 2;
-        bOffset = nComps < 3 ? 0 : 2;
-        break;
-    case ViewerInstance::A:
-        rOffset = nComps < 4 ? 0 : 3;
-        gOffset = nComps < 4 ? 0 : 3;
-        bOffset = nComps < 4 ? 0 : 3;
-        break;
-    default:
-        rOffset = 0;
-        gOffset = 0;
-        bOffset = 0;
-        break;
-    }
     switch ( args.inputImage->getBitDepth() ) {
-    case Natron::IMAGE_FLOAT:
-        scaleToTexture8bits_internal<float, 1>(yRange, args, output, rOffset, gOffset, bOffset, nComps);
-        break;
-    case Natron::IMAGE_BYTE:
-        scaleToTexture8bits_internal<unsigned char, 255>(yRange, args, output, rOffset, gOffset, bOffset, nComps);
-        break;
-    case Natron::IMAGE_SHORT:
-        scaleToTexture8bits_internal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset, nComps);
-        break;
-
-    case Natron::IMAGE_NONE:
-        break;
+        case Natron::IMAGE_FLOAT:
+            scaleToTexture8bitsForDepth<float, 1>(yRange, args, output);
+            break;
+        case Natron::IMAGE_BYTE:
+            scaleToTexture8bitsForDepth<unsigned char, 255>(yRange, args, output);
+            break;
+        case Natron::IMAGE_SHORT:
+            scaleToTexture8bitsForDepth<unsigned short, 65535>(yRange, args,output);
+            break;
+            
+        case Natron::IMAGE_NONE:
+            break;
     }
 } // scaleToTexture8bits
 
-template <typename PIX,int maxValue>
+template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                             float *output,
-                             int rOffset,
-                             int gOffset,
-                             int bOffset,
-                             int nComps)
+                             float *output)
 {
-    Natron::ImageComponents comps = args.inputImage->getComponents();
+    size_t pixelSize = sizeof(PIX);
     const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
 
     ///the width of the output buffer multiplied by the channels count
@@ -1345,32 +1394,32 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
         for (int x = args.texRect.x1; x < args.texRect.x2; x += args.closestPowerOf2) {
             double r,g,b,a;
 
-            switch (comps) {
-            case Natron::ImageComponentRGBA:
+            switch (nComps) {
+            case 4:
                 r = (double)(src_pixels[rOffset]);
                 g = (double)src_pixels[gOffset];
                 b = (double)src_pixels[bOffset];
                 a = (nComps < 4) ? 1. : src_pixels[3];
                 break;
-            case Natron::ImageComponentRGB:
+            case 3:
                 r = (double)(src_pixels[rOffset]);
                 g = (double)src_pixels[gOffset];
                 b = (double)src_pixels[bOffset];
                 a = 1.;
                 break;
-            case Natron::ImageComponentAlpha:
+            case 1:
                 a = (nComps < 4) ? 1. : *src_pixels;
                 r = g = b = a;
                 a = 1.;
                 break;
-            case Natron::ImageComponentNone:
+            default:
                 assert(false);
                 r = g = b = a = 0.;
                 break;
             }
 
-            switch ( args.inputImage->getBitDepth() ) {
-            case Natron::IMAGE_BYTE:
+            switch ( pixelSize ) {
+            case sizeof(unsigned char):
                 if (args.srcColorSpace) {
                     r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
                     g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
@@ -1381,7 +1430,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                     b = (double)convertPixelDepth<unsigned char, float>( (unsigned char)b );
                 }
                 break;
-            case Natron::IMAGE_SHORT:
+            case sizeof(unsigned short):
                 if (args.srcColorSpace) {
                     r = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)r );
                     g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
@@ -1392,14 +1441,14 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                     b = (double)convertPixelDepth<unsigned short, float>( (unsigned char)b );
                 }
                 break;
-            case Natron::IMAGE_FLOAT:
+            case sizeof(float):
                 if (args.srcColorSpace) {
                     r = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
                     g = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
                     b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                 }
                 break;
-            case Natron::IMAGE_NONE:
+            default:
                 break;
             }
 
@@ -1420,6 +1469,96 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
     }
 } // scaleToTexture32bitsInternal
 
+template <typename PIX,int maxValue,int nComps>
+void
+scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                             float *output)
+{
+    switch (args.channels) {
+        case ViewerInstance::RGB:
+        case ViewerInstance::LUMINANCE:
+            switch (nComps) {
+                case 1:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 3:
+                case 4:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 1, 2>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::G:
+            switch (nComps) {
+                case 1:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 3:
+                case 4:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 1, 1, 1>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::B:
+            switch (nComps) {
+                case 1:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 3:
+                case 4:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 2, 2, 2>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::A:
+            switch (nComps) {
+                case 1:
+                case 3:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+                    break;
+                case 4:
+                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 3, 3, 3>(yRange, args, output);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ViewerInstance::R:
+        default:
+            scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
+            break;
+    }
+
+}
+
+template <typename PIX,int maxValue>
+void
+scaleToTexture32bitsForDepth(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                             float *output)
+{
+    Natron::ImageComponents comps = args.inputImage->getComponents();
+    switch (comps) {
+        case Natron::ImageComponentRGBA:
+            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,output);
+            break;
+        case Natron::ImageComponentRGB:
+            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,output);
+            break;
+        case Natron::ImageComponentAlpha:
+            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,output);
+            break;
+        default:
+            break;
+    }
+}
+
 void
 scaleToTexture32bits(std::pair<int,int> yRange,
                      const RenderViewerArgs & args,
@@ -1427,53 +1566,18 @@ scaleToTexture32bits(std::pair<int,int> yRange,
 {
     assert(output);
 
-    int rOffset, gOffset, bOffset;
-    int nComps = (int)args.inputImage->getComponentsCount();
-    switch (args.channels) {
-    case ViewerInstance::RGB:
-    case ViewerInstance::LUMINANCE:
-        rOffset = 0;
-        gOffset = nComps < 2 ? 0 : 1;
-        bOffset = nComps < 3 ? 0 : 2;
-        break;
-    case ViewerInstance::R:
-        rOffset = 0;
-        gOffset = 0;
-        bOffset = 0;
-        break;
-    case ViewerInstance::G:
-        rOffset = nComps < 2 ? 0 : 1;
-        gOffset = nComps < 2 ? 0 : 1;
-        bOffset = nComps < 2 ? 0 : 1;
-        break;
-    case ViewerInstance::B:
-        rOffset = nComps < 3 ? 0 : 2;
-        gOffset = nComps < 3 ? 0 : 2;
-        bOffset = nComps < 3 ? 0 : 2;
-        break;
-    case ViewerInstance::A:
-        rOffset = nComps < 4 ? 0 : 3;
-        gOffset = nComps < 4 ? 0 : 3;
-        bOffset = nComps < 4 ? 0 : 3;
-        break;
-    default:
-        rOffset = 0;
-        gOffset = 0;
-        bOffset = 0;
-        break;
-    }
     switch ( args.inputImage->getBitDepth() ) {
-    case Natron::IMAGE_FLOAT:
-        scaleToTexture32bitsInternal<float, 1>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
-        break;
-    case Natron::IMAGE_BYTE:
-        scaleToTexture32bitsInternal<unsigned char, 255>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
-        break;
-    case Natron::IMAGE_SHORT:
-        scaleToTexture32bitsInternal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
-        break;
-    case Natron::IMAGE_NONE:
-        break;
+        case Natron::IMAGE_FLOAT:
+            scaleToTexture32bitsForDepth<float, 1>(yRange, args, output);
+            break;
+        case Natron::IMAGE_BYTE:
+            scaleToTexture32bitsForDepth<unsigned char, 255>(yRange, args, output);
+            break;
+        case Natron::IMAGE_SHORT:
+            scaleToTexture32bitsForDepth<unsigned short, 65535>(yRange, args, output);
+            break;
+        case Natron::IMAGE_NONE:
+            break;
     }
 } // scaleToTexture32bits
 

@@ -726,7 +726,7 @@ KnobGui::removeKeyFrame(double time,
 QString
 KnobGui::getScriptNameHtml() const
 {
-    return tr("Script name: ") + QString("<font size = 4><b>%1</b></font>").arg( getKnob()->getName().c_str() );
+    return  QString("<font size = 4><b>%1</b></font>").arg( getKnob()->getName().c_str() );
 }
 
 QString

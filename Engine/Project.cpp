@@ -542,11 +542,16 @@ Project::initializeKnobs()
                                   "[" NATRON_PROJECT_ENV_VAR_NAME "]MyProject.ntp \n"
                                   "You can add as many env. variables as you want and can name them as you want. This way it "
                                   "makes it easy to share your projects and move files around."
-                                  "By default if a file-path is NOT absolute (i.e: not starting with '/' on Unix or a drive name on Windows) "
+                                  " You can chain up variables, like so:\n "
+                                  "[" NATRON_PROJECT_ENV_VAR_NAME "] = <PathToProject>/ \n"
+                                  "[Scene1] = [" NATRON_PROJECT_ENV_VAR_NAME "]Rush/S_01/ \n"
+                                  "[Shot1] = [Scene1]Shot001/ \n"
+                                  "By default if a file-path is NOT absolute (i.e: not starting with '/' "
+                                  " on Unix or a drive name on Windows) "
                                   "then it will be expanded using the [" NATRON_PROJECT_ENV_VAR_NAME "] environment variable. "
                                   "Absolute paths are treated as normal."
                                   " The [" NATRON_PROJECT_ENV_VAR_NAME "] environment variable will be set automatically to "
-                                  " the location of the project file when loading a project.");
+                                  " the location of the project file when saving and loading a project.");
     _imp->envVars->setSecret(false);
     _imp->envVars->setMultiPath(true);
     page->addKnob(_imp->envVars);
