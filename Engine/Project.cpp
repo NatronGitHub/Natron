@@ -1444,4 +1444,51 @@ Project::getEnvironmentVariables(std::map<std::string,std::string>& env) const
     }
 }
     
+void
+Project::expandVariable(const std::map<std::string,std::string>& env,std::string& str)
+{
+    ///Loop while we can still expand variables, up to NATRON_PROJECT_ENV_VAR_MAX_RECURSION recursions
+    for (int i = 0; i < NATRON_PROJECT_ENV_VAR_MAX_RECURSION; ++i) {
+        bool found = false;
+        for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
+            
+            if (str.size() > (it->first.size() + 2) && ///can contain the environment variable name
+                str[0] == '[' && /// env var name is bracketed
+                str.substr(1,it->first.size()) == it->first && /// starts with the environment variable name
+                str[it->first.size() + 1] == ']') { /// env var name is bracketed
+                
+                str.erase(str.begin() + it->first.size() + 1);
+                str.erase(str.begin());
+                str.replace(0,it->first.size(),it->second);
+                found = true;
+                break;
+            }
+            
+        }
+    }
+}
+   
+void
+Project::findReplaceVariable(const std::map<std::string,std::string>& env,std::string& str)
+{
+    std::string longestName;
+    std::string longestVar;
+    for (std::map<std::string,std::string>::const_iterator it = env.begin(); it!=env.end(); ++it) {
+        if (str.size() >= it->second.size() &&
+            it->second.size() > longestVar.size() &&
+            str.substr(0,it->second.size()) == it->second) {
+            longestName = it->first;
+            longestVar = it->second;
+        }
+    }
+    if (!longestName.empty() && !longestVar.empty()) {
+        std::string replaceStr;
+        replaceStr += '[';
+        replaceStr += longestName;
+        replaceStr += ']';
+        str.replace(0, longestVar.size(),replaceStr);
+    }
+    
+}
+    
 } //namespace Natron

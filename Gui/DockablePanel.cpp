@@ -1120,7 +1120,7 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget->removeEmbeddedWidget();
         setParent( _imp->_container->parentWidget() );
         _imp->_container->insertWidget(1, this);
-        delete _imp->_floatingWidget;
+        _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }
 }

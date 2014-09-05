@@ -94,6 +94,7 @@ File_KnobGui::onButtonClicked()
     open_file();
 }
 
+
 void
 File_KnobGui::open_file()
 {
@@ -118,11 +119,19 @@ File_KnobGui::open_file()
 
     SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, _knob->isInputImageFile(),
                                SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString(), getGui());
+    
     if ( dialog.exec() ) {
         std::string selectedFile = dialog.selectedFiles();
+        
         std::string originalSelectedFile = selectedFile;
         path = SequenceParsing::removePath(selectedFile);
         updateLastOpened( path.c_str() );
+        
+        std::map<std::string,std::string> env;
+        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
+        Natron::Project::findReplaceVariable(env,originalSelectedFile);
+        
+        
         pushUndoCommand( new KnobUndoCommand<std::string>(this,currentPattern,originalSelectedFile) );
     }
 }
@@ -139,7 +148,8 @@ File_KnobGui::updateLastOpened(const QString &str)
 void
 File_KnobGui::updateGUI(int /*dimension*/)
 {
-    _lineEdit->setText( _knob->getValue().c_str() );
+    QString file(_knob->getValue().c_str());
+    _lineEdit->setText(file);
 }
 
 void
@@ -271,7 +281,11 @@ OutputFile_KnobGui::open_file(bool openSequence)
                               getGui());
     if ( dialog.exec() ) {
         std::string oldPattern = _lineEdit->text().toStdString();
+        
         std::string newPattern = dialog.filesToSave();
+        std::map<std::string,std::string> env;
+        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
+        Natron::Project::findReplaceVariable(env,newPattern);
         updateLastOpened( SequenceParsing::removePath(oldPattern).c_str() );
 
         pushUndoCommand( new KnobUndoCommand<std::string>(this,oldPattern,newPattern) );
@@ -524,12 +538,17 @@ Path_KnobGui::onAddButtonClicked()
         }
         updateLastOpened(dirPath);
         
+        std::string stdDirPath = dirPath.toStdString();
+        std::map<std::string,std::string> env;
+        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
+        Natron::Project::findReplaceVariable(env,stdDirPath);
+        
         std::string oldValue = _knob->getValue();
         
         int rowCount = (int)_items.size();
         
         QString varName = QString(tr("Path") + "%1").arg(rowCount);
-        createItem(rowCount, dirPath, varName);
+        createItem(rowCount, stdDirPath.c_str(), varName);
         std::string newPath = rebuildPath();
         
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
@@ -544,12 +563,15 @@ Path_KnobGui::onOpenFileButtonClicked()
     SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui() );
     
     if ( dialog.exec() ) {
-        QString dirPath = dialog.currentDirectory().absolutePath();
-        updateLastOpened(dirPath);
+        std::string dirPath = dialog.currentDirectory().absolutePath().toStdString();
+        updateLastOpened(dirPath.c_str());
+        std::map<std::string,std::string> env;
+        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
+        Natron::Project::findReplaceVariable(env,dirPath);
         
         std::string oldValue = _knob->getValue();
         
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,dirPath.toStdString() ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,dirPath ) );
     }
 
 }

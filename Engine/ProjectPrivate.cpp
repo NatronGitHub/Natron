@@ -306,7 +306,7 @@ void
 ProjectPrivate::autoSetProjectDirectory(const QString& path)
 {
     QString pathCpy = path;
-    if (!path.endsWith('/') && !path.endsWith('\\')) {
+    if (!path.isEmpty() && !path.endsWith('/') && !path.endsWith('\\')) {
         pathCpy.push_back('/');
     }
     std::string env = envVars->getValue();

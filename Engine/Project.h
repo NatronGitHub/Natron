@@ -233,6 +233,16 @@ public:
      * @brief Returns the user environment variables for the project
      **/
     void getEnvironmentVariables(std::map<std::string,std::string>& env) const;
+    
+    /**
+     * @brief Expands the environment variables in the given string that are found in env
+     **/
+    static void expandVariable(const std::map<std::string,std::string>& env,std::string& str);
+    
+    /**
+     * @brief Try to find in str a variable from env. The longest match is replaced by the variable name.
+     **/
+    static void findReplaceVariable(const std::map<std::string,std::string>& env,std::string& str);
 public slots:
 
     void onAutoSaveTimerTriggered();

@@ -553,32 +553,7 @@ SequenceFileDialog::saveState() const
     return data;
 }
 
-static void expandVariable(const std::map<std::string,std::string>& env,QString& str)
-{
-    std::string stdStr = str.toStdString();
-    for (;;) {
-        bool found = false;
-        for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
-            
-            if (stdStr.size() > (it->first.size() + 2) &&
-                stdStr[0] == '[' &&
-                stdStr.substr(1,it->first.size()) == it->first &&
-                stdStr[it->first.size() + 1] == ']') {
-                
-                stdStr.erase(stdStr.begin() + it->first.size() + 1);
-                stdStr.erase(stdStr.begin());
-                stdStr.replace(0,it->first.size(),it->second);
-                found = true;
-                break;
-            }
-                
-        }
-        if (!found) {
-            str = stdStr.c_str();
-            return;
-        }
-    }
-}
+
 
 bool
 SequenceFileDialog::restoreState(const QByteArray & state)
@@ -621,7 +596,7 @@ SequenceFileDialog::restoreState(const QByteArray & state)
         QString var(it->second.c_str());
         
         ///The variable may be nested
-        expandVariable(envVar, var);
+        Natron::Project::expandVariable(envVar, it->second);
         expandedVars.push_back(var);
         QUrl url = QUrl::fromLocalFile(var);
         
@@ -2225,8 +2200,9 @@ FavoriteItemDelegate::paint(QPainter * painter,
         std::map<std::string,std::string>::const_iterator isEnvVar = envVars.end();
         for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it!=envVars.end(); ++it) {
             ///if it->second ends with '/' remove it
-            QString var(it->second.c_str());
-            expandVariable(envVars, var);
+            std::string stdVar = it->second;
+            Natron::Project::expandVariable(envVars, stdVar);
+            QString var(stdVar.c_str());
             if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
                 var = var.remove(var.size() - 1, 1);
             }

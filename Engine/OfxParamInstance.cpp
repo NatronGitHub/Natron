@@ -2335,34 +2335,7 @@ OfxStringInstance::projectEnvVarProxy(std::string& str) const
     std::map<std::string,std::string> envvar;
     _node->getApp()->getProject()->getEnvironmentVariables(envvar);
     
-    bool startsWithEnvVar = false;
-    
-    ///Loop while we can still expand variables, up to NATRON_PROJECT_ENV_VAR_MAX_RECURSION recursions
-    for (int i = 0; i < NATRON_PROJECT_ENV_VAR_MAX_RECURSION; ++i) {
-        bool foundVariable = false;
-        for (std::map<std::string,std::string>::iterator it = envvar.begin(); it != envvar.end(); ++it) {
-            
-            if (str.size() >= (it->first.size() + 2) && ///can contain the environment variable name
-                str.substr(1, it->first.size()) ==  it->first && /// starts with the environment variable name
-                str.at(0) == '[' && /// env var name is bracketed
-                str.at(it->first.size() + 1) == ']') { /// env var name is bracketed
-                
-                str.erase(str.begin() + it->first.size() + 1);
-                str.erase(str.begin());
-                str.replace(0, it->first.size(),it->second);
-                
-                foundVariable = true;
-                if (!startsWithEnvVar) {
-                    startsWithEnvVar = true;
-                }
-                break;
-            }
-        }
-        if (!foundVariable) {
-            break;
-        }
-    }
-    
+    Natron::Project::expandVariable(envvar, str);
     
     ///Now check if the string is relative
     if ( !str.empty() && isRelative(str) ) {
