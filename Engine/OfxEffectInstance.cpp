@@ -755,6 +755,11 @@ OfxEffectInstance::onInputChanged(int inputNo)
     _effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
     _effect->endInstanceChangedAction(kOfxChangeUserEdited);
 
+    ///Don't do anything while loading a project
+
+    if (getApp()->getProject()->isLoadingProject()) {
+        return;
+    }
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
@@ -799,6 +804,8 @@ OfxEffectInstance::checkClipPrefs(double time,
                                   const RenderScale & scale,
                                   const std::string & reason)
 {
+   
+    
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -828,8 +835,13 @@ OfxEffectInstance::checkClipPrefs(double time,
 
     _effect->beginInstanceChangedAction(reason);
 
-    for (int i = 0; i < getMaxInputCount(); ++i) {
-        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>( getInput(i) );
+    int maxInputs = getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        EffectInstance* inputEffect = getInput(i);
+        if (inputEffect) {
+            inputEffect = inputEffect->getNearestNonIdentity(time);
+        }
+        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(inputEffect);
         OfxClipInstance* clip = getClipCorrespondingToInput(i);
 
         if (instance) {
@@ -875,7 +887,15 @@ OfxEffectInstance::onMultipleInputsChanged()
     assert(_context != eContextNone);
 
     RECURSIVE_ACTION();
-    _effect->runGetClipPrefsConditionally();
+    double time = getApp()->getTimeLine()->currentFrame();
+    RenderScale s;
+    s.x = s.y = 1.;
+    
+    ///if all non optional clips are connected, call getClipPrefs
+    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
+    if ( _effect->areAllNonOptionalClipsConnected() ) {
+        checkClipPrefs(time,s,kOfxChangeUserEdited);
+    }
 }
 
 std::vector<std::string>

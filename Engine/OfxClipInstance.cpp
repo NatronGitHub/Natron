@@ -55,7 +55,9 @@ OfxClipInstance::getUnmappedBitDepth() const
     static const std::string floatStr(kOfxBitDepthFloat);
     static const std::string noneStr(kOfxBitDepthNone);
     EffectInstance* inputNode = getAssociatedNode();
-    
+    if (!isOutput() && inputNode) {
+        inputNode = inputNode->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
+    }
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
         Natron::ImageComponents comp;
@@ -103,7 +105,9 @@ OfxClipInstance::getUnmappedComponents() const
     static const std::string alphaStr(kOfxImageComponentAlpha);
 
     EffectInstance* inputNode = getAssociatedNode();
-    
+    if (!isOutput() && inputNode) {
+        inputNode = inputNode->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
+    }
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
         Natron::ImageComponents comp;
@@ -141,7 +145,11 @@ OfxClipInstance::getPremult() const
     static const std::string unPremultStr(kOfxImageUnPreMultiplied);
     static const std::string opaqueStr(kOfxImageOpaque);
     EffectInstance* effect =  getAssociatedNode() ;
-
+    
+    ///The clip might be identity and we want the data of the node that will be upstream not of the identity one
+    if (!isOutput() && effect) {
+        effect = effect->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
+    }
     if (effect) {
         
         ///Get the input node's output preferred bit depth and componentns

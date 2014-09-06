@@ -1311,19 +1311,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         boost::shared_ptr<Image>(),
                                                         firstFrame,
                                                         lastFrame);
-            Natron::ImageComponents inputPrefComps;
-            Natron::ImageBitDepth inputPrefDepth;
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
-                inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                 image = getImage(inputNbIdentity,
                                  inputTimeIdentity,
                                  args.scale,
                                  args.view,
                                  &canonicalRoI,
-                                 inputPrefComps,
-                                 inputPrefDepth,
+                                 args.components,
+                                 args.bitdepth,
                                  true,
                                  NULL);
                 ///Clear input images pointer because getImage has stored the image .
@@ -1458,13 +1455,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         boost::shared_ptr<Image>(),
                                                         firstFrame,
                                                         lastFrame);
-            Natron::ImageComponents inputPrefComps;
-            Natron::ImageBitDepth inputPrefDepth;
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
-                inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                 boost::shared_ptr<Image> ret =  getImage(inputNbIdentity, inputTimeIdentity,
-                                                         args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true,NULL);
+                                                         args.scale, args.view, NULL, args.components, args.bitdepth, true,NULL);
                 ///Clear input images pointer because getImage has stored ret .
                 _imp->clearInputImagePointers();
 
@@ -3122,6 +3116,37 @@ EffectInstance::getNearestNonDisabled() const
         ///We didn't find anything upstream, return
         return NULL;
     }
+}
+
+Natron::EffectInstance*
+EffectInstance::getNearestNonIdentity(int time)
+{
+    
+    U64 hash = getHash();
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    
+    RectD rod;
+    bool isProjectFormat;
+    Natron::Status stat = getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProjectFormat);
+    
+    ///Ignore the result of getRoD if it failed
+    (void)stat;
+    
+    SequenceTime inputTimeIdentity;
+    int inputNbIdentity;
+    
+    if ( !isIdentity_public(hash, time, scale, rod, 0, &inputTimeIdentity, &inputNbIdentity) ) {
+        return this;
+    } else {
+        
+        if (inputNbIdentity < 0) {
+            return this;
+        }
+        Natron::EffectInstance* effect = getInput(inputNbIdentity);
+        return effect ? effect->getNearestNonIdentity(time) : this;
+    }
+
 }
 
 void

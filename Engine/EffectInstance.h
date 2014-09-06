@@ -399,6 +399,12 @@ public:
      * If this not is not disabled, it will return a pointer to this.
      **/
     Natron::EffectInstance* getNearestNonDisabled() const;
+    
+    /**
+     * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
+     * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
+     **/
+    Natron::EffectInstance* getNearestNonIdentity(int time);
 
 protected:
     /**

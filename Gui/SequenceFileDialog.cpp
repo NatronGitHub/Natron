@@ -594,39 +594,42 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     QStringList expandedVars;
     for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
         QString var(it->second.c_str());
-        
-        ///The variable may be nested
-        Natron::Project::expandVariable(envVar, it->second);
-        expandedVars.push_back(var);
-        QUrl url = QUrl::fromLocalFile(var);
-        
-        QDir dir(var);
-        if (dir.exists()) {
-            stdBookMarks.push_back(url);
+        if (!var.isEmpty()) {
+            ///The variable may be nested
+            Natron::Project::expandVariable(envVar, it->second);
+            expandedVars.push_back(var);
+            QUrl url = QUrl::fromLocalFile(var);
+            
+            QDir dir(var);
+            if (dir.exists()) {
+                stdBookMarks.push_back(url);
+            }
         }
-
     }
     
     for (int i = 0; i < bookmarks.count(); ++i) {
         QString urlPath = bookmarks[i].path();
-        if (urlPath.size() > 1 && (urlPath.endsWith('/') || urlPath.endsWith('\\'))) {
-            urlPath = urlPath.remove(urlPath.size() - 1, 1);
-        }
-        bool alreadyFound = false;
         
-        for (int j = 0;j < expandedVars.size();++j) {
-            if (expandedVars[j].size() > 1 && (expandedVars[j].endsWith('/') || expandedVars[j].endsWith('\\'))) {
-                expandedVars[j] = expandedVars[j].remove(expandedVars[j].size() - 1, 1);
+        if (!urlPath.isEmpty()) {
+            if (urlPath.size() > 1 && (urlPath.endsWith('/') || urlPath.endsWith('\\'))) {
+                urlPath = urlPath.remove(urlPath.size() - 1, 1);
             }
-            if (expandedVars[j] == urlPath) {
-                alreadyFound = true;
-                break;
+            bool alreadyFound = false;
+            
+            for (int j = 0;j < expandedVars.size();++j) {
+                if (expandedVars[j].size() > 1 && (expandedVars[j].endsWith('/') || expandedVars[j].endsWith('\\'))) {
+                    expandedVars[j] = expandedVars[j].remove(expandedVars[j].size() - 1, 1);
+                }
+                if (expandedVars[j] == urlPath) {
+                    alreadyFound = true;
+                    break;
+                }
             }
-        }
-        
-        QDir dir(urlPath);
-        if (!alreadyFound && dir.exists()) {
-            stdBookMarks.push_back( bookmarks[i] );
+            
+            QDir dir(urlPath);
+            if (!alreadyFound && dir.exists()) {
+                stdBookMarks.push_back( bookmarks[i] );
+            }
         }
     }
     

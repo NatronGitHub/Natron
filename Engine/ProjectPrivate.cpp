@@ -21,6 +21,7 @@
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ProjectSerialization.h"
+#include "Engine/OfxEffectInstance.h"
 
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
@@ -251,6 +252,12 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 qDebug() << message.c_str();
             }
         }
+    }
+    
+    
+    ///Now that everything is connected, check clip preferences on all OpenFX effects
+    for (U32 i = 0; i < currentNodes.size(); ++i) {
+        currentNodes[i]->getLiveInstance()->onMultipleInputsChanged();
     }
 
     nodeCounters = obj.getNodeCounters();

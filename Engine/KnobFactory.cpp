@@ -68,13 +68,13 @@ static std::pair<std::string,LibraryBinary *>
 knobFactoryEntry()
 {
     std::string stub;
-    boost::shared_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
+    //boost::shared_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
     std::map<std::string, void *> functions;
 
     functions.insert( make_pair("BuildKnob", (void *)&K::BuildKnob) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
-    return make_pair(knob->typeName(), knobPlugin);
+    return make_pair(K::typeNameStatic(), knobPlugin);
 }
 
 void
