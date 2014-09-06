@@ -2076,6 +2076,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // no need to set _imp->_dragStartPoint
 
         // no need to updateGL()
+        e->accept();
         return;
     }
     ////

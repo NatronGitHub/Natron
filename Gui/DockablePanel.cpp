@@ -1327,13 +1327,13 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
                     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
                     
                     if (isInt) {
-                        kf.setValue( isInt->getValue(i) );
+                        kf.setValue( isInt->getValueAtTime(time,i) );
                     } else if (isBool) {
-                        kf.setValue( isBool->getValue(i) );
+                        kf.setValue( isBool->getValueAtTime(time,i) );
                     } else if (isDouble) {
-                        kf.setValue( isDouble->getValue(i) );
+                        kf.setValue( isDouble->getValueAtTime(time,i) );
                     } else if (isString) {
-                        std::string v = isString->getValue(i);
+                        std::string v = isString->getValueAtTime(time,i);
                         double dv;
                         isString->stringToKeyFrameValue(time, v, &dv);
                         kf.setValue(dv);
