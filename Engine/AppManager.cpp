@@ -1478,7 +1478,7 @@ AppManager::decreaseNCacheFilesOpened()
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
 
     --_imp->currentCacheFilesCount;
-    // qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
+    //qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
 }
 
 void
@@ -1611,27 +1611,9 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
     size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
     size_t totalFreeRAM = getAmountFreePhysicalRAM();
     
-    bool attemptToRemoveFromNodeCache = true;
-    bool attemptToRemoveFromViewerCache = true;
     while (totalFreeRAM <= systemRAMToKeepFree) {
         
-        bool removedFromNodeCache = false;
-        if (attemptToRemoveFromNodeCache) {
-            removedFromNodeCache = _imp->_nodeCache->evictLRUEntry();
-            if (!removedFromNodeCache) {
-                attemptToRemoveFromNodeCache = false;
-            }
-        }
-        
-        bool removedFromViewerCache = false;
-        if (attemptToRemoveFromViewerCache) {
-            removedFromViewerCache = _imp->_viewerCache->evictLRUEntry();
-            if (!removedFromViewerCache) {
-                attemptToRemoveFromViewerCache = false;
-            }
-        }
-        
-        if (!removedFromNodeCache && !removedFromViewerCache) {
+        if (! _imp->_nodeCache->evictLRUEntry()) {
             break;
         }
         

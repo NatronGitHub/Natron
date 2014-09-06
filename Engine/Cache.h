@@ -566,7 +566,7 @@ public:
     }
     
     /**
-     * @brief Removes the last recently used entry from the cache.
+     * @brief Removes the last recently used entry from the in-memory cache.
      * This is expensive since it takes the lock. Returns false
      * if there's nothing left to evict.
      **/
