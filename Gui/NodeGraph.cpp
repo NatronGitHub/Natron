@@ -2255,6 +2255,11 @@ NodeGraph::populateMenu()
     QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( pasteNodeClipBoards() ) );
     editMenu->addAction(pasteAction);
 
+    QAction* deleteAction = new QAction(tr("Delete"),editMenu);
+    deleteAction->setShortcut(QKeySequence::Delete);
+    QObject::connect( deleteAction,SIGNAL( triggered() ),this,SLOT( deleteSelection() ) );
+    editMenu->addAction(deleteAction);
+
     QAction* duplicateAction = new QAction(tr("Duplicate"),editMenu);
     duplicateAction->setShortcut( QKeySequence(Qt::AltModifier + Qt::Key_C) );
     QObject::connect( duplicateAction,SIGNAL( triggered() ),this,SLOT( duplicateSelectedNodes() ) );
