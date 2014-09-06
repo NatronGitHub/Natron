@@ -292,8 +292,10 @@ TimeLineGui::paintGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     QFontMetrics fontM(_imp->_font);
-    double lineYpos = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT / 2).y();
-
+    
+    double lineYPosWidget = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
+    double lineYpos = toTimeLineCoordinates(0,lineYPosWidget).y();
+    double cachedLineYPos = toTimeLineCoordinates(0,lineYPosWidget + 1).y();
 
     /*draw the horizontal axis*/
     glColor4f( _imp->_scaleColor.redF(), _imp->_scaleColor.greenF(), _imp->_scaleColor.blueF(), _imp->_scaleColor.alphaF() );
@@ -489,8 +491,8 @@ TimeLineGui::paintGL()
             glColor4f( _imp->_diskCachedLineColor.redF(),_imp->_diskCachedLineColor.greenF(),
                        _imp->_diskCachedLineColor.blueF(),_imp->_diskCachedLineColor.alphaF() );
         }
-        glVertex2f(i->time - 0.5,lineYpos);
-        glVertex2f(i->time + 0.5,lineYpos);
+        glVertex2f(i->time - 0.5,cachedLineYPos);
+        glVertex2f(i->time + 0.5,cachedLineYPos);
     }
     glEnd();
 
