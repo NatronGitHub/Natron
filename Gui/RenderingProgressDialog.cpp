@@ -28,10 +28,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
-
+#include "Gui/Gui.h"
 
 struct RenderingProgressDialogPrivate
 {
+    Gui* _gui;
     QVBoxLayout* _mainLayout;
     QLabel* _totalLabel;
     QProgressBar* _totalProgress;
@@ -44,11 +45,13 @@ struct RenderingProgressDialogPrivate
     int _lastFrame;
     boost::shared_ptr<ProcessHandler> _process;
 
-    RenderingProgressDialogPrivate(const QString & sequenceName,
+    RenderingProgressDialogPrivate(Gui* gui,
+                                   const QString & sequenceName,
                                    int firstFrame,
                                    int lastFrame,
                                    const boost::shared_ptr<ProcessHandler> & proc)
-        : _mainLayout(0)
+        : _gui(gui)
+          , _mainLayout(0)
           , _totalLabel(0)
           , _totalProgress(0)
           , _separator(0)
@@ -155,13 +158,14 @@ RenderingProgressDialog::onVideoEngineStopped(int retCode)
     }
 }
 
-RenderingProgressDialog::RenderingProgressDialog(const QString & sequenceName,
+RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
+                                                 const QString & sequenceName,
                                                  int firstFrame,
                                                  int lastFrame,
                                                  const boost::shared_ptr<ProcessHandler> & process,
                                                  QWidget* parent)
     : QDialog(parent)
-      , _imp( new RenderingProgressDialogPrivate(sequenceName,firstFrame,lastFrame,process) )
+      , _imp( new RenderingProgressDialogPrivate(gui,sequenceName,firstFrame,lastFrame,process) )
 
 {
     QString title = QString::number(0) + tr("% of ") + _imp->_sequenceName;
@@ -247,8 +251,22 @@ LogWindow::LogWindow(const QString & log,
 
     mainLayout->addWidget(textBrowser);
 
-    okButton = new Button(tr("Ok"),this);
+    QWidget* buttonsContainer = new QWidget(this);
+    QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
+    
+    clearButton = new Button(tr("Clear"),buttonsContainer);
+    buttonsLayout->addWidget(clearButton);
+    QObject::connect(clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()));
+    buttonsLayout->addStretch();
+    okButton = new Button(tr("Ok"),buttonsContainer);
+    buttonsLayout->addWidget(okButton);
     QObject::connect( okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
-    mainLayout->addWidget(okButton);
+    mainLayout->addWidget(buttonsContainer);
 }
 
+void
+LogWindow::onClearButtonClicked()
+{
+    appPTR->clearOfxLog_mt_safe();
+    textBrowser->clear();
+}

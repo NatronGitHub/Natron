@@ -22,6 +22,7 @@
 #include "Engine/Node.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/AppManager.h"
 
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
@@ -57,13 +58,16 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     autoSaveTimer->setSingleShot(true);
 }
 
-void
+bool
 ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                          const QString& name,
                                          const QString& path,
                                          bool isAutoSave,
                                          const QString& realFilePath)
 {
+    
+    bool mustShowErrorsLog = false;
+    
     /*1st OFF RESTORE THE PROJECT KNOBS*/
 
     projectCreationTime = QDateTime::fromMSecsSinceEpoch( obj.getCreationDate() );
@@ -173,8 +177,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             text.append( it->getPluginID().c_str() );
             text.append( QObject::tr(" was found in the script but doesn't seem \n"
                                      "to exist in the currently loaded plug-ins.") );
-            qDebug() << text;
-            Natron::errorDialog( "", text.toStdString() );
+            appPTR->writeToOfxLog_mt_safe(text);
+            mustShowErrorsLog = true;
             continue;
         }
         if ( n->isOutputNode() ) {
@@ -226,7 +230,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 }
             }
             if (!masterNode) {
-                qDebug() << "Cannot restore the link between " << it->getPluginLabel().c_str() << " and " << masterNodeName.c_str();
+                appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString(it->getPluginLabel().c_str()) + " and " + masterNodeName.c_str()));
+                mustShowErrorsLog = true;
             }
             thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
         } else {
@@ -237,7 +242,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         for (U32 j = 0; j < inputs.size(); ++j) {
             if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode) ) {
                 std::string message = std::string("Failed to connect node ") + it->getPluginLabel() + " to " + inputs[j];
-                qDebug() << message.c_str();
+                appPTR->writeToOfxLog_mt_safe(message.c_str());
+                mustShowErrorsLog =true;
             }
         }
     }
@@ -249,7 +255,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         for (U32 j = 0; j < inputs.size(); ++j) {
             if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],it->first) ) {
                 std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + inputs[j];
-                qDebug() << message.c_str();
+                appPTR->writeToOfxLog_mt_safe(message.c_str());
+                mustShowErrorsLog =true;
+
             }
         }
     }
@@ -269,6 +277,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     projectPath = isAutoSave ? realFilePath : path;
     ageSinceLastSave = time;
     lastAutoSave = time;
+    
+    return !mustShowErrorsLog;
 } // restoreFromSerialization
 
 bool

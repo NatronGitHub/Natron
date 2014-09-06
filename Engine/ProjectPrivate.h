@@ -95,7 +95,7 @@ struct ProjectPrivate
     
     ProjectPrivate(Natron::Project* project);
 
-    void restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
+    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
 
     bool findFormat(int index,Format* format) const;
     

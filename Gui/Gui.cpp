@@ -3302,7 +3302,7 @@ Gui::onProcessHandlerStarted(const QString & sequenceName,
                              const boost::shared_ptr<ProcessHandler> & process)
 {
     ///make the dialog which will show the progress
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,process,this);
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(this,sequenceName,firstFrame,lastFrame,process,this);
 
     dialog->show();
 }
@@ -3513,7 +3513,7 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(this,sequenceName,firstFrame,lastFrame,
                                                                   boost::shared_ptr<ProcessHandler>(),this);
     VideoEngine* ve = writer->getVideoEngine().get();
     ///Cycle through the render tree and freeze all knobs since this render is taking place in the active GUI session.
@@ -3623,9 +3623,10 @@ Gui::showOfxLog()
     QString log = appPTR->getOfxLog_mt_safe();
     LogWindow lw(log,this);
 
-    lw.setWindowTitle( tr("OpenFX messages log") );
+    lw.setWindowTitle( tr("Errors log") );
     lw.exec();
 }
+
 
 void
 Gui::createNewTrackerInterface(NodeGui* n)

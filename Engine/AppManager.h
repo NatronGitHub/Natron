@@ -236,6 +236,10 @@ public:
     QString getOfxLog_mt_safe() const;
 
     void writeToOfxLog_mt_safe(const QString & str);
+    
+    void clearOfxLog_mt_safe();
+    
+    virtual void showOfxLog() {}
 
     virtual void debugImage(const Natron::Image* /*image*/,
                             const QString & /*filename = QString()*/) const

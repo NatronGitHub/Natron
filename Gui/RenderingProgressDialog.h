@@ -28,6 +28,7 @@ class Button;
 class QString;
 class ProcessHandler;
 struct RenderingProgressDialogPrivate;
+class Gui;
 class RenderingProgressDialog
     : public QDialog
 {
@@ -35,7 +36,8 @@ class RenderingProgressDialog
 
 public:
 
-    RenderingProgressDialog(const QString & sequenceName,
+    RenderingProgressDialog(Gui* gui,
+                            const QString & sequenceName,
                             int firstFrame,
                             int lastFrame,
                             const boost::shared_ptr<ProcessHandler> & process,
@@ -75,11 +77,15 @@ class LogWindow
     QVBoxLayout* mainLayout;
     QTextBrowser* textBrowser;
     Button* okButton;
-
+    Button* clearButton;
 public:
 
     LogWindow(const QString & log,
               QWidget* parent = 0);
+    
+public slots:
+    
+    void onClearButtonClicked();
 };
 
 #endif // RENDERINGPROGRESSDIALOG_H

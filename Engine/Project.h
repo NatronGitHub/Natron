@@ -276,7 +276,7 @@ private:
 
     void setProjectDefaultFormat(const Format & f);
 
-    void loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,const QString& realFilePath);
+    bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,const QString& realFilePath);
 
     QDateTime saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
 
@@ -323,7 +323,7 @@ private:
 
     void save(ProjectSerialization* serializationObject) const;
 
-    void load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
+    bool load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;

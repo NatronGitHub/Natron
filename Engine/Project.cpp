@@ -106,7 +106,7 @@ Project::loadProject(const QString & path,
     return true;
 } // loadProject
 
-void
+bool
 Project::loadProjectInternal(const QString & path,
                              const QString & name,bool isAutoSave,const QString& realFilePath)
 {
@@ -115,6 +115,8 @@ Project::loadProjectInternal(const QString & path,
     if ( !QFile::exists(filePath) ) {
         throw std::invalid_argument( QString(filePath + " : no such file.").toStdString() );
     }
+    
+    bool ret = false;
     std::ifstream ifile;
     try {
         ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -130,7 +132,7 @@ Project::loadProjectInternal(const QString & path,
         ProjectSerialization projectSerializationObj( getApp() );
         iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
         
-        load(projectSerializationObj,name,path,isAutoSave,realFilePath);
+        ret = load(projectSerializationObj,name,path,isAutoSave,realFilePath);
         
         if (!bgProject) {
             getApp()->loadProjectGui(iArchive);
@@ -145,6 +147,7 @@ Project::loadProjectInternal(const QString & path,
 
     ifile.close();
     emit projectNameChanged(name);
+    return ret;
 }
 
 void
@@ -166,10 +169,10 @@ Project::refreshViewersAndPreviews()
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
                 assert(n);
                 n->getVideoEngine()->render(1, //< frame count
-                                            true, //<seek timeline
+                                            false, //<seek timeline
                                             true, //< refresh tree
                                             true, //< forward
-                                            false, //< same frame
+                                            true, //< same frame
                                             true); //< force preview
             }
         }
@@ -481,8 +484,9 @@ Project::findAndTryLoadAutoSave()
                     existingFilePath = QFileInfo(filename).path(); 
                 }
                 
+                bool loadOK = true;
                 try {
-                    loadProjectInternal(savesDir.path() + QDir::separator(), entry,true,existingFilePath);
+                    loadOK = loadProjectInternal(savesDir.path() + QDir::separator(), entry,true,existingFilePath);
                 } catch (const std::exception & e) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() + ": " + e.what() );
                     getApp()->createNode( CreateNodeArgs("Viewer") );
@@ -520,6 +524,11 @@ Project::findAndTryLoadAutoSave()
 
                 refreshViewersAndPreviews();
 
+                if (!loadOK) {
+                    ///Show errors log
+                    appPTR->showOfxLog();
+                }
+                
                 return true;
             }
         }
@@ -994,14 +1003,15 @@ Project::save(ProjectSerialization* serializationObject) const
     serializationObject->initialize(this);
 }
 
-void
+bool
 Project::load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath)
 {
     _imp->nodeCounters.clear();
-    _imp->restoreFromSerialization(obj,name,path,isAutoSave,realFilePath);
+    bool ret = _imp->restoreFromSerialization(obj,name,path,isAutoSave,realFilePath);
     Format f;
     getProjectDefaultFormat(&f);
     emit formatChanged(f);
+    return ret;
 }
 
 void

@@ -1594,3 +1594,12 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
     }
 }
 
+void
+GuiApplicationManager::showOfxLog()
+{
+    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(getTopLevelInstance());
+    if (app) {
+        app->getGui()->showOfxLog();
+    }
+    
+}

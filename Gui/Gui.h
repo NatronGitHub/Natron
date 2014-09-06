@@ -457,7 +457,7 @@ public slots:
     void showShortcutEditor();
 
     void showOfxLog();
-
+    
     void openRecentFile();
 
     void onProjectNameChanged(const QString & name);

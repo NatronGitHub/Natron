@@ -130,7 +130,7 @@ public:
 
     void notifyShortcutChanged(KeyBoundAction* action);
     
-
+    virtual void showOfxLog() OVERRIDE FINAL;
 public slots:
 
 

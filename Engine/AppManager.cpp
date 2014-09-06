@@ -1536,6 +1536,13 @@ AppManager::writeToOfxLog_mt_safe(const QString & str)
 }
 
 void
+AppManager::clearOfxLog_mt_safe()
+{
+    QMutexLocker l(&_imp->_ofxLogMutex);
+    _imp->_ofxLog.clear();
+}
+
+void
 AppManager::exitApp()
 {
     const std::map<int,AppInstanceRef> & instances = getAppInstances();

@@ -458,7 +458,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName( (*it)->getName() );
         if (!knob) {
-            qDebug() << "Couldn't find a knob named " << (*it)->getName().c_str();
+            appPTR->writeToOfxLog_mt_safe("Couldn't find a parameter named " + QString((*it)->getName().c_str()));
             continue;
         }
         (*it)->restoreKnobLinks(knob,allNodes);

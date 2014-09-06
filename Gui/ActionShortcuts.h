@@ -54,7 +54,7 @@
 #define kShortcutDescActionProjectSettings "Show project settings"
 
 #define kShortcutIDActionShowOFXLog "showOFXLog"
-#define kShortcutDescActionShowOFXLog "Show OpenFX log"
+#define kShortcutDescActionShowOFXLog "Show errors log"
 
 #define kShortcutIDActionShowShortcutEditor "showShortcutEditor"
 #define kShortcutDescActionShowShortcutEditor "Show shortcut editor"
