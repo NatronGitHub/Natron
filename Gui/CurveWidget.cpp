@@ -452,7 +452,12 @@ public:
     void drawScale();
     void drawSelectedKeyFramesBbox();
 
-    Curves::const_iterator isNearbyCurve(const QPoint &pt) const;
+    /**
+     * @brief Returns whether the click at position pt is nearby the curve.
+     * If so then the value x and y will be set to the position on the curve
+     * if they are not NULL.
+     **/
+    Curves::const_iterator isNearbyCurve(const QPoint &pt,double* x = NULL,double *y = NULL) const;
     std::pair<CurveGui*,KeyFrame> isNearbyKeyFrame(const QPoint & pt) const;
     std::pair<CurveGui::SelectedDerivative, KeyPtr> isNearbyTangent(const QPoint & pt) const;
 
@@ -998,7 +1003,7 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
 }
 
 Curves::const_iterator
-CurveWidgetPrivate::isNearbyCurve(const QPoint &pt) const
+CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,double* x,double *y) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1006,9 +1011,15 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt) const
     QPointF openGL_pos = zoomCtx.toZoomCoordinates( pt.x(),pt.y() );
     for (Curves::const_iterator it = _curves.begin(); it != _curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            double y = (*it)->evaluate( openGL_pos.x() );
-            double yWidget = zoomCtx.toWidgetCoordinates(0,y).y();
+            double yCurve = (*it)->evaluate( openGL_pos.x() );
+            double yWidget = zoomCtx.toWidgetCoordinates(0,yCurve).y();
             if (std::abs(pt.y() - yWidget) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
+                if (x != NULL) {
+                    *x = openGL_pos.x();
+                }
+                if (y != NULL) {
+                    *y = yCurve;
+                }
                 return it;
             }
         }
@@ -2018,6 +2029,31 @@ CurveWidget::renderText(double x,
     glLoadIdentity();
     glPopMatrix(); // restore GL_PROJECTION
     glMatrixMode(GL_MODELVIEW);
+}
+
+void
+CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    ///If the click is on a curve but not nearby a keyframe, add a keyframe
+    
+    
+    std::pair<CurveGui*,KeyFrame > selectedKey = _imp->isNearbyKeyFrame( e->pos() );
+    std::pair<CurveGui::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    if (selectedKey.first || selectedTan.second) {
+        return;
+    }
+    
+    ///We're nearby a curve
+    double xCurve,yCurve;
+    Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
+    if ( foundCurveNearby != _imp->_curves.end() ) {
+        std::vector<KeyFrame> keys(1);
+        keys[0] = KeyFrame(xCurve,yCurve);
+        (*foundCurveNearby)->getKnob()->pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
+    }
 }
 
 //

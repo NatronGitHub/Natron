@@ -133,7 +133,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int dim,int lvl);
 
 private:
     boost::shared_ptr<Int_Knob> _knob;
@@ -178,7 +178,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     boost::shared_ptr<Double_Knob> _knob;
@@ -219,7 +219,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     boost::shared_ptr<Bool_Knob> _knob;
@@ -261,7 +261,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     std::vector<std::string> _entries;
@@ -306,7 +306,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     boost::shared_ptr<Color_Knob> _knob;
@@ -351,7 +351,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     boost::shared_ptr<Color_Knob> _knob;
@@ -396,7 +396,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     OfxEffectInstance* _node;
@@ -437,7 +437,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     OfxEffectInstance* _node;
@@ -482,7 +482,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     OfxEffectInstance* _node;
@@ -522,7 +522,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     OfxEffectInstance* _node;
@@ -628,7 +628,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     
@@ -695,7 +695,7 @@ public:
 
 public slots:
 
-    void onKnobAnimationLevelChanged(int lvl);
+    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
 

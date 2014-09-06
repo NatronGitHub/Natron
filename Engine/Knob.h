@@ -569,9 +569,9 @@ public:
         emit evaluateValueChangedInMainThread(dimension,reason);
     }
 
-    void s_animationLevelChanged(int level)
+    void s_animationLevelChanged(int dim,int level)
     {
-        emit animationLevelChanged(level);
+        emit animationLevelChanged(dim,level);
     }
 
     void s_deleted()
@@ -693,7 +693,7 @@ signals:
 
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
-    void animationLevelChanged(int);
+    void animationLevelChanged(int,int);
 
     ///emitted when the destructor is entered
     void deleted();

@@ -279,6 +279,7 @@ private:
     virtual void paintGL() OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;

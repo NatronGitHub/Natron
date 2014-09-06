@@ -351,7 +351,7 @@ OfxIntegerInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl)
+OfxIntegerInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -565,7 +565,7 @@ OfxDoubleInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl)
+OfxDoubleInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -692,7 +692,7 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl)
+OfxBooleanInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -854,7 +854,7 @@ OfxChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl)
+OfxChoiceInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -1076,7 +1076,7 @@ OfxRGBAInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl)
+OfxRGBAInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -1284,7 +1284,7 @@ OfxRGBInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxRGBInstance::onKnobAnimationLevelChanged(int lvl)
+OfxRGBInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -1533,7 +1533,7 @@ OfxDouble2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
+OfxDouble2DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -1719,7 +1719,7 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl)
+OfxInteger2DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -1958,7 +1958,7 @@ OfxDouble3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl)
+OfxDouble3DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -2152,7 +2152,7 @@ OfxInteger3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl)
+OfxInteger3DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -2649,7 +2649,7 @@ OfxStringInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxStringInstance::onKnobAnimationLevelChanged(int lvl)
+OfxStringInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 
@@ -2832,7 +2832,7 @@ OfxCustomInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 }
 
 void
-OfxCustomInstance::onKnobAnimationLevelChanged(int lvl)
+OfxCustomInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
 

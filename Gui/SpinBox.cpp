@@ -564,7 +564,7 @@ SpinBox::focusInEvent(QFocusEvent* e)
     // don't give focus if this is a wheelEvent
     if (e->reason() == Qt::MouseFocusReason) {
         Qt::MouseButtons buttons = QApplication::mouseButtons();
-        if ( !(buttons & Qt::LeftButton) ) {
+        if ( !(buttons & Qt::LeftButton) && !(buttons & Qt::RightButton)) {
             this->clearFocus();
 
             return;

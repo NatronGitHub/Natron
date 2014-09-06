@@ -888,7 +888,7 @@ KnobHelper::setAnimationLevel(int dimension,
         assert( dimension < (int)_imp->animationLevel.size() );
         _imp->animationLevel[dimension] = level;
     }
-    _signalSlotHandler->s_animationLevelChanged( (int)level );
+    _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
 }
 
 Natron::AnimationLevel

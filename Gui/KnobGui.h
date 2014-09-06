@@ -260,7 +260,7 @@ public slots:
 
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(int level);
+    void onAnimationLevelChanged(int dim,int level);
 
     void onAppendParamEditChanged(const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
 

@@ -137,7 +137,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( handler,SIGNAL( animationRemoved(int) ),this,SLOT( onInternalAnimationRemoved() ) );
     QObject::connect( handler,SIGNAL( setValueWithUndoStack(Variant,int) ),this,SLOT( onSetValueUsingUndoStack(Variant,int) ) );
     QObject::connect( handler,SIGNAL( dirty(bool) ),this,SLOT( onSetDirty(bool) ) );
-    QObject::connect( handler,SIGNAL( animationLevelChanged(int) ),this,SLOT( onAnimationLevelChanged(int) ) );
+    QObject::connect( handler,SIGNAL( animationLevelChanged(int,int) ),this,SLOT( onAnimationLevelChanged(int,int) ) );
     QObject::connect( handler,SIGNAL( appendParamEditChange(Variant,int,int,bool,bool) ),this,
                       SLOT( onAppendParamEditChanged(Variant,int,int,bool,bool) ) );
     QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
@@ -210,8 +210,9 @@ KnobGui::createGUI(QFormLayout* containerLayout,
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         updateGuiInternal(i);
+        onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
     }
-    onAnimationLevelChanged( knob->getAnimationLevel(0) );
+    
 
     setEnabledSlot();
     if (isOnNewLine) {
@@ -663,6 +664,9 @@ KnobGui::setKeyframe(double time,
     assert( knob->getHolder()->getApp() );
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
+    if ( !knob->getIsSecret() ) {
+        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    }
 }
 
 void
@@ -673,9 +677,7 @@ KnobGui::onSetKeyActionTriggered()
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    if ( !knob->getIsSecret() ) {
-        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
-    }
+
     for (int i = 0; i < knob->getDimension(); ++i) {
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
         if (!curve) {
@@ -758,32 +760,16 @@ KnobGui::onRemoveKeyActionTriggered()
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
     std::vector<std::pair<CurveGui*,KeyFrame> > toRemove;
     for (int i = 0; i < knob->getDimension(); ++i) {
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
+        
         KeyFrame kf;
-        kf.setTime(time);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-        AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-
-        if (isInt) {
-            kf.setValue( isInt->getValue(i) );
-        } else if (isBool) {
-            kf.setValue( isBool->getValue(i) );
-        } else if (isDouble) {
-            kf.setValue( isDouble->getValue(i) );
-        } else if (isString) {
-            std::string v = isString->getValue(i);
-            double dv;
-            isString->stringToKeyFrameValue(time, v, &dv);
-            kf.setValue(dv);
+        bool foundKey = knob->getCurve(i)->getKeyFrameWithTime(time, &kf);
+        
+        if (foundKey) {
+            toRemove.push_back( std::make_pair(curve,kf) );
         }
-
-
-        toRemove.push_back( std::make_pair(curve,kf) );
     }
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
                                            toRemove) );
@@ -1558,13 +1544,10 @@ KnobGui::onKeyFrameMoved(int oldTime,
 }
 
 void
-KnobGui::onAnimationLevelChanged(int level)
+KnobGui::onAnimationLevelChanged(int dim,int level)
 {
     if (!_imp->customInteract) {
-        int dim = getKnob()->getDimension();
-        for (int i = 0; i < dim; ++i) {
-            reflectAnimationLevel(i, (Natron::AnimationLevel)level);
-        }
+        reflectAnimationLevel(dim, (Natron::AnimationLevel)level);
     }
 }
 

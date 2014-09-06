@@ -1309,52 +1309,56 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     if (ret == setKeys) {
         AddKeysCommand::KeysToAddList keys;
         for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            for (int i = 0; i < it->first->getDimension(); ++i) {
-                CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
-                if (!curve) {
-                    continue;
+            if (it->first->isAnimationEnabled()) {
+                for (int i = 0; i < it->first->getDimension(); ++i) {
+                    CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
+                    if (!curve) {
+                        continue;
+                    }
+                    boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
+                    curveKeys->curve = curve;
+                    
+                    std::vector<KeyFrame> kVec;
+                    KeyFrame kf;
+                    kf.setTime(time);
+                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
+                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
+                    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
+                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
+                    
+                    if (isInt) {
+                        kf.setValue( isInt->getValue(i) );
+                    } else if (isBool) {
+                        kf.setValue( isBool->getValue(i) );
+                    } else if (isDouble) {
+                        kf.setValue( isDouble->getValue(i) );
+                    } else if (isString) {
+                        std::string v = isString->getValue(i);
+                        double dv;
+                        isString->stringToKeyFrameValue(time, v, &dv);
+                        kf.setValue(dv);
+                    }
+                    
+                    kVec.push_back(kf);
+                    curveKeys->keys = kVec;
+                    keys.push_back(curveKeys);
                 }
-                boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
-                curveKeys->curve = curve;
-
-                std::vector<KeyFrame> kVec;
-                KeyFrame kf;
-                kf.setTime(time);
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
-                AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
-                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
-
-                if (isInt) {
-                    kf.setValue( isInt->getValue(i) );
-                } else if (isBool) {
-                    kf.setValue( isBool->getValue(i) );
-                } else if (isDouble) {
-                    kf.setValue( isDouble->getValue(i) );
-                } else if (isString) {
-                    std::string v = isString->getValue(i);
-                    double dv;
-                    isString->stringToKeyFrameValue(time, v, &dv);
-                    kf.setValue(dv);
-                }
-
-                kVec.push_back(kf);
-                curveKeys->keys = kVec;
-                keys.push_back(curveKeys);
             }
         }
         pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keys) );
     } else if (ret == removeAnimation) {
         std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
         for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            for (int i = 0; i < it->first->getDimension(); ++i) {
-                CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
-                if (!curve) {
-                    continue;
-                }
-                KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
-                for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                    keysToRemove.push_back( std::make_pair(curve,*it) );
+            if (it->first->isAnimationEnabled()) {
+                for (int i = 0; i < it->first->getDimension(); ++i) {
+                    CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
+                    if (!curve) {
+                        continue;
+                    }
+                    KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
+                    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+                        keysToRemove.push_back( std::make_pair(curve,*it) );
+                    }
                 }
             }
         }
