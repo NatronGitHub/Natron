@@ -1613,7 +1613,7 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
     
     while (totalFreeRAM <= systemRAMToKeepFree) {
         
-        if (! _imp->_nodeCache->evictLRUEntry()) {
+        if (! _imp->_nodeCache->evictLRUInMemoryEntry()) {
             break;
         }
         

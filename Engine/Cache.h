@@ -570,10 +570,32 @@ public:
      * This is expensive since it takes the lock. Returns false
      * if there's nothing left to evict.
      **/
-    bool evictLRUEntry() const
+    bool evictLRUInMemoryEntry() const
     {
         QMutexLocker locker(&_lock);
         return tryEvictEntry();
+    }
+    
+    /**
+     * @brief Removes the last recently used entry from the disk cache.
+     * This is expensive since it takes the lock. Returns false
+     * if there's nothing left to evict.
+     **/
+    bool evictLRUDiskEntry() const {
+        QMutexLocker locker(&_lock);
+        
+        std::pair<hash_type,CachedValue> evicted = _diskCache.evict();
+        //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+        //we'll let the user of these entries purge the extra entries left in the cache later on
+        if (!evicted.second.entry) {
+            return false;
+        }
+        /*if it is stored on disk, remove it from memory*/
+        
+        assert( evicted.second.entry.unique() );
+        evicted.second.entry->removeAnyBackingFile();
+        
+        return true;
     }
 
     /**
@@ -867,9 +889,14 @@ public:
 
             Natron::StorageMode storage = Natron::DISK;
 
+            ///Just in case, we don't allow more than X files to be removed at once.
+            int safeCounter = 0;
             ///If too many files are opened, fall-back on RAM storage.
-            if ( appPTR->isNCacheFilesOpenedCapped() ) {
-                storage = Natron::RAM;
+            while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
+                if ( !evictLRUDiskEntry() ) {
+                    break;
+                }
+                ++safeCounter;
             }
 
             try {
@@ -907,10 +934,16 @@ private:
             storage = Natron::NO_STORAGE;
         }
 
-        ///If there are too many opened files, fall-back on RAM storage.
-        if ( appPTR->isNCacheFilesOpenedCapped() ) {
-            storage = Natron::RAM;
+        ///Just in case, we don't allow more than X files to be removed at once.
+        int safeCounter = 0;
+        ///If too many files are opened, fall-back on RAM storage.
+        while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
+            if ( !evictLRUDiskEntry() ) {
+                break;
+            }
+            ++safeCounter;
         }
+
 
     
         size_t entryDataSize = params->getElementsCount() * sizeof(data_t);
