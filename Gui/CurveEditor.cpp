@@ -200,6 +200,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                 hasAtLeast1KnobWithACurveShown = true;
                 hideKnob = false;
             }
+            knobCurve->setVisible(false);
         } else {
             for (int j = 0; j < k->getDimension(); ++j) {
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
@@ -214,6 +215,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                     hasAtLeast1KnobWithACurveShown = true;
                     hideKnob = false;
                 }
+                dimCurve->setVisible(false);
             }
         }
 
