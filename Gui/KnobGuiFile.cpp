@@ -127,11 +127,6 @@ File_KnobGui::open_file()
         path = SequenceParsing::removePath(selectedFile);
         updateLastOpened( path.c_str() );
         
-        std::map<std::string,std::string> env;
-        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
-        Natron::Project::findReplaceVariable(env,originalSelectedFile);
-        
-        
         pushUndoCommand( new KnobUndoCommand<std::string>(this,currentPattern,originalSelectedFile) );
     }
 }
@@ -283,9 +278,6 @@ OutputFile_KnobGui::open_file(bool openSequence)
         std::string oldPattern = _lineEdit->text().toStdString();
         
         std::string newPattern = dialog.filesToSave();
-        std::map<std::string,std::string> env;
-        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
-        Natron::Project::findReplaceVariable(env,newPattern);
         updateLastOpened( SequenceParsing::removePath(oldPattern).c_str() );
 
         pushUndoCommand( new KnobUndoCommand<std::string>(this,oldPattern,newPattern) );
@@ -485,13 +477,13 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         
         _addPathButton = new Button( "+",buttonsContainer );
         _addPathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _addPathButton->setToolTip( tr("Click to add a new environment variable") );
+        _addPathButton->setToolTip( tr("Click to add a new project path") );
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( "-",buttonsContainer);
         _removePathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
-        _removePathButton->setToolTip(tr("Click to remove selected environment variables"));
+        _removePathButton->setToolTip(tr("Click to remove selected project path"));
         
         
         buttonsLayout->addWidget(_addPathButton);
@@ -532,23 +524,19 @@ Path_KnobGui::onAddButtonClicked()
     SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui() );
     
     if ( dialog.exec() ) {
-        QString dirPath = dialog.currentDirectory().absolutePath();
-        if (!dirPath.endsWith('/')) {
-            dirPath.append('/');
+        std::string dirPath = dialog.selectedDirectory();
+        if (dirPath[dirPath.size() - 1] != '/') {
+            dirPath += '/';
         }
-        updateLastOpened(dirPath);
+        updateLastOpened(dirPath.c_str());
         
-        std::string stdDirPath = dirPath.toStdString();
-        std::map<std::string,std::string> env;
-        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
-        Natron::Project::findReplaceVariable(env,stdDirPath);
         
         std::string oldValue = _knob->getValue();
         
         int rowCount = (int)_items.size();
         
         QString varName = QString(tr("Path") + "%1").arg(rowCount);
-        createItem(rowCount, stdDirPath.c_str(), varName);
+        createItem(rowCount, dirPath.c_str(), varName);
         std::string newPath = rebuildPath();
         
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
@@ -565,9 +553,11 @@ Path_KnobGui::onOpenFileButtonClicked()
     if ( dialog.exec() ) {
         std::string dirPath = dialog.currentDirectory().absolutePath().toStdString();
         updateLastOpened(dirPath.c_str());
-        std::map<std::string,std::string> env;
-        getGui()->getApp()->getProject()->getEnvironmentVariables(env);
-        Natron::Project::findReplaceVariable(env,dirPath);
+        std::string varName,varPath;
+        bool relative = dialog.getRelativeChoiceProjectPath(varName, varPath);
+        if (relative) {
+            Natron::Project::makeRelativeToVariable(varName, varPath, dirPath);
+        }
         
         std::string oldValue = _knob->getValue();
         

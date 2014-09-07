@@ -345,6 +345,10 @@ public:
     ///Works only in SAVE_DIALOG mode.
     std::string filesToSave();
 
+    ///Returns the path of the directory returned by currentDirectory() but whose path has been made
+    ///relative to the selected user project path.
+    std::string selectedDirectory() const;
+    
     ///Returns the current directory of the dialog.
     ///This can be used for a DIR_DIALOG to retrieve the value selected by the user.
     QDir currentDirectory() const;
@@ -433,6 +437,13 @@ public:
      **/
     void getMappedNameAndSizeForFile(const QString & absoluteFileName,QString* mappedName,quint64* sequenceSize) const;
 
+    /**
+     * @brief Get the user preference regarding how the file should be fetched.
+     * @returns False if the file path should be absolute. When true the varName and varValue
+     * will be set to the project path desired.
+     **/
+    bool getRelativeChoiceProjectPath(std::string& varName,std::string& varValue) const;
+    
 public slots:
 
     ///same as setDirectory but with a QModelIndex
@@ -566,6 +577,8 @@ private:
     Button* _addFavoriteButton;
     Button* _removeFavoriteButton;
     LineEdit* _selectionLineEdit;
+    QLabel* _relativeLabel;
+    ComboBox* _relativeChoice;
     ComboBox* _sequenceButton;
     QLabel* _filterLabel;
     LineEdit* _filterLineEdit;

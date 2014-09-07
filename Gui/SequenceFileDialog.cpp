@@ -215,6 +215,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
       , _addFavoriteButton(0)
       , _removeFavoriteButton(0)
       , _selectionLineEdit(0)
+      , _relativeLabel(0)
+      , _relativeChoice(0)
       , _sequenceButton(0)
       , _filterLabel(0)
       , _filterLineEdit(0)
@@ -374,9 +376,28 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _selectionLayout->setContentsMargins(0, 0, 0, 0);
     _selectionWidget->setLayout(_selectionLayout);
 
-    _sequenceButton = new ComboBox(_buttonsWidget);
+    _relativeLabel = new QLabel(tr("Relative to:"),_selectionWidget);
+    _selectionLayout->addWidget(_relativeLabel);
+    
+    _relativeChoice = new ComboBox(_selectionWidget);
+    _relativeChoice->setToolTip(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have ""chosen a file. The path will be made relative to the selected project path only when OK will be pressed."));
+    _selectionLayout->addWidget(_relativeChoice);
+    _relativeChoice->addItem( tr("Absolute") );
+    std::map<std::string,std::string> projectPaths;
+    gui->getApp()->getProject()->getEnvironmentVariables(projectPaths);
+    for (std::map<std::string,std::string>::iterator it = projectPaths.begin(); it != projectPaths.end(); ++it) {
+        QString varName;
+        varName.append('[');
+        varName.append(it->first.c_str());
+        varName.append(']');
+        _relativeChoice->addItem(varName);
+    }
+    
+    _sequenceButton = new ComboBox(_selectionWidget);
     _sequenceButton->addItem( tr("Sequence:") );
     _sequenceButton->addItem( tr("File:") );
+   
+    
     if (isSequenceDialog) {
         _sequenceButton->setCurrentIndex(0);
     } else {
@@ -549,7 +570,7 @@ SequenceFileDialog::saveState() const
     stream << history();
     stream << currentDirectory().path();
     stream << _view->header()->saveState();
-
+    stream << _relativeChoice->itemText(_relativeChoice->activeIndex());
     return data;
 }
 
@@ -569,11 +590,13 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     QList<QUrl> bookmarks;
     QStringList history;
     QString currentDirectory;
+    QString relativeChoice;
     stream >> splitterState
     >> bookmarks
     >> history
     >> currentDirectory
-    >> headerData;
+    >> headerData
+    >> relativeChoice;
     if ( !_centerSplitter->restoreState(splitterState) ) {
         return false;
     }
@@ -583,6 +606,14 @@ SequenceFileDialog::restoreState(const QByteArray & state)
             list[i] = _centerSplitter->widget(i)->sizeHint().width();
         }
         _centerSplitter->setSizes(list);
+    }
+    
+    
+    for (int i = 0; i < _relativeChoice->count(); ++i) {
+        if (_relativeChoice->itemText(i) == relativeChoice) {
+            _relativeChoice->setCurrentIndex(i);
+            break;
+        }
     }
     
     std::map<std::string,std::string> envVar;
@@ -758,6 +789,25 @@ SequenceFileDialog::enableSequenceMode(bool b)
     setDirectory( _model->myComputer().toString() );
     setDirectory(currentDir);
     _view->viewport()->update();
+}
+
+bool
+SequenceFileDialog::getRelativeChoiceProjectPath(std::string& varName,std::string& varValue) const
+{
+    int choice = _relativeChoice->activeIndex();
+    if (choice == 0) {
+        return false; //< absolute
+    } else {
+        --choice; //we skip the absolute choice
+        std::map<std::string,std::string> projectPaths;
+        _gui->getApp()->getProject()->getEnvironmentVariables(projectPaths);
+        std::map<std::string,std::string>::iterator it = projectPaths.begin();
+        assert(choice < (int)projectPaths.size());
+        std::advance(it, choice);
+        varName = it->first;
+        varValue = it->second;
+        return true;
+    }
 }
 
 void
@@ -1747,6 +1797,7 @@ SequenceFileDialog::selectedFiles()
 {
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
 
+    std::string selection;
     assert(indexes.count() <= 1);
     if ( sequenceModeEnabled() ) {
         if (indexes.count() == 1) {
@@ -1755,22 +1806,28 @@ SequenceFileDialog::selectedFiles()
             SequenceParsing::SequenceFromFiles ret(false);
             _proxy->getSequenceFromFilesForFole(absoluteFileName, &ret);
 
-            return ret.generateValidSequencePattern();
+            selection =  ret.generateValidSequencePattern();
         } else {
             //if nothing is selected, pick whatever the line edit tells us
-            return _selectionLineEdit->text().toStdString();
+            selection =  _selectionLineEdit->text().toStdString();
         }
     } else {
         if (indexes.count() == 1) {
             QModelIndex sequenceIndex = mapToSource( indexes.at(0) );
             QString absoluteFileName = sequenceIndex.data(QFileSystemModel::FilePathRole).toString();
 
-            return absoluteFileName.toStdString();
+            selection =  absoluteFileName.toStdString();
         } else {
             //if nothing is selected, pick whatever the line edit tells us
-            return _selectionLineEdit->text().toStdString();
+            selection =  _selectionLineEdit->text().toStdString();
         }
     }
+    std::string varName,varPath;
+    bool relative = getRelativeChoiceProjectPath(varName, varPath);
+    if (relative) {
+        Natron::Project::makeRelativeToVariable(varName, varPath, selection);
+    }
+    return selection;
 }
 
 std::string
@@ -1778,13 +1835,31 @@ SequenceFileDialog::filesToSave()
 {
     assert(_dialogMode == SAVE_DIALOG);
 
-    return _selectionLineEdit->text().toStdString();
+    std::string ret =  _selectionLineEdit->text().toStdString();
+    std::string varName,varPath;
+    bool relative = getRelativeChoiceProjectPath(varName, varPath);
+    if (relative) {
+        Natron::Project::makeRelativeToVariable(varName, varPath, ret);
+    }
+    return ret;
 }
 
 QDir
 SequenceFileDialog::currentDirectory() const
 {
     return _requestedDir;
+}
+
+std::string
+SequenceFileDialog::selectedDirectory() const
+{
+    std::string path = _requestedDir.toStdString();
+    std::string pathName,pathValue;
+    bool relative = getRelativeChoiceProjectPath(pathName, pathValue);
+    if (relative) {
+        Natron::Project::makeRelativeToVariable(pathName, pathValue, path);
+    }
+    return path;
 }
 
 QModelIndex

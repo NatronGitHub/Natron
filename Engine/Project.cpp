@@ -544,8 +544,8 @@ Project::initializeKnobs()
 {
     boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Settings");
 
-    _imp->envVars = Natron::createKnob<Path_Knob>(this, "Environment variables");
-    _imp->envVars->setName("envVars");
+    _imp->envVars = Natron::createKnob<Path_Knob>(this, "Project paths");
+    _imp->envVars->setName("projectPaths");
     _imp->envVars->setHintToolTip("Specify here environment variables for the project. Any environment variable can be used "
                                   "in file paths and can be used between brackets, for example: \n"
                                   "[" NATRON_PROJECT_ENV_VAR_NAME "]MyProject.ntp \n"
@@ -1498,6 +1498,22 @@ Project::findReplaceVariable(const std::map<std::string,std::string>& env,std::s
         str.replace(0, longestVar.size(),replaceStr);
     }
     
+}
+    
+void
+Project::makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str)
+{
+    QDir dir(varValue.c_str());
+    if (!dir.exists()) {
+        return;
+    }
+    QString s(str.c_str());
+    s = dir.relativeFilePath(s);
+    if (varValue[varValue.size() - 1] != '/' && varValue[varValue.size() - 1] != '\\') {
+        ///append a '/'
+        s.prepend('/');
+    }
+    str = '[' + varName + ']' + s.toStdString();
 }
     
 } //namespace Natron

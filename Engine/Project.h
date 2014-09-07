@@ -243,6 +243,12 @@ public:
      * @brief Try to find in str a variable from env. The longest match is replaced by the variable name.
      **/
     static void findReplaceVariable(const std::map<std::string,std::string>& env,std::string& str);
+    
+    /**
+     * @brief Make the given string relative to the given variable.
+     * If the path indicated by varValue doesn't exist then str will be unchanged.
+     **/
+    static void makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str);
 public slots:
 
     void onAutoSaveTimerTriggered();
