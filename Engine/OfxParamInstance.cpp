@@ -2282,6 +2282,8 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>( node, getParamLabel(this) );
             if (fileIsImage) {
                 _outputFileKnob->setAsOutputImageFile();
+            } else {
+                _outputFileKnob->turnOffSequences();
             }
             if (!filePathSupportsImageSequences) {
                 _outputFileKnob->setAnimationEnabled(false);
