@@ -1215,7 +1215,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     image->convertToFormat( image->getBounds(),
                                             getApp()->getDefaultColorSpaceForBitDepth( image->getBitDepth() ),
                                             getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                            args.channelForAlpha, false, true,unPremultIfNeeded,
+                                            args.channelForAlpha, true, true,unPremultIfNeeded,
                                             remappedImage.get() );
                 }
                 ///switch the pointer
@@ -1279,7 +1279,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     RenderRoIArgs argCpy = args;
                     argCpy.time = inputTimeIdentity;
 
-                    return renderRoI(argCpy);
+                    return renderRoI(argCpy,&nodeHash);
                 }
             }
             
@@ -1523,7 +1523,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                                       renderFullScaleThenDownscale);
 
 
-    if ( aborted() ) {
+    if ( aborted() && renderRetCode != eImageAlreadyRendered) {
         //if render was aborted, remove the frame from the cache as it contains only garbage
         appPTR->removeFromNodeCache(image);
     } else if (renderRetCode == eImageRenderFailed) {
