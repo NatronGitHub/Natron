@@ -614,6 +614,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             img.load(NATRON_IMAGES_PATH "turbo_off.png");
             *pix = QPixmap::fromImage(img);
             break;
+        case NATRON_PIXMAP_VIEWER_ICON:
+            img.load(NATRON_IMAGES_PATH "viewer_icon.png");
+            *pix = QPixmap::fromImage(img);
+            break;
         default:
             assert(!"Missing image.");
         } // switch
@@ -883,7 +887,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin( viewerPlugin,viewer->getPluginID().c_str(),viewer->getPluginLabel().c_str(),
-                                                     "","",grouping,(QMutex*)NULL,viewer->getMajorVersion(),viewer->getMinorVersion() );
+                                                     NATRON_IMAGES_PATH "viewer_icon.png","",grouping,(QMutex*)NULL,
+                                                    viewer->getMajorVersion(),viewer->getMinorVersion() );
         plugins->push_back(plugin);
         onPluginLoaded(plugin);
     }
