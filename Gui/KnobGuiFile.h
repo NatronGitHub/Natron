@@ -25,6 +25,7 @@ CLANG_DIAG_ON(uninitialized)
 
 // Qt
 class QHBoxLayout;
+class QFileSystemWatcher;
 
 // Engine
 class KnobI;
@@ -71,6 +72,9 @@ public slots:
 
     void open_file();
 
+    void onTimelineFrameChanged(SequenceTime time,int reason);
+    
+    void watchedFileChanged();
 private:
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
@@ -87,6 +91,7 @@ private:
     LineEdit *_lineEdit;
     Button *_openFileButton;
     QString _lastOpened;
+    QFileSystemWatcher* _watcher;
     boost::shared_ptr<File_Knob> _knob;
 };
 

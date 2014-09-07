@@ -20,13 +20,14 @@
 #include <QStyle>
 #include <QApplication>
 #include <QStyledItemDelegate>
-
+#include <QFileSystemWatcher>
 
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 #include <SequenceParsing.h>
 #include "Engine/EffectInstance.h"
 #include "Engine/Project.h"
+#include "Engine/TimeLine.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
@@ -43,6 +44,10 @@ using namespace Natron;
 File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
+    , _lineEdit(0)
+    , _openFileButton(0)
+    , _lastOpened()
+    , _watcher(0)
 {
     _knob = boost::dynamic_pointer_cast<File_Knob>(knob);
     assert(_knob);
@@ -53,11 +58,17 @@ File_KnobGui::~File_KnobGui()
 {
     delete _lineEdit;
     delete _openFileButton;
+    delete _watcher;
 }
 
 void
 File_KnobGui::createWidget(QHBoxLayout* layout)
 {
+    
+    if (_knob->getHolder() && _knob->getEvaluateOnChange()) {
+        boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
+        QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime, int)));
+    }
     _lineEdit = new LineEdit( layout->parentWidget() );
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     _lineEdit->setPlaceholderText( tr("File path...") );
@@ -86,6 +97,7 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
     containerLayout->addWidget(_openFileButton);
 
     layout->addWidget(container);
+    
 }
 
 void
@@ -145,6 +157,40 @@ File_KnobGui::updateGUI(int /*dimension*/)
 {
     QString file(_knob->getValue().c_str());
     _lineEdit->setText(file);
+    if (_knob->getHolder() && _knob->getEvaluateOnChange() && QFile::exists(file)) {
+        if (_watcher && _watcher->files().contains(file)) {
+            return;
+        }
+        delete _watcher;
+        _watcher = new QFileSystemWatcher;
+        _watcher->addPath(file);
+        QObject::connect(_watcher, SIGNAL(fileChanged(QString)), this, SLOT(watchedFileChanged()));
+
+    }
+}
+
+void
+File_KnobGui::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
+{
+    ///Get the current file, if it exists, add the file path to the file system watcher
+    ///to get notified if the file changes.
+    std::string filepath = _knob->getFileName(time, 0);
+    QString qfilePath(filepath.c_str());
+    if (!QFile::exists(qfilePath)) {
+        return;
+    }
+    
+    delete _watcher;
+    _watcher = new QFileSystemWatcher;
+    _watcher->addPath(qfilePath);
+    QObject::connect(_watcher, SIGNAL(fileChanged(QString)), this, SLOT(watchedFileChanged()));
+}
+
+void
+File_KnobGui::watchedFileChanged()
+{
+    ///The file has changed, trigger a new render.
+    _knob->getHolder()->evaluate_public(_knob.get(), true, Natron::USER_EDITED);
 }
 
 void
