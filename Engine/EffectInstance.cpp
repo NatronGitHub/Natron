@@ -1212,7 +1212,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     
                     bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
                     
-                    image->convertToFormat( image->getBounds(),
+                    image->convertToFormat( args.roi,
                                             getApp()->getDefaultColorSpaceForBitDepth( image->getBitDepth() ),
                                             getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                             args.channelForAlpha, true, true,unPremultIfNeeded,
