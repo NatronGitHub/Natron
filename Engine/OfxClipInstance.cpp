@@ -83,13 +83,15 @@ OfxClipInstance::getUnmappedBitDepth() const
     }
     
     ///Return the hightest bit depth supported by the plugin
-    std::string ret = _nodeInstance->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
-    if (ret == floatStr) {
-        return floatStr;
-    } else if (ret == shortStr) {
-        return shortStr;
-    } else if (ret == byteStr) {
-        return byteStr;
+    if (_nodeInstance) {
+        std::string ret = _nodeInstance->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+        if (ret == floatStr) {
+            return floatStr;
+        } else if (ret == shortStr) {
+            return shortStr;
+        } else if (ret == byteStr) {
+            return byteStr;
+        }
     }
     return noneStr;
 
