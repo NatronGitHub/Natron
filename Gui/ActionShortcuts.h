@@ -177,6 +177,32 @@
 #define kShortcutIDActionProxyLevel32 "proxy32"
 #define kShortcutDescActionProxyLevel32 "Set proxy level to 32"
 
+#define kShortcutIDActionHideOverlays "hideOverlays"
+#define kShortcutDescActionHideOverlays "Show/Hide overlays"
+
+#define kShortcutIDActionHidePlayer "hidePlayer"
+#define kShortcutDescActionHidePlayer "Show/Hide player"
+
+#define kShortcutIDActionHideTimeline "hideTimeline"
+#define kShortcutDescActionHideTimeline "Show/Hide timeline"
+
+#define kShortcutIDActionHideLeft "hideLeft"
+#define kShortcutDescActionHideLeft "Show/Hide left toolbar"
+
+#define kShortcutIDActionHideRight "hideRight"
+#define kShortcutDescActionHideRight "Show/Hide right toolbar"
+
+#define kShortcutIDActionHideTop "hideTop"
+#define kShortcutDescActionHideTop "Show/Hide top toolbar"
+
+#define kShortcutIDActionHideInfobar "hideInfos"
+#define kShortcutDescActionHideInfobar "Show/Hide infos bar"
+
+#define kShortcutIDActionHideAll "hideAll"
+#define kShortcutDescActionHideAll "Hide all"
+
+#define kShortcutIDActionShowAll "showAll"
+#define kShortcutDescActionShowAll "Show all"
 
 #define kShortcutIDMousePickColor "pick"
 #define kShortcutDescMousePickColor "Pick a color"
@@ -524,5 +550,19 @@ typedef std::map<QString,BoundAction*> GroupShortcuts;
 ///All groups shortcuts mapped against the name of the group
 typedef std::map<QString,GroupShortcuts> AppShortcuts;
 
+class ActionWithShortcut
+: public QAction
+{
+    QString _group;
+    QString _actionID;
+    
+public:
+    
+    ActionWithShortcut(const QString & group,
+                       const QString & actionID,
+                       const QString & actionDescription,
+                       QObject* parent);
+    
+    virtual ~ActionWithShortcut();};
 
 #endif // ACTIONSHORTCUTS_H

@@ -19,6 +19,7 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 CLANG_DIAG_ON(deprecated-register)
 #include "Gui/LineEdit.h"
 
+class BoundAction;
 struct ShortCutEditorPrivate;
 class ShortCutEditor
     : public QWidget
@@ -31,6 +32,8 @@ public:
 
     virtual ~ShortCutEditor();
 
+    void addShortcut(BoundAction* action);
+    
 public slots:
 
     void onSelectionChanged();

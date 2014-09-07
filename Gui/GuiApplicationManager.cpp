@@ -97,6 +97,7 @@ struct KnobsClipBoard
 
 struct GuiApplicationManagerPrivate
 {
+    GuiApplicationManager* _publicInterface;
     std::vector<PluginGroupNode*> _toolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
@@ -109,8 +110,9 @@ struct GuiApplicationManagerPrivate
     AppShortcuts _actionShortcuts;
 
     
-    GuiApplicationManagerPrivate()
-        : _toolButtons()
+    GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
+        :   _publicInterface(publicInterface)
+          , _toolButtons()
           , _knobsClipBoard(new KnobsClipBoard)
           , _knobGuiFactory( new KnobGuiFactory() )
           , _colorPickerCursor(NULL)
@@ -136,7 +138,7 @@ struct GuiApplicationManagerPrivate
 
 GuiApplicationManager::GuiApplicationManager()
     : AppManager()
-      , _imp(new GuiApplicationManagerPrivate)
+      , _imp(new GuiApplicationManagerPrivate(this))
 {
 }
 
@@ -1316,6 +1318,16 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5);
 
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, kShortcutDescActionHideOverlays, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, kShortcutDescActionHidePlayer, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideTimeline, kShortcutDescActionHideTimeline, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideLeft, kShortcutDescActionHideLeft, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideRight, kShortcutDescActionHideRight, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, kShortcutDescActionHideTop, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, kShortcutDescActionHideInfobar, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, kShortcutDescActionShowAll, Qt::NoModifier, (Qt::Key)0);
+    
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);
 
@@ -1404,6 +1416,14 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
                                          const Qt::KeyboardModifiers & modifiers,
                                          Qt::Key symbol)
 {
+    
+    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
+    if ( foundGroup != _actionShortcuts.end() ) {
+        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
+        if ( foundAction != foundGroup->second.end() ) {
+            return;
+        }
+    }
     KeyBoundAction* kA = new KeyBoundAction;
 
     kA->grouping = grouping;
@@ -1412,13 +1432,17 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
     kA->modifiers = modifiers;
     kA->defaultShortcut = symbol;
     kA->currentShortcut = symbol;
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
         foundGroup->second.insert( std::make_pair(id, kA) );
     } else {
         GroupShortcuts group;
         group.insert( std::make_pair(id, kA) );
         _actionShortcuts.insert( std::make_pair(grouping, group) );
+    }
+    
+    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(_publicInterface->getTopLevelInstance());
+    if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
+        app->getGui()->addShortcut(kA);
     }
 }
 
@@ -1429,6 +1453,14 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
                                                const Qt::KeyboardModifiers & modifiers,
                                                Qt::MouseButton button)
 {
+    
+    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
+    if ( foundGroup != _actionShortcuts.end() ) {
+        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
+        if ( foundAction != foundGroup->second.end() ) {
+            return;
+        }
+    }
     MouseAction* mA = new MouseAction;
 
     mA->grouping = grouping;
@@ -1443,13 +1475,17 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
     ///Mouse shortcuts are not editable.
     mA->editable = false;
 
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
         foundGroup->second.insert( std::make_pair(id, mA) );
     } else {
         GroupShortcuts group;
         group.insert( std::make_pair(id, mA) );
         _actionShortcuts.insert( std::make_pair(grouping, group) );
+    }
+    
+    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(_publicInterface->getTopLevelInstance());
+    if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
+        app->getGui()->addShortcut(mA);
     }
 }
 
@@ -1459,6 +1495,14 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
                                                  const QString & description,
                                                  QKeySequence::StandardKey key)
 {
+    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
+    if ( foundGroup != _actionShortcuts.end() ) {
+        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
+        if ( foundAction != foundGroup->second.end() ) {
+            return;
+        }
+    }
+    
     Qt::KeyboardModifiers modifiers;
     Qt::Key symbol;
 
@@ -1470,13 +1514,17 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     kA->modifiers = modifiers;
     kA->defaultShortcut = symbol;
     kA->currentShortcut = symbol;
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
         foundGroup->second.insert( std::make_pair(id, kA) );
     } else {
         GroupShortcuts group;
         group.insert( std::make_pair(id, kA) );
         _actionShortcuts.insert( std::make_pair(grouping, group) );
+    }
+    
+    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(_publicInterface->getTopLevelInstance());
+    if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
+        app->getGui()->addShortcut(kA);
     }
 }
 

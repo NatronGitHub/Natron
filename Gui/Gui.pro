@@ -38,6 +38,7 @@ DEPENDPATH += $$PWD/../Global
 
 SOURCES += \
     AboutWindow.cpp \
+    ActionShortcuts.cpp \
     AnimatedCheckBox.cpp \
     AnimationButton.cpp \
     Button.cpp \

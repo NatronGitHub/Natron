@@ -194,6 +194,7 @@ struct ViewerGL::Implementation
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         assert( qApp && qApp->thread() == QThread::currentThread() );
         menu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+
     }
 
     /////////////////////////////////////////////////////////
@@ -815,7 +816,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),1);
     onProjectFormatChanged(projectFormat);
     resetWipeControls();
-
+    populateMenu();
     QObject::connect( getInternalNode(), SIGNAL( rodChanged(RectD, int) ), this, SLOT( setRegionOfDefinition(RectD, int) ) );
 }
 
@@ -2194,7 +2195,6 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     if (!overlaysCaught) {
         if ( buttonDownIsRight(e) ) {
-            populateMenu();
             _imp->menu->exec( mapToGlobal( e->pos() ) );
         } else if ( buttonDownIsLeft(e) ) {
             ///build selection rectangle
@@ -3005,12 +3005,41 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (e->key() == Qt::Key_O) {
+    
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+    bool accept = false;
+
+    
+    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
         toggleOverlays();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, modifiers, key) ) {
+        _imp->viewerTab->hideAllToolbars();
+        accept = true;
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, modifiers, key) ) {
+        _imp->viewerTab->showAllToolbars();
+        accept = true;
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, modifiers, key) ) {
+        _imp->viewerTab->togglePlayerVisibility();
+        accept = true;
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTimeline, modifiers, key) ) {
+        _imp->viewerTab->toggleTimelineVisibility();
+        accept = true;
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, modifiers, key) ) {
+        _imp->viewerTab->toggleInfobarVisbility();
+        accept = true;
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideLeft, modifiers, key) ) {
+        _imp->viewerTab->toggleLeftToolbarVisiblity();
+        accept = true;
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideRight, modifiers, key) ) {
+        _imp->viewerTab->toggleRightToolbarVisibility();
+        accept = true;
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, modifiers, key) ) {
+        _imp->viewerTab->toggleTopToolbarVisibility();
+        accept = true;
     }
 
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
-    bool accept = false;
     if ( e->isAutoRepeat() ) {
         if ( _imp->viewerTab->notifyOverlaysKeyRepeat(scale, scale, e) ) {
             accept = true;
@@ -3058,10 +3087,13 @@ ViewerGL::getBitDepth() const
 void
 ViewerGL::populateMenu()
 {
+    
+    
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->menu->clear();
-    QAction* displayOverlaysAction = new QAction(tr("Display overlays"),_imp->menu);
+    QAction* displayOverlaysAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideOverlays,kShortcutDescActionHideOverlays, _imp->menu);
+
     displayOverlaysAction->setCheckable(true);
     displayOverlaysAction->setChecked(true);
     QObject::connect( displayOverlaysAction,SIGNAL( triggered() ),this,SLOT( toggleOverlays() ) );
@@ -3072,44 +3104,27 @@ ViewerGL::populateMenu()
     
     QAction* showHidePlayer,*showHideLeftToolbar,*showHideRightToolbar,*showHideTopToolbar,*showHideInfobar,*showHideTimeline;
     QAction* showAll,*hideAll;
-    if (_imp->viewerTab->isPlayerVisible()) {
-        showHidePlayer = new QAction(tr("Hide player"),showHideMenu);
-    } else {
-        showHidePlayer = new QAction(tr("Show player"),showHideMenu);
-    }
     
-    if (_imp->viewerTab->isLeftToolbarVisible()) {
-        showHideLeftToolbar = new QAction(tr("Hide left toolbar"),showHideMenu);
-    } else {
-        showHideLeftToolbar = new QAction(tr("Show left toolbar"),showHideMenu);
-    }
+    showHidePlayer = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHidePlayer,kShortcutDescActionHidePlayer,
+                                                showHideMenu);
+
+    showHideLeftToolbar = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideLeft,kShortcutDescActionHideLeft,
+                                                 showHideMenu);
+    showHideRightToolbar = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideRight,kShortcutDescActionHideRight,
+                                                  showHideMenu);
+    showHideTopToolbar = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideTop,kShortcutDescActionHideTop,
+                                                showHideMenu);
+    showHideInfobar = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideInfobar,kShortcutDescActionHideInfobar,
+                                             showHideMenu);
+    showHideTimeline = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideTimeline,kShortcutDescActionHideTimeline,
+                                              showHideMenu);
+   
     
-    if (_imp->viewerTab->isRightToolbarVisible()) {
-        showHideRightToolbar = new QAction(tr("Hide right toolbar"),showHideMenu);
-    } else {
-        showHideRightToolbar = new QAction(tr("Show right toolbar"),showHideMenu);
-    }
-    
-    if (_imp->viewerTab->isTopToolbarVisible()) {
-        showHideTopToolbar = new QAction(tr("Hide top toolbar"),showHideMenu);
-    } else {
-        showHideTopToolbar = new QAction(tr("Show top toolbar"),showHideMenu);
-    }
-    
-    if (_imp->viewerTab->isInfobarVisible()) {
-        showHideInfobar = new QAction(tr("Hide infos bar"),showHideMenu);
-    } else {
-        showHideInfobar = new QAction(tr("Show infos bar"),showHideMenu);
-    }
-    
-    if (_imp->viewerTab->isTimelineVisible()) {
-        showHideTimeline = new QAction(tr("Hide timeline"),showHideMenu);
-    } else {
-        showHideTimeline = new QAction(tr("Show timeline"),showHideMenu);
-    }
-    
-    showAll = new QAction(tr("Show all"),showHideMenu);
-    hideAll = new QAction(tr("Hide all"),showHideMenu);
+    showAll = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideAll,kShortcutDescActionHideAll,
+                                     showHideMenu);
+
+    hideAll = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionShowAll,kShortcutDescActionShowAll,
+                                     showHideMenu);
     
     QObject::connect(showHidePlayer,SIGNAL(triggered()),_imp->viewerTab,SLOT(togglePlayerVisibility()));
     QObject::connect(showHideLeftToolbar,SIGNAL(triggered()),_imp->viewerTab,SLOT(toggleLeftToolbarVisiblity()));

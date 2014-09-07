@@ -62,6 +62,7 @@ class Histogram;
 class NodeBackDropSerialization;
 class RotoGui;
 class FloatingWidget;
+class BoundAction;
 
 //Natron engine
 class ViewerInstance;
@@ -389,6 +390,12 @@ public:
     
     bool isGUIFrozen() const;
     
+    /**
+     * @brief If returns true then you must add shorcuts to the shortcut editor using the addShortcut function
+     **/
+    bool hasShortcutEditorAlreadyBeenBuilt() const;
+    
+    void addShortcut(BoundAction* action);
 signals:
 
     void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);

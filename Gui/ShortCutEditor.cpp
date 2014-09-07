@@ -146,6 +146,10 @@ struct ShortCutEditorPrivate
 
         return (BoundAction*)NULL;
     }
+    
+    GuiAppShorcuts::iterator buildGroupHierarchy(QString grouping);
+    
+    void makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,BoundAction* action);
 };
 
 static QString
@@ -226,106 +230,19 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
                                    "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
                                    "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."),Qt::WhiteSpaceNormal) );
     _imp->tree->setItemDelegate( new ShortcutDelegate(_imp->tree) );
+    
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
+    
     for (AppShortcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
-        QString grouping = it->first;
-
-        ///Do not allow empty grouping, make them under the Global shortcut
-        if ( grouping.isEmpty() ) {
-            grouping = kShortcutGroupGlobal;
-        }
-
-        ///Groups are separated by a '/'
-        QStringList groupingSplit = grouping.split( QChar('/') );
-        assert(groupingSplit.size() > 0);
-        const QString & lastGroupName = groupingSplit.back();
-
-        ///Find out whether the deepest parent group of the action already exist
-        GuiAppShorcuts::iterator foundGuiGroup = _imp->appShortcuts.end();
-        for (GuiAppShorcuts::iterator it2 = _imp->appShortcuts.begin(); it2 != _imp->appShortcuts.end(); ++it2) {
-            if (it2->item->text(0) == lastGroupName) {
-                foundGuiGroup = it2;
-                break;
-            }
-        }
-
-        QTreeWidgetItem* groupParent;
-        if ( foundGuiGroup != _imp->appShortcuts.end() ) {
-            groupParent = foundGuiGroup->item;
-        } else {
-            groupParent = 0;
-            for (int i = 0; i < groupingSplit.size(); ++i) {
-                QTreeWidgetItem* groupingItem;
-                bool existAlready = false;
-                if (groupParent) {
-                    for (int j = 0; j < groupParent->childCount(); ++j) {
-                        QTreeWidgetItem* child = groupParent->child(j);
-                        if (child->text(0) == groupingSplit[i]) {
-                            groupingItem = child;
-                            existAlready = true;
-                            break;
-                        }
-                    }
-                    if (!existAlready) {
-                        groupingItem = new QTreeWidgetItem(groupParent);
-                        groupParent->addChild(groupingItem);
-                    }
-                } else {
-                    for (int j = 0; j < _imp->tree->topLevelItemCount(); ++j) {
-                        QTreeWidgetItem* topLvlItem = _imp->tree->topLevelItem(j);
-                        if (topLvlItem->text(0) == groupingSplit[i]) {
-                            groupingItem = topLvlItem;
-                            existAlready = true;
-                            break;
-                        }
-                    }
-                    if (!existAlready) {
-                        groupingItem = new QTreeWidgetItem(_imp->tree);
-                        _imp->tree->addTopLevelItem(groupingItem);
-                    }
-                }
-                if (!existAlready) {
-                    /* expand only top-level groups */
-                    groupingItem->setExpanded(i == 0);
-                    groupingItem->setFlags(Qt::ItemIsEnabled);
-                    groupingItem->setText(0, groupingSplit[i]);
-                }
-                groupParent = groupingItem;
-            }
-            GuiShortCutGroup group;
-            group.item = groupParent;
-            foundGuiGroup = _imp->appShortcuts.insert(_imp->appShortcuts.end(), group);
-        }
-
-
-        assert(groupParent);
-
+      
+        GuiAppShorcuts::iterator foundGuiGroup = _imp->buildGroupHierarchy(it->first);
+        assert(foundGuiGroup != _imp->appShortcuts.end());
+        
         for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            GuiBoundAction action;
-            action.action = it2->second;
-            action.item = new QTreeWidgetItem(groupParent);
-            action.item->setText(0, action.action->description);
-            const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(it2->second);
-            const MouseAction* ma = dynamic_cast<const MouseAction*>(it2->second);
-            QString shortcutStr;
-            if (ka) {
-                shortcutStr = keybindToString(ka->modifiers, ka->currentShortcut);
-            } else if (ma) {
-                shortcutStr = mouseShortcutToString(ma->modifiers, ma->button);
-            } else {
-                assert(false);
-            }
-            if (!it2->second->editable) {
-                action.item->setToolTip( 0, tr("This action is standard and its shortcut cannot be edited.") );
-                action.item->setToolTip( 1, tr("This action is standard and its shortcut cannot be edited.") );
-                action.item->setDisabled(true);
-            }
-            action.item->setExpanded(true);
-            action.item->setText(1, shortcutStr);
-            foundGuiGroup->actions.push_back(action);
-            foundGuiGroup->item->addChild(action.item);
+            _imp->makeGuiActionForShortcut(foundGuiGroup, it2->second);
         }
     }
+    
     _imp->tree->resizeColumnToContents(0);
     QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onSelectionChanged() ) );
 
@@ -389,6 +306,117 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
 
 ShortCutEditor::~ShortCutEditor()
 {
+}
+
+GuiAppShorcuts::iterator
+ShortCutEditorPrivate::buildGroupHierarchy(QString grouping)
+{
+    ///Do not allow empty grouping, make them under the Global shortcut
+    if ( grouping.isEmpty() ) {
+        grouping = kShortcutGroupGlobal;
+    }
+    
+    ///Groups are separated by a '/'
+    QStringList groupingSplit = grouping.split( QChar('/') );
+    assert(groupingSplit.size() > 0);
+    const QString & lastGroupName = groupingSplit.back();
+    
+    ///Find out whether the deepest parent group of the action already exist
+    GuiAppShorcuts::iterator foundGuiGroup = appShortcuts.end();
+    for (GuiAppShorcuts::iterator it2 = appShortcuts.begin(); it2 != appShortcuts.end(); ++it2) {
+        if (it2->item->text(0) == lastGroupName) {
+            foundGuiGroup = it2;
+            break;
+        }
+    }
+    
+    QTreeWidgetItem* groupParent;
+    if ( foundGuiGroup != appShortcuts.end() ) {
+        groupParent = foundGuiGroup->item;
+    } else {
+        groupParent = 0;
+        for (int i = 0; i < groupingSplit.size(); ++i) {
+            QTreeWidgetItem* groupingItem;
+            bool existAlready = false;
+            if (groupParent) {
+                for (int j = 0; j < groupParent->childCount(); ++j) {
+                    QTreeWidgetItem* child = groupParent->child(j);
+                    if (child->text(0) == groupingSplit[i]) {
+                        groupingItem = child;
+                        existAlready = true;
+                        break;
+                    }
+                }
+                if (!existAlready) {
+                    groupingItem = new QTreeWidgetItem(groupParent);
+                    groupParent->addChild(groupingItem);
+                }
+            } else {
+                for (int j = 0; j < tree->topLevelItemCount(); ++j) {
+                    QTreeWidgetItem* topLvlItem = tree->topLevelItem(j);
+                    if (topLvlItem->text(0) == groupingSplit[i]) {
+                        groupingItem = topLvlItem;
+                        existAlready = true;
+                        break;
+                    }
+                }
+                if (!existAlready) {
+                    groupingItem = new QTreeWidgetItem(tree);
+                    tree->addTopLevelItem(groupingItem);
+                }
+            }
+            if (!existAlready) {
+                /* expand only top-level groups */
+                groupingItem->setExpanded(i == 0);
+                groupingItem->setFlags(Qt::ItemIsEnabled);
+                groupingItem->setText(0, groupingSplit[i]);
+            }
+            groupParent = groupingItem;
+        }
+        GuiShortCutGroup group;
+        group.item = groupParent;
+        foundGuiGroup = appShortcuts.insert(appShortcuts.end(), group);
+    }
+    return foundGuiGroup;
+}
+
+void
+ShortCutEditorPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,BoundAction* action)
+{
+    GuiBoundAction guiAction;
+    guiAction.action = action;
+    guiAction.item = new QTreeWidgetItem(guiGroupIterator->item);
+    guiAction.item->setText(0, guiAction.action->description);
+    const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(action);
+    const MouseAction* ma = dynamic_cast<const MouseAction*>(action);
+    QString shortcutStr;
+    if (ka) {
+        shortcutStr = keybindToString(ka->modifiers, ka->currentShortcut);
+    } else if (ma) {
+        shortcutStr = mouseShortcutToString(ma->modifiers, ma->button);
+    } else {
+        assert(false);
+    }
+    if (!action->editable) {
+        guiAction.item->setToolTip( 0, QObject::tr("This action is standard and its shortcut cannot be edited.") );
+        guiAction.item->setToolTip( 1, QObject::tr("This action is standard and its shortcut cannot be edited.") );
+        guiAction.item->setDisabled(true);
+    }
+    guiAction.item->setExpanded(true);
+    guiAction.item->setText(1, shortcutStr);
+    guiGroupIterator->actions.push_back(guiAction);
+    guiGroupIterator->item->addChild(guiAction.item);
+
+}
+
+void
+ShortCutEditor::addShortcut(BoundAction* action)
+{
+    GuiAppShorcuts::iterator foundGuiGroup = _imp->buildGroupHierarchy(action->grouping);
+    assert(foundGuiGroup != _imp->appShortcuts.end());
+    
+    _imp->makeGuiActionForShortcut(foundGuiGroup, action);
+
 }
 
 void

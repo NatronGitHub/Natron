@@ -158,40 +158,6 @@ getPixmapForGrouping(QPixmap* pixmap,
         appPTR->getIcon(Natron::NATRON_PIXMAP_OTHER_PLUGINS, pixmap);
     }
 }
-
-/**
- * @brief A small class that helps registering an action to a shortcut.
- * Its shortcut also gets updated when the user modifies it.
- **/
-class ActionWithShortcut
-    : public QAction
-{
-    QString _group;
-    QString _actionID;
-
-public:
-
-    ActionWithShortcut(const QString & group,
-                       const QString & actionID,
-                       const QString & actionDescription,
-                       QObject* parent)
-        : QAction(parent)
-          , _group(group)
-          , _actionID(actionID)
-    {
-        assert ( !group.isEmpty() && !actionID.isEmpty() );
-        setShortcut( getKeybind(group, actionID) );
-        appPTR->addShortcutAction(group, actionID, this);
-        setShortcutContext(Qt::WindowShortcut);
-        setText( QObject::tr( actionDescription.toStdString().c_str() ) );
-    }
-
-    virtual ~ActionWithShortcut()
-    {
-        assert ( !_group.isEmpty() && !_actionID.isEmpty() );
-        appPTR->removeShortcutAction(_group, _actionID, this);
-    }
-};
 }
 
 
@@ -3789,7 +3755,7 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
         std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
         (*it)->closePanel();
     }
-    _imp->openedPanels.push_front(panel);
+    _imp->openedPanels.push_back(panel);
 }
 
 void
@@ -3936,6 +3902,19 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     _imp->_isGUIFrozen = clicked;
     _imp->_freezeUIButton->setDown(clicked);
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
+}
+
+bool
+Gui::hasShortcutEditorAlreadyBeenBuilt() const
+{
+    return _imp->shortcutEditor != NULL;
+}
+
+void
+Gui::addShortcut(BoundAction* action)
+{
+    assert(_imp->shortcutEditor);
+    _imp->shortcutEditor->addShortcut(action);
 }
 
 FloatingWidget::FloatingWidget(Gui* gui,
