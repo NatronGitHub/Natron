@@ -1469,7 +1469,9 @@ AppManager::increaseNCacheFilesOpened()
         qDebug() << "Cache has more files opened than the limit allowed: " << _imp->currentCacheFilesCount << " / " << _imp->maxCacheFiles;
     }
 #endif
-    //qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
+#ifdef NATRON_DEBUG_CACHE
+    qDebug() << "N Cache Files Opened: " << _imp->currentCacheFilesCount;
+#endif
 }
 
 void
@@ -1478,7 +1480,9 @@ AppManager::decreaseNCacheFilesOpened()
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
 
     --_imp->currentCacheFilesCount;
-    //qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
+#ifdef NATRON_DEBUG_CACHE
+    qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
+#endif
 }
 
 void
@@ -1612,7 +1616,10 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
     size_t totalFreeRAM = getAmountFreePhysicalRAM();
     
     while (totalFreeRAM <= systemRAMToKeepFree) {
-        
+#ifdef NATRON_DEBUG_CACHE
+        qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)
+        << ", clearing last recently used NodeCache image...";
+#endif
         if (! _imp->_nodeCache->evictLRUInMemoryEntry()) {
             break;
         }

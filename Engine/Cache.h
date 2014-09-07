@@ -49,6 +49,9 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/CacheEntry.h"
 #include "Engine/LRUHashTable.h"
 #include "Engine/StandardPaths.h"
+#include "Global/MemoryInfo.h"
+///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
+//#define NATRON_DEBUG_CACHE
 
 namespace Natron {
 class CacheSignalEmitter
@@ -419,11 +422,12 @@ public:
 
             return false;
         } else {
+#ifdef DEBUG
             if (*cachedParams != *params) {
                 qDebug() << "WARNING: A cache entry was found in the cache for the given key, but the cached parameters that "
                     " go along the entry do not match what's expected. This is a bug.";
             }
-
+#endif
             return true;
         }
     }
@@ -619,6 +623,9 @@ public:
         } else {
             _memoryCacheSize += diff;
         }
+#ifdef NATRON_DEBUG_CACHE
+        qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
+#endif
     }
 
     /**
@@ -639,6 +646,9 @@ public:
         if (storage == Natron::DISK) {
             appPTR->increaseNCacheFilesOpened();
         }
+#ifdef NATRON_DEBUG_CACHE
+        qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
+#endif
     }
 
     /**
@@ -655,8 +665,14 @@ public:
 
         if (storage == Natron::RAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
+#ifdef NATRON_DEBUG_CACHE
+            qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
+#endif
         } else if (storage == Natron::DISK) {
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
+#ifdef NATRON_DEBUG_CACHE
+            qDebug() << cacheName().c_str() << " disk size: " << printAsRAM(_diskCacheSize);
+#endif
         }
         if (gotLock) {
             _lock.unlock();
@@ -685,13 +701,19 @@ public:
         if (oldStorage == Natron::RAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
             _diskCacheSize += size;
-
+#ifdef NATRON_DEBUG_CACHE
+            qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
+            qDebug() << cacheName().c_str() << " disk size: " << printAsRAM(_diskCacheSize);
+#endif
             ///We switched from RAM to DISK that means the MemoryFile object has been destroyed hence the file has been closed.
             appPTR->decreaseNCacheFilesOpened();
         } else {
             _memoryCacheSize += size;
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
-
+#ifdef NATRON_DEBUG_CACHE
+            qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
+            qDebug() << cacheName().c_str() << " disk size: " << printAsRAM(_diskCacheSize);
+#endif
             ///We switched from DISK to RAM that means the MemoryFile object has been created and the file opened
             appPTR->increaseNCacheFilesOpened();
         }
@@ -893,6 +915,9 @@ public:
             int safeCounter = 0;
             ///If too many files are opened, fall-back on RAM storage.
             while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
+#ifdef NATRON_DEBUG_CACHE
+            qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
+#endif
                 if ( !evictLRUDiskEntry() ) {
                     break;
                 }
@@ -938,6 +963,9 @@ private:
         int safeCounter = 0;
         ///If too many files are opened, fall-back on RAM storage.
         while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
+#ifdef NATRON_DEBUG_CACHE
+            qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
+#endif
             if ( !evictLRUDiskEntry() ) {
                 break;
             }
