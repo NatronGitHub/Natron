@@ -373,10 +373,11 @@ ShortCutEditorPrivate::buildGroupHierarchy(QString grouping)
             }
             groupParent = groupingItem;
         }
-        GuiShortCutGroup group;
-        group.item = groupParent;
-        foundGuiGroup = appShortcuts.insert(appShortcuts.end(), group);
     }
+    GuiShortCutGroup group;
+    group.item = groupParent;
+    foundGuiGroup = appShortcuts.insert(appShortcuts.end(), group);
+
     return foundGuiGroup;
 }
 
