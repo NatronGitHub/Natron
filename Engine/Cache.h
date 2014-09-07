@@ -1032,11 +1032,14 @@ private:
 
         if ( evicted.second.entry->isStoredOnDisk() ) {
             assert( evicted.second.entry.unique() );
+            
+            ///This is EXPENSIVE! it calls msync
             evicted.second.entry->deallocate();
+            
             /*insert it back into the disk portion */
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-            while ( ( _diskCacheSize + _memoryCacheSize + evicted.second.entry->size() ) >= _maximumCacheSize ) {
+            while ( ( _diskCacheSize  + evicted.second.entry->size() ) >= _maximumCacheSize ) {
                 std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
                 //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                 //we'll let the user of these entries purge the extra entries left in the cache later on
