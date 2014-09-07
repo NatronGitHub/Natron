@@ -2766,6 +2766,7 @@ EffectInstance::isIdentity_public(U64 hash,
         }
         if (!ret) {
             *inputNb = -1;
+            *inputTime = time;
         }
         _imp->actionsCache.setIdentityResult(time, mipMapLevel, *inputNb, *inputTime);
         return ret;
