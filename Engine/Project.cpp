@@ -1459,7 +1459,7 @@ Project::expandVariable(const std::map<std::string,std::string>& env,std::string
 {
     ///Loop while we can still expand variables, up to NATRON_PROJECT_ENV_VAR_MAX_RECURSION recursions
     for (int i = 0; i < NATRON_PROJECT_ENV_VAR_MAX_RECURSION; ++i) {
-        bool found = false;
+        //bool found = false;
         for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
             
             if (str.size() > (it->first.size() + 2) && ///can contain the environment variable name
@@ -1470,10 +1470,9 @@ Project::expandVariable(const std::map<std::string,std::string>& env,std::string
                 str.erase(str.begin() + it->first.size() + 1);
                 str.erase(str.begin());
                 str.replace(0,it->first.size(),it->second);
-                found = true;
+                //found = true;
                 break;
             }
-            
         }
     }
 }
