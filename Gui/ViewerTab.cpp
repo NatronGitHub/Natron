@@ -221,13 +221,20 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_viewerChannels->setToolTip( "<p><b>" + tr("Channels") + ": \n</b></p>"
                                        + tr("The channels to display on the viewer.") );
     _imp->_firstRowLayout->addWidget(_imp->_viewerChannels);
+    
+    QAction* lumiAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionLuminance,kShortcutDescActionLuminance,_imp->_viewerChannels);
+    QAction* rgbAction = new QAction(QIcon(),tr("RGB"),_imp->_viewerChannels);
+    QAction* rAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionR,kShortcutDescActionR,_imp->_viewerChannels);
+    QAction* gAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionG,kShortcutDescActionG,_imp->_viewerChannels);
+    QAction* bAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionB,kShortcutDescActionB,_imp->_viewerChannels);
+    QAction* aAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionA,kShortcutDescActionA,_imp->_viewerChannels);
 
-    _imp->_viewerChannels->addItem( "Luminance",QIcon(),QKeySequence(Qt::Key_Y) );
-    _imp->_viewerChannels->addItem("RGB");
-    _imp->_viewerChannels->addItem( "R",QIcon(),QKeySequence(Qt::Key_R) );
-    _imp->_viewerChannels->addItem( "G",QIcon(),QKeySequence(Qt::Key_G) );
-    _imp->_viewerChannels->addItem( "B",QIcon(),QKeySequence(Qt::Key_B) );
-    _imp->_viewerChannels->addItem( "A",QIcon(),QKeySequence(Qt::Key_A) );
+    _imp->_viewerChannels->addAction(lumiAction);
+    _imp->_viewerChannels->addAction(rgbAction);
+    _imp->_viewerChannels->addAction(rAction);
+    _imp->_viewerChannels->addAction(gAction);
+    _imp->_viewerChannels->addAction(bAction);
+    _imp->_viewerChannels->addAction(aAction);
     _imp->_viewerChannels->setCurrentIndex(1);
     QObject::connect( _imp->_viewerChannels, SIGNAL( currentIndexChanged(int) ), this, SLOT( onViewerChannelsChanged(int) ) );
 
@@ -293,11 +300,22 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_renderScaleCombo = new ComboBox(_imp->_firstSettingsRow);
     _imp->_renderScaleCombo->setToolTip( tr("When proxy mode is activated, it scales down the rendered image by this factor \n"
                                             "to accelerate the rendering.") );
-    _imp->_renderScaleCombo->addItem( "2",QIcon(),QKeySequence(Qt::ALT + Qt::Key_1) );
-    _imp->_renderScaleCombo->addItem( "4",QIcon(),QKeySequence(Qt::ALT + Qt::Key_2) );
-    _imp->_renderScaleCombo->addItem( "8",QIcon(),QKeySequence(Qt::ALT + Qt::Key_3) );
-    _imp->_renderScaleCombo->addItem( "16",QIcon(),QKeySequence(Qt::ALT + Qt::Key_4) );
-    _imp->_renderScaleCombo->addItem( "32",QIcon(),QKeySequence(Qt::ALT + Qt::Key_5) );
+    
+    QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel2,kShortcutDescActionProxyLevel2,
+                                             _imp->_renderScaleCombo);
+    QAction* proxy4 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel4,kShortcutDescActionProxyLevel4,
+                                             _imp->_renderScaleCombo);
+    QAction* proxy8 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel8,kShortcutDescActionProxyLevel8,
+                                             _imp->_renderScaleCombo);
+    QAction* proxy16 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel16,kShortcutDescActionProxyLevel16,
+                                             _imp->_renderScaleCombo);
+    QAction* proxy32 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel32,kShortcutDescActionProxyLevel32,
+                                             _imp->_renderScaleCombo);
+    _imp->_renderScaleCombo->addAction(proxy2);
+    _imp->_renderScaleCombo->addAction(proxy4);
+    _imp->_renderScaleCombo->addAction(proxy8);
+    _imp->_renderScaleCombo->addAction(proxy16);
+    _imp->_renderScaleCombo->addAction(proxy32);
     _imp->_firstRowLayout->addWidget(_imp->_renderScaleCombo);
 
     _imp->_firstRowLayout->addStretch();

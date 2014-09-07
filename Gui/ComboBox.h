@@ -58,6 +58,9 @@ public:
 
     /*Insert a new item BEFORE the specified index.*/
     void insertItem( int index,const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
+    
+    void addAction(QAction* action);
+    
     void addItem( const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
 
     /*Appends a separator to the comboBox.*/

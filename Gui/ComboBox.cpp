@@ -182,6 +182,25 @@ ComboBox::insertItem(int index,
 }
 
 void
+ComboBox::addAction(QAction* action)
+{
+    QString text = action->text();
+#if IS_MAXIMUMTEXTSIZE_USEFUL
+    if (text.size() > _maximumTextSize) {
+        _maximumTextSize = text.size();
+    }
+#endif
+    growMaximumWidthFromText(text);
+    action->setParent(this);
+    _actions.push_back(action);
+    
+    /*if this is the first action we add, make it current*/
+    if (_actions.size() == 1) {
+        setCurrentText_no_emit( itemText(0) );
+    }
+}
+
+void
 ComboBox::addItem(const QString & item,
                   QIcon icon,
                   QKeySequence key,
@@ -199,18 +218,7 @@ ComboBox::addItem(const QString & item,
     if ( !toolTip.isEmpty() ) {
         action->setToolTip( Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal) );
     }
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-    if (item.size() > _maximumTextSize) {
-        _maximumTextSize = item.size();
-    }
-#endif
-    growMaximumWidthFromText(item);
-    _actions.push_back(action);
-
-    /*if this is the first action we add, make it current*/
-    if (_actions.size() == 1) {
-        setCurrentText_no_emit( itemText(0) );
-    }
+    addAction(action);
 }
 
 void

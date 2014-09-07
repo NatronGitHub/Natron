@@ -184,6 +184,8 @@ public slots:
     void centerOnAllNodes();
 
     void toggleConnectionHints();
+    
+    void toggleSelectedNodesEnabled();
 
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);

@@ -133,19 +133,19 @@
 
 /////////VIEWER SHORTCUTS
 #define kShortcutIDActionLuminance "luminance"
-#define kShortcutDescActionLuminance "Display luminance"
+#define kShortcutDescActionLuminance "Luminance"
 
 #define kShortcutIDActionR "channelR"
-#define kShortcutDescActionR "Display red channel"
+#define kShortcutDescActionR "Red"
 
 #define kShortcutIDActionG "channelG"
-#define kShortcutDescActionG "Display green channel"
+#define kShortcutDescActionG "Green"
 
 #define kShortcutIDActionB "channelB"
-#define kShortcutDescActionB "Display blue channel"
+#define kShortcutDescActionB "Blue"
 
 #define kShortcutIDActionA "channelA"
-#define kShortcutDescActionA "Display alpha channel"
+#define kShortcutDescActionA "Alpha"
 
 #define kShortcutIDActionFitViewer "fitViewer"
 #define kShortcutDescActionFitViewer "Fit image to viewer"
@@ -163,19 +163,19 @@
 #define kShortcutDescActionProxyEnabled "Enable proxy rendering"
 
 #define kShortcutIDActionProxyLevel2 "proxy2"
-#define kShortcutDescActionProxyLevel2 "Set proxy level to 2"
+#define kShortcutDescActionProxyLevel2 "2"
 
 #define kShortcutIDActionProxyLevel4 "proxy4"
-#define kShortcutDescActionProxyLevel4 "Set proxy level to 4"
+#define kShortcutDescActionProxyLevel4 "4"
 
 #define kShortcutIDActionProxyLevel8 "proxy8"
-#define kShortcutDescActionProxyLevel8 "Set proxy level to 8"
+#define kShortcutDescActionProxyLevel8 "8"
 
 #define kShortcutIDActionProxyLevel16 "proxy16"
-#define kShortcutDescActionProxyLevel16 "Set proxy level to 16"
+#define kShortcutDescActionProxyLevel16 "16"
 
 #define kShortcutIDActionProxyLevel32 "proxy32"
-#define kShortcutDescActionProxyLevel32 "Set proxy level to 32"
+#define kShortcutDescActionProxyLevel32 "32"
 
 #define kShortcutIDActionHideOverlays "hideOverlays"
 #define kShortcutDescActionHideOverlays "Show/Hide overlays"
@@ -318,9 +318,6 @@
 #define kShortcutIDActionGraphRearrangeNodes "rearrange"
 #define kShortcutDescActionGraphRearrangeNodes "Rearrange nodes"
 
-#define kShortcutIDActionGraphDisableNodes "disable"
-#define kShortcutDescActionGraphDisableNodes "Disable nodes"
-
 #define kShortcutIDActionGraphRemoveNodes "remove"
 #define kShortcutDescActionGraphRemoveNodes "Remove nodes"
 
@@ -369,8 +366,21 @@
 #define kShortcutIDActionGraphDuplicate "duplicate"
 #define kShortcutDescActionGraphDuplicate "Duplicate nodes"
 
+#define kShortcutIDActionGraphDisableNodes "disable"
+#define kShortcutDescActionGraphDisableNodes "Disable nodes"
+
+#define kShortcutIDActionGraphToggleAutoPreview "toggleAutoPreview"
+#define kShortcutDescActionGraphToggleAutoPreview "Auto previews"
+
+#define kShortcutIDActionGraphTogglePreview "togglePreview"
+#define kShortcutDescActionGraphTogglePreview "Toggle preview images"
+
 #define kShortcutIDActionGraphForcePreview "preview"
-#define kShortcutDescActionGraphForcePreview "Refresh previews"
+#define kShortcutDescActionGraphForcePreview "Refresh preview images"
+
+#define kShortcutIDActionGraphShowCacheSize "cacheSize"
+#define kShortcutDescActionGraphShowCacheSize "Diplay cache memory consumption"
+
 
 #define kShortcutIDActionGraphFrameNodes "frameNodes"
 #define kShortcutDescActionGraphFrameNodes "Center on all nodes"
@@ -378,7 +388,7 @@
 
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
-#define kShortcutDescActionCurveEditorRemoveKeys "Remove keyframes"
+#define kShortcutDescActionCurveEditorRemoveKeys "Delete keyframes"
 
 #define kShortcutIDActionCurveEditorConstant "constant"
 #define kShortcutDescActionCurveEditorConstant "Constant interpolation"
