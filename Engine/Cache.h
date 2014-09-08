@@ -938,20 +938,22 @@ public:
                 }
                 ++safeCounter;
             }
-
-            try {
-                value = new EntryType(it->key,it->params,this);
-                value->allocateMemory( true, storage, QString( getCachePath() + QDir::separator() ).toStdString() );
-            } catch (const std::bad_alloc & e) {
-                qDebug() << e.what();
-                continue;
-            }
             
-            CachedValue cachedValue;
-            cachedValue.entry = EntryTypePtr(value);
-            cachedValue.params = it->params;
             {
                 QMutexLocker locker(&_lock);
+                
+                try {
+                    value = new EntryType(it->key,it->params,this);
+                    value->allocateMemory( true, storage, QString( getCachePath() + QDir::separator() ).toStdString() );
+                } catch (const std::bad_alloc & e) {
+                    qDebug() << e.what();
+                    continue;
+                }
+                
+                CachedValue cachedValue;
+                cachedValue.entry = EntryTypePtr(value);
+                cachedValue.params = it->params;
+                
                 sealEntry(cachedValue);
             }
         }
