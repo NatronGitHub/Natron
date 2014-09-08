@@ -1324,7 +1324,7 @@ Gui::exportLayout()
     std::vector<std::string> filters;
 
     filters.push_back(".nl");
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
@@ -1374,7 +1374,7 @@ Gui::importLayout()
     std::vector<std::string> filters;
 
     filters.push_back(".nl");
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         std::ifstream ifile;
@@ -2295,7 +2295,7 @@ Gui::openProject()
     std::vector<std::string> filters;
 
     filters.push_back(NATRON_PROJECT_FILE_EXT);
-    std::string selectedFile =  popOpenFileDialog( false, filters, _imp->_lastLoadProjectOpenedDir.toStdString() );
+    std::string selectedFile =  popOpenFileDialog( false, filters, _imp->_lastLoadProjectOpenedDir.toStdString(),false );
 
     if ( !selectedFile.empty() ) {
         openProjectInternal(selectedFile);
@@ -2403,7 +2403,7 @@ Gui::saveProjectAs()
     std::vector<std::string> filter;
 
     filter.push_back(NATRON_PROJECT_FILE_EXT);
-    std::string outFile = popSaveFileDialog( false, filter,_imp->_lastSaveProjectOpenedDir.toStdString() );
+    std::string outFile = popSaveFileDialog( false, filter,_imp->_lastSaveProjectOpenedDir.toStdString(),false );
     if (outFile.size() > 0) {
         if (outFile.find("." NATRON_PROJECT_FILE_EXT) == std::string::npos) {
             outFile.append("." NATRON_PROJECT_FILE_EXT);
@@ -2448,7 +2448,7 @@ Gui::createReader()
     for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString() );
+    std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(),true );
     if ( !pattern.empty() ) {
         QString qpattern( pattern.c_str() );
         std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
@@ -2493,7 +2493,7 @@ Gui::createWriter()
     for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    std::string file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString() );
+    std::string file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(),true );
     if ( !file.empty() ) {
         QString fileCpy = file.c_str();
         std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
@@ -2525,9 +2525,10 @@ Gui::createWriter()
 std::string
 Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::vector<std::string> & initialfilters,
-                       const std::string & initialDir)
+                       const std::string & initialDir,
+                       bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir,this);
+    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.selectedFiles();
@@ -2539,9 +2540,10 @@ Gui::popOpenFileDialog(bool sequenceDialog,
 std::string
 Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::vector<std::string> & initialfilters,
-                       const std::string & initialDir)
+                       const std::string & initialDir,
+                       bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir,this);
+    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.filesToSave();

@@ -3303,13 +3303,13 @@ ImportExportCurveDialog::open_file()
     std::vector<std::string> filters;
     filters.push_back("*");
     if (_isExportDialog) {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::SAVE_DIALOG,"",_gui);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::SAVE_DIALOG,"",_gui,false);
         if ( dialog.exec() ) {
             std::string file = dialog.filesToSave();
             _fileLineEdit->setText( file.c_str() );
         }
     } else {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG,"",_gui);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG,"",_gui,false);
         if ( dialog.exec() ) {
             std::string files = dialog.selectedFiles();
             if ( !files.empty() ) {

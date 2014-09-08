@@ -323,7 +323,8 @@ public:
                        bool isSequenceDialog, // true if this dialog can display sequences
                        FileDialogMode mode, // if it is an open or save dialog
                        const std::string & currentDirectory,  // the directory to show first
-                       Gui* gui);
+                       Gui* gui,
+                       bool allowRelativePaths);
 
     virtual ~SequenceFileDialog();
 
@@ -616,6 +617,8 @@ private:
     bool _wasAutosetProjectFormatEnabled;
     
     Gui* _gui;
+    
+    bool _relativePathsAllowed;
 };
 
 /**

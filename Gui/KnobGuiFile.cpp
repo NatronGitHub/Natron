@@ -130,7 +130,7 @@ File_KnobGui::open_file()
     }
 
     SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, _knob->isInputImageFile(),
-                               SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString(), getGui());
+                               SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString(), getGui(),true);
     
     if ( dialog.exec() ) {
         std::string selectedFile = dialog.selectedFiles();
@@ -318,8 +318,7 @@ OutputFile_KnobGui::open_file(bool openSequence)
         }
     }
 
-    SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString(),
-                              getGui());
+    SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString(), getGui(),true);
     if ( dialog.exec() ) {
         std::string oldPattern = _lineEdit->text().toStdString();
         
@@ -567,7 +566,7 @@ void
 Path_KnobGui::onAddButtonClicked()
 {
     std::vector<std::string> filters;
-    SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui() );
+    SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui(),true );
     
     if ( dialog.exec() ) {
         std::string dirPath = dialog.selectedDirectory();
@@ -596,7 +595,7 @@ void
 Path_KnobGui::onOpenFileButtonClicked()
 {
     std::vector<std::string> filters;
-    SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui() );
+    SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui(),true );
     
     if ( dialog.exec() ) {
         std::string dirPath = dialog.currentDirectory().absolutePath().toStdString();

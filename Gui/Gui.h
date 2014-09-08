@@ -241,8 +241,10 @@ public:
      **/
     QWidget* getCentralWidget() const;
     std::string popOpenFileDialog(bool sequenceDialog,
-                                  const std::vector<std::string> & initialfilters,const std::string & initialDir);
-    std::string popSaveFileDialog(bool sequenceDialog,const std::vector<std::string> & initialfilters,const std::string & initialDir);
+                                  const std::vector<std::string> & initialfilters,const std::string & initialDir,
+                                  bool allowRelativePaths);
+    std::string popSaveFileDialog(bool sequenceDialog,const std::vector<std::string> & initialfilters,const std::string & initialDir,
+                                  bool allowRelativePaths);
 
     void setUserScrubbingTimeline(bool b);
 

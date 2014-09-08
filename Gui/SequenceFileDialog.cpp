@@ -193,7 +193,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
                                        bool isSequenceDialog, // true if this dialog can display sequences
                                        FileDialogMode mode, // if it is an open or save dialog
                                        const std::string & currentDirectory,// the directory to show first
-                                       Gui* gui)
+                                       Gui* gui,
+                                       bool allowRelativePaths)
     : QDialog(parent)
       , _nameMapping()
       , _filters(filters)
@@ -248,6 +249,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
       , _preview()
       , _wasAutosetProjectFormatEnabled(false)
       , _gui(gui)
+      , _relativePathsAllowed(allowRelativePaths)
 {
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
@@ -391,6 +393,10 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         varName.append(it->first.c_str());
         varName.append(']');
         _relativeChoice->addItem(varName);
+    }
+    if (!allowRelativePaths) {
+        _relativeLabel->hide();
+        _relativeChoice->hide();
     }
     
     _sequenceButton = new ComboBox(_selectionWidget);
@@ -1822,10 +1828,13 @@ SequenceFileDialog::selectedFiles()
             selection =  _selectionLineEdit->text().toStdString();
         }
     }
-    std::string varName,varPath;
-    bool relative = getRelativeChoiceProjectPath(varName, varPath);
-    if (relative) {
-        Natron::Project::makeRelativeToVariable(varName, varPath, selection);
+    
+    if (_relativePathsAllowed) {
+        std::string varName,varPath;
+        bool relative = getRelativeChoiceProjectPath(varName, varPath);
+        if (relative) {
+            Natron::Project::makeRelativeToVariable(varName, varPath, selection);
+        }
     }
     return selection;
 }
@@ -1836,10 +1845,12 @@ SequenceFileDialog::filesToSave()
     assert(_dialogMode == SAVE_DIALOG);
 
     std::string ret =  _selectionLineEdit->text().toStdString();
-    std::string varName,varPath;
-    bool relative = getRelativeChoiceProjectPath(varName, varPath);
-    if (relative) {
-        Natron::Project::makeRelativeToVariable(varName, varPath, ret);
+    if (_relativePathsAllowed) {
+        std::string varName,varPath;
+        bool relative = getRelativeChoiceProjectPath(varName, varPath);
+        if (relative) {
+            Natron::Project::makeRelativeToVariable(varName, varPath, ret);
+        }
     }
     return ret;
 }
@@ -1854,10 +1865,12 @@ std::string
 SequenceFileDialog::selectedDirectory() const
 {
     std::string path = _requestedDir.toStdString();
-    std::string pathName,pathValue;
-    bool relative = getRelativeChoiceProjectPath(pathName, pathValue);
-    if (relative) {
-        Natron::Project::makeRelativeToVariable(pathName, pathValue, path);
+    if (_relativePathsAllowed) {
+        std::string pathName,pathValue;
+        bool relative = getRelativeChoiceProjectPath(pathName, pathValue);
+        if (relative) {
+            Natron::Project::makeRelativeToVariable(pathName, pathValue, path);
+        }
     }
     return path;
 }
