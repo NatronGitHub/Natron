@@ -1110,7 +1110,7 @@ Project::reset()
 {
     {
         QMutexLocker l(&_imp->projectLock);
-        _imp->autoSetProjectFormat = true;
+        _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
         _imp->hasProjectBeenSavedByUser = false;
         _imp->projectCreationTime = QDateTime::currentDateTime();
         _imp->projectName = NATRON_PROJECT_UNTITLED;

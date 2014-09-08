@@ -127,6 +127,13 @@ Settings::initializeKnobs()
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
 
 
+    _firstReadSetProjectFormat = Natron::createKnob<Bool_Knob>(this, "First image read set project format");
+    _firstReadSetProjectFormat->setName("autoProjectFormat");
+    _firstReadSetProjectFormat->setAnimationEnabled(false);
+    _firstReadSetProjectFormat->setHintToolTip("If checked, the first image you read in the project will set the project format to the "
+                                               "image size.");
+    _generalTab->addKnob(_firstReadSetProjectFormat);
+    
     _maxPanelsOpened = Natron::createKnob<Int_Knob>(this, "Maximum number of node settings panels opened");
     _maxPanelsOpened->setName("maxPanels");
     _maxPanelsOpened->setHintToolTip("This property holds the number of node settings pnaels that can be "
@@ -585,6 +592,7 @@ Settings::setDefaultValues()
     _numberOfThreads->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
+    _firstReadSetProjectFormat->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10,0);
     _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);
@@ -1689,3 +1697,8 @@ Settings::useCursorPositionIncrements() const
     return _useCursorPositionIncrements->getValue();
 }
 
+bool
+Settings::isAutoProjectFormatEnabled() const
+{
+    return _firstReadSetProjectFormat->getValue();
+}

@@ -23,7 +23,7 @@
 #include "Engine/ProjectSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/AppManager.h"
-
+#include "Engine/Settings.h"
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
     : projectLock()
@@ -44,7 +44,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , colorSpace16bits()
       , colorSpace32bits()
       , timeline( new TimeLine(project) )
-      , autoSetProjectFormat(true)
+      , autoSetProjectFormat(appPTR->getCurrentSettings()->isAutoProjectFormatEnabled())
       , currentNodes()
       , project(project)
       , lastTimelineSeekCaller()
