@@ -312,6 +312,14 @@ Project::saveProjectInternal(const QString & path,
         throw std::runtime_error( "Failed to open file " + filePath.toStdString() );
     }
 
+    ///Fix file paths before saving.
+    QString oldProjectPath;
+    {
+        QMutexLocker l(&_imp->projectLock);
+        oldProjectPath = _imp->projectPath;
+    }
+    _imp->autoSetProjectDirectory(path);
+    
     try {
         boost::archive::xml_oarchive oArchive(ofile);
         bool bgProject = appPTR->isBackground();
@@ -324,6 +332,8 @@ Project::saveProjectInternal(const QString & path,
         }
     } catch (...) {
         ofile.close();
+        ///Reset the old project path in case of failure.
+        _imp->autoSetProjectDirectory(oldProjectPath);
         throw;
     }
 
@@ -344,7 +354,6 @@ Project::saveProjectInternal(const QString & path,
     } else {
         emit projectNameChanged(name + " (*)");
     }
-    _imp->autoSetProjectDirectory(path);
     
     _imp->projectPath = path;
     if (!autoSave) {
