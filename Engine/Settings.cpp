@@ -630,10 +630,10 @@ Settings::setDefaultValues()
     _texturesMode->setDefaultValue(0,0);
     _powerOf2Tiling->setDefaultValue(8,0);
     _checkerboardTilesCount->setDefaultValue(100);
-    _checkerboardColor1->setDefaultValue(1.,0);
-    _checkerboardColor1->setDefaultValue(1.,1);
-    _checkerboardColor1->setDefaultValue(1.,2);
-    _checkerboardColor1->setDefaultValue(1.,3);
+    _checkerboardColor1->setDefaultValue(0.5,0);
+    _checkerboardColor1->setDefaultValue(0.5,1);
+    _checkerboardColor1->setDefaultValue(0.5,2);
+    _checkerboardColor1->setDefaultValue(0.5,3);
     _checkerboardColor2->setDefaultValue(0.,0);
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
