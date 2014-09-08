@@ -56,6 +56,7 @@ generateStringFromFormat(const Format & f)
 
 struct ProjectPrivate
 {
+    Natron::Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
     QString projectName; //< name of the project, e.g: "Untitled.EXT"
     QString projectPath; //< path of the project, e.g: /Users/Lala/Projects/
@@ -103,6 +104,10 @@ struct ProjectPrivate
      * @brief Auto fills the project directory parameter given the project file path
      **/
     void autoSetProjectDirectory(const QString& path);
+    
+    static bool fixFilePath(const std::map<std::string,std::string>& env,
+                            const std::string& projectPathName,const std::string& newProjectPath,
+                     std::string& filePath);
 };
 }
 

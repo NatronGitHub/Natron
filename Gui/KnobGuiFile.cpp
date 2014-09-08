@@ -585,6 +585,8 @@ Path_KnobGui::onAddButtonClicked()
         createItem(rowCount, dirPath.c_str(), varName);
         std::string newPath = rebuildPath();
         
+       
+        
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
     }
 
@@ -619,11 +621,23 @@ Path_KnobGui::onRemoveButtonClicked()
     QModelIndexList selection = _table->selectionModel()->selectedRows();
     _model->removeRows(selection.front().row(),selection.size());
     
+    std::list<std::string> removeVars;
     for (int i = 0; i < selection.size(); ++i) {
         Variables::iterator found = _items.find(selection[i].row());
         if (found != _items.end()) {
+            removeVars.push_back(found->second.varName->text().toStdString());
             _items.erase(found);
         }
+    }
+    
+    
+    ///Fix all variables if needed
+    if (_knob->getHolder() && _knob->getHolder() == getGui()->getApp()->getProject().get() &&
+        appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+        for (std::list<std::string>::iterator it = removeVars.begin(); it != removeVars.end(); ++it) {
+            getGui()->getApp()->getProject()->fixRelativeFilePaths(*it, "");
+        }
+        
     }
     
     std::string newPath = rebuildPath();
@@ -760,7 +774,33 @@ Path_KnobGui::onItemDataChanged(TableItem* /*item*/)
     
     std::string newPath = rebuildPath();
     std::string oldPath = _knob->getValue();
+    
     if (oldPath != newPath) {
+        
+        if (_knob->getHolder() && _knob->getHolder() == _knob->getHolder()->getApp()->getProject().get() &&
+            appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+            std::map<std::string,std::string> oldEnv,newEnv;
+            
+            Natron::Project::makeEnvMap(oldPath,oldEnv);
+            Natron::Project::makeEnvMap(newPath, newEnv);
+            
+            ///Compare the 2 maps to find-out if a path has changed or just a name
+            if (oldEnv.size() == newEnv.size()) {
+                std::map<std::string,std::string>::iterator itOld = oldEnv.begin();
+                for (std::map<std::string,std::string>::iterator itNew = newEnv.begin(); itNew != newEnv.end(); ++itNew, ++itOld) {
+                    
+                    if (itOld->first != itNew->first) {
+                        ///a name has changed
+                        getGui()->getApp()->getProject()->fixPathName(itOld->first, itNew->first);
+                        break;
+                    } else if (itOld->second != itOld->second) {
+                        getGui()->getApp()->getProject()->fixRelativeFilePaths(itOld->first, itNew->second);
+                        break;
+                    }
+                }
+            }
+        }
+        
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldPath,newPath ) );
     }
 }

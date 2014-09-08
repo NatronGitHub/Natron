@@ -233,11 +233,13 @@ public:
      * @brief Returns the user environment variables for the project
      **/
     void getEnvironmentVariables(std::map<std::string,std::string>& env) const;
+    static void makeEnvMap(const std::string& encodedEnv,std::map<std::string,std::string>& env);
     
     /**
      * @brief Expands the environment variables in the given string that are found in env
      **/
     static void expandVariable(const std::map<std::string,std::string>& env,std::string& str);
+    static bool expandVariable(const std::string& varName,const std::string& varValue,std::string& str);
     
     /**
      * @brief Try to find in str a variable from env. The longest match is replaced by the variable name.
@@ -249,6 +251,20 @@ public:
      * If the path indicated by varValue doesn't exist then str will be unchanged.
      **/
     static void makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str);
+    
+    /**
+     * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
+     * change the file-path to be relative to the newProjectPath.
+     **/
+    void fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath);
+    void fixRelativeFilePaths(const std::map<std::string,std::string>& envVars,
+                              const std::string& projectPathName,const std::string& newProjectPath);
+    
+    /**
+     * @brief For all active nodes, if it has a file-path parameter using the oldName of a variable, it will turn it into the
+     * newName.
+     **/
+    void fixPathName(const std::string& oldName,const std::string& newName);
 public slots:
 
     void onAutoSaveTimerTriggered();

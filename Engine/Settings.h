@@ -167,6 +167,8 @@ public:
 
     bool isAutoProjectFormatEnabled() const;
     
+    bool isAutoFixRelativeFilePathEnabled() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -185,6 +187,7 @@ private:
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<Bool_Knob> _firstReadSetProjectFormat;
+    boost::shared_ptr<Bool_Knob> _fixPathsOnProjectPathChanged;
     boost::shared_ptr<Int_Knob> _maxPanelsOpened;
     boost::shared_ptr<Bool_Knob> _useCursorPositionIncrements;
     boost::shared_ptr<File_Knob> _defaultLayoutFile;

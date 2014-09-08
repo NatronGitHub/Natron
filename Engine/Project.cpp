@@ -1439,12 +1439,11 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
         break;
     }
 }
-
+    
 void
-Project::getEnvironmentVariables(std::map<std::string,std::string>& env) const
+Project::makeEnvMap(const std::string& encodedEnv,std::map<std::string,std::string>& env)
 {
-    std::string raw = _imp->envVars->getValue();
-    QStringList variables = QString(raw.c_str()).split(';');
+    QStringList variables = QString(encodedEnv.c_str()).split(';');
     for (int i = 0; i < variables.size(); ++i) {
         QStringList split = variables[i].split(':');
         if (split.size() != 2) {
@@ -1452,6 +1451,14 @@ Project::getEnvironmentVariables(std::map<std::string,std::string>& env) const
         }
         env.insert(std::make_pair(split[0].toStdString(),split[1].toStdString()));
     }
+  
+}
+
+void
+Project::getEnvironmentVariables(std::map<std::string,std::string>& env) const
+{
+    std::string raw = _imp->envVars->getValue();
+    makeEnvMap(raw, env);
 }
     
 void
@@ -1459,22 +1466,29 @@ Project::expandVariable(const std::map<std::string,std::string>& env,std::string
 {
     ///Loop while we can still expand variables, up to NATRON_PROJECT_ENV_VAR_MAX_RECURSION recursions
     for (int i = 0; i < NATRON_PROJECT_ENV_VAR_MAX_RECURSION; ++i) {
-        //bool found = false;
         for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
-            
-            if (str.size() > (it->first.size() + 2) && ///can contain the environment variable name
-                str[0] == '[' && /// env var name is bracketed
-                str.substr(1,it->first.size()) == it->first && /// starts with the environment variable name
-                str[it->first.size() + 1] == ']') { /// env var name is bracketed
-                
-                str.erase(str.begin() + it->first.size() + 1);
-                str.erase(str.begin());
-                str.replace(0,it->first.size(),it->second);
-                //found = true;
+            if (expandVariable(it->first,it->second, str)) {
                 break;
             }
         }
     }
+}
+    
+bool
+Project::expandVariable(const std::string& varName,const std::string& varValue,std::string& str)
+{
+    if (str.size() > (varName.size() + 2) && ///can contain the environment variable name
+        str[0] == '[' && /// env var name is bracketed
+        str.substr(1,varName.size()) == varName && /// starts with the environment variable name
+        str[varName.size() + 1] == ']') { /// env var name is bracketed
+        
+        str.erase(str.begin() + varName.size() + 1);
+        str.erase(str.begin());
+        str.replace(0,varName.size(),varValue);
+        return true;
+    }
+    return false;
+
 }
    
 void
@@ -1514,6 +1528,87 @@ Project::makeRelativeToVariable(const std::string& varName,const std::string& va
         s.prepend('/');
     }
     str = '[' + varName + ']' + s.toStdString();
+}
+    
+void
+Project::fixRelativeFilePaths(const std::map<std::string,std::string>& envVars,
+                            const std::string& projectPathName,const std::string& newProjectPath)
+{
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        nodes = _imp->currentNodes;
+    }
+    
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isActivated()) {
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
+            for (U32 j = 0; j < knobs.size(); ++j) {
+                
+                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
+                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
+                if (!isString || isStringKnob) {
+                    continue;
+                }
+                
+                std::string filepath = isString->getValue();
+                
+                if (!filepath.empty()) {
+                    if (ProjectPrivate::fixFilePath(envVars, projectPathName, newProjectPath, filepath)) {
+                        isString->setValue(filepath, 0);
+                    }
+                }
+            }
+            
+        }
+    }
+ 
+}
+    
+void
+Project::fixPathName(const std::string& oldName,const std::string& newName)
+{
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        nodes = _imp->currentNodes;
+    }
+    
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isActivated()) {
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
+            for (U32 j = 0; j < knobs.size(); ++j) {
+                
+                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
+                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
+                if (!isString || isStringKnob) {
+                    continue;
+                }
+                
+                std::string filepath = isString->getValue();
+                
+                if (filepath.size() >= (oldName.size() + 2) &&
+                    filepath[0] == '[' &&
+                    filepath[oldName.size() + 1] == ']' &&
+                    filepath.substr(1,oldName.size()) == oldName) {
+                    
+                    filepath.replace(1, oldName.size(), newName);
+                    isString->setValue(filepath, 0);
+                }
+            }
+            
+        }
+    }
+
+}
+    
+void
+Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath)
+{
+    
+    std::map<std::string,std::string> env;
+    getEnvironmentVariables(env);
+    fixRelativeFilePaths(env,projectPathName, newProjectPath);
 }
     
 } //namespace Natron

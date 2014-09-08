@@ -134,6 +134,12 @@ Settings::initializeKnobs()
                                                "image size.");
     _generalTab->addKnob(_firstReadSetProjectFormat);
     
+    _fixPathsOnProjectPathChanged = Natron::createKnob<Bool_Knob>(this, "Auto fix relative file-paths");
+    _fixPathsOnProjectPathChanged->setAnimationEnabled(false);
+    _fixPathsOnProjectPathChanged->setHintToolTip("If checked, when a project-path changes (either the name or the value pointed to), " NATRON_APPLICATION_NAME " will check all file-path parameters in the project and try to fix them.");
+    _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
+    _generalTab->addKnob(_fixPathsOnProjectPathChanged);
+    
     _maxPanelsOpened = Natron::createKnob<Int_Knob>(this, "Maximum number of node settings panels opened");
     _maxPanelsOpened->setName("maxPanels");
     _maxPanelsOpened->setHintToolTip("This property holds the number of node settings pnaels that can be "
@@ -593,6 +599,7 @@ Settings::setDefaultValues()
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
+    _fixPathsOnProjectPathChanged->setDefaultValue(false);
     _maxPanelsOpened->setDefaultValue(10,0);
     _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);
@@ -705,6 +712,8 @@ Settings::saveSettings()
     settings.setValue( "Number of threads", _numberOfThreads->getValue() );
     settings.setValue( "RenderInSeparateProcess", _renderInSeparateProcess->getValue() );
     settings.setValue( "AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue() );
+    settings.setValue( "AutoProjectFormat" , _firstReadSetProjectFormat->getValue() );
+    settings.setValue( "FixRelativeFilePaths", _fixPathsOnProjectPathChanged->getValue() );
     settings.setValue( "MaxPanelsOpened", _maxPanelsOpened->getValue() );
     settings.setValue( "UseCursorPosIncrements", _useCursorPositionIncrements->getValue() );
     settings.setValue( "DefaultLayoutFile", _defaultLayoutFile->getValue().c_str() );
@@ -846,7 +855,12 @@ Settings::restoreSettings()
     if ( settings.contains("AutoPreviewDefault") ) {
         _autoPreviewEnabledForNewProjects->setValue(settings.value("AutoPreviewDefault").toBool(),0);
     }
-
+    if ( settings.contains("AutoProjectFormat") ) {
+        _firstReadSetProjectFormat->setValue(settings.value("AutoProjectFormat").toBool(), 0);
+    }
+    if ( settings.contains("FixRelativeFilePaths") ) {
+        _fixPathsOnProjectPathChanged->setValue(settings.value("FixRelativeFilePaths").toBool(), 0);
+    }
     if ( settings.contains("MaxPanelsOpened") ) {
         _maxPanelsOpened->setValue(settings.value("MaxPanelsOpened").toInt(), 0);
     }
@@ -1701,4 +1715,9 @@ bool
 Settings::isAutoProjectFormatEnabled() const
 {
     return _firstReadSetProjectFormat->getValue();
+}
+
+bool Settings::isAutoFixRelativeFilePathEnabled() const
+{
+    return _fixPathsOnProjectPathChanged->getValue();
 }
