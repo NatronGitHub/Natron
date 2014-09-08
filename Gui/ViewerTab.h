@@ -184,6 +184,10 @@ public:
     void setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline);
     boost::shared_ptr<TimeLine> getTimeLine() const;
     
+    bool isCheckerboardEnabled() const;
+    void setCheckerboardEnabled(bool enabled);
+    
+    
 public slots:
 
     void startPause(bool);
@@ -271,6 +275,8 @@ public slots:
     void hideAllToolbars();
     
     void onVideoEngineStopped();
+    
+    void onCheckerboardButtonClicked();
 private:
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);

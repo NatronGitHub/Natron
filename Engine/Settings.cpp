@@ -329,7 +329,28 @@ Settings::initializeKnobs()
 
     _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
-
+    
+    _checkerboardTilesCount = Natron::createKnob<Int_Knob>(this, "Checkerboard N tiles");
+    _checkerboardTilesCount->setName("checkerboardNTiles");
+    _checkerboardTilesCount->setMinimum(1);
+    _checkerboardTilesCount->setAnimationEnabled(false);
+    _checkerboardTilesCount->setHintToolTip("This is the number of tiles that the checkerboard will have across the longest dimension "
+                                            "(width/height)");
+    _viewersTab->addKnob(_checkerboardTilesCount);
+    
+    _checkerboardColor1 = Natron::createKnob<Color_Knob>(this, "Checkerboard color 1",4);
+    _checkerboardColor1->setName("checkerboardColor1");
+    _checkerboardColor1->setAnimationEnabled(false);
+    _checkerboardColor1->setHintToolTip("The first color used by the checkerboard");
+    _viewersTab->addKnob(_checkerboardColor1);
+    
+    _checkerboardColor2 = Natron::createKnob<Color_Knob>(this, "Checkerboard color 2",4);
+    _checkerboardColor2->setName("checkerboardColor2");
+    _checkerboardColor2->setAnimationEnabled(false);
+    _checkerboardColor2->setHintToolTip("The second color used by the checkerboard");
+    _viewersTab->addKnob(_checkerboardColor2);
+    
+    
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
 
@@ -608,6 +629,16 @@ Settings::setDefaultValues()
     _loadBundledPlugins->setDefaultValue(true);
     _texturesMode->setDefaultValue(0,0);
     _powerOf2Tiling->setDefaultValue(8,0);
+    _checkerboardTilesCount->setDefaultValue(100);
+    _checkerboardColor1->setDefaultValue(1.,0);
+    _checkerboardColor1->setDefaultValue(1.,1);
+    _checkerboardColor1->setDefaultValue(1.,2);
+    _checkerboardColor1->setDefaultValue(1.,3);
+    _checkerboardColor2->setDefaultValue(0.,0);
+    _checkerboardColor2->setDefaultValue(0.,1);
+    _checkerboardColor2->setDefaultValue(0.,2);
+    _checkerboardColor2->setDefaultValue(0.,3);
+
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
     _unreachableRAMPercent->setDefaultValue(5);
@@ -742,6 +773,15 @@ Settings::saveSettings()
     settings.beginGroup("Viewers");
     settings.setValue( "ByteTextures", _texturesMode->getValue() );
     settings.setValue( "TilesPowerOf2", _powerOf2Tiling->getValue() );
+    settings.setValue( "CheckerboardNTiles", _checkerboardTilesCount->getValue() );
+    settings.setValue("CheckerboardColor1_r", _checkerboardColor1->getValue(0));
+    settings.setValue("CheckerboardColor1_g", _checkerboardColor1->getValue(1));
+    settings.setValue("CheckerboardColor1_b", _checkerboardColor1->getValue(2));
+    settings.setValue("CheckerboardColor1_a", _checkerboardColor1->getValue(3));
+    settings.setValue("CheckerboardColor2_r", _checkerboardColor2->getValue(0));
+    settings.setValue("CheckerboardColor2_g", _checkerboardColor2->getValue(1));
+    settings.setValue("CheckerboardColor2_b", _checkerboardColor2->getValue(2));
+    settings.setValue("CheckerboardColor2_a", _checkerboardColor2->getValue(3));
     settings.endGroup();
 
     settings.beginGroup("Nodegraph");
@@ -924,6 +964,33 @@ Settings::restoreSettings()
     }
     if ( settings.contains("TilesPowerOf2") ) {
         _powerOf2Tiling->setValue(settings.value("TilesPowerOf2").toInt(),0);
+    }
+    if (settings.contains("CheckerboardNTiles")) {
+        _checkerboardTilesCount->setValue(settings.value("CheckerboardNTiles").toInt(), 0);
+    }
+    if (settings.contains("CheckerboardColor1_r")) {
+        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_r").toDouble(), 0);
+    }
+    if (settings.contains("CheckerboardColor1_g")) {
+        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_g").toDouble(), 1);
+    }
+    if (settings.contains("CheckerboardColor1_b")) {
+        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_b").toDouble(), 2);
+    }
+    if (settings.contains("CheckerboardColor1_a")) {
+        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_a").toDouble(), 3);
+    }
+    if (settings.contains("CheckerboardColor2_r")) {
+        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_r").toDouble(), 0);
+    }
+    if (settings.contains("CheckerboardColor2_g")) {
+        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_g").toDouble(), 1);
+    }
+    if (settings.contains("CheckerboardColor2_b")) {
+        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_b").toDouble(), 2);
+    }
+    if (settings.contains("CheckerboardColor2_a")) {
+        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_a").toDouble(), 3);
     }
     settings.endGroup();
 
@@ -1251,6 +1318,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
     } else if ( k == _maxPanelsOpened.get() ) {
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
+    } else if ( k == _checkerboardTilesCount.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
+        appPTR->onCheckerboardSettingsChanged();
     }
 } // onKnobValueChanged
 
@@ -1717,7 +1786,32 @@ Settings::isAutoProjectFormatEnabled() const
     return _firstReadSetProjectFormat->getValue();
 }
 
-bool Settings::isAutoFixRelativeFilePathEnabled() const
+bool
+Settings::isAutoFixRelativeFilePathEnabled() const
 {
     return _fixPathsOnProjectPathChanged->getValue();
+}
+
+int
+Settings::getNCheckerboardTiles() const
+{
+    return _checkerboardTilesCount->getValue();
+}
+
+void
+Settings::getCheckerboardColor1(double* r,double* g,double* b,double* a) const
+{
+    *r = _checkerboardColor1->getValue(0);
+    *g = _checkerboardColor1->getValue(1);
+    *b = _checkerboardColor1->getValue(2);
+    *a = _checkerboardColor1->getValue(3);
+}
+
+void
+Settings::getCheckerboardColor2(double* r,double* g,double* b,double* a) const
+{
+    *r = _checkerboardColor2->getValue(0);
+    *g = _checkerboardColor2->getValue(1);
+    *b = _checkerboardColor2->getValue(2);
+    *a = _checkerboardColor2->getValue(3);
 }

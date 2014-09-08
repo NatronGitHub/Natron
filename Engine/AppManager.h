@@ -267,6 +267,8 @@ public:
      **/
     void checkCacheFreeMemoryIsGoodEnough();
     
+    void onCheckerboardSettingsChanged() { emit checkerboardSettingsChanged(); }
+    
 public slots:
 
     ///Closes the application not saving any projects.
@@ -299,6 +301,7 @@ signals:
 
     void imageRemovedFromViewerCache(SequenceTime time);
 
+    void checkerboardSettingsChanged();
 protected:
 
     virtual void initGui()

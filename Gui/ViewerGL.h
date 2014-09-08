@@ -236,6 +236,7 @@ public slots:
      **/
     void resetWipeControls();
 
+    void onCheckerboardSettingsChanged();
 public:
 
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
@@ -319,6 +320,8 @@ signals:
     void selectionRectangleChanged(bool onRelease);
 
     void selectionCleared();
+    
+
 
 private:
     /**

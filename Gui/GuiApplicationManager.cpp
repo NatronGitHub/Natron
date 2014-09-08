@@ -618,6 +618,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             img.load(NATRON_IMAGES_PATH "viewer_icon.png");
             *pix = QPixmap::fromImage(img);
             break;
+        case NATRON_PIXMAP_VIEWER_CHECKERBOARD:
+            img.load(NATRON_IMAGES_PATH "checkerboard.png");
+            *pix = QPixmap::fromImage(img);
+            break;
         default:
             assert(!"Missing image.");
         } // switch

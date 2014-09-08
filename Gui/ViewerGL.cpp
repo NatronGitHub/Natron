@@ -183,6 +183,8 @@ struct ViewerGL::Implementation
           , wipeAngle(M_PI / 2.) // protected by mutex
           , wipeCenter()
           , selectionRectangle()
+          , checkerboardTextureID(0)
+          , currentCheckerboardTilesCount(0)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -265,6 +267,9 @@ struct ViewerGL::Implementation
     double wipeAngle; /// the angle to the X axis
     QPointF wipeCenter; /// the center of the wipe control
     QRectF selectionRectangle;
+    
+    GLuint checkerboardTextureID;
+    int currentCheckerboardTilesCount; // to avoid a call to getValue() of the settings at each draw
 
     bool isNearbyWipeCenter(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double tolerance) const;
@@ -321,6 +326,10 @@ struct ViewerGL::Implementation
     void refreshSelectionRectangle(const QPointF & pos);
 
     void drawSelectionRectangle();
+    
+    void initializeCheckerboardTexture(bool mustCreateTexture);
+    
+    void drawCheckerboardTexture(const RectD& rod);
 };
 
 #if 0
@@ -372,19 +381,19 @@ static const GLubyte triangleStrip[28] = {
    The actual texture seen on the viewport is the rect (5,9,10,6).
    We draw  3*6 strips
 
-   0___1___2___3
+ 0___1___2___3
  |  /|  /|  /|
  | / | / | / |
- |||/  |/  |/  |
-   4---5---6----7
+ |/  |/  |/  |
+ 4---5---6----7
  |  /|  /|  /|
  | / | / | / |
- |||/  |/  |/  |
-   8---9--10--11
+ |/  |/  |/  |
+ 8---9--10--11
  |  /|  /|  /|
  | / | / | / |
- |||/  |/  |/  |
-   12--13--14--15
+ |/  |/  |/  |
+ 12--13--14--15
  */
 static GLfloat
 clipTexCoord(const double clippedSize,
@@ -424,6 +433,9 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
+    bool useShader = getBitDepth() != OpenGLViewerI::BYTE && _imp->supportsGLSL;
+
+    
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
     const TextureRect &r = _imp->activeTextures[textureIndex]->getTextureRect();
@@ -446,6 +458,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
             return;
         }
     }
+   
 
     RectD canonicalTexRect;
     texRect.toCanonical(mipMapLevel, rod, &canonicalTexRect);
@@ -492,6 +505,8 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         } else if (polyType == Implementation::POLYGON_PARTIAL) {
             _imp->getPolygonTextureCoordinates(polygonPoints, canonicalTexRect, polygonTexCoords);
 
+            _imp->bindTextureAndActivateShader(textureIndex, useShader);
+
             glBegin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
                 const QPointF & tCoord = polygonTexCoords[i];
@@ -500,6 +515,9 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
                 glVertex2d( vCoord.x(), vCoord.y() );
             }
             glEnd();
+            
+            _imp->unbindTextureAndReleaseShader(useShader);
+
         } else {
             ///draw the all polygon as usual
             polygonMode = ALL_PLANE;
@@ -545,6 +563,12 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
             texRight, texBottom    //15
         };
 
+        
+        if (_imp->viewerTab->isCheckerboardEnabled()) {
+            _imp->drawCheckerboardTexture(rod);
+        }
+        
+        _imp->bindTextureAndActivateShader(textureIndex, useShader);
 
         glCheckError();
 
@@ -569,6 +593,8 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         glCheckError();
+        
+        _imp->unbindTextureAndReleaseShader(useShader);
     }
 } // drawRenderingVAO
 
@@ -818,6 +844,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     resetWipeControls();
     populateMenu();
     QObject::connect( getInternalNode(), SIGNAL( rodChanged(RectD, int) ), this, SLOT( setRegionOfDefinition(RectD, int) ) );
+    QObject::connect( appPTR, SIGNAL(checkerboardSettingsChanged()), this, SLOT(onCheckerboardSettingsChanged()));
 }
 
 ViewerGL::~ViewerGL()
@@ -846,6 +873,7 @@ ViewerGL::~ViewerGL()
     glDeleteBuffers(1, &_imp->iboTriangleStripId);
     glCheckError();
     delete _imp->textFont;
+    glDeleteTextures(1, &_imp->checkerboardTextureID);
 }
 
 QSize
@@ -959,11 +987,13 @@ ViewerGL::paintGL()
 
     clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
     glCheckErrorIgnoreOSXBug();
+    
 
     glEnable (GL_TEXTURE_2D);
+    
+   
 
     // don't even bind the shader on 8-bits gamma-compressed textures
-    bool useShader = getBitDepth() != OpenGLViewerI::BYTE && _imp->supportsGLSL;
     ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
 
     ///Determine whether we need to draw each texture or not
@@ -988,67 +1018,48 @@ ViewerGL::paintGL()
         ///In wipe mode draw first the input A then only the portion we are interested in the input B
 
         if (drawTexture[0]) {
-            _imp->bindTextureAndActivateShader(0, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
         }
         if (drawTexture[1]) {
             glEnable(GL_BLEND);
             glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-
-
-            _imp->bindTextureAndActivateShader(1, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
             glDisable(GL_BLEND);
         }
     } else if (compOp == OPERATOR_MINUS) {
         if (drawTexture[0]) {
-            _imp->bindTextureAndActivateShader(0, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
         }
         if (drawTexture[1]) {
-            _imp->bindTextureAndActivateShader(1, useShader);
-
             glEnable(GL_BLEND);
             glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
             glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-
             drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
             glDisable(GL_BLEND);
         }
     } else if (compOp == OPERATOR_UNDER) {
         if (drawTexture[0]) {
-            _imp->bindTextureAndActivateShader(0, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
         }
         if (drawTexture[1]) {
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-            _imp->bindTextureAndActivateShader(1, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
             glDisable(GL_BLEND);
 
             glEnable(GL_BLEND);
             glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
             glDisable(GL_BLEND);
         }
     } else if (compOp == OPERATOR_OVER) {
         ///draw first B then A
         if (drawTexture[1]) {
-            _imp->bindTextureAndActivateShader(1, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
         }
         if (drawTexture[0]) {
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-            _imp->bindTextureAndActivateShader(0, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
             glDisable(GL_BLEND);
 
@@ -1057,14 +1068,14 @@ ViewerGL::paintGL()
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
             glDisable(GL_BLEND);
         }
     } else {
         if (drawTexture[0]) {
-            _imp->bindTextureAndActivateShader(0, useShader);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-            _imp->unbindTextureAndReleaseShader(useShader);
+            glDisable(GL_BLEND);
         }
     }
 
@@ -1656,6 +1667,45 @@ ViewerGL::Implementation::drawSelectionRectangle()
 }
 
 void
+ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
+{
+    double tileW,tileH;
+    int xTilesCount,yTilesCount;
+    double xTilesCountF,yTilesCountF;
+    
+    ///We divide by 2 the tiles count because one texture is 4 tiles actually
+    
+    if (rod.width() > rod.height()) {
+        tileW = rod.width() / (double)currentCheckerboardTilesCount;
+        xTilesCount = currentCheckerboardTilesCount / 2.;
+        xTilesCountF = xTilesCount;
+        QMutexLocker l(&zoomCtxMutex);
+        tileH = tileW / zoomCtx.par();
+        yTilesCountF = rod.height() / (double)(tileH * 2.);
+        yTilesCount = std::ceil(yTilesCountF);
+    } else {
+        tileH = rod.height() / (double)currentCheckerboardTilesCount;
+        yTilesCount = currentCheckerboardTilesCount / 2.;
+        yTilesCountF = yTilesCount;
+        QMutexLocker l(&zoomCtxMutex);
+        tileW = tileH * zoomCtx.par();
+        xTilesCountF = rod.width() / (double)(tileW * 2.);
+        xTilesCount = std::ceil(xTilesCountF);
+    }
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
+    glBegin(GL_POLYGON);
+    glTexCoord2d(0., 0.); glVertex2d(rod.x1, rod.y1);
+    glTexCoord2d(0., yTilesCountF); glVertex2d(rod.x1, rod.y2);
+    glTexCoord2d(xTilesCountF, yTilesCountF); glVertex2d(rod.x2, rod.y2);
+    glTexCoord2d(xTilesCountF, 0.); glVertex2d(rod.x2, rod.y1);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glCheckError();
+}
+
+void
 ViewerGL::initializeGL()
 {
     // always running in the main thread
@@ -1684,13 +1734,54 @@ ViewerGL::initializeGL()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glCheckError();
 
-
+    _imp->initializeCheckerboardTexture(true);
+    
     if (_imp->supportsGLSL) {
         initShaderGLSL();
         glCheckError();
     }
 
     glCheckError();
+}
+
+void
+ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
+{
+    if (mustCreateTexture) {
+        glGenTextures(1, &checkerboardTextureID);
+    }
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture (GL_TEXTURE_2D,checkerboardTextureID);
+    
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    double color1[4];
+    double color2[4];
+    appPTR->getCurrentSettings()->getCheckerboardColor1(&color1[0], &color1[1], &color1[2], &color1[3]);
+    appPTR->getCurrentSettings()->getCheckerboardColor2(&color2[0], &color2[1], &color2[2], &color2[3]);
+    
+    unsigned char checkerboardTexture[16];
+    ///Fill the first line
+    for (int i = 0; i < 4; ++i) {
+        checkerboardTexture[i] = Color::floatToInt<256>(color1[i]);
+        checkerboardTexture[i + 4] = Color::floatToInt<256>(color2[i]);
+    }
+    ///Copy the first line to the second line
+    memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
+    memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    currentCheckerboardTilesCount = appPTR->getCurrentSettings()->getNCheckerboardTiles();
+
+    
+   
 }
 
 QString
@@ -3851,3 +3942,9 @@ ViewerGL::getTimeline() const
     return _imp->viewerTab->getTimeLine();
 }
 
+void
+ViewerGL::onCheckerboardSettingsChanged()
+{
+    _imp->initializeCheckerboardTexture(false);
+    update();
+}

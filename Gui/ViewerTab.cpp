@@ -110,6 +110,7 @@ struct ViewerTabPrivate
     ClickableLabel* _autoConstrastLabel;
     QCheckBox* _autoContrast;
     ComboBox* _viewerColorSpace;
+    Button* _checkerboardButton;
     ComboBox* _viewsComboBox;
     int _currentViewIndex;
     QMutex _currentViewMutex;
@@ -162,6 +163,9 @@ struct ViewerTabPrivate
     bool _topToolbarVisible;
     
     bool _isFileDialogViewer;
+    
+    mutable QMutex _checkerboardMutex;
+    bool _checkerboardEnabled;
 
     ViewerTabPrivate(Gui* gui,
                      ViewerInstance* node)
@@ -181,6 +185,8 @@ struct ViewerTabPrivate
           , _rightToolbarVisible(true)
           , _topToolbarVisible(true)
           , _isFileDialogViewer(false)
+          , _checkerboardMutex()
+          , _checkerboardEnabled(false)
     {
         _currentRoto.first = NULL;
         _currentRoto.second = NULL;
@@ -394,6 +400,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_viewerColorSpace->addItem("sRGB");
     _imp->_viewerColorSpace->addItem("Rec.709");
     _imp->_viewerColorSpace->setCurrentIndex(1);
+    
+    QPixmap pixCheckerboard;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD, &pixCheckerboard);
+    _imp->_checkerboardButton = new Button(QIcon(pixCheckerboard),"",_imp->_secondSettingsRow);
+    _imp->_checkerboardButton->setCheckable(true);
+    _imp->_checkerboardButton->setChecked(false);
+    _imp->_checkerboardButton->setDown(false);
+    _imp->_checkerboardButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    QObject::connect(_imp->_checkerboardButton,SIGNAL(clicked(bool)),this,SLOT(onCheckerboardButtonClicked()));
+    _imp->_secondRowLayout->addWidget(_imp->_checkerboardButton);
 
     _imp->_viewsComboBox = new ComboBox(_imp->_secondSettingsRow);
     _imp->_viewsComboBox->setToolTip( "<p><b>" + tr("Active view") + ": \n</b></p>" + tr(
@@ -2901,3 +2917,30 @@ ViewerTab::onVideoEngineStopped()
     }
 }
 
+void
+ViewerTab::onCheckerboardButtonClicked()
+{
+    {
+        QMutexLocker l(&_imp->_checkerboardMutex);
+        _imp->_checkerboardEnabled = !_imp->_checkerboardEnabled;
+    }
+    _imp->_checkerboardButton->setDown(_imp->_checkerboardEnabled);
+    _imp->viewer->redraw();
+}
+
+bool ViewerTab::isCheckerboardEnabled() const
+{
+    QMutexLocker l(&_imp->_checkerboardMutex);
+    return _imp->_checkerboardEnabled;
+}
+
+void ViewerTab::setCheckerboardEnabled(bool enabled)
+{
+    {
+        QMutexLocker l(&_imp->_checkerboardMutex);
+        _imp->_checkerboardEnabled = enabled;
+    }
+    _imp->_checkerboardButton->setDown(enabled);
+    _imp->_checkerboardButton->setChecked(enabled);
+
+}
