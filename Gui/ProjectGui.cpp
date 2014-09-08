@@ -385,6 +385,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setPlayerVisible(found->second.playerVisible);
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
+                tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
             }
         }
 

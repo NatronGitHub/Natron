@@ -1670,28 +1670,35 @@ void
 ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
 {
     double tileW,tileH;
-    int xTilesCount,yTilesCount;
     double xTilesCountF,yTilesCountF;
     
     ///We divide by 2 the tiles count because one texture is 4 tiles actually
     
-    if (rod.width() > rod.height()) {
-        tileW = rod.width() / (double)currentCheckerboardTilesCount;
-        xTilesCount = currentCheckerboardTilesCount / 2.;
-        xTilesCountF = xTilesCount;
+    double zoomFactor,par ;
+    {
         QMutexLocker l(&zoomCtxMutex);
-        tileH = tileW / zoomCtx.par();
-        yTilesCountF = rod.height() / (double)(tileH * 2.);
-        yTilesCount = std::ceil(yTilesCountF);
-    } else {
-        tileH = rod.height() / (double)currentCheckerboardTilesCount;
-        yTilesCount = currentCheckerboardTilesCount / 2.;
-        yTilesCountF = yTilesCount;
-        QMutexLocker l(&zoomCtxMutex);
-        tileW = tileH * zoomCtx.par();
-        xTilesCountF = rod.width() / (double)(tileW * 2.);
-        xTilesCount = std::ceil(xTilesCountF);
+        zoomFactor = zoomCtx.factor();
+        par = zoomCtx.par();
     }
+    
+    
+    double checkerboardTilesCount =  (double)currentCheckerboardTilesCount;
+    
+    if (rod.width() > rod.height()) {
+        tileW = rod.width() / checkerboardTilesCount;
+        xTilesCountF = checkerboardTilesCount / 2.;
+        tileH = tileW / par;
+        yTilesCountF = rod.height() / (double)(tileH * 2.);
+    } else {
+        tileH = rod.height() / checkerboardTilesCount;
+        yTilesCountF = checkerboardTilesCount / 2.;
+        tileW = tileH * par;
+        xTilesCountF = rod.width() / (double)(tileW * 2.);
+    }
+    
+    xTilesCountF *= zoomFactor;
+    yTilesCountF *= zoomFactor;
+    
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
     glBegin(GL_POLYGON);
