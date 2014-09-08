@@ -1547,7 +1547,7 @@ Project::fixRelativeFilePaths(const std::map<std::string,std::string>& envVars,
                 
                 Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
                 String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
-                if (!isString || isStringKnob) {
+                if (!isString || isStringKnob || knobs[j] == _imp->envVars) {
                     continue;
                 }
                 
@@ -1581,7 +1581,7 @@ Project::fixPathName(const std::string& oldName,const std::string& newName)
                 
                 Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
                 String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
-                if (!isString || isStringKnob) {
+                if (!isString || isStringKnob || knobs[j] == _imp->envVars) {
                     continue;
                 }
                 
