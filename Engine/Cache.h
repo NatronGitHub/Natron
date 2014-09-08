@@ -416,6 +416,20 @@ public:
             ///Before allocating the memory check that there's enough space to fit in memory
             appPTR->checkCacheFreeMemoryIsGoodEnough();
             
+            
+            ///Just in case, we don't allow more than X files to be removed at once.
+            int safeCounter = 0;
+            ///If too many files are opened, fall-back on RAM storage.
+            while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
+#ifdef NATRON_DEBUG_CACHE
+                qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
+#endif
+                if ( !evictLRUDiskEntry() ) {
+                    break;
+                }
+                ++safeCounter;
+            }
+            
             ///lock the cache before writing it.
             QMutexLocker locker(&_lock);
             *returnValue = newEntry(key,params);
@@ -878,7 +892,6 @@ public:
     /*Restores the cache from disk.*/
     void restore(const CacheTOC & tableOfContents)
     {
-        QMutexLocker locker(&_lock);
 
         for (typename CacheTOC::const_iterator it =
                  tableOfContents.begin(); it != tableOfContents.end(); ++it) {
@@ -896,21 +909,23 @@ public:
             }
             EntryType* value = NULL;
 
-            locker.unlock();
             ///Before allocating the memory check that there's enough space to fit in memory
             appPTR->checkCacheFreeMemoryIsGoodEnough();
-            locker.relock();
            
             size_t entryDataSize = it->params->getElementsCount() * sizeof(data_t);
-
-            while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) ) {
-                if ( !tryEvictEntry() ) {
-                    break;
+            
+            {
+                QMutexLocker locker(&_lock);
+                
+                while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) ) {
+                    if ( !tryEvictEntry() ) {
+                        break;
+                    }
                 }
             }
-
             Natron::StorageMode storage = Natron::DISK;
 
+            
             ///Just in case, we don't allow more than X files to be removed at once.
             int safeCounter = 0;
             ///If too many files are opened, fall-back on RAM storage.
@@ -931,11 +946,14 @@ public:
                 qDebug() << e.what();
                 continue;
             }
-
+            
             CachedValue cachedValue;
             cachedValue.entry = EntryTypePtr(value);
             cachedValue.params = it->params;
-            sealEntry(cachedValue);
+            {
+                QMutexLocker locker(&_lock);
+                sealEntry(cachedValue);
+            }
         }
     }
 
@@ -958,20 +976,6 @@ private:
         } else {
             storage = Natron::NO_STORAGE;
         }
-
-        ///Just in case, we don't allow more than X files to be removed at once.
-        int safeCounter = 0;
-        ///If too many files are opened, fall-back on RAM storage.
-        while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
-#ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
-#endif
-            if ( !evictLRUDiskEntry() ) {
-                break;
-            }
-            ++safeCounter;
-        }
-
 
     
         size_t entryDataSize = params->getElementsCount() * sizeof(data_t);
