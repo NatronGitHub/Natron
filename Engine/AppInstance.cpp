@@ -229,10 +229,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return boost::shared_ptr<Natron::Node>();
     }
 
-    if ( !requestedByLoad && !multiInstanceParentName.empty() ) {
-        node->fetchParentMultiInstancePointer();
-    }
-
     if (addToProject) {
         _imp->_currentProject->addNodeToProject(node);
     }

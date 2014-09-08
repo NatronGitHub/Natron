@@ -246,6 +246,9 @@ Node::load(const std::string & pluginID,
         nameSet = true;
     }
 
+    if (serialization.isNull() && !parentMultiInstanceName.empty()) {
+        fetchParentMultiInstancePointer();
+    }
 
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {

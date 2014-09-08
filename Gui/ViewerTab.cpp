@@ -407,6 +407,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_checkerboardButton->setCheckable(true);
     _imp->_checkerboardButton->setChecked(false);
     _imp->_checkerboardButton->setDown(false);
+    _imp->_checkerboardButton->setToolTip(tr("When checked the viewer will draw a checkerboard instead of black "
+                                             "in transparant areas."));
     _imp->_checkerboardButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->_checkerboardButton,SIGNAL(clicked(bool)),this,SLOT(onCheckerboardButtonClicked()));
     _imp->_secondRowLayout->addWidget(_imp->_checkerboardButton);

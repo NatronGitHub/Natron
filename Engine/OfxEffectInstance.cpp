@@ -940,13 +940,21 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
 
     OfxRectD ofxRod;
     OfxStatus stat;
-
+    
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "getRegionOfDefinition cannot be called recursively as an action. Please check this.";
+#ifdef DEBUG
+            if (QThread::currentThread() != qApp->thread()) {
+                
+                qDebug() << "getRegionOfDefinition cannot be called recursively as an action. Please check this.";
+            }
+#endif
+            
             skipDiscarding = true;
         }
+        
+        
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
@@ -1258,23 +1266,32 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         assert(false);
         throw std::logic_error("isIdentity called with render scale != 1, but effect does not support render scale!");
     }
-
+    
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxStatus stat;
-
+    
     {
         bool skipDiscarding = false;
+        
         if (getRecursionLevel() > 1) {
-            qDebug() << "isIdentity cannot be called recursively as an action. Please check this.";
+            
+#ifdef DEBUG
+            if (QThread::currentThread() != qApp->thread()) {
+                qDebug() << "isIdentity cannot be called recursively as an action. Please check this.";
+            }
+#endif
             skipDiscarding = true;
         }
+        
+        
+        
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
                                             true, //< setView ?
                                             view,
                                             true,
                                             mipMapLevel);
-
+        
         // In Natron, we only consider isIdentity for whole images
         RectI roi;
         rod.toPixelEnclosing(scale, &roi);
@@ -1293,7 +1310,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 // try again with scale one
                 OfxPointD scaleOne;
                 scaleOne.x = scaleOne.y = 1.;
-
+                
                 rod.toPixelEnclosing(scaleOne, &roi);
                 ofxRoI.x1 = roi.left();
                 ofxRoI.x2 = roi.right();
