@@ -190,7 +190,17 @@ void
 File_KnobGui::watchedFileChanged()
 {
     ///The file has changed, trigger a new render.
-    _knob->getHolder()->evaluate_public(_knob.get(), true, Natron::USER_EDITED);
+    
+    ///Make sure the node doesn't hold any cache
+    if (_knob->getHolder()) {
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
+        if (effect) {
+            effect->purgeCaches();
+        }
+        _knob->getHolder()->evaluate_public(_knob.get(), true, Natron::USER_EDITED);
+    }
+    
+    
 }
 
 void

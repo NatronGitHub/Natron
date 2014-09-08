@@ -1410,13 +1410,18 @@ void
 KnobHolder::assertActionIsNotRecursive() const
 {
 # ifdef DEBUG
-    int recursionLvl = getRecursionLevel();
-
-    if ( getApp() && getApp()->isShowingDialog() ) {
-        return;
-    }
-    if (recursionLvl != 0) {
-        qDebug() << "A non-recursive action has been called recursively.";
+    
+    ///Only check recursions which are on a render threads, because we do authorize recursions in getRegionOfDefinition and such which
+    ///always happen in the main thread.
+    if (QThread::currentThread() != qApp->thread()) {
+        int recursionLvl = getRecursionLevel();
+        
+        if ( getApp() && getApp()->isShowingDialog() ) {
+            return;
+        }
+        if (recursionLvl != 0) {
+            qDebug() << "A non-recursive action has been called recursively.";
+        }
     }
 # endif // DEBUG
 }
