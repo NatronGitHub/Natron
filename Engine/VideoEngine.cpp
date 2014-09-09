@@ -720,29 +720,33 @@ VideoEngine::abortRendering(bool blocking)
     }
     _tree.getOutput()->getApp()->registerVideoEngineBeingAborted(this);
     {
-        QMutexLocker locker(&_abortedRequestedMutex);
-        ++_abortRequested;
-
+        
+        
+        
         /*Note that we set the aborted flag in from output to inputs otherwise some aborted images
-           might get rendered*/
+         might get rendered*/
         for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
             (*it)->setAborted(true);
         }
+        
+        
         if ( _tree.isOutputAViewer() && (QThread::currentThread() != this) ) {
             
             /*
              Explanation: If another thread calls this function, the render thread (this) might have a waitCondition depending
              on the caller thread. But waiting for the render thread to be done (with the _abortedRequestedCondition) will cause
-             a deadlock. 
+             a deadlock.
              Solution: process all events remaining, to be sure the render thread is no longer relying on the caller thread.
              */
             QCoreApplication::processEvents();
-            //_tree.outputAsViewer()->wakeUpAnySleepingThread();
         }
-
-        if ( (QThread::currentThread() != this) && isRunning()  && blocking ) {
-            while (_abortRequested > 0) {
-                _abortedRequestedCondition.wait(&_abortedRequestedMutex);
+        {
+            QMutexLocker locker(&_abortedRequestedMutex);
+             ++_abortRequested;
+            if ( (QThread::currentThread() != this) && isRunning()  && blocking ) {
+                while (_abortRequested > 0) {
+                    _abortedRequestedCondition.wait(&_abortedRequestedMutex);
+                }
             }
         }
     }
