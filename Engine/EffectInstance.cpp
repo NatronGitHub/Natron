@@ -1206,7 +1206,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     image->convertToFormat( args.roi,
                                             getApp()->getDefaultColorSpaceForBitDepth( image->getBitDepth() ),
                                             getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                            args.channelForAlpha, true, true,unPremultIfNeeded,
+                                            args.channelForAlpha, false, true,unPremultIfNeeded,
                                             remappedImage.get() );
                 }
                 ///switch the pointer
