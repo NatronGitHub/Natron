@@ -86,7 +86,7 @@ public:
               const QString& fixedName);
 
     ///called by load() and OfxEffectInstance, do not call this!
-    void loadKnobs(const NodeSerialization & serialization);
+    void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
 
     ///to be called once all nodes have been loaded from the project or right away after the load() function.
     ///this is so the child of a multi-instance can retrieve the pointer to it's main instance
@@ -131,6 +131,10 @@ public:
 
     bool hasEffect() const;
 
+    /**
+     * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
+     * e.g: the Tracker node.
+     **/
     bool isMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
@@ -642,6 +646,12 @@ public:
      **/
     void initializeKnobs(const NodeSerialization & serialization);
 
+    
+    /**
+     * @brief Fills keyframes with all different keyframes time that all parameters of this
+     * node have. Some keyframes might appear several times.
+     **/
+    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
 public slots:
 
     void setKnobsAge(U64 newAge);
@@ -760,14 +770,10 @@ protected:
 private:
 
 
-    /**
-     * @brief Fills keyframes with all different keyframes time that all parameters of this
-     * node have. Some keyframes might appear several times.
-     **/
-    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
 
 
-    void loadKnob(const boost::shared_ptr<KnobI> & knob,const NodeSerialization & serialization);
+
+    void loadKnob(const boost::shared_ptr<KnobI> & knob,const NodeSerialization & serialization,bool updateKnobGui = false);
 
 
     /**

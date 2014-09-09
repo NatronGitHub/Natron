@@ -44,7 +44,7 @@ public:
     typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
 
     ///Used to serialize
-    NodeSerialization(const boost::shared_ptr<Natron::Node> & n);
+    NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs = true,bool copyKnobs = false);
 
     ////Used to deserialize
     NodeSerialization(AppInstance* app)
@@ -75,6 +75,10 @@ public:
     const std::vector<std::string> & getInputs() const
     {
         return _inputs;
+    }
+    
+    void setInputs(const std::vector<std::string>& inputs) {
+        _inputs = inputs;
     }
 
     int getPluginMajorVersion() const

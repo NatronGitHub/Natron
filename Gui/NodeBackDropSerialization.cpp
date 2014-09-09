@@ -22,8 +22,7 @@ NodeBackDropSerialization::initialize(const NodeBackDrop* n)
     posY = pos.y();
     n->getSize(width,height);
 
-    label.reset(new KnobSerialization);
-    label->initialize( n->getLabelKnob() );
+    label.reset(new KnobSerialization(n->getLabelKnob(),false));
     QColor color = n->getCurrentColor();
     r = color.redF();
     g = color.greenF();

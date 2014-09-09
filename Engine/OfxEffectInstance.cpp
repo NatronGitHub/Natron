@@ -1251,6 +1251,12 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                               SequenceTime* inputTime,
                               int* inputNb)
 {
+    if (!_created) {
+        *inputNb = -1;
+        *inputTime = 0;
+        return false;
+    }
+    
     assert(_context != eContextNone);
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;

@@ -1095,4 +1095,24 @@ Knob<T>::cloneAndUpdateGui(KnobI* other)
     cloneExtraData(other);
 }
 
+template <typename T>
+void
+Knob<T>::deepClone(KnobI* other)
+{
+    cloneAndUpdateGui(other);
+    for (int i = 0; i < getDimension(); ++i) {
+        if (!other->isEnabled(i)) {
+            setEnabled(i,false);
+        }
+    }
+    
+    if (other->getIsSecret()) {
+        setSecret(true);
+    }
+    
+    setName(other->getName());
+    deepCloneExtraData(other);
+
+}
+
 #endif // KNOBIMPL_H

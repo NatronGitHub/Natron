@@ -507,28 +507,34 @@ public:
     }
 };
 
-boost::shared_ptr<Natron::Node> MultiInstancePanel::createNewInstance()
+boost::shared_ptr<Natron::Node> MultiInstancePanel::createNewInstance(bool useUndoRedoStack)
 {
-    return addInstanceInternal();
+    return addInstanceInternal(useUndoRedoStack);
 }
 
 void
 MultiInstancePanel::onAddButtonClicked()
 {
-    (void)addInstanceInternal();
+    (void)addInstanceInternal(true);
 }
 
-boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal()
+boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
 {
     boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
     CreateNodeArgs args( mainInstance->getPluginID().c_str(),
                          mainInstance->getName(),
                          -1,-1,true,
-                         (int)_imp->instances.size() );
+                         (int)_imp->instances.size(),
+                        true,
+                        INT_MIN,INT_MIN,
+                        false); //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
     boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(args);
 
     _imp->addTableRow(newInstance);
-    _imp->pushUndoCommand( new AddNodeCommand(this,newInstance) );
+    
+    if (useUndoRedoStack) {
+        _imp->pushUndoCommand( new AddNodeCommand(this,newInstance) );
+    }
 
     return newInstance;
 }
@@ -741,13 +747,8 @@ public:
 
     virtual void undo() OVERRIDE FINAL
     {
-        std::list<boost::shared_ptr<Natron::Node> >::iterator next = _nodes.begin();
-
-        ++next;
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
-            _panel->addRow(*it);
-            (*it)->activate( std::list<boost::shared_ptr<Natron::Node> >(),false,next == _nodes.end() );
-        }
+        
+        _panel->addInstances(_nodes);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
         setText( QObject::tr("Remove instance(s)") );
@@ -755,23 +756,42 @@ public:
 
     virtual void redo() OVERRIDE FINAL
     {
-        boost::shared_ptr<Node> mainInstance = _panel->getMainInstance();
-        std::list<boost::shared_ptr<Natron::Node> >::iterator next = _nodes.begin();
-
-        ++next;
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
-            int index = _panel->getNodeIndex(*it);
-            assert(index != -1);
-            _panel->removeRow(index);
-            bool isMainInstance = (*it) == mainInstance;
-            (*it)->deactivate( std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance,next == _nodes.end() );
-        }
-
-        mainInstance->getApp()->triggerAutoSave();
+        _panel->removeInstances(_nodes);
+        _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
         setText( QObject::tr("Remove instance(s)") );
     }
 };
+
+void
+MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances)
+{
+    boost::shared_ptr<Node> mainInstance = getMainInstance();
+    std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
+    
+    ++next;
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
+        int index = getNodeIndex(*it);
+        assert(index != -1);
+        removeRow(index);
+        bool isMainInstance = (*it) == mainInstance;
+        (*it)->deactivate( std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance,next == instances.end() );
+    }
+    
+
+}
+
+void
+MultiInstancePanel::addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances)
+{
+    std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
+    
+    ++next;
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
+        addRow(*it);
+        (*it)->activate( std::list<boost::shared_ptr<Natron::Node> >(),false,next == instances.end() );
+    }
+}
 
 void
 MultiInstancePanel::removeRow(int index)
@@ -1560,7 +1580,7 @@ TrackerPanel::onAverageTracksButtonClicked()
         return;
     }
 
-    boost::shared_ptr<Node> newInstance = addInstanceInternal();
+    boost::shared_ptr<Node> newInstance = addInstanceInternal(true);
     ///give an appropriate name to the new instance
     int avgIndex = 0;
     const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > > & allInstances = getInstances();

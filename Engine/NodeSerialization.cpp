@@ -18,7 +18,7 @@
 #include "Engine/RotoSerialization.h"
 #include "Engine/RotoContext.h"
 
-NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n)
+NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs,bool copyKnobs)
     : _isNull(true)
       , _hasRotoContext(false)
       , _node()
@@ -44,7 +44,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n)
             Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
             Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
             if (knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
-                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
+                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i],copyKnobs) );
                 _knobsValues.push_back(newKnobSer);
             }
         }
@@ -59,8 +59,10 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n)
         _pluginMajorVersion = n->getMajorVersion();
 
         _pluginMinorVersion = n->getMinorVersion();
-
-        n->getInputNames(_inputs);
+        
+        if (serializeInputs) {
+            n->getInputNames(_inputs);
+        }
 
         boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
         if (masterNode) {

@@ -19,6 +19,7 @@
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+#include <boost/serialization/map.hpp>
 
 #include "Engine/KnobSerialization.h"
 

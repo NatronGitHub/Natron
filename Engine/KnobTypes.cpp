@@ -913,6 +913,16 @@ Choice_Knob::getHintToolTipFull() const
     return ss.str();
 }
 
+void
+Choice_Knob::deepCloneExtraData(KnobI* other)
+{
+    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(other);
+    if (!isChoice) {
+        return;
+    }
+    _entries = isChoice->getEntries();
+    _entriesHelp = isChoice->getEntriesHelp();
+}
 /******************************SEPARATOR_KNOB**************************************/
 
 Separator_Knob::Separator_Knob(KnobHolder* holder,

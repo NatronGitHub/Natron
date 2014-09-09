@@ -398,6 +398,10 @@ public:
     bool hasShortcutEditorAlreadyBeenBuilt() const;
     
     void addShortcut(BoundAction* action);
+    
+    const QString& getLastLoadProjectDirectory() const;
+    
+    const QString& getLastSaveProjectDirectory() const;
 signals:
 
     void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);

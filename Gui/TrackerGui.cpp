@@ -368,7 +368,7 @@ TrackerGui::penDown(double scaleX,
     }
 
     if (_imp->clickToAddTrackEnabled && !didSomething) {
-        boost::shared_ptr<Node> newInstance = _imp->panel->createNewInstance();
+        boost::shared_ptr<Node> newInstance = _imp->panel->createNewInstance(true);
         boost::shared_ptr<KnobI> newInstanceKnob = newInstance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );

@@ -40,6 +40,7 @@ class NodeGraph;
 class QAction;
 class KnobI;
 class NodeGuiSerialization;
+class NodeSerialization;
 class KnobGui;
 class QUndoStack;
 class LinkArrow;
@@ -284,6 +285,14 @@ public:
 
 
     void setKnobLinksVisible(bool visible);
+    
+    /**
+     * @brief Serialize this node. If this is a multi-instance node, every instance will
+     * be serialized, hence the list.
+     **/
+    void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const;
+    void restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
+                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
 
 public slots:
 

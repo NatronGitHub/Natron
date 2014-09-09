@@ -405,7 +405,7 @@ Node::computeHash()
 } // computeHash
 
 void
-Node::loadKnobs(const NodeSerialization & serialization)
+Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
 {
     ///Only called from the main thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -414,7 +414,7 @@ Node::loadKnobs(const NodeSerialization & serialization)
     const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size(); ++j) {
-        loadKnob(nodeKnobs[j], serialization);
+        loadKnob(nodeKnobs[j], serialization,updateKnobGui);
     }
     ///now restore the roto context if the node has a roto context
     if (serialization.hasRotoContext() && _imp->rotoContext) {
@@ -426,7 +426,7 @@ Node::loadKnobs(const NodeSerialization & serialization)
 
 void
 Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
-               const NodeSerialization & serialization)
+               const NodeSerialization & serialization,bool updateKnobGui)
 {
     const NodeSerialization::KnobValues & knobsValues = serialization.getKnobsValues();
 
@@ -436,7 +436,11 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
             if ( knob->getIsPersistant() ) {
                 boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
-                knob->clone(serializedKnob);
+                if (updateKnobGui) {
+                    knob->cloneAndUpdateGui(serializedKnob.get());
+                } else {
+                    knob->clone(serializedKnob);
+                }
                 knob->setSecret( serializedKnob->getIsSecret() );
                 if ( knob->getDimension() == serializedKnob->getDimension() ) {
                     for (int i = 0; i < knob->getDimension(); ++i) {

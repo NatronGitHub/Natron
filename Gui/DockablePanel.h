@@ -178,6 +178,9 @@ public slots:
     void setClosed(bool closed);
 
     void onRightClickMenuRequested(const QPoint & pos);
+    
+    void setKeyOnAllParameters();
+    void removeAnimationOnAllParameters();
 
 signals:
 
@@ -237,6 +240,7 @@ class NodeSettingsPanel
     boost::shared_ptr<NodeGui> _nodeGUI;
     bool _selected;
     Button* _centerNodeButton;
+    Button* _settingsButton;
     boost::shared_ptr<MultiInstancePanel> _multiPanel;
 
 public:
@@ -274,6 +278,12 @@ private:
 public slots:
 
     void centerNode();
+    
+    void onSettingsButtonClicked();
+    
+    void onImportPresetsActionTriggered();
+    
+    void onExportPresetsActionTriggered();
 };
 
 #endif // NATRON_GUI_SETTINGSPANEL_H_

@@ -20,6 +20,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/NodeSerialization.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
@@ -27,7 +28,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Edge.h"
 #include "Gui/NodeBackDrop.h"
-
+#include "Gui/MultiInstancePanel.h"
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
@@ -1001,3 +1002,96 @@ EnableNodesCommand::redo()
     setText( QObject::tr("Enable nodes") );
 }
 
+
+LoadNodePresetsCommand::LoadNodePresetsCommand(const boost::shared_ptr<NodeGui> & node,
+                                               const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
+                                               QUndoCommand *parent)
+: QUndoCommand(parent)
+, _firstRedoCalled(false)
+, _isUndone(false)
+, _node(node)
+, _newSerializations(serialization)
+{
+
+}
+
+LoadNodePresetsCommand::~LoadNodePresetsCommand()
+{
+//    if (_isUndone) {
+//        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _newChildren.begin(); it != _newChildren.end(); ++it) {
+//            (*it)->getDagGui()->deleteNodePermanantly(*it);
+//        }
+//    } else {
+//        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _oldChildren.begin(); it != _oldChildren.end(); ++it) {
+//            (*it)->getDagGui()->deleteNodePermanantly(*it);
+//        }
+//    }
+
+}
+
+void
+LoadNodePresetsCommand::undo()
+{
+    
+    _isUndone = true;
+    
+    boost::shared_ptr<Natron::Node> internalNode = _node->getNode();
+    boost::shared_ptr<MultiInstancePanel> panel = _node->getMultiInstancePanel();
+    internalNode->loadKnobs(*_oldSerialization.front(),true);
+    if (panel) {
+        panel->removeInstances(_newChildren);
+        panel->addInstances(_oldChildren);
+    }
+    
+    setText(QObject::tr("Load presets"));
+}
+
+void
+LoadNodePresetsCommand::redo()
+{
+    
+
+    boost::shared_ptr<Natron::Node> internalNode = _node->getNode();
+    boost::shared_ptr<MultiInstancePanel> panel = _node->getMultiInstancePanel();
+
+    if (!_firstRedoCalled) {
+       
+        ///Serialize the current state of the node
+        _node->serializeInternal(_oldSerialization,true);
+        
+        if (panel) {
+            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& children = panel->getInstances();
+            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = children.begin();
+                 it != children.end(); ++it) {
+                _oldChildren.push_back(it->first);
+            }
+        }
+        
+        int k = 0;
+        
+        for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = _newSerializations.begin();
+             it != _newSerializations.end(); ++it,++k) {
+            
+            if (k > 0)  { /// this is a multi-instance child, create it
+               boost::shared_ptr<Natron::Node> newNode = panel->createNewInstance(false);
+                newNode->loadKnobs(**it);
+                std::list<SequenceTime> keys;
+                newNode->getAllKnobsKeyframes(&keys);
+                newNode->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, true);
+                _newChildren.push_back(newNode);
+            }
+        }
+    }
+    
+    internalNode->loadKnobs(*_newSerializations.front(),true);
+    if (panel) {
+        panel->removeInstances(_oldChildren);
+        if (_firstRedoCalled) {
+            panel->addInstances(_newChildren);
+        }
+    }
+    
+    _firstRedoCalled = true;
+
+    setText(QObject::tr("Load presets"));
+}

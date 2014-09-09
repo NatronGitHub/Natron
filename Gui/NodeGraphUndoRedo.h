@@ -28,6 +28,7 @@ class Edge;
 class NodeGui;
 class NodeGraph;
 class NodeBackDrop;
+class NodeSerialization;
 namespace Natron {
 class Node;
 }
@@ -276,6 +277,30 @@ public:
 private:
 
     std::list<boost::shared_ptr<NodeGui> >_nodes;
+};
+
+
+class LoadNodePresetsCommand
+: public QUndoCommand
+{
+    
+public:
+    
+    LoadNodePresetsCommand(const boost::shared_ptr<NodeGui> & node,
+                           const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
+                       QUndoCommand *parent = 0);
+    
+    virtual ~LoadNodePresetsCommand();
+    virtual void undo();
+    virtual void redo();
+
+private:
+    
+    bool _firstRedoCalled;
+    bool _isUndone;
+    boost::shared_ptr<NodeGui> _node;
+    std::list< boost::shared_ptr<Natron::Node> > _oldChildren,_newChildren; //< children if multi-instance
+    std::list<boost::shared_ptr<NodeSerialization> > _newSerializations,_oldSerialization;
 };
 
 

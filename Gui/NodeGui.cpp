@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/NodeGraphUndoRedo.h"
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
@@ -47,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Timer.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
@@ -1419,6 +1421,39 @@ void
 NodeGui::serialize(NodeGuiSerialization* serializationObject) const
 {
     serializationObject->initialize( _graph->getNodeGuiSharedPtr(this) );
+}
+
+void
+NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const
+{
+    boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(_internalNode,false,copyKnobs));
+    internalSerialization.push_back(thisSerialization);
+    
+    ///For multi-instancs, serialize children too
+    if (_internalNode->isMultiInstance()) {
+        assert(_settingsPanel);
+        boost::shared_ptr<MultiInstancePanel> panel = _settingsPanel->getMultiInstancePanel();
+        assert(panel);
+        
+        const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = panel->getInstances();
+        for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin();
+             it != instances.end(); ++it) {
+            boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first,false,copyKnobs));
+            internalSerialization.push_back(childSerialization);
+        }
+    }
+}
+
+void
+NodeGui::restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
+                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization)
+{
+    assert(internalSerialization.size() >= 1);
+    if (internalSerialization.front()->getPluginID() != _internalNode->getPluginID()) {
+        Natron::errorDialog(tr("Presets").toStdString(),tr("You cannot load presets of another plug-in").toStdString());
+        return;
+    }
+    getSettingPanel()->pushUndoCommand(new LoadNodePresetsCommand(thisShared,internalSerialization));
 }
 
 void

@@ -122,6 +122,12 @@ public:
     virtual void cloneAndUpdateGui(KnobI* other) = 0;
 
     /**
+     * @brief Performs the same as cloneAndUpdateGui, but also copies the properties of the knob such as whether it is enabled, secret,
+     * the name of the knob, etc...
+     **/
+    virtual void deepClone(KnobI* other) = 0;
+    
+    /**
      * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
      * on the keyframes time and only the keyframes withing the given range are copied.
      * If the range is NULL everything will be copied.
@@ -914,6 +920,11 @@ protected:
     }
 
     /**
+     * @brief Override to copy extra properties, such as the entries for a combobox for example.
+     **/
+    virtual void deepCloneExtraData(KnobI* /*other*/) {}
+    
+    /**
      * @brief Called when a keyframe is removed.
      * Derived knobs can use it to refresh any data structure related to keyframes it may have.
      **/
@@ -1086,7 +1097,7 @@ public:
     virtual void clone(KnobI* other)  OVERRIDE FINAL;
     virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(KnobI* other) OVERRIDE FINAL;
-
+    virtual void deepClone(KnobI* other)  OVERRIDE FINAL;
 private:
 
     void cloneValues(KnobI* other);

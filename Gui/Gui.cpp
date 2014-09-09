@@ -1323,14 +1323,14 @@ Gui::exportLayout()
 {
     std::vector<std::string> filters;
 
-    filters.push_back(".nl");
+    filters.push_back("." NATRON_LAYOUT_FILE_EXT);
     SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
         QString ext = Natron::removeFileExtension(filenameCpy);
-        if (ext != "nl") {
-            filename.append(".nl");
+        if (ext != NATRON_LAYOUT_FILE_EXT) {
+            filename.append("." NATRON_LAYOUT_FILE_EXT);
         }
 
         std::ofstream ofile;
@@ -1368,12 +1368,24 @@ Gui::exportLayout()
     }
 }
 
+const QString&
+Gui::getLastLoadProjectDirectory() const
+{
+    return _imp->_lastLoadProjectOpenedDir;
+}
+
+const QString&
+Gui::getLastSaveProjectDirectory() const
+{
+    return _imp->_lastSaveProjectOpenedDir;
+}
+
 void
 Gui::importLayout()
 {
     std::vector<std::string> filters;
 
-    filters.push_back(".nl");
+    filters.push_back("." NATRON_LAYOUT_FILE_EXT);
     SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();

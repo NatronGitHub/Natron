@@ -471,7 +471,7 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-
+    virtual void deepCloneExtraData(KnobI* other) OVERRIDE FINAL;
 private:
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;

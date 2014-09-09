@@ -66,7 +66,7 @@ public:
     {
     }
 
-    boost::shared_ptr<Natron::Node> createNewInstance();
+    boost::shared_ptr<Natron::Node> createNewInstance(bool useUndoRedoStack);
 
     void selectNode(const boost::shared_ptr<Natron::Node> & node,bool addToSelection);
 
@@ -77,6 +77,9 @@ public:
     void clearSelection();
 
     bool isSettingsPanelVisible() const;
+    
+    void removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
+    void addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
 
 public slots:
 
@@ -112,7 +115,7 @@ protected:
     {
     }
 
-    boost::shared_ptr<Natron::Node> addInstanceInternal();
+    boost::shared_ptr<Natron::Node> addInstanceInternal(bool useUndoRedoStack);
     virtual void initializeExtraKnobs()
     {
     }

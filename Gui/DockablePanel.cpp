@@ -11,6 +11,7 @@
 #include "DockablePanel.h"
 
 #include <iostream>
+#include <fstream>
 #include <QLayout>
 #include <QAction>
 #include <QTabWidget>
@@ -33,6 +34,9 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <ofxNatron.h>
 
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/serialization/utility.hpp>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -41,6 +45,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Image.h"
+#include "Engine/NodeSerialization.h"
 
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -1304,67 +1309,81 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
     menu.addAction(removeAnimation);
 
-    int time = getGui()->getApp()->getTimeLine()->currentFrame();
     QAction* ret = menu.exec( emitter->mapToGlobal(pos) );
     if (ret == setKeys) {
-        AddKeysCommand::KeysToAddList keys;
-        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            if (it->first->isAnimationEnabled()) {
-                for (int i = 0; i < it->first->getDimension(); ++i) {
-                    CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
-                    if (!curve) {
-                        continue;
-                    }
-                    boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
-                    curveKeys->curve = curve;
-                    
-                    std::vector<KeyFrame> kVec;
-                    KeyFrame kf;
-                    kf.setTime(time);
-                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
-                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
-                    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
-                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
-                    
-                    if (isInt) {
-                        kf.setValue( isInt->getValueAtTime(time,i) );
-                    } else if (isBool) {
-                        kf.setValue( isBool->getValueAtTime(time,i) );
-                    } else if (isDouble) {
-                        kf.setValue( isDouble->getValueAtTime(time,i) );
-                    } else if (isString) {
-                        std::string v = isString->getValueAtTime(time,i);
-                        double dv;
-                        isString->stringToKeyFrameValue(time, v, &dv);
-                        kf.setValue(dv);
-                    }
-                    
-                    kVec.push_back(kf);
-                    curveKeys->keys = kVec;
-                    keys.push_back(curveKeys);
-                }
-            }
-        }
-        pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keys) );
+        setKeyOnAllParameters();
     } else if (ret == removeAnimation) {
-        std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
-        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            if (it->first->isAnimationEnabled()) {
-                for (int i = 0; i < it->first->getDimension(); ++i) {
-                    CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
-                    if (!curve) {
-                        continue;
-                    }
-                    KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
-                    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                        keysToRemove.push_back( std::make_pair(curve,*it) );
-                    }
-                }
-            }
-        }
-        pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keysToRemove) );
+        removeAnimationOnAllParameters();
     }
 } // onRightClickMenuRequested
+
+void
+DockablePanel::setKeyOnAllParameters()
+{
+    int time = getGui()->getApp()->getTimeLine()->currentFrame();
+
+    AddKeysCommand::KeysToAddList keys;
+    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        if (it->first->isAnimationEnabled()) {
+            for (int i = 0; i < it->first->getDimension(); ++i) {
+                CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
+                if (!curve) {
+                    continue;
+                }
+                boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
+                curveKeys->curve = curve;
+                
+                std::vector<KeyFrame> kVec;
+                KeyFrame kf;
+                kf.setTime(time);
+                Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
+                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
+                AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
+                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
+                
+                if (isInt) {
+                    kf.setValue( isInt->getValueAtTime(time,i) );
+                } else if (isBool) {
+                    kf.setValue( isBool->getValueAtTime(time,i) );
+                } else if (isDouble) {
+                    kf.setValue( isDouble->getValueAtTime(time,i) );
+                } else if (isString) {
+                    std::string v = isString->getValueAtTime(time,i);
+                    double dv;
+                    isString->stringToKeyFrameValue(time, v, &dv);
+                    kf.setValue(dv);
+                }
+                
+                kVec.push_back(kf);
+                curveKeys->keys = kVec;
+                keys.push_back(curveKeys);
+            }
+        }
+    }
+    pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keys) );
+
+}
+
+void
+DockablePanel::removeAnimationOnAllParameters()
+{
+    std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
+    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        if (it->first->isAnimationEnabled()) {
+            for (int i = 0; i < it->first->getDimension(); ++i) {
+                CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
+                if (!curve) {
+                    continue;
+                }
+                KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
+                for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+                    keysToRemove.push_back( std::make_pair(curve,*it) );
+                }
+            }
+        }
+    }
+    pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keysToRemove) );
+}
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                      Gui* gui,
@@ -1382,6 +1401,9 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     "Settings",
                     parent)
       , _nodeGUI(NodeUi)
+      , _selected(false)
+      , _centerNodeButton(0)
+      , _settingsButton(0)
       , _multiPanel(multiPanel)
 {
     if (multiPanel) {
@@ -1396,6 +1418,14 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     QObject::connect( _centerNodeButton,SIGNAL( clicked() ),this,SLOT( centerNode() ) );
     insertHeaderWidget(0, _centerNodeButton);
     QObject::connect( this,SIGNAL( closeChanged(bool) ),NodeUi.get(),SLOT( onSettingsPanelClosedChanged(bool) ) );
+    
+    QPixmap pixSettings;
+    appPTR->getIcon(NATRON_PIXMAP_SETTINGS,&pixSettings);
+    _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
+    _settingsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _settingsButton->setToolTip( tr("Settings and presets") );
+    QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );
+    insertHeaderWidget(1, _settingsButton);
 }
 
 NodeSettingsPanel::~NodeSettingsPanel()
@@ -1435,3 +1465,120 @@ NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
     }
 }
 
+void
+NodeSettingsPanel::onSettingsButtonClicked()
+{
+    QMenu menu(this);
+    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    
+    QAction* importPresets = new QAction(tr("Import presets"),&menu);
+    QObject::connect(importPresets,SIGNAL(triggered()),this,SLOT(onImportPresetsActionTriggered()));
+    QAction* exportAsPresets = new QAction(tr("Export as presets"),&menu);
+    QObject::connect(exportAsPresets,SIGNAL(triggered()),this,SLOT(onExportPresetsActionTriggered()));
+    
+    menu.addAction(importPresets);
+    menu.addAction(exportAsPresets);
+    menu.addSeparator();
+    
+    QAction* setKeyOnAll = new QAction(tr("Set key on all parameters"),&menu);
+    QObject::connect(setKeyOnAll,SIGNAL(triggered()),this,SLOT(setKeyOnAllParameters()));
+    QAction* removeAnimationOnAll = new QAction(tr("Remove animation on all parameters"),&menu);
+    QObject::connect(removeAnimationOnAll,SIGNAL(triggered()),this,SLOT(removeAnimationOnAllParameters()));
+    menu.addAction(setKeyOnAll);
+    menu.addAction(removeAnimationOnAll);
+    
+    menu.exec(_settingsButton->mapToGlobal(_settingsButton->pos()));
+}
+
+void
+NodeSettingsPanel::onImportPresetsActionTriggered()
+{
+    std::vector<std::string> filters;
+    filters.push_back(NATRON_PRESETS_FILE_EXT);
+    std::string filename = getGui()->popOpenFileDialog(false, filters, getGui()->getLastLoadProjectDirectory().toStdString(), false);
+    if (filename.empty()) {
+        return;
+    }
+    
+    std::ifstream ifile;
+    try {
+        ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ifile.open(filename.c_str(),std::ifstream::in);
+    } catch (const std::ifstream::failure & e) {
+        Natron::errorDialog("Presets",e.what());
+        return;
+    }
+    
+    std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
+    try {
+
+        int nNodes;
+        boost::archive::xml_iarchive iArchive(ifile);
+        iArchive >> boost::serialization::make_nvp("NodesCount",nNodes);
+        for (int i = 0; i < nNodes ;++i) {
+            boost::shared_ptr<NodeSerialization> node(new NodeSerialization(getHolder()->getApp()));
+            iArchive >> boost::serialization::make_nvp("Node",*node);
+            nodeSerialization.push_back(node);
+        }
+        
+        
+    } catch (const std::exception & e) {
+        ifile.close();
+        Natron::errorDialog("Presets",e.what());
+        return;
+    }
+    
+    
+    _nodeGUI->restoreInternal(_nodeGUI,nodeSerialization);
+}
+
+
+static bool endsWith(const std::string &str, const std::string &suffix)
+{
+    return ((str.size() >= suffix.size()) &&
+            (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0));
+}
+
+void
+NodeSettingsPanel::onExportPresetsActionTriggered()
+{
+    std::vector<std::string> filters;
+    filters.push_back(NATRON_PRESETS_FILE_EXT);
+    std::string filename = getGui()->popSaveFileDialog(false, filters, getGui()->getLastSaveProjectDirectory().toStdString(), false);
+    if (filename.empty()) {
+        return;
+    }
+    
+    if (!endsWith(filename, "." NATRON_PRESETS_FILE_EXT)) {
+        filename.append("." NATRON_PRESETS_FILE_EXT);
+    }
+    
+    std::ofstream ofile;
+    try {
+        ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+        ofile.open(filename.c_str(),std::ofstream::out);
+    } catch (const std::ofstream::failure & e) {
+        Natron::errorDialog("Presets",e.what());
+        return;
+    }
+
+    std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
+    _nodeGUI->serializeInternal(nodeSerialization,true);
+    try {
+         
+        int nNodes = nodeSerialization.size();
+        boost::archive::xml_oarchive oArchive(ofile);
+        oArchive << boost::serialization::make_nvp("NodesCount",nNodes);
+        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it = nodeSerialization.begin();
+             it != nodeSerialization.end(); ++it) {
+            oArchive << boost::serialization::make_nvp("Node",**it);
+        }
+        
+        
+    }  catch (const std::exception & e) {
+        ofile.close();
+        Natron::errorDialog("Presets",e.what());
+        return;
+    }
+ 
+}

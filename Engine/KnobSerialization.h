@@ -367,19 +367,23 @@ class KnobSerialization
 public:
 
     ///Constructor used to serialize
-    explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob)
-        : _knob(knob)
-          , _typeName( knob->typeName() )
-          , _dimension( knob->getDimension() )
-          , _masters()
+    explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob,bool copyKnob)
+        : _knob()
     {
+        initialize(knob,copyKnob);
     }
 
     ///Doing the empty param constructor + this function is the same
     ///as calling the constructore above
-    void initialize(const boost::shared_ptr<KnobI> & knob)
+    void initialize(const boost::shared_ptr<KnobI> & knob,bool copyKnob)
     {
-        _knob = knob;
+        if (copyKnob) {
+            _knob = createKnob(knob->typeName(), knob->getDimension());
+            _knob->deepClone(knob.get());
+            
+        } else {
+            _knob = knob;
+        }
         _typeName = knob->typeName();
         _dimension = knob->getDimension();
     }

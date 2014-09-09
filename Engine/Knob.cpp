@@ -888,7 +888,9 @@ KnobHelper::setAnimationLevel(int dimension,
         assert( dimension < (int)_imp->animationLevel.size() );
         _imp->animationLevel[dimension] = level;
     }
-    _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
+    }
 }
 
 Natron::AnimationLevel
@@ -1434,6 +1436,14 @@ KnobHolder::incrementRecursionLevel()
     } else {
         _imp->actionsRecursionLevel.localData() += 1;
     }
+   
+    /*NamedKnobHolder* named = dynamic_cast<NamedKnobHolder*>(this);
+    if (named) {
+        std::cout << named->getName_mt_safe() <<  " INCR: " << _imp->actionsRecursionLevel.localData() <<  " ( "<<
+        QThread::currentThread() <<
+        " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
+    }
+    */
 }
 
 void
@@ -1441,14 +1451,33 @@ KnobHolder::decrementRecursionLevel()
 {
     assert( _imp->actionsRecursionLevel.hasLocalData() );
     _imp->actionsRecursionLevel.localData() -= 1;
+    /*NamedKnobHolder* named = dynamic_cast<NamedKnobHolder*>(this);
+    if (named) {
+        std::cout << named->getName_mt_safe() << " DECR: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<QThread::currentThread() <<
+        " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
+    }
+     */
 }
 
 int
 KnobHolder::getRecursionLevel() const
 {
+
     if ( _imp->actionsRecursionLevel.hasLocalData() ) {
+       /* const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(this);
+        if (named) {
+            std::cout << named->getName_mt_safe() << " GET: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<
+            QThread::currentThread() <<
+            " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
+        }*/
         return _imp->actionsRecursionLevel.localData();
     } else {
+        /*const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(this);
+        if (named) {
+            std::cout << named->getName_mt_safe() << "GET: "<< 0 <<  "( "<< QThread::currentThread() <<
+            " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
+        }
+         */
         return 0;
     }
 }
