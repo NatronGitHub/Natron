@@ -1443,9 +1443,12 @@ NodeGraph::onNodeCreationDialogFinished()
 
     if (dialog) {
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
+        QString res = dialog->getNodeName();
+        dialog->deleteLater();
+
         switch (ret) {
         case QDialog::Accepted: {
-            QString res = dialog->getNodeName();
+           
             const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
             for (U32 i = 0; i < allPlugins.size(); ++i) {
                 if (allPlugins[i]->getPluginID() == res) {
@@ -1468,7 +1471,6 @@ NodeGraph::onNodeCreationDialogFinished()
         default:
             break;
         }
-        dialog->deleteLater();
     }
 }
 

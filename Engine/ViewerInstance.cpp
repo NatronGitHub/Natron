@@ -1033,10 +1033,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         } else {
             _imp->updateViewerRunning = false;
         }
-        if (usingRAMBuffer) {
-            while (_imp->updateViewerRunning) {
-                _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
-            }
+        while (_imp->updateViewerRunning) {
+            _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
         }
     }
     // end of boost::shared_ptr<UpdateUserParams> scope... but it still lives inside updateViewer()

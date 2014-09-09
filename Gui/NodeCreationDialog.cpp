@@ -169,6 +169,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             _imp->listView->setCurrentIndex(index);
         }
     } else if ( (key == Qt::Key_Enter) || (key == Qt::Key_Return) ) {
+        _imp->listView->hide();
         if (_imp->model->rowCount() == 1) {
             setText( _imp->model->index(0).data().toString() );
             emit itemCompletionChosen();
@@ -191,7 +192,6 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             }
         }
 
-        _imp->listView->hide();
     } else {
         QLineEdit::keyPressEvent(e);
     }
