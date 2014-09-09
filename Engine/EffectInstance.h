@@ -114,6 +114,13 @@ public:
     virtual ~EffectInstance();
 
     /**
+     * @brief Returns true once the effect has been fully initialized and is ready to have its actions called apart from
+     * the createInstanceAction
+     **/
+    virtual bool isEffectCreated() const { return true; }
+    
+    
+    /**
      * @brief Returns a pointer to the node holding this effect.
      **/
     boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN

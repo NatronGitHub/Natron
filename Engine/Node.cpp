@@ -69,6 +69,7 @@ struct Node::Implementation
           , inputs()
           , inputsQueue()
           , liveInstance(0)
+          , effectCreated(false)
           , inputsComponents()
           , outputComponents()
           , inputLabels()
@@ -123,7 +124,8 @@ struct Node::Implementation
     std::vector<boost::shared_ptr<Node> > inputsQueue; //< This is written to by the GUI only. Then the render thread copies this queue
     //to the inputs in a thread-safe manner.
     Natron::EffectInstance*  liveInstance; //< the effect hosted by this node
-
+    bool effectCreated;
+    
     ///These two are also protected by inputsMutex
     std::vector< std::list<Natron::ImageComponents> > inputsComponents;
     std::list<Natron::ImageComponents> outputComponents;

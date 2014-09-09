@@ -88,6 +88,7 @@ public:
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
 
+   
     ///to be called once all nodes have been loaded from the project or right away after the load() function.
     ///this is so the child of a multi-instance can retrieve the pointer to it's main instance
     void fetchParentMultiInstancePointer();

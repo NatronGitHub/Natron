@@ -137,7 +137,7 @@ public:
     {
         return true;
     }
-
+    virtual bool isEffectCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool makePreviewByDefault() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;

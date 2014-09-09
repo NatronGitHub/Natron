@@ -307,6 +307,12 @@ OfxEffectInstance::~OfxEffectInstance()
     delete _renderSafetyLock;
 }
 
+bool
+OfxEffectInstance::isEffectCreated() const
+{
+    return _created;
+}
+
 void
 OfxEffectInstance::initializeContextDependentParams()
 {

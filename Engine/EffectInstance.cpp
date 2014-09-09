@@ -2765,6 +2765,10 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                                              RectD* rod,
                                              bool* isProjectFormat)
 {
+    if (!isEffectCreated()) {
+        return StatFailed;
+    }
+    
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, mipMapLevel, rod);
     if (foundInCache) {
@@ -2784,10 +2788,11 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         }
         
         Natron::Status ret;
-        
+        RenderScale scaleOne;
+        scaleOne.x = scaleOne.y = 1.;
         {
             NON_RECURSIVE_ACTION();
-            ret = getRegionOfDefinition(hash,time, scale, view, rod);
+            ret = getRegionOfDefinition(hash,time, supportsRenderScale() ? scale : scaleOne, view, rod);
             
             if ( (ret != StatOK) && (ret != StatReplyDefault) ) {
                 // rod is not valid
