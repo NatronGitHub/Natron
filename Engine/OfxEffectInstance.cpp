@@ -273,7 +273,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-        checkClipPrefs(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited);
+        checkOFXClipPreferences(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited);
         
       
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
@@ -769,7 +769,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkClipPrefs(time,s,kOfxChangeUserEdited);
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited);
     }
 }
 
@@ -806,11 +806,11 @@ OfxEffectInstance::mapToContextEnum(const std::string &s)
 }
 
 void
-OfxEffectInstance::checkClipPrefs(double time,
-                                  const RenderScale & scale,
-                                  const std::string & reason)
+OfxEffectInstance::checkOFXClipPreferences(double time,
+                             const RenderScale & scale,
+                             const std::string & reason)
 {
-   
+    
     
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
@@ -885,7 +885,14 @@ OfxEffectInstance::checkClipPrefs(double time,
     _effect->endInstanceChangedAction(reason);
 
     getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
-} // checkClipPrefs
+    
+    ///Now call this on all output nodes.
+    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _node->getOutputs();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason);
+    }
+    
+} // checkOFXClipPreferences
 
 void
 OfxEffectInstance::onMultipleInputsChanged()
@@ -900,7 +907,7 @@ OfxEffectInstance::onMultipleInputsChanged()
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkClipPrefs(time,s,kOfxChangeUserEdited);
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited);
     }
 }
 
@@ -2000,7 +2007,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
         RECURSIVE_ACTION();
-        checkClipPrefs(time, renderScale, ofxReason);
+        checkOFXClipPreferences(time, renderScale, ofxReason);
     }
     if (_overlayInteract) {
         std::vector<std::string> params;

@@ -232,6 +232,10 @@ public:
     virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponents* comp, Natron::ImageBitDepth* depth) const OVERRIDE FINAL;
     virtual Natron::SequentialPreference getSequentialPreference() const OVERRIDE FINAL;
     virtual Natron::ImagePremultiplication getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual void checkOFXClipPreferences(double time,
+                                     const RenderScale & scale,
+                                         const std::string & reason) OVERRIDE FINAL;
+
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
 public slots:
@@ -258,8 +262,6 @@ private:
     };
 
     ContextEnum mapToContextEnum(const std::string &s);
-
-    void checkClipPrefs(double time,const RenderScale & scale,const std::string &  reason);
 
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 

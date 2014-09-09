@@ -413,6 +413,12 @@ public:
      **/
     Natron::EffectInstance* getNearestNonIdentity(int time);
 
+    /**
+     * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
+     **/
+    virtual void checkOFXClipPreferences(double /*time*/,
+                                         const RenderScale & /*scale*/,
+                                         const std::string & /*reason*/) {}
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
