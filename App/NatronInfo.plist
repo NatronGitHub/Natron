@@ -34,6 +34,21 @@
  	    <key>LSIsAppleDefaultForType</key>
 	    <true/>
           </dict>
+         <dict>
+	    <key>CFBundleTypeExtensions</key>
+	    <array>
+	      <string>nps</string>
+	    </array>
+            <key>CFBundleTypeMIMETypes</key>
+            <array>
+              <string>application/vnd.natron.nodepresets</string>
+            </array>
+            <key>CFBundleTypeName</key>
+            <string>Natron Node Presets</string>
+	    <key>CFBundleTypeRole</key>          
+            <string>Editor</string>
+	    <true/>
+          </dict>
         </array>
 </dict>
 </plist>
