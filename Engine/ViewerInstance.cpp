@@ -1577,16 +1577,6 @@ scaleToTexture32bits(std::pair<int,int> yRange,
     }
 } // scaleToTexture32bits
 
-void
-ViewerInstance::wakeUpAnySleepingThread()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    QMutexLocker locker(&_imp->updateViewerMutex);
-    _imp->updateViewerRunning = false;
-    _imp->updateViewerCond.wakeAll();
-}
 
 void
 ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params)
@@ -1604,7 +1594,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     QMutexLocker locker(&updateViewerMutex);
-    if (updateViewerRunning) { // updateViewerRunning may have been reset, e.g. by wakeUpAnySleepingThread()
+    if (updateViewerRunning) {
         uiContext->makeOpenGLcontextCurrent();
         if ( !instance->aborted() ) {
             // how do you make sure params->ramBuffer is not freed during this operation?

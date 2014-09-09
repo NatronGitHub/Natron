@@ -83,14 +83,6 @@ public:
 
     void disconnectViewer();
 
-    /**
-     * @brief This is used by the VideoEngine::abortRendering() function. abortRendering() might be called from the
-     * main thread, i.e the OpenGL thread. However if the viewer is already uploading a texture to OpenGL (i.e: the
-     * wait condition usingOpenGL is true) then it will deadlock for sure. What we want to do here is just wake-up the
-     * thread (the render thread) waiting for the main-thread to be done with OpenGL.
-     **/
-    void wakeUpAnySleepingThread();
-
     int activeInput() const WARN_UNUSED_RETURN;
 
     int getLutType() const WARN_UNUSED_RETURN;

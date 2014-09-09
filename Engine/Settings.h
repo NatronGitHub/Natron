@@ -169,7 +169,7 @@ public:
     
     bool isAutoFixRelativeFilePathEnabled() const;
     
-    int getNCheckerboardTiles() const;
+    int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r,double* g,double* b,double* a) const;
     void getCheckerboardColor2(double* r,double* g,double* b,double* a) const;
 private:
@@ -226,7 +226,7 @@ private:
     boost::shared_ptr<Page_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
     boost::shared_ptr<Int_Knob> _powerOf2Tiling;
-    boost::shared_ptr<Int_Knob> _checkerboardTilesCount;
+    boost::shared_ptr<Int_Knob> _checkerboardTileSize;
     boost::shared_ptr<Color_Knob> _checkerboardColor1;
     boost::shared_ptr<Color_Knob> _checkerboardColor2;
     boost::shared_ptr<Page_Knob> _nodegraphTab;

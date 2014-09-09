@@ -184,7 +184,7 @@ struct ViewerGL::Implementation
           , wipeCenter()
           , selectionRectangle()
           , checkerboardTextureID(0)
-          , currentCheckerboardTilesCount(0)
+          , checkerboardTileSize(0)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -269,7 +269,7 @@ struct ViewerGL::Implementation
     QRectF selectionRectangle;
     
     GLuint checkerboardTextureID;
-    int currentCheckerboardTilesCount; // to avoid a call to getValue() of the settings at each draw
+    int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
 
     bool isNearbyWipeCenter(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double tolerance) const;
@@ -1669,46 +1669,42 @@ ViewerGL::Implementation::drawSelectionRectangle()
 void
 ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
 {
-    double tileW,tileH;
-    double xTilesCountF,yTilesCountF;
-    
     ///We divide by 2 the tiles count because one texture is 4 tiles actually
-    
+    QPointF topLeft,btmRight;
+    double screenW,screenH;
     double zoomFactor,par ;
+    QPointF rodBtmLeft;
+    QPointF rodTopRight;
     {
         QMutexLocker l(&zoomCtxMutex);
         zoomFactor = zoomCtx.factor();
         par = zoomCtx.par();
+        topLeft = zoomCtx.toZoomCoordinates(0, 0);
+        screenW = zoomCtx.screenWidth();
+        screenH = zoomCtx.screenHeight();
+        btmRight = zoomCtx.toZoomCoordinates(screenW - 1, screenH - 1);
+        rodBtmLeft = zoomCtx.toWidgetCoordinates(rod.x1, rod.y1);
+        rodTopRight = zoomCtx.toWidgetCoordinates(rod.x2, rod.y2);
     }
     
-    
-    double checkerboardTilesCount =  (double)currentCheckerboardTilesCount;
-    
-    if (rod.width() > rod.height()) {
-        tileW = rod.width() / checkerboardTilesCount;
-        xTilesCountF = checkerboardTilesCount / 2.;
-        tileH = tileW / par;
-        yTilesCountF = rod.height() / (double)(tileH * 2.);
-    } else {
-        tileH = rod.height() / checkerboardTilesCount;
-        yTilesCountF = checkerboardTilesCount / 2.;
-        tileW = tileH * par;
-        xTilesCountF = rod.width() / (double)(tileW * 2.);
-    }
-    
-    xTilesCountF *= zoomFactor;
-    yTilesCountF *= zoomFactor;
+    double xTilesCountF = screenW / (checkerboardTileSize * 4); //< 4 because the texture contains 4 tiles
+    double yTilesCountF = screenH / (checkerboardTileSize * 4);
+
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y());
     
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
     glBegin(GL_POLYGON);
-    glTexCoord2d(0., 0.); glVertex2d(rod.x1, rod.y1);
-    glTexCoord2d(0., yTilesCountF); glVertex2d(rod.x1, rod.y2);
-    glTexCoord2d(xTilesCountF, yTilesCountF); glVertex2d(rod.x2, rod.y2);
-    glTexCoord2d(xTilesCountF, 0.); glVertex2d(rod.x2, rod.y1);
+    glTexCoord2d(0., 0.); glVertex2d(topLeft.x(),btmRight.y());
+    glTexCoord2d(0., yTilesCountF); glVertex2d(topLeft.x(),topLeft.y());
+    glTexCoord2d(xTilesCountF, yTilesCountF); glVertex2d(btmRight.x(), topLeft.y());
+    glTexCoord2d(xTilesCountF, 0.); glVertex2d(btmRight.x(), btmRight.y());
     glEnd();
 
     glBindTexture(GL_TEXTURE_2D, 0);
+    
+    glDisable(GL_SCISSOR_TEST);
     glCheckError();
 }
 
@@ -1785,7 +1781,7 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
     
     glBindTexture(GL_TEXTURE_2D, 0);
     
-    currentCheckerboardTilesCount = appPTR->getCurrentSettings()->getNCheckerboardTiles();
+    checkerboardTileSize = appPTR->getCurrentSettings()->getCheckerboardTileSize();
 
     
    

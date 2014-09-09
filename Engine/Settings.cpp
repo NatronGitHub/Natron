@@ -330,13 +330,12 @@ Settings::initializeKnobs()
     _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
     
-    _checkerboardTilesCount = Natron::createKnob<Int_Knob>(this, "Checkerboard N tiles");
-    _checkerboardTilesCount->setName("checkerboardNTiles");
-    _checkerboardTilesCount->setMinimum(1);
-    _checkerboardTilesCount->setAnimationEnabled(false);
-    _checkerboardTilesCount->setHintToolTip("This is the number of tiles that the checkerboard will have across the longest dimension "
-                                            "(width/height) when the zoomfactor is at 100%.");
-    _viewersTab->addKnob(_checkerboardTilesCount);
+    _checkerboardTileSize = Natron::createKnob<Int_Knob>(this, "Checkerboard tile size (pixels)");
+    _checkerboardTileSize->setName("checkerboardTileSize");
+    _checkerboardTileSize->setMinimum(1);
+    _checkerboardTileSize->setAnimationEnabled(false);
+    _checkerboardTileSize->setHintToolTip("The size in pixel of 1 tile of the checkerboard in pixels.");
+    _viewersTab->addKnob(_checkerboardTileSize);
     
     _checkerboardColor1 = Natron::createKnob<Color_Knob>(this, "Checkerboard color 1",4);
     _checkerboardColor1->setName("checkerboardColor1");
@@ -629,7 +628,7 @@ Settings::setDefaultValues()
     _loadBundledPlugins->setDefaultValue(true);
     _texturesMode->setDefaultValue(0,0);
     _powerOf2Tiling->setDefaultValue(8,0);
-    _checkerboardTilesCount->setDefaultValue(100);
+    _checkerboardTileSize->setDefaultValue(5);
     _checkerboardColor1->setDefaultValue(0.5,0);
     _checkerboardColor1->setDefaultValue(0.5,1);
     _checkerboardColor1->setDefaultValue(0.5,2);
@@ -773,7 +772,7 @@ Settings::saveSettings()
     settings.beginGroup("Viewers");
     settings.setValue( "ByteTextures", _texturesMode->getValue() );
     settings.setValue( "TilesPowerOf2", _powerOf2Tiling->getValue() );
-    settings.setValue( "CheckerboardNTiles", _checkerboardTilesCount->getValue() );
+    settings.setValue( "CheckerboardTileSize", _checkerboardTileSize->getValue() );
     settings.setValue("CheckerboardColor1_r", _checkerboardColor1->getValue(0));
     settings.setValue("CheckerboardColor1_g", _checkerboardColor1->getValue(1));
     settings.setValue("CheckerboardColor1_b", _checkerboardColor1->getValue(2));
@@ -965,8 +964,8 @@ Settings::restoreSettings()
     if ( settings.contains("TilesPowerOf2") ) {
         _powerOf2Tiling->setValue(settings.value("TilesPowerOf2").toInt(),0);
     }
-    if (settings.contains("CheckerboardNTiles")) {
-        _checkerboardTilesCount->setValue(settings.value("CheckerboardNTiles").toInt(), 0);
+    if (settings.contains("CheckerboardTileSize")) {
+        _checkerboardTileSize->setValue(settings.value("CheckerboardTileSize").toInt(), 0);
     }
     if (settings.contains("CheckerboardColor1_r")) {
         _checkerboardColor1->setValue(settings.value("CheckerboardColor1_r").toDouble(), 0);
@@ -1318,7 +1317,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
     } else if ( k == _maxPanelsOpened.get() ) {
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
-    } else if ( k == _checkerboardTilesCount.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
+    } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
     }
 } // onKnobValueChanged
@@ -1793,9 +1792,9 @@ Settings::isAutoFixRelativeFilePathEnabled() const
 }
 
 int
-Settings::getNCheckerboardTiles() const
+Settings::getCheckerboardTileSize() const
 {
-    return _checkerboardTilesCount->getValue();
+    return _checkerboardTileSize->getValue();
 }
 
 void
