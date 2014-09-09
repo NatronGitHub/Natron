@@ -1569,8 +1569,7 @@ convertToFormatInternal(const RectI & renderWindow,
 
     Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
     Natron::ImageBitDepth srcDepth = dstDepth;
-    bool sameBitDepth = srcDepth == dstDepth;
-    
+
     ///special case comp == alpha && channelForAlpha = -1 clear out the mask
     if ( dstNComps == 1 && (channelForAlpha == -1) ) {
         DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1, intersection.y1);
@@ -1616,40 +1615,31 @@ convertToFormatInternal(const RectI & renderWindow,
             };
 
             while ( x != end && x >= 0 && x < intersection.width() ) {
-                
-                
                 if (dstNComps == 1) {
                     ///If we're converting to alpha, we just have to handle pixel depth conversion
                     assert(channelForAlpha < srcNComps && channelForAlpha >= 0);
-                    *dstPixels = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha])
-                                 : srcPixels[channelForAlpha];
-                    if (invert) {
-                        *dstPixels = dstMaxValue - *dstPixels;
-                    }
+                    // convertPixelDepth is optimized when SRCPIX == DSTPIX
+                    DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
+                    dstPixels[0] = invert ? dstMaxValue - pix: pix;
                 } else {
                     
                     if (srcImg.getComponents() == Natron::ImageComponentAlpha) {
-                        ///If we're converting from alpha, we just fill all color channels with the alpha value
-                        if (dstNComps == 3) {
-                            for (int k = 0; k < dstNComps; ++k) {
-                                DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
-                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                            }
-                        } else {
-                            assert(dstNComps == 4);
-                            for (int k = 0; k < dstNComps - 1; ++k) {
-                                dstPixels[k] = invert ? dstMaxValue : 0;
-                            }
-                            DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
-                            dstPixels[3] = invert ? dstMaxValue : pix;
+                        ///If we're converting from alpha, R G and B are 0.
+                        //assert(dstNComps == 3 || dstNComps == 4);
+                        for (int k = 0; k < std::min(3, dstNComps); ++k) {
+                            dstPixels[k] = invert ? dstMaxValue : 0;
+                        }
+                        if (dstNComps == 4) {
+                            DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
+                            dstPixels[dstNComps - 1] = invert ? dstMaxValue - pix: pix;
                         }
                     } else {
                         ///In this case we've RGB or RGBA input and outputs
                         assert(srcImg.getComponents() != dstImg.getComponents());
                         
-                        bool unpremultChannel = srcImg.getComponents() == Natron::ImageComponentRGBA &&
-                        dstImg.getComponents() == Natron::ImageComponentRGB &&
-                        requiresUnpremult;
+                        bool unpremultChannel = (srcImg.getComponents() == Natron::ImageComponentRGBA &&
+                                                 dstImg.getComponents() == Natron::ImageComponentRGB &&
+                                                 requiresUnpremult);
                         
                         ///This is only set if unpremultChannel is true
                         float alphaForUnPremult;
@@ -1660,7 +1650,11 @@ convertToFormatInternal(const RectI & renderWindow,
                         }
                         
                         for (int k = 0; k < dstNComps; ++k) {
-                            if (k < 3) {
+                            if (k == 3) {
+                                ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
+                                DSTPIX pix = convertPixelDepth<float, DSTPIX>(1.f);
+                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                            } else {
                                 ///For RGB channels
                                 float pixFloat;
                                 
@@ -1702,11 +1696,6 @@ convertToFormatInternal(const RectI & renderWindow,
                                         pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                     }
                                 }
-                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                                
-                            } else {
-                                ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
-                                DSTPIX pix = convertPixelDepth<float, DSTPIX>(1.f);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
                             }
                         }
