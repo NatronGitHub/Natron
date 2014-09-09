@@ -2792,7 +2792,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         scaleOne.x = scaleOne.y = 1.;
         {
             NON_RECURSIVE_ACTION();
-            ret = getRegionOfDefinition(hash,time, supportsRenderScale() ? scale : scaleOne, view, rod);
+            ret = getRegionOfDefinition(hash,time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
             
             if ( (ret != StatOK) && (ret != StatReplyDefault) ) {
                 // rod is not valid
