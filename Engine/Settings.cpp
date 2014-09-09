@@ -335,7 +335,7 @@ Settings::initializeKnobs()
     _checkerboardTilesCount->setMinimum(1);
     _checkerboardTilesCount->setAnimationEnabled(false);
     _checkerboardTilesCount->setHintToolTip("This is the number of tiles that the checkerboard will have across the longest dimension "
-                                            "(width/height)");
+                                            "(width/height) when the zoomfactor is at 100%.");
     _viewersTab->addKnob(_checkerboardTilesCount);
     
     _checkerboardColor1 = Natron::createKnob<Color_Knob>(this, "Checkerboard color 1",4);

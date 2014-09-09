@@ -250,7 +250,6 @@ public slots:
     void quitEngineThread();
 
 
-    void getFrameRange();
     /************************************************************************************************************
      ************************************************************************************************************
      **************************************END PRIVATE SLOTS*****************************************************
@@ -287,7 +286,6 @@ signals:
      **/
     void frameRendered(int frameNumber);
 
-    void mustGetFrameRange();
 
 public:
 
@@ -417,11 +415,15 @@ private:
      * It is used internally by the run function
      *@returns Returns true if started,false otherwise
      **/
-    bool startEngine(bool singleThreaded);
+    bool startEngine();
 
     Natron::Status renderFrame(SequenceTime time,bool singleThreaded);
 
     boost::shared_ptr<TimeLine> getTimeline() const;
+
+    ///Called in the render thread and set the frame range member in the _currentRunArgs
+    void getFrameRange();
+
 private:
     // FIXME: PIMPL
 
@@ -493,9 +495,6 @@ private:
 
     /*Accessed only by the run() thread*/
     timeval _startRenderFrameTime; /*!< stores the time at which the QtConcurrent::map call was made*/
-    QWaitCondition _getFrameRangeCond;
-    mutable QMutex _getFrameRangeMutex;
-    bool _gettingFrameRange;
     int _firstFrame;
     int _lastFrame;
     bool _doingARenderSingleThreaded;

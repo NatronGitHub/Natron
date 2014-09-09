@@ -257,8 +257,6 @@ void
 ViewerInstance::getFrameRange(SequenceTime *first,
                               SequenceTime *last)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
 
     SequenceTime inpFirst = 0,inpLast = 0;
     int activeInputs[2];

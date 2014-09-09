@@ -877,16 +877,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,SequenceTime time,
     bool firstInput = true;
     RenderScale renderMappedScale = scale;
 
-#if 1
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-#pragma message WARN("remove dead code below if no crash with plugins that don't support renderscale")
-#else
-    const SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool renderFullScaleThenDownscale = ( supportsRS == eSupportsNo && (scale.x != 1. || scale.y != 1.) );
-    if (renderFullScaleThenDownscale) {
-        renderMappedScale.x = renderMappedScale.y = 1.;
-    }
-#endif
 
     for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = getInput(i);
@@ -2705,15 +2696,8 @@ EffectInstance::isIdentity_public(U64 hash,
                                   int* inputNb)
 {
     
-#if 1
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-#pragma message WARN("remove dead code below if no crash with plugins that don't support renderscale")
-#else
-    if ( (supportsRenderScaleMaybe() == eSupportsNo) && ( (scale.x != 1.) || (scale.y != 1.) ) ) {
-        qDebug() << "EffectInstance::isIdentity_public() called with renderscale !=1, but plugin does not support it";
-    }
-#endif
-    
+
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     
     double timeF;

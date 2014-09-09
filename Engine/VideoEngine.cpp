@@ -75,14 +75,10 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,
       , _lastRequestedRunArgs()
       , _currentRunArgs()
       , _startRenderFrameTime()
-      , _getFrameRangeCond()
-      , _getFrameRangeMutex()
-      , _gettingFrameRange(false)
       , _firstFrame(0)
       , _lastFrame(0)
       , _doingARenderSingleThreaded(false)
 {
-    QObject::connect( this, SIGNAL( mustGetFrameRange() ), this, SLOT( getFrameRange() ) );
 }
 
 VideoEngine::~VideoEngine()
@@ -112,12 +108,6 @@ VideoEngine::quitEngineThread()
             QMutexLocker locker(&_startMutex);
             ++_startCount;
             _startCondition.wakeAll();
-        }
-
-        {
-            QMutexLocker locker(&_getFrameRangeMutex);
-            _gettingFrameRange = false;
-            _getFrameRangeCond.wakeAll();
         }
 
         {
@@ -189,7 +179,7 @@ VideoEngine::render(int frameCount,
 }
 
 bool
-VideoEngine::startEngine(bool singleThreaded)
+VideoEngine::startEngine()
 {
     // don't allow "abort"s to be processed while starting engine by locking _abortBeingProcessedMutex
     QMutexLocker abortBeingProcessedLocker(&_abortBeingProcessedMutex);
@@ -218,23 +208,9 @@ VideoEngine::startEngine(bool singleThreaded)
     }
 
     if ( !_tree.isOutputAViewer() ) {
-        if ( !singleThreaded && !appPTR->isBackground() ) {
-            {
-                QMutexLocker l(&_abortedRequestedMutex);
-                if (_abortRequested > 0) {
-                    return false;
-                }
-            }
-            QMutexLocker l(&_getFrameRangeMutex);
-            _gettingFrameRange = true;
-            emit mustGetFrameRange();
-            while (_gettingFrameRange) {
-                _getFrameRangeCond.wait(&_getFrameRangeMutex);
-            }
-        } else {
-            getFrameRange();
-        }
-
+        
+        getFrameRange();
+        
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>( _tree.getOutput() );
         output->setFirstFrame(_firstFrame);
         output->setLastFrame(_lastFrame);
@@ -387,7 +363,7 @@ VideoEngine::run()
         /*If restart is on, start the engine. Restart is on for the 1st frame
            rendered of a sequence.*/
         if (_restart) {
-            if ( !startEngine(false) ) {
+            if ( !startEngine() ) {
                 if ( stopEngine() ) {
                     return;
                 }
@@ -431,7 +407,7 @@ VideoEngine::runSameThread()
         _doingARenderSingleThreaded = true;
     }
 
-    if ( !startEngine(true) ) {
+    if ( !startEngine() ) {
         stopEngine();
     } else {
         QCoreApplication::processEvents();
@@ -490,29 +466,8 @@ VideoEngine::iterateKernel(bool singleThreaded)
         boost::shared_ptr<TimeLine>  timeline = getTimeline();
 
         if (viewer) {
-            if ( singleThreaded || appPTR->isBackground() ) {
-                getFrameRange();
-            } else {
-                {
-                    QMutexLocker l(&_abortedRequestedMutex);
-                    if (_abortRequested > 0) {
-                        return;
-                    }
-                }
-
-                bool mustQuit;
-                {
-                    QMutexLocker l(&_mustQuitMutex);
-                    mustQuit = _mustQuit;
-                }
-                QMutexLocker l(&_getFrameRangeMutex);
-                _gettingFrameRange = true;
-                emit mustGetFrameRange();
-                while (_gettingFrameRange && !mustQuit) {
-                    _getFrameRangeCond.wait(&_getFrameRangeMutex);
-                }
-            }
-
+            getFrameRange();
+            
             //If the frame range is not locked, let the user define it.
             if ( viewer->isFrameRangeLocked() && (viewer->getApp()->getProject()->getLastTimelineSeekCaller() != viewer) ) {
                 timeline->setFrameRange(_firstFrame, _lastFrame);
@@ -777,10 +732,6 @@ VideoEngine::abortRendering(bool blocking)
             _tree.outputAsViewer()->wakeUpAnySleepingThread();
         }
 
-        ///also wake up the run() thread if it is waiting for getFrameRange
-        _gettingFrameRange = false;
-        _getFrameRangeCond.wakeOne();
-
         if ( (QThread::currentThread() != this) && isRunning()  && blocking ) {
             while (_abortRequested > 0) {
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
@@ -1023,8 +974,6 @@ VideoEngine::getFrameRange()
             return;
         }
     }
-    QMutexLocker l(&_getFrameRangeMutex);
-
     boost::shared_ptr<TimeLine>  timeline = getTimeline();
     if ( _tree.getOutput() ) {
         _tree.getOutput()->getFrameRange_public(_tree.getOutput()->getHash(),&_firstFrame, &_lastFrame);
@@ -1038,9 +987,6 @@ VideoEngine::getFrameRange()
         _firstFrame = timeline->leftBound();
         _lastFrame = timeline->rightBound();
     }
-
-    _gettingFrameRange = false;
-    _getFrameRangeCond.wakeOne();
 }
 
 boost::shared_ptr<TimeLine> VideoEngine::getTimeline() const
