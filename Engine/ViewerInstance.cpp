@@ -1164,9 +1164,9 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                         a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
                         break;
                     case 3:
-                        r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
-                        g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
-                        b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
+                        r = (src_pixels && rOffset < nComps) ? src_pixels[srcIndex * nComps + rOffset] : 0.;
+                        g = (src_pixels && gOffset < nComps) ? src_pixels[srcIndex * nComps + gOffset] : 0.;
+                        b = (src_pixels && bOffset < nComps) ? src_pixels[srcIndex * nComps + bOffset] : 0.;
                         a = (src_pixels ? 255 : 0);
                         break;
                     case 1:
@@ -1263,56 +1263,16 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
     switch (args.channels) {
         case ViewerInstance::RGB:
         case ViewerInstance::LUMINANCE:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 1, 2>(yRange, args, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 1, 2>(yRange, args, output);
             break;
         case ViewerInstance::G:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 1, 1, 1>(yRange, args, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture8bits_internal<PIX, maxValue, nComps, 1, 1, 1>(yRange, args, output);
             break;
         case ViewerInstance::B:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 2, 2, 2>(yRange, args, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture8bits_internal<PIX, maxValue, nComps, 2, 2, 2>(yRange, args, output);
             break;
         case ViewerInstance::A:
-            switch (nComps) {
-                case 1:
-                case 3:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args, output);
-                    break;
-                case 4:
-                    scaleToTexture8bits_internal<PIX, maxValue, nComps, 3, 3, 3>(yRange, args, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture8bits_internal<PIX, maxValue, nComps, 3, 3, 3>(yRange, args, output);
             break;
         case ViewerInstance::R:
         default:
