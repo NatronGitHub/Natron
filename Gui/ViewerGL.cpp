@@ -1672,13 +1672,10 @@ ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
     ///We divide by 2 the tiles count because one texture is 4 tiles actually
     QPointF topLeft,btmRight;
     double screenW,screenH;
-    double zoomFactor,par ;
     QPointF rodBtmLeft;
     QPointF rodTopRight;
     {
         QMutexLocker l(&zoomCtxMutex);
-        zoomFactor = zoomCtx.factor();
-        par = zoomCtx.par();
         topLeft = zoomCtx.toZoomCoordinates(0, 0);
         screenW = zoomCtx.screenWidth();
         screenH = zoomCtx.screenHeight();
