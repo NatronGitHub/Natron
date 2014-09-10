@@ -408,7 +408,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.x2 = optionalBounds->x2;
         bounds.y2 = optionalBounds->y2;
     }
-    
+#pragma message WARN("ClipInstance::getComponents is NOT THREAD-SAFE, we should override it and make it thread-safe with a mutex.")
     RectI renderWindow;
     boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
                                                                      optionalBounds ? &bounds : NULL,
