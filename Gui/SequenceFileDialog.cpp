@@ -104,42 +104,6 @@ nocase_equal_string (const std::string &s1,
                        nocase_equal_char);
 }
 
-namespace {
-struct NameMappingCompareFirst
-{
-    NameMappingCompareFirst(const QString &val)
-        : val_(val)
-    {
-    }
-
-    bool operator()(const SequenceFileDialog::NameMappingElement & elem) const
-    {
-        return val_ == elem.first;
-    }
-
-private:
-    QString val_;
-};
-
-struct NameMappingCompareFirstNoPath
-{
-    NameMappingCompareFirstNoPath(const QString &val)
-        : val_(val)
-    {
-    }
-
-    bool operator()(const SequenceFileDialog::NameMappingElement & elem) const
-    {
-        std::string unpathed = elem.first.toStdString();
-        SequenceParsing::removePath(unpathed);
-
-        return val_.toStdString() == unpathed;
-    }
-
-private:
-    QString val_;
-};
-}
 
 static inline bool
 isCaseSensitiveFileSystem(const QString &path)
@@ -1095,18 +1059,14 @@ SequenceFileDialog::getMappedNameAndSizeForFile(const QString & absoluteFileName
         return;
     }
 
-    SequenceFileDialog::NameMapping::const_iterator it = std::find_if( _nameMapping.begin(), _nameMapping.end(),
-                                                                       NameMappingCompareFirstNoPath(absoluteFileName) );
+    NameMapping::const_iterator it =  _nameMapping.find(absoluteFileName);
     if ( it != _nameMapping.end() ) { // probably a directory or a single image file
         *mappedName = it->second.second;
         *sequenceSize = it->second.first;
     } else {
         ///Try to generate the mapped name
         *mappedName = _proxy->getUserFriendlyFileSequencePatternForFile(absoluteFileName,sequenceSize);
-        NameMapping::const_iterator it = std::find_if( _nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(absoluteFileName) );
-        if ( it == _nameMapping.end() ) {
-            _nameMapping.push_back( make_pair( absoluteFileName,make_pair(*sequenceSize,*mappedName) ) );
-        }
+        _nameMapping.insert( make_pair( absoluteFileName,make_pair(*sequenceSize,*mappedName) ) );
     }
 }
 

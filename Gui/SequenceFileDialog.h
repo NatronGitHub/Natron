@@ -310,8 +310,7 @@ public:
         OPEN_DIALOG = 0,SAVE_DIALOG = 1,DIR_DIALOG = 2
     };
 
-    typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
-    typedef std::vector<NameMappingElement> NameMapping;
+    typedef std::map<QString,std::pair<qint64,QString> > NameMapping;
 
 
 public:
