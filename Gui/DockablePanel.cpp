@@ -1527,7 +1527,13 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         Natron::errorDialog("Presets",e.what());
         return;
     }
-    
+    if (nodeSerialization.front()->getPluginID() != _nodeGUI->getNode()->getPluginID()) {
+        QString err = QString(tr("You cannot load ") + filename.c_str()  + tr(" which are presets for the plug-in ") +
+                              nodeSerialization.front()->getPluginID().c_str() + tr(" on the plug-in ") +
+                              _nodeGUI->getNode()->getPluginID().c_str());
+        Natron::errorDialog(tr("Presets").toStdString(),err.toStdString());
+        return;
+    }
     
     _nodeGUI->restoreInternal(_nodeGUI,nodeSerialization);
 }

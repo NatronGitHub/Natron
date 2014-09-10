@@ -618,8 +618,20 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             img.load(NATRON_IMAGES_PATH "viewer_icon.png");
             *pix = QPixmap::fromImage(img);
             break;
-        case NATRON_PIXMAP_VIEWER_CHECKERBOARD:
-            img.load(NATRON_IMAGES_PATH "checkerboard.png");
+        case NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED:
+            img.load(NATRON_IMAGES_PATH "checkerboard_on.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED:
+            img.load(NATRON_IMAGES_PATH "checkerboard_off.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_VIEWER_ZEBRA_ENABLED:
+            img.load(NATRON_IMAGES_PATH "zebra_on.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED:
+            img.load(NATRON_IMAGES_PATH "zebra_off.png");
             *pix = QPixmap::fromImage(img);
             break;
         default:

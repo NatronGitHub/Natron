@@ -1449,10 +1449,7 @@ NodeGui::restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization)
 {
     assert(internalSerialization.size() >= 1);
-    if (internalSerialization.front()->getPluginID() != _internalNode->getPluginID()) {
-        Natron::errorDialog(tr("Presets").toStdString(),tr("You cannot load presets of another plug-in").toStdString());
-        return;
-    }
+   
     getSettingPanel()->pushUndoCommand(new LoadNodePresetsCommand(thisShared,internalSerialization));
 }
 

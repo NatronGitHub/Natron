@@ -165,6 +165,9 @@
         <file>Resources/Images/turbo_off.png</file>
         <file>Resources/Images/turbo_on.png</file>
         <file>Resources/Images/viewer_icon.png</file>
-        <file>Resources/Images/checkerboard.png</file>
+        <file>Resources/Images/checkerboard_off.png</file>
+        <file>Resources/Images/checkerboard_on.png</file>
+        <file>Resources/Images/zebra_off.png</file>
+        <file>Resources/Images/zebra_on.png</file>
     </qresource>
 </RCC>

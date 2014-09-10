@@ -401,10 +401,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_viewerColorSpace->addItem("Rec.709");
     _imp->_viewerColorSpace->setCurrentIndex(1);
     
-    QPixmap pixCheckerboard;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD, &pixCheckerboard);
-    _imp->_checkerboardButton = new Button(QIcon(pixCheckerboard),"",_imp->_secondSettingsRow);
-    _imp->_checkerboardButton->setCheckable(true);
+    QPixmap pixCheckerboardEnabled,pixCheckerboardDisabld;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED, &pixCheckerboardEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED, &pixCheckerboardDisabld);
+    QIcon icCk;
+    icCk.addPixmap(pixCheckerboardEnabled,QIcon::Normal,QIcon::On);
+    icCk.addPixmap(pixCheckerboardDisabld,QIcon::Normal,QIcon::Off);
+    _imp->_checkerboardButton = new Button(icCk,"",_imp->_secondSettingsRow);
+    _imp->_checkerboardButton->setCheckable(true); 
     _imp->_checkerboardButton->setChecked(false);
     _imp->_checkerboardButton->setDown(false);
     _imp->_checkerboardButton->setToolTip(tr("When checked the viewer will draw a checkerboard instead of black "
