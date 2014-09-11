@@ -466,6 +466,16 @@ ShortCutEditor::onValidateButtonClicked()
     QKeySequence seq(text,QKeySequence::NativeText);
     BoundAction* action = _imp->getActionForTreeItem(selection);
 
+    QTreeWidgetItem* parent = selection->parent();
+    while (parent) {
+        QTreeWidgetItem* parentUp = parent->parent();
+        if (!parentUp) {
+            break;
+        }
+        parent = parentUp;
+    }
+    assert(parent); 
+    
     //only keybinds can be edited...
     KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
     assert(ka);
@@ -476,7 +486,7 @@ ShortCutEditor::onValidateButtonClicked()
 
     for (GuiAppShorcuts::iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
         for (std::list<GuiBoundAction>::iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
-            if (it2->action != action) {
+            if (it2->action != action && it->item->text(0) == parent->text(0)) {
                 KeyBoundAction* keyAction = dynamic_cast<KeyBoundAction*>(it2->action);
                 if ( keyAction && (keyAction->modifiers == modifiers) && (keyAction->currentShortcut == symbol) ) {
                     QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
