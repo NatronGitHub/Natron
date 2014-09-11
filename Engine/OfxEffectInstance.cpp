@@ -1366,7 +1366,8 @@ OfxEffectInstance::isIdentity(SequenceTime time,
     } else if (stat == kOfxStatReplyDefault) {
         return false;
     }
-    throw std::runtime_error("isIdentity failed");
+    return false; //< may fail if getRegionOfDefinition has failed in the plug-in code
+    //throw std::runtime_error("isIdentity failed");
 } // isIdentity
 
 Natron::Status
