@@ -47,6 +47,7 @@
             <string>Natron Node Presets</string>
 	    <key>CFBundleTypeRole</key>          
             <string>Editor</string>
+      <key>LSIsAppleDefaultForType</key>
 	    <true/>
           </dict>
         </array>
