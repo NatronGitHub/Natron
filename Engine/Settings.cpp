@@ -184,8 +184,7 @@ Settings::initializeKnobs()
 
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
     _extraPluginPaths->setName("extraPluginsSearchPaths");
-    _extraPluginPaths->setHintToolTip( std::string("All paths in this variable are separated by ';' and indicate"
-                                                   " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
+    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
                                                    "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
                                                    "The priority order for system-wide plugins, from high to low, is:\n"
                                                    "- plugins found in OFX_PLUGIN_PATH\n"

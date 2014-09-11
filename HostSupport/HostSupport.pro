@@ -18,6 +18,14 @@ INCLUDEPATH += $$PWD/../libs/OpenFX/include
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 
+win32-msvc* {
+	CONFIG(64bit) {
+		QMAKE_LFLAGS += /MACHINE:X64
+	} else {
+		QMAKE_LFLAGS += /MACHINE:X86
+	}
+}
+
 SOURCES += \
     ../libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
     ../libs/OpenFX/HostSupport/src/ofxhClip.cpp \

@@ -90,7 +90,8 @@ Here's an example of a config.pri file that supports both 32bit and 64bit builds
 
 boost {
         INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
-        LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib64-msvc-10.0) -lboost_serialization-vc100-mt-1_55
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib64-msvc-10.0) -lboost_serialization-vc100-mt-1_55
+		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib64-msvc-10.0) -lboost_serialization-vc100-mt-gd-1_55
 }
 
 glew{
@@ -100,7 +101,7 @@ glew{
 
 expat{
     INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
-    LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win64\\bin\\Release) -llibexpatMT
+    LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\x64\\bin\\Release) -llibexpatMT
     LIBS += shell32.lib
 }
 
@@ -116,7 +117,8 @@ cairo {
 
 boost {
         INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
-        LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib) -lboost_serialization-vc100-mt-1_55
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib) -lboost_serialization-vc100-mt-1_55
+		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib) -lboost_serialization-vc100-mt-gd-1_55
 }
 
 glew{
