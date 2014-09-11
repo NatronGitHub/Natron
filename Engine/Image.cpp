@@ -1567,6 +1567,19 @@ convertToFormatInternal(const RectI & renderWindow,
         return;
     }
 
+    if (channelForAlpha == -1) {
+        switch (srcNComps) {
+            case 4:
+                channelForAlpha = 3;
+                break;
+            case 3:
+            case 1:
+             default:
+                break;
+        }
+
+    }
+
     Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
     Natron::ImageBitDepth srcDepth = dstDepth;
 
@@ -1617,13 +1630,27 @@ convertToFormatInternal(const RectI & renderWindow,
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 if (dstNComps == 1) {
                     ///If we're converting to alpha, we just have to handle pixel depth conversion
-                    assert(channelForAlpha < srcNComps && channelForAlpha >= 0);
+                    assert((channelForAlpha < srcNComps && channelForAlpha >= 0) || channelForAlpha == -1);
+                    DSTPIX pix;
+
                     // convertPixelDepth is optimized when SRCPIX == DSTPIX
-                    DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
+
+                    switch (srcNComps) {
+                        case 4:
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
+                            break;
+                        case 3:
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(1); // RGB is opaque
+                            break;
+                        case 1:
+                            pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
+                            break;
+                    }
+
                     dstPixels[0] = invert ? dstMaxValue - pix: pix;
                 } else {
                     
-                    if (srcImg.getComponents() == Natron::ImageComponentAlpha) {
+                    if (srcNComps == 1) {
                         ///If we're converting from alpha, R G and B are 0.
                         //assert(dstNComps == 3 || dstNComps == 4);
                         for (int k = 0; k < std::min(3, dstNComps); ++k) {
