@@ -98,22 +98,14 @@ Planned features
 
 ### Features planned for next major version
 
-- 2D Tracker
+- Python scripting
 
 ### Features planned for future versions
-
-- Node-graph enhancements: "global view" + pre-comps
-
-- Python scripting: Natron will be entirely scriptable, to operate with the node graph faster and
-also to allow Natron to be used as a command-line tool only.
 
 - Dope sheet: Well this is time we implement this, it can be very tedious to organise image sequences 
 without this very useful tool.
 
-- Presets: As the scripting will be implemented, it will be easy for us to add Node presets that you can
-share with others.
-
-- Templates: Template nodes are an aggregation of several nodes put together as a graph that act
+- Templates/Groups: Template nodes are an aggregation of several nodes put together as a graph that act
 like a simple node. Share your templates and save time re-using them as part of other graphs.
 
 - Deep data: Support for deep data (multiple samples per pixel)

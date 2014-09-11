@@ -4,7 +4,7 @@
 
 
 TARGET = Natron
-VERSION = 0.9.6
+VERSION = 1.0.0
 TEMPLATE = app
 CONFIG += app
 CONFIG += moc
