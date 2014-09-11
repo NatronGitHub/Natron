@@ -1630,7 +1630,6 @@ convertToFormatInternal(const RectI & renderWindow,
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 if (dstNComps == 1) {
                     ///If we're converting to alpha, we just have to handle pixel depth conversion
-                    assert((channelForAlpha < srcNComps && channelForAlpha >= 0) || channelForAlpha == -1);
                     DSTPIX pix;
 
                     // convertPixelDepth is optimized when SRCPIX == DSTPIX
