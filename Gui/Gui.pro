@@ -36,6 +36,14 @@ INCLUDEPATH += $$PWD/../libs/SequenceParsing
 DEPENDPATH += $$PWD/../Engine
 DEPENDPATH += $$PWD/../Global
 
+win32-msvc* {
+	CONFIG(64bit) {
+		QMAKE_LFLAGS += /MACHINE:X64
+	} else {
+		QMAKE_LFLAGS += /MACHINE:X86
+	}
+}
+
 SOURCES += \
     AboutWindow.cpp \
     ActionShortcuts.cpp \
