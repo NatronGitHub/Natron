@@ -29,6 +29,14 @@ INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 
+win32-msvc* {
+	CONFIG(64bit) {
+		QMAKE_LFLAGS += /MACHINE:X64
+	} else {
+		QMAKE_LFLAGS += /MACHINE:X86
+	}
+}
+
 ################
 # Gui
 
