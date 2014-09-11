@@ -66,6 +66,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/Image.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Node.h"
+#include "Engine/KnobSerialization.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
@@ -2468,26 +2469,20 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString() );
         } else {
-            ret = _imp->_appInstance->createNode( CreateNodeArgs(found->second.c_str(),"",-1,-1,false) );
+            CreateNodeArgs::DefaultValuesList defaultValues;
+            defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,false,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {
                 return ret;
             }
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = ret->getKnobs();
-            for (U32 i = 0; i < knobs.size(); ++i) {
-                if ( knobs[i]->typeName() == File_Knob::typeNameStatic() ) {
-                    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
-                    assert(fk);
 
-                    fk->setValue(pattern,0);
-                    
-                    ///We must call it here even though the Node class does it already in the instance changed action
-                    ///It probably didn't finish to setup everything that depends on the filename at that point, so
-                    ///we make sure we can have a clean preview.
-                    ret->computePreviewImage( getApp()->getTimeLine()->currentFrame() );
-                    break;
-                }
-            }
+            ///We must call it here even though the Node class does it already in the instance changed action
+            ///It probably didn't finish to setup everything that depends on the filename at that point, so
+            ///we make sure we can have a clean preview.
+            ret->computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+        
         }
     }
 
@@ -2511,20 +2506,13 @@ Gui::createWriter()
         std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if ( found != writersForFormat.end() ) {
-            ret = _imp->_appInstance->createNode( CreateNodeArgs(found->second.c_str(),"",-1,-1,false) );
+            
+            CreateNodeArgs::DefaultValuesList defaultValues;
+            defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,false,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            ret = _imp->_appInstance->createNode(args);
             if (!ret) {
                 return ret;
-            }
-
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = ret->getKnobs();
-            for (U32 i = 0; i < knobs.size(); ++i) {
-                OutputFile_Knob* isOutputFile = dynamic_cast<OutputFile_Knob*>( knobs[i].get() );
-                if (isOutputFile) {
-                    if ( isOutputFile->isOutputImageFile() ) {
-                        isOutputFile->setValue(file,0);
-                        break;
-                    }
-                }
             }
         } else {
             errorDialog( tr("Writer").toStdString(), tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString() );

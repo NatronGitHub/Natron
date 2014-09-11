@@ -44,6 +44,7 @@ class ViewerInstance;
 class RenderTree;
 class Format;
 class NodeSerialization;
+class KnobSerialization;
 class KnobHolder;
 class Double_Knob;
 class RotoContext;
@@ -83,11 +84,14 @@ public:
               const boost::shared_ptr<Natron::Node> & thisShared,
               const NodeSerialization & serialization,
               bool dontLoadName,
-              const QString& fixedName);
+              const QString& fixedName,
+              const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
 
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
 
+    ///Set values for Knobs given their serialization
+    void setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
    
     ///to be called once all nodes have been loaded from the project or right away after the load() function.
     ///this is so the child of a multi-instance can retrieve the pointer to it's main instance

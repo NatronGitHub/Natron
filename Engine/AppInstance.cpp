@@ -30,6 +30,7 @@
 #include "Engine/NodeSerialization.h"
 #include "Engine/FileDownloader.h"
 #include "Engine/Settings.h"
+#include "Engine/KnobTypes.h"
 
 using namespace Natron;
 
@@ -176,6 +177,7 @@ AppInstance::load(const QString & projectName,
     }
 }
 
+
 boost::shared_ptr<Natron::Node>
 AppInstance::createNodeInternal(const QString & pluginID,
                                 const std::string & multiInstanceParentName,
@@ -191,7 +193,8 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 double yPosHint,
                                 bool pushUndoRedoCommand,
                                 bool addToProject,
-                                const QString& fixedName)
+                                const QString& fixedName,
+                                const CreateNodeArgs::DefaultValuesList& paramValues)
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -212,7 +215,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     try {
         // load() calls OfxEffectInstance::createOFXImageEffectInstance()
-        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName);
+        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
@@ -270,7 +273,8 @@ AppInstance::createNode(const CreateNodeArgs & args)
                               args.xPosHint,args.yPosHint,
                               args.pushUndoRedoCommand,
                               args.addToProject,
-                              args.fixedName);
+                              args.fixedName,
+                              args.paramValues);
 }
 
 boost::shared_ptr<Natron::Node>
@@ -288,7 +292,8 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               INT_MIN,INT_MIN,
                               false,
                               true,
-                              QString());
+                              QString(),
+                              CreateNodeArgs::DefaultValuesList());
 }
 
 int

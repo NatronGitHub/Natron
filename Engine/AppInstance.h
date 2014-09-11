@@ -13,6 +13,7 @@
 
 
 #include <vector>
+#include <list>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -30,6 +31,7 @@ class xml_oarchive;
 class NodeSerialization;
 class TimeLine;
 struct AppInstancePrivate;
+class KnobSerialization;
 class ProcessHandler;
 class VideoEngine;
 namespace Natron {
@@ -54,7 +56,10 @@ struct CreateNodeArgs
     bool pushUndoRedoCommand;
     bool addToProject;
     QString fixedName;
-
+    
+    typedef std::list< boost::shared_ptr<KnobSerialization> > DefaultValuesList;
+    DefaultValuesList paramValues; //< values of parameters to set before creating the plug-in
+    
     ///Constructor used to create a new node
     explicit CreateNodeArgs(const QString & pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
                             const std::string & multiInstanceParentName = std::string(), //< no parent by default
@@ -67,7 +72,8 @@ struct CreateNodeArgs
                             double yPosHint = INT_MIN, //< yPosition in the nodegraph
                             bool pushUndoRedoCommand = true, //< should we push a new undo/redo command on the GUI?
                             bool addToProject = true, //< should we add the node to the project ?
-                            const QString & fixedName = QString()) //< if non empty, this will be the name of the node
+                            const QString & fixedName = QString(),  //< if non empty, this will be the name of the node
+                            const DefaultValuesList& paramValues = DefaultValuesList())
         : pluginID(pluginID)
           , majorV(majorVersion)
           , minorV(minorVersion)
@@ -80,9 +86,11 @@ struct CreateNodeArgs
           , pushUndoRedoCommand(pushUndoRedoCommand)
           , addToProject(addToProject)
           , fixedName(fixedName)
+          , paramValues(paramValues)
     {
     }
 };
+
 
 struct LoadNodeArgs
 {
@@ -320,7 +328,8 @@ private:
                                                        bool requestedByLoad,bool openImageFileDialog,
                                                        const NodeSerialization & serialization,bool dontLoadName,
                                                        int childIndex,bool autoConnect,double xPosHint,double yPosHint,
-                                                       bool pushUndoRedoCommand,bool addToProject,const QString& fixedName);
+                                                       bool pushUndoRedoCommand,bool addToProject,const QString& fixedName,
+                                                       const CreateNodeArgs::DefaultValuesList& paramValues);
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 

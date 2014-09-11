@@ -37,6 +37,7 @@ class Format;
 class Settings;
 class KnobHolder;
 class NodeSerialization;
+class KnobSerialization;
 namespace Natron {
 class Node;
 class EffectInstance;
@@ -124,7 +125,8 @@ public:
     }
 
     Natron::EffectInstance* createOFXEffect(const std::string & pluginID,boost::shared_ptr<Natron::Node> node,
-                                            const NodeSerialization* serialization ) const;
+                                            const NodeSerialization* serialization,
+                                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues) const;
 
     void registerAppInstance(AppInstance* app);
 

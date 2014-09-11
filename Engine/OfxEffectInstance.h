@@ -32,6 +32,7 @@ class OfxClipInstance;
 class Button_Knob;
 class OverlaySupport;
 class NodeSerialization;
+class KnobSerialization;
 namespace Natron {
 class Node;
 class OfxImageEffectInstance;
@@ -53,7 +54,8 @@ public:
     }
 
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                              const std::string & context,const NodeSerialization* serialization) = 0;
+                                              const std::string & context,const NodeSerialization* serialization,
+                                               const std::list<boost::shared_ptr<KnobSerialization> >& paramValues) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -81,7 +83,8 @@ public:
     virtual ~OfxEffectInstance();
 
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                      const std::string & context,const NodeSerialization* serialization) OVERRIDE FINAL;
+                                      const std::string & context,const NodeSerialization* serialization,
+                                       const std::list<boost::shared_ptr<KnobSerialization> >& paramValues) OVERRIDE FINAL;
 
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN
     {

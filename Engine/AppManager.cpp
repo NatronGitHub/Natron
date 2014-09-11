@@ -918,9 +918,10 @@ AppManager::getPluginBinary(const QString & pluginId,
 Natron::EffectInstance*
 AppManager::createOFXEffect(const std::string & pluginID,
                             boost::shared_ptr<Natron::Node> node,
-                            const NodeSerialization* serialization ) const
+                            const NodeSerialization* serialization,
+                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues) const
 {
-    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization);
+    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues);
 }
 
 void

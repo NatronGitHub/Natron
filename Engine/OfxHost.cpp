@@ -349,7 +349,8 @@ Natron::OfxHost::getPluginAndContextByID(const std::string & pluginID,
 AbstractOfxEffectInstance*
 Natron::OfxHost::createOfxEffect(const std::string & name,
                                  boost::shared_ptr<Natron::Node> node,
-                                 const NodeSerialization* serialization )
+                                 const NodeSerialization* serialization,
+                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues)
 {
     assert(node);
     OFX::Host::ImageEffect::ImageEffectPlugin *plugin;
@@ -362,7 +363,7 @@ Natron::OfxHost::createOfxEffect(const std::string & name,
         node->setLiveInstance(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization);
+    hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization,paramValues);
 
     return hostSideEffect;
 }

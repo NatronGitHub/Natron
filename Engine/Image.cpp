@@ -1346,7 +1346,7 @@ Image::getLevelFromScale(double s)
 
 void
 Image::clearBitmap()
-{
+{ 
     _bitmap.clear();
 }
 

@@ -148,7 +148,8 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
 void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 const std::string & context,
-                                                const NodeSerialization* serialization)
+                                                const NodeSerialization* serialization,
+                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
@@ -227,6 +228,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->loadKnobs(*serialization);
         }
 
+        if (!paramValues.empty()) {
+            getNode()->setValuesFromSerialization(paramValues);
+        }
 
         stat = _effect->createInstanceAction();
         _created = true;

@@ -219,7 +219,8 @@ Node::load(const std::string & pluginID,
            const boost::shared_ptr<Natron::Node> & thisShared,
            const NodeSerialization & serialization,
            bool dontLoadName,
-           const QString& fixedName)
+           const QString& fixedName,
+           const CreateNodeArgs::DefaultValuesList& paramValues)
 {
     ///Called from the main thread. MT-safe
     assert( QThread::currentThread() == qApp->thread() );
@@ -259,8 +260,11 @@ Node::load(const std::string & pluginID,
         createRotoContextConditionnally();
         initializeInputs();
         initializeKnobs(serialization);
+        if (!paramValues.empty()) {
+            setValuesFromSerialization(paramValues);
+        }
     } else { //ofx plugin
-        _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization);
+        _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization,paramValues);
         assert(_imp->liveInstance);
         _imp->liveInstance->initializeOverlayInteract();
     }
@@ -405,6 +409,28 @@ Node::computeHash()
     _imp->liveInstance->onNodeHashChanged(getHashValue());
     
 } // computeHash
+
+void
+Node::setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues)
+{
+                                    
+    assert( QThread::currentThread() == qApp->thread() );
+    assert(_imp->knobsInitialized);
+    
+    const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
+    ///for all knobs of the node
+    for (U32 j = 0; j < nodeKnobs.size(); ++j) {
+        ///try to find a serialized value for this knob
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
+            if ( (*it)->getName() == nodeKnobs[j]->getName() ) {
+                boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
+                nodeKnobs[j]->clone(serializedKnob);
+                break;
+            }
+        }
+
+    }
+}
 
 void
 Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)

@@ -421,4 +421,20 @@ private:
 BOOST_CLASS_VERSION(KnobSerialization, KNOB_SERIALIZATION_VERSION)
 
 
+namespace Natron {
+    
+    template <typename T>
+    boost::shared_ptr<KnobSerialization> createDefaultValueForParam(const std::string& paramName,const T& value)
+    {
+        boost::shared_ptr< Knob<T> > knob(new Knob<T>(NULL, paramName, 1, false));
+        knob->populate();
+        knob->setName(paramName);
+        knob->setValue(value,0);
+        boost::shared_ptr<KnobSerialization> ret(new KnobSerialization(knob,false));
+        return ret;
+    }
+    
+}
+
+
 #endif // KNOBSERIALIZATION_H

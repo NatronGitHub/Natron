@@ -25,6 +25,7 @@ class AbstractOfxEffectInstance;
 class AppInstance;
 class QMutex;
 class NodeSerialization;
+class KnobSerialization;
 namespace Natron {
 class Node;
 class Plugin;
@@ -96,7 +97,8 @@ public:
 #endif
 
     AbstractOfxEffectInstance* createOfxEffect(const std::string & name,boost::shared_ptr<Node> node,
-                                               const NodeSerialization* serialization );
+                                               const NodeSerialization* serialization,
+                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
 
     void addPathToLoadOFXPlugins(const std::string path);
 

@@ -22,6 +22,7 @@
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
 
+
 class Curve;
 class KeyFrame;
 class KnobHolder;
@@ -1070,10 +1071,10 @@ public:
     virtual void populate() OVERRIDE FINAL;
 
     /// You must implement it
-    virtual const std::string & typeName() const = 0;
+    virtual const std::string & typeName() const OVERRIDE;
 
     /// You must implement it
-    virtual bool canAnimate() const = 0;
+    virtual bool canAnimate() const OVERRIDE;
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(int /*dimension*/) const OVERRIDE WARN_UNUSED_RETURN
     {

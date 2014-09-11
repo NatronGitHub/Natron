@@ -299,6 +299,21 @@ KnobHelper::populate()
     }
 }
 
+/// You must implement it
+template <typename T>
+const std::string &
+Knob<T>::typeName() const {
+    static std::string knobNoTypeName("NoType");
+    return knobNoTypeName;
+}
+
+/// You must implement it
+template <typename T>
+bool
+Knob<T>::canAnimate() const {
+    return false;
+}
+
 void
 KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> & handler)
 {
