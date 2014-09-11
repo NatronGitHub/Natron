@@ -330,9 +330,9 @@ public:
     virtual void notifyEntryDestroyed(int time,size_t size,Natron::StorageMode storage) const = 0;
 
     /**
-     * @brief To be called when a backing file has been removed on disk
+     * @brief To be called when a backing file has been closed
      **/
-    virtual void backingFileRemoved() const = 0;
+    virtual void backingFileClosed() const = 0;
 
     /**
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
@@ -572,7 +572,7 @@ public:
         size_t sz = size();
         bool hasRemovedFile = _data.removeAnyBackingFile();
         if (hasRemovedFile) {
-            _cache->backingFileRemoved();
+            _cache->backingFileClosed();
         }
         if ( isAlloc ) {
             _cache->notifyEntryDestroyed(getTime(), sz,Natron::RAM);

@@ -723,11 +723,6 @@ VideoEngine::abortRendering(bool blocking)
         
         
         
-        /*Note that we set the aborted flag in from output to inputs otherwise some aborted images
-         might get rendered*/
-        for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
-            (*it)->setAborted(true);
-        }
         
         
         if ( _tree.isOutputAViewer() && (QThread::currentThread() != this) ) {
@@ -740,9 +735,17 @@ VideoEngine::abortRendering(bool blocking)
              */
             QCoreApplication::processEvents();
         }
+        
         {
             QMutexLocker locker(&_abortedRequestedMutex);
              ++_abortRequested;
+            
+            /*Note that we set the aborted flag in from output to inputs otherwise some aborted images
+             might get rendered*/
+            for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
+                (*it)->setAborted(true);
+            }
+            
             if ( (QThread::currentThread() != this) && isRunning()  && blocking ) {
                 while (_abortRequested > 0) {
                     _abortedRequestedCondition.wait(&_abortedRequestedMutex);

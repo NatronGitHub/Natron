@@ -739,7 +739,7 @@ public:
         }
     }
 
-    virtual void backingFileRemoved() const OVERRIDE FINAL
+    virtual void backingFileClosed() const OVERRIDE FINAL
     {
         appPTR->decreaseNCacheFilesOpened();
     }
