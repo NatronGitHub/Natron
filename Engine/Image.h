@@ -154,9 +154,8 @@ public:
         deallocate();
     }
 
-#     ifdef DEBUG
     virtual void onMemoryAllocated() OVERRIDE FINAL;
-#     endif // DEBUG
+
     static ImageKey makeKey(U64 nodeHashKey,
                             SequenceTime time,
                             unsigned int mipMapLevel,

@@ -329,7 +329,6 @@ Image::Image(const ImageKey & key,
 
     _components = p->getComponents();
     _bitDepth = p->getBitDepth();
-    _bitmap.initialize( p->getBounds() );
     _rod = p->getRoD();
     _bounds = p->getBounds();
 }
@@ -359,21 +358,24 @@ Image::Image(ImageComponents components,
     ImageParams* p = dynamic_cast<ImageParams*>( _params.get() );
     _components = components;
     _bitDepth = bitdepth;
-    _bitmap.initialize( p->getBounds() );
     _rod = regionOfDefinition;
     _bounds = p->getBounds();
     allocateMemory(false,Natron::RAM, "");
 }
 
-#ifdef DEBUG
 void
 Image::onMemoryAllocated()
 {
+    
+    _bitmap.initialize(_bounds);
+
+#ifdef DEBUG
     ///fill with red, to recognize unrendered pixels
     fill(_bounds,1.,0.,0.,1.);
+#endif
+    
 }
 
-#endif // DEBUG
 
 ImageKey  
 Image::makeKey(U64 nodeHashKey,

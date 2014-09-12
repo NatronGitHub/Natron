@@ -40,6 +40,8 @@ public:
 
     ///the number of elements the associated cache entry should allocate the first time (relative to the datatype of the entry)
     U64 getElementsCount() const;
+    
+    void setElementsCount(U64 count);
 
     int getCost() const;
 

@@ -3154,6 +3154,9 @@ ViewerGL::keyReleaseEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
     if ( _imp->viewerTab->notifyOverlaysKeyUp(scale, scale, e) ) {
         updateGL();

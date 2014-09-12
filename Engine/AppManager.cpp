@@ -353,8 +353,9 @@ AppManager::loadInternal(const QString & projectFilename,
     U64 maxDiskCache = _imp->_settings->getMaximumDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
 
+    U64 viewerCacheSize = maxDiskCache + playbackSize;
     _imp->_nodeCache.reset( new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1) );
-    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache) );
+    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",0x1,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
 
     setLoadingStatus( tr("Restoring the image cache...") );
     _imp->restoreCaches();
@@ -1628,9 +1629,13 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
             qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)
             << ", clearing last recently used ViewerCache texture...";
 #endif
+            
+            
             if (! _imp->_viewerCache->evictLRUInMemoryEntry()) {
                 break;
             }
+            
+            
         } else {
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)

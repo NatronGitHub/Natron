@@ -452,9 +452,7 @@ public:
         if (_cache) {
             _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
         }
-#     ifdef DEBUG
         onMemoryAllocated();
-#     endif // DEBUG
     }
 
 # ifdef DEBUG
@@ -570,15 +568,15 @@ public:
         }
         
         bool isAlloc = _data.isAllocated();
-        size_t sz = size();
         bool hasRemovedFile = _data.removeAnyBackingFile();
         if (hasRemovedFile) {
             _cache->backingFileClosed();
         }
         if ( isAlloc ) {
-            _cache->notifyEntryDestroyed(getTime(), sz,Natron::RAM);
+            _cache->notifyEntryDestroyed(getTime(), size(),Natron::RAM);
         } else {
-            _cache->notifyEntryDestroyed(getTime(), sz,Natron::DISK);
+            ///size() will return 0 at this point, we have to recompute it
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::DISK);
         }
     }
 
@@ -592,6 +590,7 @@ protected:
 
     void reallocate(U64 elemCount)
     {
+        _params->setElementsCount(elemCount);
         _data.reallocate(elemCount);
         if (_cache) {
             size_t oldSize = size();

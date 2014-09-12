@@ -311,10 +311,16 @@ void
 MemoryFilePrivate::closeMapping()
 {
 #if defined(__NATRON_UNIX__)
-    ::munmap(data,size);
+    if (::munmap(data,size) != 0) {
+        std::string str("MemoryFile EXC : Failed to unmap the mapped file: ");
+        str.append( std::strerror(errno) );
+        throw std::runtime_error(str);
+    }
     ::close(file_handle);
 #elif defined(__NATRON_WIN32__)
-    ::UnmapViewOfFile(data);
+    if (::UnmapViewOfFile(data) == 0) {
+        throw std::runtime_error("Failed to unmap the mapped file");
+    }
     ::CloseHandle(file_mapping_handle);
     ::CloseHandle(file_handle);
 #endif
@@ -335,7 +341,11 @@ MemoryFile::flush()
 MemoryFile::~MemoryFile()
 {
     if (_imp->data) {
-        _imp->closeMapping();
+        try {
+            _imp->closeMapping();
+        } catch (const std::exception & e) {
+            std::cerr << e.what() << std::endl;
+        }
     }
     delete _imp;
 }

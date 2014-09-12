@@ -40,6 +40,12 @@ NonKeyParams::getElementsCount() const
     return _elementsCount;
 }
 
+void
+NonKeyParams::setElementsCount(U64 count)
+{
+    _elementsCount = count;
+}
+
 int
 NonKeyParams::getCost() const
 {

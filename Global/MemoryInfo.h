@@ -287,8 +287,11 @@ getAmountFreePhysicalRAM()
     if ( KERN_SUCCESS != host_page_size(hostName, &pageSize) ) {
         throw std::runtime_error("Unable to get amount of free physical RAM");
     }
-
-    return vmstat.free_count * pageSize;
+    /**
+     * Returning only the free_count is not useful because it seems munmap implementations tend to not increase the free_count
+     * but the inactive_count instead
+    **/
+    return (vmstat.free_count + vmstat.inactive_count) * pageSize;
 #endif
 }
 
