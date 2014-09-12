@@ -628,6 +628,10 @@ Path_KnobGui::onRemoveButtonClicked()
 {
     std::string oldValue = _knob->getValue();
     QModelIndexList selection = _table->selectionModel()->selectedRows();
+	if (selection.isEmpty()) {
+		return;
+	}
+
     _model->removeRows(selection.front().row(),selection.size());
     
     std::list<std::string> removeVars;
