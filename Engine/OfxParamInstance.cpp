@@ -2345,6 +2345,9 @@ OfxStringInstance::projectEnvVarProxy(std::string& str) const
         ///If it doesn't start with an env var but is relative, prepend the project env var
         std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
         if (foundProject != envvar.end()) {
+			if (foundProject->second.empty()) {
+				return;
+			}
             const char& c = foundProject->second[foundProject->second.size() - 1];
             bool addTrailingSlash = c != '/' && c != '\\';
             std::string copy = foundProject->second;
