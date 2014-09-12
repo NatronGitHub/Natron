@@ -570,7 +570,7 @@ public:
             _cache->backingFileClosed();
         }
         if ( isAlloc ) {
-            _cache->notifyEntryDestroyed(getTime(), size(),Natron::RAM);
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::RAM);
         } else {
             ///size() will return 0 at this point, we have to recompute it
             _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::DISK);

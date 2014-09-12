@@ -331,7 +331,9 @@ Image::Image(const ImageKey & key,
     _bitDepth = p->getBitDepth();
     _rod = p->getRoD();
     _bounds = p->getBounds();
+    _bitmap.initialize(_bounds);
 }
+
 
 /*This constructor can be used to allocate a local Image. The deallocation should
    then be handled by the user. Note that no view number is passed in parameter
@@ -360,14 +362,13 @@ Image::Image(ImageComponents components,
     _bitDepth = bitdepth;
     _rod = regionOfDefinition;
     _bounds = p->getBounds();
+    _bitmap.initialize(_bounds);
     allocateMemory(false,Natron::RAM, "");
 }
 
 void
 Image::onMemoryAllocated()
 {
-    
-    _bitmap.initialize(_bounds);
 
 #ifdef DEBUG
     ///fill with red, to recognize unrendered pixels
