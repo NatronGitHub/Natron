@@ -455,15 +455,12 @@ public:
         onMemoryAllocated();
     }
 
-# ifdef DEBUG
     /**
      * @brief Called right away once the buffer is allocated. Used in debug mode to initialize image with a default color.
      **/
     virtual void onMemoryAllocated()
     {
     }
-
-# endif // DEBUG
 
 
     const KeyType & getKey() const OVERRIDE FINAL
