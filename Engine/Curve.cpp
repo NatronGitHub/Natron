@@ -408,6 +408,9 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
 void
 Curve::removeKeyFrameWithIndex(int index)
 {
+    if (index == -1) {
+        return;
+    }
     QWriteLocker l(&_imp->_lock);
 
     removeKeyFrame( atIndex(index) );
