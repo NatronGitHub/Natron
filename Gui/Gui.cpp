@@ -2603,7 +2603,7 @@ Gui::errorDialog(const std::string & title,
         }
     }
 
-    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
+    ///we have no choice but to return. Waiting here would hang the application since the main thread is also waiting for that thread to finish.
     if ( QThread::currentThread() != qApp->thread() ) {
         QMutexLocker l(&_imp->abortedEnginesMutex);
         if ( !_imp->abortedEngines.empty() ) {

@@ -1043,6 +1043,13 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     return StatOK;
 } // renderViewer_internal
 
+bool
+ViewerInstance::isUpdatingOpenGLViewer() const
+{
+    QMutexLocker locker(&_imp->updateViewerMutex);
+    return _imp->updateViewerRunning;
+}
+
 void
 renderFunctor(std::pair<int,int> yRange,
               const RenderViewerArgs & args,

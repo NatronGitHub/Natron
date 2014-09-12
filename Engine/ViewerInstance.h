@@ -145,6 +145,12 @@ public:
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
+    /**
+     * @brief Returns true when the main-thread is used to fill the OpenGL texture.
+     * This also means that the render thread is waiting for it to be finished.
+     **/
+    bool isUpdatingOpenGLViewer() const;
+    
 public slots:
 
 

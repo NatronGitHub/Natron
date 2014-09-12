@@ -243,7 +243,8 @@ public:
                 _backingFile.reset();
                 return true;
             } else {
-                return ::remove( _path.c_str() ) == 0;
+                ::remove( _path.c_str() ) ;
+                return false;
             }
         }
         return false;

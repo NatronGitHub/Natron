@@ -713,39 +713,53 @@ VideoEngine::renderFrame(SequenceTime time,
 void
 VideoEngine::abortRendering(bool blocking)
 {
+    ///The engine is not running, we are alredy stopped
+    if ( !isWorking() ) {
+        return;
+    }
+    
+    
     {
-        if ( !isWorking() ) {
+        ///We are already aborting, it is useless to ask for a second abort
+        QMutexLocker locker(&_abortedRequestedMutex);
+        if (_abortRequested > 0) {
             return;
         }
+        
     }
-    _tree.getOutput()->getApp()->registerVideoEngineBeingAborted(this);
+    
+    bool isMainThread = QThread::currentThread() == qApp->thread();
+    
+    if (isMainThread) {
+        ///This is to overcome the issue that since we're aborting with the main-thread, this thread will
+        ///then wait for the render thread to finish. Problem: if the render thread asks for a dialog the UI
+        ///will be unable to make it and this will stall the whole application.
+        _tree.getOutput()->getApp()->registerVideoEngineBeingAborted(this);
+    }
     {
-        
-        
-        
-        
-        
-        if ( _tree.isOutputAViewer() && (QThread::currentThread() != this) ) {
-            
-            /*
-             Explanation: If another thread calls this function, the render thread (this) might have a waitCondition depending
-             on the caller thread. But waiting for the render thread to be done (with the _abortedRequestedCondition) will cause
-             a deadlock.
-             Solution: process all events remaining, to be sure the render thread is no longer relying on the caller thread.
-             */
-            QCoreApplication::processEvents();
-        }
         
         {
             QMutexLocker locker(&_abortedRequestedMutex);
+            
+            ///The abortRequested count will be reset to 0 in stopEngine() once the render thread has finished rendering.
              ++_abortRequested;
             
-            /*Note that we set the aborted flag in from output to inputs otherwise some aborted images
-             might get rendered*/
+            ///Notify all nodes in the tree that we're aborting to make them return faster from their processing
             for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
                 (*it)->setAborted(true);
             }
             
+            
+            ///Explanation: If the output node is a viewer and is currently waiting for the main-thread to be done
+            ///rendering the OpenGL texture and this thread is the main-thread don't wait in here otherwise we would
+            ///stall the main-thread, rather the next render will be called once the viewer is done using the main-thread
+            ///which is not too long in time anyway.
+            if (isMainThread && _tree.isOutputAViewer() && _tree.outputAsViewer()->isUpdatingOpenGLViewer() && blocking) {
+                blocking = false;
+            }
+            
+            ///If we're want a blocking abort, wait for the render thread to be done.
+            ///This thread will be woken up by the render thread in stopEngine() once it is done rendering.
             if ( (QThread::currentThread() != this) && isRunning()  && blocking ) {
                 while (_abortRequested > 0) {
                     _abortedRequestedCondition.wait(&_abortedRequestedMutex);
@@ -753,7 +767,10 @@ VideoEngine::abortRendering(bool blocking)
             }
         }
     }
-    _tree.getOutput()->getApp()->unregisterVideoEngineBeingAborted(this);
+    
+    if (QThread::currentThread() == qApp->thread()) {
+        _tree.getOutput()->getApp()->unregisterVideoEngineBeingAborted(this);
+    }
 }
 
 void
