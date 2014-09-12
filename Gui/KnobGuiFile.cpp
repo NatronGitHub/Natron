@@ -628,7 +628,6 @@ Path_KnobGui::onRemoveButtonClicked()
 {
     std::string oldValue = _knob->getValue();
     QModelIndexList selection = _table->selectionModel()->selectedRows();
-    _model->removeRows(selection.front().row(),selection.size());
     
     std::list<std::string> removeVars;
     for (int i = 0; i < selection.size(); ++i) {
@@ -639,6 +638,9 @@ Path_KnobGui::onRemoveButtonClicked()
         }
     }
     
+    
+    _model->removeRows(selection.front().row(),selection.size());
+
     
     ///Fix all variables if needed
     if (_knob->getHolder() && _knob->getHolder() == getGui()->getApp()->getProject().get() &&
