@@ -2438,25 +2438,14 @@ NodeGraph::dropEvent(QDropEvent* e)
         if ( found == readersForFormat.end() ) {
             errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
         } else {
-            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode( CreateNodeArgs(found->second.c_str(),"",-1,-1,false) );
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = n->getKnobs();
-            for (U32 i = 0; i < knobs.size(); ++i) {
-                if ( knobs[i]->typeName() == File_Knob::typeNameStatic() ) {
-                    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
-                    assert(fk);
-
-                    if ( !fk->isAnimationEnabled() && (sequence->count() > 1) ) {
-                        errorDialog( tr("Reader").toStdString(), tr("This plug-in doesn't support image sequences, please select only 1 file.").toStdString() );
-                        break;
-                    } else {
-                        fk->setValue(sequence->generateValidSequencePattern(),0);
-                        if ( n->isPreviewEnabled() ) {
-                            n->computePreviewImage( _imp->_gui->getApp()->getTimeLine()->currentFrame() );
-                        }
-                        break;
-                    }
-                }
-            }
+            
+            std::string pattern = sequence->generateValidSequencePattern();
+            CreateNodeArgs::DefaultValuesList defaultValues;
+            defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
+            
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,false,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
+            n->computePreviewImage( _imp->_gui->getApp()->getTimeLine()->currentFrame() );
         }
     }
 } // dropEvent
