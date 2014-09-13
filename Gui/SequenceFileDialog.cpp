@@ -220,7 +220,9 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     setLayout(_mainLayout);
     /*Creating view and setting directory*/
     _view =  new SequenceDialogView(this);
-    _view->setSortingEnabled( isCaseSensitiveFileSystem( rootPath() ) );
+
+	////Do not uncomment: if you disable sorting then filterAcceptsRow will not be called and the sequence dialog will not longer work.
+    //_view->setSortingEnabled( isCaseSensitiveFileSystem( rootPath() ) );
 #ifdef FILE_DIALOG_DISABLE_ICONS
     EmptyIconProvider* iconProvider = new EmptyIconProvider;
     _model->setIconProvider(iconProvider);
