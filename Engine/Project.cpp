@@ -605,6 +605,7 @@ Project::initializeKnobs()
     _imp->viewsCount->setDisplayMinimum(1);
     _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
+    _imp->viewsCount->setEvaluateOnChange(false);
     _imp->viewsCount->turnOffNewLine();
     page->addKnob(_imp->viewsCount);
 
@@ -623,6 +624,7 @@ Project::initializeKnobs()
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
     _imp->previewMode->setAnimationEnabled(false);
+    _imp->previewMode->setEvaluateOnChange(false);
     page->addKnob(_imp->previewMode);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setDefaultValue(autoPreviewEnabled,0);
@@ -659,7 +661,7 @@ Project::initializeKnobs()
 } // initializeKnobs
 
 void
-Project::evaluate(KnobI* knob,
+Project::evaluate(KnobI* /*knob*/,
                   bool isSignificant,
                   Natron::ValueChangedReason /*reason*/)
 {
@@ -669,16 +671,11 @@ Project::evaluate(KnobI* knob,
         
         for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
             assert(_imp->currentNodes[i]);
-            
+            _imp->currentNodes[i]->incrementKnobsAge();
 
             
             ViewerInstance* n = dynamic_cast<ViewerInstance*>( _imp->currentNodes[i]->getLiveInstance() );
             if (n) {
-                
-                ///A change of format requires an age increment otherwise it might load a wrong texture from the viewer cache
-                if (knob == _imp->formatKnob.get()) {
-                    _imp->currentNodes[i]->incrementKnobsAge();
-                }
                 n->updateTreeAndRender();
             }
         }
