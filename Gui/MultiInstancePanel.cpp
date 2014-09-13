@@ -53,17 +53,19 @@ CLANG_DIAG_ON(uninitialized)
 #define kTrackNextButtonName "trackNext"
 #define kTrackForwardButtonName "trackForward"
 #define kTrackCenterName "center"
+#define kTrackInvertName "invert"
 using namespace Natron;
 
 namespace {
 typedef std::list < std::pair<boost::shared_ptr<Node>,bool> > Nodes;
-Double_Knob*
+
+boost::shared_ptr<Double_Knob>
 getCenterKnobForTracker(Node* node)
 {
     boost::shared_ptr<KnobI> knob = node->getKnobByName(kTrackCenterName);
 
     assert(knob);
-    Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( knob.get() );
+    boost::shared_ptr<Double_Knob> dblKnob = boost::dynamic_pointer_cast<Double_Knob>(knob);
     assert(dblKnob);
 
     return dblKnob;
@@ -1452,7 +1454,7 @@ struct TrackerPanelPrivate
 
     void createTransformFromSelection(const std::list<Node*> & selection,bool linked,ExportTransformType type);
 
-    void createCornerPinFromSelection(const std::list<Node*> & selection,bool linked,bool useTransformRefFrame);
+    void createCornerPinFromSelection(const std::list<Node*> & selection,bool linked,bool useTransformRefFrame,bool invert);
 };
 
 TrackerPanel::TrackerPanel(const boost::shared_ptr<NodeGui> & node)
@@ -1481,6 +1483,8 @@ TrackerPanel::appendExtraGui(QVBoxLayout* layout)
                                        "<p><b>CornerPinOFX (Use transform ref frame):</p></b>"
                                        "<p>Warp the image according to the relative transform using the "
                                        "reference frame specified in the transform tab.</p>"
+                                       "<p><b>CornerPinOFX (Stabilize):</p></b>"
+                                       "<p>Transform the image so that the tracked points do not move.</p>"
 //                                      "<p><b>Transform (Stabilize):</p></b>"
 //                                      "<p>Transform the image so that the tracked points do not move.</p>"
 //                                      "<p><b>Transform (Match-move):</p></b>"
@@ -1491,21 +1495,28 @@ TrackerPanel::appendExtraGui(QVBoxLayout* layout)
     std::vector<std::string> choices;
     std::vector<std::string> helps;
 
-//    choices.push_back(tr("CornerPinOFX (Use current frame. Linked)").toStdString());
-//    helps.push_back(tr("Warp the image according to the relative transform using the current frame as reference.").toStdString());
+    choices.push_back(tr("CornerPinOFX (Use current frame. Linked)").toStdString());
+    helps.push_back(tr("Warp the image according to the relative transform using the current frame as reference.").toStdString());
 //
 //    choices.push_back(tr("CornerPinOFX (Use transform ref frame. Linked)").toStdString());
 //    helps.push_back(tr("Warp the image according to the relative transform using the "
 //                       "reference frame specified in the transform tab.").toStdString());
-
+    
+    choices.push_back(tr("CornerPinOFX (Stabilize. Linked)").toStdString());
+    helps.push_back(tr("Transform the image so that the tracked points do not move.").toStdString());
 
     choices.push_back( tr("CornerPinOFX (Use current frame. Copy)").toStdString() );
     helps.push_back( tr("Same as the linked version except that it copies values instead of "
                         "referencing them via a link to the track").toStdString() );
+    
+    choices.push_back(tr("CornerPinOFX (Stabilize. Copy)").toStdString());
+    helps.push_back(tr("Same as the linked version except that it copies values instead of "
+                       "referencing them via a link to the track").toStdString());
 
     choices.push_back( tr("CornerPinOFX (Use transform ref frame. Copy)").toStdString() );
     helps.push_back( tr("Same as the linked version except that it copies values instead of "
                         "referencing them via a link to the track").toStdString() );
+    
 
 //    choices.push_back(tr("Transform (Stabilize. Linked)").toStdString());
 //    helps.push_back(tr("Transform the image so that the tracked points do not move.").toStdString());
@@ -1594,14 +1605,14 @@ TrackerPanel::onAverageTracksButtonClicked()
     newInstance->setName(newName);
     newInstance->updateEffectLabelKnob(newName);
 
-    Double_Knob* newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
-    std::list<Double_Knob*> centers;
+    boost::shared_ptr<Double_Knob> newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
+    std::list<boost::shared_ptr<Double_Knob> > centers;
     RangeD keyframesRange;
     keyframesRange.min = INT_MAX;
     keyframesRange.max = INT_MIN;
 
     for (std::list<Natron::Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
-        Double_Knob* dblKnob = getCenterKnobForTracker(*it);
+        boost::shared_ptr<Double_Knob> dblKnob = getCenterKnobForTracker(*it);
         centers.push_back(dblKnob);
         double mini,maxi;
         bool hasKey = dblKnob->getFirstKeyFrameTime(0, &mini);
@@ -1631,7 +1642,7 @@ TrackerPanel::onAverageTracksButtonClicked()
         std::pair<double,double> average;
         average.first = 0;
         average.second = 0;
-        for (std::list<Double_Knob*>::iterator it = centers.begin(); it != centers.end(); ++it) {
+        for (std::list<boost::shared_ptr<Double_Knob> >::iterator it = centers.begin(); it != centers.end(); ++it) {
             double x = (*it)->getValueAtTime(t,0);
             double y = (*it)->getValueAtTime(t,1);
             average.first += x;
@@ -1973,16 +1984,25 @@ TrackerPanel::onExportButtonClicked()
 //            break;
 //        default:
 //            break;
-//    }
+    //    }
     switch (index) {
-    case 0:
-        _imp->createCornerPinFromSelection(selection, false, false);
-        break;
-    case 1:
-        _imp->createCornerPinFromSelection(selection, false, true);
-        break;
-    default:
-        break;
+        case 0:
+            _imp->createCornerPinFromSelection(selection, true, false,false);
+            break;
+        case 1:
+            _imp->createCornerPinFromSelection(selection, true, false,true);
+            break;
+        case 2:
+            _imp->createCornerPinFromSelection(selection, false, false,false);
+            break;
+        case 3:
+            _imp->createCornerPinFromSelection(selection, false, false,true);
+            break;
+        case 4:
+            _imp->createCornerPinFromSelection(selection, false, true,false);
+            break;
+        default:
+            break;
     }
 }
 
@@ -1994,7 +2014,8 @@ TrackerPanelPrivate::createTransformFromSelection(const std::list<Node*> & /*sel
 }
 
 namespace  {
-Double_Knob*
+
+boost::shared_ptr<Double_Knob>
 getCornerPinPoint(Natron::Node* node,
                   bool isFrom,
                   int index)
@@ -2003,9 +2024,8 @@ getCornerPinPoint(Natron::Node* node,
     QString name = isFrom ? QString("from%1").arg(index + 1) : QString("to%1").arg(index + 1);
     boost::shared_ptr<KnobI> knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    Double_Knob* ret = dynamic_cast<Double_Knob*>( knob.get() );
+    boost::shared_ptr<Double_Knob>  ret = boost::dynamic_pointer_cast<Double_Knob>(knob);
     assert(ret);
-
     return ret;
 }
 }
@@ -2013,7 +2033,8 @@ getCornerPinPoint(Natron::Node* node,
 void
 TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selection,
                                                   bool linked,
-                                                  bool useTransformRefFrame)
+                                                  bool useTransformRefFrame,
+                                                  bool invert)
 {
     if ( (selection.size() > 4) || selection.empty() ) {
         Natron::errorDialog( QObject::tr("Export").toStdString(),
@@ -2022,17 +2043,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         return;
     }
 
-    if (linked) {
-        Natron::warningDialog( QObject::tr("Missing feature").toStdString(), QObject::tr("Expressions and scripting are not yet "
-                                                                                         "available in Natron hence we can't "
-                                                                                         "make a link. Instead a node with a copy "
-                                                                                         "of the values will be created.").toStdString() );
-        //linked = false;
-    }
-
-    Double_Knob* centers[4] = {
-        NULL, NULL, NULL, NULL
-    };
+    boost::shared_ptr<Double_Knob> centers[4];
     int i = 0;
     for (std::list<Node*>::const_iterator it = selection.begin(); it != selection.end(); ++it,++i) {
         centers[i] = getCenterKnobForTracker(*it);
@@ -2056,12 +2067,9 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
     mainInstancePos = cornerPinGui->mapToParent( cornerPinGui->mapFromScene(mainInstancePos) );
     cornerPinGui->refreshPosition( mainInstancePos.x() + mainInstanceGui->getSize().width() * 2, mainInstancePos.y() );
 
-    Double_Knob* toPoints[4] = {
-        NULL, NULL, NULL, NULL
-    };
-    Double_Knob* fromPoints[4] = {
-        NULL, NULL, NULL, NULL
-    };
+    boost::shared_ptr<Double_Knob> toPoints[4];
+    boost::shared_ptr<Double_Knob>  fromPoints[4];
+    
     int timeForFromPoints = useTransformRefFrame ? referenceFrame->getValue() : app->getTimeLine()->currentFrame();
 
     for (unsigned int i = 0; i < selection.size(); ++i) {
@@ -2073,7 +2081,12 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
 
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
         assert(toPoints[i]);
-        toPoints[i]->cloneAndUpdateGui(centers[i]);
+        if (!linked) {
+            toPoints[i]->cloneAndUpdateGui(centers[i].get());
+        } else {
+            dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(0, centers[i], 0);
+            dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(1, centers[i], 1);
+        }
     }
 
     ///Disable all non used points
@@ -2085,6 +2098,15 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(enableKnob);
         enableKnob->setValue(false, 0);
     }
+    
+    if (invert) {
+        boost::shared_ptr<KnobI> invertKnob = cornerPin->getKnobByName(kTrackInvertName);
+        assert(invertKnob);
+        Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(invertKnob.get());
+        assert(isBool);
+        isBool->setValue(true, 0);
+    }
+    
 } // createCornerPinFromSelection
 
 void
@@ -2099,7 +2121,7 @@ TrackerPanel::showMenuForInstance(Natron::Node* instance)
 
     QAction* ret = menu.exec( QCursor::pos() );
     if (ret == copyTrackAnimation) {
-        Double_Knob* centerKnob = getCenterKnobForTracker(instance);
+        boost::shared_ptr<Double_Knob> centerKnob = getCenterKnobForTracker(instance);
         assert(centerKnob);
         centerKnob->copyAnimationToClipboard();
     }

@@ -305,7 +305,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         if (!nGui) {
             continue;
         }
-        nGui->setPos( it->getX(),it->getY() );
+        nGui->refreshPosition( it->getX(),it->getY(), true );
 
         if ( ( it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled() ) ||
              ( !it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled() ) ) {
