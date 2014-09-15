@@ -834,20 +834,23 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     } else if (selectedBendPoint) {
         _imp->setNodesBendPointsVisible(false);
 
-        boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode( CreateNodeArgs("Dot",
-                                                                                                   std::string(),
-                                                                                                   -1,
-                                                                                                   -1,
-                                                                                                   true,
-                                                                                                   -1,
-                                                                                                   false) );
+        CreateNodeArgs args("Dot",
+                            std::string(),
+                            -1,
+                            -1,
+                            true,
+                            -1,
+                            false,
+                            INT_MIN,
+                            INT_MIN,
+                            false);
+        boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
         assert(dotNodeGui);
 
         std::list<boost::shared_ptr<NodeGui> > nodesList;
         nodesList.push_back(dotNodeGui);
-        _imp->_undoStack->push( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
 
         ///Now connect the node to the edge input
         boost::shared_ptr<Natron::Node> inputNode = selectedBendPoint->getSource()->getNode();
@@ -871,6 +874,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         if ( !dotNodeGui->getIsSelected() ) {
             selectNode( dotNodeGui, modCASIsShift(e) );
         }
+        _imp->_undoStack->push( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
+
+        
         _imp->_evtState = NODE_DRAGGING;
         _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
         didSomething = true;
