@@ -1524,8 +1524,9 @@ NodeGui::onInputNRenderingFinished(int input)
 {
     std::map<int,Edge*>::iterator it = _inputEdges.find(input);
 
-    assert( it != _inputEdges.end() );
-    it->second->turnOffRenderingColor();
+    if ( it != _inputEdges.end() ) {
+        it->second->turnOffRenderingColor();
+    }
 }
 
 void

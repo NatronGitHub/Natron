@@ -104,7 +104,7 @@ nocase_equal_string (const std::string &s1,
                        nocase_equal_char);
 }
 
-
+#if 0
 static inline bool
 isCaseSensitiveFileSystem(const QString &path)
 {
@@ -122,6 +122,7 @@ isCaseSensitiveFileSystem(const QString &path)
     return true;
 #endif
 }
+#endif
 
 #ifdef FILE_DIALOG_DISABLE_ICONS
 class EmptyIconProvider

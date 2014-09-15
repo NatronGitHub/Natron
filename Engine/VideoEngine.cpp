@@ -96,6 +96,9 @@ VideoEngine::quitEngineThread()
     }
 
     if (isThreadStarted) {
+        
+        bool isMainThread = QThread::currentThread() == qApp->thread();
+        
         {
             QMutexLocker locker(&_mustQuitMutex);
             _mustQuit = true;
@@ -109,6 +112,14 @@ VideoEngine::quitEngineThread()
             ++_startCount;
             _startCondition.wakeAll();
         }
+        
+        ///Explanation: If the output node is a viewer and is currently waiting for the main-thread to be done
+        ///rendering the OpenGL texture and this thread is the main-thread don't wait in here otherwise we would
+        ///stall the main-thread
+        if (isMainThread && _tree.isOutputAViewer()) {
+            _tree.outputAsViewer()->wakeUpRenderThread();
+        }
+        
 
         {
             QMutexLocker locker(&_mustQuitMutex);

@@ -151,6 +151,8 @@ public:
      **/
     bool isUpdatingOpenGLViewer() const;
     
+    void wakeUpRenderThread();
+    
 public slots:
 
 
