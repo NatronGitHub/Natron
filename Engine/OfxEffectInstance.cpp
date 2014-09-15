@@ -19,6 +19,7 @@
 #include <QByteArray>
 #include <QReadWriteLock>
 #include <QPointF>
+#include <QtConcurrentRun>
 
 #include "Global/Macros.h"
 
@@ -141,6 +142,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
       , _wasRenderSafetySet(false)
       , _renderSafetyLock(new QReadWriteLock)
       , _context(eContextNone)
+      , _preferencesLock(new QReadWriteLock(QReadWriteLock::Recursive))
 {
     QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
@@ -232,7 +234,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->setValuesFromSerialization(paramValues);
         }
 
-        stat = _effect->createInstanceAction();
+        {
+            ///Take the preferences lock so that it cannot be modified throughout the action.
+            QReadLocker preferencesLocker(_preferencesLock);
+            stat = _effect->createInstanceAction();
+        }
         _created = true;
         unblockEvaluation();
 
@@ -268,16 +274,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 }
             }
         }
-
-        if ( !_effect->getClipPreferences() ) {
-            qDebug() << "The plugin failed in the getClipPreferencesAction.";
-        }
         
         // Check here that bitdepth and components given by getClipPreferences are supported by the effect.
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-        checkOFXClipPreferences(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited);
+        checkOFXClipPreferences(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true);
         
       
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
@@ -309,6 +311,7 @@ OfxEffectInstance::~OfxEffectInstance()
 
     delete _effect;
     delete _renderSafetyLock;
+    delete _preferencesLock;
 }
 
 bool
@@ -359,7 +362,11 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
                                                 0);
 
 
-            _overlayInteract->createInstanceAction();
+            {
+                ///Take the preferences lock so that it cannot be modified throughout the action.
+                QReadLocker preferencesLocker(_preferencesLock);
+                _overlayInteract->createInstanceAction();
+            }
         }
         getApp()->redrawAllViewers();
     }
@@ -374,7 +381,11 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             boost::shared_ptr<OfxParamOverlayInteract> overlay( new OfxParamOverlayInteract( knob.get(),interactDesc,
                                                                                              effectInstance()->getHandle() ) );
 
-            overlay->createInstanceAction();
+            {
+                ///Take the preferences lock so that it cannot be modified throughout the action.
+                QReadLocker preferencesLocker(_preferencesLock);
+                overlay->createInstanceAction();
+            }
             knob->setCustomInteract(overlay);
         }
     }
@@ -761,19 +772,24 @@ OfxEffectInstance::onInputChanged(int inputNo)
     double time = getApp()->getTimeLine()->currentFrame();
     RenderScale s;
     s.x = s.y = 1.;
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
-    _effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
-
-    ///Don't do anything while loading a project
-
+    
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
+        _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+        _effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
+        _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    }
+    
+    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
+    
     if (getApp()->getProject()->isLoadingProject()) {
         return;
     }
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited);
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
     }
 }
 
@@ -809,94 +825,189 @@ OfxEffectInstance::mapToContextEnum(const std::string &s)
     throw std::invalid_argument(s);
 }
 
+/**
+ * @brief The purpose of this function is to allow Natron to modify slightly the values returned in the getClipPreferencesAction
+ * by the plugin so that we can minimize the amount of Natron::Image::convertToFormat calls.
+ **/
+static void
+clipPrefsProxy(OfxEffectInstance* self,
+               double time,
+               std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>& clipPrefs,
+               std::list<OfxClipInstance*>& changedClips)
+{
+    ///We remap all the input clips components to be the same as the output clip, except for the masks.
+    OfxClipInstance* outputClip = dynamic_cast<OfxClipInstance*>(self->effectInstance()->getClip(kOfxImageEffectOutputClipName));
+    assert(outputClip);
+    std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundOutputPrefs = clipPrefs.find(outputClip);
+    assert(foundOutputPrefs != clipPrefs.end());
+
+    
+    
+    std::string outputClipDepth = outputClip->getPixelDepth();
+    Natron::ImageBitDepth outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
+    
+    ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
+    QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
+                            "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
+    bool setBitDepthWarning = false;
+    
+    if (!self->isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth))) {
+        outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+        outputClip->setPixelDepth(outputClipDepth);
+    }
+    
+    double outputAspectRatio = foundOutputPrefs->second.par;
+    
+    
+    ///output clip doesn't support components just remap it, this is probably a plug-in bug.
+    if (!outputClip->isSupportedComponent(foundOutputPrefs->second.components)) {
+        foundOutputPrefs->second.components = outputClip->findSupportedComp(kOfxImageComponentRGBA);
+    }
+    
+    int maxInputs = self->getMaxInputCount();
+    
+    for (int i = 0; i < maxInputs; ++i) {
+        EffectInstance* inputEffect = self->getInput(i);
+        if (inputEffect) {
+            inputEffect = inputEffect->getNearestNonIdentity(time);
+        }
+        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(inputEffect);
+        OfxClipInstance* clip = self->getClipCorrespondingToInput(i);
+        
+        if (instance) {
+            
+            std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundClipPrefs = clipPrefs.find(clip);
+            assert(foundClipPrefs != clipPrefs.end());
+
+            bool hasChanged = false;
+            
+            ///This is the output clip of the input node
+            OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
+            
+            ///Set the clip to have the same components as the output components if it is supported
+            if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
+                ///we only take into account non mask clips for the most components
+                if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
+                    foundClipPrefs->second.components = foundOutputPrefs->second.components;
+                    hasChanged = true;
+                }
+            }
+            
+            ///Try to remap the clip's bitdepth to be the same as
+            const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
+            Natron::ImageBitDepth input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
+            
+            ///If supported, set the clip's bitdepth to be the same as the output depth of the input node
+            if ( self->isSupportedBitDepth(input_outputNatronDepth) ) {
+                bool depthsDifferent = input_outputNatronDepth != outputClipDepthNatron;
+                if (self->effectInstance()->supportsMultipleClipDepths() && depthsDifferent) {
+                    foundClipPrefs->second.bitdepth = input_outputDepth;
+                    hasChanged = true;
+                }
+            }
+            ///Otherwise if the bit-depth conversion will be lossy, warn the user
+            else if ( Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron) ) {
+                bitDepthWarning.append( instance->getName().c_str() );
+                bitDepthWarning.append(" (" + QString( Image::getDepthString(input_outputNatronDepth).c_str() ) + ")");
+                bitDepthWarning.append(" ----> ");
+                bitDepthWarning.append( self->getName_mt_safe().c_str() );
+                bitDepthWarning.append(" (" + QString( Image::getDepthString(outputClipDepthNatron).c_str() ) + ")");
+                bitDepthWarning.append('\n');
+                setBitDepthWarning = true;
+            }
+            
+            if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio) {
+                foundClipPrefs->second.par = outputAspectRatio;
+                hasChanged = true;
+            }
+            
+            if (hasChanged) {
+                changedClips.push_back(clip);
+            }
+        }
+    }
+    
+    self->getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
+    
+} //endCheckOFXClipPreferences
+
+
+static void setPreferences(OfxImageEffectInstance* effect,
+                           QReadWriteLock* preferencesLock,
+                           const std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>& clipPrefs,
+                           const OfxImageEffectInstance::EffectPrefs& effectPrefs)
+{
+    QWriteLocker l(preferencesLock);
+    for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipPrefs.begin(); it != clipPrefs.end(); ++it) {
+        it->first->setComponents(it->second.components);
+        it->first->setPixelDepth(it->second.bitdepth);
+        it->first->setAspectRatio(it->second.par);
+    }
+    
+    effect->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
+                                   effectPrefs.continuous, effectPrefs.frameVarying);
+}
+
 void
 OfxEffectInstance::checkOFXClipPreferences(double time,
-                             const RenderScale & scale,
-                             const std::string & reason)
+                                           const RenderScale & scale,
+                                           const std::string & reason,
+                                           bool forceGetClipPrefAction)
 {
     
     
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
 
-    _effect->runGetClipPrefsConditionally();
-
-    ///We remap all the input clips components to be the same as the output clip, except for the masks.
-    OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-    assert(outputClip);
+    std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs> clipsPrefs;
+    OfxImageEffectInstance::EffectPrefs effectPrefs;
     
-    
-    std::string outputClipDepth = outputClip->getPixelDepth();
-    QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
-                            "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
-    bool setBitDepthWarning = false;
-
-    std::string outputComponents = outputClip->getComponents();
-    
-    if (!isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth))) {
-        outputClipDepth = _effect->bestSupportedDepth(kOfxBitDepthFloat);
-        outputClip->setPixelDepth(outputClipDepth);
-    }
-    
-    ///output clip doesn't support components just remap it, this is probably a plug-in bug.
-    if (!outputClip->isSupportedComponent(outputComponents)) {
-        outputComponents = outputClip->findSupportedComp(kOfxImageComponentRGBA);
-    }
-
-    _effect->beginInstanceChangedAction(reason);
-
-    int maxInputs = getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        EffectInstance* inputEffect = getInput(i);
-        if (inputEffect) {
-            inputEffect = inputEffect->getNearestNonIdentity(time);
-        }
-        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(inputEffect);
-        OfxClipInstance* clip = getClipCorrespondingToInput(i);
-
-        if (instance) {
-            OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
-
-            if ( clip->isSupportedComponent(outputComponents) ) {
-                ///we only take into account non mask clips for the most components
-                if ( !clip->isMask() ) {
-                    clip->setComponents(outputComponents);
-                }
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
+        if (forceGetClipPrefAction) {
+            if (!_effect->getClipPreferences_safe(clipsPrefs,effectPrefs)) {
+                return;
             }
-
-            ///Try to remap the clip's bitdepth to be the same as the output depth of the input node
-            const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
-            Natron::ImageBitDepth input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
-            Natron::ImageBitDepth outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
-
-            if ( isSupportedBitDepth(input_outputNatronDepth) ) {
-                bool depthsDifferent = input_outputNatronDepth != outputClipDepthNatron;
-                if ( (_effect->supportsMultipleClipDepths() && depthsDifferent) || !depthsDifferent ) {
-                    clip->setPixelDepth(input_outputDepth);
+        } else {
+            if (_effect->areClipPrefsDirty()) {
+                if (!_effect->getClipPreferences_safe(clipsPrefs, effectPrefs)) {
+                    return;
                 }
-            } else if ( Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron) ) {
-                bitDepthWarning.append( instance->getName().c_str() );
-                bitDepthWarning.append(" (" + QString( Image::getDepthString(input_outputNatronDepth).c_str() ) + ")");
-                bitDepthWarning.append(" ----> ");
-                bitDepthWarning.append( getName().c_str() );
-                bitDepthWarning.append(" (" + QString( Image::getDepthString(outputClipDepthNatron).c_str() ) + ")");
-                bitDepthWarning.append('\n');
-                setBitDepthWarning = true;
+            } else {
+                return;
             }
-            _effect->clipInstanceChangedAction(outputClip->getName(), reason, time, scale);
         }
     }
-    _effect->endInstanceChangedAction(reason);
-
-    getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
     
-    ///Now call this on all output nodes.
-    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _node->getOutputs();
+    std::list<OfxClipInstance*> modifiedClips;
+    
+    clipPrefsProxy(this,time,clipsPrefs,modifiedClips);
+    
+    if (!modifiedClips.empty()) {
+        effectInstance()->beginInstanceChangedAction(reason);
+    }
+    for (std::list<OfxClipInstance*>::iterator it = modifiedClips.begin(); it!=modifiedClips.end();++it) {
+        effectInstance()->clipInstanceChangedAction((*it)->getName(), reason, time, scale);
+    }
+    if (!modifiedClips.empty()) {
+        effectInstance()->endInstanceChangedAction(reason);
+    }
+    
+
+    ///In another thread, try to take the preferences lock for writing and update the clip preferences.
+    ///The will be updated once all actions are finished.
+    QtConcurrent::run(&setPreferences,effectInstance(),_preferencesLock,clipsPrefs,effectPrefs);
+    
+    ///Finally call recursively this function on all outputs to propagate it along the tree.
+    const std::list<boost::shared_ptr<Natron::Node> >& outputs = getNode()->getOutputs();
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-        (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason);
+        (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason,forceGetClipPrefAction);
     }
     
 } // checkOFXClipPreferences
+
+
 
 void
 OfxEffectInstance::onMultipleInputsChanged()
@@ -911,7 +1022,7 @@ OfxEffectInstance::onMultipleInputsChanged()
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited);
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
     }
 }
 
@@ -978,8 +1089,12 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                                             view,
                                             true, //< set mipmaplevel?
                                             mipMapLevel);
-
-        stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+        
+        {
+            ///Take the preferences lock so that it cannot be modified throughout the action.
+            QReadLocker preferencesLocker(_preferencesLock);
+            stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+        }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
             if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
                 // we got at least one success with RS != 1
@@ -989,8 +1104,12 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                 // try again with scale one
                 OfxPointD scaleOne;
                 scaleOne.x = scaleOne.y = 1.;
-
-                stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                
+                {
+                    ///Take the preferences lock so that it cannot be modified throughout the action.
+                    QReadLocker preferencesLocker(_preferencesLock);
+                    stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                }
                 if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
                     // we got success with scale = 1, which means it doesn't support renderscale after all
                     setSupportsRenderScaleMaybe(eSupportsNo);
@@ -1058,6 +1177,9 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxRectD ofxRod;
     
+    
+    ///Take the preferences lock so that it cannot be modified throughout the action.
+    QReadLocker preferencesLocker(_preferencesLock);
     if (getRecursionLevel() == 0) {
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
@@ -1135,6 +1257,9 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
                                             mipMapLevel);
         OfxRectD roi;
         rectToOfxRectD(renderWindow, &roi);
+        
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         stat = _effect->getRegionOfInterestAction( (OfxTime)time, scale,
                                                    roi, inputRois );
     }
@@ -1177,8 +1302,12 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time)
     }
     OFX::Host::ImageEffect::RangeMap inputRanges;
     assert(_effect);
-
-    OfxStatus stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
+    OfxStatus stat;
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
+        stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
+    }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         Natron::errorDialog( getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
     } else if (stat == kOfxStatOK) {
@@ -1212,6 +1341,8 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
          ( _context == eContextReader) ||
          ( _context == eContextWriter) ||
          ( _context == eContextGenerator) ) {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         st = _effect->getTimeDomainAction(range);
     }
     if (st == kOfxStatOK) {
@@ -1323,7 +1454,12 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         ofxRoI.x2 = roi.right();
         ofxRoI.y1 = roi.bottom();
         ofxRoI.y2 = roi.top();
-        stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+        
+        {
+            ///Take the preferences lock so that it cannot be modified throughout the action.
+            QReadLocker preferencesLocker(_preferencesLock);
+            stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+        }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
             if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
                 // we got at least one success with RS != 1
@@ -1339,7 +1475,12 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 ofxRoI.x2 = roi.right();
                 ofxRoI.y1 = roi.bottom();
                 ofxRoI.y2 = roi.top();
-                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                
+                {
+                    ///Take the preferences lock so that it cannot be modified throughout the action.
+                    QReadLocker preferencesLocker(_preferencesLock);
+                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                }
                 if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
                     // we got success with scale = 1, which means it doesn't support renderscale after all
                     setSupportsRenderScaleMaybe(eSupportsNo);
@@ -1404,6 +1545,8 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
                                             true,
                                             mipMapLevel);
 
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     }
 
@@ -1444,6 +1587,9 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
                                             true,
                                             mipMapLevel);
 
+        
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         stat = effectInstance()->endRenderAction(first, last, step, interactive,scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     }
 
@@ -1520,6 +1666,9 @@ OfxEffectInstance::render(SequenceTime time,
                                             true,//< set mipmaplevel ?
                                             mipMapLevel);
 
+        
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         stat = _effect->renderAction( (OfxTime)time,
                                       field,
                                       ofxRoI,
@@ -1621,6 +1770,8 @@ OfxEffectInstance::drawOverlay(double /*scaleX*/,
         } else {*/
         
         
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         _overlayInteract->drawAction(time, rs);
         
         /*}*/
@@ -1664,6 +1815,9 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
                                             false,
                                             0);
          */
+        
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
 
 
@@ -1709,6 +1863,8 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
             stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         } else {*/
         
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         /*}*/
 
@@ -1749,6 +1905,8 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
                                             false,
                                             0);
          */
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
 
         if (stat == kOfxStatOK) {
@@ -1784,6 +1942,8 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
                                             false,
                                             0);
  */
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->keyDownAction( time, rs, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
@@ -1818,6 +1978,8 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
                                             false,
                                             0);
          */
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->keyUpAction( time, rs, (int)key, keyStr.data() );
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -1853,6 +2015,8 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
                                             false,
                                             0);
  */
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->keyRepeatAction( time, rs, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
@@ -1886,7 +2050,9 @@ OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
                                                 0);
             stat = _overlayInteract->gainFocusAction(time, rs);
         } else {*/
-            stat = _overlayInteract->gainFocusAction(time, rs);
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
+        stat = _overlayInteract->gainFocusAction(time, rs);
         /*}*/
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
@@ -1922,7 +2088,9 @@ OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,
 
             stat = _overlayInteract->loseFocusAction(time, rs);
         } else {*/
-            stat = _overlayInteract->loseFocusAction(time, rs);
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
+        stat = _overlayInteract->loseFocusAction(time, rs);
         /*}*/
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -1997,8 +2165,12 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                             false, //< setmipmaplevel?
                                             0);
         
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
     } else {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
         stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
     }
 
@@ -2012,7 +2184,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
         RECURSIVE_ACTION();
-        checkOFXClipPreferences(time, renderScale, ofxReason);
+        checkOFXClipPreferences(time, renderScale, ofxReason,false);
     }
     if (_overlayInteract) {
         std::vector<std::string> params;
@@ -2032,6 +2204,8 @@ OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reason)
     if (!_initialized) {
         return;
     }
+    ///Take the preferences lock so that it cannot be modified throughout the action.
+    QReadLocker preferencesLocker(_preferencesLock);
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
     case Natron::USER_EDITED:
@@ -2056,6 +2230,8 @@ OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
     if (!_initialized) {
         return;
     }
+    ///Take the preferences lock so that it cannot be modified throughout the action.
+    QReadLocker preferencesLocker(_preferencesLock);
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
     case Natron::USER_EDITED:
@@ -2078,6 +2254,8 @@ void
 OfxEffectInstance::purgeCaches()
 {
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
+    ///Take the preferences lock so that it cannot be modified throughout the action.
+    QReadLocker preferencesLocker(_preferencesLock);
     OfxStatus stat =  _effect->purgeCachesAction();
 
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -2119,6 +2297,8 @@ OfxEffectInstance::supportsMultiResolution() const
 void
 OfxEffectInstance::beginEditKnobs()
 {
+    ///Take the preferences lock so that it cannot be modified throughout the action.
+    QReadLocker preferencesLocker(_preferencesLock);
     effectInstance()->beginInstanceEditAction();
 }
 
@@ -2127,6 +2307,8 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 {
     ///Can only be called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
+    ///Take the preferences lock so that it cannot be modified throughout the action.
+    QReadLocker preferencesLocker(_preferencesLock);
     effectInstance()->syncPrivateDataAction();
 }
 
@@ -2246,3 +2428,14 @@ OfxEffectInstance::ofxGetOutputPremultiplication() const
     }
 }
 
+
+double
+OfxEffectInstance::getPreferredAspectRatio() const
+{
+    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    assert(clip);
+    
+    ///Take the preferences lock to be sure we're not writing them
+    QReadLocker l(_preferencesLock);
+    return clip->getAspectRatio();
+}

@@ -418,7 +418,13 @@ public:
      **/
     virtual void checkOFXClipPreferences(double /*time*/,
                                          const RenderScale & /*scale*/,
-                                         const std::string & /*reason*/) {}
+                                         const std::string & /*reason*/,
+                                        bool /*forceGetClipPrefAction*/) {}
+    
+    /**
+     * @brief Returns the output aspect ratio to render with
+     **/
+    virtual double getPreferredAspectRatio() const { return 1.; }
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and

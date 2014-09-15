@@ -17,6 +17,7 @@
 
 #include "Global/GlobalDefines.h"
 
+class OfxClipInstance;
 class OfxEffectInstance;
 class RectD;
 namespace Natron {
@@ -106,8 +107,52 @@ public:
     /// the recursive instanceChangedAction will be fed the correct
     /// renderScale
     virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE FINAL;
+    
+    /// Run the clip preferences action from the effect.
+    ///
+    /// This will look into the input clips and output clip
+    /// and set the following properties that the effect should
+    /// fetch the image at.
+    ///     - pixel depth
+    ///     - components
+    ///     - pixel aspect ratio
+    /// It will also set on the effect itselff
+    ///     - whether it is continuously samplable
+    ///     - the premult state of the output
+    ///     - whether the effect is frame varying
+    ///     - the fielding of the output clip
+    ///
+    /// This will be run automatically by the effect in the following situations...
+    ///     - an input clip is changed
+    ///     - a clip preferences slave param is changed
+    ///
+    /// The host still needs to call this explicitly just after the effect is wired
+    /// up.
+    struct ClipPrefs {
+        std::string components;
+        std::string bitdepth;
+        double par;
+    };
+    
+    struct EffectPrefs {
+        double frameRate;
+        std::string fielding;
+        std::string premult;
+        bool continuous;
+        bool frameVarying;
+    };
+    
+    /**
+     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
+     **/
+    bool getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs);
 
-
+    /**
+     * @brief To be called once no action is currently being run after getClipPreferences_safe was called.
+     * Caller maintains a lock around this call to prevent race conditions.
+     **/
+    void updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
+                                bool continuous,bool frameVarying);
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////

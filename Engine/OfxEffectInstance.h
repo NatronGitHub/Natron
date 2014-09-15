@@ -237,9 +237,12 @@ public:
     virtual Natron::ImagePremultiplication getOutputPremultiplication() const OVERRIDE FINAL;
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
-                                         const std::string & reason) OVERRIDE FINAL;
-
+                                     const std::string & reason,
+                                     bool forceGetClipPrefAction) OVERRIDE FINAL;
+    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
+
+    OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
 public slots:
 
@@ -266,7 +269,6 @@ private:
 
     ContextEnum mapToContextEnum(const std::string &s);
 
-    OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
     void tryInitializeOverlayInteracts();
 
@@ -285,6 +287,7 @@ private:
     mutable bool _wasRenderSafetySet;
     mutable QReadWriteLock* _renderSafetyLock;
     ContextEnum _context;
+    mutable QReadWriteLock* _preferencesLock;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_

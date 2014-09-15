@@ -191,7 +191,13 @@ OfxClipInstance::getPremult() const
 double
 OfxClipInstance::getAspectRatio() const
 {
-    return _effect->getProjectPixelAspectRatio();
+    return _aspectRatio;
+}
+
+void
+OfxClipInstance::setAspectRatio(double par)
+{
+    _aspectRatio = par;
 }
 
 // Frame Rate -

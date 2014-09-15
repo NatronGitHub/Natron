@@ -84,6 +84,8 @@ public:
     //  The pixel aspect ratio of a clip or image.
     virtual double getAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    void setAspectRatio(double par);
+    
     // Frame Rate -
     //
     //  The frame rate of a clip or instance's project.
@@ -179,6 +181,7 @@ private:
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds);
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
+    double _aspectRatio;
     
     /**
      * @brief These are datas that are local to an action call but that we need in order to perform the API call like

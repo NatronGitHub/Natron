@@ -682,6 +682,7 @@ Image::getDepthString(Natron::ImageBitDepth depth)
     return s;
 }
 
+
 bool
 Image::isBitDepthConversionLossy(Natron::ImageBitDepth from,
                                  Natron::ImageBitDepth to)

@@ -629,4 +629,80 @@ OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
 }
 
 
+bool
+OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs)
+{
+    /// create the out args with the stuff that does not depend on individual clips
+    OFX::Host::Property::Set outArgs;
+    
+    setupClipPreferencesArgs(outArgs);
+    
+    
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxImageEffectActionGetClipPreferences<<"()"<<std::endl;
+#       endif
+    OfxStatus st = mainEntry(kOfxImageEffectActionGetClipPreferences,
+                             this->getHandle(),
+                             0,
+                             &outArgs);
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxImageEffectActionGetClipPreferences<<"()->"<<StatStr(st);
+#       endif
+    
+    if(st!=kOfxStatOK && st!=kOfxStatReplyDefault) {
+#       ifdef OFX_DEBUG_ACTIONS
+        std::cout << std::endl;
+#       endif
+        /// ouch
+        return false;
+    }
+    
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << ": ";
+#       endif
+    /// OK, go pump the components/depths back into the clips themselves
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
+        it!=_clips.end();
+        ++it) {
+        ClipPrefs prefs;
+        
+        std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
+        std::string depthParamName = "OfxImageClipPropDepth_"+it->first;
+        std::string parParamName = "OfxImageClipPropPAR_"+it->first;
+        
+#       ifdef OFX_DEBUG_ACTIONS
+        std::cout << it->first<<"->"<<outArgs.getStringProperty(depthParamName)<<","<<outArgs.getStringProperty(componentParamName)<<","<<outArgs.getDoubleProperty(parParamName)<<" ";
+#       endif
+        prefs.bitdepth = outArgs.getStringProperty(depthParamName);
+        prefs.components = outArgs.getStringProperty(componentParamName);
+        prefs.par = outArgs.getDoubleProperty(parParamName);
+        clipPrefs.insert(std::make_pair(dynamic_cast<OfxClipInstance*>(it->second), prefs));
+    }
+    
+    
+    effectPrefs.frameRate         = outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate);
+    effectPrefs.fielding          = outArgs.getStringProperty(kOfxImageClipPropFieldOrder);
+    effectPrefs.premult           = outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication);
+    effectPrefs.continuous        = outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0;
+    effectPrefs.frameVarying      = outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0;
+    
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << _outputFrameRate<<","<<_outputFielding<<","<<_outputPreMultiplication<<","<<_continuousSamples<<","<<_frameVarying<<std::endl;
+#       endif
+    
+    _clipPrefsDirty  = false;
+    
+    return true;
 
+}
+
+void
+OfxImageEffectInstance::updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
+                            bool continuous,bool frameVarying)
+{
+    _outputFrameRate = frameRate;
+    _outputFielding = fielding;
+    _outputPreMultiplication = premult;
+    _continuousSamples = continuous;
+    _frameVarying = frameVarying;
+}
