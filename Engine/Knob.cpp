@@ -479,9 +479,11 @@ KnobHelper::evaluateValueChange(int dimension,
             ///Notify that a value has changed, this may lead to this function being called recursively.
             _imp->holder->onKnobValueChanged_public(this, reason, time);
 
-            ///Evaluate the change
-            bool significant = (reason != Natron::TIME_CHANGED) && _imp->EvaluateOnChange;
-            _imp->holder->evaluate_public(this, significant, reason);
+
+            if (reason != Natron::TIME_CHANGED && reason != Natron::SLAVE_REFRESH) {
+                ///Evaluate the change only if the reason is not time changed or slave refresh
+                _imp->holder->evaluate_public(this, _imp->EvaluateOnChange, reason);
+            }
 
         }
     }
