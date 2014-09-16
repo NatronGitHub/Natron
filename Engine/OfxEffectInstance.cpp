@@ -1130,9 +1130,13 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                                             mipMapLevel);
         
         {
-            ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(_preferencesLock);
-            stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+            if (getRecursionLevel() > 1) {
+                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+            } else {
+                ///Take the preferences lock so that it cannot be modified throughout the action.
+                QReadLocker preferencesLocker(_preferencesLock);
+                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+            }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
             if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
@@ -1144,7 +1148,9 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                 OfxPointD scaleOne;
                 scaleOne.x = scaleOne.y = 1.;
                 
-                {
+                if (getRecursionLevel() > 1) {
+                    stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                } else {
                     ///Take the preferences lock so that it cannot be modified throughout the action.
                     QReadLocker preferencesLocker(_preferencesLock);
                     stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
@@ -1495,9 +1501,13 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         ofxRoI.y2 = roi.top();
         
         {
-            ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(_preferencesLock);
-            stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+            if (getRecursionLevel() > 1) {
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+            } else {
+                ///Take the preferences lock so that it cannot be modified throughout the action.
+                QReadLocker preferencesLocker(_preferencesLock);
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+            }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
             if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
@@ -1515,7 +1525,9 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 ofxRoI.y1 = roi.bottom();
                 ofxRoI.y2 = roi.top();
                 
-                {
+                if (getRecursionLevel() > 1) {
+                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                } else {
                     ///Take the preferences lock so that it cannot be modified throughout the action.
                     QReadLocker preferencesLocker(_preferencesLock);
                     stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
