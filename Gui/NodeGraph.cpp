@@ -994,7 +994,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             boost::shared_ptr<NodeGui> & n = *it;
 
-            if ( n->isActive() && n->isNearby(ep) &&
+            if ( n->isActive() && n->isVisible() && n->isNearby(ep) &&
                  ( n->getNode()->getName() != nodeHoldingEdge->getNode()->getName() ) ) {
                 if ( !_imp->_arrowSelected->isOutputEdge() ) {
                     if ( !n->getNode()->canOthersConnectToThisNode() ) {
