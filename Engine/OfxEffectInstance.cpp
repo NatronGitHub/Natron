@@ -1224,7 +1224,6 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
     
     
     ///Take the preferences lock so that it cannot be modified throughout the action.
-    QReadLocker preferencesLocker(_preferencesLock);
     if (getRecursionLevel() == 0) {
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
@@ -1242,6 +1241,7 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
         // retimer context - defaults to the union of the RoD of the 'Source' input clip at the frame directly preceding the value of the 'SourceTime' double parameter and the frame directly after it
         
         // the following ofxh function does the job
+        QReadLocker preferencesLocker(_preferencesLock);
         ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
     } else {
         ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
