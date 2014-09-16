@@ -151,7 +151,8 @@ void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 const std::string & context,
                                                 const NodeSerialization* serialization,
-                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues)
+                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
+                                                bool allowFileDialogs)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
@@ -235,9 +236,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
 
         std::string images;
-        if (isReader() && serialization->isNull() && paramValues.empty()) {
+        if (allowFileDialogs && isReader() && serialization->isNull() && paramValues.empty()) {
             images = getApp()->openImageFileDialog();
-        } else if (isWriter() && serialization->isNull()  && paramValues.empty()) {
+        } else if (allowFileDialogs && isWriter() && serialization->isNull()  && paramValues.empty()) {
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {

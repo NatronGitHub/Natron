@@ -255,6 +255,7 @@ Node::load(const std::string & pluginID,
     }
 
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
+    bool isFileDialogPreviewReader = fixedName.contains("Natron_File_Dialog_Preview_Provider_Reader");
     if (func.first) {
         _imp->liveInstance = func.second(thisShared);
         assert(_imp->liveInstance);
@@ -265,10 +266,11 @@ Node::load(const std::string & pluginID,
             setValuesFromSerialization(paramValues);
         }
         
+        
         std::string images;
-        if (_imp->liveInstance->isReader() && serialization.isNull() && paramValues.empty()) {
+        if (_imp->liveInstance->isReader() && serialization.isNull() && paramValues.empty() && !isFileDialogPreviewReader) {
              images = getApp()->openImageFileDialog();
-        } else if (_imp->liveInstance->isWriter() && serialization.isNull() && paramValues.empty()) {
+        } else if (_imp->liveInstance->isWriter() && serialization.isNull() && paramValues.empty() && !isFileDialogPreviewReader) {
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {
@@ -278,7 +280,7 @@ Node::load(const std::string & pluginID,
             setValuesFromSerialization(list);
         }
     } else { //ofx plugin
-        _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization,paramValues);
+        _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization,paramValues,!isFileDialogPreviewReader);
         assert(_imp->liveInstance);
         _imp->liveInstance->initializeOverlayInteract();
     }
