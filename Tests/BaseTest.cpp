@@ -96,7 +96,10 @@ boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,
                                                      int majorVersion,
                                                      int minorVersion)
 {
-    boost::shared_ptr<Node> ret =  _app->createNode( CreateNodeArgs(pluginID,"",majorVersion,minorVersion,false) );
+    boost::shared_ptr<Node> ret =  _app->createNode( CreateNodeArgs(pluginID,
+                                                                    "",
+                                                                    majorVersion,minorVersion,-1,true,INT_MIN,INT_MIN,true,true,
+                                                                    QString(),CreateNodeArgs::DefaultValuesList()) );
 
     EXPECT_NE(ret.get(),(Natron::Node*)NULL);
 
