@@ -1456,20 +1456,12 @@ private:
 /**
  * @brief Should be called in the begining of any action that cannot be called recursively.
  **/
-#ifdef DEBUG
 #define NON_RECURSIVE_ACTION() MANAGE_RECURSION(true)
-#else
-#define NON_RECURSIVE_ACTION() ( (void)0 )
-#endif
 
 /**
  * @brief Should be called in the begining of any action that can be called recursively
  **/
-#ifdef DEBUG
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
-#else
-#define RECURSIVE_ACTION() ( (void)0 )
-#endif
 
 ////Common interface for EffectInstance and backdrops
 class NamedKnobHolder
