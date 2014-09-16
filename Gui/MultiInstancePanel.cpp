@@ -525,11 +525,14 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
     boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
     CreateNodeArgs args( mainInstance->getPluginID().c_str(),
                          mainInstance->getName(),
-                         -1,-1,true,
+                         -1,-1,
                          (int)_imp->instances.size(),
                         true,
                         INT_MIN,INT_MIN,
-                        false); //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
+                        false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
+                        true,
+                        QString(),
+                        CreateNodeArgs::DefaultValuesList());
     boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(args);
 
     _imp->addTableRow(newInstance);
@@ -2050,8 +2053,16 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(centers[i]);
     }
     GuiAppInstance* app = publicInterface->getGui()->getApp();
-    boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs("CornerPinOFX  [Transform]", "",
-                                                                                -1, -1, true, -1, false) );
+    boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs("CornerPinOFX  [Transform]",
+                                                                                "",
+                                                                                -1, -1, -1,
+                                                                                false, //< don't autoconnect
+                                                                                INT_MIN,
+                                                                                INT_MIN,
+                                                                                true,
+                                                                                true,
+                                                                                QString(),
+                                                                                CreateNodeArgs::DefaultValuesList()) );
     if (!cornerPin) {
         return;
     }

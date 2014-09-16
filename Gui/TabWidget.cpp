@@ -385,7 +385,16 @@ void
 TabWidget::addNewViewer()
 {
     _gui->setNextViewerAnchor(this);
-    _gui->getApp()->createNode( CreateNodeArgs("Viewer") );
+    _gui->getApp()->createNode(  CreateNodeArgs("Viewer",
+                                                "",
+                                                -1,-1,
+                                                -1,
+                                                true,
+                                                INT_MIN,INT_MIN,
+                                                true,
+                                                true,
+                                                QString(),
+                                                CreateNodeArgs::DefaultValuesList()) );
 }
 
 void

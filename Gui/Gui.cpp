@@ -2447,7 +2447,16 @@ Gui::saveProjectAs()
 void
 Gui::createNewViewer()
 {
-    (void)_imp->_appInstance->createNode( CreateNodeArgs("Viewer") );
+    (void)_imp->_appInstance->createNode( CreateNodeArgs("Viewer",
+                                                         "",
+                                                         -1,-1,
+                                                         -1,
+                                                         true,
+                                                         INT_MIN,INT_MIN,
+                                                         true,
+                                                         true,
+                                                         QString(),
+                                                         CreateNodeArgs::DefaultValuesList()) );
 }
 
 boost::shared_ptr<Natron::Node>
@@ -2471,18 +2480,21 @@ Gui::createReader()
         } else {
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,false,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),
+                                "",
+                                -1,-1,
+                                -1,
+                                true,
+                                INT_MIN,INT_MIN,
+                                true,
+                                true,
+                                QString(),
+                                defaultValues);
             ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {
                 return ret;
             }
-
-            ///We must call it here even though the Node class does it already in the instance changed action
-            ///It probably didn't finish to setup everything that depends on the filename at that point, so
-            ///we make sure we can have a clean preview.
-            ret->computePreviewImage( getApp()->getTimeLine()->currentFrame() );
-        
         }
     }
 
@@ -2509,7 +2521,7 @@ Gui::createWriter()
             
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,false,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
             ret = _imp->_appInstance->createNode(args);
             if (!ret) {
                 return ret;
@@ -2535,6 +2547,34 @@ Gui::popOpenFileDialog(bool sequenceDialog,
     } else {
         return std::string();
     }
+}
+
+std::string
+Gui::openImageSequenceDialog()
+{
+    std::map<std::string,std::string> readersForFormat;
+    
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+    std::vector<std::string> filters;
+    for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
+        filters.push_back(it->first);
+    }
+
+    return popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true);
+}
+
+std::string
+Gui::saveImageSequenceDialog()
+{
+    std::map<std::string,std::string> writersForFormat;
+    
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    std::vector<std::string> filters;
+    for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
+        filters.push_back(it->first);
+    }
+    
+    return popSaveFileDialog(true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true);
 }
 
 std::string

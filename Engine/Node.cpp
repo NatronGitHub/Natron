@@ -263,6 +263,19 @@ Node::load(const std::string & pluginID,
         if (!paramValues.empty()) {
             setValuesFromSerialization(paramValues);
         }
+        
+        std::string images;
+        if (_imp->liveInstance->isReader() && serialization.isNull()) {
+             images = getApp()->openImageFileDialog();
+        } else if (_imp->liveInstance->isWriter() && serialization.isNull()) {
+            images = getApp()->saveImageFileDialog();
+        }
+        if (!images.empty()) {
+            boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
+            CreateNodeArgs::DefaultValuesList list;
+            list.push_back(defaultFile);
+            setValuesFromSerialization(list);
+        }
     } else { //ofx plugin
         _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization,paramValues);
         assert(_imp->liveInstance);

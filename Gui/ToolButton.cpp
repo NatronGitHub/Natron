@@ -132,6 +132,16 @@ ToolButton::getPluginToolButton() const
 void
 ToolButton::onTriggered()
 {
-    _imp->_app->createNode( CreateNodeArgs(_imp->_id) );
+    CreateNodeArgs args(_imp->_id,
+                   "",
+                   -1,-1,
+                   -1,
+                   true,
+                   INT_MIN,INT_MIN,
+                   true,
+                   true,
+                   QString(),
+                   CreateNodeArgs::DefaultValuesList());
+    _imp->_app->createNode( args );
 }
 

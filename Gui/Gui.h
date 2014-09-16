@@ -246,6 +246,9 @@ public:
     std::string popSaveFileDialog(bool sequenceDialog,const std::vector<std::string> & initialfilters,const std::string & initialDir,
                                   bool allowRelativePaths);
 
+    std::string openImageSequenceDialog();
+    std::string saveImageSequenceDialog();
+    
     void setUserScrubbingTimeline(bool b);
 
     bool isUserScrubbingTimeline() const;

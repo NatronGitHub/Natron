@@ -184,7 +184,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 int majorVersion,
                                 int minorVersion,
                                 bool requestedByLoad,
-                                bool openImageFileDialog,
                                 const NodeSerialization & serialization,
                                 bool dontLoadName,
                                 int childIndex,
@@ -214,7 +213,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     try {
-        // load() calls OfxEffectInstance::createOFXImageEffectInstance()
         node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
         std::string title = std::string("Error while creating node");
@@ -240,7 +238,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
     createNodeGui(node,
                   multiInstanceParentName,
                   requestedByLoad,
-                  openImageFileDialog,
                   autoConnect,
                   xPosHint,
                   yPosHint,
@@ -265,7 +262,6 @@ AppInstance::createNode(const CreateNodeArgs & args)
                               args.multiInstanceParentName,
                               args.majorV, args.minorV,
                               false,
-                              args.openImageFileDialog,
                               NodeSerialization( boost::shared_ptr<Natron::Node>() ),
                               !args.fixedName.isEmpty(),
                               args.childIndex,
@@ -284,7 +280,6 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               args.multiInstanceParentName,
                               args.majorV, args.minorV,
                               true,
-                              false,
                               *args.serialization,
                               args.dontLoadName,
                               -1,

@@ -170,7 +170,16 @@ GuiAppInstance::load(const QString & projectName,
 
     if ( projectName.isEmpty() ) {
         ///if the user didn't specify a projects name in the launch args just create a viewer node.
-        createNode( CreateNodeArgs("Viewer") );
+        createNode( CreateNodeArgs("Viewer",
+                                   "",
+                                   -1,-1,
+                                   -1,
+                                   true,
+                                   INT_MIN,INT_MIN,
+                                   true,
+                                   true,
+                                   QString(),
+                                   CreateNodeArgs::DefaultValuesList()) );
     } else {
         ///Otherwise just load the project specified.
         QFileInfo infos(projectName);
@@ -188,7 +197,6 @@ void
 GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
                               const std::string & multiInstanceParentName,
                               bool loadRequest,
-                              bool openImageFileDialog,
                               bool autoConnect,
                               double xPosHint,
                               double yPosHint,
@@ -243,15 +251,27 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
             getProject()->autoConnectNodes(selected, node);
         }
         _imp->_gui->selectNode(nodegui);
+        
+        ///we make sure we can have a clean preview.
+        node->computePreviewImage( getTimeLine()->currentFrame() );
 
-        if (openImageFileDialog) {
-            node->getLiveInstance()->openImageFileKnob();
-        }
     }
     if (!loadRequest && !isViewer) {
         triggerAutoSave();
     }
 } // createNodeGui
+
+std::string
+GuiAppInstance::openImageFileDialog()
+{
+    return _imp->_gui->openImageSequenceDialog();
+}
+
+std::string
+GuiAppInstance::saveImageFileDialog()
+{
+    return _imp->_gui->saveImageSequenceDialog();
+}
 
 Gui*
 GuiAppInstance::getGui() const

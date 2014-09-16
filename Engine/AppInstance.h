@@ -48,7 +48,6 @@ struct CreateNodeArgs
     ///or given from the virtual function getPluginID() of the builtin plugins (such as Backdrop,Viewer,etc...)
     QString pluginID;
     int majorV,minorV;
-    bool openImageFileDialog;
     std::string multiInstanceParentName;
     int childIndex;
     bool autoConnect;
@@ -62,22 +61,20 @@ struct CreateNodeArgs
     
     ///Constructor used to create a new node
     explicit CreateNodeArgs(const QString & pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
-                            const std::string & multiInstanceParentName = std::string(), //< no parent by default
-                            int majorVersion = -1, //< use greatest version found
-                            int minorVersion = -1, //< use greatest version found
-                            bool openImageFileDialog = true, //< open a file dialog if the node is a reader/writer
-                            int childIndex = -1,//< if this is a child of a multi-instance, this is the index
-                            bool autoConnect = true, //< should we attempt to autoconnect ?
-                            double xPosHint = INT_MIN, //< xPosition in the nodegraph
-                            double yPosHint = INT_MIN, //< yPosition in the nodegraph
-                            bool pushUndoRedoCommand = true, //< should we push a new undo/redo command on the GUI?
-                            bool addToProject = true, //< should we add the node to the project ?
-                            const QString & fixedName = QString(),  //< if non empty, this will be the name of the node
-                            const DefaultValuesList& paramValues = DefaultValuesList())
+                            const std::string & multiInstanceParentName, //< no parent by default DEFAULT = empty
+                            int majorVersion , //< use greatest version found DEFAULT = - 1
+                            int minorVersion , //< use greatest version found DEFAULT = -1
+                            int childIndex ,//< if this is a child of a multi-instance, this is the index DEFAULT = -1
+                            bool autoConnect , //< should we attempt to autoconnect ? DEFAULT = true
+                            double xPosHint, //< xPosition in the nodegraph DEFAULT = INT_MIN
+                            double yPosHint, //< yPosition in the nodegraph DEFAULT = INT_MIN
+                            bool pushUndoRedoCommand , //< should we push a new undo/redo command on the GUI? DEFAULT = true
+                            bool addToProject, //< should we add the node to the project ? DEFAULT = true
+                            const QString & fixedName,  //< if non empty, this will be the name of the node DEFAULT = empty
+                            const DefaultValuesList& paramValues) //< parameters to set before creating the plugin
         : pluginID(pluginID)
           , majorV(majorVersion)
           , minorV(minorVersion)
-          , openImageFileDialog(openImageFileDialog)
           , multiInstanceParentName(multiInstanceParentName)
           , childIndex(childIndex)
           , autoConnect(autoConnect)
@@ -89,6 +86,7 @@ struct CreateNodeArgs
           , paramValues(paramValues)
     {
     }
+    
 };
 
 
@@ -271,6 +269,9 @@ public:
     {
     }
 
+    virtual std::string openImageFileDialog() { return std::string(); }
+    virtual std::string saveImageFileDialog() { return std::string(); }
+
 public slots:
 
     void quit();
@@ -304,13 +305,13 @@ protected:
     virtual void createNodeGui(boost::shared_ptr<Natron::Node> /*node*/,
                                const std::string & /*multiInstanceParentName*/,
                                bool /*loadRequest*/,
-                               bool /*openImageFileDialog*/,
                                bool /*autoConnect*/,
                                double /*xPosHint*/,
                                double /*yPosHint*/,
                                bool /*pushUndoRedoCommand*/)
     {
     }
+    
 
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
@@ -325,7 +326,7 @@ private:
 
     boost::shared_ptr<Natron::Node> createNodeInternal(const QString & pluginID,const std::string & multiInstanceParentName,
                                                        int majorVersion,int minorVersion,
-                                                       bool requestedByLoad,bool openImageFileDialog,
+                                                       bool requestedByLoad,
                                                        const NodeSerialization & serialization,bool dontLoadName,
                                                        int childIndex,bool autoConnect,double xPosHint,double yPosHint,
                                                        bool pushUndoRedoCommand,bool addToProject,const QString& fixedName,

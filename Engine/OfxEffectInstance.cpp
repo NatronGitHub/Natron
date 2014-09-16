@@ -234,6 +234,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->setValuesFromSerialization(paramValues);
         }
 
+        std::string images;
+        if (isReader() && serialization->isNull()) {
+            images = getApp()->openImageFileDialog();
+        } else if (isWriter() && serialization->isNull()) {
+            images = getApp()->saveImageFileDialog();
+        }
+        if (!images.empty()) {
+            boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
+            CreateNodeArgs::DefaultValuesList list;
+            list.push_back(defaultFile);
+            getNode()->setValuesFromSerialization(list);
+        }
+
+        
+        
         {
             ///Take the preferences lock so that it cannot be modified throughout the action.
             QReadLocker preferencesLocker(_preferencesLock);
@@ -2372,6 +2387,8 @@ OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
         clip = getClipCorrespondingToInput(inputNb);
     }
     assert(clip);
+    ///Take the preferences lock to be sure we're not writing them
+    QReadLocker l(_preferencesLock);
     *comp = OfxClipInstance::ofxComponentsToNatronComponents( clip->getComponents() );
     *depth = OfxClipInstance::ofxDepthToNatronDepth( clip->getPixelDepth() );
 }
@@ -2419,6 +2436,9 @@ OfxEffectInstance::ofxGetOutputPremultiplication() const
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
 
     assert(clip);
+    
+    ///Take the preferences lock to be sure we're not writing them
+    QReadLocker l(_preferencesLock);
     const std::string & premult = effectInstance()->getOutputPreMultiplication();
     ///if the output has something, use it, otherwise default to premultiplied
     if ( !premult.empty() ) {

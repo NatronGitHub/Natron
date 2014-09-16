@@ -838,12 +838,14 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                             std::string(),
                             -1,
                             -1,
-                            true,
                             -1,
-                            false,
+                            false, //< don't autoconnect
                             INT_MIN,
                             INT_MIN,
-                            false);
+                            false, //<< don't push an undo command
+                            true,
+                            QString(),
+                            CreateNodeArgs::DefaultValuesList());
         boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
@@ -1460,14 +1462,17 @@ NodeGraph::onNodeCreationDialogFinished()
                 if (allPlugins[i]->getPluginID() == res) {
                     QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
                     getGui()->getApp()->createNode( CreateNodeArgs( res,
-                                                                    "",
-                                                                    -1,
-                                                                    -1,
-                                                                    true,
-                                                                    -1,
-                                                                    true,
-                                                                    posHint.x(),
-                                                                    posHint.y() ) );
+                                                                   "",
+                                                                   -1,
+                                                                   -1,
+                                                                   -1,
+                                                                   true,
+                                                                   posHint.x(),
+                                                                   posHint.y(),
+                                                                   true,
+                                                                   true,
+                                                                   QString(),
+                                                                   CreateNodeArgs::DefaultValuesList()) );
                     break;
                 }
             }
@@ -1615,7 +1620,16 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 }
                 if ( isKeybind(group.toStdString().c_str(), allPlugins[i]->getPluginID().toStdString().c_str(), modifiers, key) ) {
                     QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    getGui()->getApp()->createNode( CreateNodeArgs( allPlugins[i]->getPluginID(),"",-1,-1,true,-1,true,hint.x(),hint.y() ) );
+                    getGui()->getApp()->createNode( CreateNodeArgs( allPlugins[i]->getPluginID(),
+                                                                   "",
+                                                                   -1,-1,
+                                                                   -1,
+                                                                   true,
+                                                                   hint.x(),hint.y(),
+                                                                   true,
+                                                                   true,
+                                                                   QString(),
+                                                                   CreateNodeArgs::DefaultValuesList()) );
                     break;
                 }
             }
@@ -1696,7 +1710,16 @@ void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
     if ( !_imp->_gui->getLastSelectedViewer() ) {
-        _imp->_gui->getApp()->createNode( CreateNodeArgs("Viewer") );
+        _imp->_gui->getApp()->createNode(  CreateNodeArgs("Viewer",
+                                                          "",
+                                                          -1,-1,
+                                                          -1,
+                                                          true,
+                                                          INT_MIN,INT_MIN,
+                                                          true,
+                                                          true,
+                                                          QString(),
+                                                          CreateNodeArgs::DefaultValuesList()) );
     }
 
     ///get a pointer to the last user selected viewer
@@ -2449,9 +2472,8 @@ NodeGraph::dropEvent(QDropEvent* e)
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,false,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
             boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
-            n->computePreviewImage( _imp->_gui->getApp()->getTimeLine()->currentFrame() );
         }
     }
 } // dropEvent

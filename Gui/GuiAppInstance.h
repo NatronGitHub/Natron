@@ -106,6 +106,9 @@ public:
 
     boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
 
+    virtual std::string openImageFileDialog() OVERRIDE FINAL;
+    virtual std::string saveImageFileDialog() OVERRIDE FINAL;
+
 public slots:
 
     void onProcessFinished();
@@ -117,7 +120,6 @@ private:
     virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,
                                const std::string & multiInstanceParentName,
                                bool loadRequest,
-                               bool openImageFileDialog,
                                bool autoConnect,
                                double xPosHint,double yPosHint,
                                bool pushUndoRedoCommand) OVERRIDE FINAL;

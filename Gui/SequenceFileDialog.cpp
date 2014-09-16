@@ -2774,14 +2774,14 @@ SequenceFileDialog::createViewerPreviewNode()
     CreateNodeArgs args("Viewer",
                         "",
                         -1,-1,
-                         false,
                         -1,
                         false,
                         INT_MIN,
                         INT_MIN,
                         false,
                         false,
-                        "Natron_File_Dialog_Preview_Provider_Viewer");
+                        "Natron_File_Dialog_Preview_Provider_Viewer",
+                        CreateNodeArgs::DefaultValuesList());
     
     boost::shared_ptr<Natron::Node> viewer = _gui->getApp()->createNode(args);
     _preview->viewerNode = _gui->getApp()->getNodeGui(viewer);
@@ -2823,14 +2823,14 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
             CreateNodeArgs args(found->second.c_str(),
                                 "",
                                 -1,-1,
-                                false,
                                 -1,
                                 false,
                                 INT_MIN,
                                 INT_MIN,
                                 false,
                                 false,
-                                QString("Natron_File_Dialog_Preview_Provider_Reader") +  QString(found->second.c_str()));
+                                QString("Natron_File_Dialog_Preview_Provider_Reader") +  QString(found->second.c_str()),
+                                CreateNodeArgs::DefaultValuesList());
             
             boost::shared_ptr<Natron::Node> reader = _gui->getApp()->createNode(args);
             boost::shared_ptr<NodeGui> readerGui = _gui->getApp()->getNodeGui(reader);

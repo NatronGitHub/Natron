@@ -162,7 +162,15 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                     boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs( it->getPluginID().c_str(),
                                                                                                             "",
                                                                                                             it->getPluginMajorVersion(),
-                                                                                                            it->getPluginMinorVersion() ) );
+                                                                                                            it->getPluginMinorVersion(),
+                                                                                                           -1,
+                                                                                                           true,
+                                                                                                           INT_MIN,
+                                                                                                           INT_MIN,
+                                                                                                           true,
+                                                                                                           true,
+                                                                                                           QString(),
+                                                                                                           CreateNodeArgs::DefaultValuesList()) );
                     parent->setName( it->getMultiInstanceParentName().c_str() );
                     parentsToReconnect.insert( std::make_pair(parent, it) );
                 }
