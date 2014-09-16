@@ -920,9 +920,10 @@ Natron::EffectInstance*
 AppManager::createOFXEffect(const std::string & pluginID,
                             boost::shared_ptr<Natron::Node> node,
                             const NodeSerialization* serialization,
-                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues) const
+                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
+                            bool allowFileDialogs) const
 {
-    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues);
+    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues,allowFileDialogs);
 }
 
 void

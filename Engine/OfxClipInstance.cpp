@@ -137,7 +137,7 @@ OfxClipInstance::getUnmappedComponents() const
             int nInputs = _nodeInstance->getMaxInputCount();
             for (int i  = 0 ; i < nInputs ; ++i) {
                 OfxClipInstance* clip = _nodeInstance->getClipCorrespondingToInput(i);
-                if (clip && !clip->isOptional() && clip->getConnected()) {
+                if (clip && !clip->isOptional() && clip->getConnected() && clip->getComponents() != noneStr) {
                     return clip->getComponents();
                 }
             }

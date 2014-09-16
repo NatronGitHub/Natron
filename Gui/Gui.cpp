@@ -2484,7 +2484,7 @@ Gui::createReader()
                                 "",
                                 -1,-1,
                                 -1,
-                                false,
+                                true,
                                 INT_MIN,INT_MIN,
                                 true,
                                 true,
@@ -2521,7 +2521,7 @@ Gui::createWriter()
             
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,false,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
             ret = _imp->_appInstance->createNode(args);
             if (!ret) {
                 return ret;

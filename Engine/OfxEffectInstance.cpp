@@ -151,7 +151,8 @@ void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 const std::string & context,
                                                 const NodeSerialization* serialization,
-                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues)
+                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
+                                                bool allowFileDialogs)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
@@ -235,9 +236,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
 
         std::string images;
-        if (isReader() && serialization->isNull()) {
+        if (allowFileDialogs && isReader() && serialization->isNull() && paramValues.empty()) {
             images = getApp()->openImageFileDialog();
-        } else if (isWriter() && serialization->isNull()) {
+        } else if (allowFileDialogs && isWriter() && serialization->isNull()  && paramValues.empty()) {
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {
@@ -1129,9 +1130,13 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                                             mipMapLevel);
         
         {
-            ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(_preferencesLock);
-            stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+            if (getRecursionLevel() > 1) {
+                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+            } else {
+                ///Take the preferences lock so that it cannot be modified throughout the action.
+                QReadLocker preferencesLocker(_preferencesLock);
+                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+            }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
             if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
@@ -1143,7 +1148,9 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                 OfxPointD scaleOne;
                 scaleOne.x = scaleOne.y = 1.;
                 
-                {
+                if (getRecursionLevel() > 1) {
+                    stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                } else {
                     ///Take the preferences lock so that it cannot be modified throughout the action.
                     QReadLocker preferencesLocker(_preferencesLock);
                     stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
@@ -1217,7 +1224,6 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
     
     
     ///Take the preferences lock so that it cannot be modified throughout the action.
-    QReadLocker preferencesLocker(_preferencesLock);
     if (getRecursionLevel() == 0) {
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             skipDiscarding,
@@ -1235,6 +1241,7 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
         // retimer context - defaults to the union of the RoD of the 'Source' input clip at the frame directly preceding the value of the 'SourceTime' double parameter and the frame directly after it
         
         // the following ofxh function does the job
+        QReadLocker preferencesLocker(_preferencesLock);
         ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
     } else {
         ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
@@ -1494,9 +1501,13 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         ofxRoI.y2 = roi.top();
         
         {
-            ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(_preferencesLock);
-            stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+            if (getRecursionLevel() > 1) {
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+            } else {
+                ///Take the preferences lock so that it cannot be modified throughout the action.
+                QReadLocker preferencesLocker(_preferencesLock);
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+            }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
             if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
@@ -1514,7 +1525,9 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 ofxRoI.y1 = roi.bottom();
                 ofxRoI.y2 = roi.top();
                 
-                {
+                if (getRecursionLevel() > 1) {
+                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                } else {
                     ///Take the preferences lock so that it cannot be modified throughout the action.
                     QReadLocker preferencesLocker(_preferencesLock);
                     stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
@@ -2478,14 +2491,24 @@ OfxEffectInstance::ofxGetOutputPremultiplication() const
 
     assert(clip);
     
-    ///Take the preferences lock to be sure we're not writing them
-    QReadLocker l(_preferencesLock);
-    const std::string & premult = effectInstance()->getOutputPreMultiplication();
-    ///if the output has something, use it, otherwise default to premultiplied
-    if ( !premult.empty() ) {
-        return premult;
+    if (getRecursionLevel() > 0) {
+        const std::string & premult = effectInstance()->getOutputPreMultiplication();
+        ///if the output has something, use it, otherwise default to premultiplied
+        if ( !premult.empty() ) {
+            return premult;
+        } else {
+            return v;
+        }
     } else {
-        return v;
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        const std::string & premult = effectInstance()->getOutputPreMultiplication();
+        ///if the output has something, use it, otherwise default to premultiplied
+        if ( !premult.empty() ) {
+            return premult;
+        } else {
+            return v;
+        }
     }
 }
 
@@ -2496,7 +2519,12 @@ OfxEffectInstance::getPreferredAspectRatio() const
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(clip);
     
-    ///Take the preferences lock to be sure we're not writing them
-    QReadLocker l(_preferencesLock);
-    return clip->getAspectRatio();
+    if (getRecursionLevel() > 0) {
+        return clip->getAspectRatio();
+    } else {
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        return clip->getAspectRatio();
+
+    }
 }

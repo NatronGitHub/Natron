@@ -994,7 +994,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             boost::shared_ptr<NodeGui> & n = *it;
 
-            if ( n->isActive() && n->isNearby(ep) &&
+            if ( n->isActive() && n->isVisible() && n->isNearby(ep) &&
                  ( n->getNode()->getName() != nodeHoldingEdge->getNode()->getName() ) ) {
                 if ( !_imp->_arrowSelected->isOutputEdge() ) {
                     if ( !n->getNode()->canOthersConnectToThisNode() ) {
@@ -2472,7 +2472,7 @@ NodeGraph::dropEvent(QDropEvent* e)
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,false,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
             boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
         }
     }

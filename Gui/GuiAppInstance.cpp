@@ -79,7 +79,8 @@ GuiAppInstance::aboutToQuit()
      Kill the nodes used to make the previews in the file dialogs
      **/
     if (_imp->_previewProvider->viewerNode) {
-        _imp->_previewProvider->viewerNode->getNode()->deactivate(std::list< boost::shared_ptr<Natron::Node> > (),false,false,false,false);
+        _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
+        _imp->_previewProvider->viewerNode->getNode()->deactivate(std::list< boost::shared_ptr<Natron::Node> > (),false,false,true,false);
         _imp->_previewProvider->viewerNode->getNode()->removeReferences();
         _imp->_previewProvider->viewerNode->deleteReferences();
     }
