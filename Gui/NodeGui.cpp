@@ -1190,7 +1190,7 @@ NodeGui::activate(bool triggerRender)
 void
 NodeGui::hideGui()
 {
-    if ( !_graph->getGui() ) {
+    if ( !_graph || !_graph->getGui() ) {
         return;
     }
     hide();
@@ -1280,12 +1280,14 @@ NodeGui::deactivate(bool triggerRender)
     if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
     }
-    _graph->moveToTrash(this);
-    if ( _graph->getGui() ) {
-        _graph->getGui()->getCurveEditor()->removeNode(this);
+    if (_graph) {
+        _graph->moveToTrash(this);
+        if ( _graph->getGui() ) {
+            _graph->getGui()->getCurveEditor()->removeNode(this);
+        }
     }
-
-
+    
+    
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);

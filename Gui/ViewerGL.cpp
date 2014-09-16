@@ -1575,24 +1575,31 @@ ViewerGL::drawPersistentMessage()
     int averageCharsPerLine = numberOfLines != 0 ? _imp->persistentMessage.size() / numberOfLines : _imp->persistentMessage.size();
     QStringList lines;
     int i = 0;
-    while ( i < _imp->persistentMessage.size() ) {
+    QString message = _imp->persistentMessage;
+    while (!message.isEmpty()) {
         QString str;
-        while ( i < _imp->persistentMessage.size() ) {
+        while ( i < message.size() ) {
             if ( (i % averageCharsPerLine == 0) && (i != 0) ) {
                 break;
             }
-            str.append( _imp->persistentMessage.at(i) );
+            str.append( message.at(i) );
             ++i;
         }
-        /*Find closest word end and insert a new line*/
-        while ( i < _imp->persistentMessage.size() && _imp->persistentMessage.at(i) != QChar(' ') ) {
-            str.append( _imp->persistentMessage.at(i) );
-            ++i;
+        
+        if (i < message.size()) {
+            int originalIndex = i;
+            /*Find closest word before and insert a new line*/
+            while ( i >= 0 && message.at(i) != QChar(' ') && message.at(i) != QChar('\t') &&
+                   message.at(i) != QChar('\n')) {
+                --i;
+            }
+            if (i >= 0) {
+                str.remove(i, str.size() - originalIndex);
+            }
         }
-        if ( ( i < _imp->persistentMessage.size() ) && ( _imp->persistentMessage.at(i) == QChar(' ') ) ) {
-            ++i;
-        }
+        message.remove(0, str.size());
         lines.append(str);
+        i = 0;
     }
 
     int offset = metrics.height() + 10;
