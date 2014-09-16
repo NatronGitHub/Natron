@@ -2479,14 +2479,24 @@ OfxEffectInstance::ofxGetOutputPremultiplication() const
 
     assert(clip);
     
-    ///Take the preferences lock to be sure we're not writing them
-    QReadLocker l(_preferencesLock);
-    const std::string & premult = effectInstance()->getOutputPreMultiplication();
-    ///if the output has something, use it, otherwise default to premultiplied
-    if ( !premult.empty() ) {
-        return premult;
+    if (getRecursionLevel() > 0) {
+        const std::string & premult = effectInstance()->getOutputPreMultiplication();
+        ///if the output has something, use it, otherwise default to premultiplied
+        if ( !premult.empty() ) {
+            return premult;
+        } else {
+            return v;
+        }
     } else {
-        return v;
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        const std::string & premult = effectInstance()->getOutputPreMultiplication();
+        ///if the output has something, use it, otherwise default to premultiplied
+        if ( !premult.empty() ) {
+            return premult;
+        } else {
+            return v;
+        }
     }
 }
 
@@ -2497,7 +2507,12 @@ OfxEffectInstance::getPreferredAspectRatio() const
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(clip);
     
-    ///Take the preferences lock to be sure we're not writing them
-    QReadLocker l(_preferencesLock);
-    return clip->getAspectRatio();
+    if (getRecursionLevel() > 0) {
+        return clip->getAspectRatio();
+    } else {
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        return clip->getAspectRatio();
+
+    }
 }
