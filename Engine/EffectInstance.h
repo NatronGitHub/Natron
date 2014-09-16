@@ -28,6 +28,8 @@ class Format;
 class OverlaySupport;
 class PluginMemory;
 class BlockingBackgroundRender;
+class OutputSchedulerThread;
+class BufferableObject;
 
 namespace Natron {
 class Node;
@@ -119,6 +121,10 @@ public:
      **/
     virtual bool isEffectCreated() const { return true; }
     
+    /**
+     * @brief Called right away after the effect is created and before any parameters or input is populated.
+     **/
+    virtual void initializeData() {}
     
     /**
      * @brief Returns a pointer to the node holding this effect.
@@ -1118,7 +1124,6 @@ public:
  **/
 typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
 
-
 class OutputEffectInstance
     : public Natron::EffectInstance
 {
@@ -1130,13 +1135,15 @@ class OutputEffectInstance
     bool _doingFullSequenceRender;
     mutable QMutex* _outputEffectDataLock;
     BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
-
+    boost::shared_ptr<OutputSchedulerThread> _scheduler;
 public:
 
     OutputEffectInstance(boost::shared_ptr<Node> node);
 
     virtual ~OutputEffectInstance();
 
+    virtual void initializeData() OVERRIDE FINAL;
+    
     virtual bool isOutput() const
     {
         return true;
@@ -1181,6 +1188,15 @@ public:
     void setDoingFullSequenceRender(bool b);
 
     bool isDoingFullSequenceRender() const;
+    
+protected:
+    
+    void appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
+    
+    /**
+     * @brief Creates the scheduler that will regulate the output rendering
+     **/
+    virtual OutputSchedulerThread*  createOutputScheduler();
 };
 } // Natron
 #endif // NATRON_ENGINE_EFFECTINSTANCE_H_

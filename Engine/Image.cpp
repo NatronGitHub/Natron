@@ -377,6 +377,11 @@ Image::onMemoryAllocated()
     
 }
 
+boost::shared_ptr<ImageParams>
+Image::getParams() const
+{
+    return boost::dynamic_pointer_cast<ImageParams>(_params);
+}
 
 ImageKey  
 Image::makeKey(U64 nodeHashKey,

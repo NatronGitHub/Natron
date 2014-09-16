@@ -39,11 +39,13 @@ namespace Natron {
 class Node;
 class EffectInstance;
 class OutputEffectInstance;
+class Image;
 }
 class ViewerInstance;
 class OfxNode;
 class Timer;
 class TimeLine;
+class OutputSchedulerThread;
 
 /**
  *@class RenderTree
@@ -179,7 +181,8 @@ public:
      * @brief Set frozen all knobs of all nodes in the tree.
      **/
     void setNodesKnobsFrozen(bool frozen);
-
+    
+  
 private:
     /*called by resetAndSort(...) to fill the structure
      * upstream of the output given in parameter of resetAndSort(...)*/
@@ -386,6 +389,13 @@ public:
     void setPlaybackMode(PlaybackMode mode);
     
     PlaybackMode getPlaybackMode() const;
+    
+    /**
+     * @brief Set the scheduler thread that will regulate the output flow so it is in the same order as the frame
+     * that were asked for. This function will start the thread.
+     **/
+    void setOutputScheduler(OutputSchedulerThread* scheduler);
+
 private:
 
     /*The function doing all the processing in a separate thread, called by render()*/
@@ -395,7 +405,7 @@ private:
     void runSameThread();
 
     /*Used by run() and runSameThread()*/
-    void iterateKernel(bool singleThreaded);
+    void iterateKernel();
 
     /**
      *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
@@ -498,7 +508,10 @@ private:
     int _firstFrame;
     int _lastFrame;
     bool _doingARenderSingleThreaded;
+    
+    OutputSchedulerThread* _scheduler;
 };
+
 
 
 #endif /* defined(NATRON_ENGINE_VIDEOENGINE_H_) */

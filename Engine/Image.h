@@ -24,6 +24,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/CacheEntry.h"
 #include "Engine/Rect.h"
+#include "Engine/OutputSchedulerThread.h"
 
 namespace Natron {
 class ImageParams;
@@ -131,7 +132,7 @@ private:
 
 
 class Image
-    : public CacheEntryHelper<unsigned char,ImageKey>
+    : public CacheEntryHelper<unsigned char,ImageKey> , public BufferableObject
 {
 public:
 
@@ -170,6 +171,9 @@ public:
                                                      int inputTimeIdentity,
                                                      const std::map<int, std::vector<RangeD> > & framesNeeded);
 
+    
+    boost::shared_ptr<ImageParams> getParams() const;
+    
     /**
      * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
      * scale applied to it. In order to return the true pixel data window you must call getBounds()

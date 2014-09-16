@@ -258,6 +258,8 @@ Node::load(const std::string & pluginID,
     if (func.first) {
         _imp->liveInstance = func.second(thisShared);
         assert(_imp->liveInstance);
+        _imp->liveInstance->initializeData();
+        
         createRotoContextConditionnally();
         initializeInputs();
         initializeKnobs(serialization);
@@ -878,6 +880,7 @@ Node::setLiveInstance(Natron::EffectInstance* liveInstance)
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     _imp->liveInstance = liveInstance;
+    _imp->liveInstance->initializeData();
 }
 
 Natron::EffectInstance*

@@ -28,14 +28,16 @@ class TimeLine;
 class OpenGLViewerI;
 struct TextureRect;
 
-//namespace Natron {
-
 class ViewerInstance
     : public QObject, public Natron::OutputEffectInstance
 {
     Q_OBJECT
 
+    friend class ViewerDisplayScheduler;
 public:
+    
+    
+    
     enum DisplayChannels
     {
         RGB = 0,
@@ -52,6 +54,8 @@ public:
     ViewerInstance(boost::shared_ptr<Natron::Node> node);
 
     virtual ~ViewerInstance();
+    
+    OutputSchedulerThread* createOutputScheduler() OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
@@ -144,15 +148,7 @@ public:
     bool isFrameRangeLocked() const;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
-    
-    /**
-     * @brief Returns true when the main-thread is used to fill the OpenGL texture.
-     * This also means that the render thread is waiting for it to be finished.
-     **/
-    bool isUpdatingOpenGLViewer() const;
-    
-    void wakeUpRenderThread();
-    
+
 public slots:
 
 
@@ -240,10 +236,12 @@ private:
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
     /*******************************************/
+    
     Natron::Status renderViewer_internal(SequenceTime time,bool singleThreaded,bool isSequentialRender,
                                          int textureIndex) WARN_UNUSED_RETURN;
 
 private:
+    
     struct ViewerInstancePrivate;
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };

@@ -39,6 +39,7 @@
 #include "Engine/ThreadStorage.h"
 #include "Engine/Settings.h"
 #include "Engine/RotoContext.h"
+#include "Engine/OutputSchedulerThread.h"
 using namespace Natron;
 
 
@@ -3159,6 +3160,7 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
       , _doingFullSequenceRender()
       , _outputEffectDataLock(new QMutex)
       , _renderController(0)
+      , _scheduler()
 {
 }
 
@@ -3304,3 +3306,21 @@ OutputEffectInstance::isDoingFullSequenceRender() const
     return _doingFullSequenceRender;
 }
 
+OutputSchedulerThread*
+OutputEffectInstance::createOutputScheduler()
+{
+    return new DefaultScheduler(this);
+}
+
+void
+OutputEffectInstance::initializeData()
+{
+    _scheduler.reset(createOutputScheduler());
+    _videoEngine->setOutputScheduler(_scheduler.get());
+}
+
+void
+OutputEffectInstance::appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& frame)
+{
+    _scheduler->appendToBuffer(time, view, frame);
+}

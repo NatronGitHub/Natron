@@ -18,6 +18,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QSocketNotifier>
 
+
 #include "Global/MemoryInfo.h"
 
 #include "Engine/ViewerInstance.h"
@@ -37,7 +38,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Image.h"
-
+#include "Engine/OutputSchedulerThread.h"
 
 #define NATRON_FPS_REFRESH_RATE 10
 
@@ -97,8 +98,6 @@ VideoEngine::quitEngineThread()
 
     if (isThreadStarted) {
         
-        bool isMainThread = QThread::currentThread() == qApp->thread();
-        
         {
             QMutexLocker locker(&_mustQuitMutex);
             _mustQuit = true;
@@ -107,19 +106,13 @@ VideoEngine::quitEngineThread()
             abortRendering(true);
         }
 
+        _scheduler->quitThread();
+        
         {
             QMutexLocker locker(&_startMutex);
             ++_startCount;
             _startCondition.wakeAll();
         }
-        
-        ///Explanation: If the output node is a viewer and is currently waiting for the main-thread to be done
-        ///rendering the OpenGL texture and this thread is the main-thread don't wait in here otherwise we would
-        ///stall the main-thread
-        if (isMainThread && _tree.isOutputAViewer()) {
-            _tree.outputAsViewer()->wakeUpRenderThread();
-        }
-        
 
         {
             QMutexLocker locker(&_mustQuitMutex);
@@ -392,7 +385,7 @@ VideoEngine::run()
             }
         }
 
-        iterateKernel(false);
+        iterateKernel();
 
         if ( stopEngine() ) {
             return;
@@ -431,7 +424,7 @@ VideoEngine::runSameThread()
 
             return;
         }
-        iterateKernel(true);
+        iterateKernel();
         QCoreApplication::processEvents();
         ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
 
@@ -449,8 +442,10 @@ VideoEngine::runSameThread()
 }
 
 void
-VideoEngine::iterateKernel(bool singleThreaded)
+VideoEngine::iterateKernel()
 {
+    bool singleThreaded = QThread::currentThread() == qApp->thread();
+    
     for (;; ) { // infinite loop
         {
             QMutexLocker locker(&_abortedRequestedMutex);
@@ -689,25 +684,36 @@ VideoEngine::renderFrame(SequenceTime time,
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
-            stat = _tree.getOutput()->getRegionOfDefinition_public(writerHash,time, scale, i, &rod, &isProjectFormat);
+            EffectInstance* activeInputToRender = _tree.getOutput()->getInput(0);
+            if (activeInputToRender) {
+                activeInputToRender = activeInputToRender->getNearestNonDisabled();
+            }
+            U64 activeInputToRenderHash = activeInputToRender->getHash();
+            
+            stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash,time, scale, i, &rod, &isProjectFormat);
             if (stat != StatFailed) {
                 ImageComponents components;
                 ImageBitDepth imageDepth;
                 _tree.getOutput()->getPreferredDepthAndComponents(-1, &components, &imageDepth);
                 RectI renderWindow;
                 rod.toPixelEnclosing(scale, &renderWindow);
-                (void)_tree.getOutput()->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
-                                                                                  scale, //< the scale at which to render
-                                                                                  mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                                  i, //< the view to render
-                                                                                  renderWindow, //< the region of interest (in pixel coordinates)
-                                                                                  isSequentialRender, // is this sequential
-                                                                                  false, // is this render due to user interaction ?
-                                                                                  false, //< bypass cache ?
-                                                                                  rod, // < any precomputed rod ? in canonical coordinates
-                                                                                  components,
-                                                                                  imageDepth),
-                                                                                            &writerHash);
+                
+                boost::shared_ptr<Natron::Image> img =
+                activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                                                                              scale, //< the scale at which to render
+                                                                              mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                              i, //< the view to render
+                                                                              renderWindow, //< the region of interest (in pixel coordinates)
+                                                                              isSequentialRender, // is this sequential
+                                                                              false, // is this render due to user interaction ?
+                                                                              false, //< bypass cache ?
+                                                                              rod, // < any precomputed rod ? in canonical coordinates
+                                                                              components,
+                                                                              imageDepth),
+                                               &writerHash);
+                
+                _scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
+                
             } else {
                 break;
             }
@@ -765,7 +771,7 @@ VideoEngine::abortRendering(bool blocking)
             ///rendering the OpenGL texture and this thread is the main-thread don't wait in here otherwise we would
             ///stall the main-thread, rather the next render will be called once the viewer is done using the main-thread
             ///which is not too long in time anyway.
-            if (isMainThread && _tree.isOutputAViewer() && _tree.outputAsViewer()->isUpdatingOpenGLViewer() && blocking) {
+            if (isMainThread && blocking) {
                 blocking = false;
             }
             
@@ -1032,7 +1038,8 @@ VideoEngine::getFrameRange()
     }
 }
 
-boost::shared_ptr<TimeLine> VideoEngine::getTimeline() const
+boost::shared_ptr<TimeLine>
+VideoEngine::getTimeline() const
 {
     if (_tree.isOutputAViewer()) {
         return _tree.outputAsViewer()->getTimeline();
@@ -1040,3 +1047,14 @@ boost::shared_ptr<TimeLine> VideoEngine::getTimeline() const
         return _tree.getOutput()->getApp()->getTimeLine();
     }
 }
+
+void
+VideoEngine::setOutputScheduler(OutputSchedulerThread* scheduler)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    assert(scheduler);
+    
+    _scheduler = scheduler;
+    _scheduler->start();
+}
+

@@ -81,6 +81,7 @@ SOURCES += \
     OfxMemory.cpp \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
+    OutputSchedulerThread.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
     ProcessHandler.cpp \
@@ -149,6 +150,7 @@ HEADERS += \
     OfxMemory.h \
     OfxParamInstance.h \
     OpenGLViewerI.h \
+    OutputSchedulerThread.h \
     OverlaySupport.h \
     Plugin.h \
     PluginMemory.h \

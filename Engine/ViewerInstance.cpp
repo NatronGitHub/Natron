@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Project.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/Image.h"
+#include "Engine/OutputSchedulerThread.h"
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
@@ -103,18 +104,7 @@ lutFromColorspace(Natron::ViewerColorSpace cs)
     return lut;
 }
 
-namespace {
-class MetaTypesRegistration
-{
-public:
-    inline MetaTypesRegistration()
-    {
-        qRegisterMetaType<boost::shared_ptr<UpdateViewerParams> >("boost::shared_ptr<UpdateViewerParams>");
-    }
-};
-}
 
-static MetaTypesRegistration registration;
 Natron::EffectInstance*
 ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node> n)
 {
@@ -1003,16 +993,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     // call updateViewer()
 
     if ( !activeInputToRender->aborted() ) {
-        QMutexLocker locker(&_imp->updateViewerMutex);
-        // wait until previous updateViewer (if any) finishes
 
-        if (!usingRAMBuffer) {
-            while (_imp->updateViewerRunning) {
-                _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
-            }
-        }
-        assert(!_imp->updateViewerRunning);
-        _imp->updateViewerRunning = true;
         params->ramBuffer = ramBuffer;
         params->textureRect = textureRect;
         params->bytesCount = bytesCount;
@@ -1022,19 +1003,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         params->mipMapLevel = (unsigned int)mipMapLevel;
         params->textureIndex = textureIndex;
         if ( !activeInputToRender->aborted() ) {
-            if (singleThreaded) {
-                locker.unlock();
-                _imp->updateViewer(params);
-                locker.relock();
-                assert(!_imp->updateViewerRunning);
-            } else {
-                _imp->updateViewerVideoEngine(params);
-            }
-        } else {
-            _imp->updateViewerRunning = false;
-        }
-        while (_imp->updateViewerRunning) {
-            _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
+            appendToBuffer(time, view, boost::dynamic_pointer_cast<BufferableObject>(params));
         }
     }
     // end of boost::shared_ptr<UpdateUserParams> scope... but it still lives inside updateViewer()
@@ -1043,21 +1012,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     return StatOK;
 } // renderViewer_internal
 
-
-void
-ViewerInstance::wakeUpRenderThread()
-{
-    QMutexLocker locker(&_imp->updateViewerMutex);
-    _imp->updateViewerCond.wakeAll();
-    _imp->updateViewerRunning = false;
-}
-
-bool
-ViewerInstance::isUpdatingOpenGLViewer() const
-{
-    QMutexLocker locker(&_imp->updateViewerMutex);
-    return _imp->updateViewerRunning;
-}
 
 void
 renderFunctor(std::pair<int,int> yRange,
@@ -1555,22 +1509,13 @@ scaleToTexture32bits(std::pair<int,int> yRange,
 
 
 void
-ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params)
-{
-    // always running in the VideoEngine thread
-    assertVideoEngine();
-
-    emit doUpdateViewer(params);
-}
-
-void
 ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateViewerParams> params)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    QMutexLocker locker(&updateViewerMutex);
-    if (updateViewerRunning) {
+   // QMutexLocker locker(&updateViewerMutex);
+   // if (updateViewerRunning) {
         uiContext->makeOpenGLcontextCurrent();
         if ( !instance->aborted() ) {
             // how do you make sure params->ramBuffer is not freed during this operation?
@@ -1592,10 +1537,10 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         }
 
         uiContext->updateColorPicker(params->textureIndex);
-
-        updateViewerRunning = false;
-    }
-    updateViewerCond.wakeOne();
+//
+//        updateViewerRunning = false;
+//    }
+//    updateViewerCond.wakeOne();
 }
 
 bool
@@ -2209,4 +2154,10 @@ boost::shared_ptr<TimeLine>
 ViewerInstance::getTimeline() const
 {
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
+}
+
+OutputSchedulerThread*
+ViewerInstance::createOutputScheduler()
+{
+    return new ViewerDisplayScheduler(this);
 }

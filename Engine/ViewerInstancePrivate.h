@@ -18,6 +18,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/TextureRect.h"
@@ -64,8 +65,11 @@ struct RenderViewerArgs
 };
 
 /// parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
-struct UpdateViewerParams
+class UpdateViewerParams : public BufferableObject
 {
+    
+public:
+    
     UpdateViewerParams()
         : ramBuffer(NULL)
           , textureIndex(0)
@@ -77,6 +81,8 @@ struct UpdateViewerParams
           , lut(Natron::sRGB)
     {
     }
+    
+    virtual ~UpdateViewerParams() {}
 
     unsigned char* ramBuffer;
     int textureIndex;
@@ -100,9 +106,6 @@ public:
           , uiContext(NULL)
           , forceRenderMutex()
           , forceRender(false)
-          , updateViewerCond()
-          , updateViewerMutex()
-          , updateViewerRunning(false)
           , updateViewerPboIndex(0)
           , buffer(NULL)
           , bufferAllocated(0)
@@ -122,8 +125,7 @@ public:
           , lastRenderHash(0)
           , lastRenderedTexture()
     {
-        connect( this,SIGNAL( doUpdateViewer(boost::shared_ptr<UpdateViewerParams>) ),this,
-                 SLOT( updateViewer(boost::shared_ptr<UpdateViewerParams>) ) );
+
         activeInputs[0] = -1;
         activeInputs[1] = -1;
     }
@@ -144,9 +146,6 @@ public:
 #     endif // DEBUG
     }
 
-    /// function that emits the signal to call updateViewer() from the main thread
-    void updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params);
-
     void redrawViewer()
     {
         emit mustRedrawViewer();
@@ -160,11 +159,7 @@ public slots:
     void updateViewer(boost::shared_ptr<UpdateViewerParams> params);
 
 signals:
-    /**
-     *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
-     **/
-    void doUpdateViewer(boost::shared_ptr<UpdateViewerParams> params);
-
+   
     void mustRedrawViewer();
 
 public:
@@ -175,9 +170,6 @@ public:
 
 
     // updateViewer: stuff for handling the execution of updateViewer() in the main thread, @see UpdateViewerParams
-    QWaitCondition updateViewerCond;
-    mutable QMutex updateViewerMutex;     //!< protects updateViewerRunning, updateViewerPboIndex
-    bool updateViewerRunning;               //<! This flag is true when the updateViewer() function is called. That function
     //is always called on the main thread, but the thread running renderViewer MUST
     //wait the entire time. This flag is here to make the renderViewer() thread wait
     //until the texture upload is finished by the main thread.
