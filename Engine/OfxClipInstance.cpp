@@ -131,6 +131,20 @@ OfxClipInstance::getUnmappedComponents() const
                 break;
         }
     } else {
+        ///The node is not connected but optional, return the closest supported components
+        ///of the first connected non optional input.
+        if ( isOptional() ) {
+            int nInputs = _nodeInstance->getMaxInputCount();
+            for (int i  = 0 ; i < nInputs ; ++i) {
+                OfxClipInstance* clip = _nodeInstance->getClipCorrespondingToInput(i);
+                if (clip && !clip->isOptional() && clip->getConnected()) {
+                    return clip->getComponents();
+                }
+            }
+        }
+        
+        
+        ///last-resort: black and transparant image means RGBA.
         return rgbaStr;
     }
 }
@@ -414,7 +428,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.x2 = optionalBounds->x2;
         bounds.y2 = optionalBounds->y2;
     }
-#pragma message WARN("ClipInstance::getComponents is NOT THREAD-SAFE, we should override it and make it thread-safe with a mutex.")
+
     RectI renderWindow;
     boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
                                                                      optionalBounds ? &bounds : NULL,

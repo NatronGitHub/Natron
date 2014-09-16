@@ -322,6 +322,7 @@ public:
     void getOutputsConnectedToThisNode(std::map< boost::shared_ptr<Node>,int>* outputs);
 
     const std::list<boost::shared_ptr<Natron::Node> > & getOutputs() const;
+    void getOutputs_mt_safe(std::list<boost::shared_ptr<Natron::Node> >& outputs) const;
 
     /**
      * @brief Each input name is appended to the vector, in the same order
@@ -657,6 +658,9 @@ public:
      * node have. Some keyframes might appear several times.
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
+    
+    
+
 public slots:
 
     void setKnobsAge(U64 newAge);
@@ -694,6 +698,7 @@ public slots:
     {
         emit settingsPanelClosed(closed);
     }
+
 
 signals:
 

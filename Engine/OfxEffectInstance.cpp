@@ -19,7 +19,7 @@
 #include <QByteArray>
 #include <QReadWriteLock>
 #include <QPointF>
-#include <QtConcurrentRun>
+
 
 #include "Global/Macros.h"
 
@@ -858,7 +858,7 @@ clipPrefsProxy(OfxEffectInstance* self,
 
     
     
-    std::string outputClipDepth = outputClip->getPixelDepth();
+    std::string outputClipDepth = foundOutputPrefs->second.bitdepth;
     Natron::ImageBitDepth outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
     
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
@@ -866,9 +866,12 @@ clipPrefsProxy(OfxEffectInstance* self,
                             "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
     bool setBitDepthWarning = false;
     
+    bool outputModified = false;
+    
     if (!self->isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth))) {
         outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
-        outputClip->setPixelDepth(outputClipDepth);
+        foundOutputPrefs->second.bitdepth = outputClipDepth;
+        outputModified = true;
     }
     
     double outputAspectRatio = foundOutputPrefs->second.par;
@@ -877,6 +880,7 @@ clipPrefsProxy(OfxEffectInstance* self,
     ///output clip doesn't support components just remap it, this is probably a plug-in bug.
     if (!outputClip->isSupportedComponent(foundOutputPrefs->second.components)) {
         foundOutputPrefs->second.components = outputClip->findSupportedComp(kOfxImageComponentRGBA);
+        outputModified = true;
     }
     
     int maxInputs = self->getMaxInputCount();
@@ -942,26 +946,14 @@ clipPrefsProxy(OfxEffectInstance* self,
         }
     }
     
+    if (outputModified) {
+        changedClips.push_back(outputClip);
+    }
+    
     self->getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
     
 } //endCheckOFXClipPreferences
 
-
-static void setPreferences(OfxImageEffectInstance* effect,
-                           QReadWriteLock* preferencesLock,
-                           const std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>& clipPrefs,
-                           const OfxImageEffectInstance::EffectPrefs& effectPrefs)
-{
-    QWriteLocker l(preferencesLock);
-    for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipPrefs.begin(); it != clipPrefs.end(); ++it) {
-        it->first->setComponents(it->second.components);
-        it->first->setPixelDepth(it->second.bitdepth);
-        it->first->setAspectRatio(it->second.par);
-    }
-    
-    effect->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
-                                   effectPrefs.continuous, effectPrefs.frameVarying);
-}
 
 void
 OfxEffectInstance::checkOFXClipPreferences(double time,
@@ -974,12 +966,15 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
 
+    ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////
+    //////////////// STEP 1 : Get plug-in render preferences
     std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs> clipsPrefs;
     OfxImageEffectInstance::EffectPrefs effectPrefs;
-    
     {
+        RECURSIVE_ACTION();
         ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
+        QWriteLocker preferencesLocker(_preferencesLock);
         if (forceGetClipPrefAction) {
             if (!_effect->getClipPreferences_safe(clipsPrefs,effectPrefs)) {
                 return;
@@ -995,34 +990,62 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
         }
     }
     
+    
+    ////////////////////////////////////////////////////////////////
+    ////////////////////////////////
+    //////////////// STEP 2: Apply a proxy, i.e: modify the preferences so it requires a minimum pixel shuffling
     std::list<OfxClipInstance*> modifiedClips;
     
     clipPrefsProxy(this,time,clipsPrefs,modifiedClips);
     
-    if (!modifiedClips.empty()) {
-        effectInstance()->beginInstanceChangedAction(reason);
-    }
-    for (std::list<OfxClipInstance*>::iterator it = modifiedClips.begin(); it!=modifiedClips.end();++it) {
-        effectInstance()->clipInstanceChangedAction((*it)->getName(), reason, time, scale);
-    }
-    if (!modifiedClips.empty()) {
-        effectInstance()->endInstanceChangedAction(reason);
+    
+    ////////////////////////////////////////////////////////////////
+    ////////////////////////////////
+    //////////////// STEP 3: Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
+    
+    {
+        QWriteLocker l(_preferencesLock);
+        for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipsPrefs.begin(); it != clipsPrefs.end(); ++it) {
+            it->first->setComponents(it->second.components);
+            it->first->setPixelDepth(it->second.bitdepth);
+            it->first->setAspectRatio(it->second.par);
+        }
+        
+        effectInstance()->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
+                                                 effectPrefs.continuous, effectPrefs.frameVarying);
     }
     
+    
+    ////////////////////////////////////////////////////////////////
+    ////////////////////////////////
+    //////////////// STEP 4: If our proxy remapping changed some clips preferences, notifying the plug-in of the clips which changed
+    {
+        RECURSIVE_ACTION();
+        if (!modifiedClips.empty()) {
+            effectInstance()->beginInstanceChangedAction(reason);
+        }
+        for (std::list<OfxClipInstance*>::iterator it = modifiedClips.begin(); it!=modifiedClips.end();++it) {
+            effectInstance()->clipInstanceChangedAction((*it)->getName(), reason, time, scale);
+        }
+        if (!modifiedClips.empty()) {
+            effectInstance()->endInstanceChangedAction(reason);
+        }
+    }
 
-    ///In another thread, try to take the preferences lock for writing and update the clip preferences.
-    ///The will be updated once all actions are finished.
-    QtConcurrent::run(&setPreferences,effectInstance(),_preferencesLock,clipsPrefs,effectPrefs);
-    
+    ////////////////////////////////////////////////////////////////
+    ////////////////////////////////
+    //////////////// STEP 5: Recursion down-stream
+
     ///Finally call recursively this function on all outputs to propagate it along the tree.
-    const std::list<boost::shared_ptr<Natron::Node> >& outputs = getNode()->getOutputs();
+    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _node->getOutputs();
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-        (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason,forceGetClipPrefAction);
+        ///Force a call to getClipPrefs on outputs because they are obviously not dirty
+        (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason, true);
     }
+
+    
     
 } // checkOFXClipPreferences
-
-
 
 void
 OfxEffectInstance::onMultipleInputsChanged()
@@ -1783,10 +1806,6 @@ OfxEffectInstance::drawOverlay(double /*scaleX*/,
              
             _overlayInteract->drawAction(time, rs);
         } else {*/
-        
-        
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         _overlayInteract->drawAction(time, rs);
         
         /*}*/
@@ -1831,8 +1850,6 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
                                             0);
          */
         
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
 
 
@@ -1878,8 +1895,6 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
             stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         } else {*/
         
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         /*}*/
 
@@ -1920,8 +1935,6 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
                                             false,
                                             0);
          */
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
 
         if (stat == kOfxStatOK) {
@@ -1957,8 +1970,6 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
                                             false,
                                             0);
  */
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->keyDownAction( time, rs, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
@@ -1993,8 +2004,6 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
                                             false,
                                             0);
          */
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->keyUpAction( time, rs, (int)key, keyStr.data() );
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -2030,8 +2039,6 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
                                             false,
                                             0);
  */
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         OfxStatus stat = _overlayInteract->keyRepeatAction( time, rs, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
@@ -2065,8 +2072,6 @@ OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
                                                 0);
             stat = _overlayInteract->gainFocusAction(time, rs);
         } else {*/
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         stat = _overlayInteract->gainFocusAction(time, rs);
         /*}*/
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -2103,8 +2108,6 @@ OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,
 
             stat = _overlayInteract->loseFocusAction(time, rs);
         } else {*/
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
         stat = _overlayInteract->loseFocusAction(time, rs);
         /*}*/
 
@@ -2180,12 +2183,16 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                             false, //< setmipmaplevel?
                                             0);
         
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
+        ///This action as all the overlay interacts actions can trigger recursive actions, such as
+        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+        ///the clip preferences to stay the same throughout the action.
         stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
     } else {
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
+        ///This action as all the overlay interacts actions can trigger recursive actions, such as
+        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+        ///the clip preferences to stay the same throughout the action.
         stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
     }
 
@@ -2219,8 +2226,12 @@ OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reason)
     if (!_initialized) {
         return;
     }
-    ///Take the preferences lock so that it cannot be modified throughout the action.
-    QReadLocker preferencesLocker(_preferencesLock);
+    
+    RECURSIVE_ACTION();
+    ///This action as all the overlay interacts actions can trigger recursive actions, such as
+    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+    ///the clip preferences to stay the same throughout the action.
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
     case Natron::USER_EDITED:
@@ -2245,8 +2256,12 @@ OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
     if (!_initialized) {
         return;
     }
-    ///Take the preferences lock so that it cannot be modified throughout the action.
-    QReadLocker preferencesLocker(_preferencesLock);
+    
+    RECURSIVE_ACTION();
+    ///This action as all the overlay interacts actions can trigger recursive actions, such as
+    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+    ///the clip preferences to stay the same throughout the action.
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
     case Natron::USER_EDITED:
@@ -2269,14 +2284,27 @@ void
 OfxEffectInstance::purgeCaches()
 {
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
-    ///Take the preferences lock so that it cannot be modified throughout the action.
-    QReadLocker preferencesLocker(_preferencesLock);
-    OfxStatus stat =  _effect->purgeCachesAction();
-
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    OfxStatus stat;
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(_preferencesLock);
+        stat =  _effect->purgeCachesAction();
+        
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        
+    }
     // The kOfxActionSyncPrivateData action is called when a plugin should synchronise any private data structures to its parameter set. This generally occurs when an effect is about to be saved or copied, but it could occur in other situations as well. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionSyncPrivateData
-    stat =  _effect->syncPrivateDataAction();
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    
+    {
+        RECURSIVE_ACTION();
+        ///This action as all the overlay interacts actions can trigger recursive actions, such as
+        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+        ///the clip preferences to stay the same throughout the action.
+        stat =  _effect->syncPrivateDataAction();
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        
+    }
 }
 
 int
@@ -2322,8 +2350,14 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 {
     ///Can only be called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    ///Take the preferences lock so that it cannot be modified throughout the action.
-    QReadLocker preferencesLocker(_preferencesLock);
+    
+    RECURSIVE_ACTION();
+    
+    ///This action as all the overlay interacts actions can trigger recursive actions, such as
+    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+    ///the clip preferences to stay the same throughout the action.
+    
     effectInstance()->syncPrivateDataAction();
 }
 
@@ -2387,10 +2421,17 @@ OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
         clip = getClipCorrespondingToInput(inputNb);
     }
     assert(clip);
-    ///Take the preferences lock to be sure we're not writing them
-    QReadLocker l(_preferencesLock);
-    *comp = OfxClipInstance::ofxComponentsToNatronComponents( clip->getComponents() );
-    *depth = OfxClipInstance::ofxDepthToNatronDepth( clip->getPixelDepth() );
+    
+    if (getRecursionLevel() > 0) {
+        ///Someone took the read  (all actions) or write (getClipPreferences action)lock already
+        *comp = OfxClipInstance::ofxComponentsToNatronComponents( clip->getComponents() );
+        *depth = OfxClipInstance::ofxDepthToNatronDepth( clip->getPixelDepth() );
+    } else {
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        *comp = OfxClipInstance::ofxComponentsToNatronComponents( clip->getComponents() );
+        *depth = OfxClipInstance::ofxDepthToNatronDepth( clip->getPixelDepth() );
+    }
 }
 
 Natron::SequentialPreference

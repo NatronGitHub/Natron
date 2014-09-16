@@ -199,6 +199,7 @@ Node::Node(AppInstance* app,
       , _imp( new Implementation(app,plugin) )
 {
     QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
+
 }
 
 void
@@ -644,6 +645,13 @@ Node::getOutputs() const
     assert( QThread::currentThread() == qApp->thread() );
 
     return _imp->outputsQueue;
+}
+
+void
+Node::getOutputs_mt_safe(std::list<boost::shared_ptr<Natron::Node> >& outputs) const
+{
+    QMutexLocker l(&_imp->outputsMutex);
+    outputs =  _imp->outputsQueue;
 }
 
 void
