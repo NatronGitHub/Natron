@@ -235,9 +235,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
 
         std::string images;
-        if (isReader() && serialization->isNull()) {
+        if (isReader() && serialization->isNull() && paramValues.empty()) {
             images = getApp()->openImageFileDialog();
-        } else if (isWriter() && serialization->isNull()) {
+        } else if (isWriter() && serialization->isNull()  && paramValues.empty()) {
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {

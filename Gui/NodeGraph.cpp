@@ -2472,7 +2472,7 @@ NodeGraph::dropEvent(QDropEvent* e)
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,false,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
             boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
         }
     }

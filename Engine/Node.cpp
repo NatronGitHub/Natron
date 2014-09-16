@@ -266,9 +266,9 @@ Node::load(const std::string & pluginID,
         }
         
         std::string images;
-        if (_imp->liveInstance->isReader() && serialization.isNull()) {
+        if (_imp->liveInstance->isReader() && serialization.isNull() && paramValues.empty()) {
              images = getApp()->openImageFileDialog();
-        } else if (_imp->liveInstance->isWriter() && serialization.isNull()) {
+        } else if (_imp->liveInstance->isWriter() && serialization.isNull() && paramValues.empty()) {
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {
