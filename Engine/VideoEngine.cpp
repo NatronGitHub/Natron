@@ -162,6 +162,11 @@ VideoEngine::render(int frameCount,
         _lastRequestedRunArgs._forceSequential = false;
     }
 
+    
+    ///Start the scheduler if it has never been running 
+    if (!_scheduler->isRunning()) {
+        _scheduler->start();
+    }
 
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         runSameThread();
@@ -694,7 +699,7 @@ VideoEngine::renderFrame(SequenceTime time,
             if (stat != StatFailed) {
                 ImageComponents components;
                 ImageBitDepth imageDepth;
-                _tree.getOutput()->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+                activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
                 RectI renderWindow;
                 rod.toPixelEnclosing(scale, &renderWindow);
                 
@@ -1055,6 +1060,5 @@ VideoEngine::setOutputScheduler(OutputSchedulerThread* scheduler)
     assert(scheduler);
     
     _scheduler = scheduler;
-    _scheduler->start();
 }
 

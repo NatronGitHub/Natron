@@ -246,10 +246,8 @@ DefaultScheduler::~DefaultScheduler()
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<BufferableObject>& frame)
+DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<BufferableObject>& /*frame*/)
 {
-    boost::shared_ptr<Natron::Image> image = boost::dynamic_pointer_cast<Natron::Image>(frame);
-    assert(image);
     
     ///Writers render to scale 1 always
     RenderScale scale;
@@ -260,10 +258,27 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
     bool isProjectFormat;
     RectD rod;
     RectI roi;
-    rod.toPixelEnclosing(0, &roi);
-    (void)_effect->getRegionOfDefinition_public(hash,time, scale, view, &rod, &isProjectFormat);
     
-    _effect->renderRoI(time, scale, 0, view, roi, rod, image->getParams(), image, image, true, false, false, hash);
+    Natron::ImageComponents components;
+    Natron::ImageBitDepth imageDepth;
+    _effect->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+    
+    (void)_effect->getRegionOfDefinition_public(hash,time, scale, view, &rod, &isProjectFormat);
+    rod.toPixelEnclosing(0, &roi);
+
+    
+    Natron::EffectInstance::RenderRoIArgs args(time,
+                                               scale,0,
+                                               view,
+                                               roi,
+                                               true,
+                                               false,
+                                               false,
+                                               rod,
+                                               components,
+                                               imageDepth,
+                                               3);
+    (void)_effect->renderRoI(args);
 }
 
 

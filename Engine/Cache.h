@@ -838,9 +838,7 @@ public:
             std::list<CachedValue> & ret = getValueFromIterator(existingEntry);
             for (typename std::list<CachedValue>::iterator it = ret.begin(); it != ret.end(); ++it) {
                 if ( it->entry->getKey() == entry->getKey() ) {
-                    if ( it->entry->isStoredOnDisk() ) {
-                        it->entry->removeAnyBackingFile();
-                    }
+                    it->entry->scheduleForDestruction();
                     ret.erase(it);
                     break;
                 }
@@ -854,9 +852,7 @@ public:
                 std::list<CachedValue> & ret = getValueFromIterator(existingEntry);
                 for (typename std::list<CachedValue>::iterator it = ret.begin(); it != ret.end(); ++it) {
                     if ( it->entry->getKey() == entry->getKey() ) {
-                        if ( it->entry->isStoredOnDisk() ) {
-                            it->entry->removeAnyBackingFile();
-                        }
+                        it->entry->scheduleForDestruction();
                         ret.erase(it);
                         break;
                     }
@@ -1054,7 +1050,7 @@ private:
                 }
 
                 ///Erase the file from the disk if we reach the limit.
-                evictedFromDisk.second.entry->removeAnyBackingFile();
+                evictedFromDisk.second.entry->scheduleForDestruction();
             }
 
             CacheIterator existingDiskCacheEntry = _diskCache(evicted.first);

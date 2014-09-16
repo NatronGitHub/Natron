@@ -392,6 +392,7 @@ public:
           , _params()
           , _data()
           , _cache()
+          , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -408,11 +409,15 @@ public:
           , _params(params)
           , _data()
           , _cache(cache)
+          , _removeBackingFileBeforeDestruction(false)
     {
     }
 
     virtual ~CacheEntryHelper()
     {
+        if (_removeBackingFileBeforeDestruction) {
+            removeAnyBackingFile();
+        }
         deallocate();
     }
 
@@ -576,6 +581,13 @@ public:
             _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::DISK);
         }
     }
+    
+    /**
+     * @brief To be called when an entry is going to be removed from the cache entirely.
+     **/
+    void scheduleForDestruction() {
+        _removeBackingFileBeforeDestruction = true;
+    }
 
     virtual SequenceTime getTime() const OVERRIDE FINAL
     {
@@ -645,6 +657,7 @@ protected:
     boost::shared_ptr<NonKeyParams> _params;
     Buffer<DataType> _data;
     const CacheAPI* _cache;
+    bool _removeBackingFileBeforeDestruction;
 };
 }
 
