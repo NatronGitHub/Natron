@@ -461,7 +461,7 @@ NodeGui::updateShape(int width,
 
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
-    refreshPosition( pos().x(), pos().y() );
+    refreshPosition( pos().x(), pos().y(), true );
 }
 
 void
