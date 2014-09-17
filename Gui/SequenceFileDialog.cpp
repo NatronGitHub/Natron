@@ -598,7 +598,7 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     QStringList expandedVars;
     for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
         QString var(it->second.c_str());
-        if (!var.isEmpty()) {
+        if (it->first != NATRON_OCIO_ENV_VAR_NAME && !var.isEmpty()) {
             ///The variable may be nested
             Natron::Project::expandVariable(envVar, it->second);
             expandedVars.push_back(var);
