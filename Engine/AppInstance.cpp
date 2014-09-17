@@ -506,3 +506,9 @@ AppInstance::getMainView() const
     return _imp->_currentProject->getProjectMainView();
 }
 
+void
+AppInstance::onOCIOConfigPathChanged(const std::string& path)
+{
+    _imp->_currentProject->onOCIOConfigPathChanged(path);
+}
+

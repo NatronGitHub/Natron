@@ -112,6 +112,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
         if (projectKnobs[i] == envVars) {
             autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+            _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
         }
 
     }

@@ -701,7 +701,7 @@ Path_KnobGui::createItem(int row,const QString& value,const QString& varName)
     Qt::ItemFlags flags;
     
     ///Project env var is disabled and uneditable and set automatically by the project
-    if (varName != NATRON_PROJECT_ENV_VAR_NAME) {
+    if (varName != NATRON_PROJECT_ENV_VAR_NAME && varName != NATRON_OCIO_ENV_VAR_NAME) {
         flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
     }
     TableItem* cell0 = new TableItem;

@@ -608,6 +608,10 @@ Project::initializeKnobs()
                                   " the location of the project file when saving and loading a project.");
     _imp->envVars->setSecret(false);
     _imp->envVars->setMultiPath(true);
+    
+    ///Initialize the OCIO Config
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    
     page->addKnob(_imp->envVars);
     
     _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
@@ -1170,6 +1174,8 @@ Project::reset()
         knobs[i]->unblockEvaluation();
     }
 
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
 }
@@ -1651,6 +1657,60 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     std::map<std::string,std::string> env;
     getEnvironmentVariables(env);
     fixRelativeFilePaths(env,projectPathName, newProjectPath);
+}
+    
+void
+Project::onOCIOConfigPathChanged(const std::string& path)
+{
+    
+    QString pathCpy(path.c_str());
+
+    std::string env = _imp->envVars->getValue();
+    QStringList variables = QString(env.c_str()).split(';');
+    
+    QStringList newVariables;
+    
+    std::map<std::string, std::string> oldEnvMap;
+    
+    ///If there was already a OCIO variable, update it, otherwise create it
+    for (int i = 0; i < variables.size(); ++i) {
+        QStringList var = variables[i].split(':');
+        if (var.size() != 2) {
+            ///ignore
+            continue;
+        }
+        
+        oldEnvMap.insert(std::make_pair(var[0].toStdString(),var[1].toStdString()));
+        
+        ///update the project path
+        if (var[0] == NATRON_OCIO_ENV_VAR_NAME) {
+            QString newPath = QString(NATRON_OCIO_ENV_VAR_NAME":" + pathCpy);
+            newVariables << newPath;
+        } else {
+            newVariables << variables[i];
+        }
+        
+    }
+    
+    if (newVariables.empty()) {
+        QString newPath = QString(NATRON_OCIO_ENV_VAR_NAME":" + pathCpy);
+        newVariables << newPath;
+    }
+    
+    std::string newEnv;
+    for (int i = 0 ; i < newVariables.size(); ++i) {
+        newEnv += newVariables[i].toStdString();
+        if (i < (newVariables.size() - 1)) {
+            newEnv += ';';
+        }
+    }
+    if (env != newEnv) {
+        
+        if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+            fixRelativeFilePaths(oldEnvMap, NATRON_OCIO_ENV_VAR_NAME, path);
+        }
+        _imp->envVars->setValue(newEnv, 0);
+    }
 }
     
 } //namespace Natron

@@ -265,6 +265,9 @@ public:
      * newName.
      **/
     void fixPathName(const std::string& oldName,const std::string& newName);
+    
+    void onOCIOConfigPathChanged(const std::string& path);
+
 public slots:
 
     void onAutoSaveTimerTriggered();

@@ -2309,12 +2309,15 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
     std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
     if ( !defaultVal.empty() ) {
         if (_fileKnob) {
+            projectEnvVar_setProxy(defaultVal);
             _fileKnob->setDefaultValue(defaultVal,0);
         } else if (_outputFileKnob) {
+            projectEnvVar_setProxy(defaultVal);
             _outputFileKnob->setDefaultValue(defaultVal,0);
         } else if (_stringKnob) {
             _stringKnob->setDefaultValue(defaultVal,0);
         } else if (_pathKnob) {
+            projectEnvVar_setProxy(defaultVal);
             _pathKnob->setDefaultValue(defaultVal,0);
         }
     }
@@ -2332,7 +2335,7 @@ static bool isRelative(const std::string& str)
 }
 
 void
-OfxStringInstance::projectEnvVarProxy(std::string& str) const
+OfxStringInstance::projectEnvVar_getProxy(std::string& str) const
 {
     std::map<std::string,std::string> envvar;
     _node->getApp()->getProject()->getEnvironmentVariables(envvar);
@@ -2369,6 +2372,16 @@ OfxStringInstance::projectEnvVarProxy(std::string& str) const
     }
 }
 
+void
+OfxStringInstance::projectEnvVar_setProxy(std::string& str) const
+{
+    std::map<std::string,std::string> envvar;
+    _node->getApp()->getProject()->getEnvironmentVariables(envvar);
+    
+    Natron::Project::findReplaceVariable(envvar,str);
+   
+}
+
 OfxStatus
 OfxStringInstance::get(std::string &str)
 {
@@ -2376,15 +2389,15 @@ OfxStringInstance::get(std::string &str)
     int currentFrame = _node->getApp()->getTimeLine()->currentFrame();
     if (_fileKnob) {
         str = _fileKnob->getFileName(currentFrame,/*view*/ 0);
-        projectEnvVarProxy(str);
+        projectEnvVar_getProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
-        projectEnvVarProxy(str);
+        projectEnvVar_getProxy(str);
     } else if (_stringKnob) {
         str = _stringKnob->getValueAtTime(currentFrame,0);
     } else if (_pathKnob) {
         str = _pathKnob->getValue();
-        projectEnvVarProxy(str);
+        projectEnvVar_getProxy(str);
     }
 
     return kOfxStatOK;
@@ -2397,15 +2410,15 @@ OfxStringInstance::get(OfxTime time,
     assert( _node->effectInstance() );
     if (_fileKnob) {
         str = _fileKnob->getFileName(std::floor(time + 0.5),/*view*/ 0);
-        projectEnvVarProxy(str);
+        projectEnvVar_getProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
-        projectEnvVarProxy(str);
+        projectEnvVar_getProxy(str);
     } else if (_stringKnob) {
         str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0);
     } else if (_pathKnob) {
         str = _pathKnob->getValue();
-        projectEnvVarProxy(str);
+        projectEnvVar_getProxy(str);
     }
 
     return kOfxStatOK;
@@ -2415,16 +2428,22 @@ OfxStatus
 OfxStringInstance::set(const char* str)
 {
     if (_fileKnob) {
-        _fileKnob->setValue(str,0);
+        std::string s(str);
+        projectEnvVar_setProxy(s);
+        _fileKnob->setValue(s,0);
     }
     if (_outputFileKnob) {
-        _outputFileKnob->setValue(str,0);
+        std::string s(str);
+        projectEnvVar_setProxy(s);
+        _outputFileKnob->setValue(s,0);
     }
     if (_stringKnob) {
         _stringKnob->setValue(str,0);
     }
     if (_pathKnob) {
-        _pathKnob->setValue(str,0);
+        std::string s(str);
+        projectEnvVar_setProxy(s);
+        _pathKnob->setValue(s,0);
     }
 
     return kOfxStatOK;
@@ -2436,16 +2455,22 @@ OfxStringInstance::set(OfxTime time,
 {
     assert( !String_Knob::canAnimateStatic() );
     if (_fileKnob) {
-        _fileKnob->setValueAtTime(time,str,0);
+        std::string s(str);
+        projectEnvVar_setProxy(s);
+        _fileKnob->setValueAtTime(time,s,0);
     }
     if (_outputFileKnob) {
-        _outputFileKnob->setValue(str,0);
+        std::string s(str);
+        projectEnvVar_setProxy(s);
+        _outputFileKnob->setValueAtTime(time,s,0);
     }
     if (_stringKnob) {
         _stringKnob->setValueAtTime( (int)time,str,0 );
     }
     if (_pathKnob) {
-        _pathKnob->setValue(str,0);
+        std::string s(str);
+        projectEnvVar_setProxy(s);
+        _pathKnob->setValueAtTime(time,s,0);
     }
 
     return kOfxStatOK;

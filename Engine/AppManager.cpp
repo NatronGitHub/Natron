@@ -77,7 +77,10 @@ struct AppManagerPrivate
     size_t maxCacheFiles; //< the maximum number of files the application can open for caching. This is the hard limit * 0.9
     size_t currentCacheFilesCount; //< the number of cache files currently opened in the application
     mutable QMutex currentCacheFilesCountMutex; //< protects currentCacheFilesCount
+    
 
+    std::string currentOCIOConfigPath; //< the currentOCIO config path
+    
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
           , _appInstances()
@@ -1650,6 +1653,21 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
         totalFreeRAM = getAmountFreePhysicalRAM();
     }
 
+}
+
+void
+AppManager::onOCIOConfigPathChanged(const std::string& path)
+{
+    _imp->currentOCIOConfigPath = path;
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin() ; it != _imp->_appInstances.end(); ++it) {
+        it->second.app->onOCIOConfigPathChanged(path);
+    }
+}
+
+const std::string&
+AppManager::getOCIOConfigPath() const
+{
+    return _imp->currentOCIOConfigPath;
 }
 
 namespace Natron {

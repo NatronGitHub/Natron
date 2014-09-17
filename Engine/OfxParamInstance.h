@@ -633,9 +633,14 @@ public slots:
 private:
     
     /**
-     * @brief If str starts with an env var of the project, replace it by the name of the env var
+     * @brief Expand any project path contained in str
      **/
-    void projectEnvVarProxy(std::string& str) const;
+    void projectEnvVar_getProxy(std::string& str) const;
+    
+    /**
+     * @brief Find any project path contained in str and replace it by the associated name
+     **/
+    void projectEnvVar_setProxy(std::string& str) const;
     
     OfxEffectInstance* _node;
     boost::shared_ptr<File_Knob> _fileKnob;

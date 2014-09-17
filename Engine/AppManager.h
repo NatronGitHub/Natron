@@ -272,6 +272,10 @@ public:
     
     void onCheckerboardSettingsChanged() { emit checkerboardSettingsChanged(); }
     
+    void onOCIOConfigPathChanged(const std::string& path);
+    ///Non MT-safe!
+    const std::string& getOCIOConfigPath() const;
+    
 public slots:
 
     ///Closes the application not saving any projects.
