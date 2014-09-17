@@ -789,6 +789,15 @@ OfxEffectInstance::onInputChanged(int inputNo)
     RenderScale s;
     s.x = s.y = 1.;
     
+    
+    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
+    
+    ///if all non optional clips are connected, call getClipPrefs
+    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
+    if ( !getApp()->getProject()->isLoadingProject() && _effect->areAllNonOptionalClipsConnected() ) {
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
+    }
+    
     {
         RECURSIVE_ACTION();
         
@@ -796,17 +805,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
         _effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
         _effect->endInstanceChangedAction(kOfxChangeUserEdited);
     }
-    
-    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-    
-    if (getApp()->getProject()->isLoadingProject()) {
-        return;
-    }
-    ///if all non optional clips are connected, call getClipPrefs
-    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
-    if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
-    }
+
 }
 
 /** @brief map a std::string to a context */
@@ -849,6 +848,7 @@ static void
 clipPrefsProxy(OfxEffectInstance* self,
                double time,
                std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>& clipPrefs,
+               OfxImageEffectInstance::EffectPrefs& effectPrefs,
                std::list<OfxClipInstance*>& changedClips)
 {
     ///We remap all the input clips components to be the same as the output clip, except for the masks.
@@ -871,6 +871,7 @@ clipPrefsProxy(OfxEffectInstance* self,
     
     if (!self->isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth))) {
         outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+        outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
         foundOutputPrefs->second.bitdepth = outputClipDepth;
         outputModified = true;
     }
@@ -883,6 +884,14 @@ clipPrefsProxy(OfxEffectInstance* self,
         foundOutputPrefs->second.components = outputClip->findSupportedComp(kOfxImageComponentRGBA);
         outputModified = true;
     }
+    
+    ///Adjust output premultiplication if needed
+    if (foundOutputPrefs->second.components == kOfxImageComponentRGB) {
+        effectPrefs.premult = kOfxImageOpaque;
+    } else if (foundOutputPrefs->second.components == kOfxImageComponentAlpha) {
+        effectPrefs.premult = kOfxImagePreMultiplied;
+    }
+    
     
     int maxInputs = self->getMaxInputCount();
     
@@ -997,7 +1006,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     //////////////// STEP 2: Apply a proxy, i.e: modify the preferences so it requires a minimum pixel shuffling
     std::list<OfxClipInstance*> modifiedClips;
     
-    clipPrefsProxy(this,time,clipsPrefs,modifiedClips);
+    clipPrefsProxy(this,time,clipsPrefs,effectPrefs,modifiedClips);
     
     
     ////////////////////////////////////////////////////////////////

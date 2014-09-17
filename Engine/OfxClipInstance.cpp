@@ -178,6 +178,7 @@ OfxClipInstance::getPremult() const
                 return opaqueStr;
             case Natron::ImageComponentRGBA:
             case Natron::ImageComponentAlpha:
+                return premultStr;
             default:
                 break;
         }
@@ -194,8 +195,15 @@ OfxClipInstance::getPremult() const
                 return opaqueStr;
         }
     }
-
-    ///Default to opaque, input is not connected
+    
+    ///Input is not connected
+    
+    const std::string& comps = getComponents();
+    if (comps == kOfxImageComponentRGBA || comps == kOfxImageComponentAlpha) {
+        return premultStr;
+    }
+    
+    ///Default to opaque
     return opaqueStr;
 }
 
