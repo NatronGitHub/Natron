@@ -790,8 +790,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
     s.x = s.y = 1.;
     
     {
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
+        RECURSIVE_ACTION();
+        
         _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
         _effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
         _effect->endInstanceChangedAction(kOfxChangeUserEdited);
@@ -1053,7 +1053,6 @@ OfxEffectInstance::onMultipleInputsChanged()
 {
     assert(_context != eContextNone);
 
-    RECURSIVE_ACTION();
     double time = getApp()->getTimeLine()->currentFrame();
     RenderScale s;
     s.x = s.y = 1.;
