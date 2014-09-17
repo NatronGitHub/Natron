@@ -30,7 +30,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QMenu>
 #include <QThread>
 #include <QDropEvent>
-#include <QCoreApplication>
+#include <QApplication>
 #include <QMimeData>
 #include <QLineEdit>
 #include <QDebug>
@@ -83,6 +83,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/GuiApplicationManager.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
@@ -1775,7 +1776,9 @@ NodeGraph::enterEvent(QEvent* e)
     QGraphicsView::enterEvent(e);
 
     _imp->_nodeCreationShortcutEnabled = true;
-    setFocus();
+    if (qApp->focusWidget() == 0 || dynamic_cast<ViewerGL*>(qApp->focusWidget()) || dynamic_cast<CurveWidget*>(qApp->focusWidget())) {
+        setFocus();
+    }
 }
 
 void
@@ -1784,7 +1787,7 @@ NodeGraph::leaveEvent(QEvent* e)
     QGraphicsView::leaveEvent(e);
 
     _imp->_nodeCreationShortcutEnabled = false;
-    setFocus();
+   // setFocus();
 }
 
 void

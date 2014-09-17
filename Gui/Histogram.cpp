@@ -1303,16 +1303,6 @@ Histogram::keyPressEvent(QKeyEvent* e)
 }
 
 void
-Histogram::enterEvent(QEvent* e)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    setFocus();
-    QGLWidget::enterEvent(e);
-}
-
-void
 Histogram::leaveEvent(QEvent* e)
 {
     // always running in the main thread

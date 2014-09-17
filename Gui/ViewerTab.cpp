@@ -1882,11 +1882,6 @@ ViewerTab::getGui() const
     return _imp->_gui;
 }
 
-void
-ViewerTab::enterEvent(QEvent*)
-{
-    setFocus();
-}
 
 void
 ViewerTab::onAutoContrastChanged(bool b)
