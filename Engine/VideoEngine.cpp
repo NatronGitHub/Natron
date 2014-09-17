@@ -31,7 +31,6 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/TimeLine.h"
-#include "Engine/Timer.h"
 #include "Engine/Log.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
@@ -70,15 +69,13 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,
       , _startCount(0)
       , _workingMutex()
       , _working(false)
-      , _timerMutex()
-      , _timer(new Timer)
-      , _timerFrameCount(0)
       , _lastRequestedRunArgs()
       , _currentRunArgs()
       , _startRenderFrameTime()
       , _firstFrame(0)
       , _lastFrame(0)
       , _doingARenderSingleThreaded(false)
+      , _scheduler(0)
 {
 }
 
@@ -245,7 +242,14 @@ VideoEngine::startEngine()
 
     if (!_currentRunArgs._sameFrame) {
         emit engineStarted(_currentRunArgs._forward,_currentRunArgs._frameRequestsCount);
-        _timer->playState = RUNNING; /*activating the timer*/
+        
+        ////If the output is a Viewer and we're doing playback, just start the FPS timer that will regulate the output flow.
+        if ( (_currentRunArgs._frameRequestsCount > 1 || _currentRunArgs._frameRequestsCount == -1) &&
+            _tree.isOutputAViewer() ) {
+            
+            _scheduler->startFPSTimer();
+            
+        }
     }
     if ( appPTR->isBackground() ) {
         appPTR->writeToOutputPipe(kRenderingStartedLong, kRenderingStartedShort);
@@ -304,8 +308,7 @@ VideoEngine::stopEngine()
 
         _currentRunArgs._frameRequestsCount = 0;
         _restart = true;
-        _timer->playState = PAUSE;
-
+        _scheduler->stopFPSTimer();
 
         {
             QMutexLocker workingLocker(&_workingMutex);
@@ -590,32 +593,20 @@ VideoEngine::iterateKernel()
         // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
         Status stat;
         try {
-            stat =  renderFrame(currentFrame,singleThreaded);
+            stat =  renderFrame(currentFrame);
         } catch (const std::exception &e) {
             if (viewer) {
-                //viewer->setPersistentMessage(Natron::ERROR_MESSAGE, ss.str());
                 viewer->disconnectViewer();
             } else {
                 std::stringstream ss;
                 ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
                 std::cout << ss.str() << std::endl;
             }
-
             return;
         }
 
         if (stat == StatFailed) {
             return;
-        }
-
-
-        /*The frame has been rendered , we call engineLoop() which will reset all the flags,
-           update viewers
-           and appropriately increment counters for the next frame in the sequence.*/
-        emit frameRendered(currentFrame);
-        if ( appPTR->isBackground() ) {
-            QString frameStr = QString::number(currentFrame);
-            appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
         }
 
         if (singleThreaded) {
@@ -639,8 +630,7 @@ VideoEngine::iterateKernel()
 } // iterateKernel
 
 Natron::Status
-VideoEngine::renderFrame(SequenceTime time,
-                         bool singleThreaded)
+VideoEngine::renderFrame(SequenceTime time)
 {
     bool isSequentialRender = _currentRunArgs._frameRequestsCount > 1 || _currentRunArgs._frameRequestsCount == -1 ||
                               _currentRunArgs._forceSequential;
@@ -650,18 +640,7 @@ VideoEngine::renderFrame(SequenceTime time,
     gettimeofday(&_startRenderFrameTime, 0);
     if ( _tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode() ) {
         ViewerInstance* viewer = _tree.outputAsViewer();
-        stat = viewer->renderViewer(time,singleThreaded,isSequentialRender);
-
-        if (!_currentRunArgs._sameFrame) {
-            QMutexLocker timerLocker(&_timerMutex);
-            _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
-            if ( ( (_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0 ) && (_currentRunArgs._frameRequestsCount == -1) ) {
-                emit fpsChanged( _timer->actualFrameRate(),_timer->getDesiredFrameRate() ); // refreshing fps display on the GUI
-                _timerFrameCount = 1; //reseting to 1
-            } else {
-                ++_timerFrameCount;
-            }
-        }
+        stat = viewer->renderViewer(time,QThread::currentThread() == qApp->thread(),isSequentialRender);
 
         if (stat == StatFailed) {
             viewer->disconnectViewer();
@@ -680,6 +659,12 @@ VideoEngine::renderFrame(SequenceTime time,
 
         U64 writerHash = _tree.getOutput()->getHash();
         
+        ///If the writer is not sequential and there's more than 1 parallel task then we render directly with the writer
+        ///instead of passing the output image
+        ///to the scheduler
+        Natron::SequentialPreference pref = _tree.getOutput()->getSequentialPreference();
+        bool renderDirectly = false;/*pref == Natron::EFFECT_NOT_SEQUENTIAL  && nRenders > 1*/;
+        
         for (int i = 0; i < viewsCount; ++i) {
             if ( isSequentialRender && (i != mainView) ) {
                 ///@see the warning in EffectInstance::evaluate
@@ -689,9 +674,15 @@ VideoEngine::renderFrame(SequenceTime time,
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
-            EffectInstance* activeInputToRender = _tree.getOutput()->getInput(0);
-            if (activeInputToRender) {
-                activeInputToRender = activeInputToRender->getNearestNonDisabled();
+            EffectInstance* activeInputToRender;
+            if (renderDirectly) {
+                activeInputToRender = _tree.getOutput();
+            } else {
+                activeInputToRender = _tree.getOutput()->getInput(0);
+                if (activeInputToRender) {
+                    activeInputToRender = activeInputToRender->getNearestNonDisabled();
+                }
+                
             }
             U64 activeInputToRenderHash = activeInputToRender->getHash();
             
@@ -717,7 +708,12 @@ VideoEngine::renderFrame(SequenceTime time,
                                                                               imageDepth),
                                                &writerHash);
                 
-                _scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
+                ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
+                if (!renderDirectly) {
+                    _scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
+                } else {
+                    _scheduler->notifyFrameRendered(time);
+                }
                 
             } else {
                 break;
@@ -983,9 +979,8 @@ VideoEngine::getPlaybackMode() const
 void
 VideoEngine::setDesiredFPS(double d)
 {
-    QMutexLocker timerLocker(&_timerMutex);
-
-    _timer->setDesiredFrameRate(d);
+    assert(_scheduler);
+    _scheduler->setDesiredFPS(d);
 }
 
 bool
@@ -1061,4 +1056,11 @@ VideoEngine::setOutputScheduler(OutputSchedulerThread* scheduler)
     
     _scheduler = scheduler;
 }
+
+OutputSchedulerThread*
+VideoEngine::getOutputScheduler() const
+{
+    return _scheduler;
+}
+
 

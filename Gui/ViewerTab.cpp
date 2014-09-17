@@ -38,6 +38,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
+#include "Engine/OutputSchedulerThread.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
@@ -2527,12 +2528,12 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
     VideoEngine* vengine = _imp->_viewerNode->getVideoEngine().get();
-
+    OutputSchedulerThread* scheduler = vengine->getOutputScheduler();
     if (connect) {
-        QObject::connect( vengine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
+        QObject::connect( scheduler, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
         QObject::connect( vengine,SIGNAL( engineStopped(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
     } else {
-        QObject::disconnect( vengine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
+        QObject::disconnect( scheduler, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
         QObject::disconnect( vengine,SIGNAL( engineStopped(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
     }
 }

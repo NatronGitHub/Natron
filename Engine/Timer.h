@@ -42,6 +42,7 @@
 //
 //----------------------------------------------------------------------------
 
+#include <QObject>
 #ifdef _WIN32
     #include <windows.h>
 #else
@@ -61,8 +62,11 @@ enum PlayState
 };
 
 
-class Timer
+class Timer : public QObject
 {
+    
+    Q_OBJECT
+    
 public:
 
     //------------
@@ -91,10 +95,10 @@ public:
     // Set and get the frame rate, in frames per second
     //-------------------------------------------------
 
-    void    setDesiredFrameRate (float fps);
-    float   getDesiredFrameRate() const;
+    void    setDesiredFrameRate (double fps);
+    double   getDesiredFrameRate() const;
 
-    float   actualFrameRate ();
+    double   actualFrameRate ();
 
 
     //-------------------
@@ -102,17 +106,21 @@ public:
     //-------------------
 
     PlayState playState;
+    
+signals:
+    
+    void fpsChanged(double actualfps,double desiredfps);
 
 private:
 
-    float _spf;                 // desired frame rate,
+    double _spf;                 // desired frame rate,
     // in seconds per frame
     timeval _lastFrameTime;         // time when we displayed the
     // last frame
-    float _timingError;             // cumulative timing error
+    double _timingError;             // cumulative timing error
     timeval _lastFpsFrameTime;      // state to keep track of the
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
-    float _actualFrameRate;         // over several frames
+    double _actualFrameRate;         // over several frames
 };
 
 #endif // ifndef NATRON_ENGINE_TIMER_H_

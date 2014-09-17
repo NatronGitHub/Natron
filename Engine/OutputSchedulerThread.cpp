@@ -16,11 +16,15 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QCoreApplication>
+#include <QString>
 
+#include "Engine/AppManager.h"
 #include "Engine/Image.h"
+#include "Engine/Timer.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerInstancePrivate.h"
 
+#define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
 
 struct BufferedKey
@@ -82,6 +86,9 @@ struct OutputSchedulerThreadPrivate
     
     OutputSchedulerThread::Mode mode;
     
+    mutable QMutex timerMutex; ///protects timer & lastFpsChangedTime
+    boost::scoped_ptr<Timer> timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
+    
     OutputSchedulerThreadPrivate(OutputSchedulerThread::Mode mode)
     : buf()
     , bufCondition()
@@ -93,8 +100,10 @@ struct OutputSchedulerThreadPrivate
     , treatCondition()
     , treatMutex()
     , mode(mode)
+    , timerMutex()
+    , timer(new Timer)
     {
-        
+       
     }
     
     void appendBufferedFrame(double time,int view,const boost::shared_ptr<BufferableObject>& image)
@@ -113,6 +122,8 @@ OutputSchedulerThread::OutputSchedulerThread(Mode mode)
 {
     QObject::connect(this, SIGNAL(s_doTreatOnMainThread(double,int,boost::shared_ptr<BufferableObject>)), this,
                      SLOT(doTreatFrameMainThread(double,int,boost::shared_ptr<BufferableObject>)));
+    
+    QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), this, SIGNAL(fpsChanged(double,double)));
 }
 
 OutputSchedulerThread::~OutputSchedulerThread()
@@ -138,6 +149,13 @@ OutputSchedulerThread::run()
                 }
             }
             
+            {
+                QMutexLocker timerLocker(&_imp->timerMutex);
+                if (_imp->timer->playState == RUNNING) {
+                    _imp->timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+                }
+            }
+            
             
             ///dequeue the first image, by time
             FrameBuffer::iterator it = _imp->buf.begin();
@@ -155,10 +173,27 @@ OutputSchedulerThread::run()
                 }
             }
             
+            int frameTime = (int)it->first.time;
+            notifyFrameRendered(frameTime);
+            
             _imp->buf.erase(it);
+            
+            
         }
         _imp->bufCondition.wait(&_imp->bufMutex);
     }
+}
+
+void
+OutputSchedulerThread::notifyFrameRendered(int frame)
+{
+    emit frameRendered(frame);
+    if ( appPTR->isBackground() ) {
+        QString frameStr = QString::number(frame);
+        appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
+    }
+    
+
 }
 
 void
@@ -218,6 +253,27 @@ OutputSchedulerThread::quitThread()
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
     }
+}
+
+void
+OutputSchedulerThread::startFPSTimer()
+{
+    QMutexLocker l(&_imp->timerMutex);
+    _imp->timer->playState = RUNNING;
+}
+
+void
+OutputSchedulerThread::stopFPSTimer()
+{
+    QMutexLocker l(&_imp->timerMutex);
+    _imp->timer->playState = PAUSE;
+}
+
+void
+OutputSchedulerThread::setDesiredFPS(double d)
+{
+    QMutexLocker timerLocker(&_imp->timerMutex);
+    _imp->timer->setDesiredFrameRate(d);
 }
 
 ////////////////////////////////////////////////////////////

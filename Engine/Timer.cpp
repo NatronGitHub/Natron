@@ -34,9 +34,13 @@
 ///////////////////////////////////////////////////////////////////////////
 
 
+
 #include "Timer.h"
 
 #include <time.h>
+
+#define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
+
 
 #ifdef _WIN32
 int
@@ -97,9 +101,9 @@ Timer::waitUntilNextFrameIsDue ()
     timeval now;
     gettimeofday (&now, 0);
 
-    float timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
+    double timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
                                (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
-    float timeToSleep = _spf - timeSinceLastFrame - _timingError;
+    double timeToSleep = _spf - timeSinceLastFrame - _timingError;
 
     #ifdef _WIN32
 
@@ -146,17 +150,20 @@ Timer::waitUntilNextFrameIsDue ()
     //
     // Calculate our actual frame rate, averaged over several frames.
     //
-
-    if (_framesSinceLastFpsFrame >= 24) {
-        float t =  now.tv_sec  - _lastFpsFrameTime.tv_sec +
-                  (now.tv_usec - _lastFpsFrameTime.tv_usec) * 1e-6f;
-
-        if (t > 0) {
-            _actualFrameRate = _framesSinceLastFpsFrame / t;
+    
+    double t =  now.tv_sec  - _lastFpsFrameTime.tv_sec +
+    (now.tv_usec - _lastFpsFrameTime.tv_usec) * 1e-6f;
+    
+    if (t > NATRON_FPS_REFRESH_RATE_SECONDS) {
+        double actualFrameRate = _framesSinceLastFpsFrame / t;
+        if (actualFrameRate != _actualFrameRate) {
+            _actualFrameRate = actualFrameRate;
+            emit fpsChanged(_actualFrameRate,getDesiredFrameRate());
         }
-
         _framesSinceLastFpsFrame = 0;
     }
+    
+    
 
     if (_framesSinceLastFpsFrame == 0) {
         _lastFpsFrameTime = now;
@@ -166,18 +173,18 @@ Timer::waitUntilNextFrameIsDue ()
 } // waitUntilNextFrameIsDue
 
 void
-Timer::setDesiredFrameRate (float fps)
+Timer::setDesiredFrameRate (double fps)
 {
     _spf = 1 / fps;
 }
 
-float
+double
 Timer::getDesiredFrameRate() const
 {
     return 1.f / _spf;
 }
 
-float
+double
 Timer::actualFrameRate ()
 {
     return _actualFrameRate;

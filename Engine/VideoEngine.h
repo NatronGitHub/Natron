@@ -43,7 +43,6 @@ class Image;
 }
 class ViewerInstance;
 class OfxNode;
-class Timer;
 class TimeLine;
 class OutputSchedulerThread;
 
@@ -262,12 +261,6 @@ public slots:
 signals:
 
     /**
-     *@brief Signal emitted when the function waits the time due to display the frame.
-     **/
-    void fpsChanged(double actualFrameRate,double desiredFrameRate);
-
-
-    /**
      *@brief emitted when the engine started to render a sequence (which can be only a sequence of 1 frame).
      **/
     void engineStarted(bool forward,int frameCount);
@@ -283,12 +276,6 @@ signals:
      * Progress varies between [0,100].
      **/
     void progressChanged(int progress);
-
-    /**
-     *@brief emitted when a frame has been rendered successfully.
-     **/
-    void frameRendered(int frameNumber);
-
 
 public:
 
@@ -396,6 +383,7 @@ public:
      **/
     void setOutputScheduler(OutputSchedulerThread* scheduler);
 
+    OutputSchedulerThread* getOutputScheduler() const;
 private:
 
     /*The function doing all the processing in a separate thread, called by render()*/
@@ -427,7 +415,7 @@ private:
      **/
     bool startEngine();
 
-    Natron::Status renderFrame(SequenceTime time,bool singleThreaded);
+    Natron::Status renderFrame(SequenceTime time);
 
     boost::shared_ptr<TimeLine> getTimeline() const;
 
@@ -491,9 +479,7 @@ private:
     int _startCount; //!< if > 0 that means start requests are pending
     mutable QMutex _workingMutex; //!< protects _working
     bool _working; //!< true if a thread is working
-    mutable QMutex _timerMutex; ///protects timer
-    boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
-    int _timerFrameCount;
+
 
     /*These member doesn't need to be protected by a mutex:
        _lastRequestedRunArgs is modified upon a call to render() and

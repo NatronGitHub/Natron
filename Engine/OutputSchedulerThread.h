@@ -66,15 +66,39 @@ public:
      **/
     void quitThread();
     
+    /**
+     * @brief Starts the timer that will regulate the FPS at the FPS set by setDesiredFPS.
+     * By default the FPS is set to 24.
+     * Render on disk should never call this otherwise it would regulate the writing FPS.
+     **/
+    void startFPSTimer();
     
+    /**
+     * @brief Stop FPS regulation that was started by startFPSTimer()
+     **/
+    void stopFPSTimer();
     
-    public slots:
+    /**
+     *@brief The slot called by the GUI to set the requested fps.
+     **/
+    void setDesiredFPS(double d);
+    
+    /**
+     * @brief Called when a frame has been rendered completetly
+     **/
+    void notifyFrameRendered(int frame);
+    
+public slots:
     
     void doTreatFrameMainThread(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
     
 signals:
     
     void s_doTreatOnMainThread(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
+    
+    void fpsChanged(double actualFps,double desiredFps);
+    
+    void frameRendered(int time);
     
 protected:
     

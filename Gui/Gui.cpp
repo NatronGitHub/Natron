@@ -67,6 +67,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/VideoEngine.h"
 #include "Engine/Node.h"
 #include "Engine/KnobSerialization.h"
+#include "Engine/OutputSchedulerThread.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
@@ -3526,10 +3527,10 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
     VideoEngine* ve = writer->getVideoEngine().get();
     ///Cycle through the render tree and freeze all knobs since this render is taking place in the active GUI session.
     ve->refreshTree();
-
+    OutputSchedulerThread* scheduler = ve->getOutputScheduler();
 
     QObject::connect( dialog,SIGNAL( canceled() ),ve,SLOT( abortRenderingNonBlocking() ) );
-    QObject::connect( ve,SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );
+    QObject::connect( scheduler,SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );
     QObject::connect( ve,SIGNAL( progressChanged(int) ),dialog,SLOT( onCurrentFrameProgress(int) ) );
     QObject::connect( ve,SIGNAL( engineStopped(int) ),dialog,SLOT( onVideoEngineStopped(int) ) );
     dialog->show();
