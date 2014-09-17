@@ -626,7 +626,7 @@ GuiAppInstance::getPreviewProvider() const
 void
 GuiAppInstance::projectFormatChanged(const Format& /*f*/)
 {
-    if (_imp->_previewProvider->viewerNode && _imp->_previewProvider->viewerUI) {
+    if (_imp->_previewProvider && _imp->_previewProvider->viewerNode && _imp->_previewProvider->viewerUI) {
         _imp->_previewProvider->viewerUI->getInternalNode()->updateTreeAndRender();
     }
 }

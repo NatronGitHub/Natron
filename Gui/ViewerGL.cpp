@@ -2970,6 +2970,11 @@ ViewerGL::onProjectFormatChanged(const Format & format)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
+    
     _imp->blankViewerInfos.setDisplayWindow(format);
     _imp->blankViewerInfos.setRoD(format);
     for (int i = 0; i < 2; ++i) {

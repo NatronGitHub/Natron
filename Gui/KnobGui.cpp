@@ -875,6 +875,9 @@ KnobGui::isOnNewLine() const
 void
 KnobGui::setEnabledSlot()
 {
+    if (!getGui()) {
+        return;
+    }
     if (!_imp->customInteract) {
         setEnabled();
     }
