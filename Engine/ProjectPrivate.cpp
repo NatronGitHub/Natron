@@ -346,6 +346,8 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     std::map<std::string, std::string> oldEnvMap;
 
     ///If there was already a project variable, update it, otherwise create it
+    
+    bool foundProjectVar = false;
     for (int i = 0; i < variables.size(); ++i) {
         QStringList var = variables[i].split(':');
         if (var.size() != 2) {
@@ -357,6 +359,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
         
         ///update the project path
         if (var[0] == NATRON_PROJECT_ENV_VAR_NAME) {
+            foundProjectVar = true;
             QString newPath = QString(NATRON_PROJECT_ENV_VAR_NAME":" + pathCpy);
             newVariables << newPath;
         } else {
@@ -365,7 +368,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
         
     }
     
-    if (newVariables.empty()) {
+    if (!foundProjectVar) {
         QString newPath = QString(NATRON_PROJECT_ENV_VAR_NAME":" + pathCpy);
         newVariables << newPath;
     }
