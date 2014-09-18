@@ -276,7 +276,7 @@ public:
                 return NULL;
             }
         } else {
-            return _buffer.data();
+            return &_buffer.front();
         }
     }
 
@@ -285,7 +285,7 @@ public:
         if (_storageMode == DISK) {
             return (const DataType*)_backingFile->data();
         } else {
-            return _buffer.data();
+            return &_buffer.front();
         }
     }
 
