@@ -254,7 +254,12 @@ Natron::OfxHost::getPluginAndContextByID(const std::string & pluginID,
                                          std::string & context)
 {
     // throws out_of_range if the plugin does not exist
-    const OFXPluginEntry & ofxPlugin = _ofxPlugins.at(pluginID);
+    // Note: std::map.at() is C++11
+    OFXPluginsIterator found = _ofxPlugins.find(pluginID);
+    if (found == _ofxPlugins.end()) {
+        throw std::out_of_range(std::string("Error: No such plugin ") + pluginID);
+    }
+    const OFXPluginEntry & ofxPlugin = found->second;
 
     *plugin = _imageEffectPluginCache->getPluginById(ofxPlugin.openfxId);
     if ( !(*plugin) ) {
