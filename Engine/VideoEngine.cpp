@@ -421,7 +421,7 @@ VideoEngine::runSameThread()
     if ( !startEngine() ) {
         stopEngine();
     } else {
-        QCoreApplication::processEvents();
+        //QCoreApplication::processEvents();
         ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
 
         if (_mustQuit) {
@@ -432,7 +432,7 @@ VideoEngine::runSameThread()
             return;
         }
         iterateKernel(true);
-        QCoreApplication::processEvents();
+        //QCoreApplication::processEvents();
         ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
 
         if (_mustQuit) {
@@ -619,7 +619,7 @@ VideoEngine::iterateKernel(bool singleThreaded)
         }
 
         if (singleThreaded) {
-            QCoreApplication::processEvents();
+           // QCoreApplication::processEvents();
 
             ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
             if (_mustQuit) {
