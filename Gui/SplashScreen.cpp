@@ -33,7 +33,7 @@ SplashScreen::SplashScreen(const QString & filePath)
     
     if (customBuildString.isEmpty()) {
         QString buildNo = QString::number(NATRON_BUILD_NUMBER);
-        _versionString = QString("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS + customBuildString
+        _versionString = QString("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS + buildNo
                                  + QObject::tr(" - built on ") + __DATE__ );
     } else {
         _versionString = QString (NATRON_APPLICATION_NAME +
