@@ -28,7 +28,7 @@ Hash64::computeHash()
         return;
     }
 
-    const unsigned char* data = reinterpret_cast<const unsigned char*>( node_values.data() );
+    const unsigned char* data = reinterpret_cast<const unsigned char*>( &node_values.front() );
     boost::crc_optimal<64,0x42F0E1EBA9EA3693ULL,0,0,false,false> crc_64;
     crc_64 = std::for_each( data, data + node_values.size() * sizeof(node_values[0]), crc_64 );
     hash = crc_64();
