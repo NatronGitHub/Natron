@@ -191,6 +191,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
     }
     _context = mapToContextEnum(context);
+    
+    std::string images;
+
     try {
         _effect = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(_effect);
@@ -235,7 +238,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->setValuesFromSerialization(paramValues);
         }
 
-        std::string images;
+        //////////////////////////////////////////////////////
+        ///////For READERS & WRITERS only we open an image file dialog
         if (allowFileDialogs && isReader() && serialization->isNull() && paramValues.empty()) {
             images = getApp()->openImageFileDialog();
         } else if (allowFileDialogs && isWriter() && serialization->isNull()  && paramValues.empty()) {
@@ -247,7 +251,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             list.push_back(defaultFile);
             getNode()->setValuesFromSerialization(list);
         }
-
+        //////////////////////////////////////////////////////
         
         
         {
@@ -257,6 +261,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
         _created = true;
         unblockEvaluation();
+
+       
+        
 
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
             throw std::runtime_error("Could not create effect instance for plugin");
@@ -317,6 +324,24 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     }
 
     _initialized = true;
+    
+    ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
+    ///that we set
+    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end();++it) {
+        boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
+        assert(knob);
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            knob->evaluateValueChange(i, Natron::USER_EDITED);
+        }
+    }
+    
+    if (!images.empty()) {
+        boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        if (fileNameKnob) {
+            fileNameKnob->evaluateValueChange(0,Natron::USER_EDITED);
+        }
+    }
+    
 } // createOfxImageEffectInstance
 
 OfxEffectInstance::~OfxEffectInstance()
