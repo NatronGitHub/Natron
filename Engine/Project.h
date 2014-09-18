@@ -233,7 +233,10 @@ public:
      * @brief Returns the user environment variables for the project
      **/
     void getEnvironmentVariables(std::map<std::string,std::string>& env) const;
-    static void makeEnvMap(const std::string& encodedEnv,std::map<std::string,std::string>& env);
+    /**
+     * @brief Decode the project variables from the encoded version;
+     **/
+    static void makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables);
     
     /**
      * @brief Expands the environment variables in the given string that are found in env
@@ -251,6 +254,8 @@ public:
      * If the path indicated by varValue doesn't exist then str will be unchanged.
      **/
     static void makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str);
+    
+   
     
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
