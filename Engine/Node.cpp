@@ -661,10 +661,10 @@ Node::getInputNames(std::vector<std::string> & inputNames) const
 {
     int maxInp = _imp->liveInstance->getMaxInputCount();
 
+    QMutexLocker l(&_imp->inputsMutex);
     for (int i = 0; i < maxInp; ++i) {
-        boost::shared_ptr<Node> inp = getInput(i);
-        if (inp) {
-            inputNames.push_back( inp->getName_mt_safe() );
+        if (_imp->inputsQueue[i]) {
+            inputNames.push_back( _imp->inputsQueue[i]->getName_mt_safe() );
         } else {
             inputNames.push_back("");
         }
