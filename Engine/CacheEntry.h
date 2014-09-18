@@ -313,6 +313,7 @@ private:
 class CacheAPI
 {
 public:
+    virtual ~CacheAPI() {}
 
     /**
      * @brief To be called by a CacheEntry whenever it's size is changed.
