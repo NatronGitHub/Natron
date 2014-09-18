@@ -164,7 +164,7 @@ SOURCES += \
 
 INSTALLS += target
 
-Resources.files = ../Gui/Resources/OpenColorIO-Configs
+Resources.files = $$PWD/../Gui/Resources/OpenColorIO-Configs
 macx {
     Resources.path = Contents/Resources
     QMAKE_BUNDLE_DATA += Resources
