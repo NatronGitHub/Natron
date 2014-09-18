@@ -113,12 +113,12 @@ public:
 
     const char* getBitmap() const
     {
-        return _map.data();
+        return &_map.front();
     }
 
     char* getBitmap()
     {
-        return _map.data();
+        return &_map.front();
     }
 
     const char* getBitmapAt(int x,int y) const;
