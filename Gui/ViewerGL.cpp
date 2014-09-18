@@ -2166,6 +2166,10 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
+    
+    ///Set focus on user click
+    setFocus();
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::MouseButton button = e->button();
 
