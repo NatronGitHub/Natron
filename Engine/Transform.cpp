@@ -41,6 +41,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <algorithm>
+#include <stdexcept>
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -122,11 +123,12 @@ Point4D::operator() (int i)
         return w;
     default:
         assert(false);
+        throw std::out_of_range("Point4D");
     }
     ;
 }
 
-double
+const double&
 Point4D::operator() (int i) const
 {
     switch (i) {
@@ -144,6 +146,7 @@ Point4D::operator() (int i) const
         return w;
     default:
         assert(false);
+        throw std::out_of_range("Point4D");
     }
     ;
 }

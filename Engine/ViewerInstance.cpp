@@ -1876,7 +1876,7 @@ ViewerInstance::getColorAt(double x,
                                               dstColorSpace,
                                               r, g, b, a);
         break;
-    case IMAGE_NONE:
+    default:
         gotval = false;
         break;
     }

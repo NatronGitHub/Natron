@@ -72,7 +72,7 @@ struct Point4D
     Point4D(const Point4D & o);
     double & operator() (int i);
 
-    double operator() (int i) const;
+    const double& operator() (int i) const;
 
     bool operator==(const Point4D & o) const;
 };
