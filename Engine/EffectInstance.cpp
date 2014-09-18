@@ -771,6 +771,12 @@ EffectInstance::getImage(int inputNb,
     } else {
         roi = optionalBounds;
     }
+    
+    ///For writers, bypassCache was set to true in the renderRoI call, make sure it is set to false now! otherwise
+    ///we would render twice the frame.
+    if (isWriter()) {
+        byPassCache = false;
+    }
 
 
     ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
@@ -1842,7 +1848,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                     for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
                         Natron::ImageComponents inputPrefComps;
                         Natron::ImageBitDepth inputPrefDepth;
-                        inputEffect->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
+                        getPreferredDepthAndComponents(it2->first, &inputPrefComps, &inputPrefDepth);
 
                         int channelForAlphaInput = inputIsMask ? getMaskChannel(it2->first) : 3;
                         boost::shared_ptr<Natron::Image> inputImg =
