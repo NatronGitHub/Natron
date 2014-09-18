@@ -85,6 +85,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/Histogram.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -1774,11 +1775,22 @@ void
 NodeGraph::enterEvent(QEvent* e)
 {
     QGraphicsView::enterEvent(e);
-
-    _imp->_nodeCreationShortcutEnabled = true;
-    if (qApp->focusWidget() == 0 || dynamic_cast<ViewerGL*>(qApp->focusWidget()) || dynamic_cast<CurveWidget*>(qApp->focusWidget())) {
+    
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
         setFocus();
     }
+
+    _imp->_nodeCreationShortcutEnabled = true;
+   
 }
 
 void

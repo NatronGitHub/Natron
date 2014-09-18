@@ -63,6 +63,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/Histogram.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -3087,11 +3088,20 @@ ViewerGL::enterEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (qApp->focusWidget() == 0 || dynamic_cast<NodeGraph*>(qApp->focusWidget())
-        || dynamic_cast<CurveWidget*>(qApp->focusWidget())) {
+    
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
         setFocus();
     }
-    QGLWidget::enterEvent(e);
+    QWidget::enterEvent(e);
 }
 
 void

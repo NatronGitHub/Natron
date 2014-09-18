@@ -1099,6 +1099,7 @@ TabWidget::keyPressEvent (QKeyEvent* e)
         } else {
             _gui->maximize(this);
         }
+        e->accept();
     } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, e->modifiers(), e->key())) {
         _gui->toggleFullScreen();
         e->accept();
