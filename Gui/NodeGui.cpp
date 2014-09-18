@@ -1515,9 +1515,10 @@ NodeGui::onInputNRenderingStarted(int input)
     ///change again, otherwise it would flicker the screen
     if (t >= 0.5) {
         std::map<int,Edge*>::iterator it = _inputEdges.find(input);
-        assert( it != _inputEdges.end() );
-        it->second->turnOnRenderingColor();
-        _lastInputNRenderStartedSlotCallTime = now;
+        if ( it != _inputEdges.end() ) {
+            it->second->turnOnRenderingColor();
+            _lastInputNRenderStartedSlotCallTime = now;
+        }
     }
 }
 
