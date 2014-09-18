@@ -1043,13 +1043,13 @@ KnobHelper::getKeyFrameIndex(int dimension,
 
 void
 KnobHelper::onMasterChanged(KnobI* master,
-                            int /*masterDimension*/)
+                            int masterDimension)
 {
     ///Map to the good dimension
     {
         QReadLocker l(&_imp->mastersMutex);
         for (U32 i = 0; i < _imp->masters.size(); ++i) {
-            if (_imp->masters[i].second.get() == master) {
+            if (_imp->masters[i].second.get() == master && _imp->masters[i].first == masterDimension) {
                 evaluateValueChange(i, Natron::SLAVE_REFRESH);
 
                 return;
