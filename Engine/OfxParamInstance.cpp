@@ -177,6 +177,14 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
     ///copy only if type is the same
     if ( from->typeName() == to->typeName() ) {
         to->clone(from,offset,range);
+        to->blockEvaluation();
+        int dims = to->getDimension();
+        for (int i = 0; i < dims; ++i) {
+            if (i == dims - 1) {
+                to->unblockEvaluation();
+            }
+            to->evaluateValueChange(i, Natron::PLUGIN_EDITED);
+        }
     }
 
     return kOfxStatOK;
