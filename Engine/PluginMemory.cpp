@@ -78,7 +78,7 @@ PluginMemory::getPtr()
 {
     QMutexLocker l(&_imp->mutex);
 
-   // assert( _imp->data.size() > 0 && _imp->data.data() );
+    assert(_imp->data.size() == 0 || (_imp->data.size() > 0 && &_imp->data.front()));
 
     return (void*)( &_imp->data.front() );
 }
