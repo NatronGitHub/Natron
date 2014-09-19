@@ -13,6 +13,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cstdlib> // strtoul
+#include <cerrno> // errno
 
 #include <QtConcurrentRun>
 #include <QCoreApplication>
