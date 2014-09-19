@@ -835,12 +835,13 @@ Path_KnobGui::rebuildPath() const
         ++next;
     }
     for (Variables::const_iterator it = _items.begin(); it!= _items.end(); ++it,++next) {
-            path += NATRON_ENV_VAR_NAME_START_TAG;
-            path += it->second.varName->text().toStdString();
-            path += NATRON_ENV_VAR_NAME_END_TAG;
-            path += NATRON_ENV_VAR_VALUE_START_TAG;
-            path += it->second.value->text().toStdString();
-            path += NATRON_ENV_VAR_VALUE_END_TAG;
+        // In order to use XML tags, the text inside the tags has to be escaped.
+        path += NATRON_ENV_VAR_NAME_START_TAG;
+        path += Project::escapeXML(it->second.varName->text().toStdString());
+        path += NATRON_ENV_VAR_NAME_END_TAG;
+        path += NATRON_ENV_VAR_VALUE_START_TAG;
+        path += Project::escapeXML(it->second.value->text().toStdString());
+        path += NATRON_ENV_VAR_VALUE_END_TAG;
         if (next == _items.end()) {
             --next;
         }

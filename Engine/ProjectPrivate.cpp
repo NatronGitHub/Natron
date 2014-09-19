@@ -351,10 +351,11 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     std::string newEnv;
     for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
         newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        newEnv += it->first;
+        // In order to use XML tags, the text inside the tags has to be escaped.
+        newEnv += Project::escapeXML(it->first);
         newEnv += NATRON_ENV_VAR_NAME_END_TAG;
         newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += it->second;
+        newEnv += Project::escapeXML(it->second);
         newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
     }
     if (env != newEnv) {

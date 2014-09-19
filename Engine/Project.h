@@ -273,6 +273,10 @@ public:
     
     void onOCIOConfigPathChanged(const std::string& path);
 
+
+    static std::string escapeXML(const std::string &input);
+    static std::string unescapeXML(const std::string &input);
+
 public slots:
 
     void onAutoSaveTimerTriggered();
