@@ -1029,52 +1029,72 @@ renderFunctor(std::pair<int,int> yRange,
     }
 }
 
+template <int nComps>
 std::pair<double, double>
-findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
+findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
                          ViewerInstance::DisplayChannels channels,
                          const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
     double localVmax = -std::numeric_limits<double>::infinity();
-
+    
     for (int y = rect.bottom(); y < rect.top(); ++y) {
         const float* src_pixels = (const float*)inputImage->pixelAt(rect.left(),y);
         ///we fill the scan-line with all the pixels of the input image
         for (int x = rect.left(); x < rect.right(); ++x) {
-            double r = src_pixels[0];
-            double g = src_pixels[1];
-            double b = src_pixels[2];
-            double a = src_pixels[3];
+            
+            double r,g,b,a;
+            switch (nComps) {
+                case 4:
+                    r = src_pixels[0];
+                    g = src_pixels[1];
+                    b = src_pixels[2];
+                    a = src_pixels[3];
+                    break;
+                case 3:
+                    r = src_pixels[0];
+                    g = src_pixels[1];
+                    b = src_pixels[2];
+                    a = 1.;
+                    break;
+                case 1:
+                    a = src_pixels[0];
+                    r = g = b = 0.;
+                    break;
+                default:
+                    r = g = b = 0.;
+            }
+            
             double mini, maxi;
             switch (channels) {
-            case ViewerInstance::RGB:
-                mini = std::min(std::min(r,g),b);
-                maxi = std::max(std::max(r,g),b);
-                break;
-            case ViewerInstance::LUMINANCE:
-                mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
-                maxi = mini;
-                break;
-            case ViewerInstance::R:
-                mini = r;
-                maxi = mini;
-                break;
-            case ViewerInstance::G:
-                mini = g;
-                maxi = mini;
-                break;
-            case ViewerInstance::B:
-                mini = b;
-                maxi = mini;
-                break;
-            case ViewerInstance::A:
-                mini = a;
-                maxi = mini;
-                break;
-            default:
-                mini = 0.;
-                maxi = 0.;
-                break;
+                case ViewerInstance::RGB:
+                    mini = std::min(std::min(r,g),b);
+                    maxi = std::max(std::max(r,g),b);
+                    break;
+                case ViewerInstance::LUMINANCE:
+                    mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
+                    maxi = mini;
+                    break;
+                case ViewerInstance::R:
+                    mini = r;
+                    maxi = mini;
+                    break;
+                case ViewerInstance::G:
+                    mini = g;
+                    maxi = mini;
+                    break;
+                case ViewerInstance::B:
+                    mini = b;
+                    maxi = mini;
+                    break;
+                case ViewerInstance::A:
+                    mini = a;
+                    maxi = mini;
+                    break;
+                default:
+                    mini = 0.;
+                    maxi = 0.;
+                    break;
             }
             if (mini < localVmin) {
                 localVmin = mini;
@@ -1082,12 +1102,30 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
             if (maxi > localVmax) {
                 localVmax = maxi;
             }
-
+            
             src_pixels +=  4;
         }
     }
-
+    
     return std::make_pair(localVmin, localVmax);
+}
+
+
+std::pair<double, double>
+findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
+                         ViewerInstance::DisplayChannels channels,
+                         const RectI & rect)
+{
+    switch (inputImage->getComponents()) {
+        case Natron::ImageComponentRGBA:
+            return findAutoContrastVminVmax_internal<4>(inputImage, channels, rect);
+        case Natron::ImageComponentRGB:
+            return findAutoContrastVminVmax_internal<3>(inputImage, channels, rect);
+        case Natron::ImageComponentAlpha:
+            return findAutoContrastVminVmax_internal<1>(inputImage, channels, rect);
+        default:
+            return std::make_pair(0,1);
+    }
 } // findAutoContrastVminVmax
 
 template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
@@ -1821,7 +1859,7 @@ ViewerInstance::getColorAt(double x,
                                               dstColorSpace,
                                               r, g, b, a);
         break;
-    case IMAGE_NONE:
+    default:
         gotval = false;
         break;
     }

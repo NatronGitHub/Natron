@@ -608,6 +608,10 @@ Project::initializeKnobs()
                                   " the location of the project file when saving and loading a project.");
     _imp->envVars->setSecret(false);
     _imp->envVars->setMultiPath(true);
+    
+    ///Initialize the OCIO Config
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    
     page->addKnob(_imp->envVars);
     
     _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
@@ -1170,6 +1174,8 @@ Project::reset()
         knobs[i]->unblockEvaluation();
     }
 
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
 }
@@ -1483,17 +1489,42 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
 }
     
 void
-Project::makeEnvMap(const std::string& encodedEnv,std::map<std::string,std::string>& env)
+Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables)
 {
-    QStringList variables = QString(encodedEnv.c_str()).split(';');
-    for (int i = 0; i < variables.size(); ++i) {
-        QStringList split = variables[i].split(':');
-        if (split.size() != 2) {
-            continue;
+    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
+    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
+    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
+    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
+    
+    size_t i = encoded.find(startNameTag);
+    while (i != std::string::npos) {
+        i += startNameTag.size();
+        assert(i < encoded.size());
+        size_t endNamePos = encoded.find(endNameTag,i);
+        assert(endNamePos != std::string::npos && endNamePos < encoded.size());
+        
+        std::string name,value;
+        while (i < endNamePos) {
+            name.push_back(encoded[i]);
+            ++i;
         }
-        env.insert(std::make_pair(split[0].toStdString(),split[1].toStdString()));
+        
+        i = encoded.find(startValueTag,i);
+        i += startValueTag.size();
+        assert(i != std::string::npos && i < encoded.size());
+        
+        size_t endValuePos = encoded.find(endValueTag,i);
+        assert(endValuePos != std::string::npos && endValuePos < encoded.size());
+        
+        while (i < endValuePos) {
+            value.push_back(encoded.at(i));
+            ++i;
+        }
+        
+        variables.insert(std::make_pair(name, value));
+        
+        i = encoded.find(startNameTag,i);
     }
-  
 }
 
 void
@@ -1652,5 +1683,40 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     getEnvironmentVariables(env);
     fixRelativeFilePaths(env,projectPathName, newProjectPath);
 }
+    
+void
+Project::onOCIOConfigPathChanged(const std::string& path)
+{
+    
+    std::string env = _imp->envVars->getValue();
+    std::map<std::string, std::string> envMap;
+    makeEnvMap(env, envMap);
+    
+    ///If there was already a OCIO variable, update it, otherwise create it
+    
+    std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
+    if (foundOCIO != envMap.end()) {
+        foundOCIO->second = path;
+    } else {
+        envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
+    }
+
+    std::string newEnv;
+    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+        newEnv += NATRON_ENV_VAR_NAME_START_TAG;
+        newEnv += it->first;
+        newEnv += NATRON_ENV_VAR_NAME_END_TAG;
+        newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
+        newEnv += it->second;
+        newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
+    }
+    if (env != newEnv) {
+        if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+            fixRelativeFilePaths(envMap, NATRON_OCIO_ENV_VAR_NAME, path);
+        }
+        _imp->envVars->setValue(newEnv, 0);
+    }
+}
+
     
 } //namespace Natron

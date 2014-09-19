@@ -875,6 +875,9 @@ KnobGui::isOnNewLine() const
 void
 KnobGui::setEnabledSlot()
 {
+    if (!getGui()) {
+        return;
+    }
     if (!_imp->customInteract) {
         setEnabled();
     }
@@ -1195,12 +1198,17 @@ LinkToKnobDialog::onNodeComboEditingFinished()
             Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[j].get() );
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[j].get() );
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
+                QString name( knobs[j]->getDescription().c_str() );
+
+                bool canInsertKnob = true;
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {
-                    QString name( knobs[j]->getDescription().c_str() );
-                    if ( !knobs[j]->isSlave(k) && knobs[j]->isEnabled(k) && !name.isEmpty() ) {
-                        _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
-                        _imp->knobSelectionCombo->addItem(name);
+                    if ( knobs[j]->isSlave(k) || !knobs[j]->isEnabled(k) || name.isEmpty() ) {
+                        canInsertKnob = false;
                     }
+                }
+                if (canInsertKnob) {
+                    _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
+                    _imp->knobSelectionCombo->addItem(name);
                 }
             }
         }

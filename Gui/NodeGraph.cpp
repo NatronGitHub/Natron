@@ -30,7 +30,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QMenu>
 #include <QThread>
 #include <QDropEvent>
-#include <QCoreApplication>
+#include <QApplication>
 #include <QMimeData>
 #include <QLineEdit>
 #include <QDebug>
@@ -83,7 +83,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/Histogram.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -1773,9 +1775,22 @@ void
 NodeGraph::enterEvent(QEvent* e)
 {
     QGraphicsView::enterEvent(e);
+    
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
+        setFocus();
+    }
 
     _imp->_nodeCreationShortcutEnabled = true;
-    setFocus();
+   
 }
 
 void
@@ -1784,7 +1799,7 @@ NodeGraph::leaveEvent(QEvent* e)
     QGraphicsView::leaveEvent(e);
 
     _imp->_nodeCreationShortcutEnabled = false;
-    setFocus();
+   // setFocus();
 }
 
 void
@@ -3106,7 +3121,9 @@ NodeGraph::createBackDrop(QVBoxLayout *dockContainer,
 
             int border = 100;
             int headerHeight = bd->getHeaderHeight();
-            bd->setPos(bbox.x() - border, bbox.y() - border);
+            QPointF scenePos(bbox.x() - border, bbox.y() - border);
+            
+            bd->setPos(bd->mapToParent(bd->mapFromScene(scenePos)));
             bd->resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
         } else {
             QRectF viewPos = visibleSceneRect();

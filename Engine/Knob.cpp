@@ -1043,13 +1043,13 @@ KnobHelper::getKeyFrameIndex(int dimension,
 
 void
 KnobHelper::onMasterChanged(KnobI* master,
-                            int /*masterDimension*/)
+                            int masterDimension)
 {
     ///Map to the good dimension
     {
         QReadLocker l(&_imp->mastersMutex);
         for (U32 i = 0; i < _imp->masters.size(); ++i) {
-            if (_imp->masters[i].second.get() == master) {
+            if (_imp->masters[i].second.get() == master && _imp->masters[i].first == masterDimension) {
                 evaluateValueChange(i, Natron::SLAVE_REFRESH);
 
                 return;
@@ -1402,9 +1402,11 @@ KnobHolder::evaluate_public(KnobI* knob,
         return;
     }
     _imp->evaluateQueue.isSignificant |= isSignificant;
-    _imp->evaluateQueue.requester = knob;
+    if (!_imp->evaluateQueue.requester) {
+        _imp->evaluateQueue.requester = knob;
+    }
     if (getRecursionLevel() == 0) {
-        evaluate(knob, _imp->evaluateQueue.isSignificant,reason);
+        evaluate(_imp->evaluateQueue.requester, _imp->evaluateQueue.isSignificant,reason);
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
         if ( isSignificant && getApp() ) {

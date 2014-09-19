@@ -13,7 +13,6 @@
 #include <cassert>
 #include <map>
 
-#include <QtCore/QCoreApplication>
 #include <QtCore/QEvent>
 #include <QtCore/QFile>
 #include <QtCore/QHash>
@@ -21,6 +20,7 @@
 #include <QtCore/QWaitCondition>
 #include <QtGui/QPainter>
 #include <QtGui/QImage>
+#include <QApplication>
 #include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtGui/QPainter>
@@ -61,6 +61,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/CurveWidget.h"
+#include "Gui/Histogram.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2164,6 +2167,10 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
+    
+    ///Set focus on user click
+    setFocus();
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::MouseButton button = e->button();
 
@@ -2968,6 +2975,11 @@ ViewerGL::onProjectFormatChanged(const Format & format)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
+    
     _imp->blankViewerInfos.setDisplayWindow(format);
     _imp->blankViewerInfos.setRoD(format);
     for (int i = 0; i < 2; ++i) {
@@ -3076,8 +3088,20 @@ ViewerGL::enterEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    setFocus();
-    QGLWidget::enterEvent(e);
+    
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
+        setFocus();
+    }
+    QWidget::enterEvent(e);
 }
 
 void

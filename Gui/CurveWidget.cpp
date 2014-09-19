@@ -16,7 +16,6 @@ CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
-#include <QtCore/QCoreApplication>
 #include <QtCore/QRectF>
 #include <QtGui/QPolygonF>
 #include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
@@ -25,6 +24,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QTextStream>
 #include <QThread>
 #include <QUndoStack>
+#include <QApplication>
 
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
@@ -48,6 +48,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/Histogram.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2582,12 +2585,24 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
 } // keyPressEvent
 
 void
-CurveWidget::enterEvent(QEvent* /*e*/)
+CurveWidget::enterEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    setFocus();
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
+        setFocus();
+    }
+    
+    QGLWidget::enterEvent(e);
 }
 
 //struct RefreshTangent_functor{

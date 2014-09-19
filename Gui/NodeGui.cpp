@@ -461,7 +461,7 @@ NodeGui::updateShape(int width,
 
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
-    refreshPosition( pos().x(), pos().y() );
+    refreshPosition( pos().x(), pos().y(), true );
 }
 
 void
@@ -469,20 +469,24 @@ NodeGui::refreshPositionEnd(double x,
                             double y)
 {
     setPos(x, y);
-    QRectF bbox = mapRectToScene( boundingRect() );
-    const std::list<boost::shared_ptr<NodeGui> > & allNodes = _graph->getAllActiveNodes();
+    if (_graph) {
+        QRectF bbox = mapRectToScene(boundingRect());
+        const std::list<boost::shared_ptr<NodeGui> > & allNodes = _graph->getAllActiveNodes();
 
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-        if ( (*it)->isVisible() && (it->get() != this) && (*it)->intersects(bbox) ) {
-            setAboveItem( it->get() );
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+            if ((*it)->isVisible() && (it->get() != this) && (*it)->intersects(bbox)) {
+                setAboveItem( it->get() );
+            }
         }
     }
     refreshEdges();
-    const std::list<boost::shared_ptr<Natron::Node> > & outputs = _internalNode->getOutputs();
+    if (_internalNode) {
+        const std::list<boost::shared_ptr<Natron::Node> > & outputs = _internalNode->getOutputs();
 
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        assert(*it);
-        (*it)->doRefreshEdgesGUI();
+        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            assert(*it);
+            (*it)->doRefreshEdgesGUI();
+        }
     }
     emit positionChanged(x,y);
 }
@@ -1515,9 +1519,10 @@ NodeGui::onInputNRenderingStarted(int input)
     ///change again, otherwise it would flicker the screen
     if (t >= 0.5) {
         std::map<int,Edge*>::iterator it = _inputEdges.find(input);
-        assert( it != _inputEdges.end() );
-        it->second->turnOnRenderingColor();
-        _lastInputNRenderStartedSlotCallTime = now;
+        if ( it != _inputEdges.end() ) {
+            it->second->turnOnRenderingColor();
+            _lastInputNRenderStartedSlotCallTime = now;
+        }
     }
 }
 

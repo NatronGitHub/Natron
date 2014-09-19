@@ -23,7 +23,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
 #include <boost/serialization/split_member.hpp>
-
+#include <boost/serialization/version.hpp>
 
 #include "Engine/ProjectPrivate.h"
 #include "Engine/Project.h"
@@ -31,6 +31,9 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/KnobSerialization.h"
+
+#define PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION 2
+#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION
 
 class AppInstance;
 class ProjectSerialization
@@ -102,6 +105,10 @@ public:
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
+        
+        std::string natronVersion = NATRON_VERSION_STRING;
+        ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
+        
         int nodesCount = (int)_serializedNodes.size();
         ar & boost::serialization::make_nvp("NodesCount",nodesCount);
 
@@ -127,8 +134,13 @@ public:
 
     template<class Archive>
     void load(Archive & ar,
-              const unsigned int /*version*/)
+              const unsigned int version)
     {
+        if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
+            std::string natronVersion;
+            ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
+        }
+        
         assert(_app);
         int nodesCount;
         ar & boost::serialization::make_nvp("NodesCount",nodesCount);
@@ -156,5 +168,6 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
+BOOST_CLASS_VERSION(ProjectSerialization,PROJECT_SERIALIZATION_VERSION)
 
 #endif // PROJECTSERIALIZATION_H

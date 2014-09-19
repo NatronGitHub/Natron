@@ -191,6 +191,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
     }
     _context = mapToContextEnum(context);
+    
+    std::string images;
+
     try {
         _effect = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(_effect);
@@ -235,7 +238,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->setValuesFromSerialization(paramValues);
         }
 
-        std::string images;
+        //////////////////////////////////////////////////////
+        ///////For READERS & WRITERS only we open an image file dialog
         if (allowFileDialogs && isReader() && serialization->isNull() && paramValues.empty()) {
             images = getApp()->openImageFileDialog();
         } else if (allowFileDialogs && isWriter() && serialization->isNull()  && paramValues.empty()) {
@@ -247,7 +251,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             list.push_back(defaultFile);
             getNode()->setValuesFromSerialization(list);
         }
-
+        //////////////////////////////////////////////////////
         
         
         {
@@ -257,6 +261,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
         _created = true;
         unblockEvaluation();
+
+       
+        
 
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
             throw std::runtime_error("Could not create effect instance for plugin");
@@ -317,6 +324,24 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     }
 
     _initialized = true;
+    
+    ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
+    ///that we set
+    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end();++it) {
+        boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
+        assert(knob);
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            knob->evaluateValueChange(i, Natron::USER_EDITED);
+        }
+    }
+    
+    if (!images.empty()) {
+        boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        if (fileNameKnob) {
+            fileNameKnob->evaluateValueChange(0,Natron::USER_EDITED);
+        }
+    }
+    
 } // createOfxImageEffectInstance
 
 OfxEffectInstance::~OfxEffectInstance()
@@ -789,24 +814,23 @@ OfxEffectInstance::onInputChanged(int inputNo)
     RenderScale s;
     s.x = s.y = 1.;
     
+    
+    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
+    
+    ///if all non optional clips are connected, call getClipPrefs
+    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
+    if ( !getApp()->getProject()->isLoadingProject() && _effect->areAllNonOptionalClipsConnected() ) {
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
+    }
+    
     {
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
+        RECURSIVE_ACTION();
+        
         _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
         _effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
         _effect->endInstanceChangedAction(kOfxChangeUserEdited);
     }
-    
-    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-    
-    if (getApp()->getProject()->isLoadingProject()) {
-        return;
-    }
-    ///if all non optional clips are connected, call getClipPrefs
-    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
-    if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
-    }
+
 }
 
 /** @brief map a std::string to a context */
@@ -849,6 +873,7 @@ static void
 clipPrefsProxy(OfxEffectInstance* self,
                double time,
                std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>& clipPrefs,
+               OfxImageEffectInstance::EffectPrefs& effectPrefs,
                std::list<OfxClipInstance*>& changedClips)
 {
     ///We remap all the input clips components to be the same as the output clip, except for the masks.
@@ -871,6 +896,7 @@ clipPrefsProxy(OfxEffectInstance* self,
     
     if (!self->isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth))) {
         outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+        outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
         foundOutputPrefs->second.bitdepth = outputClipDepth;
         outputModified = true;
     }
@@ -883,6 +909,14 @@ clipPrefsProxy(OfxEffectInstance* self,
         foundOutputPrefs->second.components = outputClip->findSupportedComp(kOfxImageComponentRGBA);
         outputModified = true;
     }
+    
+    ///Adjust output premultiplication if needed
+    if (foundOutputPrefs->second.components == kOfxImageComponentRGB) {
+        effectPrefs.premult = kOfxImageOpaque;
+    } else if (foundOutputPrefs->second.components == kOfxImageComponentAlpha) {
+        effectPrefs.premult = kOfxImagePreMultiplied;
+    }
+    
     
     int maxInputs = self->getMaxInputCount();
     
@@ -997,7 +1031,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     //////////////// STEP 2: Apply a proxy, i.e: modify the preferences so it requires a minimum pixel shuffling
     std::list<OfxClipInstance*> modifiedClips;
     
-    clipPrefsProxy(this,time,clipsPrefs,modifiedClips);
+    clipPrefsProxy(this,time,clipsPrefs,effectPrefs,modifiedClips);
     
     
     ////////////////////////////////////////////////////////////////
@@ -1053,7 +1087,6 @@ OfxEffectInstance::onMultipleInputsChanged()
 {
     assert(_context != eContextNone);
 
-    RECURSIVE_ACTION();
     double time = getApp()->getTimeLine()->currentFrame();
     RenderScale s;
     s.x = s.y = 1.;

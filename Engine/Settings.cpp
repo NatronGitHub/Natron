@@ -26,7 +26,7 @@
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
-
+#include "SequenceParsing.h"
 
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
@@ -1218,6 +1218,7 @@ Settings::tryLoadOpenColorIOConfig()
 {
     QString configFile;
 
+
     if ( _customOcioConfigFile->isEnabled(0) ) {
         ///try to load from the file
         std::string file = _customOcioConfigFile->getValue();
@@ -1265,8 +1266,12 @@ Settings::tryLoadOpenColorIOConfig()
         }
     }
     qDebug() << "setting OCIO=" << configFile;
-    qputenv( "OCIO", configFile.toUtf8() );
+    qputenv( NATRON_OCIO_ENV_VAR_NAME, configFile.toUtf8() );
 
+    std::string stdConfigFile = configFile.toStdString();
+    std::string configPath = SequenceParsing::removePath(stdConfigFile);
+    
+    appPTR->onOCIOConfigPathChanged(configPath);
     return true;
 } // tryLoadOpenColorIOConfig
 

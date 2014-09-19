@@ -283,7 +283,7 @@ getAmountFreePhysicalRAM()
     if ( KERN_SUCCESS != host_statistics(hostName, HOST_VM_INFO, (host_info_t)&vmstat, &count) ) {
         throw std::runtime_error("Unable to get amount of free physical RAM");
     }
-    size_t pageSize;
+    vm_size_t pageSize;
     if ( KERN_SUCCESS != host_page_size(hostName, &pageSize) ) {
         throw std::runtime_error("Unable to get amount of free physical RAM");
     }

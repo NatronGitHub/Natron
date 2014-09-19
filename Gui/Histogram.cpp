@@ -17,7 +17,7 @@ CLANG_DIAG_OFF(unused-private-field)
 #include <QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
 #include <QDebug>
-#include <QCoreApplication>
+#include <QApplication>
 #include <QMenu>
 #include <QActionGroup>
 
@@ -37,6 +37,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/CurveWidget.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -1303,12 +1305,19 @@ Histogram::keyPressEvent(QKeyEvent* e)
 }
 
 void
-Histogram::enterEvent(QEvent* e)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    setFocus();
+Histogram::enterEvent(QEvent* e) {
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
+        setFocus();
+    }
     QGLWidget::enterEvent(e);
 }
 

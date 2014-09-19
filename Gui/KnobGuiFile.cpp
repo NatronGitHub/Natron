@@ -676,17 +676,15 @@ Path_KnobGui::updateGUI(int /*dimension*/)
     QString path(_knob->getValue().c_str());
     
     if (_knob->isMultiPath()) {
-        QStringList variables = path.split(QChar(';'));
+        std::map<std::string,std::string> variables;
+        Natron::Project::makeEnvMap(path.toStdString(), variables);
+        
         
         _model->clear();
         _items.clear();
-        for (int i = 0; i < variables.size(); ++i) {
-            QStringList cols = variables[i].split(QChar(':'));
-            if (cols.size() < 2) {
-                continue;
-            }
-            
-            createItem(i, cols[1], cols[0]);
+        int i = 0;
+        for (std::map<std::string,std::string> ::const_iterator it = variables.begin();it!=variables.end();++it,++i) {
+            createItem(i, it->second.c_str(), it->first.c_str());
         }
     } else {
         _lineEdit->setText(path);
@@ -701,7 +699,7 @@ Path_KnobGui::createItem(int row,const QString& value,const QString& varName)
     Qt::ItemFlags flags;
     
     ///Project env var is disabled and uneditable and set automatically by the project
-    if (varName != NATRON_PROJECT_ENV_VAR_NAME) {
+    if (varName != NATRON_PROJECT_ENV_VAR_NAME && varName != NATRON_OCIO_ENV_VAR_NAME) {
         flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
     }
     TableItem* cell0 = new TableItem;
@@ -837,15 +835,15 @@ Path_KnobGui::rebuildPath() const
         ++next;
     }
     for (Variables::const_iterator it = _items.begin(); it!= _items.end(); ++it,++next) {
+            path += NATRON_ENV_VAR_NAME_START_TAG;
             path += it->second.varName->text().toStdString();
-            path += ':';
+            path += NATRON_ENV_VAR_NAME_END_TAG;
+            path += NATRON_ENV_VAR_VALUE_START_TAG;
             path += it->second.value->text().toStdString();
+            path += NATRON_ENV_VAR_VALUE_END_TAG;
         if (next == _items.end()) {
             --next;
-        } else {
-            path += ';';
         }
-        
     }
     return path;
 }

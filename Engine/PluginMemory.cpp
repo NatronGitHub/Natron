@@ -80,7 +80,7 @@ PluginMemory::getPtr()
 
    // assert( _imp->data.size() > 0 && _imp->data.data() );
 
-    return (void*)( _imp->data.data() );
+    return (void*)( &_imp->data.front() );
 }
 
 void

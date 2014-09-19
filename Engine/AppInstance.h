@@ -272,6 +272,8 @@ public:
     virtual std::string openImageFileDialog() { return std::string(); }
     virtual std::string saveImageFileDialog() { return std::string(); }
 
+    
+    void onOCIOConfigPathChanged(const std::string& path);
 public slots:
 
     void quit();
