@@ -1581,8 +1581,8 @@ Project::unescapeXML(const std::string &istr)
                 if (fail) {
                     return str;
                 }
-                
-                str.replace(i, tail-head, 1, (char)cp);
+                // replace from '&' to ';' (thus the +1)
+                str.replace(i, tail - head + 1, 1, (char)cp);
             }
         }
         i = str.find_first_of("&", i + 1);
