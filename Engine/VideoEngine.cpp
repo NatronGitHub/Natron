@@ -71,7 +71,6 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,
       , _working(false)
       , _lastRequestedRunArgs()
       , _currentRunArgs()
-      , _startRenderFrameTime()
       , _firstFrame(0)
       , _lastFrame(0)
       , _doingARenderSingleThreaded(false)
@@ -587,6 +586,9 @@ VideoEngine::iterateKernel()
         ///before rendering the frame, clear any persistent message that may be left
         _tree.clearPersistentMessages();
 
+        ///This controls how many renders we should launch concurrently
+        int nRenders = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
+        
         ////////////////////////
         // Render currentFrame
         //
@@ -636,8 +638,6 @@ VideoEngine::renderFrame(SequenceTime time)
                               _currentRunArgs._forceSequential;
     Status stat = StatOK;
 
-    /*get the time at which we started rendering the frame*/
-    gettimeofday(&_startRenderFrameTime, 0);
     if ( _tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode() ) {
         ViewerInstance* viewer = _tree.outputAsViewer();
         stat = viewer->renderViewer(time,QThread::currentThread() == qApp->thread(),isSequentialRender);

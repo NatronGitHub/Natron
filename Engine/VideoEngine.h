@@ -490,7 +490,6 @@ private:
 
 
     /*Accessed only by the run() thread*/
-    timeval _startRenderFrameTime; /*!< stores the time at which the QtConcurrent::map call was made*/
     int _firstFrame;
     int _lastFrame;
     bool _doingARenderSingleThreaded;

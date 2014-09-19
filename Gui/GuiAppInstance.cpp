@@ -341,6 +341,9 @@ void
 GuiAppInstance::errorDialog(const std::string & title,
                             const std::string & message) const
 {
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
@@ -356,6 +359,9 @@ void
 GuiAppInstance::warningDialog(const std::string & title,
                               const std::string & message) const
 {
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
@@ -371,6 +377,9 @@ void
 GuiAppInstance::informationDialog(const std::string & title,
                                   const std::string & message) const
 {
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
@@ -388,6 +397,9 @@ GuiAppInstance::questionDialog(const std::string & title,
                                Natron::StandardButtons buttons,
                                Natron::StandardButton defaultButton) const
 {
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;

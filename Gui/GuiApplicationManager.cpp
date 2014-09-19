@@ -759,6 +759,12 @@ GuiApplicationManagerPrivate::createColorPickerCursor()
     _colorPickerCursor = new QCursor( pickerPix,0,pickerPix.height() );
 }
 
+bool
+GuiApplicationManager::isSplashcreenVisible() const
+{
+    return _imp->_splashScreen ? true : false;
+}
+
 void
 GuiApplicationManager::hideSplashScreen()
 {

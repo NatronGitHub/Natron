@@ -111,6 +111,18 @@ Settings::initializeKnobs()
     _numberOfThreads->setMinimum(-1);
     _numberOfThreads->setDisplayMinimum(-1);
     _generalTab->addKnob(_numberOfThreads);
+    
+    _numberOfParallelRenders = Natron::createKnob<Int_Knob>(this, "Number of parallel renders");
+    _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
+                                             "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
+                                             "what is the best number of parallel renders to launch given your CPU activity. "
+                                             "Setting a value different than 0 should be done only if you know what you're doing and can "
+                                             "in some situations decrease performances.");
+    _numberOfParallelRenders->setName("nParallelRenders");
+    _numberOfParallelRenders->setMinimum(0);
+    _numberOfParallelRenders->disableSlider();
+    _numberOfParallelRenders->setAnimationEnabled(false);
+    _generalTab->addKnob(_numberOfParallelRenders);
 
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
     _renderInSeparateProcess->setName("renderNewProcess");
@@ -615,6 +627,7 @@ Settings::setDefaultValues()
     _useBWIcons->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
+    _numberOfParallelRenders->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
@@ -738,7 +751,8 @@ Settings::saveSettings()
     settings.setValue( "CheckUpdates", _checkForUpdates->getValue() );
     settings.setValue( "AutoSaveDelay", _autoSaveDelay->getValue() );
     settings.setValue( "LinearColorPickers",_linearPickers->getValue() );
-    settings.setValue( "Number of threads", _numberOfThreads->getValue() );
+    settings.setValue( "NumberOfThreads", _numberOfThreads->getValue() );
+    settings.setValue( "NParallelRenders", _numberOfParallelRenders->getValue() );
     settings.setValue( "RenderInSeparateProcess", _renderInSeparateProcess->getValue() );
     settings.setValue( "AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue() );
     settings.setValue( "AutoProjectFormat" , _firstReadSetProjectFormat->getValue() );
@@ -884,8 +898,11 @@ Settings::restoreSettings()
     if ( settings.contains("LinearColorPickers") ) {
         _linearPickers->setValue(settings.value("LinearColorPickers").toBool(),0);
     }
-    if ( settings.contains("Number of threads") ) {
+    if ( settings.contains("NumberOfThreads") ) {
         _numberOfThreads->setValue(settings.value("Number of threads").toInt(),0);
+    }
+    if ( settings.contains("NParallelRenders") ) {
+        _numberOfParallelRenders->setValue(settings.value("NParallelRenders").toInt(),0);
     }
     if ( settings.contains("RenderInSeparateProcess") ) {
         _renderInSeparateProcess->setValue(settings.value("RenderInSeparateProcess").toBool(),0);
@@ -1812,4 +1829,9 @@ Settings::getCheckerboardColor2(double* r,double* g,double* b,double* a) const
     *g = _checkerboardColor2->getValue(1);
     *b = _checkerboardColor2->getValue(2);
     *a = _checkerboardColor2->getValue(3);
+}
+
+int Settings::getNumberOfParallelRenders() const
+{
+    return _numberOfParallelRenders->getValue();
 }

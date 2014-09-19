@@ -88,6 +88,8 @@ public:
 
     void updateAllRecentFileMenus();
 
+    bool isSplashcreenVisible() const;
+    
     virtual void hideSplashScreen() OVERRIDE FINAL;
     const QCursor & getColorPickerCursor() const;
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;

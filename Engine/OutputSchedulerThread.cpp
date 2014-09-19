@@ -86,7 +86,7 @@ struct OutputSchedulerThreadPrivate
     
     OutputSchedulerThread::Mode mode;
     
-    mutable QMutex timerMutex; ///protects timer & lastFpsChangedTime
+    QMutex timerMutex; ///protects timer & lastFpsChangedTime
     boost::scoped_ptr<Timer> timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
     OutputSchedulerThreadPrivate(OutputSchedulerThread::Mode mode)
@@ -163,6 +163,8 @@ OutputSchedulerThread::run()
             if (_imp->mode == TREAT_ON_SCHEDULER_THREAD) {
                 treatFrame(it->first.time, it->first.view, it->second);
             } else {
+                ///Treat on main-thread
+                
                 QMutexLocker treatLocker (&_imp->treatMutex);
                 _imp->treatRunning = true;
                 
