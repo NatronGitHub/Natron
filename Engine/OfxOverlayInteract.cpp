@@ -16,8 +16,27 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Global/GLIncludes.h"
 
 using namespace Natron;
+
+namespace {
+class OGLContextSaver
+{
+public:
+    OGLContextSaver() {
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedtexture);
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+    }
+
+    ~OGLContextSaver() {
+        glPopAttrib();
+        glBindTexture(GL_TEXTURE_2D, savedtexture);
+    }
+private:
+    GLuint savedtexture;
+};
+}
 
 OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
                                        int bitDepthPerComponent,
@@ -26,6 +45,127 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
       , NatronOverlayInteractSupport()
 {
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// protect all OpenGL attribs from anything wrong that could be done in interact functions
+// Should this be done in the GUI?
+// Probably not: the fact that interacts are OpenGL
+OfxStatus
+OfxOverlayInteract::createInstanceAction()
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::createInstanceAction();
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::drawAction(OfxTime time,
+                               const OfxPointD &renderScale)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::penMotionAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    const OfxPointD &penPos,
+                                    const OfxPointI &penPosViewport,
+                                    double  pressure)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, penPos, penPosViewport, pressure);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::penUpAction(OfxTime time,
+                                const OfxPointD &renderScale,
+                                const OfxPointD &penPos,
+                                const OfxPointI &penPosViewport,
+                                double pressure)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, penPos, penPosViewport, pressure);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::penDownAction(OfxTime time,
+                                  const OfxPointD &renderScale,
+                                  const OfxPointD &penPos,
+                                  const OfxPointI &penPosViewport,
+                                  double pressure)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, penPos, penPosViewport, pressure);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::keyDownAction(OfxTime time,
+                                  const OfxPointD &renderScale,
+                                  int     key,
+                                  char*   keyString)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, key, keyString);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::keyUpAction(OfxTime time,
+                                const OfxPointD &renderScale,
+                                int     key,
+                                char*   keyString)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, key, keyString);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::keyRepeatAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    int     key,
+                                    char*   keyString)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, key, keyString);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::gainFocusAction(OfxTime time,
+                                    const OfxPointD &renderScale)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale);
+
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::loseFocusAction(OfxTime  time,
+                                    const OfxPointD &renderScale)
+{
+    OGLContextSaver saver;
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale);
+
+    return stat;
+}
+
+
+
 
 Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                          OFX::Host::Interact::Descriptor &desc,
