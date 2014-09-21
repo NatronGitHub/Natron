@@ -25,7 +25,6 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Log.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/KnobFile.h"
@@ -583,9 +582,10 @@ EffectInstance::aborted() const
 void
 EffectInstance::setAborted(bool b)
 {
-    QWriteLocker l(&_imp->renderAbortedMutex);
-
-    _imp->renderAborted = b;
+    {
+        QWriteLocker l(&_imp->renderAbortedMutex);
+        _imp->renderAborted = b;
+    }
 }
 
 U64
@@ -1075,16 +1075,7 @@ boost::shared_ptr<Natron::Image>
 EffectInstance::renderRoI(const RenderRoIArgs & args,
                           U64* hashUsed)
 {
-#ifdef NATRON_LOG
-    Natron::Log::beginFunction(getName(),"renderRoI");
-    Natron::Log::print( QString( "Time " + QString::number(time) +
-                                 " Scale (" + QString::number(scale.x) +
-                                 "," + QString::number(scale.y)
-                                 + ") View " + QString::number(view) + " RoI: xmin= " + QString::number( renderWindow.left() ) +
-                                 " ymin= " + QString::number( renderWindow.bottom() ) + " xmax= " + QString::number( renderWindow.right() )
-                                 + " ymax= " + QString::number( renderWindow.top() ) ).toStdString() );
-#endif
-
+   
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
     if ( isWriter() ) {
@@ -1410,10 +1401,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         assert(cachedImgParams);
     } else {
-#ifdef NATRON_LOG
-        Natron::Log::print( QString( "The image was found in the NodeCache with the following hash key: " +
-                                     QString::number( key.getHash() ) ).toStdString() );
-#endif
+
         assert(cachedImgParams);
         assert(image);
 
@@ -1534,10 +1522,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         _imp->lastRenderHash = nodeHash;
         _imp->lastImage = downscaledImage;
     }
-
-#ifdef NATRON_LOG
-    Natron::Log::endFunction(getName(),"renderRoI");
-#endif
 
     return downscaledImage;
 } // renderRoI
@@ -1665,12 +1649,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         rectsToRender.clear();
         rectsToRender.push_back( downscaledImage->getBounds() );
     }
-#ifdef NATRON_LOG
-    else if ( rectsToRender.empty() ) {
-        Natron::Log::print( QString("Everything is already rendered in this image.").toStdString() );
-    }
-#endif
-
+    
     ///Here we fetch the age of the roto context if there's any to pass it through
     ///the tree and remember it when the plugin calls getImage() afterwards
     boost::shared_ptr<RotoContext> rotoContext = _node->getRotoContext();
@@ -1752,15 +1731,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
         RectD canonicalRectToRender;
         downscaledRectToRender.toCanonical(mipMapLevel, rod, &canonicalRectToRender);
-
-
-#ifdef NATRON_LOG
-        Natron::Log::print( QString( "Rect left to render in the image... xmin= " +
-                                     QString::number( downscaledRectToRender.left() ) + " ymin= " +
-                                     QString::number( downscaledRectToRender.bottom() ) + " xmax= " +
-                                     QString::number( downscaledRectToRender.right() ) + " ymax= " +
-                                     QString::number( downscaledRectToRender.top() ) ).toStdString() );
-#endif
 
         ///the getRegionsOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
@@ -2244,7 +2214,7 @@ EffectInstance::createKnobDynamically()
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
-                         Natron::ValueChangedReason reason)
+                         Natron::ValueChangedReason /*reason*/)
 {
     assert(_node);
 
@@ -2267,27 +2237,29 @@ EffectInstance::evaluate(KnobI* knob,
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
         if (button) {
             if ( button->isRenderButton() ) {
-                QStringList list;
-                list << getName().c_str();
-
                 std::string sequentialNode;
                 if ( _node->hasSequentialOnlyNodeUpstream(sequentialNode) ) {
                     if (_node->getApp()->getProject()->getProjectViewsCount() > 1) {
-                        Natron::StandardButton answer = Natron::questionDialog( QObject::tr("Render").toStdString(), sequentialNode + QObject::tr(" can only "
-                                                                                                                                                  "render in sequential mode. Due to limitations in the "
-                                                                                                                                                  "OpenFX standard that means that %1"
-                                                                                                                                                  " will not be able "
-                                                                                                                                                  "to render all the views of the project. "
-                                                                                                                                                  "Only the main view of the project will be rendered, you can "
-                                                                                                                                                  "change the main view in the project settings. Would you like "
-                                                                                                                                                  "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString() );
+                        Natron::StandardButton answer =
+                        Natron::questionDialog( QObject::tr("Render").toStdString(),
+                                               sequentialNode + QObject::tr(" can only "
+                                                                            "render in sequential mode. Due to limitations in the "
+                                                                            "OpenFX standard that means that %1"
+                                                                            " will not be able "
+                                                                            "to render all the views of the project. "
+                                                                            "Only the main view of the project will be rendered, you can "
+                                                                            "change the main view in the project settings. Would you like "
+                                                                            "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString() );
                         if (answer != Natron::Yes) {
                             return;
                         }
                     }
                 }
-
-                getApp()->startWritersRendering(list);
+                AppInstance::RenderWork w;
+                w.writer = dynamic_cast<OutputEffectInstance*>(this);
+                w.firstFrame = INT_MIN;
+                w.lastFrame = INT_MAX;
+                getApp()->startRenderingFullSequence(w);
 
                 return;
             }
@@ -2301,28 +2273,17 @@ EffectInstance::evaluate(KnobI* knob,
 
     std::list<ViewerInstance* > viewers;
     _node->hasViewersConnected(&viewers);
-    bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();
          it != viewers.end();
          ++it) {
         if (isSignificant) {
-            if (button) {
-                ///if the parameter is a button, force an update of the tree since it could be an analysis
-                (*it)->updateTreeAndRender();
-            } else {
-                (*it)->refreshAndContinueRender(forcePreview,reason == Natron::USER_EDITED);
-            }
+            (*it)->renderCurrentFrame();
         } else {
             (*it)->redrawViewer();
         }
     }
 
-    ///if the parameter is a button, force an update of the tree since it could be an analysis
-    if ( button && viewers.empty() ) {
-        _node->updateRenderInputsRecursive();
-    }
-
-    getNode()->refreshPreviewsRecursively();
+    getNode()->refreshPreviewsRecursivelyDownstream(getApp()->getTimeLine()->currentFrame());
 } // evaluate
 
 bool
@@ -3159,11 +3120,9 @@ EffectInstance::onNodeHashChanged(U64 hash)
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)
-      , _videoEngine(node ? new VideoEngine(this) : 0)
       , _writerCurrentFrame(0)
       , _writerFirstFrame(0)
       , _writerLastFrame(0)
-      , _doingFullSequenceRender()
       , _outputEffectDataLock(new QMutex)
       , _renderController(0)
       , _scheduler()
@@ -3172,24 +3131,17 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 
 OutputEffectInstance::~OutputEffectInstance()
 {
-    if (_videoEngine) {
+    if (_scheduler) {
         ///Thread must have been killed before.
-        assert( !_videoEngine->isThreadRunning() );
+        assert( !_scheduler->isRunning() );
     }
     delete _outputEffectDataLock;
 }
 
 void
-OutputEffectInstance::updateTreeAndRender()
+OutputEffectInstance::renderCurrentFrame()
 {
-    _videoEngine->updateTreeAndContinueRender();
-}
-
-void
-OutputEffectInstance::refreshAndContinueRender(bool forcePreview,
-                                               bool abortRender)
-{
-    _videoEngine->refreshAndContinueRender(forcePreview,abortRender);
+    _scheduler->renderCurrentFrame();
 }
 
 bool
@@ -3226,17 +3178,12 @@ OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
 }
 
 void
-OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderController)
+OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderController,int first,int last)
 {
     _renderController = renderController;
-    assert(getPluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
-    getVideoEngine()->refreshTree();
-    getVideoEngine()->render(-1, //< frame count
-                             true, //< seek timeline
-                             true, //< refresh tree
-                             true, //< forward
-                             false,
-                             false); //< same frame
+    
+    ///If you want writers to render backward (from last to first), just change the flag in parameter here
+    _scheduler->renderFrameRange(first,last,OutputSchedulerThread::RENDER_FORWARD);
 }
 
 void
@@ -3262,6 +3209,20 @@ OutputEffectInstance::setCurrentFrame(int f)
     QMutexLocker l(_outputEffectDataLock);
 
     _writerCurrentFrame = f;
+}
+
+void
+OutputEffectInstance::incrementCurrentFrame()
+{
+    QMutexLocker l(_outputEffectDataLock);
+    ++_writerCurrentFrame;
+}
+
+void
+OutputEffectInstance::decrementCurrentFrame()
+{
+    QMutexLocker l(_outputEffectDataLock);
+    --_writerCurrentFrame;
 }
 
 int
@@ -3296,21 +3257,7 @@ OutputEffectInstance::setLastFrame(int f)
     _writerLastFrame = f;
 }
 
-void
-OutputEffectInstance::setDoingFullSequenceRender(bool b)
-{
-    QMutexLocker l(_outputEffectDataLock);
 
-    _doingFullSequenceRender = b;
-}
-
-bool
-OutputEffectInstance::isDoingFullSequenceRender() const
-{
-    QMutexLocker l(_outputEffectDataLock);
-
-    return _doingFullSequenceRender;
-}
 
 OutputSchedulerThread*
 OutputEffectInstance::createOutputScheduler()
@@ -3322,7 +3269,6 @@ void
 OutputEffectInstance::initializeData()
 {
     _scheduler.reset(createOutputScheduler());
-    _videoEngine->setOutputScheduler(_scheduler.get());
 }
 
 void

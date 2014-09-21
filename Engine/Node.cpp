@@ -17,7 +17,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
-
+#include <QtCore/QWaitCondition>
 #include <boost/bind.hpp>
 
 #include <ofxNatron.h>
@@ -25,7 +25,6 @@
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/Knob.h"
@@ -42,6 +41,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/ImageParams.h"
+#include "Engine/ThreadStorage.h"
 #include "Engine/RotoContext.h"
 
 using namespace Natron;
@@ -53,6 +53,7 @@ namespace { // protect local classes in anonymous namespace
 /*The output node was connected from inputNumber to this...*/
 typedef std::map<boost::shared_ptr<Node>,int > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
+typedef std::vector<boost::shared_ptr<Node> > InputsV;
 }
 
 struct Node::Implementation
@@ -67,7 +68,6 @@ struct Node::Implementation
           , outputsQueue()
           , inputsMutex()
           , inputs()
-          , inputsQueue()
           , liveInstance(0)
           , effectCreated(false)
           , inputsComponents()
@@ -119,9 +119,19 @@ struct Node::Implementation
     mutable QMutex outputsMutex;
     std::list<boost::shared_ptr<Node> > outputs; //< written to by the render thread once before rendering a frame
     std::list<boost::shared_ptr<Node> > outputsQueue; //< Written to by the GUI only.
-    mutable QMutex inputsMutex; //< protects inputsMutex
-    std::vector<boost::shared_ptr<Node> > inputs; //< Written to by the render thread once before rendering a frame.
-    std::vector<boost::shared_ptr<Node> > inputsQueue; //< This is written to by the GUI only. Then the render thread copies this queue
+    
+    mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them
+    
+    ///The  inputs are the one used by the GUI whenever the user make changes.
+    ///Finally we use only one set of inputs protected by a mutex. This has the drawback that the
+    ///inputs connections might change throughout the render of a frame and the plug-in might then have
+    ///different results when calling stuff on clips (e.g: getRegionOfDefinition or getComponents).
+    ///I couldn't figure out a clean way to have the inputs stable throughout a render, thread-storage is not enough:
+    ///image effect suite functions that access to clips can be called from other threads than just the render-thread:
+    ///they can be accessed from the multi-thread suite. The problem is we have no way to set thread-local data to multi
+    ///thread suite threads because we don't know at all which node is using it.
+    InputsV inputs;
+    
     //to the inputs in a thread-safe manner.
     Natron::EffectInstance*  liveInstance; //< the effect hosted by this node
     bool effectCreated;
@@ -387,22 +397,23 @@ Node::computeHash()
         ///append all inputs hash
         {
             ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
-            QMutexLocker l(&_imp->inputsMutex);
+            
             if (isViewer) {
                 int activeInput[2];
                 isViewer->getActiveInputs(activeInput[0], activeInput[1]);
+                
                 for (int i = 0; i < 2; ++i) {
-                    if ( (activeInput[i] >= 0) && _imp->inputsQueue[i] ) {
-                        _imp->hash.append( _imp->inputsQueue[i]->getHashValue() );
+                    if ( (activeInput[i] >= 0) && _imp->inputs[i] ) {
+                        _imp->hash.append( _imp->inputs[i]->getHashValue() );
                     }
                 }
             } else {
-                for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-                    if (_imp->inputsQueue[i]) {
+                for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+                    if (_imp->inputs[i]) {
                         ///Add the index of the input to its hash.
                         ///Explanation: if we didn't add this, just switching inputs would produce a similar
                         ///hash.
-                        _imp->hash.append(_imp->inputsQueue[i]->getHashValue() + i);
+                        _imp->hash.append(_imp->inputs[i]->getHashValue() + i);
                     }
                 }
             }
@@ -596,7 +607,7 @@ Node::abortAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
 
     if (isOutput) {
-        isOutput->getVideoEngine()->abortRendering(true);
+        isOutput->getScheduler()->abortRendering(true);
     }
     _imp->abortPreview();
 }
@@ -607,7 +618,7 @@ Node::quitAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
 
     if (isOutput) {
-        isOutput->getVideoEngine()->quitEngineThread();
+        isOutput->getScheduler()->quitThread();
     }
     _imp->abortPreview();
 }
@@ -624,8 +635,8 @@ Node::removeReferences()
 {
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance);
 
-    if ( isOutput && isOutput->getVideoEngine()->isThreadRunning() ) {
-        isOutput->getVideoEngine()->quitEngineThread();
+    if ( isOutput && isOutput->getScheduler()->isRunning() ) {
+        isOutput->getScheduler()->quitThread();
     }
     delete _imp->liveInstance;
     _imp->liveInstance = 0;
@@ -661,12 +672,15 @@ Node::getOutputs_mt_safe(std::list<boost::shared_ptr<Natron::Node> >& outputs) c
 void
 Node::getInputNames(std::vector<std::string> & inputNames) const
 {
+    ///This is called by the serialization thread.
+    ///We use the guiInputs because we want to serialize exactly how the tree was to the user
+    
     int maxInp = _imp->liveInstance->getMaxInputCount();
 
     QMutexLocker l(&_imp->inputsMutex);
     for (int i = 0; i < maxInp; ++i) {
-        if (_imp->inputsQueue[i]) {
-            inputNames.push_back( _imp->inputsQueue[i]->getName_mt_safe() );
+        if (_imp->inputs[i]) {
+            inputNames.push_back( _imp->inputs[i]->getName_mt_safe() );
         } else {
             inputNames.push_back("");
         }
@@ -686,8 +700,8 @@ Node::getPreferredInputForConnection() const
     std::list<int> optionalEmptyInputs;
     {
         QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-            if (!_imp->inputsQueue[i]) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (!_imp->inputs[i]) {
                 if ( !_imp->liveInstance->isInputOptional(i) ) {
                     if (firstNonOptionalEmptyInput == -1) {
                         firstNonOptionalEmptyInput = i;
@@ -976,14 +990,12 @@ Node::initializeInputs()
     {
         QMutexLocker l(&_imp->inputsMutex);
         _imp->inputs.resize(inputCount);
-        _imp->inputsQueue.resize(inputCount);
         _imp->inputLabels.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         if (inputCount > oldCount) {
             for (int i = oldCount; i < inputCount; ++i) {
                 _imp->inputLabels[i] = _imp->liveInstance->getInputLabel(i);
                 _imp->inputs[i].reset();
-                _imp->inputsQueue[i].reset();
             }
         }
 
@@ -1006,67 +1018,15 @@ Node::getInput(int index) const
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->getInput(index);
     }
-    if ( QThread::currentThread() == qApp->thread() ) {
-        if (!_imp->inputsInitialized) {
-            qDebug() << "Node::getInput(): inputs not initialized";
-        }
-        QMutexLocker l(&_imp->inputsMutex);
-        if ( ( index >= (int)_imp->inputsQueue.size() ) || (index < 0) ) {
-            return boost::shared_ptr<Node>();
-        }
-
-        return _imp->inputsQueue[index];
-    } else {
-        assert(_imp->inputsInitialized);
-
-        QMutexLocker l(&_imp->inputsMutex);
-        if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
-            return boost::shared_ptr<Node>();
-        }
-
-        return _imp->inputs[index];
+    if (!_imp->inputsInitialized) {
+        qDebug() << "Node::getInput(): inputs not initialized";
     }
-}
-
-void
-Node::updateRenderInputs()
-{
-    assert(_imp->inputsInitialized);
-
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        _imp->inputs = _imp->inputsQueue;
-    }
-    {
-        QMutexLocker l(&_imp->outputsMutex);
-        _imp->outputs = _imp->outputsQueue;
-    }
-}
-
-void
-Node::updateRenderInputsRecursive()
-{
-    assert(_imp->inputsInitialized);
-
-    updateRenderInputs();
-    for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputsQueue.begin(); it != _imp->inputsQueue.end(); ++it) {
-        if ( (*it) ) {
-            (*it)->updateRenderInputs();
-        }
-    }
-}
-
-const std::vector<boost::shared_ptr<Natron::Node> > &
-Node::getInputs_other_thread() const
-{
-    assert(_imp->inputsInitialized);
-
     QMutexLocker l(&_imp->inputsMutex);
-    if (_imp->multiInstanceParent) {
-        return _imp->multiInstanceParent->getInputs_other_thread();
+    if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
+        return boost::shared_ptr<Node>();
     }
-
-    return _imp->inputs;
+    
+    return _imp->inputs[index];
 }
 
 const std::vector<boost::shared_ptr<Natron::Node> > &
@@ -1080,7 +1040,8 @@ Node::getInputs_mt_safe() const
         return _imp->multiInstanceParent->getInputs_mt_safe();
     }
 
-    return _imp->inputsQueue;
+    ///No need to lock because guiInputs is only written to by the main-thread.
+    return _imp->inputs;
 }
 
 std::string
@@ -1113,20 +1074,13 @@ Node::hasInputConnected() const
         return _imp->multiInstanceParent->hasInputConnected();
     }
     QMutexLocker l(&_imp->inputsMutex);
-    if ( QThread::currentThread() == qApp->thread() ) {
-        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-            if (_imp->inputsQueue[i]) {
-                return true;
-            }
-        }
-    } else {
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->inputs[i]) {
-                return true;
-            }
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            return true;
         }
     }
-
+    
+    
     return false;
 }
 
@@ -1173,19 +1127,19 @@ Node::isNodeUpstream(const Natron::Node* input,
         return;
     }
 
-    QMutexLocker l(&_imp->inputsMutex);
+    ///No need to lock guiInputs is only written to by the main-thread
 
-    for (U32 i = 0; i  < _imp->inputsQueue.size(); ++i) {
-        if (_imp->inputsQueue[i].get() == input) {
+    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].get() == input) {
             *ok = true;
 
             return;
         }
     }
     *ok = false;
-    for (U32 i = 0; i  < _imp->inputsQueue.size(); ++i) {
-        if (_imp->inputsQueue[i]) {
-            _imp->inputsQueue[i]->isNodeUpstream(input, ok);
+    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            _imp->inputs[i]->isNodeUpstream(input, ok);
             if (*ok) {
                 return;
             }
@@ -1208,10 +1162,10 @@ Node::connectInput(boost::shared_ptr<Node> input,
 
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputsQueue.size() ) || (_imp->inputsQueue[inputNumber] != NULL) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] != NULL) ) {
             return false;
         }
-        _imp->inputsQueue[inputNumber] = input;
+        _imp->inputs[inputNumber] = input;
     }
     QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
     emit inputChanged(inputNumber);
@@ -1271,10 +1225,10 @@ Node::switchInput0And1()
 
     {
         QMutexLocker l(&_imp->inputsMutex);
-        assert( inputAIndex < (int)_imp->inputsQueue.size() && inputBIndex < (int)_imp->inputsQueue.size() );
-        boost::shared_ptr<Natron::Node> input0 = _imp->inputsQueue[inputAIndex];
-        _imp->inputsQueue[inputAIndex] = _imp->inputsQueue[inputBIndex];
-        _imp->inputsQueue[inputBIndex] = input0;
+        assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
+        boost::shared_ptr<Natron::Node> input0 = _imp->inputs[inputAIndex];
+        _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
+        _imp->inputs[inputBIndex] = input0;
     }
     emit inputChanged(inputAIndex);
     emit inputChanged(inputBIndex);
@@ -1294,16 +1248,15 @@ Node::onInputNameChanged(const QString & name)
         return;
     }
     int inputNb = -1;
-
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-            if (_imp->inputsQueue[i].get() == inp) {
-                inputNb = i;
-                break;
-            }
+    ///No need to lock, guiInputs is only written to by the mainthread
+    
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].get() == inp) {
+            inputNb = i;
+            break;
         }
     }
+    
     if (inputNb != -1) {
         emit inputNameChanged(inputNb, name);
     }
@@ -1331,11 +1284,11 @@ Node::disconnectInput(int inputNumber)
 
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputsQueue.size() ) || (_imp->inputsQueue[inputNumber] == NULL) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] == NULL) ) {
             return -1;
         }
-        QObject::disconnect( _imp->inputsQueue[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
-        _imp->inputsQueue[inputNumber].reset();
+        QObject::disconnect( _imp->inputs[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+        _imp->inputs[inputNumber].reset();
     }
     emit inputChanged(inputNumber);
     onInputChanged(inputNumber);
@@ -1352,9 +1305,9 @@ Node::disconnectInput(boost::shared_ptr<Node> input)
     assert(_imp->inputsInitialized);
     {
         QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-            if (_imp->inputsQueue[i] == input) {
-                _imp->inputsQueue[i].reset();
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i] == input) {
+                _imp->inputs[i].reset();
                 l.unlock();
                 emit inputChanged(i);
                 onInputChanged(i);
@@ -1400,17 +1353,18 @@ Node::inputIndex(Node* n) const
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
+    
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->inputIndex(n);
     }
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-            if (_imp->inputsQueue[i].get() == n) {
-                return i;
-            }
+    
+    ///No need to lock this is only called by the main-thread
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].get() == n) {
+            return i;
         }
     }
+    
 
     return -1;
 }
@@ -1462,28 +1416,28 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToD
     int firstNonOptionalInput = -1;
     if (reconnect) {
         bool hasOnlyOneInputConnected = false;
-        {
-            QMutexLocker l(&_imp->inputsMutex);
-            for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-                if (_imp->inputsQueue[i]) {
-                    if ( !_imp->liveInstance->isInputOptional(i) ) {
-                        if (firstNonOptionalInput == -1) {
-                            firstNonOptionalInput = i;
-                            hasOnlyOneInputConnected = true;
-                        } else {
-                            hasOnlyOneInputConnected = false;
-                        }
-                    } else if (!firstOptionalInput) {
-                        firstOptionalInput = _imp->inputsQueue[i];
-                        if (hasOnlyOneInputConnected) {
-                            hasOnlyOneInputConnected = false;
-                        } else {
-                            hasOnlyOneInputConnected = true;
-                        }
+        
+        ///No need to lock guiInputs is only written to by the mainthread
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                if ( !_imp->liveInstance->isInputOptional(i) ) {
+                    if (firstNonOptionalInput == -1) {
+                        firstNonOptionalInput = i;
+                        hasOnlyOneInputConnected = true;
+                    } else {
+                        hasOnlyOneInputConnected = false;
+                    }
+                } else if (!firstOptionalInput) {
+                    firstOptionalInput = _imp->inputs[i];
+                    if (hasOnlyOneInputConnected) {
+                        hasOnlyOneInputConnected = false;
+                    } else {
+                        hasOnlyOneInputConnected = true;
                     }
                 }
             }
         }
+        
         if (hasOnlyOneInputConnected) {
             if (firstNonOptionalInput != -1) {
                 inputToConnectTo = getInput(firstNonOptionalInput);
@@ -1500,13 +1454,10 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToD
     ///thisShared might be null if we're tearing down the project.
     if (thisShared) {
         std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
-        {
-            QMutexLocker l(&_imp->inputsMutex);
-            inputsQueueCopy = _imp->inputsQueue;
-        }
-        for (U32 i = 0; i < inputsQueueCopy.size(); ++i) {
-            if (inputsQueueCopy[i]) {
-                inputsQueueCopy[i]->disconnectOutput(thisShared);
+        
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                _imp->inputs[i]->disconnectOutput(thisShared);
             }
         }
         
@@ -1543,7 +1494,7 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToD
     }
 
 
-    ///kill any thread it could have started (e.g: VideoEngine or preview)
+    ///kill any thread it could have started 
     ///Commented-out: If we were to undo the deactivate we don't want all threads to be
     ///exited, just exit them when the effect is really deleted instead
     //quitAnyProcessing();
@@ -1579,16 +1530,17 @@ Node::activate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToRes
     boost::shared_ptr<Natron::Node> thisShared = getApp()->getProject()->getNodePointer(this);
     assert(thisShared);
 
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        ///for all inputs, reconnect their output to this node
-        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-            if (_imp->inputsQueue[i]) {
-                _imp->inputsQueue[i]->connectOutput(thisShared);
-            }
+    
+    ///No need to lock, guiInputs is only written to by the main-thread
+    
+    ///for all inputs, reconnect their output to this node
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            _imp->inputs[i]->connectOutput(thisShared);
         }
     }
-
+    
+    
     ///Restore all outputs that was connected to this node
     for (std::map<boost::shared_ptr<Node>,int >::iterator it = _imp->deactivatedState.begin();
          it != _imp->deactivatedState.end(); ++it) {
@@ -1742,10 +1694,6 @@ Node::makePreviewImage(SequenceTime time,
 
     scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
-#ifdef NATRON_LOG
-    Log::beginFunction(getName(),"makePreviewImage");
-    Log::print( QString( "Time " + QString::number(time) ).toStdString() );
-#endif
 
     boost::shared_ptr<Image> img;
     RectI renderWindow;
@@ -1811,9 +1759,7 @@ Node::makePreviewImage(SequenceTime time,
 
     _imp->computingPreview = false;
     _imp->computingPreviewCond.wakeOne();
-#ifdef NATRON_LOG
-    Log::endFunction(getName(),"makePreviewImage");
-#endif
+
 } // makePreviewImage
 
 bool
@@ -1875,7 +1821,14 @@ void
 Node::setKnobsFrozen(bool frozen)
 {
     ///MT-safe from EffectInstance::setKnobsFrozen
-    return _imp->liveInstance->setKnobsFrozen(frozen);
+    _imp->liveInstance->setKnobsFrozen(frozen);
+    
+    QMutexLocker l(&_imp->inputsMutex);
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            _imp->inputs[i]->setKnobsFrozen(frozen);
+        }
+    }
 }
 
 std::string
@@ -1955,12 +1908,26 @@ Node::setAborted(bool b)
     ///MT-safe from EffectInstance
     assert(_imp->liveInstance);
     _imp->liveInstance->setAborted(b);
+    
+    QMutexLocker l(&_imp->inputsMutex);
+    
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            _imp->inputs[i]->setAborted(b);
+        }
+    }
+    
 }
 
 bool
 Node::message(MessageType type,
               const std::string & content) const
 {
+    ///If the node was aborted, don't transmit any message because we could cause a deadlock
+    if ( _imp->liveInstance->aborted() ) {
+        return false;
+    }
+    
     switch (type) {
     case INFO_MESSAGE:
         informationDialog(getName_mt_safe(), content);
@@ -2015,6 +1982,15 @@ Node::clearPersistentMessage()
     if ( !appPTR->isBackground() ) {
         emit persistentMessageCleared();
     }
+    
+    QMutexLocker l(&_imp->inputsMutex);
+    ///No need to lock, guiInputs is only written to by the main-thread
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            _imp->inputs[i]->clearPersistentMessage();
+        }
+    }
+    
 }
 
 void
@@ -2101,17 +2077,33 @@ Node::getFrameMutex(int time)
 }
 
 void
-Node::refreshPreviewsRecursively()
+Node::refreshPreviewsRecursivelyUpstream(int time)
+{
+    if ( isPreviewEnabled() ) {
+        refreshPreviewImage( time );
+    }
+    
+    QMutexLocker l (&_imp->inputsMutex);
+    
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            _imp->inputs[i]->refreshPreviewsRecursivelyUpstream(time);
+        }
+    }
+}
+
+void
+Node::refreshPreviewsRecursivelyDownstream(int time)
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
     if ( isPreviewEnabled() ) {
-        refreshPreviewImage( _imp->liveInstance->getApp()->getTimeLine()->currentFrame() );
+        refreshPreviewImage( time );
     }
     for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->outputsQueue.begin(); it != _imp->outputsQueue.end(); ++it) {
         assert(*it);
-        (*it)->refreshPreviewsRecursively();
+        (*it)->refreshPreviewsRecursivelyDownstream(time);
     }
 }
 
@@ -2610,31 +2602,24 @@ Node::getNodeExtraLabel() const
 bool
 Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
+    ///Just take into account sequentiallity for writers
     if ( (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL) && _imp->liveInstance->isWriter() ) {
         nodeName = getName_mt_safe();
 
         return true;
     } else {
+        
+        
         QMutexLocker l(&_imp->inputsMutex);
-
-        if ( QThread::currentThread() == qApp->thread() ) {
-            for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputsQueue.begin(); it != _imp->inputsQueue.end(); ++it) {
-                if ( (*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName) && (*it)->getLiveInstance()->isWriter() ) {
-                    nodeName = (*it)->getName();
-
-                    return true;
-                }
-            }
-        } else {
-            for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
-                if ( (*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName) && (*it)->getLiveInstance()->isWriter() ) {
-                    nodeName = (*it)->getName_mt_safe();
-
-                    return true;
-                }
+        
+        for (InputsV::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+            if ( (*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName) && (*it)->getLiveInstance()->isWriter() ) {
+                nodeName = (*it)->getName();
+                
+                return true;
             }
         }
-
+        
         return false;
     }
 }
@@ -2838,7 +2823,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     computeHash();
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
-        dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->updateTreeAndRender();
+        dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame();
     }
 }
 

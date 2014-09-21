@@ -49,7 +49,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
 
-#include "Engine/VideoEngine.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Hash64.h"
@@ -61,6 +60,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NoOp.h"
+#include "Engine/OutputSchedulerThread.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -3248,16 +3248,9 @@ NodeGraph::onTimeChanged(SequenceTime time,
     project->setLastTimelineSeekCaller(NULL);
 
     ///Syncrhronize viewers
-    
     for (U32 i = 0; i < viewers.size(); ++i) {
         if ( (viewers[i] != lastTimelineSeekCaller) || (reason == USER_SEEK) ) {
-            boost::shared_ptr<VideoEngine> engine = viewers[i]->getVideoEngine();
-            engine->render(1, //< frame count
-                           false, //< seek timeline
-                           false, //<refresh tree
-                           true, //< forward
-                           true, // <same frame
-                           false); //< force preview
+            viewers[i]->renderCurrentFrame();
         }
     }
 }

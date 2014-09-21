@@ -99,6 +99,7 @@ public:
      **/
     bool load( int &argc, char **argv, const QString & projectFilename = QString(),
                const QStringList & writers = QStringList(),
+               const std::list<std::pair<int,int> >& frameRanges =  std::list<std::pair<int,int> >(),
                const QString & mainProcessServerName = QString() );
 
     virtual ~AppManager();
@@ -119,7 +120,9 @@ public:
 
     bool isLoaded() const;
 
-    AppInstance* newAppInstance( const QString & projectName = QString(),const QStringList & writers = QStringList() );
+    AppInstance* newAppInstance( const QString & projectName = QString(),
+                                const QStringList & writers = QStringList(),
+                                const std::list<std::pair<int,int> >& frameRanges = std::list<std::pair<int,int> >());
     virtual void hideSplashScreen()
     {
     }
@@ -219,6 +222,7 @@ public:
                                  bool* isBackground,
                                  QString & projectFilename,
                                  QStringList & writers,
+                                 std::list<std::pair<int,int> >& frameRanges,
                                  QString & mainProcessServerName);
 
     /**
@@ -339,7 +343,10 @@ protected:
 private:
 
 
-    bool loadInternal(const QString & projectFilename,const QStringList & writers,const QString & mainProcessServerName);
+    bool loadInternal(const QString & projectFilename,
+                      const QStringList & writers,
+                      const std::list<std::pair<int,int> >& frameRanges,
+                      const QString & mainProcessServerName);
 
     void registerEngineMetaTypes() const;
 

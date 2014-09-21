@@ -132,7 +132,7 @@ AppInstance::newVersionCheckError()
 
 void
 AppInstance::load(const QString & projectName,
-                  const QStringList & writers)
+                  const std::list<RenderWork>& writersWork)
 {
     if ( (getAppID() == 0) && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled() ) {
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
@@ -173,7 +173,7 @@ AppInstance::load(const QString & projectName,
         if ( !_imp->_currentProject->loadProject(path,name) ) {
             throw std::invalid_argument("Project file loading failed.");
         }
-        startWritersRendering(writers);
+        startWritersRendering(writersWork);
     }
 }
 
@@ -371,7 +371,7 @@ AppInstance::checkViewersConnection()
         assert(nodes[i]);
         ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
         if (n) {
-            n->updateTreeAndRender();
+            n->renderCurrentFrame();
         }
     }
 }
@@ -397,62 +397,98 @@ AppInstance::triggerAutoSave()
     _imp->_currentProject->triggerAutoSave();
 }
 
+
 void
-AppInstance::startWritersRendering(const QStringList & writers)
+AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
 {
     const std::vector<boost::shared_ptr<Node> > projectNodes = _imp->_currentProject->getCurrentNodes();
-    std::vector<Natron::OutputEffectInstance* > renderers;
+    
+   
+    std::list<RenderWork> renderers;
 
-    if ( !writers.isEmpty() ) {
-        for (int i = 0; i < writers.size(); ++i) {
+    if ( !writers.empty() ) {
+        for (std::list<RenderRequest>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
+            
             boost::shared_ptr<Node> node;
+            std::string writerName =  it->writerName.toStdString();
+            
             for (U32 j = 0; j < projectNodes.size(); ++j) {
-                if ( projectNodes[j]->getName() == writers.at(i).toStdString() ) {
+                if ( projectNodes[j]->getName() == writerName) {
                     node = projectNodes[j];
                     break;
                 }
             }
             if (!node) {
-                std::string exc( writers.at(i).toStdString() );
+                std::string exc(writerName);
                 exc.append(" does not belong to the project file. Please enter a valid writer name.");
                 throw std::invalid_argument(exc);
             } else {
                 if ( !node->isOutputNode() ) {
-                    std::string exc( writers.at(i).toStdString() );
+                    std::string exc(writerName);
                     exc.append(" is not an output node! It cannot render anything.");
                     throw std::invalid_argument(exc);
                 }
                 if (node->getPluginID() == "Viewer") {
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
-                renderers.push_back( dynamic_cast<OutputEffectInstance*>( node->getLiveInstance() ) );
+                RenderWork w;
+                w.writer = dynamic_cast<OutputEffectInstance*>( node->getLiveInstance() );
+                assert(w.writer);
+                w.firstFrame = it->firstFrame;
+                w.lastFrame = it->lastFrame;
+                renderers.push_back(w);
             }
         }
     } else {
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
-            if ( projectNodes[j]->isOutputNode() && (projectNodes[j]->getPluginID() != "Viewer") ) {
-                renderers.push_back( dynamic_cast<OutputEffectInstance*>( projectNodes[j]->getLiveInstance() ) );
+            if ( projectNodes[j]->getLiveInstance()->isWriter() ) {
+                
+                RenderWork w;
+                w.writer = dynamic_cast<OutputEffectInstance*>( projectNodes[j]->getLiveInstance() );
+                assert(w.writer);
+                
+                w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
+                renderers.push_back(w);
             }
         }
     }
+    
+    startWritersRendering(renderers);
+}
 
+void
+AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
+{
+    
     if ( appPTR->isBackground() ) {
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( renderers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1) );
+        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1) );
     } else {
-        for (U32 i = 0; i < renderers.size(); ++i) {
-            startRenderingFullSequence(renderers[i]);
+        for (std::list<RenderWork>::const_iterator it = writers.begin();it!=writers.end();++it) {
+            ///Use the frame range defined by the writer GUI because we're in an interactive session
+            startRenderingFullSequence(*it);
         }
     }
 }
 
 void
-AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
+AppInstance::startRenderingFullSequence(const RenderWork& writerWork)
 {
-    BlockingBackgroundRender backgroundRender(writer);
-
-    backgroundRender.blockingRender(); //< doesn't return before rendering is finished
+    BlockingBackgroundRender backgroundRender(writerWork.writer);
+    int first,last;
+    if (writerWork.firstFrame == INT_MIN || writerWork.lastFrame == INT_MAX) {
+        writerWork.writer->getFrameRange_public(writerWork.writer->getHash(), &first, &last);
+        if (first == INT_MIN || last == INT_MAX) {
+            first = getTimeLine()->leftBound();
+            last = getTimeLine()->rightBound();
+        }
+    } else {
+        first = writerWork.firstFrame;
+        last = writerWork.lastFrame;
+    }
+    
+    backgroundRender.blockingRender(first,last); //< doesn't return before rendering is finished
 }
 
 void

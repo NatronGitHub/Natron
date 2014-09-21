@@ -33,7 +33,6 @@ class TimeLine;
 struct AppInstancePrivate;
 class KnobSerialization;
 class ProcessHandler;
-class VideoEngine;
 namespace Natron {
 class Node;
 class Project;
@@ -131,7 +130,17 @@ public:
     {
     }
 
-    virtual void load( const QString & projectName = QString(),const QStringList & writers = QStringList() );
+    struct RenderRequest {
+        QString writerName;
+        int firstFrame,lastFrame;
+    };
+    
+    struct RenderWork {
+        Natron::OutputEffectInstance* writer;
+        int firstFrame,lastFrame;
+    };
+    
+    virtual void load( const QString & projectName = QString(),const std::list<RenderWork>& writersWork = std::list<RenderWork>() );
 
     int getAppID() const;
 
@@ -242,19 +251,6 @@ public:
     int getMainView() const;
 
     /**
-     * @brief This is to overcome possible deadlocks when a plug-in is trying to show a dialog
-     * in the render thread (hence requesting the main-thread to show it) and the main thread
-     * is trying to abort that exact render thread.
-     **/
-    virtual void registerVideoEngineBeingAborted(VideoEngine* /*engine*/)
-    {
-    }
-
-    virtual void unregisterVideoEngineBeingAborted(VideoEngine* /*engine*/)
-    {
-    }
-
-    /**
      * @brief Clears any shared ptr to NodeGuis left
      **/
     virtual void clearNodeGuiMapping()
@@ -274,6 +270,14 @@ public:
 
     
     void onOCIOConfigPathChanged(const std::string& path);
+    
+  
+    
+    void startWritersRendering(const std::list<RenderRequest>& writers);
+    void startWritersRendering(const std::list<RenderWork>& writers);
+
+    virtual void startRenderingFullSequence(const RenderWork& writerWork);
+
 public slots:
 
     void quit();
@@ -284,9 +288,6 @@ public slots:
     void redrawAllViewers();
 
     void triggerAutoSave();
-
-    /*Used in background mode only*/
-    void startWritersRendering(const QStringList & writers);
 
     void clearOpenFXPluginsCaches();
 
@@ -315,7 +316,6 @@ protected:
     }
     
 
-    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 private:
 

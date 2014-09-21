@@ -33,7 +33,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QTextDocument>
 
 #include "Engine/ViewerInstance.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
@@ -816,8 +815,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_gainSlider, SIGNAL( positionChanged(double) ), this, SLOT( onGainSliderChanged(double) ) );
     QObject::connect( _imp->_gainBox, SIGNAL( valueChanged(double) ), _imp->_gainSlider, SLOT( seekScalePosition(double) ) );
     QObject::connect( _imp->_currentFrameBox, SIGNAL( valueChanged(double) ), this, SLOT( onCurrentTimeSpinBoxChanged(double) ) );
-    VideoEngine* vengine = _imp->_viewerNode->getVideoEngine().get();
-    assert(vengine);
+    boost::shared_ptr<OutputSchedulerThread> scheduler = _imp->_viewerNode->getScheduler();
+    assert(scheduler);
 
     QObject::connect( _imp->play_Forward_Button,SIGNAL( clicked(bool) ),this,SLOT( startPause(bool) ) );
     QObject::connect( _imp->stop_Button,SIGNAL( clicked() ),this,SLOT( abortRendering() ) );
@@ -835,7 +834,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_refreshButton, SIGNAL( clicked() ), this, SLOT( refresh() ) );
     QObject::connect( _imp->_centerViewerButton, SIGNAL( clicked() ), this, SLOT( centerViewer() ) );
     QObject::connect( _imp->_viewerNode,SIGNAL( viewerDisconnected() ),this,SLOT( disconnectViewer() ) );
-    QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), vengine, SLOT( setDesiredFPS(double) ) );
+    QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), scheduler.get(), SLOT( setDesiredFPS(double) ) );
 
     manageSlotsForInfoWidget(0,true);
 
@@ -936,24 +935,24 @@ ViewerTab::getCurrentView() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    VideoEngine::PlaybackMode mode = _imp->_viewerNode->getVideoEngine()->getPlaybackMode();
-    mode = (VideoEngine::PlaybackMode)(((int)mode + 1) % 3);
+    Natron::PlaybackMode mode = _imp->_viewerNode->getScheduler()->getPlaybackMode();
+    mode = (Natron::PlaybackMode)(((int)mode + 1) % 3);
     QPixmap pix;
     switch (mode) {
-        case VideoEngine::PLAYBACK_LOOP:
+        case Natron::PLAYBACK_LOOP:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
             break;
-        case VideoEngine::PLAYBACK_BOUNCE:
+        case Natron::PLAYBACK_BOUNCE:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
             break;
-        case VideoEngine::PLAYBACK_ONCE:
+        case Natron::PLAYBACK_ONCE:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
             break;
         default:
             break;
     }
     _imp->playbackMode_Button->setIcon(QIcon(pix));
-    _imp->_viewerNode->getVideoEngine()->setPlaybackMode(mode);
+    _imp->_viewerNode->getScheduler()->setPlaybackMode(mode);
 }
 
 void
@@ -984,12 +983,8 @@ ViewerTab::startPause(bool b)
     if (b) {
         _imp->play_Forward_Button->setDown(true);
         _imp->play_Forward_Button->setChecked(true);
-        _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
-                                                    true, /*seek timeline ?*/
-                                                    true, /*rebuild tree?*/
-                                                    true, /*forward ?*/
-                                                    false, /*same frame ?*/
-                                                    false); /*force preview?*/
+        boost::shared_ptr<TimeLine> timeline = _imp->_timeLineGui->getTimeline();
+        _imp->_viewerNode->getScheduler()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_FORWARD);
     }
 }
 
@@ -1006,7 +1001,7 @@ ViewerTab::abortRendering()
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
         if (isViewer) {
-            isViewer->getVideoEngine()->abortRendering(false);
+            isViewer->getScheduler()->abortRendering(false);
         }
     }
 }
@@ -1018,12 +1013,9 @@ ViewerTab::startBackward(bool b)
     if (b) {
         _imp->play_Backward_Button->setDown(true);
         _imp->play_Backward_Button->setChecked(true);
-        _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
-                                                    true, /*seek timeline ?*/
-                                                    true, /*rebuild tree?*/
-                                                    false, /*forward?*/
-                                                    false, /*same frame ?*/
-                                                    false); /*force preview?*/
+        boost::shared_ptr<TimeLine> timeline = _imp->_timeLineGui->getTimeline();
+        _imp->_viewerNode->getScheduler()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_BACKWARD);
+
     }
 }
 
@@ -1080,12 +1072,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     _imp->_currentFrameBox->setValue(time);
     
     if (_imp->_timeLineGui->getTimeline() != _imp->_gui->getApp()->getTimeLine()) {
-        _imp->_viewerNode->getVideoEngine()->render(1, //< frame count
-                       false, //< seek timeline
-                       false, //<refresh tree
-                       true, //< forward
-                       true, // <same frame
-                       false); //< force preview
+        _imp->_viewerNode->renderCurrentFrame();
     }
 }
 
@@ -1100,7 +1087,7 @@ ViewerTab::centerViewer()
 {
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
-        _imp->_viewerNode->refreshAndContinueRender(false,true);
+        _imp->_viewerNode->renderCurrentFrame();
     } else {
         _imp->viewer->updateGL();
     }
@@ -1110,7 +1097,7 @@ void
 ViewerTab::refresh()
 {
     _imp->_viewerNode->forceFullComputationOnNextFrame();
-    _imp->_viewerNode->updateTreeAndRender();
+    _imp->_viewerNode->renderCurrentFrame();
 }
 
 ViewerTab::~ViewerTab()
@@ -1311,8 +1298,7 @@ ViewerTab::showView(int view)
 
     _imp->_currentViewIndex = view;
     abortRendering();
-    bool isAutoPreview = _imp->app->getProject()->isAutoPreviewEnabled();
-    _imp->_viewerNode->refreshAndContinueRender(isAutoPreview,true);
+    _imp->_viewerNode->renderCurrentFrame();
 }
 
 void
@@ -2397,7 +2383,7 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
         }
     }
     _imp->_viewerNode->setInputA(inputIndex);
-    _imp->_viewerNode->refreshAndContinueRender(false,true);
+    _imp->_viewerNode->renderCurrentFrame();
 }
 
 ///Called when the user change the combobox choice
@@ -2428,7 +2414,7 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             }
         }
     }
-    _imp->_viewerNode->refreshAndContinueRender(false,true);
+    _imp->_viewerNode->renderCurrentFrame();
 }
 
 ///This function is called only when the user changed inputs on the node graph
@@ -2541,14 +2527,14 @@ void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    VideoEngine* vengine = _imp->_viewerNode->getVideoEngine().get();
-    OutputSchedulerThread* scheduler = vengine->getOutputScheduler();
+    boost::shared_ptr<OutputSchedulerThread> scheduler = _imp->_viewerNode->getScheduler();
     if (connect) {
-        QObject::connect( scheduler, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( vengine,SIGNAL( engineStopped(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( scheduler.get(), SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
+        QObject::connect( scheduler.get(),SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
     } else {
-        QObject::disconnect( scheduler, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::disconnect( vengine,SIGNAL( engineStopped(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( scheduler.get(), SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex],
+                            SLOT( setFps(double,double) ) );
+        QObject::disconnect( scheduler.get(),SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
     }
 }
 

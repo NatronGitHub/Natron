@@ -2879,7 +2879,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         
         
     }
-     _preview->viewerUI->getInternalNode()->updateTreeAndRender();
+    _preview->viewerUI->getInternalNode()->renderCurrentFrame();
 }
 
 ///Reset everything as it was prior to the dialog being opened, also avoid the nodes being deleted

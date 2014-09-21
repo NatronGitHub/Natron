@@ -21,9 +21,6 @@
 #include "Engine/Rect.h"
 
 class Hash64;
-class RenderTree;
-class VideoEngine;
-class RenderTree;
 class Format;
 class OverlaySupport;
 class PluginMemory;
@@ -246,6 +243,7 @@ public:
 
     /**
      * @brief How many input can we have at most. (i.e: how many input arrows)
+     * This function should be MT-safe and should never change the value returned.
      **/
     virtual int getMaxInputCount() const WARN_UNUSED_RETURN = 0;
 
@@ -1127,12 +1125,10 @@ typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
 class OutputEffectInstance
     : public Natron::EffectInstance
 {
-    boost::shared_ptr<VideoEngine> _videoEngine;
     SequenceTime _writerCurrentFrame; /*!< for writers only: indicates the current frame
                                          It avoids snchronizing all viewers in the app to the render*/
     SequenceTime _writerFirstFrame;
     SequenceTime _writerLastFrame;
-    bool _doingFullSequenceRender;
     mutable QMutex* _outputEffectDataLock;
     BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
     boost::shared_ptr<OutputSchedulerThread> _scheduler;
@@ -1149,22 +1145,20 @@ public:
         return true;
     }
 
-    boost::shared_ptr<VideoEngine> getVideoEngine() const
+    boost::shared_ptr<OutputSchedulerThread> getScheduler() const
     {
-        return _videoEngine;
+        return _scheduler;
     }
 
     /**
      * @brief Starts rendering of all the sequence available, from start to end.
      * This function is meant to be called for on-disk renderer only (i.e: not viewers).
      **/
-    void renderFullSequence(BlockingBackgroundRender* renderController);
+    void renderFullSequence(BlockingBackgroundRender* renderController,int first,int last);
 
     void notifyRenderFinished();
 
-    void updateTreeAndRender();
-
-    void refreshAndContinueRender(bool forcePreview, bool abortRender);
+    void renderCurrentFrame();
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
@@ -1176,6 +1170,9 @@ public:
     int getCurrentFrame() const;
 
     void setCurrentFrame(int f);
+    
+    void incrementCurrentFrame();
+    void decrementCurrentFrame();
 
     int getFirstFrame() const;
 
@@ -1184,10 +1181,6 @@ public:
     int getLastFrame() const;
 
     void setLastFrame(int f);
-
-    void setDoingFullSequenceRender(bool b);
-
-    bool isDoingFullSequenceRender() const;
     
 protected:
     

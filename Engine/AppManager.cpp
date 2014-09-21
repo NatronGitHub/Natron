@@ -155,6 +155,7 @@ AppManager::parseCmdLineArgs(int argc,
                              bool* isBackground,
                              QString & projectFilename,
                              QStringList & writers,
+                             std::list<std::pair<int,int> >& frameRanges,
                              QString & mainProcessServerName)
 {
     if (!argv) {
@@ -164,12 +165,15 @@ AppManager::parseCmdLineArgs(int argc,
     *isBackground = false;
     bool expectWriterNameOnNextArg = false;
     bool expectPipeFileNameOnNextArg = false;
+    bool canNextArgBeFrameRange = false;
     QStringList args;
     for (int i = 0; i < argc; ++i) {
         args.push_back( QString(argv[i]) );
     }
 
     for (int i = 0; i < args.size(); ++i) {
+        
+        bool frameRangeFound = false;
         if ( args.at(i).contains("." NATRON_PROJECT_FILE_EXT) ) {
             if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
                 AppManager::printUsage();
@@ -202,12 +206,44 @@ AppManager::parseCmdLineArgs(int argc,
             }
             expectPipeFileNameOnNextArg = true;
             continue;
+        } else if (canNextArgBeFrameRange) {
+            
+            frameRangeFound = true;
+            QStringList strRange = args[i].split('-');
+            if (strRange.size() != 2) {
+                AppManager::printUsage();
+            }
+            std::pair<int, int> range;
+            bool ok;
+            range.first = strRange[0].toInt(&ok);
+            if (!ok) {
+                AppManager::printUsage();
+            }
+            range.second = strRange[1].toInt(&ok);
+            if (!ok) {
+                AppManager::printUsage();
+            }
+            
+            frameRanges.push_back(range);
         }
 
+        if (canNextArgBeFrameRange) {
+            canNextArgBeFrameRange = false;
+            if (!frameRangeFound) {
+                ///push a fake frame range indicating to the render engine that it needs to render using the frame range
+                ///defined by the writer node instead
+                std::pair<int, int> range;
+                range.first = INT_MIN;
+                range.second = INT_MAX;
+                frameRanges.push_back(range);
+            }
+        }
+        
         if (expectWriterNameOnNextArg) {
             assert(!expectPipeFileNameOnNextArg);
             writers << args.at(i);
             expectWriterNameOnNextArg = false;
+            canNextArgBeFrameRange = true;
         }
         if (expectPipeFileNameOnNextArg) {
             assert(!expectWriterNameOnNextArg);
@@ -232,6 +268,7 @@ AppManager::load(int &argc,
                  char *argv[],
                  const QString & projectFilename,
                  const QStringList & writers,
+                 const std::list<std::pair<int,int> >& frameRanges,
                  const QString & mainProcessServerName)
 {
     ///if the user didn't specify launch arguments (e.g unit testing)
@@ -260,7 +297,7 @@ AppManager::load(int &argc,
     ///the QCoreApplication must have been created so far.
     assert(qApp);
 
-    return loadInternal(projectFilename,writers,mainProcessServerName);
+    return loadInternal(projectFilename,writers,frameRanges,mainProcessServerName);
 }
 
 AppManager::~AppManager()
@@ -316,6 +353,7 @@ AppManager::initializeQApp(int &argc,
 bool
 AppManager::loadInternal(const QString & projectFilename,
                          const QStringList & writers,
+                         const std::list<std::pair<int,int> >& frameRanges,
                          const QString & mainProcessServerName)
 {
     assert(!_imp->_loaded);
@@ -390,7 +428,7 @@ AppManager::loadInternal(const QString & projectFilename,
         _imp->_appType = APP_GUI;
     }
 
-    AppInstance* mainInstance = newAppInstance(projectFilename,writers);
+    AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
 
     hideSplashScreen();
 
@@ -410,12 +448,21 @@ AppManager::loadInternal(const QString & projectFilename,
 
 AppInstance*
 AppManager::newAppInstance(const QString & projectName,
-                           const QStringList & writers)
+                           const QStringList & writers,
+                           const std::list<std::pair<int,int> >& frameRanges)
 {
     AppInstance* instance = makeNewInstance(_imp->_availableID);
 
     try {
-        instance->load(projectName,writers);
+        std::list<AppInstance::RenderWork> renderWorks;
+        int i = 0;
+        for (std::list<std::pair<int,int> >::const_iterator it = frameRanges.begin(); it != frameRanges.end(); ++it,++i) {
+            AppInstance::RenderRequest w;
+            w.writerName = writers[i];
+            w.firstFrame = it->first;
+            w.lastFrame = it->second;
+        }
+        instance->load(projectName,renderWorks);
     } catch (const std::exception & e) {
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what() );
         removeInstance(_imp->_availableID);
@@ -989,26 +1036,12 @@ AppManager::getImage(const Natron::ImageKey & key,
 {
     boost::shared_ptr<NonKeyParams> paramsBase;
 
-#ifdef NATRON_LOG
-    Log::beginFunction("AppManager","getImage");
-    bool ret = _imp->_nodeCache->get(key,&paramsBase,returnValue);
-    if (ret) {
-        *params = boost::dynamic_pointer_cast<Natron::ImageParams>(paramsBase);
-        Log::print("Image found in cache!");
-    } else {
-        Log::print("Image not found in cache!");
-    }
-    Log::endFunction("AppManager","getImage");
-
-    return ret;
-#else
     bool ret = _imp->_nodeCache->get(key,&paramsBase, returnValue);
     if (ret) {
         *params = boost::dynamic_pointer_cast<Natron::ImageParams>(paramsBase);
     }
 
     return ret;
-#endif
 }
 
 bool
@@ -1016,21 +1049,7 @@ AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              boost::shared_ptr<Natron::ImageParams> params,
                              boost::shared_ptr<Natron::Image>* returnValue) const
 {
-#ifdef NATRON_LOG
-    Log::beginFunction("AppManager","getImage");
-    bool ret = _imp->_nodeCache->getOrCreate(key,params,returnValue);
-    if (ret) {
-        Log::print("Image found in cache!");
-    } else {
-        Log::print("Image not found in cache!");
-    }
-    Log::endFunction("AppManager","getImage");
-
-    return ret;
-#else
-
     return _imp->_nodeCache->getOrCreate(key,params,returnValue);
-#endif
 }
 
 bool
@@ -1040,19 +1059,6 @@ AppManager::getTexture(const Natron::FrameKey & key,
 {
     boost::shared_ptr<NonKeyParams> paramsBase;
 
-#ifdef NATRON_LOG
-    Log::beginFunction("AppManager","getTexture");
-    bool ret = _imp->_viewerCache->get(key,paramsBase, returnValue);
-    if (ret) {
-        *params = boost::dynamic_pointer_cast<Natron::FrameParams>(paramsBase);
-        Log::print("Texture found in cache!");
-    } else {
-        Log::print("Texture not found in cache!");
-    }
-    Log::endFunction("AppManager","getTexture");
-
-    return ret;
-#else
     bool ret =  _imp->_viewerCache->get(key, &paramsBase,returnValue);
     if (ret && params) {
         *params = boost::dynamic_pointer_cast<Natron::FrameParams>(paramsBase);
@@ -1060,7 +1066,6 @@ AppManager::getTexture(const Natron::FrameKey & key,
 
     return ret;
 
-#endif
 }
 
 bool
@@ -1068,21 +1073,7 @@ AppManager::getTextureOrCreate(const Natron::FrameKey & key,
                                boost::shared_ptr<Natron::FrameParams> params,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
-#ifdef NATRON_LOG
-    Log::beginFunction("AppManager","getTexture");
-    bool ret = _imp->_viewerCache->getOrCreate(key,params, returnValue);
-    if (ret) {
-        Log::print("Texture found in cache!");
-    } else {
-        Log::print("Texture not found in cache!");
-    }
-    Log::endFunction("AppManager","getTexture");
-
-    return ret;
-#else
-
     return _imp->_viewerCache->getOrCreate(key, params,returnValue);
-#endif
 }
 
 U64
@@ -1683,12 +1674,6 @@ errorDialog(const std::string & title,
     } else {
         std::cout << "ERROR: " << title << " :" <<  message << std::endl;
     }
-
-#ifdef NATRON_LOG
-    Log::beginFunction(title,"ERROR");
-    Log::print(message);
-    Log::endFunction(title,"ERROR");
-#endif
 }
 
 void
@@ -1703,11 +1688,6 @@ warningDialog(const std::string & title,
     } else {
         std::cout << "WARNING: " << title << " :" << message << std::endl;
     }
-#ifdef NATRON_LOG
-    Log::beginFunction(title,"WARNING");
-    Log::print(message);
-    Log::endFunction(title,"WARNING");
-#endif
 }
 
 void
@@ -1722,11 +1702,6 @@ informationDialog(const std::string & title,
     } else {
         std::cout << "INFO: " << title << " :" << message << std::endl;
     }
-#ifdef NATRON_LOG
-    Log::beginFunction(title,"INFO");
-    Log::print(message);
-    Log::endFunction(title,"INFO");
-#endif
 }
 
 Natron::StandardButton
@@ -1746,10 +1721,5 @@ questionDialog(const std::string & title,
 
         return Natron::Yes;
     }
-#ifdef NATRON_LOG
-    Log::beginFunction(title,"QUESTION");
-    Log::print(message);
-    Log::endFunction(title,"QUESTION");
-#endif
 }
 } //Namespace Natron

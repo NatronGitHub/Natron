@@ -17,19 +17,21 @@
 #include <QCoreApplication>
 #include <QTimer>
 #include <QThreadPool>
+#include <QDir>
 #include <QTemporaryFile>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/ProjectPrivate.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Hash64.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/OutputSchedulerThread.h"
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -171,27 +173,16 @@ Project::loadProjectInternal(const QString & path,
 void
 Project::refreshViewersAndPreviews()
 {
-    /*Refresh all previews*/
-    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if ( _imp->currentNodes[i]->isPreviewEnabled() ) {
-            _imp->currentNodes[i]->computePreviewImage( _imp->timeline->currentFrame() );
-        }
-    }
-
-    /*Refresh all viewers as it was*/
+    assert(QThread::currentThread() == qApp->thread());
+    
     if ( !appPTR->isBackground() ) {
-        const std::vector<boost::shared_ptr<Natron::Node> > & nodes = getCurrentNodes();
-        for (U32 i = 0; i < nodes.size(); ++i) {
-            assert(nodes[i]);
-            if (nodes[i]->getPluginID() == "Viewer") {
-                ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-                assert(n);
-                n->getVideoEngine()->render(1, //< frame count
-                                            false, //<seek timeline
-                                            true, //< refresh tree
-                                            true, //< forward
-                                            true, //< same frame
-                                            true); //< force preview
+        int time = _imp->timeline->currentFrame();
+        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+            assert(_imp->currentNodes[i]);
+            _imp->currentNodes[i]->computePreviewImage(time);
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance());
+            if (n) {
+                n->getScheduler()->renderCurrentFrame();
             }
         }
     }
@@ -418,7 +409,7 @@ Project::onAutoSaveTimerTriggered()
 {
     assert( !appPTR->isBackground() );
 
-    ///check that all VideoEngine(s) are not working.
+    ///check that all schedulers are not working.
     ///If so launch an auto-save, otherwise, restart the timer.
     bool canAutoSave = true;
     {
@@ -427,7 +418,7 @@ Project::onAutoSaveTimerTriggered()
             if ( (*it)->isOutputNode() ) {
                 Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getLiveInstance() );
                 assert(effect);
-                if ( effect->getVideoEngine()->isWorking() ) {
+                if ( effect->getScheduler()->isWorking() ) {
                     canAutoSave = false;
                     break;
                 }
@@ -716,7 +707,7 @@ Project::evaluate(KnobI* /*knob*/,
             
             ViewerInstance* n = dynamic_cast<ViewerInstance*>( _imp->currentNodes[i]->getLiveInstance() );
             if (n) {
-                n->updateTreeAndRender();
+                n->renderCurrentFrame();
             }
         }
     }
@@ -1429,7 +1420,7 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
     std::list<ViewerInstance* > viewers;
     created->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->updateTreeAndRender();
+        (*it)->renderCurrentFrame();
     }
 
     return ret;

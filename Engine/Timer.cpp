@@ -38,7 +38,7 @@
 #include "Timer.h"
 
 #include <time.h>
-
+#include <QMutexLocker>
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
 
@@ -70,10 +70,16 @@ Timer::Timer ()
       _spf (1 / 24.0),
       _timingError (0),
       _framesSinceLastFpsFrame (0),
-      _actualFrameRate (0)
+      _actualFrameRate (0),
+      _mutex(new QMutex)
 {
     gettimeofday (&_lastFrameTime, 0);
     _lastFpsFrameTime = _lastFrameTime;
+}
+
+Timer::~Timer()
+{
+    delete _mutex;
 }
 
 void
@@ -93,6 +99,12 @@ Timer::waitUntilNextFrameIsDue ()
         return;
     }
 
+    
+    double spf;
+    {
+        QMutexLocker l(_mutex);
+        spf = _spf;
+    }
     //
     // If less than _spf seconds have passed since the last frame
     // was displayed, sleep until exactly _spf seconds have gone by.
@@ -103,7 +115,7 @@ Timer::waitUntilNextFrameIsDue ()
 
     double timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
                                (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
-    double timeToSleep = _spf - timeSinceLastFrame - _timingError;
+    double timeToSleep = spf - timeSinceLastFrame - _timingError;
 
     #ifdef _WIN32
 
@@ -135,14 +147,14 @@ Timer::waitUntilNextFrameIsDue ()
     timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
                          (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
 
-    _timingError += timeSinceLastFrame - _spf;
+    _timingError += timeSinceLastFrame - spf;
 
-    if (_timingError < -2 * _spf) {
-        _timingError = -2 * _spf;
+    if (_timingError < -2 * spf) {
+        _timingError = -2 * spf;
     }
 
-    if (_timingError >  2 * _spf) {
-        _timingError =  2 * _spf;
+    if (_timingError >  2 * spf) {
+        _timingError =  2 * spf;
     }
 
     _lastFrameTime = now;
@@ -163,7 +175,6 @@ Timer::waitUntilNextFrameIsDue ()
         _framesSinceLastFpsFrame = 0;
     }
     
-    
 
     if (_framesSinceLastFpsFrame == 0) {
         _lastFpsFrameTime = now;
@@ -175,18 +186,14 @@ Timer::waitUntilNextFrameIsDue ()
 void
 Timer::setDesiredFrameRate (double fps)
 {
+    QMutexLocker l(_mutex);
     _spf = 1 / fps;
 }
 
 double
 Timer::getDesiredFrameRate() const
 {
+    QMutexLocker l(_mutex);
     return 1.f / _spf;
-}
-
-double
-Timer::actualFrameRate ()
-{
-    return _actualFrameRate;
 }
 

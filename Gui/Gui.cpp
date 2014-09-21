@@ -64,7 +64,6 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/ProcessHandler.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/Node.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -325,8 +324,6 @@ struct GuiPrivate
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
-    mutable QMutex abortedEnginesMutex;
-    std::list<VideoEngine*> abortedEngines;
     TabWidget* fullScreenWidgetDuringSave;
     ShortCutEditor* shortcutEditor;
 
@@ -429,8 +426,6 @@ struct GuiPrivate
           , _toolButtonMenuOpened(NULL)
           , aboutToCloseMutex()
           , _aboutToClose(false)
-          , abortedEnginesMutex()
-          , abortedEngines()
           , fullScreenWidgetDuringSave(0)
           , shortcutEditor(0)
     {
@@ -2644,13 +2639,6 @@ Gui::errorDialog(const std::string & title,
         }
     }
 
-    ///we have no choice but to return. Waiting here would hang the application since the main thread is also waiting for that thread to finish.
-    if ( QThread::currentThread() != qApp->thread() ) {
-        QMutexLocker l(&_imp->abortedEnginesMutex);
-        if ( !_imp->abortedEngines.empty() ) {
-            return;
-        }
-    }
 
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -2675,13 +2663,6 @@ Gui::warningDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->aboutToCloseMutex);
         if (_imp->_aboutToClose) {
-            return;
-        }
-    }
-    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
-    if ( QThread::currentThread() != qApp->thread() ) {
-        QMutexLocker l(&_imp->abortedEnginesMutex);
-        if ( !_imp->abortedEngines.empty() ) {
             return;
         }
     }
@@ -2712,14 +2693,6 @@ Gui::informationDialog(const std::string & title,
             return;
         }
     }
-    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
-    if ( QThread::currentThread() != qApp->thread() ) {
-        QMutexLocker l(&_imp->abortedEnginesMutex);
-        if ( !_imp->abortedEngines.empty() ) {
-            return;
-        }
-    }
-
 
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -2781,13 +2754,6 @@ Gui::questionDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->aboutToCloseMutex);
         if (_imp->_aboutToClose) {
-            return Natron::No;
-        }
-    }
-    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
-    if ( QThread::currentThread() != qApp->thread() ) {
-        QMutexLocker l(&_imp->abortedEnginesMutex);
-        if ( !_imp->abortedEngines.empty() ) {
             return Natron::No;
         }
     }
@@ -3524,15 +3490,11 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
 
     RenderingProgressDialog *dialog = new RenderingProgressDialog(this,sequenceName,firstFrame,lastFrame,
                                                                   boost::shared_ptr<ProcessHandler>(),this);
-    VideoEngine* ve = writer->getVideoEngine().get();
-    ///Cycle through the render tree and freeze all knobs since this render is taking place in the active GUI session.
-    ve->refreshTree();
-    OutputSchedulerThread* scheduler = ve->getOutputScheduler();
+    boost::shared_ptr<OutputSchedulerThread> scheduler = writer->getScheduler();
 
-    QObject::connect( dialog,SIGNAL( canceled() ),ve,SLOT( abortRenderingNonBlocking() ) );
-    QObject::connect( scheduler,SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );
-    QObject::connect( ve,SIGNAL( progressChanged(int) ),dialog,SLOT( onCurrentFrameProgress(int) ) );
-    QObject::connect( ve,SIGNAL( engineStopped(int) ),dialog,SLOT( onVideoEngineStopped(int) ) );
+    QObject::connect( dialog,SIGNAL( canceled() ),scheduler.get(),SLOT( abortRendering() ) );
+    QObject::connect( scheduler.get(),SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );
+    QObject::connect( scheduler.get(),SIGNAL( renderFinished(int) ),dialog,SLOT( onVideoEngineStopped(int) ) );
     dialog->show();
 }
 
@@ -3593,7 +3555,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
-    _imp->_appInstance->startWritersRendering( QStringList() );
+    _imp->_appInstance->startWritersRendering( std::list<AppInstance::RenderRequest>() );
 }
 
 void
@@ -3607,14 +3569,27 @@ Gui::renderSelectedNode()
         Natron::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
         const boost::shared_ptr<NodeGui> & selectedNode = selectedNodes.front();
+        std::list<AppInstance::RenderWork> workList;
         if ( selectedNode->getNode()->getLiveInstance()->isWriter() ) {
             ///if the node is a writer, just use it to render!
-            _imp->_appInstance->startWritersRendering( QStringList( selectedNode->getNode()->getName().c_str() ) );
+            AppInstance::RenderWork w;
+            w.writer = dynamic_cast<Natron::OutputEffectInstance*>(selectedNode->getNode()->getLiveInstance());
+            assert(w.writer);
+            w.firstFrame = INT_MIN;
+            w.lastFrame = INT_MAX;
+            workList.push_back(w);
+            _imp->_appInstance->startWritersRendering(workList);
         } else {
             ///create a node and connect it to the node and use it to render
             boost::shared_ptr<Natron::Node> writer = createWriter();
             if (writer) {
-                _imp->_appInstance->startWritersRendering( QStringList( writer->getName().c_str() ) );
+                AppInstance::RenderWork w;
+                w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+                assert(w.writer);
+                w.firstFrame = INT_MIN;
+                w.lastFrame = INT_MAX;
+                workList.push_back(w);
+                _imp->_appInstance->startWritersRendering(workList);
             }
         }
     }
@@ -3861,23 +3836,6 @@ Gui::createBackDrop(bool requestedByLoad,
     return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
 }
 
-void
-Gui::registerVideoEngineBeingAborted(VideoEngine* engine)
-{
-    QMutexLocker l(&_imp->abortedEnginesMutex);
-
-    _imp->abortedEngines.push_back(engine);
-}
-
-void
-Gui::unregisterVideoEngineBeingAborted(VideoEngine* engine)
-{
-    QMutexLocker l(&_imp->abortedEnginesMutex);
-    std::list<VideoEngine*>::iterator it = std::find(_imp->abortedEngines.begin(),_imp->abortedEngines.end(),engine);
-
-    assert( it != _imp->abortedEngines.end() );
-    _imp->abortedEngines.erase(it);
-}
 
 void
 Gui::connectViewersToViewerCache()

@@ -103,7 +103,7 @@ Settings::initializeKnobs()
     _numberOfThreads = Natron::createKnob<Int_Knob>(this, "Number of render threads");
     _numberOfThreads->setName("noRenderThreads");
     _numberOfThreads->setAnimationEnabled(false);
-    QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
+    QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render 1 frame. \n"
                                              "-1: Disable multi-threading totally (useful for debug) \n"
                                              "0: Guess from the number of cores. The ideal threads count for your hardware is %1.").arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
@@ -116,8 +116,8 @@ Settings::initializeKnobs()
     _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
                                              "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
                                              "what is the best number of parallel renders to launch given your CPU activity. "
-                                             "Setting a value different than 0 should be done only if you know what you're doing and can "
-                                             "in some situations decrease performances.");
+                                             "Setting a value different than 0 should be done only if you know what you're doing and can lead "
+                                             "in some situations to worse performances.");
     _numberOfParallelRenders->setName("nParallelRenders");
     _numberOfParallelRenders->setMinimum(0);
     _numberOfParallelRenders->disableSlider();
@@ -1303,7 +1303,7 @@ Settings::onKnobValueChanged(KnobI* k,
                             return;
                         }
                     }
-                    n->updateTreeAndRender();
+                    n->renderCurrentFrame();
                 }
             }
         }

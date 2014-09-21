@@ -26,7 +26,6 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"

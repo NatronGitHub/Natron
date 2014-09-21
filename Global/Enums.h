@@ -329,6 +329,13 @@ enum Orientation
     Horizontal = 0x1,
     Vertical = 0x2
 };
+    
+enum PlaybackMode {
+    PLAYBACK_LOOP = 0,
+    PLAYBACK_BOUNCE,
+    PLAYBACK_ONCE
+};
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

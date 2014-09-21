@@ -129,7 +129,7 @@ GuiAppInstance::isClosing() const
 
 void
 GuiAppInstance::load(const QString & projectName,
-                     const QStringList & /*writers*/)
+                     const std::list<AppInstance::RenderWork>& /*writersWork*/)
 {
     appPTR->setLoadingStatus( tr("Creating user interface...") );
     _imp->_gui = new Gui(this);
@@ -446,45 +446,47 @@ GuiAppInstance::setViewersCurrentView(int view)
 }
 
 void
-GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
+GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w)
 {
     /*Start the renderer in a background process.*/
     getProject()->autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
 
 
     ///validate the frame range to render
-    writer->getNode()->updateRenderInputs();
     int firstFrame,lastFrame;
-    writer->getFrameRange_public(writer->getHash(),&firstFrame, &lastFrame);
-    //if firstframe and lastframe are infinite clamp them to the timeline bounds
-    if (firstFrame == INT_MIN) {
-        firstFrame = getTimeLine()->firstFrame();
-    }
-    if (lastFrame == INT_MAX) {
-        lastFrame = getTimeLine()->lastFrame();
-    }
-    if (firstFrame > lastFrame) {
-        Natron::errorDialog( writer->getNode()->getName_mt_safe(),tr("First frame in the sequence is greater than the last frame").toStdString() );
-
-        return;
-    }
-    ///get the output file knob to get the same of the sequence
-    QString outputFileSequence;
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = writer->getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        OutputFile_Knob* isOutputFIle = dynamic_cast<OutputFile_Knob*>( knobs[i].get() );
-        if (isOutputFIle) {
-            if ( isOutputFIle->isOutputImageFile() ) {
-                outputFileSequence = isOutputFIle->getValue().c_str();
-                break;
-            }
+    if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
+        w.writer->getFrameRange_public(w.writer->getHash(),&firstFrame, &lastFrame);
+        //if firstframe and lastframe are infinite clamp them to the timeline bounds
+        if (firstFrame == INT_MIN) {
+            firstFrame = getTimeLine()->firstFrame();
         }
+        if (lastFrame == INT_MAX) {
+            lastFrame = getTimeLine()->lastFrame();
+        }
+        if (firstFrame > lastFrame) {
+            Natron::errorDialog( w.writer->getNode()->getName_mt_safe(),
+                                tr("First frame in the sequence is greater than the last frame").toStdString() );
+            
+            return;
+        }
+    } else {
+        firstFrame = w.firstFrame;
+        lastFrame = w.lastFrame;
+    }
+    
+    ///get the output file knob to get the name of the sequence
+    QString outputFileSequence;
+    boost::shared_ptr<KnobI> fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
+    if (fileKnob) {
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
+        assert(isString);
+        outputFileSequence = isString->getValue().c_str();
     }
 
 
     if ( appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled() ) {
         try {
-            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),writer) );
+            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),w.writer) );
             QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
             notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,process);
 
@@ -493,13 +495,13 @@ GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
                 _imp->_activeBgProcesses.push_back(process);
             }
         } catch (const std::exception & e) {
-            Natron::errorDialog( writer->getName(), tr("Error while starting rendering").toStdString() + ": " + e.what() );
+            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString() + ": " + e.what() );
         } catch (...) {
-            Natron::errorDialog( writer->getName(), tr("Error while starting rendering").toStdString() );
+            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString() );
         }
     } else {
-        writer->renderFullSequence(NULL);
-        _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, writer);
+        w.writer->renderFullSequence(NULL,firstFrame,lastFrame);
+        _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, w.writer);
     }
 } // startRenderingFullSequence
 
@@ -592,17 +594,7 @@ GuiAppInstance::createBackDrop()
     _imp->_gui->createBackDrop( false,NodeBackDropSerialization() );
 }
 
-void
-GuiAppInstance::registerVideoEngineBeingAborted(VideoEngine* engine)
-{
-    _imp->_gui->registerVideoEngineBeingAborted(engine);
-}
 
-void
-GuiAppInstance::unregisterVideoEngineBeingAborted(VideoEngine* engine)
-{
-    _imp->_gui->unregisterVideoEngineBeingAborted(engine);
-}
 
 void
 GuiAppInstance::connectViewersToViewerCache()
@@ -639,6 +631,6 @@ void
 GuiAppInstance::projectFormatChanged(const Format& /*f*/)
 {
     if (_imp->_previewProvider && _imp->_previewProvider->viewerNode && _imp->_previewProvider->viewerUI) {
-        _imp->_previewProvider->viewerUI->getInternalNode()->updateTreeAndRender();
+        _imp->_previewProvider->viewerUI->getInternalNode()->renderCurrentFrame();
     }
 }

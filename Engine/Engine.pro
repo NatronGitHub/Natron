@@ -96,7 +96,6 @@ SOURCES += \
     TimeLine.cpp \
     Timer.cpp \
     Transform.cpp \
-    VideoEngine.cpp \
     ViewerInstance.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp
 
@@ -173,7 +172,6 @@ HEADERS += \
     Timer.h \
     Transform.h \
     Variant.h \
-    VideoEngine.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
     ../Global/Enums.h \

@@ -1186,7 +1186,7 @@ NodeGui::activate(bool triggerRender)
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->updateTreeAndRender();
+            (*it)->renderCurrentFrame();
         }
     }
 }
@@ -1296,7 +1296,7 @@ NodeGui::deactivate(bool triggerRender)
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->updateTreeAndRender();
+            (*it)->renderCurrentFrame();
         }
     }
 }
@@ -1382,18 +1382,20 @@ NodeGui::onPersistentMessageCleared()
     if ( !_persistentMessage || !_persistentMessage->isVisible() ) {
         return;
     }
-    _lastPersistentMessage.clear();
-    _persistentMessage->hide();
-    _stateIndicator->hide();
-    setToolTip("");
-    std::list<ViewerInstance* > viewers;
-    _internalNode->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
-
-        ///the tab might not exist if the node is being deactivated following a tab close request by the user.
-        if (tab) {
-            tab->getViewer()->clearPersistentMessage();
+    if (!_lastPersistentMessage.isEmpty()) {
+        _lastPersistentMessage.clear();
+        _persistentMessage->hide();
+        _stateIndicator->hide();
+        setToolTip("");
+        std::list<ViewerInstance* > viewers;
+        _internalNode->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
+            
+            ///the tab might not exist if the node is being deactivated following a tab close request by the user.
+            if (tab) {
+                tab->getViewer()->clearPersistentMessage();
+            }
         }
     }
 }
@@ -2063,7 +2065,7 @@ NodeGui::onSwitchInputActionTriggered()
         std::list<ViewerInstance* > viewers;
         _internalNode->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->updateTreeAndRender();
+            (*it)->renderCurrentFrame();
         }
         _internalNode->getApp()->triggerAutoSave();
     }

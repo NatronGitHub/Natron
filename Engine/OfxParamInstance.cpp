@@ -28,7 +28,6 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/OfxOverlayInteract.h"

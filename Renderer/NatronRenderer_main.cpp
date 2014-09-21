@@ -30,7 +30,8 @@ main(int argc,
     bool isBackground;
     QString projectName,mainProcessServerName;
     QStringList writers;
-    AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
+    std::list<std::pair<int,int> > frameRanges;
+    AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,frameRanges,mainProcessServerName);
 
     setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
@@ -45,7 +46,7 @@ main(int argc,
         return 1;
     }
     AppManager manager;
-    if ( !manager.load(argc,argv,projectName,writers,mainProcessServerName) ) {
+    if ( !manager.load(argc,argv,projectName,writers,frameRanges,mainProcessServerName) ) {
         AppManager::printUsage();
 
         return 1;

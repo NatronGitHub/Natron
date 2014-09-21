@@ -66,7 +66,7 @@ class BezierSerialization;
  * Note on multi-thread:
  * All getters or const functions can be called in any thread, that is:
  * - The GUI thread (main-thread)
- * - The render thread (VideoEngine)
+ * - The render thread 
  * - The serialization thread (when saving)
  *
  * Setters or non-const functions can exclusively be called in the main-thread (Gui thread) to ensure there is no

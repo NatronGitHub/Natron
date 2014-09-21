@@ -61,7 +61,7 @@ enum PlayState
     PAUSE,
 };
 
-
+class QMutex;
 class Timer : public QObject
 {
     
@@ -70,11 +70,12 @@ class Timer : public QObject
 public:
 
     //------------
-    // Constructor
+    // Constructor/Destructor
     //------------
 
     Timer ();
 
+    ~Timer();
 
     //--------------------------------------------------------
     // Timing control to maintain the desired frame rate:
@@ -95,10 +96,8 @@ public:
     // Set and get the frame rate, in frames per second
     //-------------------------------------------------
 
-    void    setDesiredFrameRate (double fps);
-    double   getDesiredFrameRate() const;
-
-    double   actualFrameRate ();
+    void  setDesiredFrameRate (double fps);
+    double getDesiredFrameRate() const;
 
 
     //-------------------
@@ -121,6 +120,8 @@ private:
     timeval _lastFpsFrameTime;      // state to keep track of the
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
+    
+    QMutex* _mutex; //< protects _spf which is the only member that can 
 };
 
 #endif // ifndef NATRON_ENGINE_TIMER_H_

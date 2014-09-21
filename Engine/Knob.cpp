@@ -1144,6 +1144,9 @@ struct KnobHolder::KnobHolderPrivate
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
 
+    QMutex knobsFrozenMutex;
+    bool knobsFrozen;
+    
     KnobHolderPrivate(AppInstance* appInstance_)
         : app(appInstance_)
           , knobs()
@@ -1154,6 +1157,8 @@ struct KnobHolder::KnobHolderPrivate
           , paramsEditLevel(PARAM_EDIT_OFF)
           , evaluationBlockedMutex(QMutex::Recursive)
           , evaluationBlocked(0)
+          , knobsFrozenMutex()
+          , knobsFrozen(false)
     {
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
@@ -1527,6 +1532,13 @@ KnobHolder::restoreDefaultValues()
 void
 KnobHolder::setKnobsFrozen(bool frozen)
 {
+    {
+        QMutexLocker l(&_imp->knobsFrozenMutex);
+        if (frozen == _imp->knobsFrozen) {
+            return;
+        }
+        _imp->knobsFrozen = frozen;
+    }
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {

@@ -69,7 +69,6 @@ class ViewerInstance;
 class PluginGroupNode;
 class Color_Knob;
 class ProcessHandler;
-class VideoEngine;
 namespace Natron {
 class Node;
 class Image;
@@ -375,9 +374,6 @@ public:
 
     void setToolButtonMenuOpened(QToolButton* button);
     QToolButton* getToolButtonMenuOpened() const;
-
-    void registerVideoEngineBeingAborted(VideoEngine* engine);
-    void unregisterVideoEngineBeingAborted(VideoEngine* engine);
 
     void connectViewersToViewerCache();
 

@@ -59,6 +59,7 @@ public:
 
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
+    ///Called upon node creation and then never changed
     void setUiContext(OpenGLViewerI* viewer);
 
     /**

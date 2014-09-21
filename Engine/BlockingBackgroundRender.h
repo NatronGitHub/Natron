@@ -40,7 +40,7 @@ public:
 
     void notifyFinished();
 
-    void blockingRender();
+    void blockingRender(int first,int last);
 };
 
 #endif // BLOCKINGBACKGROUNDRENDER_H

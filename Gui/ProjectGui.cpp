@@ -26,7 +26,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewerInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 

@@ -196,7 +196,7 @@ AddMultipleNodesCommand::undo()
     _graph->getGui()->getApp()->triggerAutoSave();
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->updateTreeAndRender();
+        (*it)->renderCurrentFrame();
     }
 
 
@@ -233,7 +233,7 @@ AddMultipleNodesCommand::redo()
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->updateTreeAndRender();
+        (*it)->renderCurrentFrame();
     }
 
 
@@ -322,7 +322,7 @@ RemoveMultipleNodesCommand::undo()
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->updateTreeAndRender();
+        (*it)->renderCurrentFrame();
     }
     _graph->getGui()->getApp()->triggerAutoSave();
     _graph->getGui()->getApp()->redrawAllViewers();
@@ -405,7 +405,7 @@ RemoveMultipleNodesCommand::redo()
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->updateTreeAndRender();
+        (*it)->renderCurrentFrame();
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -480,15 +480,9 @@ ConnectCommand::undo()
     std::list<ViewerInstance* > viewers;
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->updateTreeAndRender();
+        (*it)->renderCurrentFrame();
     }
-    ///if there are no viewers, at least update the render inputs
-    if ( viewers.empty() ) {
-        _edge->getDest()->getNode()->updateRenderInputs();
-        if ( _edge->getSource() ) {
-            _edge->getSource()->getNode()->updateRenderInputs();
-        }
-    }
+   
 } // undo
 
 void
@@ -557,20 +551,11 @@ ConnectCommand::redo()
                  .arg( _edge->getDest()->getNode()->getName().c_str() ) );
     }
 
-    ///if the node has no inputs, all the viewers attached to that node should get disconnected. This will be done
-    ///in VideoEngine::startEngine
+    ///if the node has no inputs, all the viewers attached to that node should be black.
     std::list<ViewerInstance* > viewers;
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->updateTreeAndRender();
-    }
-
-    ///if there are no viewers, at least update the render inputs
-    if ( viewers.empty() ) {
-        _edge->getDest()->getNode()->updateRenderInputs();
-        if ( _edge->getSource() ) {
-            _edge->getSource()->getNode()->updateRenderInputs();
-        }
+        (*it)->renderCurrentFrame();
     }
 
     ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>( _edge->getDest()->getNode()->getLiveInstance() );

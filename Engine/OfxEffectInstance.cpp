@@ -38,7 +38,6 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Project.h"
 #include "Engine/KnobFile.h"

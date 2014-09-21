@@ -64,7 +64,7 @@ struct RenderViewerArgs
     const Natron::Color::Lut* colorSpace;
 };
 
-/// parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
+/// parameters send from the scheduler thread to updateViewer() (which runs in the main thread)
 class UpdateViewerParams : public BufferableObject
 {
     
@@ -117,8 +117,6 @@ public:
           , viewerMipMapLevel(0)
           , lastRenderedImageMutex()
           , lastRenderedImage()
-          , threadIdMutex()
-          , threadIdVideoEngine(NULL)
           , activeInputsMutex()
           , activeInputs()
           , lastRenderedTextureMutex()
@@ -128,22 +126,6 @@ public:
 
         activeInputs[0] = -1;
         activeInputs[1] = -1;
-    }
-
-    void assertVideoEngine()
-    {
-#     ifdef DEBUG
-        int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-        if (nbThreads == -1) {
-            assert( QThread::currentThread() == qApp->thread() );
-        } else {
-            QMutexLocker l(&threadIdMutex);
-            if (threadIdVideoEngine == NULL) {
-                threadIdVideoEngine = QThread::currentThread();
-            }
-            assert(QThread::currentThread() == threadIdVideoEngine);
-        }
-#     endif // DEBUG
     }
 
     void redrawViewer()
@@ -164,7 +146,7 @@ signals:
 
 public:
     const ViewerInstance* const instance;
-    OpenGLViewerI* uiContext; // written in the main thread before VideoEngine thread creation, accessed from VideoEngine
+    OpenGLViewerI* uiContext; // written in the main thread before render thread creation, accessed from render thread
     mutable QMutex forceRenderMutex;
     bool forceRender; /*!< true when we want to by-pass the cache*/
 
@@ -191,9 +173,12 @@ public:
     mutable QMutex lastRenderedImageMutex;
     boost::shared_ptr<Natron::Image> lastRenderedImage[2]; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
 
+    ////Commented-out: Now that the VideoEngine is gone, there can be several threads running  the render function
+    ////and we have no way to identify the threads since they belong to a thread pool.
     // store the threadId of the VideoEngine thread - used for debugging purposes
-    mutable QMutex threadIdMutex;
-    QThread *threadIdVideoEngine;
+    //mutable QMutex threadIdMutex;
+    //QThread *threadIdVideoEngine;
+    
     mutable QMutex activeInputsMutex;
     int activeInputs[2]; //< indexes of the inputs used for the wipe
     QMutex lastRenderedTextureMutex;

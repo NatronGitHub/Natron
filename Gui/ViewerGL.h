@@ -408,8 +408,7 @@ private:
 
 
     /**
-     *@brief Called inside paintGL(). It will draw all the overlays. It also calls
-     * VideoEngine::drawOverlay()
+     *@brief Called inside paintGL(). It will draw all the overlays. 
      **/
     void drawOverlay(unsigned int mipMapLevel);
 

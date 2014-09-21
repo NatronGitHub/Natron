@@ -54,7 +54,8 @@ public:
     virtual ~GuiAppInstance();
 
     virtual void aboutToQuit() OVERRIDE FINAL;
-    virtual void load( const QString & projectName = QString(),const QStringList & writers = QStringList() ) OVERRIDE FINAL;
+    virtual void load( const QString & projectName = QString(),
+                      const std::list<AppInstance::RenderWork>& writersWork = std::list<AppInstance::RenderWork>()) OVERRIDE FINAL;
     Gui* getGui() const WARN_UNUSED_RETURN;
 
     //////////
@@ -96,8 +97,6 @@ public:
     virtual void endProgress(Natron::EffectInstance* effect) OVERRIDE FINAL;
     virtual bool progressUpdate(Natron::EffectInstance* effect,double t) OVERRIDE FINAL;
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
-    virtual void registerVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
-    virtual void unregisterVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
     virtual void clearNodeGuiMapping() OVERRIDE FINAL;
@@ -108,6 +107,8 @@ public:
 
     virtual std::string openImageFileDialog() OVERRIDE FINAL;
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
+
+    virtual void startRenderingFullSequence(const AppInstance::RenderWork& w) OVERRIDE FINAL;
 
 public slots:
 
@@ -123,7 +124,6 @@ private:
                                bool autoConnect,
                                double xPosHint,double yPosHint,
                                bool pushUndoRedoCommand) OVERRIDE FINAL;
-    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer) OVERRIDE FINAL;
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
 

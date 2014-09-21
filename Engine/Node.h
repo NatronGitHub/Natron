@@ -41,7 +41,6 @@ class AppInstance;
 class NodeSettingsPanel;
 class KnobI;
 class ViewerInstance;
-class RenderTree;
 class Format;
 class NodeSerialization;
 class KnobSerialization;
@@ -163,6 +162,7 @@ public:
 
     /**
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
+     * @brief This function will be called on all input nodes aswell
      **/
     void setKnobsFrozen(bool frozen);
 
@@ -256,20 +256,13 @@ public:
      * @brief Returns a pointer to the input Node at index 'index'
      * or NULL if it couldn't find such node.
      * MT-safe
+     * This function uses thread-local storage because several render thread can be rendering concurrently
+     * and we want the rendering of a frame to have a "snap-shot" of the tree throughout the rendering of the
+     * frame.
+     *
+     * DO NOT CALL THIS ON THE SERIALIZATION THREAD, INSTEAD PREFER USING getInputNames()
      **/
     boost::shared_ptr<Node> getInput(int index) const;
-
-    /**
-     * @brief Look-ups the changes made to the inputs that are queued, and if any it updates
-     * the inputs of the node in a thread-safe manner.
-     **/
-    void updateRenderInputs();
-
-
-    /**
-     * @brief Same as updateRenderInputs() but recursive on the inputs
-     **/
-    void updateRenderInputsRecursive();
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -282,12 +275,6 @@ public:
      * This can only be called by the main thread.
      **/
     const std::vector<boost::shared_ptr<Natron::Node> > & getInputs_mt_safe() const WARN_UNUSED_RETURN;
-
-    /**
-     *@brief Returns the inputs of the node as the render thread see them.
-     * They are modified only by the render thread when updateRenderInputs() is called.
-     **/
-    const std::vector<boost::shared_ptr<Natron::Node> > & getInputs_other_thread() const WARN_UNUSED_RETURN;
 
 
     /**
@@ -431,6 +418,7 @@ public:
     /**
      * @brief Called externally when the rendering is aborted. You should never
      * call this yourself.
+     * This function will also be called on all input nodes.
      **/
     void setAborted(bool b);
 
@@ -498,6 +486,7 @@ public:
 
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
+     * This function will also be called on all inputs
      **/
     void clearPersistentMessage();
 
@@ -530,8 +519,9 @@ public:
     ///see FULLY_SAFE in EffectInstance::renderRoI
     QMutex & getFrameMutex(int time);
 
-    void refreshPreviewsRecursively();
+    void refreshPreviewsRecursivelyDownstream(int time);
 
+    void refreshPreviewsRecursivelyUpstream(int time);
 
     void incrementKnobsAge();
 
