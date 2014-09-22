@@ -228,6 +228,21 @@ struct OutputSchedulerThreadPrivate
         QMutexLocker l(&bufMutex);
         return buf.size();
     }
+    
+    /**
+     * @brief Checks if mustQuit has been set to true, if so then it will return true and the scheduler thread should stop
+     **/
+    bool checkForExit()
+    {
+        QMutexLocker l(&mustQuitMutex);
+        if (mustQuit) {
+            mustQuit = false;
+            mustQuitCond.wakeOne();
+            return true;
+        }
+        
+        return false;
+    }
 };
 
 
@@ -363,6 +378,10 @@ OutputSchedulerThread::run()
 {
     for (;;) { ///infinite loop
         
+        if ( _imp->checkForExit() ) {
+            return;
+        }
+        
         startRender();
         for (;;) {
             ///When set to true, we don't sleep in the bufEmptyCondition but in the startCondition instead, indicating
@@ -377,14 +396,8 @@ OutputSchedulerThread::run()
             
             while (!bufferEmpty) {
                 
-                ///Check for exit
-                {
-                    QMutexLocker l(&_imp->mustQuitMutex);
-                    if (_imp->mustQuit) {
-                        _imp->mustQuit = false;
-                        _imp->mustQuitCond.wakeOne();
-                        return;
-                    }
+                if ( _imp->checkForExit() ) {
+                    return;
                 }
                 
                 ///Check for abortion
@@ -631,6 +644,7 @@ OutputSchedulerThread::abortRendering(bool blocking)
     bool isMainThread = QThread::currentThread() == qApp->thread();
     
     
+
     {
         ///Before posting an abort request, we must make sure the scheduler thread is not currently processing an abort request
         ///in stopRender(), we ensure the former by taking the abortBeingProcessedMutex lock
@@ -644,8 +658,9 @@ OutputSchedulerThread::abortRendering(bool blocking)
 
         {
             QMutexLocker abortBeingProcessedLocker(&_imp->abortBeingProcessedMutex);
-            ///We are already aborting, it is useless to ask for a second abort
-            if (_imp->abortRequested > 0) {
+            
+            ///We are already aborting but we don't want a blocking abort, it is useless to ask for a second abort
+            if (!blocking && _imp->abortRequested > 0) {
                 return;
             }
             
@@ -654,6 +669,13 @@ OutputSchedulerThread::abortRendering(bool blocking)
             
             ++_imp->abortRequested;
         }
+        
+        if (blocking) {
+            l.unlock();
+            _imp->threadPool.waitForDone();
+            l.relock();
+        }
+        
         if (isMainThread) {
             
             _imp->treatRunning = false;
@@ -682,7 +704,6 @@ OutputSchedulerThread::quitThread()
     
     abortRendering(true);
     
-    _imp->threadPool.waitForDone();
     
     if (QThread::currentThread() == qApp->thread()){
         ///If the scheduler thread was sleeping in the treat condition, waiting for the main-thread to finish
@@ -697,13 +718,13 @@ OutputSchedulerThread::quitThread()
         QMutexLocker l(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
         ///Push a fake frame on the buffer to make sure we wake-up the thread
-        
-        {
-            QMutexLocker l2(&_imp->bufMutex);
-            _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
-        
-            _imp->bufCondition.wakeOne();
-        }
+//        
+//        {
+//            QMutexLocker l2(&_imp->bufMutex);
+//            _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
+//        
+//            _imp->bufCondition.wakeOne();
+//        }
         
         ///Wake-up the thread with a fake request
         {
