@@ -37,9 +37,6 @@
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
-///Let the FrameBuffer be at most NATRON_MAX_BUFFERRED_FRAMES, otherwise it might start being a huge memory sink
-///and not be so efficient after all
-#define NATRON_MAX_BUFFERRED_FRAMES 20
 
 using namespace Natron;
 
@@ -168,9 +165,6 @@ struct OutputSchedulerThreadPrivate
     
     Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
     
-    ///Only use on the Scheduler (this) thread.
-    ///When true we adjust the number of threads to start at the end of the rendering of a frame
-    bool analysingCPUActivity;
     
     OutputSchedulerThreadPrivate(Natron::OutputEffectInstance* effect,OutputSchedulerThread::Mode mode)
     : buf()
@@ -205,7 +199,6 @@ struct OutputSchedulerThreadPrivate
     , threadPool()
     , runnables()
     , outputEffect(effect)
-    , analysingCPUActivity(false)
     {
        
     }
@@ -307,11 +300,7 @@ OutputSchedulerThread::startRender()
         int nThreads = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
         
         if (nThreads == 0) {
-            ///User wants us to determine CPU activity automatically.
-            ///We first start one runnable and monitor activty across all Natron's threads
-            ///and when the first frame is finished we appropriately start other runnables.
-            _imp->analysingCPUActivity = true;
-            
+           
             _imp->threadPool.start( createRunnable(1, false) );
         } else {
             
@@ -366,9 +355,7 @@ OutputSchedulerThread::stopRender()
         emit renderFinished(wasAborted ? 1 : 0);
         
         onRenderStopped();
-        
-        ///Deactivate analysis of CPU activity if it is still activated
-        _imp->analysingCPUActivity = false;
+
         
     }
     {
@@ -478,13 +465,7 @@ OutputSchedulerThread::run()
                 
                 ///////////
                 /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
-                if (_imp->analysingCPUActivity) {
-                    
-                    
-                    
-                    _imp->analysingCPUActivity = false;
-                }
-                
+#pragma message WARN("Adjust nThreads here")
                 
                 ///////////
                 /////Move the internal timeline indicating the next expected frame to render
@@ -739,7 +720,7 @@ OutputSchedulerThread::quitThread()
     abortRendering(true);
     
     
-    if (QThread::currentThread() == qApp->thread()){
+    if (QThread::currentThread() == qApp->thread()) {
         ///If the scheduler thread was sleeping in the treat condition, waiting for the main-thread to finish
         ///treating the frame then waiting in the mustQuitCond would create a deadlock.
         ///Instead we discard the treating of the frame by taking the lock and setting treatRunning to false

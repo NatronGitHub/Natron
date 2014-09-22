@@ -223,7 +223,7 @@ private:
     ///10% seems a reasonable value.
     boost::shared_ptr<Int_Knob> _unreachableRAMPercent;
     boost::shared_ptr<String_Knob> _unreachableRAMLabel;
-
+    
     ///The total disk space allowed for all Natron's caches
     boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
     boost::shared_ptr<Page_Knob> _viewersTab;
