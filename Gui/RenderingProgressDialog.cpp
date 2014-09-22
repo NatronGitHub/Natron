@@ -20,6 +20,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QProgressBar>
 #include <QFrame>
 #include <QTextBrowser>
+#include <QApplication>
+#include <QThread>
 #include <QString>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -45,6 +47,8 @@ struct RenderingProgressDialogPrivate
     int _lastFrame;
     boost::shared_ptr<ProcessHandler> _process;
 
+    int _nFramesRendered;
+
     RenderingProgressDialogPrivate(Gui* gui,
                                    const QString & sequenceName,
                                    int firstFrame,
@@ -62,6 +66,7 @@ struct RenderingProgressDialogPrivate
           , _firstFrame(firstFrame)
           , _lastFrame(lastFrame)
           , _process(proc)
+          , _nFramesRendered(0)
     {
     }
 };
@@ -69,7 +74,13 @@ struct RenderingProgressDialogPrivate
 void
 RenderingProgressDialog::onFrameRendered(int frame)
 {
-    double percent = (double)(frame - _imp->_firstFrame + 1) / (double)(_imp->_lastFrame - _imp->_firstFrame + 1);
+
+
+    assert(QThread::currentThread() == qApp->thread());
+
+    ++_imp->_nFramesRendered;
+
+    double percent = _imp->_nFramesRendered / (double)(_imp->_lastFrame - _imp->_firstFrame + 1);
     int progress = std::floor(percent * 100);
 
     _imp->_totalProgress->setValue(progress);
