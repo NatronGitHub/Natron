@@ -221,7 +221,14 @@ TEST_F(BaseTest,GenerateDot)
     connectNodes(generator, writer, 0, true);
 
     ///and start rendering. This call is blocking.
-    _app->startWritersRendering( QStringList( writer->getName().c_str() ) );
+    std::list<AppInstance::RenderWork> works;
+    AppInstance::RenderWork w;
+    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+    assert(w.writer);
+    w.firstFrame = INT_MIN;
+    w.lastFrame = INT_MAX;
+    works.push_back(w);
+    _app->startWritersRendering(works);
 }
 
 ///High level test: simple node connections test
