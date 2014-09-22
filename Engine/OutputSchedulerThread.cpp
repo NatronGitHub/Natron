@@ -568,6 +568,7 @@ OutputSchedulerThread::run()
                     isAbortRequested = _imp->abortRequested > 0;
                 }
                 if (!isAbortRequested) {
+                    QMutexLocker bufLocker (&_imp->bufMutex);
                     ///Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
                     _imp->bufCondition.wait(&_imp->bufMutex);
                 } else {
