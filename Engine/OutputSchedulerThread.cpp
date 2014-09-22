@@ -154,6 +154,7 @@ struct OutputSchedulerThreadPrivate
     ///When the render threads are not using the appendToBuffer API, the scheduler has no way to know the rendering is finished
     ///but to count the number of frames rendered via notifyFrameRended which is called by the render thread.
     U64 nFramesRendered;
+    bool renderFinished; //< set to true when nFramesRendered = livingRunArgs.lastFrame - livingRunArgs.firstFrame + 1
     
     QMutex runArgsMutex; // protects requestedRunArgs & livingRunArgs & nFramesRendered
     
@@ -197,6 +198,7 @@ struct OutputSchedulerThreadPrivate
     , requestedRunArgs()
     , livingRunArgs()
     , nFramesRendered(0)
+    , renderFinished(false)
     , runArgsMutex()
     , pbModeMutex()
     , pbMode(PLAYBACK_LOOP)
@@ -393,6 +395,13 @@ OutputSchedulerThread::run()
             ///When set to true, we don't sleep in the bufEmptyCondition but in the startCondition instead, indicating
             ///we finished a render
             bool renderFinished = false;
+            
+            {
+                QMutexLocker l(&_imp->runArgsMutex);
+                if (_imp->renderFinished) {
+                    renderFinished = true;
+                }
+            }
             
             bool bufferEmpty;
             {
@@ -603,11 +612,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,bool countFrameRendered)
             
             l.unlock();
             
-            ///Post an abort request
-            {
-                QMutexLocker abortLocker (&_imp->abortedRequestedMutex);
-                ++_imp->abortRequested;
-            }
+            _imp->renderFinished = true;
             
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
@@ -746,14 +751,6 @@ OutputSchedulerThread::quitThread()
     {
         QMutexLocker l(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
-        ///Push a fake frame on the buffer to make sure we wake-up the thread
-//        
-//        {
-//            QMutexLocker l2(&_imp->bufMutex);
-//            _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
-//        
-//            _imp->bufCondition.wakeOne();
-//        }
         
         ///Wake-up the thread with a fake request
         {
@@ -792,6 +789,9 @@ OutputSchedulerThread::renderFrameRange(int firstFrame,int lastFrame,RenderDirec
         _imp->requestedRunArgs.firstFrame = firstFrame;
         _imp->requestedRunArgs.lastFrame = lastFrame;
         _imp->requestedRunArgs.playbackOrRender = firstFrame != lastFrame;
+        
+        _imp->nFramesRendered = 0;
+        _imp->renderFinished = false;
         
         ///Start with picking direction being the same as the timeline direction.
         ///Once the render threads are a few frames ahead the picking direction might be different than the
