@@ -43,6 +43,11 @@
 #include "Engine/ImageParams.h"
 #include "Engine/ThreadStorage.h"
 #include "Engine/RotoContext.h"
+#include "Engine/Timer.h"
+
+///The flickering of edges/nodes in the nodegraph will be refreshed
+///at most every...
+#define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 0.5
 
 using namespace Natron;
 using std::make_pair;
@@ -108,7 +113,13 @@ struct Node::Implementation
           , multiInstanceParentName()
           , duringInputChangedAction(false)
           , keyframesDisplayedOnTimeline(false)
+          , timersMutex()
+          , lastRenderStartedSlotCallTime()
+          , lastInputNRenderStartedSlotCallTime()
     {
+        ///Initialize timers
+        gettimeofday(&lastRenderStartedSlotCallTime, 0);
+        gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
     }
 
     void abortPreview();
@@ -187,6 +198,11 @@ struct Node::Implementation
     std::string multiInstanceParentName;
     bool duringInputChangedAction; //< true if we're during onInputChanged(...). MT-safe since only modified by the main thread
     bool keyframesDisplayedOnTimeline;
+    
+    ///This is to avoid the slots connected to the main-thread to be called too much
+    QMutex timersMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
+    timeval lastRenderStartedSlotCallTime;
+    timeval lastInputNRenderStartedSlotCallTime;
 };
 
 /**
@@ -2002,10 +2018,32 @@ Node::purgeAllInstancesCaches()
     _imp->liveInstance->purgeCaches();
 }
 
-void
+bool
 Node::notifyInputNIsRendering(int inputNb)
 {
-    emit inputNIsRendering(inputNb);
+    
+    timeval now;
+    
+
+    gettimeofday(&now, 0);
+    
+    QMutexLocker l(&_imp->timersMutex);
+
+    
+    double t =  now.tv_sec  - _imp->lastInputNRenderStartedSlotCallTime.tv_sec +
+    (now.tv_usec - _imp->lastInputNRenderStartedSlotCallTime.tv_usec) * 1e-6f;
+    
+        
+    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS) {
+
+        _imp->lastInputNRenderStartedSlotCallTime = now;
+        
+        l.unlock();
+        
+        emit inputNIsRendering(inputNb);
+        return true;
+    }
+    return false;
 }
 
 void
@@ -2014,10 +2052,28 @@ Node::notifyInputNIsFinishedRendering(int inputNb)
     emit inputNIsFinishedRendering(inputNb);
 }
 
-void
+bool
 Node::notifyRenderingStarted()
 {
-    emit renderingStarted();
+    timeval now;
+    
+    gettimeofday(&now, 0);
+    
+    QMutexLocker l(&_imp->timersMutex);
+    
+    double t =  now.tv_sec  - _imp->lastRenderStartedSlotCallTime.tv_sec +
+    (now.tv_usec - _imp->lastRenderStartedSlotCallTime.tv_usec) * 1e-6f;
+    
+    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS) {
+        
+        _imp->lastRenderStartedSlotCallTime = now;
+        
+        l.unlock();
+        
+        emit renderingStarted();
+        return true;
+    }
+    return false;
 }
 
 void

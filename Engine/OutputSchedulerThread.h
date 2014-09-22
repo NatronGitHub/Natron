@@ -201,6 +201,8 @@ public slots:
      **/
     void abortRendering(bool blocking);
     
+    void abortRendering_Blocking() { abortRendering(true); }
+    
     /**
      * @brief Set the playback mode
      * @param mode Corresponds to the Natron::PlaybackMode enum

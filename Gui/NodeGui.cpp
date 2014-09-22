@@ -45,7 +45,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/ChannelSet.h"
-#include "Engine/Timer.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
@@ -109,9 +108,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _selectedGradient(NULL)
       , _defaultGradient(NULL)
       , _clonedGradient(NULL)
-      , _lastRenderStartedSlotCallTime()
-      , _lastInputNRenderStartedSlotCallTime()
-      , _wasRenderStartedSlotRun(false)
       , _wasBeginEditCalled(false)
       , positionMutex()
       , _slaveMasterLink(NULL)
@@ -176,9 +172,6 @@ NodeGui::initialize(NodeGraph* dag,
 
     setCacheMode(DeviceCoordinateCache);
     setZValue(4);
-
-    gettimeofday(&_lastRenderStartedSlotCallTime, 0);
-    gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
 
 
     createGui();
@@ -1483,49 +1476,27 @@ NodeGui::getUndoStack() const
 void
 NodeGui::onRenderingStarted()
 {
-    timeval now;
-
-    gettimeofday(&now, 0);
-    double t =  now.tv_sec  - _lastRenderStartedSlotCallTime.tv_sec +
-               (now.tv_usec - _lastRenderStartedSlotCallTime.tv_usec) * 1e-6f;
-
-    ///if some time elapsed since we last changed the color of the node, allow it to
-    ///change again, otherwise it would flicker the screen
-    if (t > 0.5) {
-        _stateIndicator->setBrush(Qt::yellow);
-        _stateIndicator->show();
-        _lastRenderStartedSlotCallTime = now;
-        _wasRenderStartedSlotRun = true;
-    }
+    
+    _stateIndicator->setBrush(Qt::yellow);
+    _stateIndicator->show();
+    
 }
 
 void
 NodeGui::onRenderingFinished()
 {
-    if (_wasRenderStartedSlotRun) {
-        _stateIndicator->hide();
-        _wasRenderStartedSlotRun = false;
-    }
+    _stateIndicator->hide();
 }
 
 void
 NodeGui::onInputNRenderingStarted(int input)
 {
-    timeval now;
-
-    gettimeofday(&now, 0);
-    double t =  now.tv_sec  - _lastInputNRenderStartedSlotCallTime.tv_sec +
-               (now.tv_usec - _lastInputNRenderStartedSlotCallTime.tv_usec) * 1e-6f;
-
-    ///if some time  elapsed since we last changed the color of the edge, allow it to
-    ///change again, otherwise it would flicker the screen
-    if (t >= 0.5) {
-        std::map<int,Edge*>::iterator it = _inputEdges.find(input);
-        if ( it != _inputEdges.end() ) {
-            it->second->turnOnRenderingColor();
-            _lastInputNRenderStartedSlotCallTime = now;
-        }
+    
+    std::map<int,Edge*>::iterator it = _inputEdges.find(input);
+    if ( it != _inputEdges.end() ) {
+        it->second->turnOnRenderingColor();
     }
+    
 }
 
 void

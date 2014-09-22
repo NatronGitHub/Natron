@@ -1812,7 +1812,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
                 ///Notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
-                _node->notifyInputNIsRendering(it2->first);
+                
+                bool didEmitSignalInputNRendering = _node->notifyInputNIsRendering(it2->first);
 
                 ///For all frames requested for this node, render the RoI requested.
                 for (U32 range = 0; range < it2->second.size(); ++range) {
@@ -1841,7 +1842,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                         }
                     }
                 }
-                _node->notifyInputNIsFinishedRendering(it2->first);
+                
+                if (didEmitSignalInputNRendering) {
+                    _node->notifyInputNIsFinishedRendering(it2->first);
+                }
 
                 if ( aborted() ) {
                     //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -1938,7 +1942,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 #     endif // DEBUG
 
         ///notify the node we're starting a render
-        _node->notifyRenderingStarted();
+        bool didEmitRenderingStartedSignal = _node->notifyRenderingStarted();
 
         ///We only need to call begin if we've not already called it.
         bool callBegin = false;
@@ -2061,7 +2065,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         } // switch
 
         ///notify the node we've finished rendering
-        _node->notifyRenderingEnded();
+        
+        if (didEmitRenderingStartedSignal) {
+            _node->notifyRenderingEnded();
+        }
 
         if (renderStatus != StatOK) {
             break;

@@ -773,7 +773,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 lastRenderedImage = inputImage;
             }
         }
-        _node->notifyInputNIsRendering(activeInputIndex);
+       
+        bool didEmitInputNRenderingSignal = _node->notifyInputNIsRendering(activeInputIndex);
 
 
         if (!renderedCompletely) {
@@ -802,7 +803,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                             &inputNodeHash);
 
                     if (!lastRenderedImage) {
-                        _node->notifyInputNIsFinishedRendering(activeInputIndex);
+                        
+                        if (didEmitInputNRenderingSignal) {
+                            _node->notifyInputNIsFinishedRendering(activeInputIndex);
+                        }
 
                         return StatFailed;
                     }
@@ -831,7 +835,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                     }
                 }
             } catch (...) {
-                _node->notifyInputNIsFinishedRendering(activeInputIndex);
+                
+                if (didEmitInputNRenderingSignal) {
+                    _node->notifyInputNIsFinishedRendering(activeInputIndex);
+                }
                 appPTR->removeFromViewerCache(params->cachedFrame);
 
                 ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
@@ -843,7 +850,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 }
             }
         }
-        _node->notifyInputNIsFinishedRendering(activeInputIndex);
+        
+        if (didEmitInputNRenderingSignal) {
+            _node->notifyInputNIsFinishedRendering(activeInputIndex);
+        }
 
 
         if (!lastRenderedImage) {

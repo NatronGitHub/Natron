@@ -492,11 +492,11 @@ public:
 
     void purgeAllInstancesCaches();
 
-    void notifyInputNIsRendering(int inputNb);
+    bool notifyInputNIsRendering(int inputNb);
 
     void notifyInputNIsFinishedRendering(int inputNb);
 
-    void notifyRenderingStarted();
+    bool notifyRenderingStarted();
 
     void notifyRenderingEnded();
 

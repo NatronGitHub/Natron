@@ -460,9 +460,6 @@ private:
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;
     QGradient* _clonedGradient;
-    timeval _lastRenderStartedSlotCallTime;
-    timeval _lastInputNRenderStartedSlotCallTime;
-    bool _wasRenderStartedSlotRun; //< true if we changed the color of the widget after a call to onRenderingStarted
     bool _wasBeginEditCalled;
     mutable QMutex positionMutex;
 

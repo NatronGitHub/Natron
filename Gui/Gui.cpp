@@ -3492,7 +3492,7 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
                                                                   boost::shared_ptr<ProcessHandler>(),this);
     boost::shared_ptr<OutputSchedulerThread> scheduler = writer->getScheduler();
 
-    QObject::connect( dialog,SIGNAL( canceled() ),scheduler.get(),SLOT( abortRendering() ) );
+    QObject::connect( dialog,SIGNAL( canceled() ),scheduler.get(),SLOT( abortRendering_Blocking() ) );
     QObject::connect( scheduler.get(),SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );
     QObject::connect( scheduler.get(),SIGNAL( renderFinished(int) ),dialog,SLOT( onVideoEngineStopped(int) ) );
     dialog->show();
