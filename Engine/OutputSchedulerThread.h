@@ -139,8 +139,11 @@ public:
     
     /**
      * @brief Called when a frame has been rendered completetly
+     * @param countFrameRendered: When the render thread is not using the appendToBuffer API
+     * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
+     * then countFrameRended needs to be set to true so the scheduler knows how many frames have been rendered.
      **/
-    void notifyFrameRendered(int frame);
+    void notifyFrameRendered(int frame,bool countFrameRendered);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted

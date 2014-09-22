@@ -150,7 +150,12 @@ struct OutputSchedulerThreadPrivate
     ///The idea here is that the render() function will set the requestedRunArgs, and once the scheduler has finished
     ///the previous render it will copy them to the livingRunArgs to fullfil the new render request
     RunArgs requestedRunArgs,livingRunArgs;
-    QMutex runArgsMutex; // protects requestedRunArgs & livingRunArgs
+    
+    ///When the render threads are not using the appendToBuffer API, the scheduler has no way to know the rendering is finished
+    ///but to count the number of frames rendered via notifyFrameRended which is called by the render thread.
+    U64 nFramesRendered;
+    
+    QMutex runArgsMutex; // protects requestedRunArgs & livingRunArgs & nFramesRendered
     
     mutable QMutex pbModeMutex;
     Natron::PlaybackMode pbMode;
@@ -191,6 +196,7 @@ struct OutputSchedulerThreadPrivate
     , timer(new Timer)
     , requestedRunArgs()
     , livingRunArgs()
+    , nFramesRendered(0)
     , runArgsMutex()
     , pbModeMutex()
     , pbMode(PLAYBACK_LOOP)
@@ -459,7 +465,7 @@ OutputSchedulerThread::run()
                 /////At this point the frame has been treated by the output device
                 
                 
-                notifyFrameRendered(expectedTimeToRender);
+                notifyFrameRendered(expectedTimeToRender,false);
                 
                 ///////////
                 /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
@@ -586,9 +592,31 @@ OutputSchedulerThread::run()
 }
 
 void
-OutputSchedulerThread::notifyFrameRendered(int frame)
+OutputSchedulerThread::notifyFrameRendered(int frame,bool countFrameRendered)
 {
     emit frameRendered(frame);
+    
+    if (countFrameRendered) {
+        QMutexLocker l(&_imp->runArgsMutex);
+        ++_imp->nFramesRendered;
+        if ( _imp->nFramesRendered == (U64)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) ) {
+            
+            l.unlock();
+            
+            ///Post an abort request
+            {
+                QMutexLocker abortLocker (&_imp->abortedRequestedMutex);
+                ++_imp->abortRequested;
+            }
+            
+            ///Notify the scheduler rendering is finished by append a fake frame to the buffer
+            {
+                QMutexLocker bufLocker (&_imp->bufMutex);
+                _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
+                _imp->bufCondition.wakeOne();
+            }
+        }
+    }
     if ( appPTR->isBackground() ) {
         QString frameStr = QString::number(frame);
         appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
@@ -1240,7 +1268,7 @@ private:
                     if (!renderDirectly) {
                         _scheduler->appendToBuffer(_time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
                     } else {
-                        _scheduler->notifyFrameRendered(_time);
+                        _scheduler->notifyFrameRendered(_time,true);
                     }
                     
                 } else {
