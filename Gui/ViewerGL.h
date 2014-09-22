@@ -299,6 +299,16 @@ public:
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
 
+    /**
+     * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
+     **/
+    virtual void saveContext() OVERRIDE FINAL;
+    
+    /**
+     * @brief Must restore all OpenGL bits saved in saveContext()
+     **/
+    virtual void restoreContext() OVERRIDE FINAL;
+    
 signals:
 
     /**

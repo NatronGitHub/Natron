@@ -168,7 +168,9 @@ public:
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-
+    virtual void saveContext() OVERRIDE FINAL;
+    virtual void restoreContext() OVERRIDE FINAL;
+    
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
 

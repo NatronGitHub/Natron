@@ -230,6 +230,10 @@ public:
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
 
+    
+    virtual void saveContext() OVERRIDE FINAL;
+    virtual void restoreContext() OVERRIDE FINAL;
+    
 public slots:
 
     void refreshDisplayedTangents();

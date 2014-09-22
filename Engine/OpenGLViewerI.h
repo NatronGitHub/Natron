@@ -137,7 +137,20 @@ public:
      **/
     virtual bool isFrameRangeLocked() const = 0;
     
+    /**
+     * @brief Must return a pointer to the current timeline used by the Viewer
+     **/
     virtual boost::shared_ptr<TimeLine> getTimeline() const = 0;
+    
+    /**
+     * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
+     **/
+    virtual void saveContext() = 0;
+    
+    /**
+     * @brief Must restore all OpenGL bits saved in saveContext()
+     **/
+    virtual void restoreContext() = 0;
 };
 
 

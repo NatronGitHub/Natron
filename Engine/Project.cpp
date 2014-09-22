@@ -12,6 +12,8 @@
 
 #include <fstream>
 #include <algorithm>
+#include <cstdlib> // strtoul
+#include <cerrno> // errno
 
 #include <QtConcurrentRun>
 #include <QCoreApplication>
@@ -1487,19 +1489,146 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
         break;
     }
 }
-    
-void
-Project::makeEnvMap(const std::string& encodedEnv,std::map<std::string,std::string>& env)
+
+// Functions to escape / unescape characters from XML strings
+// Note that the unescape function matches the escape function,
+// and cannot decode any HTML entity (such as Unicode chars).
+// A far more complete decoding function can be found at:
+// https://bitbucket.org/cggaertner/cstuff/src/master/entities.c
+std::string
+Project::escapeXML(const std::string &istr)
 {
-    QStringList variables = QString(encodedEnv.c_str()).split(';');
-    for (int i = 0; i < variables.size(); ++i) {
-        QStringList split = variables[i].split(':');
-        if (split.size() != 2) {
-            continue;
+    std::string str( istr );
+    for (size_t i = 0; i < str.size(); ++i) {
+        switch (str[i]) {
+            case '<':
+                str.replace(i, 1, "&lt;");
+                i += 3;
+                break;
+
+            case '>':
+                str.replace(i, 1, "&gt;");
+                i += 3;
+                break;
+            case '&':
+                str.replace(i, 1, "&amp;");
+                i += 4;
+                break;
+            case '"':
+                str.replace(i, 1, "&quot;");
+                i += 5;
+                break;
+            case '\'':
+                str.replace(i, 1, "&apos;");
+                i += 5;
+                break;
+
+                // control chars we allow:
+            case '\n':
+            case '\r':
+            case '\t':
+                break;
+
+            default: {
+                unsigned char c = (unsigned char)(str[i]);
+                if ((0x01 <= c && c <= 0x1f) || (0x7F <= c && c <= 0x9F)) {
+                    char escaped[7];
+                    // these characters must be escaped in XML 1.1
+                    snprintf(escaped, sizeof(escaped), "&#x%02X;", (unsigned int)c);
+                    str.replace(i, 1, escaped);
+                    i += 5;
+
+                }
+            }   break;
         }
-        env.insert(std::make_pair(split[0].toStdString(),split[1].toStdString()));
     }
-  
+    return str;
+}
+
+std::string
+Project::unescapeXML(const std::string &istr)
+{
+    size_t i;
+    std::string str = istr;
+    i = str.find_first_of("&");
+    while (i != std::string::npos) {
+        if (str[i] == '&') {
+            if (!str.compare(i + 1, 3, "lt;")) {
+                str.replace(i, 4, 1, '<');
+            } else if (!str.compare(i + 1, 3, "gt;")) {
+                str.replace(i, 4, 1, '>');
+            } else if (!str.compare(i + 1, 4, "amp;")) {
+                str.replace(i, 5, 1, '&');
+            } else if (!str.compare(i + 1, 5, "apos;")) {
+                str.replace(i, 6, 1, '\'');
+            } else if (!str.compare(i + 1, 5, "quot;")) {
+                str.replace(i, 6, 1, '"');
+            } else if (!str.compare(i + 1, 1, "#")) {
+                size_t end = str.find_first_of(";", i + 2);
+                if (end == std::string::npos) {
+                    // malformed XML
+                    return str;
+                }
+                char *tail = NULL;
+                int errno_save = errno;
+                bool hex = str[i+2] == 'x' || str[i+2] == 'X';
+                char *head = &str[i+ (hex ? 3 : 2)];
+
+                errno = 0;
+                unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
+
+                bool fail = errno || (tail - &str[0])!= (long)end || cp > 0xff; // only handle 0x01-0xff
+                errno = errno_save;
+                if (fail) {
+                    return str;
+                }
+                // replace from '&' to ';' (thus the +1)
+                str.replace(i, tail - head + 1, 1, (char)cp);
+            }
+        }
+        i = str.find_first_of("&", i + 1);
+    }
+    return str;
+}
+
+void
+Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables)
+{
+    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
+    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
+    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
+    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
+    
+    size_t i = encoded.find(startNameTag);
+    while (i != std::string::npos) {
+        i += startNameTag.size();
+        assert(i < encoded.size());
+        size_t endNamePos = encoded.find(endNameTag,i);
+        assert(endNamePos != std::string::npos && endNamePos < encoded.size());
+        
+        std::string name,value;
+        while (i < endNamePos) {
+            name.push_back(encoded[i]);
+            ++i;
+        }
+        
+        i = encoded.find(startValueTag,i);
+        i += startValueTag.size();
+        assert(i != std::string::npos && i < encoded.size());
+        
+        size_t endValuePos = encoded.find(endValueTag,i);
+        assert(endValuePos != std::string::npos && endValuePos < encoded.size());
+        
+        while (i < endValuePos) {
+            value.push_back(encoded.at(i));
+            ++i;
+        }
+        
+        // In order to use XML tags, the text inside the tags has to be unescaped.
+        variables.insert(std::make_pair(unescapeXML(name), unescapeXML(value)));
+        
+        i = encoded.find(startNameTag,i);
+    }
 }
 
 void
@@ -1663,54 +1792,36 @@ void
 Project::onOCIOConfigPathChanged(const std::string& path)
 {
     
-    QString pathCpy(path.c_str());
-
     std::string env = _imp->envVars->getValue();
-    QStringList variables = QString(env.c_str()).split(';');
-    
-    QStringList newVariables;
-    
-    std::map<std::string, std::string> oldEnvMap;
+    std::map<std::string, std::string> envMap;
+    makeEnvMap(env, envMap);
     
     ///If there was already a OCIO variable, update it, otherwise create it
-    for (int i = 0; i < variables.size(); ++i) {
-        QStringList var = variables[i].split(':');
-        if (var.size() != 2) {
-            ///ignore
-            continue;
-        }
-        
-        oldEnvMap.insert(std::make_pair(var[0].toStdString(),var[1].toStdString()));
-        
-        ///update the project path
-        if (var[0] == NATRON_OCIO_ENV_VAR_NAME) {
-            QString newPath = QString(NATRON_OCIO_ENV_VAR_NAME":" + pathCpy);
-            newVariables << newPath;
-        } else {
-            newVariables << variables[i];
-        }
-        
-    }
     
-    if (newVariables.empty()) {
-        QString newPath = QString(NATRON_OCIO_ENV_VAR_NAME":" + pathCpy);
-        newVariables << newPath;
+    std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
+    if (foundOCIO != envMap.end()) {
+        foundOCIO->second = path;
+    } else {
+        envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
     }
-    
+
     std::string newEnv;
-    for (int i = 0 ; i < newVariables.size(); ++i) {
-        newEnv += newVariables[i].toStdString();
-        if (i < (newVariables.size() - 1)) {
-            newEnv += ';';
-        }
+    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+        // In order to use XML tags, the text inside the tags has to be escaped.
+        newEnv += NATRON_ENV_VAR_NAME_START_TAG;
+        newEnv += Project::escapeXML(it->first);
+        newEnv += NATRON_ENV_VAR_NAME_END_TAG;
+        newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
+        newEnv += Project::escapeXML(it->second);
+        newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
     }
     if (env != newEnv) {
-        
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(oldEnvMap, NATRON_OCIO_ENV_VAR_NAME, path);
+            fixRelativeFilePaths(envMap, NATRON_OCIO_ENV_VAR_NAME, path);
         }
         _imp->envVars->setValue(newEnv, 0);
     }
 }
+
     
 } //namespace Natron

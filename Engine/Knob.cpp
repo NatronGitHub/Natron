@@ -764,6 +764,22 @@ KnobHelper::getBackgroundColour(double &r,
 }
 
 void
+KnobHelper::saveContext()
+{
+    if (_imp->gui) {
+        _imp->gui->saveContext();
+    }
+}
+
+void
+KnobHelper::restoreContext()
+{
+    if (_imp->gui) {
+        _imp->gui->restoreContext();
+    }
+}
+
+void
 KnobHelper::setOfxParamHandle(void* ofxParamHandle)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -1402,9 +1418,11 @@ KnobHolder::evaluate_public(KnobI* knob,
         return;
     }
     _imp->evaluateQueue.isSignificant |= isSignificant;
-    _imp->evaluateQueue.requester = knob;
+    if (!_imp->evaluateQueue.requester) {
+        _imp->evaluateQueue.requester = knob;
+    }
     if (getRecursionLevel() == 0) {
-        evaluate(knob, _imp->evaluateQueue.isSignificant,reason);
+        evaluate(_imp->evaluateQueue.requester, _imp->evaluateQueue.isSignificant,reason);
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
         if ( isSignificant && getApp() ) {

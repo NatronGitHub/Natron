@@ -13,12 +13,17 @@
 
 #include <ofxhImageEffect.h>
 
+#include "Global/Macros.h"
+
 class OverlaySupport;
 class KnobI;
 
 namespace Natron {
 class NatronOverlayInteractSupport
 {
+    
+protected:
+    
     OverlaySupport* _viewport;
 
 public:
@@ -107,6 +112,120 @@ public:
     }
 
 #endif
+
+    /// call create instance
+    virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionDraw
+    //
+    // Params -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    virtual OfxStatus drawAction(OfxTime time, const OfxPointD &renderScale) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionPenMotion
+    //
+    // Params  -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    //    penX              - the X position
+    //    penY              - the Y position
+    //    pressure          - the pen pressue 0 to 1
+    virtual OfxStatus penMotionAction(OfxTime time,
+                                      const OfxPointD &renderScale,
+                                      const OfxPointD &penPos,
+                                      const OfxPointI &penPosViewport,
+                                      double pressure) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionPenUp
+    //
+    // Params  -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    //    penX              - the X position
+    //    penY              - the Y position
+    //    pressure          - the pen pressue 0 to 1
+    virtual OfxStatus penUpAction(OfxTime time,
+                                  const OfxPointD &renderScale,
+                                  const OfxPointD &penPos,
+                                  const OfxPointI &penPosViewport,
+                                  double  pressure) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionPenDown
+    //
+    // Params  -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    //    penX              - the X position
+    //    penY              - the Y position
+    //    pressure          - the pen pressue 0 to 1
+    virtual OfxStatus penDownAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    const OfxPointD &penPos,
+                                    const OfxPointI &penPosViewport,
+                                    double  pressure) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionkeyDown
+    //
+    // Params  -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    //    key               - the pressed key
+    //    keyString         - the pressed key string
+    virtual OfxStatus keyDownAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    int     key,
+                                    char*   keyString) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionkeyUp
+    //
+    // Params  -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    //    key               - the pressed key
+    //    keyString         - the pressed key string
+    virtual OfxStatus keyUpAction(OfxTime time,
+                                  const OfxPointD &renderScale,
+                                  int     key,
+                                  char*   keyString) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionkeyRepeat
+    //
+    // Params  -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    //    key               - the pressed key
+    //    keyString         - the pressed key string
+    virtual OfxStatus keyRepeatAction(OfxTime time,
+                                      const OfxPointD &renderScale,
+                                      int     key,
+                                      char*   keyString) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionLoseFocus
+    //
+    // Params -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    virtual OfxStatus gainFocusAction(OfxTime time,
+                                      const OfxPointD &renderScale) OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionLoseFocus
+    //
+    // Params -
+    //
+    //    time              - the effect time at which changed occured
+    //    renderScale       - the render scale
+    virtual OfxStatus loseFocusAction(OfxTime  time,
+                                      const OfxPointD &renderScale) OVERRIDE FINAL;
+
 };
 
 class OfxParamOverlayInteract

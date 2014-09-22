@@ -449,7 +449,10 @@ public:
     virtual void getViewportSize(double &width, double &height) const = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
-
+    virtual void saveContext() = 0;
+    virtual void restoreContext() = 0;
+    
+    
     /**
      * @brief If this is an openfx param, this is the pointer to the handle.
      **/
@@ -867,6 +870,8 @@ public:
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    virtual void saveContext() OVERRIDE FINAL;
+    virtual void restoreContext() OVERRIDE FINAL;
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;

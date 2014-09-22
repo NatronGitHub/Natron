@@ -16,8 +16,10 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Global/GLIncludes.h"
 
 using namespace Natron;
+
 
 OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
                                        int bitDepthPerComponent,
@@ -26,6 +28,109 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
       , NatronOverlayInteractSupport()
 {
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// protect all OpenGL attribs from anything wrong that could be done in interact functions
+// Should this be done in the GUI?
+// Probably not: the fact that interacts are OpenGL
+OfxStatus
+OfxOverlayInteract::createInstanceAction()
+{
+    //OGLContextSaver saver;
+    return OFX::Host::ImageEffect::OverlayInteract::createInstanceAction();
+}
+
+OfxStatus
+OfxOverlayInteract::drawAction(OfxTime time,
+                               const OfxPointD &renderScale)
+{
+    assert(_viewport);
+    _viewport->saveContext();
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale);
+    _viewport->restoreContext();
+    return stat;
+}
+
+OfxStatus
+OfxOverlayInteract::penMotionAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    const OfxPointD &penPos,
+                                    const OfxPointI &penPosViewport,
+                                    double  pressure)
+{
+    //OGLContextSaver saver;
+    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, penPos, penPosViewport, pressure);
+
+}
+
+OfxStatus
+OfxOverlayInteract::penUpAction(OfxTime time,
+                                const OfxPointD &renderScale,
+                                const OfxPointD &penPos,
+                                const OfxPointI &penPosViewport,
+                                double pressure)
+{
+    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, penPos, penPosViewport, pressure);
+
+}
+
+OfxStatus
+OfxOverlayInteract::penDownAction(OfxTime time,
+                                  const OfxPointD &renderScale,
+                                  const OfxPointD &penPos,
+                                  const OfxPointI &penPosViewport,
+                                  double pressure)
+{
+    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, penPos, penPosViewport, pressure);
+
+}
+
+OfxStatus
+OfxOverlayInteract::keyDownAction(OfxTime time,
+                                  const OfxPointD &renderScale,
+                                  int     key,
+                                  char*   keyString)
+{
+    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, key, keyString);
+
+}
+
+OfxStatus
+OfxOverlayInteract::keyUpAction(OfxTime time,
+                                const OfxPointD &renderScale,
+                                int     key,
+                                char*   keyString)
+{
+    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, key, keyString);
+
+}
+
+OfxStatus
+OfxOverlayInteract::keyRepeatAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    int     key,
+                                    char*   keyString)
+{
+    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, key, keyString);
+}
+
+OfxStatus
+OfxOverlayInteract::gainFocusAction(OfxTime time,
+                                    const OfxPointD &renderScale)
+{
+    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale);
+
+}
+
+OfxStatus
+OfxOverlayInteract::loseFocusAction(OfxTime  time,
+                                    const OfxPointD &renderScale)
+{
+    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale);
+}
+
+
+
 
 Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                          OFX::Host::Interact::Descriptor &desc,
