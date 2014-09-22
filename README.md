@@ -1,4 +1,4 @@
-Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=workshop)](https://coveralls.io/r/MrKepzie/Natron?branch=workshop) [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/MrKepzie/Natron/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=workshop)](https://coveralls.io/r/MrKepzie/Natron?branch=workshop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/MrKepzie/Natron/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 ======
 
 

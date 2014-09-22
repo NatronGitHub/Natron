@@ -100,20 +100,24 @@ global.pri file. To enable an option just add CONFIG+=<option> in the qmake call
 
 ### Nodes
 
+
 Natron's nodes are contained in separate repositories. To use the default nodes, you must also build the following repositories:
 
     https://github.com/devernay/openfx-misc
     https://github.com/MrKepzie/openfx-io
+
 
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
 
 Plugins must be installed in /usr/OFX/Plugins on Linux
 Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g:
 
+
     bin/
         Natron
     Plugins/
         IO.ofx.bundle
+
 	
 ### OpenColorIO configs
 
