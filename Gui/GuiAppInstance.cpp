@@ -129,7 +129,7 @@ GuiAppInstance::isClosing() const
 
 void
 GuiAppInstance::load(const QString & projectName,
-                     const std::list<AppInstance::RenderWork>& /*writersWork*/)
+                     const std::list<AppInstance::RenderRequest>& /*writersWork*/)
 {
     appPTR->setLoadingStatus( tr("Creating user interface...") );
     _imp->_gui = new Gui(this);

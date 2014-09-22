@@ -454,13 +454,14 @@ AppManager::newAppInstance(const QString & projectName,
     AppInstance* instance = makeNewInstance(_imp->_availableID);
 
     try {
-        std::list<AppInstance::RenderWork> renderWorks;
+        std::list<AppInstance::RenderRequest> renderWorks;
         int i = 0;
         for (std::list<std::pair<int,int> >::const_iterator it = frameRanges.begin(); it != frameRanges.end(); ++it,++i) {
             AppInstance::RenderRequest w;
             w.writerName = writers[i];
             w.firstFrame = it->first;
             w.lastFrame = it->second;
+            renderWorks.push_back(w);
         }
         instance->load(projectName,renderWorks);
     } catch (const std::exception & e) {

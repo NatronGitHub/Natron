@@ -140,7 +140,7 @@ public:
         int firstFrame,lastFrame;
     };
     
-    virtual void load( const QString & projectName = QString(),const std::list<RenderWork>& writersWork = std::list<RenderWork>() );
+    virtual void load(const QString & projectName = QString(), const std::list<RenderRequest> &writersWork = std::list<RenderRequest>() );
 
     int getAppID() const;
 

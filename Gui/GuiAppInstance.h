@@ -54,8 +54,8 @@ public:
     virtual ~GuiAppInstance();
 
     virtual void aboutToQuit() OVERRIDE FINAL;
-    virtual void load( const QString & projectName = QString(),
-                      const std::list<AppInstance::RenderWork>& writersWork = std::list<AppInstance::RenderWork>()) OVERRIDE FINAL;
+    virtual void load(const QString & projectName = QString(),
+                      const std::list<RenderRequest> &writersWork = std::list<AppInstance::RenderRequest>()) OVERRIDE FINAL;
     Gui* getGui() const WARN_UNUSED_RETURN;
 
     //////////

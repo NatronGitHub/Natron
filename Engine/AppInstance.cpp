@@ -132,7 +132,7 @@ AppInstance::newVersionCheckError()
 
 void
 AppInstance::load(const QString & projectName,
-                  const std::list<RenderWork>& writersWork)
+                  const std::list<RenderRequest>& writersWork)
 {
     if ( (getAppID() == 0) && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled() ) {
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);

@@ -579,7 +579,7 @@ OutputSchedulerThread::run()
             }
         }
         
-        stopRender();
+         stopRender();
         
     } // for(;;)
     
