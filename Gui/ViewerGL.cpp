@@ -188,6 +188,7 @@ struct ViewerGL::Implementation
           , selectionRectangle()
           , checkerboardTextureID(0)
           , checkerboardTileSize(0)
+          , savedTexture(0)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -274,6 +275,8 @@ struct ViewerGL::Implementation
     GLuint checkerboardTextureID;
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
 
+    GLuint savedTexture; // @see saveContext/restoreContext
+    
     bool isNearbyWipeCenter(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeMixHandle(const QPointF & pos,double tolerance) const;
@@ -3981,4 +3984,33 @@ ViewerGL::onCheckerboardSettingsChanged()
 {
     _imp->initializeCheckerboardTexture(false);
     update();
+}
+
+void
+ViewerGL::saveContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+}
+
+
+void
+ViewerGL::restoreContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    glPopAttrib();
+    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glPopAttrib();
+
 }

@@ -21,6 +21,9 @@ class KnobI;
 namespace Natron {
 class NatronOverlayInteractSupport
 {
+    
+protected:
+    
     OverlaySupport* _viewport;
 
 public:

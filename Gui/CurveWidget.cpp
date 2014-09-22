@@ -530,6 +530,7 @@ public:
     boost::scoped_ptr<QUndoStack> _undoStack;
     Gui* _gui;
 
+    GLuint savedTexture;
 private:
 
     QColor _baseAxisColor;
@@ -571,6 +572,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _keyDragLastMovement()
       , _undoStack(new QUndoStack)
       , _gui(gui)
+      , savedTexture(0)
       , _baseAxisColor(118,215,90,255)
       , _scaleColor(67,123,52,255)
       , _keyDragMaxMovement()
@@ -1932,6 +1934,26 @@ CurveWidget::getBackgroundColour(double &r,
     r = _imp->_clearColor.redF();
     g = _imp->_clearColor.greenF();
     b = _imp->_clearColor.blueF();
+}
+
+void
+CurveWidget::saveContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+}
+
+void
+CurveWidget::restoreContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    glPopAttrib();
+    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+
 }
 
 void

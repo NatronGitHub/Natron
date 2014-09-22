@@ -764,6 +764,22 @@ KnobHelper::getBackgroundColour(double &r,
 }
 
 void
+KnobHelper::saveContext()
+{
+    if (_imp->gui) {
+        _imp->gui->saveContext();
+    }
+}
+
+void
+KnobHelper::restoreContext()
+{
+    if (_imp->gui) {
+        _imp->gui->restoreContext();
+    }
+}
+
+void
 KnobHelper::setOfxParamHandle(void* ofxParamHandle)
 {
     assert( QThread::currentThread() == qApp->thread() );

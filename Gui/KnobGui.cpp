@@ -1460,6 +1460,22 @@ KnobGui::getBackgroundColour(double &r,
     }
 }
 
+void
+KnobGui::saveContext()
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->saveContext();
+    }
+}
+
+void
+KnobGui::restoreContext()
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->restoreContext();
+    }
+}
+
 ///Should set to the underlying knob the gui ptr
 void
 KnobGui::setKnobGuiPointer()

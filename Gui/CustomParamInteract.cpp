@@ -28,7 +28,8 @@ struct CustomParamInteractPrivate
     boost::shared_ptr<OfxParamOverlayInteract> entryPoint;
     QSize preferredSize;
     double par;
-
+    GLuint savedTexture;
+    
     CustomParamInteractPrivate(KnobGui* knob,
                                void* ofxParamHandle,
                                const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint)
@@ -37,6 +38,7 @@ struct CustomParamInteractPrivate
           , entryPoint(entryPoint)
           , preferredSize()
           , par(0)
+          , savedTexture(0)
     {
         assert(entryPoint && ofxParamHandle);
         ofxParam = reinterpret_cast<OFX::Host::Param::Instance*>(ofxParamHandle);
@@ -160,6 +162,26 @@ CustomParamInteract::getBackgroundColour(double &r,
     r = 0;
     g = 0;
     b = 0;
+}
+
+void
+CustomParamInteract::saveContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+}
+
+void
+CustomParamInteract::restoreContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    glPopAttrib();
+    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+
 }
 
 void
