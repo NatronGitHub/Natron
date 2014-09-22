@@ -150,7 +150,13 @@ struct OutputSchedulerThreadPrivate
     ///The idea here is that the render() function will set the requestedRunArgs, and once the scheduler has finished
     ///the previous render it will copy them to the livingRunArgs to fullfil the new render request
     RunArgs requestedRunArgs,livingRunArgs;
-    QMutex runArgsMutex; // protects requestedRunArgs & livingRunArgs
+    
+    ///When the render threads are not using the appendToBuffer API, the scheduler has no way to know the rendering is finished
+    ///but to count the number of frames rendered via notifyFrameRended which is called by the render thread.
+    U64 nFramesRendered;
+    bool renderFinished; //< set to true when nFramesRendered = livingRunArgs.lastFrame - livingRunArgs.firstFrame + 1
+    
+    QMutex runArgsMutex; // protects requestedRunArgs & livingRunArgs & nFramesRendered
     
     mutable QMutex pbModeMutex;
     Natron::PlaybackMode pbMode;
@@ -191,6 +197,8 @@ struct OutputSchedulerThreadPrivate
     , timer(new Timer)
     , requestedRunArgs()
     , livingRunArgs()
+    , nFramesRendered(0)
+    , renderFinished(false)
     , runArgsMutex()
     , pbModeMutex()
     , pbMode(PLAYBACK_LOOP)
@@ -388,6 +396,13 @@ OutputSchedulerThread::run()
             ///we finished a render
             bool renderFinished = false;
             
+            {
+                QMutexLocker l(&_imp->runArgsMutex);
+                if (_imp->renderFinished) {
+                    renderFinished = true;
+                }
+            }
+            
             bool bufferEmpty;
             {
                 QMutexLocker l(&_imp->bufMutex);
@@ -459,7 +474,7 @@ OutputSchedulerThread::run()
                 /////At this point the frame has been treated by the output device
                 
                 
-                notifyFrameRendered(expectedTimeToRender);
+                notifyFrameRendered(expectedTimeToRender,false);
                 
                 ///////////
                 /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
@@ -586,9 +601,27 @@ OutputSchedulerThread::run()
 }
 
 void
-OutputSchedulerThread::notifyFrameRendered(int frame)
+OutputSchedulerThread::notifyFrameRendered(int frame,bool countFrameRendered)
 {
     emit frameRendered(frame);
+    
+    if (countFrameRendered) {
+        QMutexLocker l(&_imp->runArgsMutex);
+        ++_imp->nFramesRendered;
+        if ( _imp->nFramesRendered == (U64)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) ) {
+            
+            l.unlock();
+            
+            _imp->renderFinished = true;
+            
+            ///Notify the scheduler rendering is finished by append a fake frame to the buffer
+            {
+                QMutexLocker bufLocker (&_imp->bufMutex);
+                _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
+                _imp->bufCondition.wakeOne();
+            }
+        }
+    }
     if ( appPTR->isBackground() ) {
         QString frameStr = QString::number(frame);
         appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
@@ -718,14 +751,6 @@ OutputSchedulerThread::quitThread()
     {
         QMutexLocker l(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
-        ///Push a fake frame on the buffer to make sure we wake-up the thread
-//        
-//        {
-//            QMutexLocker l2(&_imp->bufMutex);
-//            _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
-//        
-//            _imp->bufCondition.wakeOne();
-//        }
         
         ///Wake-up the thread with a fake request
         {
@@ -764,6 +789,9 @@ OutputSchedulerThread::renderFrameRange(int firstFrame,int lastFrame,RenderDirec
         _imp->requestedRunArgs.firstFrame = firstFrame;
         _imp->requestedRunArgs.lastFrame = lastFrame;
         _imp->requestedRunArgs.playbackOrRender = firstFrame != lastFrame;
+        
+        _imp->nFramesRendered = 0;
+        _imp->renderFinished = false;
         
         ///Start with picking direction being the same as the timeline direction.
         ///Once the render threads are a few frames ahead the picking direction might be different than the
@@ -1240,7 +1268,7 @@ private:
                     if (!renderDirectly) {
                         _scheduler->appendToBuffer(_time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
                     } else {
-                        _scheduler->notifyFrameRendered(_time);
+                        _scheduler->notifyFrameRendered(_time,true);
                     }
                     
                 } else {

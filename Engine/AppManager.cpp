@@ -144,9 +144,12 @@ AppManager::printUsage()
     std::cout << NATRON_APPLICATION_NAME << QObject::tr(" usage: ").toStdString() << std::endl;
     std::cout << "./" NATRON_APPLICATION_NAME << QObject::tr("    <project file path>").toStdString() << std::endl;
     std::cout << QObject::tr("[--background] or [-b] enables background mode rendering. No graphical interface will be shown.").toStdString() << std::endl;
-    std::cout << QObject::tr("[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
-                             " name following the --writer argument. If no such node exists in the project file, the process will abort."
-                             "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file.").toStdString() << std::endl;
+    std::cout << QObject::tr("[--writer <Writer node name>] or [-w] When in background mode, the renderer will only try to render with the node"
+                             " name following the this argument. If no such node exists in the project file, the process will abort."
+                             "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file. After the writer node name you can pass an optional frame range in the format "
+                             " firstFrame-lastFrame (e.g: 10-40). ").toStdString() << std::endl;
+    std::cout << QObject::tr("An example of usage of the renderer can be: \n"
+                             "./NatronRenderer -w MyWriter 1-100 /Users/Me/MyNatronProjects/MyProject.ntp").toStdString() << std::endl;
 }
 
 bool
