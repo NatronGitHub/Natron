@@ -16,6 +16,7 @@
 #include "Engine/Project.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/EffectInstance.h"
 
 using namespace Natron;
 
