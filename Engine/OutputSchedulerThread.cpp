@@ -845,6 +845,8 @@ OutputSchedulerThread::renderCurrentFrame()
     ///If doing playback, let it run, it will be refreshed automatically
     bool doingPlayback = isDoingPlayback();
     if (doingPlayback) {
+        QMutexLocker l(&_imp->runArgsMutex);
+        _imp->livingRunArgs.nextFrameToPick = timelineGetTime();
         return;
     }
     

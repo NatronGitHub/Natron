@@ -797,7 +797,7 @@ Project::clearNodes(bool emitSignal)
 
     ///Kill effects
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false);
+        nodesToDelete[i]->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false,true,false);
     }
 
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
