@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 VOL=Natron
 APP=Natron.app
@@ -206,3 +206,5 @@ hdiutil convert "${DMG_TMP}" -format UDZO -imagekey zlib-level=9 -o "${DMG_FINAL
 mv "$DMG_FINAL" ..
 cd ..
 rm -rf build
+
+echo "$DMG_FINAL" is available
