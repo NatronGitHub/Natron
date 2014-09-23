@@ -336,6 +336,7 @@ enum PlaybackMode {
     PLAYBACK_ONCE
 };
     
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

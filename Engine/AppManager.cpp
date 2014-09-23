@@ -20,6 +20,10 @@
 #include <QDebug>
 #include <QAbstractSocket>
 #include <QCoreApplication>
+#include <QThread>
+
+#include <sigar.h>
+
 
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h" // for removeRecursively
@@ -81,6 +85,11 @@ struct AppManagerPrivate
 
     std::string currentOCIOConfigPath; //< the currentOCIO config path
     
+    mutable sigar_t* sigarInfos; // for CPU idle time
+    QMutex  cpuIdleTimeMutex;
+    U64 cpuIdleTime;
+    U64 cpuTotalTime;
+    
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
           , _appInstances()
@@ -103,9 +112,19 @@ struct AppManagerPrivate
           ,maxCacheFiles(0)
           ,currentCacheFilesCount(0)
           ,currentCacheFilesCountMutex()
+          ,sigarInfos(0)
+          ,cpuIdleTimeMutex()
+          ,cpuIdleTime(0)
+          ,cpuTotalTime(0)
 
     {
         setMaxCacheFiles();
+        sigar_open(&sigarInfos);
+    }
+    
+    ~AppManagerPrivate()
+    {
+        sigar_close(sigarInfos);
     }
 
     void initProcessInputChannel(const QString & mainProcessServerName);
@@ -1663,6 +1682,52 @@ const std::string&
 AppManager::getOCIOConfigPath() const
 {
     return _imp->currentOCIOConfigPath;
+}
+
+int
+AppManager::evaluateBestNoConcurrentThreads(int currentNoThreads) const
+{
+    sigar_cpu_t cpuInfos;
+    
+    U64 idleTimeElapsed;
+    U64 totalTimeElapsed;
+    {
+        QMutexLocker l(&_imp->cpuIdleTimeMutex);
+        sigar_cpu_get(_imp->sigarInfos, &cpuInfos);
+
+        idleTimeElapsed = cpuInfos.idle - _imp->cpuIdleTime;
+        U64 newTotalTime =  cpuInfos.user + cpuInfos.sys + cpuInfos.idle;
+        totalTimeElapsed = newTotalTime - _imp->cpuTotalTime;
+        _imp->cpuIdleTime = cpuInfos.idle;
+        _imp->cpuTotalTime = newTotalTime;
+    }
+    
+    ///This can happen somehow, we don't treat this case
+    if (totalTimeElapsed == 0) {
+        return currentNoThreads;
+    }
+    
+    double activityPercent =  1. - idleTimeElapsed / (double)totalTimeElapsed;    
+    int ret;
+    
+    if (activityPercent < 1.) {
+        ret = activityPercent > 0. ? currentNoThreads / activityPercent : currentNoThreads;
+    } else {
+        ret = currentNoThreads - 1; 
+    }
+    return std::min(QThread::idealThreadCount(), ret);
+}
+
+void
+AppManager::resetCPUIdleTime()
+{
+    sigar_cpu_t cpuInfos;
+    
+    QMutexLocker l(&_imp->cpuIdleTimeMutex);
+    sigar_cpu_get(_imp->sigarInfos, &cpuInfos);
+    _imp->cpuIdleTime = cpuInfos.idle;
+    _imp->cpuTotalTime = cpuInfos.user + cpuInfos.sys + cpuInfos.idle;
+
 }
 
 namespace Natron {

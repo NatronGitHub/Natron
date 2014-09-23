@@ -49,6 +49,14 @@ On Ubuntu 12.04 LTS the package can be added with the following ppa:
     sudo add-apt-repository -y ppa:xorg-edgers/ppa 
     sudo apt-get install libcairo2-dev
 	
+### Hyperic-Sigar
+
+Download the binary from https://sourceforge.net/projects/sigar/files/sigar/1.6/
+or compile it from github directly :
+https://github.com/hyperic/sigar
+
+Make sure to install lib files in /usr/lib and includes in /usr/include
+
 We're done here for libraries.
 
 ###Add the config.pri file
@@ -75,6 +83,7 @@ LIBS is the path to the libs
     expat: LIBS += -lexpat
     expat: PKGCONFIG -= expat
     cairo: PKGCONFIG -= cairo
+    sigar: LIBS += -lsigar-amd64
     EOF
     ----- end -----
 

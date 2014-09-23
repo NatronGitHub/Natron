@@ -280,6 +280,19 @@ public:
     ///Non MT-safe!
     const std::string& getOCIOConfigPath() const;
     
+    /**
+     * @brief This functions aims to calculate the best number of parallel renders (threads)
+     * that should be concurrent to attain 100% CPU activity. This internally uses CPU idle
+     * time via the sigar library.
+     * This is to be used once a render is finished
+     **/
+    int evaluateBestNoConcurrentThreads(int currentNoThreads) const;
+    
+    /**
+     * @brief Reset the CPU Idle time tracked, this is to be called when starting a new render
+     **/
+    void resetCPUIdleTime();
+    
 public slots:
 
     ///Closes the application not saving any projects.

@@ -758,7 +758,7 @@ Settings::saveSettings()
         
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            std::string dimensionName = j > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
+            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
             if (isString) {
                 settings.setValue(dimensionName.c_str(), QVariant(isString->getValue(j).c_str()));
             } else if (isInt) {
@@ -801,7 +801,7 @@ Settings::restoreSettings()
         
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            std::string dimensionName = j > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
+            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
             QString qDimName(dimensionName.c_str());
             
             if (settings.contains(qDimName)) {
