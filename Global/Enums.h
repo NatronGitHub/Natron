@@ -330,12 +330,18 @@ enum Orientation
     Vertical = 0x2
 };
     
-enum PlaybackMode {
+enum PlaybackMode
+{
     PLAYBACK_LOOP = 0,
     PLAYBACK_BOUNCE,
     PLAYBACK_ONCE
 };
     
+enum SchedulingPolicy
+{
+    SCHEDULING_FFA = 0, ///frames will be rendered concurrently without ordering (free for all)
+    SCHEDULING_ORDERED ///frames will be rendered in order
+};
     
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)

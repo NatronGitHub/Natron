@@ -203,6 +203,7 @@ public:
      * @brief Called by the render-threads when mustQuit() is true on the thread
      **/
     void notifyThreadAboutToQuit(RenderThreadTask* thread);
+    
 public slots:
     
     void doTreatFrameMainThread(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
@@ -336,6 +337,11 @@ protected:
     virtual void handleRenderFailure(const std::string& errorMessage) = 0;
     
     /**
+     * @brief Must return the scheduling policy that the output device will have
+     **/
+    virtual Natron::SchedulingPolicy getSchedulingPolicy() const = 0;
+    
+    /**
      * @brief Callback when startRender() is called
      **/
     virtual void aboutToStartRender() {}
@@ -362,6 +368,8 @@ private:
     
     
     void pushFramesToRenderInternal(int startingFrame,int nThreads);
+    
+    void pushAllFrameRange();
     
     /**
      * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
@@ -407,6 +415,8 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
+    virtual Natron::SchedulingPolicy getSchedulingPolicy() const OVERRIDE FINAL;
+    
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
     virtual void onRenderStopped() OVERRIDE FINAL;
@@ -447,6 +457,8 @@ private:
     virtual RenderThreadTask* createRunnable(bool playbackOrRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
+    
+    virtual Natron::SchedulingPolicy getSchedulingPolicy() const OVERRIDE FINAL { return Natron::SCHEDULING_ORDERED; }
     
     virtual void onRenderStopped() OVERRIDE FINAL;
     

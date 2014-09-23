@@ -176,7 +176,10 @@ struct OutputSchedulerThreadPrivate
     ///we store this because when we call pushFramesToRender we need to know what was the last frame that was queued
     ///Protected by framesToRenderMutex
     int lastFramePushedIndex;
-    QWaitCondition framesToRenderCond;
+    
+    ///Render threads wait in this condition and the scheduler wake them when it needs to render some frames
+    QWaitCondition framesToRenderNotEmptyCond;
+    
 
     
     Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
@@ -220,7 +223,7 @@ struct OutputSchedulerThreadPrivate
     , framesToRenderMutex()
     , framesToRender()
     , lastFramePushedIndex(0)
-    , framesToRenderCond()
+    , framesToRenderNotEmptyCond()
     , outputEffect(effect)
     {
        
@@ -443,7 +446,13 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackMode pMode,OutputSc
                 break;
                 case Natron::PLAYBACK_ONCE:
                 default:
-                return false;
+                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+                    *nextFrame = firstFrame + 1;
+                    break;
+                } else {
+                    return false;
+                }
+                
                 
         }
     } else if (frame >= lastFrame) {
@@ -466,7 +475,13 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackMode pMode,OutputSc
                 break;
                 case Natron::PLAYBACK_ONCE:
             default:
-                return false;
+                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+                    return false;
+                } else {
+                    *nextFrame = lastFrame - 1;
+                    break;
+                }
+
                 
         }
     } else {
@@ -547,8 +562,34 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
     }
     
     ///Wake up render threads to notify them theres work to do
-    _imp->framesToRenderCond.wakeAll();
+    _imp->framesToRenderNotEmptyCond.wakeAll();
 
+}
+
+void
+OutputSchedulerThread::pushAllFrameRange()
+{
+    QMutexLocker l(&_imp->framesToRenderMutex);
+    RenderDirection direction;
+    int firstFrame,lastFrame;
+    {
+        QMutexLocker l(&_imp->runArgsMutex);
+        direction = _imp->livingRunArgs.timelineDirection;
+        firstFrame = _imp->livingRunArgs.firstFrame;
+        lastFrame = _imp->livingRunArgs.lastFrame;
+    }
+    
+    if (direction == RENDER_FORWARD) {
+        for (int i = firstFrame; i <= lastFrame; ++i) {
+            _imp->framesToRender.push_back(i);
+        }
+    } else {
+        for (int i = lastFrame; i >= firstFrame; --i) {
+            _imp->framesToRender.push_back(i);
+        }
+    }
+    ///Wake up render threads to notify them theres work to do
+    _imp->framesToRenderNotEmptyCond.wakeAll();
 }
 
 void
@@ -577,13 +618,12 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, frame,
                                                                         firstFrame, lastFrame, &frame, &direction);
     
-    assert(((pMode == PLAYBACK_LOOP || pMode == PLAYBACK_BOUNCE) && canContinue) || !canContinue);
     
     if (canContinue) {
         pushFramesToRenderInternal(frame, nThreads);
     }
     ///Wake up render threads to notify them theres work to do
-    _imp->framesToRenderCond.wakeAll();
+    _imp->framesToRenderNotEmptyCond.wakeAll();
 }
 
 int
@@ -604,7 +644,7 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
             _imp->allRenderThreadsInactiveCond.wakeOne();
         }
         
-        _imp->framesToRenderCond.wait(&_imp->framesToRenderMutex);
+        _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
         
     }
     
@@ -682,16 +722,23 @@ OutputSchedulerThread::startRender()
     }
     
     if (playbackOrRender) {
-        ///Push as many frames as there are threads
         
-        pushFramesToRender(startingFrame,nThreads);
+        Natron::SchedulingPolicy policy = getSchedulingPolicy();
+        
+        if (policy == Natron::SCHEDULING_FFA) {
+            ///push all frame range and let the threads deal with it
+            pushAllFrameRange();
+        } else {
+            ///Push as many frames as there are threads
+            pushFramesToRender(startingFrame,nThreads);
+        }
         
     } else {
         ///Wake up only 1 thread since we want to render only 1 frame...
         QMutexLocker l(&_imp->framesToRenderMutex);
         _imp->lastFramePushedIndex = startingFrame;
         _imp->framesToRender.push_back(startingFrame);
-        _imp->framesToRenderCond.wakeOne();
+        _imp->framesToRenderNotEmptyCond.wakeOne();
     }
 
 }
@@ -1381,7 +1428,7 @@ OutputSchedulerThread::stopRenderThreads(int nThreadsToStop)
     ///Wake-up all threads to make sure that they are notified that they must quit
     {
         QMutexLocker framesLocker(&_imp->framesToRenderMutex);
-        _imp->framesToRenderCond.wakeAll();
+        _imp->framesToRenderNotEmptyCond.wakeAll();
     }
     
 
@@ -1547,7 +1594,7 @@ private:
             /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
             /// On the other hand if the current number of concurrent frame renders is 1, we make use of the scheduler thread
             /// to speed up rendering by writing ahead
-            bool renderDirectly = sequentiallity == Natron::EFFECT_NOT_SEQUENTIAL  && _imp->scheduler->getNRenderThreads() > 1;
+            bool renderDirectly = sequentiallity == Natron::EFFECT_NOT_SEQUENTIAL  && _imp->scheduler->getNActiveRenderThreads() > 1;
             
             for (int i = 0; i < viewsCount; ++i) {
                 if ( canOnlyHandleOneView && (i != mainView) ) {
@@ -1701,6 +1748,17 @@ void
 DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
 {
     std::cout << errorMessage << std::endl;
+}
+
+Natron::SchedulingPolicy
+DefaultScheduler::getSchedulingPolicy() const
+{
+    Natron::SequentialPreference sequentiallity = _effect->getSequentialPreference();
+    if (sequentiallity == Natron::EFFECT_NOT_SEQUENTIAL) {
+        return Natron::SCHEDULING_FFA;
+    } else {
+        return Natron::SCHEDULING_ORDERED;
+    }
 }
 
 void
