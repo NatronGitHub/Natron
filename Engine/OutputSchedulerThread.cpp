@@ -89,6 +89,7 @@ struct RunArgs
     ///The frame range that the scheduler should render
     int firstFrame,lastFrame;
     
+    
     ///Hint to the scheduler as to how we should control the threads
     bool playbackOrRender;
     
@@ -308,6 +309,11 @@ struct OutputSchedulerThreadPrivate
                                 int firstFrame,int lastFrame,
                                 int* nextFrame,OutputSchedulerThread::RenderDirection* newDirection);
     
+    
+    static void getNearestInSequence(OutputSchedulerThread::RenderDirection direction,int frame,
+                                     int firstFrame,int lastFrame,
+                                     int* nextFrame);
+    
     /**
      * @brief Checks if mustQuit has been set to true, if so then it will return true and the scheduler thread should stop
      **/
@@ -325,7 +331,7 @@ struct OutputSchedulerThreadPrivate
     
     void waitForRenderThreadsToBeDone() {
         
-        assert(!renderThreadsMutex.tryLock());
+        assert( !renderThreadsMutex.tryLock() );
         while (renderThreads.size() > 0 && getNActiveRenderThreads() > 0) {
             allRenderThreadsInactiveCond.wait(&renderThreadsMutex);
         }
@@ -333,7 +339,7 @@ struct OutputSchedulerThreadPrivate
     
     int getNActiveRenderThreads() const {
         ///Private shouldn't lock
-        assert(!renderThreadsMutex.tryLock());
+        assert( !renderThreadsMutex.tryLock() );
         int ret = 0;
         for (RenderThreads::const_iterator it = renderThreads.begin() ; it!=renderThreads.end();++it) {
             if (it->active) {
@@ -417,22 +423,22 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackMode pMode,OutputSc
                                                      int* nextFrame,OutputSchedulerThread::RenderDirection* newDirection)
 {
     *newDirection = direction;
-    if (frame < firstFrame) {
+    if (frame <= firstFrame) {
         switch (pMode) {
                 case Natron::PLAYBACK_LOOP:
                 if (direction == OutputSchedulerThread::RENDER_FORWARD) {
-                    *nextFrame = firstFrame;
+                    *nextFrame = firstFrame + 1;
                 } else {
-                    *nextFrame  = lastFrame;
+                    *nextFrame  = lastFrame - 1;
                 }
                 break;
                 case Natron::PLAYBACK_BOUNCE:
                 if (direction == OutputSchedulerThread::RENDER_FORWARD) {
                     *newDirection = OutputSchedulerThread::RENDER_BACKWARD;
-                    *nextFrame  = lastFrame;
+                    *nextFrame  = lastFrame - 1;
                 } else {
                     *newDirection = OutputSchedulerThread::RENDER_FORWARD;
-                    *nextFrame  = firstFrame;
+                    *nextFrame  = firstFrame + 1;
                 }
                 break;
                 case Natron::PLAYBACK_ONCE:
@@ -440,22 +446,22 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackMode pMode,OutputSc
                 return false;
                 
         }
-    } else if (frame > lastFrame) {
+    } else if (frame >= lastFrame) {
         switch (pMode) {
                 case Natron::PLAYBACK_LOOP:
                 if (direction == OutputSchedulerThread::RENDER_FORWARD) {
                     *nextFrame = firstFrame;
                 } else {
-                    *nextFrame = lastFrame;
+                    *nextFrame = lastFrame - 1;
                 }
                 break;
                 case Natron::PLAYBACK_BOUNCE:
                 if (direction == OutputSchedulerThread::RENDER_FORWARD) {
                     *newDirection = OutputSchedulerThread::RENDER_BACKWARD;
-                    *nextFrame = lastFrame;
+                    *nextFrame = lastFrame - 1;
                 } else {
                     *newDirection = OutputSchedulerThread::RENDER_FORWARD;
-                    *nextFrame = firstFrame;
+                    *nextFrame = firstFrame + 1;
                 }
                 break;
                 case Natron::PLAYBACK_ONCE:
@@ -473,6 +479,29 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackMode pMode,OutputSc
     }
     return true;
 
+}
+
+void
+OutputSchedulerThreadPrivate::getNearestInSequence(OutputSchedulerThread::RenderDirection direction,int frame,
+                          int firstFrame,int lastFrame,
+                          int* nextFrame)
+{
+    if (frame >= firstFrame && frame <= lastFrame) {
+        *nextFrame = frame;
+    } else if (frame < firstFrame) {
+        if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+            *nextFrame = firstFrame;
+        } else {
+            *nextFrame = lastFrame;
+        }
+    } else { // frame > lastFrame
+        if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+            *nextFrame = lastFrame;
+        } else {
+            *nextFrame = firstFrame;
+        }
+    }
+    
 }
 
 void
@@ -525,10 +554,6 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
 void
 OutputSchedulerThread::pushFramesToRender(int nThreads)
 {
-    ///Make sure at least 1 frame is pushed
-    if (nThreads == 0) {
-        nThreads = 1;
-    }
     
     RenderDirection direction;
     int firstFrame,lastFrame;
@@ -551,6 +576,9 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     ///If startingTime is already taken into account in the framesToRender, push new frames from the last one in the stack instead
     canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, frame,
                                                                         firstFrame, lastFrame, &frame, &direction);
+    
+    assert(((pMode == PLAYBACK_LOOP || pMode == PLAYBACK_BOUNCE) && canContinue) || !canContinue);
+    
     if (canContinue) {
         pushFramesToRenderInternal(frame, nThreads);
     }
@@ -604,6 +632,7 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     RenderThreads::iterator found = _imp->getRunnableIterator(thread);
     if (found != _imp->renderThreads.end()) {
         found->active = false;
+        _imp->allRenderThreadsInactiveCond.wakeOne();
         _imp->allRenderThreadsQuitCond.wakeOne();
     }
 }
@@ -618,6 +647,7 @@ OutputSchedulerThread::startRender()
     
     bool playbackOrRender;
     RenderDirection direction;
+    int startingFrame;
     {
         ///Copy the last requested run args
         
@@ -625,7 +655,7 @@ OutputSchedulerThread::startRender()
         _imp->livingRunArgs = _imp->requestedRunArgs;
         direction = _imp->livingRunArgs.timelineDirection;
         playbackOrRender = _imp->livingRunArgs.playbackOrRender;
-        
+        startingFrame = timelineGetTime();
     }
     
     
@@ -650,18 +680,17 @@ OutputSchedulerThread::startRender()
         _imp->appendRunnable(renderThread);
         nThreads = 1;
     }
-    int currentTime = timelineGetTime();
     
     if (playbackOrRender) {
         ///Push as many frames as there are threads
         
-        pushFramesToRender(currentTime,nThreads);
+        pushFramesToRender(startingFrame,nThreads);
         
     } else {
         ///Wake up only 1 thread since we want to render only 1 frame...
         QMutexLocker l(&_imp->framesToRenderMutex);
-        _imp->lastFramePushedIndex = currentTime;
-        _imp->framesToRender.push_back(currentTime);
+        _imp->lastFramePushedIndex = startingFrame;
+        _imp->framesToRender.push_back(startingFrame);
         _imp->framesToRenderCond.wakeOne();
     }
 
@@ -858,7 +887,7 @@ OutputSchedulerThread::run()
                             
                             _imp->appendRunnable(createRunnable(playbackOrRender));
                             
-                        } else if (currentNThreads > optimumNThreads) {
+                        } else if (currentNThreads > optimumNThreads && currentNThreads > 1) {
                             ////////
                             ///Stop some threads
                             stopRenderThreads(currentNThreads - optimumNThreads);
@@ -902,7 +931,14 @@ OutputSchedulerThread::run()
                 
     
                 if (!renderFinished && _imp->livingRunArgs.playbackOrRender) {
-                    timelineGoTo(nextFrameToRender);
+                    ///Timeline might have changed if another thread moved the playhead
+                    int timelineCurrentTime = timelineGetTime();
+                    if (timelineCurrentTime != expectedTimeToRender) {
+                        timelineGoTo(timelineCurrentTime);
+                    } else {
+                        timelineGoTo(nextFrameToRender);
+                    }
+                    
                 }
                 
                 ///////////
@@ -1169,53 +1205,7 @@ OutputSchedulerThread::renderFromCurrentFrame(RenderDirection timelineDirection)
         
         ///Make sure current frame is in the frame range
         int currentTime = timelineGetTime();
-        
-        if (currentTime >= firstFrame && currentTime < lastFrame && timelineDirection == RENDER_FORWARD) {
-            
-            ///General case, just move the timeline by one
-            timelineStepOne(timelineDirection);
-            
-        } else if (currentTime > firstFrame && currentTime <= lastFrame && timelineDirection == RENDER_BACKWARD) {
-            
-            timelineStepOne(timelineDirection);
-            
-        } else if (currentTime <= firstFrame) {
-            Natron::PlaybackMode pMode = getPlaybackMode();
-            switch (pMode) {
-                case Natron::PLAYBACK_BOUNCE: {
-                    timelineDirection = RENDER_FORWARD;
-                    timelineGoTo(firstFrame + 1);
-                    
-                }   break;
-                case Natron::PLAYBACK_LOOP:
-                case Natron::PLAYBACK_ONCE:
-                default:
-                    if (timelineDirection == RENDER_BACKWARD) {
-                        timelineGoTo(lastFrame);
-                    } else {
-                        timelineGoTo(firstFrame);
-                    }
-                    break;
-            }
-        } else if (currentTime >= lastFrame) {
-            Natron::PlaybackMode pMode = getPlaybackMode();
-            switch (pMode) {
-                case Natron::PLAYBACK_BOUNCE: {
-                    timelineDirection = RENDER_BACKWARD;
-                    timelineGoTo(lastFrame - 1);
-                    
-                }   break;
-                case Natron::PLAYBACK_LOOP:
-                case Natron::PLAYBACK_ONCE:
-                default:
-                    if (timelineDirection == RENDER_BACKWARD) {
-                        timelineGoTo(firstFrame);
-                    } else {
-                        timelineGoTo(lastFrame);
-                    }
-                    break;
-            }
-        }
+        OutputSchedulerThreadPrivate::getNearestInSequence(timelineDirection, currentTime, firstFrame, lastFrame, &currentTime);
         
         _imp->requestedRunArgs.firstFrame = firstFrame;
         _imp->requestedRunArgs.lastFrame = lastFrame;
@@ -1226,17 +1216,22 @@ OutputSchedulerThread::renderFromCurrentFrame(RenderDirection timelineDirection)
 }
 
 void
-OutputSchedulerThread::renderCurrentFrame()
+OutputSchedulerThread::renderCurrentFrame(bool abortPrevious)
 {
     
-    ///If doing playback, let it run, it will be refreshed automatically
-    bool doingPlayback = isDoingPlayback();
-    if (doingPlayback) {
-        return;
-    }
+    
     
     ///Abort any ongoing render
-    abortRendering(false);
+    if (abortPrevious) {
+        abortRendering(false);
+    }
+    
+    ///If doing playback, let it run, just change the time
+    bool doingPlayback = isDoingPlayback();
+    if (doingPlayback) {
+        renderFromCurrentFrame(getDirectionRequestedToRender());
+        return;
+    }
 
     
     int currentFrame = timelineGetTime();

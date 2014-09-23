@@ -2795,7 +2795,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
 
     if ( displayingImage() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
     }
 
     ///Clear green cached line so the user doesn't expect to see things in the cache

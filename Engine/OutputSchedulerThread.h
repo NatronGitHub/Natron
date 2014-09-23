@@ -140,7 +140,7 @@ public:
     /**
      * @brief Basically it just calls render(...) with the current frame on the timeline.
      **/
-    void renderCurrentFrame();
+    void renderCurrentFrame(bool abortPrevious = true);
 
     
     /**
