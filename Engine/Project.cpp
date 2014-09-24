@@ -1409,11 +1409,13 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
             selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
             for (std::map<boost::shared_ptr<Node>,int>::iterator it = outputsConnectedToSelectedNode.begin();
                  it != outputsConnectedToSelectedNode.end(); ++it) {
-                bool ok = disconnectNodes(selected, it->first);
-                assert(ok);
-
-                ok = connectNodes(it->second, created, it->first);
-                assert(ok);
+                if (it->first->getParentMultiInstanceName().empty()) {
+                    bool ok = disconnectNodes(selected, it->first);
+                    assert(ok);
+                    
+                    ok = connectNodes(it->second, created, it->first);
+                    assert(ok);
+                }
             }
         }
         ///finally we connect the created node to the selected node
