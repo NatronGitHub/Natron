@@ -145,11 +145,11 @@ public:
     
     /**
      * @brief Called when a frame has been rendered completetly
-     * @param countFrameRendered: When the render thread is not using the appendToBuffer API
+     * @param policy If SCHEDULING_FFA the render thread is not using the appendToBuffer API
      * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
-     * then countFrameRended needs to be set to true so the scheduler knows how many frames have been rendered.
+     * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
-    void notifyFrameRendered(int frame,bool countFrameRendered);
+    void notifyFrameRendered(int frame,Natron::SchedulingPolicy policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
@@ -203,6 +203,8 @@ public:
      * @brief Called by the render-threads when mustQuit() is true on the thread
      **/
     void notifyThreadAboutToQuit(RenderThreadTask* thread);
+    
+    
     
 public slots:
     
@@ -370,6 +372,12 @@ private:
     void pushFramesToRenderInternal(int startingFrame,int nThreads);
     
     void pushAllFrameRange();
+    
+    /**
+     * @brief Starts/stops more threads according to CPU activity and user preferences 
+     * @param optimalNThreads[out] Will be set to the new number of threads
+     **/
+    void adjustNumberOfThreads(int* newNThreads);
     
     /**
      * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.

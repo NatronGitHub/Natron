@@ -712,28 +712,35 @@ OutputSchedulerThread::startRender()
     appPTR->resetCPUIdleTime();
     
     
-    ///Start with one thread if it doesn't exist
+    
     int nThreads = getNRenderThreads();
+    ///Start with one thread if it doesn't exist
     if (nThreads == 0) {
-        RenderThreadTask* renderThread = createRunnable(playbackOrRender);
-        QMutexLocker l(&_imp->renderThreadsMutex);
-        _imp->appendRunnable(renderThread);
+        _imp->appendRunnable(createRunnable(playbackOrRender));
         nThreads = 1;
     }
+    
+    QMutexLocker l(&_imp->renderThreadsMutex);
     
     if (playbackOrRender) {
         
         Natron::SchedulingPolicy policy = getSchedulingPolicy();
         
         if (policy == Natron::SCHEDULING_FFA) {
+            
+            
             ///push all frame range and let the threads deal with it
             pushAllFrameRange();
         } else {
+            
+            
             ///Push as many frames as there are threads
             pushFramesToRender(startingFrame,nThreads);
         }
         
     } else {
+        
+        
         ///Wake up only 1 thread since we want to render only 1 frame...
         QMutexLocker l(&_imp->framesToRenderMutex);
         _imp->lastFramePushedIndex = startingFrame;
@@ -815,6 +822,7 @@ OutputSchedulerThread::run()
             bool renderFinished = false;
             
             {
+                ///_imp->renderFinished might be set when in FFA scheduling policy
                 QMutexLocker l(&_imp->runArgsMutex);
                 if (_imp->renderFinished) {
                     renderFinished = true;
@@ -914,38 +922,12 @@ OutputSchedulerThread::run()
                     if (!renderFinished) {
                         ///////////
                         /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
-                        int optimumNThreads;
-                        
-                        int userSettingParallelThreads = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
-                        
-                        int currentNThreads = getNRenderThreads();
-
-                        if (userSettingParallelThreads == 0) {
-                            optimumNThreads = appPTR->evaluateBestNoConcurrentThreads(currentNThreads);
-                        } else {
-                            optimumNThreads = userSettingParallelThreads;
-                        }
-                        
-                        
-                        
-                        if (currentNThreads < optimumNThreads) {
-                            ///Launch more threads
-                            QMutexLocker l(&_imp->renderThreadsMutex);
-                            
-                            _imp->appendRunnable(createRunnable(playbackOrRender));
-                            
-                        } else if (currentNThreads > optimumNThreads && currentNThreads > 1) {
-                            ////////
-                            ///Stop some threads
-                            stopRenderThreads(currentNThreads - optimumNThreads);
-                            
-                        }
-                        
-                        
+                        int newNThreads;
+                        adjustNumberOfThreads(&newNThreads);
                         
                         ///////////
                         /////Append render requests for the render threads
-                        pushFramesToRender(optimumNThreads);
+                        pushFramesToRender(newNThreads);
                     }
                 }
                 
@@ -974,7 +956,7 @@ OutputSchedulerThread::run()
                 /////At this point the frame has been treated by the output device
                 
                 
-                notifyFrameRendered(expectedTimeToRender,false);
+                notifyFrameRendered(expectedTimeToRender,SCHEDULING_ORDERED);
                 
     
                 if (!renderFinished && _imp->livingRunArgs.playbackOrRender) {
@@ -1022,18 +1004,66 @@ OutputSchedulerThread::run()
 }
 
 void
-OutputSchedulerThread::notifyFrameRendered(int frame,bool countFrameRendered)
+OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
+{
+    ///////////
+    /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
+    int optimalNThreads;
+    
+    int userSettingParallelThreads = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
+    
+    int currentNThreads = getNRenderThreads();
+    
+    if (userSettingParallelThreads == 0) {
+        optimalNThreads = appPTR->evaluateBestNoConcurrentThreads(currentNThreads);
+    } else {
+        optimalNThreads = userSettingParallelThreads;
+    }
+    
+    
+    
+    if (currentNThreads < optimalNThreads) {
+        
+        bool playbackOrRender;
+        {
+            QMutexLocker l(&_imp->runArgsMutex);
+            playbackOrRender = _imp->livingRunArgs.playbackOrRender;
+        }
+        
+        
+        ///Launch more threads
+        QMutexLocker l(&_imp->renderThreadsMutex);
+        
+        _imp->appendRunnable(createRunnable(playbackOrRender));
+        *newNThreads = currentNThreads +  1;
+        
+    } else if (currentNThreads > optimalNThreads && currentNThreads > 1) {
+        ////////
+        ///Stop some threads
+        stopRenderThreads(currentNThreads - optimalNThreads);
+        *newNThreads = optimalNThreads;
+        
+    }
+    
+
+}
+
+void
+OutputSchedulerThread::notifyFrameRendered(int frame,Natron::SchedulingPolicy policy)
 {
     emit frameRendered(frame);
     
-    if (countFrameRendered) {
+    if (policy == SCHEDULING_FFA) {
+        
         QMutexLocker l(&_imp->runArgsMutex);
         ++_imp->nFramesRendered;
         if ( _imp->nFramesRendered == (U64)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) ) {
             
-            l.unlock();
             
             _imp->renderFinished = true;
+            
+            l.unlock();
+
             
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
@@ -1041,6 +1071,14 @@ OutputSchedulerThread::notifyFrameRendered(int frame,bool countFrameRendered)
                 _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
                 _imp->bufCondition.wakeOne();
             }
+        } else {
+            l.unlock();
+            
+            ///////////
+            /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
+            int newNThreads;
+            adjustNumberOfThreads(&newNThreads);
+
         }
     }
     if ( appPTR->isBackground() ) {
@@ -1643,7 +1681,7 @@ private:
                     if (!renderDirectly) {
                         _imp->scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
                     } else {
-                        _imp->scheduler->notifyFrameRendered(time,true);
+                        _imp->scheduler->notifyFrameRendered(time,SCHEDULING_FFA);
                     }
                     
                 } else {
