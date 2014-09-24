@@ -240,9 +240,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
         //////////////////////////////////////////////////////
         ///////For READERS & WRITERS only we open an image file dialog
-        if (allowFileDialogs && isReader() && serialization->isNull() && paramValues.empty()) {
+        if (allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
             images = getApp()->openImageFileDialog();
-        } else if (allowFileDialogs && isWriter() && serialization->isNull()  && paramValues.empty()) {
+        } else if (allowFileDialogs && isWriter() && !(serialization && !serialization->isNull())  && paramValues.empty()) {
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {
