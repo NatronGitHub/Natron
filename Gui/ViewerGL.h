@@ -168,7 +168,11 @@ public:
      * 3) glUnmapBuffer
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect & region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel,int textureIndex) OVERRIDE FINAL;
+    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
+                                            size_t bytesCount, const TextureRect & region,
+                                            double gain, double offset, int lut, int pboIndex,
+                                            unsigned int mipMapLevel,Natron::ImagePremultiplication premult,
+                                            int textureIndex) OVERRIDE FINAL;
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
      *@returns Returns true if the graphic card supports GLSL.

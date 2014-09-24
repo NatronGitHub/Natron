@@ -82,7 +82,10 @@ public:
      * 3) glUnmapBuffer to unmap the GPU buffer
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect & region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel,int textureIndex) = 0;
+    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount,
+                                            const TextureRect & region, double gain, double offset, int lut,
+                                            int pboIndex,unsigned int mipMapLevel,Natron::ImagePremultiplication premult,
+                                            int textureIndex) = 0;
 
     /**
      * @brief Called when the input of a viewer should render black.

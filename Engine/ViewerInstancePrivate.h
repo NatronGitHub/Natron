@@ -84,10 +84,12 @@ struct UpdateViewerParams
     unsigned char* ramBuffer;
     int textureIndex;
     TextureRect textureRect;
+    Natron::ImagePremultiplication srcPremult;
     size_t bytesCount;
     double gain;
     double offset;
     unsigned int mipMapLevel;
+    Natron::ImagePremultiplication premult;
     Natron::ViewerColorSpace lut;
     boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
 };

@@ -410,6 +410,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     ImageBitDepth imageDepth;
     activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
 
+    ImagePremultiplication srcPremult = activeInputToRender->getOutputPremultiplication();
+
+    
     emit imageFormatChanged(textureIndex,components, imageDepth);
     U64 inputNodeHash = activeInputToRender->getHash();
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
@@ -892,7 +895,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
         ViewerColorSpace srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( lastRenderedImage->getBitDepth() );
         
-        ImagePremultiplication srcPremult = activeInputToRender->getOutputPremultiplication();
         
         if (singleThreaded) {
             if (autoContrast) {
@@ -1019,6 +1021,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         _imp->updateViewerRunning = true;
         params->ramBuffer = ramBuffer;
         params->textureRect = textureRect;
+        params->srcPremult = srcPremult;
         params->bytesCount = bytesCount;
         params->gain = gain;
         params->offset = offset;
@@ -1676,6 +1679,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                                   params->lut,
                                                   updateViewerPboIndex,
                                                   params->mipMapLevel,
+                                                  params->srcPremult,
                                                   params->textureIndex);
             updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
         }

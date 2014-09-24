@@ -153,6 +153,7 @@ struct ViewerGL::Implementation
           , displayingImageGain()
           , displayingImageOffset()
           , displayingImageMipMapLevel(0)
+          , displayingImagePremult()
           , displayingImageLut(Natron::sRGB)
           , ms(UNDEFINED)
           , hs(HOVERING_NOTHING)
@@ -224,6 +225,7 @@ struct ViewerGL::Implementation
     double displayingImageGain[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel;
+    Natron::ImagePremultiplication displayingImagePremult[2];
     Natron::ViewerColorSpace displayingImageLut;
     MOUSE_STATE ms; /*!< Holds the mouse state*/
     HOVER_STATE hs;
@@ -1078,8 +1080,24 @@ ViewerGL::paintGL()
         }
     } else {
         if (drawTexture[0]) {
+            
+            ///Depending on the premultiplication of the input image we use a different blending func
+            ImagePremultiplication premult = _imp->displayingImagePremult[0];
+            if (!_imp->viewerTab->isCheckerboardEnabled()) {
+                premult = Natron::ImageOpaque; ///When no checkerboard, draw opaque
+            }
+            
             glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+            switch (premult) {
+                case Natron::ImagePremultiplied:
+                    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+                    break;
+                case Natron::ImageOpaque:
+                case Natron::ImageUnPremultiplied:
+                default:
+                    glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+                    break;
+            }
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
             glDisable(GL_BLEND);
         }
@@ -2074,6 +2092,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int lut,
                                      int pboIndex,
                                      unsigned int mipMapLevel,
+                                     Natron::ImagePremultiplication premult,
                                      int textureIndex)
 {
     // always running in the main thread
@@ -2114,7 +2133,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     _imp->displayingImageOffset[textureIndex] = offset;
     _imp->displayingImageMipMapLevel = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpace)lut;
-
+    _imp->displayingImagePremult[textureIndex] = premult;
     emit imageChanged(textureIndex);
 }
 
