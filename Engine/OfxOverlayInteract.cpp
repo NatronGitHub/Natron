@@ -16,7 +16,7 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
-#include "Global/GLIncludes.h"
+
 
 using namespace Natron;
 
