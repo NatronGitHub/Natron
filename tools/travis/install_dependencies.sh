@@ -46,11 +46,19 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'boost: LIBS += -lboost_serialization' > config.pri
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
+    echo 'sigar { ' >> config.pri
+    echo 'INCLUDEPATH += /usr/local/include' >> config.pri
+    echo 'LIBS += -L/usr/local/lib -lsigar' >> config.pri
 
     # build OpenFX-IO
     if [ "$CC" = "gcc" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
     if [ "$CC" = "gcc" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make -C openfx-io BITS=64 OIIO_HOME=/opt/oiio; fi
     if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
+
+    #build  Sigar
+    if [ "$CC" = "gcc" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/hyperic/sigar.git; cd sigar; mkdir build; cd build) fi
+    if [ "$CC" = "gcc" ]; then cmake ..; make -C; fi
+    if [ "$CC" = "gcc" ]; then sudo make install; fi
 
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     sw_vers -productVersion
