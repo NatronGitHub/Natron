@@ -1087,19 +1087,28 @@ ViewerGL::paintGL()
                 premult = Natron::ImageOpaque; ///When no checkerboard, draw opaque
             }
             
-            glEnable(GL_BLEND);
+            bool doBlend = premult != ImageOpaque;
+            if (doBlend) {
+                glEnable(GL_BLEND);
+            }
             switch (premult) {
                 case Natron::ImagePremultiplied:
+                    glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+                    break;
+                case Natron::ImageUnPremultiplied:
                     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
                     break;
                 case Natron::ImageOpaque:
-                case Natron::ImageUnPremultiplied:
-                default:
-                    glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
                     break;
             }
+            
+           
+            
             drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-            glDisable(GL_BLEND);
+            
+            if (doBlend) {
+                glDisable(GL_BLEND);
+            }
         }
     }
 
