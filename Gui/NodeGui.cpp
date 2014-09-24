@@ -1589,7 +1589,7 @@ NodeGui::setPos_mt_safe(const QPointF & pos)
 void
 NodeGui::centerGraphOnIt()
 {
-    _graph->centerOnNode( _graph->getNodeGuiSharedPtr(this) );
+    _graph->centerOnItem(this);
 }
 
 void

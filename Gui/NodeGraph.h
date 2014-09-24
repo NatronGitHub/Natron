@@ -102,7 +102,7 @@ public:
      **/
     void removeNode(const boost::shared_ptr<NodeGui> & node);
 
-    void centerOnNode(const boost::shared_ptr<NodeGui> & n);
+    void centerOnItem(QGraphicsItem* item);
 
     boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
 

@@ -99,17 +99,11 @@ NodeBackDrop::initialize(const QString & name,
     QString tooltip( tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
                         "move all the nodes inside the backdrop.") );
 
-    _imp->settingsPanel = new DockablePanel( _imp->graph->getGui(), //< pointer to the gui
-                                             this, //< pointer to the knob holder (this)
-                                             dockContainer, //< pointer to the layout that will contain this settings panel
-                                             DockablePanel::FULLY_FEATURED, //< use a fully featured header with editable text
-                                             false, //< don't use scroll areas for tabs
-                                             name, //< initial name
-                                             Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal), //< help tooltip
-                                             false, //< no default page
-                                             tr("BackDrop"), //< default page name
-                                             dockContainer->parentWidget() );
-
+    _imp->settingsPanel = new NodeBackDropSettingsPanel(this,
+                                                        _imp->graph->getGui(),
+                                                        dockContainer,
+                                                        name,
+                                                        dockContainer->parentWidget());
 
     ///initialize knobs here
     initializeKnobsPublic();
@@ -544,3 +538,8 @@ NodeBackDropPrivate::restoreFromSerialization(const NodeBackDropSerialization &s
     _publicInterface->refreshTextLabelFromKnob();
 }
 
+void
+NodeBackDrop::centerOnIt()
+{
+    _imp->graph->centerOnItem(this);
+}

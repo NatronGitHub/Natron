@@ -34,6 +34,7 @@ class Gui;
 class QVBoxLayout;
 class Button;
 class QUndoStack;
+class NodeBackDrop;
 class QUndoCommand;
 class RotoPanel;
 class MultiInstancePanel;
@@ -182,6 +183,8 @@ public slots:
     void setKeyOnAllParameters();
     void removeAnimationOnAllParameters();
 
+    void onCenterButtonClicked();
+
 signals:
 
     /*emitted when the panel is clicked*/
@@ -205,8 +208,14 @@ signals:
     void closeChanged(bool closed);
 
     void colorChanged(QColor);
+    
 
 protected:
+    
+    /**
+     * @brief Called when the "center on..." button is clicked
+     **/
+    virtual void centerOnItem() {}
 
     virtual RotoPanel* initializeRotoPanel()
     {
@@ -239,7 +248,6 @@ class NodeSettingsPanel
     /*Pointer to the node GUI*/
     boost::shared_ptr<NodeGui> _nodeGUI;
     bool _selected;
-    Button* _centerNodeButton;
     Button* _settingsButton;
     boost::shared_ptr<MultiInstancePanel> _multiPanel;
 
@@ -274,16 +282,35 @@ private:
 
     virtual RotoPanel* initializeRotoPanel();
     virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
+    virtual void centerOnItem() OVERRIDE FINAL;
 
 public slots:
-
-    void centerNode();
     
     void onSettingsButtonClicked();
     
     void onImportPresetsActionTriggered();
     
     void onExportPresetsActionTriggered();
+};
+
+class NodeBackDropSettingsPanel : public DockablePanel
+{
+    
+public:
+    
+    NodeBackDropSettingsPanel(NodeBackDrop* backdrop,
+                              Gui* gui,
+                              QVBoxLayout* container,
+                              const QString& name,
+                              QWidget* parent);
+    
+    virtual ~NodeBackDropSettingsPanel();
+    
+private:
+    
+    virtual void centerOnItem() OVERRIDE FINAL;
+    
+    NodeBackDrop* _backdrop;
 };
 
 #endif // NATRON_GUI_SETTINGSPANEL_H_

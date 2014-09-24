@@ -2536,10 +2536,10 @@ NodeGraph::switchInputs1and2ForSelectedNodes()
 }
 
 void
-NodeGraph::centerOnNode(const boost::shared_ptr<NodeGui> & n)
+NodeGraph::centerOnItem(QGraphicsItem* item)
 {
     _imp->_refreshOverlays = true;
-    centerOn( n.get() );
+    centerOn(item);
 }
 
 void

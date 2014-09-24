@@ -109,6 +109,7 @@ struct DockablePanelPrivate
 
     /*Tab related*/
     QTabWidget* _tabWidget;
+    Button* _centerNodeButton;
     Button* _helpButton;
     Button* _minimize;
     Button* _floatButton;
@@ -158,6 +159,7 @@ struct DockablePanelPrivate
           ,_nameLineEdit(NULL)
           ,_nameLabel(NULL)
           ,_tabWidget(NULL)
+          , _centerNodeButton(NULL)
           ,_helpButton(NULL)
           ,_minimize(NULL)
           ,_floatButton(NULL)
@@ -254,8 +256,16 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
-
-
+        
+        QPixmap pixCenter;
+        appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenter);
+        _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
+        _imp->_centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->_centerNodeButton->setToolTip( tr("Centers the node graph on this item.") );
+        QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
+        _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
+        
+        
         QPixmap pixHelp;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
@@ -1388,6 +1398,13 @@ DockablePanel::removeAnimationOnAllParameters()
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keysToRemove) );
 }
 
+
+void
+DockablePanel::onCenterButtonClicked()
+{
+    centerOnItem();
+}
+
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                      Gui* gui,
                                      boost::shared_ptr<NodeGui> NodeUi,
@@ -1405,7 +1422,6 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     parent)
       , _nodeGUI(NodeUi)
       , _selected(false)
-      , _centerNodeButton(0)
       , _settingsButton(0)
       , _multiPanel(multiPanel)
 {
@@ -1413,13 +1429,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
         multiPanel->initializeKnobsPublic();
     }
 
-    QPixmap pixC;
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
-    _centerNodeButton = new Button( QIcon(pixC),"",getHeaderWidget() );
-    _centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _centerNodeButton->setToolTip( tr("Centers the node graph on this node.") );
-    QObject::connect( _centerNodeButton,SIGNAL( clicked() ),this,SLOT( centerNode() ) );
-    insertHeaderWidget(0, _centerNodeButton);
+    
     QObject::connect( this,SIGNAL( closeChanged(bool) ),NodeUi.get(),SLOT( onSettingsPanelClosedChanged(bool) ) );
     
     QPixmap pixSettings;
@@ -1445,7 +1455,7 @@ NodeSettingsPanel::setSelected(bool s)
 }
 
 void
-NodeSettingsPanel::centerNode()
+NodeSettingsPanel::centerOnItem()
 {
     _nodeGUI->centerGraphOnIt();
 }
@@ -1590,4 +1600,36 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         return;
     }
  
+}
+
+NodeBackDropSettingsPanel::NodeBackDropSettingsPanel(NodeBackDrop* backdrop,
+                                                     Gui* gui,
+                                                     QVBoxLayout* container,
+                                                     const QString& name,
+                                                     QWidget* parent)
+: DockablePanel(gui,
+                backdrop,
+                container,
+                DockablePanel::FULLY_FEATURED,
+                false,
+                name,
+                QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
+                   "move all the nodes inside the backdrop."),
+                false, //< no default page
+                QObject::tr("BackDrop"), //< default page name
+                parent)
+, _backdrop(backdrop)
+{
+    
+}
+
+NodeBackDropSettingsPanel::~NodeBackDropSettingsPanel()
+{
+    
+}
+
+void
+NodeBackDropSettingsPanel::centerOnItem()
+{
+    _backdrop->centerOnIt();
 }
