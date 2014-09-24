@@ -233,7 +233,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _view->setModel( _proxy.get() );
     _view->setItemDelegate( _itemDelegate.get() );
 
-    QObject::connect( _model.get(),SIGNAL( rootPathChanged(QString) ),this,SLOT( updateView(QString) ) );
+    QObject::connect( _model.get(),SIGNAL( directoryLoaded(QString) ),this,SLOT( updateView(QString) ) );
     QObject::connect( _view, SIGNAL( doubleClicked(QModelIndex) ), this, SLOT( doubleClickOpen(QModelIndex) ) );
 
     /*creating GUI*/
