@@ -358,7 +358,7 @@ struct OutputSchedulerThreadPrivate
     {
         for (;;) {
             bool hasRemoved = false;
-            for (RenderThreads::const_iterator it = renderThreads.begin() ; it!=renderThreads.end();++it) {
+            for (RenderThreads::iterator it = renderThreads.begin() ; it!=renderThreads.end();++it) {
                 if (it->thread->hasQuit()) {
                     it->thread->deleteLater();
                     renderThreads.erase(it);
@@ -1045,6 +1045,8 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
         stopRenderThreads(currentNThreads - optimalNThreads);
         *newNThreads = optimalNThreads;
         
+    } else {
+        *newNThreads = currentNThreads;
     }
     
 

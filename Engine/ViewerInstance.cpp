@@ -664,7 +664,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     }
 
     unsigned char* ramBuffer = NULL;
-    bool usingRAMBuffer = false;
 
     if (isCached) {
         /*Found in viewer cache, we execute the cached engine and leave*/
@@ -704,7 +703,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 }
             }
             ramBuffer = (unsigned char*)_imp->buffer;
-            usingRAMBuffer = true;
         } else {
             boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
                 FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);
