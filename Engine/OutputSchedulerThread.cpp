@@ -238,7 +238,9 @@ struct OutputSchedulerThreadPrivate
         k.time = time;
         k.view = view;
         k.frame = image;
-        bufferRAMOccupation += image->sizeInRAM();
+        if (image) {
+            bufferRAMOccupation += image->sizeInRAM();
+        }
         buf.insert(k);
     }
     
@@ -1630,9 +1632,8 @@ private:
             
             /// If the writer dosn't need to render the frames in any sequential order (such as image sequences for instance), then
             /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
-            /// On the other hand if the current number of concurrent frame renders is 1, we make use of the scheduler thread
-            /// to speed up rendering by writing ahead
-            bool renderDirectly = sequentiallity == Natron::EFFECT_NOT_SEQUENTIAL  && _imp->scheduler->getNActiveRenderThreads() > 1;
+        
+            bool renderDirectly = sequentiallity == Natron::EFFECT_NOT_SEQUENTIAL;
             
             for (int i = 0; i < viewsCount; ++i) {
                 if ( canOnlyHandleOneView && (i != mainView) ) {
