@@ -3056,7 +3056,7 @@ NodeGraph::centerOnAllNodes()
     double xmax = INT_MIN;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
-    {
+    if (_imp->_selection.nodes.empty() && _imp->_selection.bds.empty()) {
         QMutexLocker l(&_imp->_nodesMutex);
 
 
@@ -3078,6 +3078,26 @@ NodeGraph::centerOnAllNodes()
             xmax = std::max( xmax,bbox.x() + bbox.width() );
             ymax = std::max( ymax,bbox.y() + bbox.height() );
         }
+    } else {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+            if ( (*it)->isActive() && (*it)->isVisible() ) {
+                QSize size = (*it)->getSize();
+                QPointF pos = (*it)->scenePos();
+                xmin = std::min( xmin, pos.x() );
+                xmax = std::max( xmax,pos.x() + size.width() );
+                ymin = std::min( ymin,pos.y() );
+                ymax = std::max( ymax,pos.y() + size.height() ); 
+            }
+        }
+        
+        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
+            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+            xmin = std::min( xmin,bbox.x() );
+            ymin = std::min( ymin,bbox.y() );
+            xmax = std::max( xmax,bbox.x() + bbox.width() );
+            ymax = std::max( ymax,bbox.y() + bbox.height() );
+        }
+
     }
     QRect rect( xmin,ymin,(xmax - xmin),(ymax - ymin) );
     fitInView(rect,Qt::KeepAspectRatio);
