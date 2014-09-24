@@ -790,7 +790,7 @@ EffectInstance::getImage(int inputNb,
     RectI pixelRoI;
     roi.toPixelEnclosing(scale, &pixelRoI);
 
-    int channelForAlpha = !isMask ? 3 : getMaskChannel(inputNb);
+    int channelForAlpha = !isMask ? -1 : getMaskChannel(inputNb);
 
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
