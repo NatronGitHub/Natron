@@ -176,7 +176,7 @@ OfxClipInstance::getPremult() const
         switch (comp) {
             case Natron::ImageComponentRGB:
                 return opaqueStr;
-            case Natron::ImageComponentRGBA:
+            //case Natron::ImageComponentRGBA: // RGBA can be Opaque, PreMult or UnPreMult
             case Natron::ImageComponentAlpha:
                 return premultStr;
             default:
