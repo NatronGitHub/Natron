@@ -1700,11 +1700,12 @@ Project::makeRelativeToVariable(const std::string& varName,const std::string& va
     }
     QString s(str.c_str());
     s = dir.relativeFilePath(s);
-    if (varValue[varValue.size() - 1] != '/' && varValue[varValue.size() - 1] != '\\') {
-        ///append a '/'
-        s.prepend('/');
+    if (!varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\')) {
+        str = '[' + varName + ']' + s.toStdString();
+    } else {
+        str = '[' + varName + "]/" + s.toStdString();
     }
-    str = '[' + varName + ']' + s.toStdString();
+    
 }
     
 void

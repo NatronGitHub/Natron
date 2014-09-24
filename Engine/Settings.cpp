@@ -1253,7 +1253,9 @@ Settings::tryLoadOpenColorIOConfig()
 
     std::string stdConfigFile = configFile.toStdString();
     std::string configPath = SequenceParsing::removePath(stdConfigFile);
-    
+    if (!configPath.empty() && configPath[configPath.size() - 1] == '/') {
+        configPath.erase(configPath.size() - 1, 1);
+    }
     appPTR->onOCIOConfigPathChanged(configPath);
     return true;
 } // tryLoadOpenColorIOConfig

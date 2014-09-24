@@ -335,6 +335,9 @@ void
 ProjectPrivate::autoSetProjectDirectory(const QString& path)
 {
     std::string pathCpy = path.toStdString();
+    if (!pathCpy.empty() && pathCpy[pathCpy.size() -1] == '/') {
+        pathCpy.erase(pathCpy.size() - 1, 1);
+    }
     std::string env = envVars->getValue();
     std::map<std::string, std::string> envMap;
     Project::makeEnvMap(env, envMap);

@@ -1795,7 +1795,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///but for the render args, we set byPassCache to false otherwise each input will not benefit of the
         ///cache, which would drastically reduce effiency.
         if ( isWriter() ) {
-            assert(byPassCache);
             byPassCache = false;
         }
 

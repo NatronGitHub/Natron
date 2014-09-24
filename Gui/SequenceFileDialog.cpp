@@ -349,6 +349,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _selectionLayout->addWidget(_relativeLabel);
     
     _relativeChoice = new ComboBox(_selectionWidget);
+    QObject::connect(_relativeChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onRelativeChoiceChanged(int)));
     _relativeChoice->setToolTip(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have ""chosen a file. The path will be made relative to the selected project path only when OK will be pressed."));
     _selectionLayout->addWidget(_relativeChoice);
     _relativeChoice->addItem( tr("Absolute") );
@@ -474,7 +475,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
 
     QItemSelectionModel *selectionModel = _view->selectionModel();
-    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this, SLOT( selectionChanged() ) );
+    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this, SLOT( onSelectionChanged() ) );
     QObject::connect( _selectionLineEdit, SIGNAL( textChanged(QString) ),this, SLOT( autoCompleteFileName(QString) ) );
     if (_dialogMode == SAVE_DIALOG) {
         QObject::connect( _selectionLineEdit,SIGNAL( textEdited(QString) ),this,SLOT( onSelectionLineEditing(QString) ) );
@@ -784,7 +785,19 @@ SequenceFileDialog::getRelativeChoiceProjectPath(std::string& varName,std::strin
 }
 
 void
-SequenceFileDialog::selectionChanged()
+SequenceFileDialog::onRelativeChoiceChanged(int /*index*/)
+{
+    ///Update the line edit text
+    std::string text = _selectionLineEdit->text().toStdString();
+    std::map<std::string,std::string> env;
+    _gui->getApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, text);
+    
+    proxyAndSetLineEditText(text.c_str());
+}
+
+void
+SequenceFileDialog::onSelectionChanged()
 {
     QStringList allFiles;
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
@@ -794,38 +807,51 @@ SequenceFileDialog::selectionChanged()
     if ( indexes.empty() ) {
         return;
     }
+    
     ///if the selected item is a directory, just set the line edit accordingly
     QModelIndex mappedIndex = mapToSource( indexes.at(0) );
     QString itemText = mappedIndex.data(QFileSystemModel::FilePathRole).toString();
 
     if (_dialogMode == OPEN_DIALOG) {
         if ( _model->isDir(mappedIndex) ) {
-            _selectionLineEdit->setText(itemText);
+            
+            proxyAndSetLineEditText(itemText);
+        
         } else {
             ///if we find a sequence containing the selected file, put the sequence pattern on the line edit.
             SequenceParsing::SequenceFromFiles sequence(false);
             _proxy->getSequenceFromFilesForFole(itemText, &sequence);
             if ( !sequence.empty() ) {
-                _selectionLineEdit->setText( sequence.generateValidSequencePattern().c_str() );
+                
+                proxyAndSetLineEditText(sequence.generateValidSequencePattern().c_str());
+                
             } else {
-                _selectionLineEdit->setText(itemText);
+                
+                proxyAndSetLineEditText(itemText);
+                
             }
         }
     } else if (_dialogMode == SAVE_DIALOG) {
-        QString lineEditText = _selectionLineEdit->text();
-        SequenceParsing::FileNameContent content( lineEditText.toStdString() );
+        
         if ( _model->isDir(mappedIndex) ) {
+            
+            QString lineEditText = _selectionLineEdit->text();
+            SequenceParsing::FileNameContent content( lineEditText.toStdString() );
             if ( !content.fileName().empty() ) {
                 QDir dir(itemText);
-                _selectionLineEdit->setText( dir.absoluteFilePath( content.fileName().c_str() ) );
+                
+                proxyAndSetLineEditText(content.fileName().c_str());
+           
             }
         } else {
             SequenceParsing::SequenceFromFiles sequence(false);
             _proxy->getSequenceFromFilesForFole(itemText, &sequence);
             if ( !sequence.empty() ) {
-                _selectionLineEdit->setText( sequence.generateValidSequencePattern().c_str() );
+                
+                proxyAndSetLineEditText(sequence.generateValidSequencePattern().c_str());
+                
             } else {
-                _selectionLineEdit->setText(itemText);
+                proxyAndSetLineEditText(itemText);
             }
             for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
                 if ( _fileExtensionCombo->itemText(i).toStdString() == sequence.fileExtension() ) {
@@ -836,7 +862,8 @@ SequenceFileDialog::selectionChanged()
         }
     } else {
         if ( _model->isDir(mappedIndex) ) {
-            _selectionLineEdit->setText(itemText);
+            proxyAndSetLineEditText(itemText);
+
         }
     }
     
@@ -845,7 +872,7 @@ SequenceFileDialog::selectionChanged()
         refreshPreviewAfterSelectionChange();
     }
     
-} // selectionChanged
+} // onSelectionChanged
 
 void
 SequenceFileDialog::enterDirectory(const QModelIndex & index)
@@ -885,16 +912,30 @@ SequenceFileDialog::setDirectory(const QString &directory)
     _selectionLineEdit->blockSignals(true);
 
     if ( (_dialogMode == OPEN_DIALOG) || (_dialogMode == DIR_DIALOG) ) {
-        _selectionLineEdit->setText(newDirectory);
+        proxyAndSetLineEditText(newDirectory);
     } else {
         ///find out if there's already a filename typed by the user
         ///and append it to the new path
         std::string unpathed = _selectionLineEdit->text().toStdString();
         SequenceParsing::removePath(unpathed);
-        _selectionLineEdit->setText( newDirectory + unpathed.c_str() );
+        proxyAndSetLineEditText( newDirectory + unpathed.c_str() );
     }
 
     _selectionLineEdit->blockSignals(false);
+}
+
+void
+SequenceFileDialog::proxyAndSetLineEditText(const QString& text)
+{
+    std::string stdText = text.toStdString();
+    if (_relativePathsAllowed) {
+        std::string varName,varPath;
+        bool relative = getRelativeChoiceProjectPath(varName, varPath);
+        if (relative) {
+            Natron::Project::makeRelativeToVariable(varName, varPath, stdText);
+        }
+    }
+    _selectionLineEdit->setText(stdText.c_str());
 }
 
 /*This function is called when a directory has successfully been loaded (i.e
@@ -1767,6 +1808,9 @@ SequenceFileDialog::selectedFiles()
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
 
     std::string selection;
+    
+    bool remapSelection = false;
+    
     assert(indexes.count() <= 1);
     if ( sequenceModeEnabled() ) {
         if (indexes.count() == 1) {
@@ -1776,6 +1820,7 @@ SequenceFileDialog::selectedFiles()
             _proxy->getSequenceFromFilesForFole(absoluteFileName, &ret);
 
             selection =  ret.generateValidSequencePattern();
+            remapSelection = true;
         } else {
             //if nothing is selected, pick whatever the line edit tells us
             selection =  _selectionLineEdit->text().toStdString();
@@ -1786,13 +1831,14 @@ SequenceFileDialog::selectedFiles()
             QString absoluteFileName = sequenceIndex.data(QFileSystemModel::FilePathRole).toString();
 
             selection =  absoluteFileName.toStdString();
+            remapSelection = true;
         } else {
             //if nothing is selected, pick whatever the line edit tells us
             selection =  _selectionLineEdit->text().toStdString();
         }
     }
     
-    if (_relativePathsAllowed) {
+    if (remapSelection && _relativePathsAllowed) {
         std::string varName,varPath;
         bool relative = getRelativeChoiceProjectPath(varName, varPath);
         if (relative) {
@@ -1828,6 +1874,7 @@ std::string
 SequenceFileDialog::selectedDirectory() const
 {
     std::string path = _requestedDir.toStdString();
+    
     if (_relativePathsAllowed) {
         std::string pathName,pathValue;
         bool relative = getRelativeChoiceProjectPath(pathName, pathValue);

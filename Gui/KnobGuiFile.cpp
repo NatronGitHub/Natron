@@ -206,15 +206,25 @@ File_KnobGui::watchedFileChanged()
 void
 File_KnobGui::onReturnPressed()
 {
-    QString str = _lineEdit->text();
+    std::string str = _lineEdit->text().toStdString();
 
     ///don't do antyhing if the pattern is the same
     std::string oldValue = _knob->getValue();
 
-    if ( str == oldValue.c_str() ) {
+    if ( str == oldValue ) {
         return;
     }
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,str.toStdString() ) );
+    
+    
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::map<std::string,std::string> envvar;
+        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
+        Natron::Project::findReplaceVariable(envvar,str);
+    }
+    
+    
+    
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,str ) );
 }
 
 void
@@ -357,9 +367,16 @@ OutputFile_KnobGui::updateGUI(int /*dimension*/)
 void
 OutputFile_KnobGui::onReturnPressed()
 {
-    QString newPattern = _lineEdit->text();
+    std::string newPattern = _lineEdit->text().toStdString();
 
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),newPattern.toStdString() ) );
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::map<std::string,std::string> envvar;
+        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
+        Natron::Project::findReplaceVariable(envvar,newPattern);
+    }
+
+    
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),newPattern ) );
 }
 
 void
@@ -580,8 +597,8 @@ Path_KnobGui::onAddButtonClicked()
     
     if ( dialog.exec() ) {
         std::string dirPath = dialog.selectedDirectory();
-        if (dirPath[dirPath.size() - 1] != '/') {
-            dirPath += '/';
+        if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
+            dirPath.erase(dirPath.size() - 1, 1);
         }
         updateLastOpened(dirPath.c_str());
         
@@ -608,13 +625,8 @@ Path_KnobGui::onOpenFileButtonClicked()
     SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui(),true );
     
     if ( dialog.exec() ) {
-        std::string dirPath = dialog.currentDirectory().absolutePath().toStdString();
+        std::string dirPath = dialog.selectedDirectory();
         updateLastOpened(dirPath.c_str());
-        std::string varName,varPath;
-        bool relative = dialog.getRelativeChoiceProjectPath(varName, varPath);
-        if (relative) {
-            Natron::Project::makeRelativeToVariable(varName, varPath, dirPath);
-        }
         
         std::string oldValue = _knob->getValue();
         

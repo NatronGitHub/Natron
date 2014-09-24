@@ -485,13 +485,16 @@ public slots:
     void doubleClickOpen(const QModelIndex & index);
 
     ///slot called when the user selection changed
-    void selectionChanged();
+    void onSelectionChanged();
 
     ///slot called when the sequence mode has changed
     void enableSequenceMode(bool);
 
     ///combobox slot, it calls enableSequenceMode
     void sequenceComboBoxSlot(int index);
+    
+    
+    void onRelativeChoiceChanged(int index);
 
     ///slot called when the filter  is clicked
     void showFilterMenu();
@@ -530,6 +533,12 @@ public slots:
 
 private:
 
+    /**
+     * @brief Tries to find if text starts with a project path and if so replaces it,
+     * The line edit text will be set to the resulting text
+     **/
+    void proxyAndSetLineEditText(const QString& text);
+    
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
