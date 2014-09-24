@@ -51,6 +51,14 @@ With macports:
 
 	sudo port install cairo
 	
+### Hyperic-Sigar
+
+Download the binary from https://sourceforge.net/projects/sigar/files/sigar/1.6/
+or compile it from github directly :
+https://github.com/hyperic/sigar
+
+Alternatively you can use the macports version.
+	
 We're done here for libraries.
 
 
@@ -93,6 +101,8 @@ LIBS is the path to the libs
 cat > config.pri << EOF
   INCLUDEPATH += /opt/local/include
   LIBS += -L/opt/local/lib -lboost_serialization-mt
+  INCLUDEPATH += /usr/local/include
+  LIBS += -L/usr/local/lib -lsigar-universal64-macosx
 EOF
 ----- end -----
 

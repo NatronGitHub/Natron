@@ -19,8 +19,6 @@
 
 #include "Global/GlobalDefines.h"
 
-///Qt
-class QRunnable;
 
 ///Natron
 class ViewerInstance;
@@ -43,37 +41,45 @@ public:
     BufferableObject() {}
     
     virtual ~BufferableObject() {}
+    
+    virtual std::size_t sizeInRAM() const = 0;
 };
 
 class OutputSchedulerThread;
-/**
- * @brief Base interface for render threads task
- **/
-class RenderThreadTaskI
+
+struct RenderThreadTaskPrivate;
+class RenderThreadTask :  public QThread
 {
+    
     
 public:
     
-    RenderThreadTaskI(int nThreads,bool playbackOrRender,OutputSchedulerThread* scheduler);
+    RenderThreadTask(bool playbackOrRender,Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler);
     
-    virtual ~RenderThreadTaskI();
+    virtual ~RenderThreadTask();
     
-    ///Used by the scheduler so the buffer doesn't get too large
-    virtual void putAsleep() = 0;
-    virtual void wakeUp() = 0;
+    virtual void run() OVERRIDE FINAL;
+    
+    /**
+     * @brief Call this to quit the thread whenever it will return to the pickFrameToRender function
+     **/
+    void scheduleForRemoval();
+    
+    bool mustQuit() const;
+
+    bool hasQuit() const;
     
 protected:
     
     /**
      * @brief Must render the frame
      **/
-    virtual void renderFrame() = 0;
-    
-    int _time;
-    int _nThreads;
-    bool _playbackOrRender;
-    OutputSchedulerThread* _scheduler;
+    virtual void renderFrame(int time) = 0;
+        
+    boost::scoped_ptr<RenderThreadTaskPrivate> _imp;
 };
+
+
 
 /**
  * @brief The scheduler that will control the render threads and order the output if needed
@@ -85,7 +91,7 @@ class OutputSchedulerThread : public QThread
     
 public:
     
-    friend class RenderThreadTaskI;
+    friend class RenderThreadTask;
     
     enum RenderDirection {
         RENDER_FORWARD = 0,
@@ -134,27 +140,22 @@ public:
     /**
      * @brief Basically it just calls render(...) with the current frame on the timeline.
      **/
-    void renderCurrentFrame();
+    void renderCurrentFrame(bool abortPrevious = true);
 
     
     /**
      * @brief Called when a frame has been rendered completetly
-     * @param countFrameRendered: When the render thread is not using the appendToBuffer API
+     * @param policy If SCHEDULING_FFA the render thread is not using the appendToBuffer API
      * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
-     * then countFrameRended needs to be set to true so the scheduler knows how many frames have been rendered.
+     * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
-    void notifyFrameRendered(int frame,bool countFrameRendered);
+    void notifyFrameRendered(int frame,Natron::SchedulingPolicy policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
      **/
     void notifyRenderFailure(const std::string& errorMessage);
     
-    /**
-     * @brief Called by all the render threads to pick a new frame index to render. 
-     * @returns True if frame was successfully set. If false is returned, the render thread work should stop
-     **/
-    bool pickFrameToRender(int* frame);
     
     /**
      * @brief Returns true if the scheduler is active and some render threads are doing work.
@@ -182,6 +183,27 @@ public:
      * This can only be called on the scheduler thread (this)
      **/
     RenderDirection getDirectionRequestedToRender() const;
+    
+    /**
+     * @brief Returns the current number of render threads
+     **/
+    int getNRenderThreads() const;
+    
+    /**
+     * @brief Returns the current number of render threads doing work
+     **/
+    int getNActiveRenderThreads() const;
+    
+    /**
+     * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
+     **/
+    int pickFrameToRender(RenderThreadTask* thread);
+
+    /**
+     * @brief Called by the render-threads when mustQuit() is true on the thread
+     **/
+    void notifyThreadAboutToQuit(RenderThreadTask* thread);
+    
     
     
 public slots:
@@ -306,16 +328,20 @@ protected:
      * @brief Must create a runnable task that will render 1 frame in a separate thread.
      * The internal thread pool will take care of the thread
      * The task will pick frames to render until there are no more to be rendered.
-     * @param nThreads The number of concurrent runnable that will be active
      * @param playbackOrRender Used as a hint to know that we're rendering for playback or render on disk
      * and not just for one frame
      **/
-    virtual QRunnable* createRunnable(int nThreads,bool playbackOrRender) = 0;
+    virtual RenderThreadTask* createRunnable(bool playbackOrRender) = 0;
     
     /**
      * @brief Called upon failure of a thread to render an image
      **/
     virtual void handleRenderFailure(const std::string& errorMessage) = 0;
+    
+    /**
+     * @brief Must return the scheduling policy that the output device will have
+     **/
+    virtual Natron::SchedulingPolicy getSchedulingPolicy() const = 0;
     
     /**
      * @brief Callback when startRender() is called
@@ -331,12 +357,38 @@ private:
     
     virtual void run() OVERRIDE FINAL;
     
+    /**
+     * @brief Called by the scheduler threads to wake-up render threads and make them do some work
+     * It calls pushFramesToRenderInternal. It starts pushing frames from lastFramePushedIndex
+     **/
+    void pushFramesToRender(int nThreads);
+   
+    /**
+     *@brief Called in startRender() when we need to start pushing frames to render
+     **/
+    void pushFramesToRender(int startingFrame,int nThreads);
+    
+    
+    void pushFramesToRenderInternal(int startingFrame,int nThreads);
+    
+    void pushAllFrameRange();
+    
+    /**
+     * @brief Starts/stops more threads according to CPU activity and user preferences 
+     * @param optimalNThreads[out] Will be set to the new number of threads
+     **/
+    void adjustNumberOfThreads(int* newNThreads);
+    
+    /**
+     * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
+     **/
+    void stopRenderThreads(int nThreadsToStop);
+    
     void startRender();
 
     void stopRender();
     
     void renderInternal();
-  
     
     boost::scoped_ptr<OutputSchedulerThreadPrivate> _imp;
     
@@ -367,9 +419,11 @@ private:
     
     virtual void timelineSetBounds(int left,int right) OVERRIDE FINAL;
     
-    virtual QRunnable* createRunnable(int nThreads,bool playbackOrRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderThreadTask* createRunnable(bool playbackOrRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
+    
+    virtual Natron::SchedulingPolicy getSchedulingPolicy() const OVERRIDE FINAL;
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
@@ -408,9 +462,11 @@ private:
     
     virtual void getFrameRangeToRender(int& first,int& last) const OVERRIDE FINAL;
     
-    virtual QRunnable* createRunnable(int nThreads,bool playbackOrRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderThreadTask* createRunnable(bool playbackOrRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
+    
+    virtual Natron::SchedulingPolicy getSchedulingPolicy() const OVERRIDE FINAL { return Natron::SCHEDULING_ORDERED; }
     
     virtual void onRenderStopped() OVERRIDE FINAL;
     

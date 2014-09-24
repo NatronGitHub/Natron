@@ -1675,7 +1675,9 @@ Node::makePreviewImage(SequenceTime time,
                        unsigned int* buf)
 {
     assert(_imp->knobsInitialized);
-
+    if (!_imp->liveInstance) {
+        return;
+    }
     {
         QMutexLocker locker(&_imp->mustQuitPreviewMutex);
         if (_imp->mustQuitPreview) {

@@ -83,6 +83,11 @@ public:
     }
     
     virtual ~UpdateViewerParams() {}
+    
+    virtual std::size_t sizeInRAM() const OVERRIDE FINAL
+    {
+        return bytesCount;
+    }
 
     unsigned char* ramBuffer;
     int textureIndex;

@@ -198,6 +198,13 @@ public:
         return dataSize() + _bitmap.getBounds().area();
     }
 
+    
+    ///Overriden from BufferableObject
+    virtual std::size_t sizeInRAM() const OVERRIDE FINAL
+    {
+        return size();
+    }
+    
     unsigned int getMipMapLevel() const
     {
         return this->_key._mipMapLevel;
