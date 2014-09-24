@@ -49,6 +49,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'sigar { ' >> config.pri
     echo 'INCLUDEPATH += /usr/local/include' >> config.pri
     echo 'LIBS += -L/usr/local/lib -lsigar' >> config.pri
+    echo '}' >> config.pri
 
     # build OpenFX-IO
     if [ "$CC" = "gcc" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
