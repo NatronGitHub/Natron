@@ -15,6 +15,11 @@
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 
+#ifdef __NATRON_WIN32__
+#include <stdio.h>
+#define snprintf _snprintf
+#endif
+
 #include <QtConcurrentRun>
 #include <QCoreApplication>
 #include <QTimer>
@@ -35,6 +40,7 @@
 
 using std::cout; using std::endl;
 using std::make_pair;
+
 
 
 namespace Natron {

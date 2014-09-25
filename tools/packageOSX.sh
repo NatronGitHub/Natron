@@ -27,7 +27,7 @@ PORTS="scons boost jpeg openexr ffmpeg openjpeg15 libcaca freetype glew lcms swi
 
 PORTSOK=yes
 for p in $PORTS; do
- if port installed $p | fgrep $p > /dev/null; then
+ if port list $p | fgrep $p > /dev/null; then
    #echo "port $p OK"
    true
  else
@@ -38,6 +38,11 @@ done
 
 if [ "$PORTSOK" = "no" ]; then
   echo "At least one port from macports is missing. Please install them."
+  exit 1
+fi
+
+if port installed ffmpeg |fgrep '(active)' |fgrep '+gpl' > /dev/null; then
+  echo "ffmpeg port should not be installed with the +gpl2 or +gpl3 variants, please reinstall it using 'sudo port install ffmpeg -gpl2 -gpl3'"
   exit 1
 fi
 
