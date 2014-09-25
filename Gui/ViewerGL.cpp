@@ -4036,13 +4036,21 @@ void
 ViewerGL::saveOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
-    
+
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
+
+    // set defaults to work around OFX plugin bugs
+    glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glEnable(GL_TEXTURE_2D);					//Activate texturing
+    //glActiveTexture (GL_TEXTURE0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
 }
 
 
@@ -4050,13 +4058,12 @@ void
 ViewerGL::restoreOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
-    
-    glPopAttrib();
+
     glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    //glActiveTexture(_imp->activeTexture);
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glPopAttrib();
-
 }
