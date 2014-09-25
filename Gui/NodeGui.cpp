@@ -1335,7 +1335,7 @@ NodeGui::onPersistentMessageChanged(int type,
     //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
 
     ///don't do anything if the last persistent message is the same
-    if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph->getGui() ) {
+    if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui() ) {
         return;
     }
     _persistentMessage->show();
@@ -2029,6 +2029,9 @@ NodeGui::setNameItemHtml(const QString & name,
 void
 NodeGui::onNodeExtraLabelChanged(const QString & label)
 {
+    if (!_graph->getGui()) {
+        return;
+    }
     _nodeLabel = label;
     if ( _internalNode->isMultiInstance() ) {
         ///The multi-instances store in the kOfxParamStringSublabelName knob the name of the instance
