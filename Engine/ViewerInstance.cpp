@@ -689,6 +689,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         }
     } else {
         byPassCache = true;
+        
+        ///Be sure to remove all textures (at any mipmaplevel) that could be left in the cache
+        appPTR->removeAllTexturesFromCacheWithMatchingKey(nodeHash);
     }
 
     unsigned char* ramBuffer = NULL;
