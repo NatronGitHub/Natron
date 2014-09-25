@@ -804,6 +804,19 @@ OfxEffectInstance::isInputRotoBrush(int inputNb) const
     return inputs[inputs.size() - 1 - inputNb]->getName() == "Roto" && getNode()->isRotoNode();
 }
 
+int
+OfxEffectInstance::getRotoBrushInputIndex() const
+{
+    assert(_context != eContextNone);
+    MappedInputV inputs = inputClipsCopyWithoutOutput();
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if (inputs[i]->getName() == "Roto") {
+            return inputs.size() - 1 - i;
+        }
+    }
+    return -1;
+}
+
 void
 OfxEffectInstance::onInputChanged(int inputNo)
 {

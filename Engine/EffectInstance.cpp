@@ -1884,13 +1884,18 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///if the node has a roto context, pre-render the roto mask too
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
+            Natron::ImageComponents inputPrefComps;
+            Natron::ImageBitDepth inputPrefDepth;
+            int rotoIndex = getRotoBrushInputIndex();
+            assert(rotoIndex != -1);
+            getPreferredDepthAndComponents(rotoIndex, &inputPrefComps, &inputPrefDepth);
             boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(downscaledRectToRender,
-                                                                        image->getComponents(),
+                                                                        inputPrefComps,
                                                                         nodeHash,
                                                                         rotoAge,
                                                                         rod,
                                                                         time,
-                                                                        getBitDepth(),
+                                                                        inputPrefDepth,
                                                                         view,
                                                                         mipMapLevel,
                                                                         byPassCache);
