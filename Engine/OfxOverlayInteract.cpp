@@ -20,6 +20,24 @@
 
 using namespace Natron;
 
+namespace {
+    class OGLContextSaver {
+    public:
+        OGLContextSaver(OverlaySupport* viewport)
+        : _viewport(viewport)
+        {
+            assert(_viewport);
+            _viewport->saveOpenGLContext();
+        }
+
+        ~OGLContextSaver() {
+            _viewport->restoreOpenGLContext();
+        }
+
+    private:
+        OverlaySupport* const _viewport;
+    };
+}
 
 OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
                                        int bitDepthPerComponent,
@@ -36,7 +54,7 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
 OfxStatus
 OfxOverlayInteract::createInstanceAction()
 {
-    //OGLContextSaver saver;
+    //OGLContextSaver s(_viewport);
     return OFX::Host::ImageEffect::OverlayInteract::createInstanceAction();
 }
 
@@ -44,10 +62,8 @@ OfxStatus
 OfxOverlayInteract::drawAction(OfxTime time,
                                const OfxPointD &renderScale)
 {
-    assert(_viewport);
-    _viewport->saveContext();
+    OGLContextSaver s(_viewport);
     OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale);
-    _viewport->restoreContext();
     return stat;
 }
 
@@ -58,7 +74,7 @@ OfxOverlayInteract::penMotionAction(OfxTime time,
                                     const OfxPointI &penPosViewport,
                                     double  pressure)
 {
-    //OGLContextSaver saver;
+    //OGLContextSaver s(_viewport);
     return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, penPos, penPosViewport, pressure);
 
 }
