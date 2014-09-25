@@ -1334,9 +1334,8 @@ NodeGui::onPersistentMessageChanged(int type,
     //keep type in synch with this enum:
     //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
 
-
     ///don't do anything if the last persistent message is the same
-    if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator ) {
+    if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph->getGui() ) {
         return;
     }
     _persistentMessage->show();

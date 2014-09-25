@@ -431,7 +431,7 @@ AppInstance::startWritersRendering(const QStringList & writers)
     } else {
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
-            if ( projectNodes[j]->isOutputNode() && (projectNodes[j]->getPluginID() != "Viewer") ) {
+            if ( projectNodes[j]->getLiveInstance()->isWriter() ) {
                 renderers.push_back( dynamic_cast<OutputEffectInstance*>( projectNodes[j]->getLiveInstance() ) );
             }
         }
