@@ -383,10 +383,9 @@ Project::saveProjectInternal(const QString & path,
         QMutexLocker l(&_imp->projectLock);
         oldProjectPath = _imp->projectPath;
     }
-    _imp->autoSetProjectDirectory(path);
     
     if (!autoSave) {
-        
+        _imp->autoSetProjectDirectory(path);
         _imp->saveDate->setValue(timeStr.toStdString(), 0);
         _imp->lastAuthorName->setValue(generateGUIUserName(), 0);
         _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
@@ -404,8 +403,10 @@ Project::saveProjectInternal(const QString & path,
         }
     } catch (...) {
         ofile.close();
-        ///Reset the old project path in case of failure.
-        _imp->autoSetProjectDirectory(oldProjectPath);
+        if (!autoSave) {
+            ///Reset the old project path in case of failure.
+            _imp->autoSetProjectDirectory(oldProjectPath);
+        }
         throw;
     }
 
