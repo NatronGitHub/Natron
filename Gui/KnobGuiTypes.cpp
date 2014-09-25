@@ -2992,11 +2992,12 @@ String_KnobGui::setReadOnly(bool readOnly,
 bool
 String_KnobGui::showDescriptionLabel() const
 {
-    if ( _knob->isLabel() ) {
+   /* if ( _knob->isLabel() ) {
         return false;
     } else {
         return true;
-    }
+    }*/
+    return true;
 }
 
 void

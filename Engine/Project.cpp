@@ -16,8 +16,12 @@
 #include <cerrno> // errno
 
 #ifdef __NATRON_WIN32__
-#include <stdio.h>
+#include <stdio.h> //for _snprintf
+#include <windows.h> //for GetUserName
+#include <Lmcons.h> //for UNLEN
 #define snprintf _snprintf
+#elif defined(__NATRON_UNIX__)
+#include <pwd.h> //for getpwuid
 #endif
 
 #include <QtConcurrentRun>
@@ -25,6 +29,7 @@
 #include <QTimer>
 #include <QThreadPool>
 #include <QTemporaryFile>
+#include <QHostInfo>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -42,6 +47,40 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 
+static std::string getUserName()
+{
+#ifdef __NATRON_WIN32__
+    char user_name[UNLEN+1];
+    DWORD user_name_size = sizeof(user_name);
+    GetUserName(user_name, &user_name_size))
+    return std::string(user_name);
+#elif defined(__NATRON_UNIX__)
+    struct passwd *passwd;
+    passwd = getpwuid( getuid() );
+    return passwd->pw_name;
+#endif
+}
+
+static std::string generateGUIUserName()
+{
+    return getUserName() + '@' + QHostInfo::localHostName().toStdString();
+}
+
+static std::string generateUserFriendlyNatronVersionName()
+{
+    std::string ret(NATRON_APPLICATION_NAME);
+    ret.append(" v");
+    ret.append(NATRON_VERSION_STRING);
+    if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_ALPHA) {
+        ret.append(" " NATRON_DEVELOPMENT_ALPHA);
+    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_BETA) {
+        ret.append(" " NATRON_DEVELOPMENT_BETA);
+    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        ret.append(" " NATRON_DEVELOPMENT_RELEASE_CANDIDATE);
+        ret.append(QString::number(NATRON_BUILD_NUMBER).toStdString());
+    }
+    return ret;
+}
 
 namespace Natron {
 Project::Project(AppInstance* appInstance)
@@ -345,6 +384,13 @@ Project::saveProjectInternal(const QString & path,
         oldProjectPath = _imp->projectPath;
     }
     _imp->autoSetProjectDirectory(path);
+    
+    if (!autoSave) {
+        
+        _imp->saveDate->setValue(timeStr.toStdString(), 0);
+        _imp->lastAuthorName->setValue(generateGUIUserName(), 0);
+        _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
+    }
     
     try {
         boost::archive::xml_oarchive oArchive(ofile);
@@ -704,6 +750,58 @@ Project::initializeKnobs()
     _imp->colorSpace32bits->populateChoices(colorSpaces);
     _imp->colorSpace32bits->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32bits);
+    
+    boost::shared_ptr<Page_Knob> infosPage = Natron::createKnob<Page_Knob>(this, "Infos");
+    
+    _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
+    _imp->natronVersion->setName("softwareVersion");
+    _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
+    _imp->natronVersion->setAsLabel();
+    _imp->natronVersion->setAnimationEnabled(false);
+    
+    _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
+    infosPage->addKnob(_imp->natronVersion);
+    
+    _imp->originalAuthorName = Natron::createKnob<String_Knob>(this, "Original author");
+    _imp->originalAuthorName->setName("originalAuthor");
+    _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
+    _imp->originalAuthorName->setAsLabel();
+    _imp->originalAuthorName->setAnimationEnabled(false);
+    std::string authorName = generateGUIUserName();
+    _imp->originalAuthorName->setDefaultValue(authorName);
+    infosPage->addKnob(_imp->originalAuthorName);
+    
+    _imp->lastAuthorName = Natron::createKnob<String_Knob>(this, "Last author");
+    _imp->lastAuthorName->setName("lastAuthor");
+    _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
+    _imp->lastAuthorName->setAsLabel();
+    _imp->lastAuthorName->setAnimationEnabled(false);
+    _imp->lastAuthorName->setDefaultValue(authorName);
+    infosPage->addKnob(_imp->lastAuthorName);
+
+
+    _imp->projectCreationDate = Natron::createKnob<String_Knob>(this, "Created on");
+    _imp->projectCreationDate->setName("creationDate");
+    _imp->projectCreationDate->setHintToolTip("The creation date of the project.");
+    _imp->projectCreationDate->setAsLabel();
+    _imp->projectCreationDate->setAnimationEnabled(false);
+    _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
+    infosPage->addKnob(_imp->projectCreationDate);
+    
+    _imp->saveDate = Natron::createKnob<String_Knob>(this, "Last saved on");
+    _imp->saveDate->setName("lastSaveDate");
+    _imp->saveDate->setHintToolTip("The date this project was last saved.");
+    _imp->saveDate->setAsLabel();
+    _imp->saveDate->setAnimationEnabled(false);
+    infosPage->addKnob(_imp->saveDate);
+    
+    boost::shared_ptr<String_Knob> comments = Natron::createKnob<String_Knob>(this, "Comments");
+    comments->setName("comments");
+    comments->setHintToolTip("This area is a good place to write some informations about the project such as its authors, license "
+                             "and anything worth mentionning about it.");
+    comments->setAsMultiLine();
+    comments->setAnimationEnabled(false);
+    infosPage->addKnob(comments);
     
     emit knobsInitialized();
 } // initializeKnobs

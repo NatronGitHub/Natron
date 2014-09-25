@@ -518,7 +518,7 @@ Settings::initializeKnobs()
     _maxRAMPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxRAMPercent);
 
-    _maxRAMLabel = Natron::createKnob<String_Knob>(this, " = ");
+    _maxRAMLabel = Natron::createKnob<String_Knob>(this, "");
     _maxRAMLabel->setName("maxRamLabel");
     _maxRAMLabel->setIsPersistant(false);
     _maxRAMLabel->setAsLabel();
@@ -537,7 +537,7 @@ Settings::initializeKnobs()
     _maxPlayBackPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxPlayBackPercent);
 
-    _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, " = ");
+    _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, "");
     _maxPlaybackLabel->setName("maxPlaybackLabel");
     _maxPlaybackLabel->setIsPersistant(false);
     _maxPlaybackLabel->setAsLabel();
@@ -560,7 +560,7 @@ Settings::initializeKnobs()
                                            "hence bad performances.");
     _unreachableRAMPercent->turnOffNewLine();
     _cachingTab->addKnob(_unreachableRAMPercent);
-    _unreachableRAMLabel = Natron::createKnob<String_Knob>(this, " = ");
+    _unreachableRAMLabel = Natron::createKnob<String_Knob>(this, "");
     _unreachableRAMLabel->setName("unreachableRAMLabel");
     _unreachableRAMLabel->setIsPersistant(false);
     _unreachableRAMLabel->setAsLabel();

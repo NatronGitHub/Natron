@@ -80,6 +80,11 @@ struct ProjectPrivate
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
     boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
     
+    boost::shared_ptr<String_Knob> natronVersion;
+    boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;
+    boost::shared_ptr<String_Knob> projectCreationDate;
+    boost::shared_ptr<String_Knob> saveDate;
+    
     boost::shared_ptr<TimeLine> timeline; // global timeline
     mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
     std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
