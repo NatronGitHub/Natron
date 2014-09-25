@@ -1469,8 +1469,10 @@ Parametric_Knob::addControlPoint(int dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size() ||
-        !boost::math::isnormal(key) ||
-        !boost::math::isnormal(value)) {
+        boost::math::isnan(key) ||
+        boost::math::isinf(key) ||
+        boost::math::isnan(value) ||
+        boost::math::isinf(value)) {
         return StatFailed;
     }
 

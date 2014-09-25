@@ -3056,9 +3056,12 @@ OfxParametricInstance::addControlPoint(int curveIndex,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
-    if (!boost::math::isnormal(time) ||
-        !boost::math::isnormal(key) ||
-        !boost::math::isnormal(value)) {
+    if (boost::math::isnan(time) ||
+        boost::math::isinf(time) ||
+        boost::math::isnan(key) ||
+        boost::math::isinf(key) ||
+        boost::math::isnan(value) ||
+        boost::math::isinf(value)) {
         return kOfxStatFailed;
     }
 
