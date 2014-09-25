@@ -1755,6 +1755,7 @@ ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
 
         //glDisable(GL_SCISSOR_TEST);
     } // glPushAttrib(GL_SCISSOR_BIT | GL_ENABLE_BIT);
+    glPopAttrib();
     glBindTexture(GL_TEXTURE_2D, savedTexture);
     glCheckError();
 }
