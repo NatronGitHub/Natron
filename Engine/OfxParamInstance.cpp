@@ -12,6 +12,8 @@
 #include "OfxParamInstance.h"
 #include <iostream>
 #include <boost/scoped_array.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
+
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
@@ -3049,11 +3051,17 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
 
 OfxStatus
 OfxParametricInstance::addControlPoint(int curveIndex,
-                                       double /*time*/,
+                                       double time,
                                        double key,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
+    if (!boost::math::isnormal(time) ||
+        !boost::math::isnormal(key) ||
+        !boost::math::isnormal(value)) {
+        return kOfxStatFailed;
+    }
+
     Natron::Status stat = _knob->addControlPoint(curveIndex, key, value);
 
     if (stat == Natron::StatOK) {

@@ -12,6 +12,7 @@
 
 #include <cfloat>
 #include <sstream>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #include <QDebug>
 #include <QThread>
@@ -1467,7 +1468,9 @@ Parametric_Knob::addControlPoint(int dimension,
                                  double value)
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_curves.size() ) {
+    if (dimension >= (int)_curves.size() ||
+        !boost::math::isnormal(key) ||
+        !boost::math::isnormal(value)) {
         return StatFailed;
     }
 

@@ -71,6 +71,11 @@ KeyFrame::KeyFrame(double time,
       , _rightDerivative(rightDerivative)
       , _interpolation(interpolation)
 {
+    assert(boost::math::isnormal(_time));
+    assert(boost::math::isnormal(_value));
+    assert(boost::math::isnormal(_leftDerivative));
+    assert(boost::math::isnormal(_rightDerivative));
+    assert(boost::math::isnormal(_interpolation));
 }
 
 KeyFrame::KeyFrame(const KeyFrame & other)
@@ -80,6 +85,11 @@ KeyFrame::KeyFrame(const KeyFrame & other)
       , _rightDerivative(other._rightDerivative)
       , _interpolation(other._interpolation)
 {
+    assert(boost::math::isnormal(_time));
+    assert(boost::math::isnormal(_value));
+    assert(boost::math::isnormal(_leftDerivative));
+    assert(boost::math::isnormal(_rightDerivative));
+    assert(boost::math::isnormal(_interpolation));
 }
 
 void
@@ -90,6 +100,11 @@ KeyFrame::operator=(const KeyFrame & o)
     _leftDerivative = o._leftDerivative;
     _rightDerivative = o._rightDerivative;
     _interpolation = o._interpolation;
+    assert(boost::math::isnormal(_time));
+    assert(boost::math::isnormal(_value));
+    assert(boost::math::isnormal(_leftDerivative));
+    assert(boost::math::isnormal(_rightDerivative));
+    assert(boost::math::isnormal(_interpolation));
 }
 
 KeyFrame::~KeyFrame()
@@ -97,31 +112,31 @@ KeyFrame::~KeyFrame()
 }
 
 void
-KeyFrame::setLeftDerivative(double v)
+KeyFrame::setLeftDerivative(double leftDerivative)
 {
-    assert( !boost::math::isnan(v) );
-    _leftDerivative = v;
+    _leftDerivative = leftDerivative;
+    assert(boost::math::isnormal(_leftDerivative));
 }
 
 void
-KeyFrame::setRightDerivative(double v)
+KeyFrame::setRightDerivative(double rightDerivative)
 {
-    assert( !boost::math::isnan(v) );
-    _rightDerivative = v;
+    _rightDerivative = rightDerivative;
+    assert(boost::math::isnormal(_rightDerivative));
 }
 
 void
-KeyFrame::setValue(double v)
+KeyFrame::setValue(double value)
 {
-    assert( !boost::math::isnan(v) );
-    _value = v;
+    _value = value;
+    assert(boost::math::isnormal(_value));
 }
 
 void
 KeyFrame::setTime(double time)
 {
-    assert( !boost::math::isnan(time) );
     _time = time;
+    assert(boost::math::isnormal(_time));
 }
 
 void
