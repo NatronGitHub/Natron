@@ -179,6 +179,17 @@ Settings::initializeKnobs()
                                              " Note that this setting doesn't apply to roto splines editing.");
     _renderOnEditingFinished->setAnimationEnabled(false);
     _generalTab->addKnob(_renderOnEditingFinished);
+    
+    _activateRGBSupport = Natron::createKnob<Bool_Knob>(this, "RGB support");
+    _activateRGBSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " will be able to process RGB opaque images and not "
+                                        "only RGBA images. However we found out that some plug-ins (not bundled with " NATRON_APPLICATION_NAME
+                                        " ) are not declaring correctly that "
+                                        "they do not support RGB images and as a result crash the whole application when providing them "
+                                        "with RGB data. Un-checking this option is a safe-mode that might avoid some crashs. "
+                                        "Changing this option requires a re-start of the application.");
+    _activateRGBSupport->setAnimationEnabled(false);
+    _activateRGBSupport->setName("rgbSupport");
+    _generalTab->addKnob(_activateRGBSupport);
 
     _generalTab->addKnob( Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins") );
 
@@ -622,6 +633,7 @@ Settings::setDefaultValues()
     _maxPanelsOpened->setDefaultValue(10,0);
     _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);
+    _activateRGBSupport->setDefaultValue(true);
     _extraPluginPaths->setDefaultValue("",0);
     _preferBundledPlugins->setDefaultValue(true);
     _loadBundledPlugins->setDefaultValue(true);
@@ -1448,4 +1460,10 @@ Settings::getCheckerboardColor2(double* r,double* g,double* b,double* a) const
     *g = _checkerboardColor2->getValue(1);
     *b = _checkerboardColor2->getValue(2);
     *a = _checkerboardColor2->getValue(3);
+}
+
+bool
+Settings::areRGBPixelComponentsSupported() const
+{
+    return _activateRGBSupport->getValue();
 }
