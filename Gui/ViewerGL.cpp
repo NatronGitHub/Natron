@@ -1835,6 +1835,7 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
     } // glPushAttrib(GL_ENABLE_BIT);
+    glPopAttrib();
     glBindTexture(GL_TEXTURE_2D, savedTexture);
     
     checkerboardTileSize = appPTR->getCurrentSettings()->getCheckerboardTileSize();

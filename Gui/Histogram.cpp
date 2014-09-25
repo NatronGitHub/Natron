@@ -1494,6 +1494,7 @@ HistogramPrivate::drawScale()
         //reset back the color
         //glColor4f(1., 1., 1., 1.);
     } // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+    glPopAttrib();
     glCheckError();
 } // drawScale
 
