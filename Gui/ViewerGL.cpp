@@ -1251,7 +1251,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     if (compOperator != OPERATOR_NONE) {
         drawWipeControl();
     }
-
+    glCheckError();
     _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
     glCheckError();
 
@@ -2084,31 +2084,7 @@ ViewerGL::initShaderGLSL()
     }
 }
 
-void
-ViewerGL::saveGLState()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-}
 
-void
-ViewerGL::restoreGLState()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    glPopAttrib();
-}
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,

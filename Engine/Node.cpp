@@ -659,6 +659,10 @@ Node::getOutputs_mt_safe(std::list<boost::shared_ptr<Natron::Node> >& outputs) c
 void
 Node::getInputNames(std::vector<std::string> & inputNames) const
 {
+    if (_imp->multiInstanceParent) {
+        _imp->multiInstanceParent->getInputNames(inputNames);
+        return;
+    }
     int maxInp = _imp->liveInstance->getMaxInputCount();
 
     QMutexLocker l(&_imp->inputsMutex);

@@ -97,16 +97,6 @@ public:
 
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
-    /**
-     *@brief Saves the OpenGL context so it can be restored later-on .
-     **/
-    void saveGLState();
-
-    /**
-     *@brief Restores the OpenGL context to the state it was when calling ViewerGL::saveGLState().
-     **/
-    void restoreGLState();
-
 
     OpenGLViewerI::BitDepth getBitDepth() const OVERRIDE FINAL;
 
