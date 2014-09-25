@@ -18,6 +18,7 @@
 #include <QtConcurrentRun>
 
 #include <boost/bind.hpp>
+#include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
 #include "Engine/AppManager.h"
@@ -3226,6 +3227,21 @@ void
 OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderController)
 {
     _renderController = renderController;
+    
+    ///Make sure that the file path exists
+    boost::shared_ptr<KnobI> fileParam = getKnobByName(kOfxImageEffectFileParamName);
+    if (fileParam) {
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileParam.get());
+        if (isString) {
+            std::string pattern = isString->getValue();
+            std::string path = SequenceParsing::removePath(pattern);
+            std::map<std::string,std::string> env;
+            getApp()->getProject()->getEnvironmentVariables(env);
+            Project::expandVariable(env, path);
+            QDir().mkpath(path.c_str());
+        }
+    }
+    
     assert(getPluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
     getVideoEngine()->refreshTree();
     getVideoEngine()->render(-1, //< frame count
