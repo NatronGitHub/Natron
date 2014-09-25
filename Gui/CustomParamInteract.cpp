@@ -165,7 +165,7 @@ CustomParamInteract::getBackgroundColour(double &r,
 }
 
 void
-CustomParamInteract::saveContext()
+CustomParamInteract::saveOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -175,7 +175,7 @@ CustomParamInteract::saveContext()
 }
 
 void
-CustomParamInteract::restoreContext()
+CustomParamInteract::restoreOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
     

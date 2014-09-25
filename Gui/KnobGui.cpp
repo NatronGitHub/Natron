@@ -1461,18 +1461,18 @@ KnobGui::getBackgroundColour(double &r,
 }
 
 void
-KnobGui::saveContext()
+KnobGui::saveOpenGLContext()
 {
     if (_imp->customInteract) {
-        _imp->customInteract->saveContext();
+        _imp->customInteract->saveOpenGLContext();
     }
 }
 
 void
-KnobGui::restoreContext()
+KnobGui::restoreOpenGLContext()
 {
     if (_imp->customInteract) {
-        _imp->customInteract->restoreContext();
+        _imp->customInteract->restoreOpenGLContext();
     }
 }
 

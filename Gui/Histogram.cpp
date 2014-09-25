@@ -935,6 +935,7 @@ HistogramPrivate::computeHistogram(Histogram::DisplayMode channel)
 
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
 
+#pragma message WARN("glPushAttrib(), and save currently bound VA and Buffer")
     /*binding the VAO holding managing the VBO*/
     glBindVertexArray(vaoID);
     /*binding the VBO sending vertices to the vertex shader*/
@@ -1424,73 +1425,75 @@ HistogramPrivate::drawScale()
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    for (int axis = 0; axis < 2; ++axis) {
-        const double rangePixel = (axis == 0) ? widget->width() : widget->height(); // AXIS-SPECIFIC
-        const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
-        const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
-        const double range = range_max - range_min;
-        double smallTickSize;
-        bool half_tick;
-        ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
-        int m1, m2;
-        const int ticks_max = 1000;
-        double offset;
-        ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
-        std::vector<int> ticks;
-        ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
-        const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
-        const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
-        const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
-        for (int i = m1; i <= m2; ++i) {
-            double value = i * smallTickSize + offset;
-            const double tickSize = ticks[i - m1] * smallTickSize;
-            const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
+        for (int axis = 0; axis < 2; ++axis) {
+            const double rangePixel = (axis == 0) ? widget->width() : widget->height(); // AXIS-SPECIFIC
+            const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
+            const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
+            const double range = range_max - range_min;
+            double smallTickSize;
+            bool half_tick;
+            ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+            int m1, m2;
+            const int ticks_max = 1000;
+            double offset;
+            ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
+            std::vector<int> ticks;
+            ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
+            const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
+            const double largestTickSize = range * largestTickSizePixel / rangePixel;
+            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
+            for (int i = m1; i <= m2; ++i) {
+                double value = i * smallTickSize + offset;
+                const double tickSize = ticks[i - m1] * smallTickSize;
+                const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+                glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
-            glBegin(GL_LINES);
-            if (axis == 0) {
-                glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
-                glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
-            } else {
-                glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
-                glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
-            }
-            glEnd();
-            glCheckErrorIgnoreOSXBug();
+                glBegin(GL_LINES);
+                if (axis == 0) {
+                    glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
+                    glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
+                } else {
+                    glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
+                    glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
+                }
+                glEnd();
+                glCheckErrorIgnoreOSXBug();
 
-            if (tickSize > minTickSizeText) {
-                const int tickSizePixel = rangePixel * tickSize / range;
-                const QString s = QString::number(value);
-                const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
-                if (tickSizePixel > sSizePixel) {
-                    const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
-                    double alphaText = 1.0; //alpha;
-                    if (tickSizePixel < sSizeFullPixel) {
-                        // when the text size is between sSizePixel and sSizeFullPixel,
-                        // draw it with a lower alpha
-                        alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
-                    }
-                    QColor c = _scaleColor;
-                    c.setAlpha(255 * alphaText);
-                    glCheckError();
-                    if (axis == 0) {
-                        widget->renderText(value, btmLeft.y(), s, c, _font); // AXIS-SPECIFIC
-                    } else {
-                        widget->renderText(btmLeft.x(), value, s, c, _font); // AXIS-SPECIFIC
+                if (tickSize > minTickSizeText) {
+                    const int tickSizePixel = rangePixel * tickSize / range;
+                    const QString s = QString::number(value);
+                    const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
+                    if (tickSizePixel > sSizePixel) {
+                        const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                        double alphaText = 1.0; //alpha;
+                        if (tickSizePixel < sSizeFullPixel) {
+                            // when the text size is between sSizePixel and sSizeFullPixel,
+                            // draw it with a lower alpha
+                            alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
+                        }
+                        QColor c = _scaleColor;
+                        c.setAlpha(255 * alphaText);
+                        glCheckError();
+                        if (axis == 0) {
+                            widget->renderText(value, btmLeft.y(), s, c, _font); // AXIS-SPECIFIC
+                        } else {
+                            widget->renderText(btmLeft.x(), value, s, c, _font); // AXIS-SPECIFIC
+                        }
                     }
                 }
             }
         }
-    }
-
-    glDisable(GL_BLEND);
-    //reset back the color
-    glColor4f(1., 1., 1., 1.);
+        //glDisable(GL_BLEND);
+        //reset back the color
+        //glColor4f(1., 1., 1., 1.);
+    } // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     glCheckError();
 } // drawScale
 
@@ -1640,82 +1643,86 @@ HistogramPrivate::drawHistogramCPU()
     assert( QGLContext::currentContext() == widget->context() );
 
     glCheckError();
-    glEnable(GL_BLEND);
-    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-    glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
+    glPushAttrib(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
+    {
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
 
-    // see the code above to compute the magic colors
+        // see the code above to compute the magic colors
 
-    double binSize = (vmax - vmin) / binsCount;
+        double binSize = (vmax - vmin) / binsCount;
 
-    glBegin(GL_LINES);
-    for (unsigned int i = 0; i < binsCount; ++i) {
-        double binMinX = vmin + i * binSize;
-        if (mode == Histogram::RGB) {
-            if ( histogram1.empty() || histogram2.empty() || histogram3.empty() ) {
-                break;
+        glBegin(GL_LINES);
+        for (unsigned int i = 0; i < binsCount; ++i) {
+            double binMinX = vmin + i * binSize;
+            if (mode == Histogram::RGB) {
+                if ( histogram1.empty() || histogram2.empty() || histogram3.empty() ) {
+                    break;
+                }
+                double rTotNormalized = ( (double)histogram1[i] / (double)pixelsCount ) / binSize;
+                double gTotNormalized = ( (double)histogram2[i] / (double)pixelsCount ) / binSize;
+                double bTotNormalized = ( (double)histogram3[i] / (double)pixelsCount ) / binSize;
+
+                // use three colors with equal luminance (0.33), so that the blue is visible and their sum is white
+                //glColor3d(1, 0, 0);
+                glColor3f(0.711519527404004, 0.164533420851110, 0.164533420851110);
+                glVertex2d(binMinX, 0);
+                glVertex2d(binMinX,  rTotNormalized);
+
+                //glColor3d(0, 1, 0);
+                glColor3f(0., 0.546986106552894, 0.);
+                glVertex2d(binMinX, 0);
+                glVertex2d(binMinX,  gTotNormalized);
+
+                //glColor3d(0, 0, 1);
+                glColor3f(0.288480472595996, 0.288480472595996, 0.835466579148890);
+                glVertex2d(binMinX, 0);
+                glVertex2d(binMinX,  bTotNormalized);
+            } else {
+                if ( histogram1.empty() ) {
+                    break;
+                }
+
+                double vTotNormalized = (double)histogram1[i] / (double)pixelsCount / binSize;
+
+                // all the following colors have the same luminance (~0.4)
+                switch (mode) {
+                    case Histogram::R:
+                        //glColor3f(1, 0, 0);
+                        glColor3f(0.851643,0.196936,0.196936);
+                        break;
+                    case Histogram::G:
+                        //glColor3f(0, 1, 0);
+                        glColor3f(0,0.654707,0);
+                        break;
+                    case Histogram::B:
+                        //glColor3f(0, 0, 1);
+                        glColor3f(0.345293,0.345293,1);
+                        break;
+                    case Histogram::A:
+                        //glColor3f(1, 1, 1);
+                        glColor3f(0.398979,0.398979,0.398979);
+                        break;
+                    case Histogram::Y:
+                        //glColor3f(0.7, 0.7, 0.7);
+                        glColor3f(0.398979,0.398979,0.398979);
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                }
+                glVertex2f(binMinX, 0);
+                glVertex2f(binMinX,  vTotNormalized);
             }
-            double rTotNormalized = ( (double)histogram1[i] / (double)pixelsCount ) / binSize;
-            double gTotNormalized = ( (double)histogram2[i] / (double)pixelsCount ) / binSize;
-            double bTotNormalized = ( (double)histogram3[i] / (double)pixelsCount ) / binSize;
-
-            // use three colors with equal luminance (0.33), so that the blue is visible and their sum is white
-            //glColor3d(1, 0, 0);
-            glColor3f(0.711519527404004, 0.164533420851110, 0.164533420851110);
-            glVertex2d(binMinX, 0);
-            glVertex2d(binMinX,  rTotNormalized);
-
-            //glColor3d(0, 1, 0);
-            glColor3f(0., 0.546986106552894, 0.);
-            glVertex2d(binMinX, 0);
-            glVertex2d(binMinX,  gTotNormalized);
-
-            //glColor3d(0, 0, 1);
-            glColor3f(0.288480472595996, 0.288480472595996, 0.835466579148890);
-            glVertex2d(binMinX, 0);
-            glVertex2d(binMinX,  bTotNormalized);
-        } else {
-            if ( histogram1.empty() ) {
-                break;
-            }
-
-            double vTotNormalized = (double)histogram1[i] / (double)pixelsCount / binSize;
-
-            // all the following colors have the same luminance (~0.4)
-            switch (mode) {
-            case Histogram::R:
-                //glColor3f(1, 0, 0);
-                glColor3f(0.851643,0.196936,0.196936);
-                break;
-            case Histogram::G:
-                //glColor3f(0, 1, 0);
-                glColor3f(0,0.654707,0);
-                break;
-            case Histogram::B:
-                //glColor3f(0, 0, 1);
-                glColor3f(0.345293,0.345293,1);
-                break;
-            case Histogram::A:
-                //glColor3f(1, 1, 1);
-                glColor3f(0.398979,0.398979,0.398979);
-                break;
-            case Histogram::Y:
-                //glColor3f(0.7, 0.7, 0.7);
-                glColor3f(0.398979,0.398979,0.398979);
-                break;
-            default:
-                assert(false);
-                break;
-            }
-            glVertex2f(binMinX, 0);
-            glVertex2f(binMinX,  vTotNormalized);
         }
-    }
-    glEnd(); // GL_LINES
-    glCheckErrorIgnoreOSXBug();
-
-    glDisable(GL_BLEND);
-    glColor4f(1, 1, 1, 1);
+        glEnd(); // GL_LINES
+        glCheckErrorIgnoreOSXBug();
+        
+        //glDisable(GL_BLEND);
+        //glColor4f(1, 1, 1, 1);
+    } // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
+    glPopAttrib();
     glCheckError();
 } // drawHistogramCPU
 

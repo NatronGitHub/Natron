@@ -60,8 +60,8 @@ public:
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
 
-    virtual void saveContext() OVERRIDE FINAL;
-    virtual void restoreContext() OVERRIDE FINAL;
+    virtual void saveOpenGLContext() OVERRIDE FINAL;
+    virtual void restoreOpenGLContext() OVERRIDE FINAL;
     
 private:
 

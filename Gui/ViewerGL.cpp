@@ -277,8 +277,9 @@ struct ViewerGL::Implementation
     GLuint checkerboardTextureID;
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
 
-    GLuint savedTexture; // @see saveContext/restoreContext
-    
+    GLuint savedTexture; // @see saveOpenGLContext/restoreOpenGLContext
+    GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
+
     bool isNearbyWipeCenter(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeMixHandle(const QPointF & pos,double tolerance) const;
@@ -290,6 +291,7 @@ struct ViewerGL::Implementation
     {
         assert(activeTextures[i]);
         glActiveTexture(GL_TEXTURE0);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
         glBindTexture( GL_TEXTURE_2D, activeTextures[i]->getTexID() );
         // debug (so the OpenGL debugger can make a breakpoint here)
         //GLfloat d;
@@ -306,7 +308,7 @@ struct ViewerGL::Implementation
             shaderRGB->release();
         }
         glCheckError();
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_2D, prevBoundTexture);
     }
 
     /**
@@ -1020,98 +1022,99 @@ ViewerGL::paintGL()
     }
 
     glPushAttrib(GL_COLOR_BUFFER_BIT);
-    glBlendColor(1, 1, 1, wipeMix);
+    {
+        glBlendColor(1, 1, 1, wipeMix);
 
-    if (compOp == OPERATOR_WIPE) {
-        ///In wipe mode draw first the input A then only the portion we are interested in the input B
+        if (compOp == OPERATOR_WIPE) {
+            ///In wipe mode draw first the input A then only the portion we are interested in the input B
 
-        if (drawTexture[0]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-        }
-        if (drawTexture[1]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-        }
-    } else if (compOp == OPERATOR_MINUS) {
-        if (drawTexture[0]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-        }
-        if (drawTexture[1]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
-            glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-        }
-    } else if (compOp == OPERATOR_UNDER) {
-        if (drawTexture[0]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-        }
-        if (drawTexture[1]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-        }
-    } else if (compOp == OPERATOR_OVER) {
-        ///draw first B then A
-        if (drawTexture[1]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-        }
-        if (drawTexture[0]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_LEFT_PLANE);
-
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-        }
-    } else {
-        if (drawTexture[0]) {
-            
-            ///Depending on the premultiplication of the input image we use a different blending func
-            ImagePremultiplication premult = _imp->displayingImagePremult[0];
-            if (!_imp->viewerTab->isCheckerboardEnabled()) {
-                premult = Natron::ImageOpaque; ///When no checkerboard, draw opaque
+            if (drawTexture[0]) {
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
             }
-            
-            bool doBlend = premult != ImageOpaque;
-            if (doBlend) {
+            if (drawTexture[1]) {
                 glEnable(GL_BLEND);
-            }
-            switch (premult) {
-                case Natron::ImagePremultiplied:
-                    glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
-                    break;
-                case Natron::ImageUnPremultiplied:
-                    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-                    break;
-                case Natron::ImageOpaque:
-                    break;
-            }
-            
-           
-            
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-            
-            if (doBlend) {
+                glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
                 glDisable(GL_BLEND);
             }
-        }
-    }
+        } else if (compOp == OPERATOR_MINUS) {
+            if (drawTexture[0]) {
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+            }
+            if (drawTexture[1]) {
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
+                glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                glDisable(GL_BLEND);
+            }
+        } else if (compOp == OPERATOR_UNDER) {
+            if (drawTexture[0]) {
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+            }
+            if (drawTexture[1]) {
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                glDisable(GL_BLEND);
 
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                glDisable(GL_BLEND);
+            }
+        } else if (compOp == OPERATOR_OVER) {
+            ///draw first B then A
+            if (drawTexture[1]) {
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+            }
+            if (drawTexture[0]) {
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+                glDisable(GL_BLEND);
+
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_LEFT_PLANE);
+
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+                glDisable(GL_BLEND);
+            }
+        } else {
+            if (drawTexture[0]) {
+
+                ///Depending on the premultiplication of the input image we use a different blending func
+                ImagePremultiplication premult = _imp->displayingImagePremult[0];
+                if (!_imp->viewerTab->isCheckerboardEnabled()) {
+                    premult = Natron::ImageOpaque; ///When no checkerboard, draw opaque
+                }
+
+                bool doBlend = premult != ImageOpaque;
+                if (doBlend) {
+                    glEnable(GL_BLEND);
+                }
+                switch (premult) {
+                    case Natron::ImagePremultiplied:
+                        glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+                        break;
+                    case Natron::ImageUnPremultiplied:
+                        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+                        break;
+                    case Natron::ImageOpaque:
+                        break;
+                }
+                
+                
+                
+                drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                
+                if (doBlend) {
+                    glDisable(GL_BLEND);
+                }
+            }
+        }
+    } // glPushAttrib(GL_COLOR_BUFFER_BIT);
     glPopAttrib();
 
 
@@ -1434,105 +1437,111 @@ ViewerGL::drawWipeControl()
     oppositeAxisBottom.setX( wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
     oppositeAxisBottom.setY( wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
 
+    glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
+    {
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        // Draw everything twice
+        // l = 0: shadow
+        // l = 1: drawing
+        double baseColor[3];
+        for (int l = 0; l < 2; ++l) {
+            if (l == 0) {
+                // Draw a shadow for the cross hair
+                // shift by (1,1) pixel
+                glPushMatrix();
+                glTranslated(1. / zoomFactor, -1. / zoomFactor, 0);
+                baseColor[0] = baseColor[1] = baseColor[2] = 0.;
+            } else {
+                baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
+            }
 
-    // Draw everything twice
-    // l = 0: shadow
-    // l = 1: drawing
-    double baseColor[3];
-    for (int l = 0; l < 2; ++l) {
-        if (l == 0) {
-            // Draw a shadow for the cross hair
-            // shift by (1,1) pixel
-            glPushMatrix();
-            glTranslated(1. / zoomFactor, -1. / zoomFactor, 0);
-            baseColor[0] = baseColor[1] = baseColor[2] = 0.;
-        } else {
-            baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
-        }
-
-        glLineWidth(1.5);
-        glEnable(GL_LINE_SMOOTH);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glBegin(GL_LINES);
-        if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
-            glColor4f(0., 1., 0., 1.);
-        }
-        glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
-        glVertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
-        glVertex2d( rotateAxisRight.x(), rotateAxisRight.y() );
-        glVertex2d( oppositeAxisBottom.x(), oppositeAxisBottom.y() );
-        glVertex2d( oppositeAxisTop.x(), oppositeAxisTop.y() );
-        glVertex2d( wipeCenter.x(),wipeCenter.y() );
-        glVertex2d( mixPos.x(), mixPos.y() );
-        glEnd();
-        glLineWidth(1.);
-
-        ///if hovering the rotate handle or dragging it show a small bended arrow
-        if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
-            glColor4f(0., 1., 0., 1.);
-            double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
-            ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
-            OfxPointD arrowRadius;
-            arrowRadius.x = 5. / zoomFactor;
-            arrowRadius.y = 10. / zoomFactor;
-
-            glPushMatrix ();
-            glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
-            glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
-            //  center the oval at x_center, y_center
-            glTranslatef (arrowCenterX, 0., 0);
-            //  draw the oval using line segments
-            glBegin (GL_LINE_STRIP);
-            glVertex2f (0, arrowRadius.y);
-            glVertex2f (arrowRadius.x, 0.);
-            glVertex2f (0, -arrowRadius.y);
-            glEnd ();
-
-
+            glLineWidth(1.5);
+            glEnable(GL_LINE_SMOOTH);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_BLEND);
+            glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
             glBegin(GL_LINES);
-            ///draw the top head
-            glVertex2f(0., arrowRadius.y);
-            glVertex2f(0., arrowRadius.y -  arrowRadius.x );
-
-            glVertex2f(0., arrowRadius.y);
-            glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
-
-            ///draw the bottom head
-            glVertex2f(0., -arrowRadius.y);
-            glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
-
-            glVertex2f(0., -arrowRadius.y);
-            glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
-
-            glEnd();
-
-            glPopMatrix ();
+            if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
+                glColor4f(0., 1., 0., 1.);
+            }
             glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
+            glVertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
+            glVertex2d( rotateAxisRight.x(), rotateAxisRight.y() );
+            glVertex2d( oppositeAxisBottom.x(), oppositeAxisBottom.y() );
+            glVertex2d( oppositeAxisTop.x(), oppositeAxisTop.y() );
+            glVertex2d( wipeCenter.x(),wipeCenter.y() );
+            glVertex2d( mixPos.x(), mixPos.y() );
+            glEnd();
+            glLineWidth(1.);
+
+            ///if hovering the rotate handle or dragging it show a small bended arrow
+            if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
+                glColor4f(0., 1., 0., 1.);
+                double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
+                ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
+                OfxPointD arrowRadius;
+                arrowRadius.x = 5. / zoomFactor;
+                arrowRadius.y = 10. / zoomFactor;
+
+                glPushMatrix ();
+                glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
+                glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
+                //  center the oval at x_center, y_center
+                glTranslatef (arrowCenterX, 0., 0);
+                //  draw the oval using line segments
+                glBegin (GL_LINE_STRIP);
+                glVertex2f (0, arrowRadius.y);
+                glVertex2f (arrowRadius.x, 0.);
+                glVertex2f (0, -arrowRadius.y);
+                glEnd ();
+
+
+                glBegin(GL_LINES);
+                ///draw the top head
+                glVertex2f(0., arrowRadius.y);
+                glVertex2f(0., arrowRadius.y -  arrowRadius.x );
+
+                glVertex2f(0., arrowRadius.y);
+                glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
+
+                ///draw the bottom head
+                glVertex2f(0., -arrowRadius.y);
+                glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
+
+                glVertex2f(0., -arrowRadius.y);
+                glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
+
+                glEnd();
+
+                glPopMatrix ();
+                glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
+            }
+
+            glPointSize(5.);
+            glEnable(GL_POINT_SMOOTH);
+            glBegin(GL_POINTS);
+            glVertex2d( wipeCenter.x(), wipeCenter.y() );
+            if ( ( (_imp->hs == HOVERING_WIPE_MIX) && (_imp->ms != ROTATING_WIPE_HANDLE) ) || (_imp->ms == DRAGGING_WIPE_MIX_HANDLE) ) {
+                glColor4f(0., 1., 0., 1.);
+            }
+            glVertex2d( mixPos.x(), mixPos.y() );
+            glEnd();
+            glPointSize(1.);
+            
+            _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+            if (l == 0) {
+                glPopMatrix();
+            }
         }
-
-        glPointSize(5.);
-        glEnable(GL_POINT_SMOOTH);
-        glBegin(GL_POINTS);
-        glVertex2d( wipeCenter.x(), wipeCenter.y() );
-        if ( ( (_imp->hs == HOVERING_WIPE_MIX) && (_imp->ms != ROTATING_WIPE_HANDLE) ) || (_imp->ms == DRAGGING_WIPE_MIX_HANDLE) ) {
-            glColor4f(0., 1., 0., 1.);
-        }
-        glVertex2d( mixPos.x(), mixPos.y() );
-        glEnd();
-        glPointSize(1.);
-
-        _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
-        if (l == 0) {
-            glPopMatrix();
-        }
-    }
-
-
-    glDisable(GL_POINT_SMOOTH);
-    glDisable(GL_LINE_SMOOTH);
-    glDisable(GL_BLEND);
+        
+        
+        //glDisable(GL_POINT_SMOOTH);
+        //glDisable(GL_LINE_SMOOTH);
+        //glDisable(GL_BLEND);
+        glPopMatrix();
+    } // glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT);
+    glPopAttrib();
 } // drawWipeControl
 
 void
@@ -1670,40 +1679,40 @@ ViewerGL::drawPersistentMessage()
 void
 ViewerGL::Implementation::drawSelectionRectangle()
 {
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+    {
+        glEnable(GL_LINE_SMOOTH);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
-    glColor4f(0.5,0.8,1.,0.4);
-    QPointF btmRight = selectionRectangle.bottomRight();
-    QPointF topLeft = selectionRectangle.topLeft();
+        glColor4f(0.5,0.8,1.,0.4);
+        QPointF btmRight = selectionRectangle.bottomRight();
+        QPointF topLeft = selectionRectangle.topLeft();
 
-    glBegin(GL_POLYGON);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
-
-
-    glLineWidth(1.5);
-
-    glBegin(GL_LINE_LOOP);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glBegin(GL_POLYGON);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
 
 
-    glDisable(GL_LINE_SMOOTH);
-    glCheckError();
+        glLineWidth(1.5);
 
-    glLineWidth(1.);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
+        glCheckError();
+
+        //glDisable(GL_LINE_SMOOTH);
+        //glLineWidth(1.);
+        //glColor4f(1., 1., 1., 1.);
+    } // glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     glPopAttrib();
-    glColor4f(1., 1., 1., 1.);
 }
 
 void
@@ -1727,21 +1736,26 @@ ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
     double xTilesCountF = screenW / (checkerboardTileSize * 4); //< 4 because the texture contains 4 tiles
     double yTilesCountF = screenH / (checkerboardTileSize * 4);
 
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y());
-    
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
-    glBegin(GL_POLYGON);
-    glTexCoord2d(0., 0.); glVertex2d(topLeft.x(),btmRight.y());
-    glTexCoord2d(0., yTilesCountF); glVertex2d(topLeft.x(),topLeft.y());
-    glTexCoord2d(xTilesCountF, yTilesCountF); glVertex2d(btmRight.x(), topLeft.y());
-    glTexCoord2d(xTilesCountF, 0.); glVertex2d(btmRight.x(), btmRight.y());
-    glEnd();
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    glPushAttrib(GL_SCISSOR_BIT | GL_ENABLE_BIT);
+    {
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y());
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    
-    glDisable(GL_SCISSOR_TEST);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
+        glBegin(GL_POLYGON);
+        glTexCoord2d(0., 0.); glVertex2d(topLeft.x(),btmRight.y());
+        glTexCoord2d(0., yTilesCountF); glVertex2d(topLeft.x(),topLeft.y());
+        glTexCoord2d(xTilesCountF, yTilesCountF); glVertex2d(btmRight.x(), topLeft.y());
+        glTexCoord2d(xTilesCountF, 0.); glVertex2d(btmRight.x(), btmRight.y());
+        glEnd();
+
+
+        //glDisable(GL_SCISSOR_TEST);
+    } // glPushAttrib(GL_SCISSOR_BIT | GL_ENABLE_BIT);
+    glBindTexture(GL_TEXTURE_2D, savedTexture);
     glCheckError();
 }
 
@@ -1790,33 +1804,37 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
     if (mustCreateTexture) {
         glGenTextures(1, &checkerboardTextureID);
     }
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture (GL_TEXTURE_2D,checkerboardTextureID);
-    
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    
-    double color1[4];
-    double color2[4];
-    appPTR->getCurrentSettings()->getCheckerboardColor1(&color1[0], &color1[1], &color1[2], &color1[3]);
-    appPTR->getCurrentSettings()->getCheckerboardColor2(&color2[0], &color2[1], &color2[2], &color2[3]);
-    
-    unsigned char checkerboardTexture[16];
-    ///Fill the first line
-    for (int i = 0; i < 4; ++i) {
-        checkerboardTexture[i] = Color::floatToInt<256>(color1[i]);
-        checkerboardTexture[i + 4] = Color::floatToInt<256>(color2[i]);
-    }
-    ///Copy the first line to the second line
-    memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
-    memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
-    
-    glBindTexture(GL_TEXTURE_2D, 0);
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    glPushAttrib(GL_ENABLE_BIT);
+    {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture (GL_TEXTURE_2D,checkerboardTextureID);
+
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        double color1[4];
+        double color2[4];
+        appPTR->getCurrentSettings()->getCheckerboardColor1(&color1[0], &color1[1], &color1[2], &color1[3]);
+        appPTR->getCurrentSettings()->getCheckerboardColor2(&color2[0], &color2[1], &color2[2], &color2[3]);
+
+        unsigned char checkerboardTexture[16];
+        ///Fill the first line
+        for (int i = 0; i < 4; ++i) {
+            checkerboardTexture[i] = Color::floatToInt<256>(color1[i]);
+            checkerboardTexture[i + 4] = Color::floatToInt<256>(color2[i]);
+        }
+        ///Copy the first line to the second line
+        memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
+        memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
+    } // glPushAttrib(GL_ENABLE_BIT);
+    glBindTexture(GL_TEXTURE_2D, savedTexture);
     
     checkerboardTileSize = appPTR->getCurrentSettings()->getCheckerboardTileSize();
 
@@ -2134,8 +2152,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::FLOAT);
     }
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+    //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
     glCheckError();
     _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
     _imp->displayingImageGain[textureIndex] = gain;
@@ -4015,7 +4033,7 @@ ViewerGL::onCheckerboardSettingsChanged()
 }
 
 void
-ViewerGL::saveContext()
+ViewerGL::saveOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -4029,7 +4047,7 @@ ViewerGL::saveContext()
 
 
 void
-ViewerGL::restoreContext()
+ViewerGL::restoreOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
     

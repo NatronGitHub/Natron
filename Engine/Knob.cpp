@@ -764,18 +764,18 @@ KnobHelper::getBackgroundColour(double &r,
 }
 
 void
-KnobHelper::saveContext()
+KnobHelper::saveOpenGLContext()
 {
     if (_imp->gui) {
-        _imp->gui->saveContext();
+        _imp->gui->saveOpenGLContext();
     }
 }
 
 void
-KnobHelper::restoreContext()
+KnobHelper::restoreOpenGLContext()
 {
     if (_imp->gui) {
-        _imp->gui->restoreContext();
+        _imp->gui->restoreOpenGLContext();
     }
 }
 

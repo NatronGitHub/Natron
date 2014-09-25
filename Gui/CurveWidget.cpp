@@ -292,103 +292,104 @@ CurveGui::drawCurve(int curveIndex,
 
     const QColor & curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
 
-    glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
+    {
+        glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+        glPointSize(_thickness);
+        glEnable(GL_LINE_SMOOTH);
+        glEnable(GL_BLEND);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+        glLineWidth(1.5);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
-    glPointSize(_thickness);
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-    glLineWidth(1.5);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-
-    glBegin(GL_LINE_STRIP);
-    for (int i = 0; i < (int)vertices.size(); i += 2) {
-        glVertex2f(vertices[i],vertices[i + 1]);
-    }
-    glEnd();
-
-
-    //render the name of the curve
-    glColor4f(1.f, 1.f, 1.f, 1.f);
-
-
-    QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
-    QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
-    double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
-    double textX = _curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
-    double textY = evaluate(textX);
-
-    _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
-    glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
-
-
-    //draw keyframes
-    glPointSize(7.f);
-    glEnable(GL_POINT_SMOOTH);
-
-    const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
-    for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
-        glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
-        const KeyFrame & key = (*k);
-        //if the key is selected change its color to white
-        SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
-        for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
-             it2 != selectedKeyFrames.end(); ++it2) {
-            if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve == this ) ) {
-                isSelected = it2;
-                glColor4f(1.f,1.f,1.f,1.f);
-                break;
-            }
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i < (int)vertices.size(); i += 2) {
+            glVertex2f(vertices[i],vertices[i + 1]);
         }
-        double x = key.getTime();
-        double y = key.getValue();
-        glBegin(GL_POINTS);
-        glVertex2f(x,y);
         glEnd();
-        if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != KEYFRAME_CONSTANT) ) {
-            //draw the derivatives lines
-            if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
-                glLineStipple(2, 0xAAAA);
-                glEnable(GL_LINE_STIPPLE);
-            }
-            glBegin(GL_LINES);
-            glColor4f(1., 0.35, 0.35, 1.);
-            glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
-            glVertex2f(x, y);
-            glVertex2f(x, y);
-            glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
-            glEnd();
-            if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
-                glDisable(GL_LINE_STIPPLE);
-            }
 
-            if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
-                QString coordStr("x: %1, y: %2");
-                coordStr = coordStr.arg(x).arg(y);
-                double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
-                QFontMetrics m( _curveWidget->getFont() );
-                yWidgetCoord += (m.height() + 4);
-                glColor4f(1., 1., 1., 1.);
-                glCheckFramebufferError();
-                _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
-                                          coordStr, QColor(240,240,240), _curveWidget->getFont() );
+
+        //render the name of the curve
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+
+
+        QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
+        QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
+        double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
+        double textX = _curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
+        double textY = evaluate(textX);
+
+        _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
+        glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+
+
+        //draw keyframes
+        glPointSize(7.f);
+        glEnable(GL_POINT_SMOOTH);
+
+        const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
+            glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
+            const KeyFrame & key = (*k);
+            //if the key is selected change its color to white
+            SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
+            for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
+                 it2 != selectedKeyFrames.end(); ++it2) {
+                if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve == this ) ) {
+                    isSelected = it2;
+                    glColor4f(1.f,1.f,1.f,1.f);
+                    break;
+                }
             }
+            double x = key.getTime();
+            double y = key.getValue();
             glBegin(GL_POINTS);
-            glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
-            glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+            glVertex2f(x,y);
             glEnd();
-        }
-    }
+            if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != KEYFRAME_CONSTANT) ) {
+                //draw the derivatives lines
+                if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
+                    glLineStipple(2, 0xAAAA);
+                    glEnable(GL_LINE_STIPPLE);
+                }
+                glBegin(GL_LINES);
+                glColor4f(1., 0.35, 0.35, 1.);
+                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
+                glVertex2f(x, y);
+                glVertex2f(x, y);
+                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                glEnd();
+                if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
+                    glDisable(GL_LINE_STIPPLE);
+                }
 
-    glDisable(GL_LINE_SMOOTH);
-    glLineWidth(1.);
-    glDisable(GL_BLEND);
-    glDisable(GL_POINT_SMOOTH);
+                if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                    QString coordStr("x: %1, y: %2");
+                    coordStr = coordStr.arg(x).arg(y);
+                    double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
+                    QFontMetrics m( _curveWidget->getFont() );
+                    yWidgetCoord += (m.height() + 4);
+                    glColor4f(1., 1., 1., 1.);
+                    glCheckFramebufferError();
+                    _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
+                                             coordStr, QColor(240,240,240), _curveWidget->getFont() );
+                }
+                glBegin(GL_POINTS);
+                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
+                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                glEnd();
+            }
+        }
+
+        //glDisable(GL_LINE_SMOOTH);     // done by glPopAttrib(GL_LINE_BIT)
+        //glLineWidth(1.);               // done by glPopAttrib(GL_LINE_BIT)
+        //glDisable(GL_BLEND);           // done by glPopAttrib(GL_ENABLE_BIT)
+        //glDisable(GL_POINT_SMOOTH);    // done by glPopAttrib(GLPOINT_BIT)
+        //glPointSize(1.f);              // done by glPopAttrib(GL_POINT_BIT)
+        //reset back the color
+        //glColor4f(1.f, 1.f, 1.f, 1.f); // done by glPopAttrib(GL_CURRENT_BIT)
+    } // glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
     glPopAttrib();
-    glPointSize(1.f);
-    //reset back the color
-    glColor4f(1.f, 1.f, 1.f, 1.f);
     glCheckError();
 } // drawCurve
 
@@ -728,41 +729,43 @@ CurveWidgetPrivate::drawSelectionRectangle()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+    {
+        glEnable(GL_LINE_SMOOTH);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
-    glColor4f(0.3,0.3,0.3,0.2);
-    QPointF btmRight = _selectionRectangle.bottomRight();
-    QPointF topLeft = _selectionRectangle.topLeft();
+        glColor4f(0.3,0.3,0.3,0.2);
+        QPointF btmRight = _selectionRectangle.bottomRight();
+        QPointF topLeft = _selectionRectangle.topLeft();
 
-    glBegin(GL_POLYGON);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
-
-
-    glLineWidth(1.5);
-
-    glColor4f(0.5,0.5,0.5,1.);
-    glBegin(GL_LINE_LOOP);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glBegin(GL_POLYGON);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
 
 
-    glDisable(GL_LINE_SMOOTH);
-    glCheckError();
+        glLineWidth(1.5);
 
-    glLineWidth(1.);
+        glColor4f(0.5,0.5,0.5,1.);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
+        
+        
+        //glDisable(GL_LINE_SMOOTH);
+        glCheckError();
+        
+        //glLineWidth(1.);
+        //glColor4f(1., 1., 1., 1.);
+    } // glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     glPopAttrib();
-    glColor4f(1., 1., 1., 1.);
 }
 
 void
@@ -909,71 +912,75 @@ CurveWidgetPrivate::drawScale()
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glPushAttrib(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    for (int axis = 0; axis < 2; ++axis) {
-        const double rangePixel = (axis == 0) ? _widget->width() : _widget->height(); // AXIS-SPECIFIC
-        const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
-        const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
-        const double range = range_max - range_min;
-        double smallTickSize;
-        bool half_tick;
-        ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
-        int m1, m2;
-        const int ticks_max = 1000;
-        double offset;
-        ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
-        std::vector<int> ticks;
-        ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
-        const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
-        const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
-        const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
-        for (int i = m1; i <= m2; ++i) {
-            double value = i * smallTickSize + offset;
-            const double tickSize = ticks[i - m1] * smallTickSize;
-            const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
+        for (int axis = 0; axis < 2; ++axis) {
+            const double rangePixel = (axis == 0) ? _widget->width() : _widget->height(); // AXIS-SPECIFIC
+            const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
+            const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
+            const double range = range_max - range_min;
+            double smallTickSize;
+            bool half_tick;
+            ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+            int m1, m2;
+            const int ticks_max = 1000;
+            double offset;
+            ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
+            std::vector<int> ticks;
+            ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
+            const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
+            const double largestTickSize = range * largestTickSizePixel / rangePixel;
+            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
+            for (int i = m1; i <= m2; ++i) {
+                double value = i * smallTickSize + offset;
+                const double tickSize = ticks[i - m1] * smallTickSize;
+                const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+                glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
-            glBegin(GL_LINES);
-            if (axis == 0) {
-                glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
-                glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
-            } else {
-                glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
-                glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
-            }
-            glEnd();
+                glBegin(GL_LINES);
+                if (axis == 0) {
+                    glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
+                    glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
+                } else {
+                    glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
+                    glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
+                }
+                glEnd();
 
-            if (tickSize > minTickSizeText) {
-                const int tickSizePixel = rangePixel * tickSize / range;
-                const QString s = QString::number(value);
-                const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
-                if (tickSizePixel > sSizePixel) {
-                    const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
-                    double alphaText = 1.0; //alpha;
-                    if (tickSizePixel < sSizeFullPixel) {
-                        // when the text size is between sSizePixel and sSizeFullPixel,
-                        // draw it with a lower alpha
-                        alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
-                    }
-                    QColor c = _scaleColor;
-                    c.setAlpha(255 * alphaText);
-                    if (axis == 0) {
-                        _widget->renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
-                    } else {
-                        _widget->renderText(btmLeft.x(), value, s, c, *_font); // AXIS-SPECIFIC
+                if (tickSize > minTickSizeText) {
+                    const int tickSizePixel = rangePixel * tickSize / range;
+                    const QString s = QString::number(value);
+                    const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
+                    if (tickSizePixel > sSizePixel) {
+                        const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                        double alphaText = 1.0; //alpha;
+                        if (tickSizePixel < sSizeFullPixel) {
+                            // when the text size is between sSizePixel and sSizeFullPixel,
+                            // draw it with a lower alpha
+                            alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
+                        }
+                        QColor c = _scaleColor;
+                        c.setAlpha(255 * alphaText);
+                        if (axis == 0) {
+                            _widget->renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
+                        } else {
+                            _widget->renderText(btmLeft.x(), value, s, c, *_font); // AXIS-SPECIFIC
+                        }
                     }
                 }
             }
         }
-    }
-
-    glDisable(GL_BLEND);
-    //reset back the color
-    glColor4f(1., 1., 1., 1.);
+        
+        //glDisable(GL_BLEND);
+        //reset back the color
+        //glColor4f(1., 1., 1., 1.);
+    } // glPushAttrib(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    glPopAttrib();
 } // drawScale
 
 void
@@ -983,40 +990,42 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+    {
+        glEnable(GL_LINE_SMOOTH);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
 
-    QPointF topLeft = _selectedKeyFramesBbox.topLeft();
-    QPointF btmRight = _selectedKeyFramesBbox.bottomRight();
+        QPointF topLeft = _selectedKeyFramesBbox.topLeft();
+        QPointF btmRight = _selectedKeyFramesBbox.bottomRight();
 
-    glLineWidth(1.5);
+        glLineWidth(1.5);
 
-    glColor4f(0.5,0.5,0.5,1.);
-    glBegin(GL_LINE_LOOP);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glColor4f(0.5,0.5,0.5,1.);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
 
 
-    glBegin(GL_LINES);
-    glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(),topLeft.x() ),_selectedKeyFramesCrossHorizLine.p1().y() );
-    glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(),btmRight.x() ),_selectedKeyFramesCrossHorizLine.p2().y() );
-    glVertex2f( _selectedKeyFramesCrossVertLine.p1().x(),std::max( _selectedKeyFramesCrossVertLine.p1().y(),btmRight.y() ) );
-    glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(),std::min( _selectedKeyFramesCrossVertLine.p2().y(),topLeft.y() ) );
-    glEnd();
-
-    glDisable(GL_LINE_SMOOTH);
-    glCheckError();
-
-    glLineWidth(1.);
+        glBegin(GL_LINES);
+        glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(),topLeft.x() ),_selectedKeyFramesCrossHorizLine.p1().y() );
+        glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(),btmRight.x() ),_selectedKeyFramesCrossHorizLine.p2().y() );
+        glVertex2f( _selectedKeyFramesCrossVertLine.p1().x(),std::max( _selectedKeyFramesCrossVertLine.p1().y(),btmRight.y() ) );
+        glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(),std::min( _selectedKeyFramesCrossVertLine.p2().y(),topLeft.y() ) );
+        glEnd();
+        
+        //glDisable(GL_LINE_SMOOTH);
+        glCheckError();
+        
+        //glLineWidth(1.);
+        //glColor4f(1., 1., 1., 1.);
+    }
     glPopAttrib();
-    glColor4f(1., 1., 1., 1.);
 }
 
 Curves::const_iterator
@@ -1937,7 +1946,7 @@ CurveWidget::getBackgroundColour(double &r,
 }
 
 void
-CurveWidget::saveContext()
+CurveWidget::saveOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -1947,7 +1956,7 @@ CurveWidget::saveContext()
 }
 
 void
-CurveWidget::restoreContext()
+CurveWidget::restoreOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
     

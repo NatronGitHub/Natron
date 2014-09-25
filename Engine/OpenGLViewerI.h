@@ -148,12 +148,12 @@ public:
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
      **/
-    virtual void saveContext() = 0;
+    virtual void saveOpenGLContext() = 0;
     
     /**
-     * @brief Must restore all OpenGL bits saved in saveContext()
+     * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
-    virtual void restoreContext() = 0;
+    virtual void restoreOpenGLContext() = 0;
 };
 
 

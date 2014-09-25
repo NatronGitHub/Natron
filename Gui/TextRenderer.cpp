@@ -115,6 +115,8 @@ TextRendererPrivate::clearBitmapCache()
 void
 TextRendererPrivate::newTransparantTexture()
 {
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     GLuint texture;
 
     glGenTextures(1, &texture);
@@ -129,7 +131,7 @@ TextRendererPrivate::newTransparantTexture()
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
                   0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits() );
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, savedTexture);
     _usedTextures.push_back(texture);
 }
 
@@ -171,11 +173,15 @@ TextRendererPrivate::createCharacter(QChar c)
     //fill the texture with the QImage
     image = QGLWidget::convertToGLFormat(image);
     glCheckError();
+
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     glBindTexture(GL_TEXTURE_2D, texture);
     assert( glIsTexture(texture) );
     glTexSubImage2D( GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
                      GL_UNSIGNED_BYTE, image.bits() );
     glCheckError();
+    glBindTexture(GL_TEXTURE_2D, savedTexture);
 
 
     CharBitmap *character = new CharBitmap;
@@ -250,43 +256,50 @@ TextRenderer::renderText(float x,
         _imp->renderers[font] = p;
     }
     assert(p);
-    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    GLuint texture = 0;
-    glTranslatef(x, y, 0);
-    glColor4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() );
-    for (int i = 0; i < text.length(); ++i) {
-        CharBitmap *c = p->createCharacter(text[i]);
-        if (!c) {
-            continue;
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+    {
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GLuint texture = 0;
+        glTranslatef(x, y, 0);
+        glColor4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() );
+        for (int i = 0; i < text.length(); ++i) {
+            CharBitmap *c = p->createCharacter(text[i]);
+            if (!c) {
+                continue;
+            }
+            if (texture != c->texID) {
+                texture = c->texID;
+                glBindTexture(GL_TEXTURE_2D, texture);
+                assert( glIsTexture(texture) );
+            }
+            glCheckError();
+            glBegin(GL_QUADS);
+            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
+            glVertex2f(0, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
+            glVertex2f(c->w, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
+            glVertex2f(c->w, c->h);
+            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
+            glVertex2f(0, c->h);
+            glEnd();
+            glCheckErrorIgnoreOSXBug();
+            glTranslatef(c->w, 0, 0);
+            glCheckError();
         }
-        if (texture != c->texID) {
-            texture = c->texID;
-            glBindTexture(GL_TEXTURE_2D, texture);
-            assert( glIsTexture(texture) );
-        }
-        glCheckError();
-        glBegin(GL_QUADS);
-        glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
-        glVertex2f(0, 0);
-        glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
-        glVertex2f(c->w, 0);
-        glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
-        glVertex2f(c->w, c->h);
-        glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
-        glVertex2f(0, c->h);
-        glEnd();
-        glCheckErrorIgnoreOSXBug();
-        glTranslatef(c->w, 0, 0);
-        glCheckError();
-    }
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glPopMatrix();
+        //glColor4f(1., 1., 1., 1.);
+    } // glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     glPopAttrib();
+    glPopMatrix();
+    glBindTexture(GL_TEXTURE_2D, savedTexture);
+
     glCheckError();
-    glColor4f(1., 1., 1., 1.);
 } // renderText
 
