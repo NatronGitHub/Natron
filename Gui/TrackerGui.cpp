@@ -288,11 +288,11 @@ TrackerGui::drawOverlays(double scaleX,
 
         if (_imp->clickToAddTrackEnabled) {
             ///draw a square of 20px around the mouse cursor
-            glLineWidth(1.5);
-            glEnable(GL_LINE_SMOOTH);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+            glLineWidth(1.5);
             glMatrixMode(GL_PROJECTION);
             for (int i = 0; i < 2; ++i) {
                 if (i == 0) {

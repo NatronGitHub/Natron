@@ -1173,6 +1173,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     QPoint btmLeft( dispW.left(),dispW.bottom() );
     QPoint btmRight( dispW.right(),dispW.bottom() );
 
+#pragma message WARN("missing glPushAttrib/glPopAttrib")
     glBegin(GL_LINES);
 
     glColor4f( _imp->displayWindowOverlayColor.redF(),
@@ -1456,11 +1457,11 @@ ViewerGL::drawWipeControl()
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
             }
 
-            glLineWidth(1.5);
-            glEnable(GL_LINE_SMOOTH);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+            glLineWidth(1.5);
             glBegin(GL_LINES);
             if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
                 glColor4f(0., 1., 0., 1.);
@@ -1654,6 +1655,7 @@ ViewerGL::drawPersistentMessage()
         textPos = _imp->zoomCtx.toZoomCoordinates(20, offset);
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
+#pragma message WARN("missing glPushAttrib/glPopAttrib")
     if (_imp->persistentMessageType == 1) { // error
         glColor4f(0.5,0.,0.,1.);
     } else { // warning
@@ -1681,9 +1683,9 @@ ViewerGL::Implementation::drawSelectionRectangle()
 {
     glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     {
-        glEnable(GL_LINE_SMOOTH);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
         glColor4f(0.5,0.8,1.,0.4);
@@ -3314,6 +3316,7 @@ ViewerGL::renderText(double x,
         return;
     }
 
+#pragma message WARN("missing glPushAttrib/glPopAttrib")
     glMatrixMode (GL_PROJECTION);
     glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();
