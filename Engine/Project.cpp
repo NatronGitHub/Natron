@@ -30,6 +30,8 @@
 #include <QThreadPool>
 #include <QTemporaryFile>
 #include <QHostInfo>
+#include <QFileInfo>
+
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -1801,17 +1803,16 @@ Project::findReplaceVariable(const std::map<std::string,std::string>& env,std::s
 void
 Project::makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str)
 {
-    QDir dir(varValue.c_str());
-    if (!dir.exists()) {
-        return;
+    
+    if (str.size() > varValue.size() && str.substr(0,varValue.size()) == varValue) {
+        if (!varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\')) {
+            str = '[' + varName + ']' + str.substr(varValue.size(),str.size());
+        } else {
+            str = '[' + varName + "]/" + str.substr(varValue.size() + 1,str.size());
+        }
     }
-    QString s(str.c_str());
-    s = dir.relativeFilePath(s);
-    if (!varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\')) {
-        str = '[' + varName + ']' + s.toStdString();
-    } else {
-        str = '[' + varName + "]/" + s.toStdString();
-    }
+
+    
     
 }
     
@@ -1895,6 +1896,82 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     getEnvironmentVariables(env);
     fixRelativeFilePaths(env,projectPathName, newProjectPath);
 }
+    
+bool
+Project::isRelative(const std::string& str)
+{
+#ifdef __NATRON_WIN32__
+    return (str.empty() || (!str.empty() && (str[0] != '/')
+                            && (!(str.size() >= 2 && str[1] == ':'))));
+#else  //Unix
+    return (str.empty() || (str[0] != '/'));
+#endif
+}
+    
+    
+    
+void
+Project::canonicalizePath(std::string& str)
+{
+    std::map<std::string,std::string> envvar;
+    getEnvironmentVariables(envvar);
+    
+    expandVariable(envvar, str);
+    
+    ///Now check if the string is relative
+    if ( !str.empty() && isRelative(str) ) {
+        
+        ///If it doesn't start with an env var but is relative, prepend the project env var
+        std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+        if (foundProject != envvar.end()) {
+			if (foundProject->second.empty()) {
+				return;
+			}
+            const char& c = foundProject->second[foundProject->second.size() - 1];
+            bool addTrailingSlash = c != '/' && c != '\\';
+            std::string copy = foundProject->second;
+            if (addTrailingSlash) {
+                copy += '/';
+            }
+            copy += str;
+            str = copy;
+        }
+        
+        ///Canonicalize
+        QFileInfo info(str.c_str());
+        QString canonical =  info.canonicalFilePath();
+        if ( canonical.isEmpty() && !str.empty() ) {
+            return;
+        } else {
+            str = canonical.toStdString();
+        }
+    }
+
+}
+    
+    
+void
+Project::simplifyPath(std::string& str)
+{
+    std::map<std::string,std::string> envvar;
+    getEnvironmentVariables(envvar);
+    
+    Natron::Project::findReplaceVariable(envvar,str);
+}
+    
+    
+void
+Project::makeRelativeToProject(std::string& str)
+{
+    std::map<std::string,std::string> envvar;
+    getEnvironmentVariables(envvar);
+
+    std::map<std::string,std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+    if (found != envvar.end()) {
+        makeRelativeToVariable(found->first, found->second, str);
+    }
+}
+
     
 void
 Project::onOCIOConfigPathChanged(const std::string& path)

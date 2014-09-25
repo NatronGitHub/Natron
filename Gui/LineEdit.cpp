@@ -21,6 +21,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
+#include <QKeySequence>
 #include <QUrl>
 #include <QMimeData>
 #include <QStyle>
@@ -68,6 +69,7 @@ LineEdit::dropEvent(QDropEvent* e)
     }
     if ( !path.isEmpty() ) {
         setText(path);
+        emit textDropped();
     }
 }
 
@@ -113,3 +115,12 @@ LineEdit::setDirty(bool b)
     repaint();
 }
 
+
+void
+LineEdit::keyPressEvent(QKeyEvent* e)
+{
+    QLineEdit::keyPressEvent(e);
+    if (e->matches(QKeySequence::Paste)) {
+        emit textPasted();
+    }
+}

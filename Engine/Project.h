@@ -255,7 +255,7 @@ public:
      **/
     static void makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str);
     
-   
+    static bool isRelative(const std::string& str);
     
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
@@ -270,6 +270,24 @@ public:
      * newName.
      **/
     void fixPathName(const std::string& oldName,const std::string& newName);
+    
+    /**
+     * @brief If str is relative it will canonicalize the path, i.e expand all variables and '.' and '..' that may 
+     * be. When returning from this function str will be an absolute path.
+     * It internally uses expandVariable
+     **/
+    void canonicalizePath(std::string& str);
+    
+    /**
+     * @brief Tries to find any variable that str could start with and simplify the given path with the longest
+     * variable matching. It internally uses findReplaceVariable
+     **/
+    void simplifyPath(std::string& str);
+    
+    /**
+     * @brief Same as simplifyPath but will only try with the [Project] variable
+     **/
+    void makeRelativeToProject(std::string& str);
     
     void onOCIOConfigPathChanged(const std::string& path);
 

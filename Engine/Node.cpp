@@ -2131,11 +2131,11 @@ Node::onAllKnobsSlaved(bool isSlave,
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode = masterNode;
         }
-        QObject::connect( masterNode.get(), SIGNAL( deactivated() ), this, SLOT( onMasterNodeDeactivated() ) );
+        QObject::connect( masterNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
         QObject::connect( masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
         QObject::connect( masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
     } else {
-        QObject::disconnect( _imp->masterNode.get(), SIGNAL( deactivated() ), this, SLOT( onMasterNodeDeactivated() ) );
+        QObject::disconnect( _imp->masterNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
         QObject::disconnect( _imp->masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
         QObject::disconnect( _imp->masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
         {

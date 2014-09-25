@@ -51,6 +51,12 @@ public:
 
     void setDirty(bool b);
 
+signals:
+    
+    void textDropped();
+    
+    void textPasted();
+    
 public slots:
 
     void onEditingFinished();
@@ -58,15 +64,16 @@ public slots:
 private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
-    void dropEvent(QDropEvent* e);
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
 
-    void dragEnterEvent(QDragEnterEvent* e);
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
 
-    void dragMoveEvent(QDragMoveEvent* e);
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
 
-    void dragLeaveEvent(QDragLeaveEvent* e);
-
-
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
+    
     int animation;
     bool dirty;
 };

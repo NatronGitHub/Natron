@@ -25,6 +25,7 @@ CLANG_DIAG_ON(uninitialized)
 
 // Qt
 class QHBoxLayout;
+class QMenu;
 class QFileSystemWatcher;
 
 // Engine
@@ -66,8 +67,8 @@ public:
 
 public slots:
 
-    void onReturnPressed();
-
+    void onTextEdited() ;
+    
     void onButtonClicked();
 
     void open_file();
@@ -75,7 +76,16 @@ public slots:
     void onTimelineFrameChanged(SequenceTime time,int reason);
     
     void watchedFileChanged();
+    
+    void onMakeAbsoluteTriggered();
+    
+    void onMakeRelativeTriggered();
+    
+    void onSimplifyTriggered();
 private:
+    
+    virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -119,13 +129,22 @@ public:
 
 public slots:
 
-    void onReturnPressed();
+    void onTextEdited() ;
 
     void onButtonClicked();
 
     void open_file(bool);
 
+    void onMakeAbsoluteTriggered();
+    
+    void onMakeRelativeTriggered();
+    
+    void onSimplifyTriggered();
+
 private:
+    
+    virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
+    
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -178,8 +197,16 @@ public slots:
     
     void onItemDataChanged(TableItem* item);
     
-private:
+    void onTextEdited();
 
+    void onMakeAbsoluteTriggered();
+    
+    void onMakeRelativeTriggered();
+    
+    void onSimplifyTriggered();
+
+private:
+    virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
 
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;

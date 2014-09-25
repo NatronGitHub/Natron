@@ -19,7 +19,6 @@
 
 #include <ofxParametricParam.h>
 
-#include <QFileInfo>
 
 #include "Engine/AppManager.h"
 #include "Global/GlobalDefines.h"
@@ -2334,61 +2333,16 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
 }
 
 
-static bool isRelative(const std::string& str)
-{
-#ifdef __NATRON_WIN32__
-    return (str.empty() || (!str.empty() && (str[0] != '/')
-                                     && (!(str.size() >= 2 && str[1] == ':'))));
-#else  //Unix
-     return (str.empty() || (str[0] != '/'));
-#endif
-}
-
 void
 OfxStringInstance::projectEnvVar_getProxy(std::string& str) const
 {
-    std::map<std::string,std::string> envvar;
-    _node->getApp()->getProject()->getEnvironmentVariables(envvar);
-    
-    Natron::Project::expandVariable(envvar, str);
-    
-    ///Now check if the string is relative
-    if ( !str.empty() && isRelative(str) ) {
-        
-        ///If it doesn't start with an env var but is relative, prepend the project env var
-        std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
-        if (foundProject != envvar.end()) {
-			if (foundProject->second.empty()) {
-				return;
-			}
-            const char& c = foundProject->second[foundProject->second.size() - 1];
-            bool addTrailingSlash = c != '/' && c != '\\';
-            std::string copy = foundProject->second;
-            if (addTrailingSlash) {
-                copy += '/';
-            }
-            copy += str;
-            str = copy;
-        }
-        
-        ///Canonicalize
-        QFileInfo info(str.c_str());
-        QString canonical =  info.canonicalFilePath();
-        if ( canonical.isEmpty() && !str.empty() ) {
-            return;
-        } else {
-            str = canonical.toStdString();
-        }
-    }
+    _node->getApp()->getProject()->canonicalizePath(str);
 }
 
 void
 OfxStringInstance::projectEnvVar_setProxy(std::string& str) const
 {
-    std::map<std::string,std::string> envvar;
-    _node->getApp()->getProject()->getEnvironmentVariables(envvar);
-    
-    Natron::Project::findReplaceVariable(envvar,str);
+    _node->getApp()->getProject()->simplifyPath(str);
    
 }
 

@@ -306,6 +306,9 @@ protected:
      **/
     virtual void updateGUI(int dimension) = 0;
 
+    virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
+    
+    
 private:
 
     void updateGuiInternal(int dimension);
