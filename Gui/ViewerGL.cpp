@@ -1248,7 +1248,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     if (compOperator != OPERATOR_NONE) {
         drawWipeControl();
     }
-
+    glCheckError();
     _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
     glCheckError();
 
