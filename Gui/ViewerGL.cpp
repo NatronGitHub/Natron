@@ -1173,6 +1173,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     QPoint btmLeft( dispW.left(),dispW.bottom() );
     QPoint btmRight( dispW.right(),dispW.bottom() );
 
+#pragma message WARN("missing glPushAttrib/glPopAttrib")
     glBegin(GL_LINES);
 
     glColor4f( _imp->displayWindowOverlayColor.redF(),
@@ -1654,6 +1655,7 @@ ViewerGL::drawPersistentMessage()
         textPos = _imp->zoomCtx.toZoomCoordinates(20, offset);
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
+#pragma message WARN("missing glPushAttrib/glPopAttrib")
     if (_imp->persistentMessageType == 1) { // error
         glColor4f(0.5,0.,0.,1.);
     } else { // warning
@@ -3314,6 +3316,7 @@ ViewerGL::renderText(double x,
         return;
     }
 
+#pragma message WARN("missing glPushAttrib/glPopAttrib")
     glMatrixMode (GL_PROJECTION);
     glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();
