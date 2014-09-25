@@ -1012,24 +1012,26 @@ Path_KnobGui::rebuildPath() const
 void
 Path_KnobGui::addRightClickMenuEntries(QMenu* menu)
 {
-    QAction* makeAbsoluteAction = new QAction(QObject::tr("Make absolute"),menu);
-    QObject::connect(makeAbsoluteAction,SIGNAL(triggered()),this,SLOT(onMakeAbsoluteTriggered()));
-    makeAbsoluteAction->setToolTip(QObject::tr("Make the file-path absolute if it was previously relative to any project path"));
-    menu->addAction(makeAbsoluteAction);
-    QAction* makeRelativeToProject = new QAction(QObject::tr("Make relative to project"),menu);
-    makeRelativeToProject->setToolTip(QObject::tr("Make the file-path relative to the [Project] path"));
-    QObject::connect(makeRelativeToProject,SIGNAL(triggered()),this,SLOT(onMakeRelativeTriggered()));
-    menu->addAction(makeRelativeToProject);
-    QAction* simplify = new QAction(QObject::tr("Simplify"),menu);
-    QObject::connect(simplify,SIGNAL(triggered()),this,SLOT(onSimplifyTriggered()));
-    simplify->setToolTip(QObject::tr("Same as make relative but will pick the longest project variable to simplify"));
-    menu->addAction(simplify);
-    
-    menu->addSeparator();
-    QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
-    qtMenu->setTitle(tr("Edit"));
-    menu->addMenu(qtMenu);
+    if (!_knob->isMultiPath()) {
+        QAction* makeAbsoluteAction = new QAction(QObject::tr("Make absolute"),menu);
+        QObject::connect(makeAbsoluteAction,SIGNAL(triggered()),this,SLOT(onMakeAbsoluteTriggered()));
+        makeAbsoluteAction->setToolTip(QObject::tr("Make the file-path absolute if it was previously relative to any project path"));
+        menu->addAction(makeAbsoluteAction);
+        QAction* makeRelativeToProject = new QAction(QObject::tr("Make relative to project"),menu);
+        makeRelativeToProject->setToolTip(QObject::tr("Make the file-path relative to the [Project] path"));
+        QObject::connect(makeRelativeToProject,SIGNAL(triggered()),this,SLOT(onMakeRelativeTriggered()));
+        menu->addAction(makeRelativeToProject);
+        QAction* simplify = new QAction(QObject::tr("Simplify"),menu);
+        QObject::connect(simplify,SIGNAL(triggered()),this,SLOT(onSimplifyTriggered()));
+        simplify->setToolTip(QObject::tr("Same as make relative but will pick the longest project variable to simplify"));
+        menu->addAction(simplify);
+        
+        menu->addSeparator();
+        QMenu* qtMenu = _lineEdit->createStandardContextMenu();
+        qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        qtMenu->setTitle(tr("Edit"));
+        menu->addMenu(qtMenu);
+    }
 }
 
 void
