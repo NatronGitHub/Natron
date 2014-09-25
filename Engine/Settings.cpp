@@ -732,139 +732,38 @@ void
 Settings::saveSettings()
 {
     _wereChangesMadeSinceLastSave = false;
-
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    settings.beginGroup("General");
-    settings.setValue( "CheckUpdates", _checkForUpdates->getValue() );
-    settings.setValue( "AutoSaveDelay", _autoSaveDelay->getValue() );
-    settings.setValue( "LinearColorPickers",_linearPickers->getValue() );
-    settings.setValue( "Number of threads", _numberOfThreads->getValue() );
-    settings.setValue( "RenderInSeparateProcess", _renderInSeparateProcess->getValue() );
-    settings.setValue( "AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue() );
-    settings.setValue( "AutoProjectFormat" , _firstReadSetProjectFormat->getValue() );
-    settings.setValue( "FixRelativeFilePaths", _fixPathsOnProjectPathChanged->getValue() );
-    settings.setValue( "MaxPanelsOpened", _maxPanelsOpened->getValue() );
-    settings.setValue( "UseCursorPosIncrements", _useCursorPositionIncrements->getValue() );
-    settings.setValue( "DefaultLayoutFile", _defaultLayoutFile->getValue().c_str() );
-    settings.setValue( "RenderOnEditingFinished",_renderOnEditingFinished->getValue() );
-    settings.setValue( "ExtraPluginsPaths", _extraPluginPaths->getValue().c_str() );
-    settings.setValue( "PreferBundledPlugins", _preferBundledPlugins->getValue() );
-    settings.setValue( "LoadBundledPlugins", _loadBundledPlugins->getValue() );
-    settings.setValue( "HostName",_hostName->getValue().c_str() );
-    settings.endGroup();
-
-    settings.beginGroup("OpenColorIO");
-    std::string configList = _customOcioConfigFile->getValue();
-    if ( !configList.empty() ) {
-        settings.setValue( "OCIOConfigFile", configList.c_str() );
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i].get());
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i].get());
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i].get());
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i].get());
+        const std::string& name = knobs[i]->getName();
+        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
+            if (isString) {
+                settings.setValue(dimensionName.c_str(), QVariant(isString->getValue(j).c_str()));
+            } else if (isInt) {
+                if (isChoice) {
+                    ///For choices,serialize the choice name instead
+                    int index = isChoice->getValue(j);
+                    const std::vector<std::string>& entries = isChoice->getEntries();
+                    assert((int)entries.size() > index);
+                    settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                } else {
+                    settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
+                }
+            } else if (isDouble) {
+                settings.setValue(dimensionName.c_str(), QVariant(isDouble->getValue(j)));
+            } else if (isBool) {
+                settings.setValue(dimensionName.c_str(), QVariant(isBool->getValue(j)));
+            } else {
+                assert(false);
+            }
+        }
     }
-    settings.setValue( "OCIOConfig", _ocioConfigKnob->getValue() );
-    settings.endGroup();
-
-    settings.beginGroup("Caching");
-    settings.setValue( "MaximumRAMUsagePercentage", _maxRAMPercent->getValue() );
-    settings.setValue( "MaximumPlaybackRAMUsage", _maxPlayBackPercent->getValue() );
-    settings.setValue( "MaximumDiskSizeUsage", _maxDiskCacheGB->getValue() );
-    settings.setValue( "UnreachableRAMPercentage", _unreachableRAMPercent->getValue() );
-    settings.endGroup();
-
-    settings.beginGroup("Viewers");
-    settings.setValue( "ByteTextures", _texturesMode->getValue() );
-    settings.setValue( "TilesPowerOf2", _powerOf2Tiling->getValue() );
-    settings.setValue( "CheckerboardTileSize", _checkerboardTileSize->getValue() );
-    settings.setValue("CheckerboardColor1_r", _checkerboardColor1->getValue(0));
-    settings.setValue("CheckerboardColor1_g", _checkerboardColor1->getValue(1));
-    settings.setValue("CheckerboardColor1_b", _checkerboardColor1->getValue(2));
-    settings.setValue("CheckerboardColor1_a", _checkerboardColor1->getValue(3));
-    settings.setValue("CheckerboardColor2_r", _checkerboardColor2->getValue(0));
-    settings.setValue("CheckerboardColor2_g", _checkerboardColor2->getValue(1));
-    settings.setValue("CheckerboardColor2_b", _checkerboardColor2->getValue(2));
-    settings.setValue("CheckerboardColor2_a", _checkerboardColor2->getValue(3));
-    settings.endGroup();
-
-    settings.beginGroup("Nodegraph");
-    settings.setValue( "SnapToNode",_snapNodesToConnections->getValue() );
-    settings.setValue( "UseBWIcons", _useBWIcons->getValue() );
-    settings.setValue( "ConnectionHints",_useNodeGraphHints->getValue() );
-    settings.setValue( "MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue() );
-    settings.setValue( "DisconnectedArrowLength", _disconnectedArrowLength->getValue() );
-    settings.setValue( "DefaultNodeColor_r", _defaultNodeColor->getValue(0) );
-    settings.setValue( "DefaultNodeColor_g", _defaultNodeColor->getValue(1) );
-    settings.setValue( "DefaultNodeColor_b", _defaultNodeColor->getValue(2) );
-    settings.setValue( "DefaultSelectedNodeColor_r", _defaultSelectedNodeColor->getValue(0) );
-    settings.setValue( "DefaultSelectedNodeColor_g", _defaultSelectedNodeColor->getValue(1) );
-    settings.setValue( "DefaultSelectedNodeColor_b", _defaultSelectedNodeColor->getValue(2) );
-    settings.setValue( "DefaultBackdropColor_r", _defaultBackdropColor->getValue(0) );
-    settings.setValue( "DefaultBackdropColor_g", _defaultBackdropColor->getValue(1) );
-    settings.setValue( "DefaultBackdropColor_b", _defaultBackdropColor->getValue(2) );
-
-    settings.setValue( "DefaultGeneratorColor_r", _defaultGeneratorColor->getValue(0) );
-    settings.setValue( "DefaultGeneratorColor_g", _defaultGeneratorColor->getValue(1) );
-    settings.setValue( "DefaultGeneratorColor_b", _defaultGeneratorColor->getValue(2) );
-
-    settings.setValue( "DefaultReaderColor_r", _defaultReaderColor->getValue(0) );
-    settings.setValue( "DefaultReaderColor_g", _defaultReaderColor->getValue(1) );
-    settings.setValue( "DefaultReaderColor_b", _defaultReaderColor->getValue(2) );
-
-    settings.setValue( "DefaultWriterColor_r", _defaultWriterColor->getValue(0) );
-    settings.setValue( "DefaultWriterColor_g", _defaultWriterColor->getValue(1) );
-    settings.setValue( "DefaultWriterColor_b", _defaultWriterColor->getValue(2) );
-
-    settings.setValue( "DefaultColorGroupColor_r", _defaultColorGroupColor->getValue(0) );
-    settings.setValue( "DefaultColorGroupColor_g", _defaultColorGroupColor->getValue(1) );
-    settings.setValue( "DefaultColorGroupColor_b", _defaultColorGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultFilterGroupColor_r", _defaultFilterGroupColor->getValue(0) );
-    settings.setValue( "DefaultFilterGroupColor_g", _defaultFilterGroupColor->getValue(1) );
-    settings.setValue( "DefaultFilterGroupColor_b", _defaultFilterGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultTransformGroupColor_r", _defaultTransformGroupColor->getValue(0) );
-    settings.setValue( "DefaultTransformGroupColor_g", _defaultTransformGroupColor->getValue(1) );
-    settings.setValue( "DefaultTransformGroupColor_b", _defaultTransformGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultTimeGroupColor_r", _defaultTimeGroupColor->getValue(0) );
-    settings.setValue( "DefaultTimeGroupColor_g", _defaultTimeGroupColor->getValue(1) );
-    settings.setValue( "DefaultTimeGroupColor_b", _defaultTimeGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultDrawGroupColor_r", _defaultDrawGroupColor->getValue(0) );
-    settings.setValue( "DefaultDrawGroupColor_g", _defaultDrawGroupColor->getValue(1) );
-    settings.setValue( "DefaultDrawGroupColor_b", _defaultDrawGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultKeyerGroupColor_r", _defaultKeyerGroupColor->getValue(0) );
-    settings.setValue( "DefaultKeyerGroupColor_g", _defaultKeyerGroupColor->getValue(1) );
-    settings.setValue( "DefaultKeyerGroupColor_b", _defaultKeyerGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultChannelGroupColor_r", _defaultChannelGroupColor->getValue(0) );
-    settings.setValue( "DefaultChannelGroupColor_g", _defaultChannelGroupColor->getValue(1) );
-    settings.setValue( "DefaultChannelGroupColor_b", _defaultChannelGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultMergeGroupColor_r", _defaultMergeGroupColor->getValue(0) );
-    settings.setValue( "DefaultMergeGroupColor_g", _defaultMergeGroupColor->getValue(1) );
-    settings.setValue( "DefaultMergeGroupColor_b", _defaultMergeGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultViewsGroupColor_r", _defaultViewsGroupColor->getValue(0) );
-    settings.setValue( "DefaultViewsGroupColor_g", _defaultViewsGroupColor->getValue(1) );
-    settings.setValue( "DefaultViewsGroupColor_b", _defaultViewsGroupColor->getValue(2) );
-
-    settings.setValue( "DefaultDeepGroupColor_r", _defaultDeepGroupColor->getValue(0) );
-    settings.setValue( "DefaultDeepGroupColor_g", _defaultDeepGroupColor->getValue(1) );
-    settings.setValue( "DefaultDeepGroupColor_b", _defaultDeepGroupColor->getValue(2) );
-
-    settings.endGroup();
-
-    settings.beginGroup(PLUGIN_GROUP_IMAGE_READERS);
-
-
-    for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        settings.setValue( _readersMapping[i]->getDescription().c_str(),_readersMapping[i]->getValue() );
-    }
-    settings.endGroup();
-
-    settings.beginGroup(PLUGIN_GROUP_IMAGE_WRITERS);
-    for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        settings.setValue( _writersMapping[i]->getDescription().c_str(),_writersMapping[i]->getValue() );
-    }
-    settings.endGroup();
 } // saveSettings
 
 void
@@ -872,327 +771,53 @@ Settings::restoreSettings()
 {
     _restoringSettings = true;
     _wereChangesMadeSinceLastSave = false;
-
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    settings.beginGroup("General");
-    if ( settings.contains("CheckUpdates") ) {
-        _checkForUpdates->setValue(settings.value("CheckUpdates").toBool(), 0);
-    }
-    if ( settings.contains("AutoSaveDelay") ) {
-        _autoSaveDelay->setValue(settings.value("AutoSaveDelay").toInt(),0);
-    }
-    if ( settings.contains("LinearColorPickers") ) {
-        _linearPickers->setValue(settings.value("LinearColorPickers").toBool(),0);
-    }
-    if ( settings.contains("Number of threads") ) {
-        _numberOfThreads->setValue(settings.value("Number of threads").toInt(),0);
-    }
-    if ( settings.contains("RenderInSeparateProcess") ) {
-        _renderInSeparateProcess->setValue(settings.value("RenderInSeparateProcess").toBool(),0);
-    }
-    if ( settings.contains("AutoPreviewDefault") ) {
-        _autoPreviewEnabledForNewProjects->setValue(settings.value("AutoPreviewDefault").toBool(),0);
-    }
-    if ( settings.contains("AutoProjectFormat") ) {
-        _firstReadSetProjectFormat->setValue(settings.value("AutoProjectFormat").toBool(), 0);
-    }
-    if ( settings.contains("FixRelativeFilePaths") ) {
-        _fixPathsOnProjectPathChanged->setValue(settings.value("FixRelativeFilePaths").toBool(), 0);
-    }
-    if ( settings.contains("MaxPanelsOpened") ) {
-        _maxPanelsOpened->setValue(settings.value("MaxPanelsOpened").toInt(), 0);
-    }
-    if ( settings.contains("UseCursorPosIncrements") ) {
-        _useCursorPositionIncrements->setValue(settings.value("UseCursorPosIncrements").toBool(), 0);
-    }
-    if ( settings.contains("DefaultLayoutFile") ) {
-        _defaultLayoutFile->setValue(settings.value("DefaultLayoutFile").toString().toStdString(), 0);
-    }
-    if ( settings.contains("RenderOnEditingFinished") ) {
-        _renderOnEditingFinished->setValue(settings.value("RenderOnEditingFinished").toBool(), 0);
-    }
-
-    if ( settings.contains("ExtraPluginsPaths") ) {
-        _extraPluginPaths->setValue(settings.value("ExtraPluginsPaths").toString().toStdString(),0);
-    }
-    if ( settings.contains("PreferBundledPlugins") ) {
-        _preferBundledPlugins->setValue(settings.value("PreferBundledPlugins").toBool(),0);
-    }
-    if ( settings.contains("LoadBundledPlugins") ) {
-        _loadBundledPlugins->setValue(settings.value("LoadBundledPlugins").toBool(), 0);
-    }
-    if ( settings.contains("HostName") ) {
-        _hostName->setValue(settings.value("HostName").toString().toStdString(), 0);
-    }
-    settings.endGroup();
-
-    settings.beginGroup("OpenColorIO");
-    if ( settings.contains("OCIOConfigFile") ) {
-        _customOcioConfigFile->setValue(settings.value("OCIOConfigFile").toString().toStdString(),0);
-    }
-    if ( settings.contains("OCIOConfig") ) {
-        int activeIndex = settings.value("OCIOConfig").toInt();
-        if ( activeIndex < (int)_ocioConfigKnob->getEntries().size() ) {
-            _ocioConfigKnob->setValue(activeIndex,0);
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i].get());
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i].get());
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i].get());
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i].get());
+        const std::string& name = knobs[i]->getName();
+        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
+            QString qDimName(dimensionName.c_str());
+            if (settings.contains(qDimName)) {
+                if (isString) {
+                    isString->setValue(settings.value(qDimName).toString().toStdString(), j);
+                } else if (isInt) {
+                    if (isChoice) {
+                        ///For choices,serialize the choice name instead
+                        std::string value = settings.value(qDimName).toString().toStdString();
+                        const std::vector<std::string>& entries = isChoice->getEntries();
+                        int found = -1;
+                        for (U32 k = 0; k < entries.size(); ++k) {
+                            if (entries[k] == value) {
+                                found = (int)k;
+                                break;
+                            }
+                        }
+                        if (found >= 0) {
+                            isChoice->setValue(found, j);
+                        }
+                    } else {
+                        isInt->setValue(settings.value(qDimName).toInt(), j);
+                    }
+                } else if (isDouble) {
+                    isDouble->setValue(settings.value(qDimName).toDouble(), j);
+                } else if (isBool) {
+                    isBool->setValue(settings.value(qDimName).toBool(), j);
+                } else {
+                    assert(false);
+                }
+            }
         }
-    } else {
+    }
+    if ( !settings.contains("OCIOConfig") ) {
         ///Load even though there's no settings!
         tryLoadOpenColorIOConfig();
     }
-    settings.endGroup();
-
-    settings.beginGroup("Caching");
-    if ( settings.contains("MaximumRAMUsagePercentage") ) {
-        _maxRAMPercent->setValue(settings.value("MaximumRAMUsagePercentage").toInt(),0);
-    }
-    if ( settings.contains("MaximumPlaybackRAMUsage") ) {
-        _maxPlayBackPercent->setValue(settings.value("MaximumPlaybackRAMUsage").toInt(),0);
-    }
-    if ( settings.contains("MaximumDiskSizeUsage") ) {
-        _maxDiskCacheGB->setValue(settings.value("MaximumDiskSizeUsage").toInt(),0);
-    }
-    if ( settings.contains("UnreachableRAMPercentage") ) {
-        _unreachableRAMPercent->setValue(settings.value("UnreachableRAMPercentage").toInt(), 0);
-    }
-    settings.endGroup();
-
-    settings.beginGroup("Viewers");
-    if ( settings.contains("ByteTextures") ) {
-        _texturesMode->setValue(settings.value("ByteTextures").toInt(),0);
-    }
-    if ( settings.contains("TilesPowerOf2") ) {
-        _powerOf2Tiling->setValue(settings.value("TilesPowerOf2").toInt(),0);
-    }
-    if (settings.contains("CheckerboardTileSize")) {
-        _checkerboardTileSize->setValue(settings.value("CheckerboardTileSize").toInt(), 0);
-    }
-    if (settings.contains("CheckerboardColor1_r")) {
-        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_r").toDouble(), 0);
-    }
-    if (settings.contains("CheckerboardColor1_g")) {
-        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_g").toDouble(), 1);
-    }
-    if (settings.contains("CheckerboardColor1_b")) {
-        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_b").toDouble(), 2);
-    }
-    if (settings.contains("CheckerboardColor1_a")) {
-        _checkerboardColor1->setValue(settings.value("CheckerboardColor1_a").toDouble(), 3);
-    }
-    if (settings.contains("CheckerboardColor2_r")) {
-        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_r").toDouble(), 0);
-    }
-    if (settings.contains("CheckerboardColor2_g")) {
-        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_g").toDouble(), 1);
-    }
-    if (settings.contains("CheckerboardColor2_b")) {
-        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_b").toDouble(), 2);
-    }
-    if (settings.contains("CheckerboardColor2_a")) {
-        _checkerboardColor2->setValue(settings.value("CheckerboardColor2_a").toDouble(), 3);
-    }
-    settings.endGroup();
-
-    settings.beginGroup("Nodegraph");
-    if ( settings.contains("SnapToNode") ) {
-        _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
-    }
-    if ( settings.contains("UseBWIcons") ) {
-        _useBWIcons->setValue(settings.value("UseBWIcons").toBool(), 0);
-    }
-    if ( settings.contains("ConnectionHints") ) {
-        _useNodeGraphHints->setValue(settings.value("ConnectionHints").toBool(), 0);
-    }
-    if ( settings.contains("MaximumUndoRedoNodeGraph") ) {
-        _maxUndoRedoNodeGraph->setValue(settings.value("MaximumUndoRedoNodeGraph").toInt(), 0);
-    }
-    if ( settings.contains("DisconnectedArrowLength") ) {
-        _disconnectedArrowLength->setValue(settings.value("DisconnectedArrowLength").toInt(), 0);
-    }
-    if ( settings.contains("DefaultNodeColor_r") ) {
-        _defaultNodeColor->setValue(settings.value("DefaultNodeColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultNodeColor_g") ) {
-        _defaultNodeColor->setValue(settings.value("DefaultNodeColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultNodeColor_b") ) {
-        _defaultNodeColor->setValue(settings.value("DefaultNodeColor_b").toDouble(), 2);
-    }
-    if ( settings.contains("DefaultSelectedNodeColor_r") ) {
-        _defaultSelectedNodeColor->setValue(settings.value("DefaultSelectedNodeColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultSelectedNodeColor_g") ) {
-        _defaultSelectedNodeColor->setValue(settings.value("DefaultSelectedNodeColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultSelectedNodeColor_b") ) {
-        _defaultSelectedNodeColor->setValue(settings.value("DefaultSelectedNodeColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultBackdropColor_r") ) {
-        _defaultBackdropColor->setValue(settings.value("DefaultBackdropColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultBackdropColor_g") ) {
-        _defaultBackdropColor->setValue(settings.value("DefaultBackdropColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultBackdropColor_b") ) {
-        _defaultBackdropColor->setValue(settings.value("DefaultBackdropColor_b").toDouble(), 2);
-    }
-
-    //////Default group colors
-    if ( settings.contains("DefaultGeneratorColor_r") ) {
-        _defaultGeneratorColor->setValue(settings.value("DefaultGeneratorColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultGeneratorColor_g") ) {
-        _defaultGeneratorColor->setValue(settings.value("DefaultGeneratorColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultGeneratorColor_b") ) {
-        _defaultGeneratorColor->setValue(settings.value("DefaultGeneratorColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultReaderColor_r") ) {
-        _defaultReaderColor->setValue(settings.value("DefaultReaderColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultReaderColor_g") ) {
-        _defaultReaderColor->setValue(settings.value("DefaultReaderColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultReaderColor_b") ) {
-        _defaultReaderColor->setValue(settings.value("DefaultReaderColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultWriterColor_r") ) {
-        _defaultWriterColor->setValue(settings.value("DefaultWriterColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultWriterColor_g") ) {
-        _defaultWriterColor->setValue(settings.value("DefaultWriterColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultWriterColor_b") ) {
-        _defaultWriterColor->setValue(settings.value("DefaultWriterColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultColorGroupColor_r") ) {
-        _defaultColorGroupColor->setValue(settings.value("DefaultColorGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultColorGroupColor_g") ) {
-        _defaultColorGroupColor->setValue(settings.value("DefaultColorGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultColorGroupColor_b") ) {
-        _defaultColorGroupColor->setValue(settings.value("DefaultColorGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultFilterGroupColor_r") ) {
-        _defaultFilterGroupColor->setValue(settings.value("DefaultFilterGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultFilterGroupColor_g") ) {
-        _defaultFilterGroupColor->setValue(settings.value("DefaultFilterGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultFilterGroupColor_b") ) {
-        _defaultFilterGroupColor->setValue(settings.value("DefaultFilterGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultTransformGroupColor_r") ) {
-        _defaultTransformGroupColor->setValue(settings.value("DefaultTransformGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultTransformGroupColor_g") ) {
-        _defaultTransformGroupColor->setValue(settings.value("DefaultTransformGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultTransformGroupColor_b") ) {
-        _defaultTransformGroupColor->setValue(settings.value("DefaultTransformGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultTimeGroupColor_r") ) {
-        _defaultTimeGroupColor->setValue(settings.value("DefaultTimeGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultTimeGroupColor_g") ) {
-        _defaultTimeGroupColor->setValue(settings.value("DefaultTimeGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultTimeGroupColor_b") ) {
-        _defaultTimeGroupColor->setValue(settings.value("DefaultTimeGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultDrawGroupColor_r") ) {
-        _defaultDrawGroupColor->setValue(settings.value("DefaultDrawGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultDrawGroupColor_g") ) {
-        _defaultDrawGroupColor->setValue(settings.value("DefaultDrawGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultDrawGroupColor_b") ) {
-        _defaultDrawGroupColor->setValue(settings.value("DefaultDrawGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultKeyerGroupColor_r") ) {
-        _defaultKeyerGroupColor->setValue(settings.value("DefaultKeyerGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultKeyerGroupColor_g") ) {
-        _defaultKeyerGroupColor->setValue(settings.value("DefaultKeyerGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultKeyerGroupColor_b") ) {
-        _defaultKeyerGroupColor->setValue(settings.value("DefaultKeyerGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultChannelGroupColor_r") ) {
-        _defaultChannelGroupColor->setValue(settings.value("DefaultChannelGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultChannelGroupColor_g") ) {
-        _defaultChannelGroupColor->setValue(settings.value("DefaultChannelGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultChannelGroupColor_b") ) {
-        _defaultChannelGroupColor->setValue(settings.value("DefaultChannelGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultMergeGroupColor_r") ) {
-        _defaultMergeGroupColor->setValue(settings.value("DefaultMergeGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultMergeGroupColor_g") ) {
-        _defaultMergeGroupColor->setValue(settings.value("DefaultMergeGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultMergeGroupColor_b") ) {
-        _defaultMergeGroupColor->setValue(settings.value("DefaultMergeGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultViewsGroupColor_r") ) {
-        _defaultViewsGroupColor->setValue(settings.value("DefaultViewsGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultViewsGroupColor_g") ) {
-        _defaultViewsGroupColor->setValue(settings.value("DefaultViewsGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultViewsGroupColor_b") ) {
-        _defaultViewsGroupColor->setValue(settings.value("DefaultViewsGroupColor_b").toDouble(), 2);
-    }
-
-    if ( settings.contains("DefaultDeepGroupColor_r") ) {
-        _defaultDeepGroupColor->setValue(settings.value("DefaultDeepGroupColor_r").toDouble(), 0);
-    }
-    if ( settings.contains("DefaultDeepGroupColor_g") ) {
-        _defaultDeepGroupColor->setValue(settings.value("DefaultDeepGroupColor_g").toDouble(), 1);
-    }
-    if ( settings.contains("DefaultDeepGroupColor_b") ) {
-        _defaultDeepGroupColor->setValue(settings.value("DefaultDeepGroupColor_b").toDouble(), 2);
-    }
-
-    settings.endGroup();
-
-    settings.beginGroup(PLUGIN_GROUP_IMAGE_READERS);
-    for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        QString format = _readersMapping[i]->getDescription().c_str();
-        if ( settings.contains(format) ) {
-            int index = settings.value(format).toInt();
-            if ( index < (int)_readersMapping[i]->getEntries().size() ) {
-                _readersMapping[i]->setValue(index,0);
-            }
-        }
-    }
-    settings.endGroup();
-
-    settings.beginGroup(PLUGIN_GROUP_IMAGE_WRITERS);
-    for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        QString format = _writersMapping[i]->getDescription().c_str();
-        if ( settings.contains(format) ) {
-            int index = settings.value(format).toInt();
-            if ( index < (int)_writersMapping[i]->getEntries().size() ) {
-                _writersMapping[i]->setValue(index,0);
-            }
-        }
-    }
-    settings.endGroup();
     _restoringSettings = false;
 } // restoreSettings
 
