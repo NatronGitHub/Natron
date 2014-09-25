@@ -1266,9 +1266,7 @@ Settings::onKnobValueChanged(KnobI* k,
                              SequenceTime /*time*/)
 {
     _wereChangesMadeSinceLastSave = true;
-    if ( _restoringSettings && ( ( k == _maxDiskCacheGB.get() ) || ( k == _maxRAMPercent.get() ) || ( k == _maxPlayBackPercent.get() ) ) ) {
-        return;
-    }
+
     if ( k == _texturesMode.get() ) {
         std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
@@ -1293,12 +1291,18 @@ Settings::onKnobValueChanged(KnobI* k,
             }
         }
     } else if ( k == _maxDiskCacheGB.get() ) {
-        appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheSize() );
+        if (!_restoringSettings) {
+            appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheSize() );
+        }
     } else if ( k == _maxRAMPercent.get() ) {
-        appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
+        if (!_restoringSettings) {
+            appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
+        }
         setCachingLabels();
     } else if ( k == _maxPlayBackPercent.get() ) {
-        appPTR->setPlaybackCacheMaximumSize( getRamPlaybackMaximumPercent() );
+        if (!_restoringSettings) {
+            appPTR->setPlaybackCacheMaximumSize( getRamPlaybackMaximumPercent() );
+        }
         setCachingLabels();
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
