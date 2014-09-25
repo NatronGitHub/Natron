@@ -1117,7 +1117,9 @@ ViewerGL::paintGL()
     } // glPushAttrib(GL_COLOR_BUFFER_BIT);
     glPopAttrib();
 
-
+    ///Unbind render textures for overlays
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
     glCheckError();
     if (_imp->overlay) {
         drawOverlay(_imp->displayingImageMipMapLevel);
@@ -1173,7 +1175,9 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     QPoint btmLeft( dispW.left(),dispW.bottom() );
     QPoint btmRight( dispW.right(),dispW.bottom() );
 
-#pragma message WARN("missing glPushAttrib/glPopAttrib")
+    glPushAttrib(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_BLEND);
+    
     glBegin(GL_LINES);
 
     glColor4f( _imp->displayWindowOverlayColor.redF(),
@@ -1238,6 +1242,8 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
             glCheckError();
         }
     }
+    
+    glPopAttrib();
 
     bool userRoIEnabled;
     {
@@ -1252,7 +1258,10 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     if (compOperator != OPERATOR_NONE) {
         drawWipeControl();
     }
+    
+    
     glCheckError();
+    glColor4f(1., 1., 1., 1.);
     _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
     glCheckError();
 
@@ -1277,6 +1286,10 @@ ViewerGL::drawUserRoI()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    glPushAttrib(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_BLEND);
+    
     glColor4f(0.9, 0.9, 0.9, 1.);
 
     double zoomScreenPixelWidth, zoomScreenPixelHeight;
@@ -1389,6 +1402,8 @@ ViewerGL::drawUserRoI()
     glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
 
     glEnd();
+    
+    glPopAttrib();
 } // drawUserRoI
 
 void
@@ -1655,7 +1670,10 @@ ViewerGL::drawPersistentMessage()
         textPos = _imp->zoomCtx.toZoomCoordinates(20, offset);
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
-#pragma message WARN("missing glPushAttrib/glPopAttrib")
+    
+    glPushAttrib(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_BLEND);
+
     if (_imp->persistentMessageType == 1) { // error
         glColor4f(0.5,0.,0.,1.);
     } else { // warning
@@ -1674,8 +1692,8 @@ ViewerGL::drawPersistentMessage()
         textPos.setY(textPos.y() - metrics.height() * 2 * zoomScreenPixelHeight);
     }
     glCheckError();
-    //reseting color for next pass
-    glColor4f(1., 1., 1., 1.);
+
+    glPopAttrib();
 } // drawPersistentMessage
 
 void
@@ -3316,7 +3334,6 @@ ViewerGL::renderText(double x,
         return;
     }
 
-#pragma message WARN("missing glPushAttrib/glPopAttrib")
     glMatrixMode (GL_PROJECTION);
     glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();
