@@ -836,7 +836,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             ClickableLabel* label = new ClickableLabel("",page->second.tab);
 
 
-            if (ret->showDescriptionLabel() && label) {
+            if (ret->showDescriptionLabel() && !knob->getDescription().empty() && label) {
                 label->setText_overload( QString(QString( ret->getKnob()->getDescription().c_str() ) + ":") );
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             }
@@ -953,7 +953,7 @@ DockablePanelPrivate::addPage(const QString & name)
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
     tabLayout->setContentsMargins(3, 0, 0, 0);
-    tabLayout->setSpacing(0); // unfortunately, this leaves extra space when parameters are hidden
+    tabLayout->setSpacing(3); // unfortunately, this leaves extra space when parameters are hidden
     tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
     tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);

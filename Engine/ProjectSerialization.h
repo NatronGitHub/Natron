@@ -26,7 +26,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/version.hpp>
 
 #include "Global/GitVersion.h"
-
+#include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/Project.h"

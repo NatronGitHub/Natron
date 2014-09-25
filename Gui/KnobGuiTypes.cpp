@@ -2312,6 +2312,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
+        _label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
@@ -2997,7 +2998,7 @@ String_KnobGui::showDescriptionLabel() const
     } else {
         return true;
     }*/
-    return true;
+    return !_knob->getDescription().empty();
 }
 
 void
