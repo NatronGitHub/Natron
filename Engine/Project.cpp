@@ -54,7 +54,7 @@ static std::string getUserName()
 #ifdef __NATRON_WIN32__
     char user_name[UNLEN+1];
     DWORD user_name_size = sizeof(user_name);
-    GetUserName(user_name, &user_name_size))
+    GetUserName(user_name, &user_name_size);
     return std::string(user_name);
 #elif defined(__NATRON_UNIX__)
     struct passwd *passwd;
