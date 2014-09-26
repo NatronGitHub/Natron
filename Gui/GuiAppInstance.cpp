@@ -486,8 +486,8 @@ GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer,
             Natron::errorDialog( writer->getName(), tr("Error while starting rendering").toStdString() );
         }
     } else {
-        writer->renderFullSequence(NULL);
         _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, writer);
+		writer->renderFullSequence(NULL);
     }
 } // startRenderingFullSequence
 
