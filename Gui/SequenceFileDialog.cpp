@@ -1853,15 +1853,7 @@ SequenceFileDialog::filesToSave()
 {
     assert(_dialogMode == SAVE_DIALOG);
 
-    std::string ret =  _selectionLineEdit->text().toStdString();
-    if (_relativePathsAllowed) {
-        std::string varName,varPath;
-        bool relative = getRelativeChoiceProjectPath(varName, varPath);
-        if (relative) {
-            Natron::Project::makeRelativeToVariable(varName, varPath, ret);
-        }
-    }
-    return ret;
+    return _selectionLineEdit->text().toStdString();
 }
 
 QDir
