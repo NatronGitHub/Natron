@@ -202,22 +202,7 @@ struct DockablePanelPrivate
                                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
 };
 
-static QPixmap
-getColorButtonDefaultPixmap()
-{
-    QImage img(32,32,QImage::Format_ARGB32);
-    QColor gray(Qt::gray);
 
-    img.fill( gray.rgba() );
-    QPainter p(&img);
-    QPen pen;
-    pen.setColor(Qt::black);
-    pen.setWidth(2);
-    p.setPen(pen);
-    p.drawLine(0, 0, 31, 31);
-
-    return QPixmap::fromImage(img);
-}
 
 DockablePanel::DockablePanel(Gui* gui
                              ,
@@ -346,8 +331,14 @@ DockablePanel::DockablePanel(Gui* gui
             } else {
                 r = g = b = 0.6;
             }
+            
+            
             _imp->_currentColor.setRgbF( Natron::clamp(r), Natron::clamp(g), Natron::clamp(b) );
-            _imp->_colorButton = new Button(QIcon( getColorButtonDefaultPixmap() ),"",_imp->_headerWidget);
+            QPixmap p(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+            p.fill(_imp->_currentColor);
+
+            
+            _imp->_colorButton = new Button(QIcon(p),"",_imp->_headerWidget);
             _imp->_colorButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
             _imp->_colorButton->setToolTip( Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                         "By default the color of the node is the one set in the "
