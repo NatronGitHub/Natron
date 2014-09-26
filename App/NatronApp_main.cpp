@@ -44,13 +44,13 @@ main(int argc,
     if (isBackground) {
         if ( projectName.isEmpty() ) {
             ///Autobackground without a project file name is not correct
-            AppManager::printUsage();
+            AppManager::printUsage(argv[0]);
 
             return 1;
         }
         AppManager manager;
         if ( !manager.load(argc,argv,projectName,writers,mainProcessServerName) ) {
-            AppManager::printUsage();
+            AppManager::printUsage(argv[0]);
 
             return 1;
         } else {

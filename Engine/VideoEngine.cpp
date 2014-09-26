@@ -576,7 +576,8 @@ VideoEngine::iterateKernel(bool singleThreaded)
                    && ( _currentRunArgs._frameRequestIndex == 1) )
 
                  || ( _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
-                 || ( ( appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN) && appPTR->hasAbortAnyProcessingBeenCalled() ) ) {
+                 || ( ( appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN ||
+                       appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) && appPTR->hasAbortAnyProcessingBeenCalled() ) ) {
                 return;
             }
         }

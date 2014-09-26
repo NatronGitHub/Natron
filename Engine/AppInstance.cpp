@@ -138,7 +138,7 @@ AppInstance::load(const QString & projectName,
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
         settings.beginGroup("General");
         bool checkUpdates = true;
-        if ( !settings.contains("CheckUpdates") ) {
+        if ( !settings.contains("checkForUpdates") ) {
             Natron::StandardButton reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                   "on launch of the application ?");
             if (reply == Natron::No) {
@@ -152,11 +152,13 @@ AppInstance::load(const QString & projectName,
     }
 
     ///if the app is a background project autorun and the project name is empty just throw an exception.
-    if ( (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN) && projectName.isEmpty() ) {
+    if ( (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN ||
+          appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) && projectName.isEmpty() ) {
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
-    if (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN) {
+    if (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN ||
+        appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) {
         QString realProjectName = projectName;
         int lastSep = realProjectName.lastIndexOf( QDir::separator() );
         if (lastSep == -1) {

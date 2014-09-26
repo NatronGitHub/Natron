@@ -129,7 +129,12 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             }
         }
         if (projectKnobs[i] == envVars) {
-            autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+            
+            ///For APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI don't change the project path since it is controlled
+            ///by the main GUI process
+            if (appPTR->getAppType() != AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) {
+                autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+            }
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
         }
 

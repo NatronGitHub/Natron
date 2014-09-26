@@ -79,6 +79,8 @@ public:
 
         APP_BACKGROUND_AUTO_RUN, //< a background AppInstance that will launch a project and render it. If projectName is empty or
                                  //writers is empty, it doesn't make sense to call AppInstance with this parameter.
+        
+        APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI, //same as APP_BACKGROUND_AUTO_RUN but a bg process launched by GUI of a main process
 
         APP_GUI //< a GUI AppInstance, the end-user can interact with it.
     };
@@ -115,7 +117,7 @@ public:
 
     AppManager::AppType getAppType() const;
     static void printBackGroundWelcomeMessage();
-    static void printUsage();
+    static void printUsage(const std::string& programName);
 
     bool isLoaded() const;
 
