@@ -427,98 +427,96 @@ Settings::initializeKnobs()
     _defaultReaderColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_READERS,3);
     _defaultReaderColor->setName("readerColor");
     _defaultReaderColor->setAnimationEnabled(false);
-    _defaultReaderColor->setHintToolTip("The default color used for newly created reader nodes.");
+    _defaultReaderColor->setHintToolTip("The color used for newly created Reader nodes.");
     _nodegraphTab->addKnob(_defaultReaderColor);
 
     _defaultWriterColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
     _defaultWriterColor->setName("writerColor");
     _defaultWriterColor->setAnimationEnabled(false);
-    _defaultWriterColor->setHintToolTip("The default color used for newly created writer nodes.");
+    _defaultWriterColor->setHintToolTip("The color used for newly created Writer nodes.");
     _nodegraphTab->addKnob(_defaultWriterColor);
 
     _defaultGeneratorColor =  Natron::createKnob<Color_Knob>(this, "Generators",3);
     _defaultGeneratorColor->setName("generatorColor");
     _defaultGeneratorColor->setAnimationEnabled(false);
-    _defaultGeneratorColor->setHintToolTip("The default color used for newly created generator nodes.");
+    _defaultGeneratorColor->setHintToolTip("The color used for newly created Generator nodes.");
     _nodegraphTab->addKnob(_defaultGeneratorColor);
 
     _defaultColorGroupColor =  Natron::createKnob<Color_Knob>(this, "Color group",3);
     _defaultColorGroupColor->setName("colorNodesColor");
     _defaultColorGroupColor->setAnimationEnabled(false);
-    _defaultColorGroupColor->setHintToolTip("The default color used for newly created color processing nodes.");
+    _defaultColorGroupColor->setHintToolTip("The color used for newly created Color nodes.");
     _nodegraphTab->addKnob(_defaultColorGroupColor);
 
-    // TODO: fix strings below
     _defaultFilterGroupColor =  Natron::createKnob<Color_Knob>(this, "Filter group",3);
     _defaultFilterGroupColor->setName("filterNodesColor");
     _defaultFilterGroupColor->setAnimationEnabled(false);
-    _defaultFilterGroupColor->setHintToolTip("This is default color which filter nodes have when created.");
+    _defaultFilterGroupColor->setHintToolTip("The color used for newly created Filter nodes.");
     _nodegraphTab->addKnob(_defaultFilterGroupColor);
 
     _defaultTransformGroupColor =  Natron::createKnob<Color_Knob>(this, "Transform group",3);
     _defaultTransformGroupColor->setName("transformNodesColor");
     _defaultTransformGroupColor->setAnimationEnabled(false);
-    _defaultTransformGroupColor->setHintToolTip("This is default color which transform nodes have when created.");
+    _defaultTransformGroupColor->setHintToolTip("The color used for newly created Transform nodes.");
     _nodegraphTab->addKnob(_defaultTransformGroupColor);
 
     _defaultTimeGroupColor =  Natron::createKnob<Color_Knob>(this, "Time group",3);
     _defaultTimeGroupColor->setName("timeNodesColor");
     _defaultTimeGroupColor->setAnimationEnabled(false);
-    _defaultTimeGroupColor->setHintToolTip("This is default color which time processing nodes have when created.");
+    _defaultTimeGroupColor->setHintToolTip("The color used for newly created Time nodes.");
     _nodegraphTab->addKnob(_defaultTimeGroupColor);
 
     _defaultDrawGroupColor =  Natron::createKnob<Color_Knob>(this, "Draw group",3);
     _defaultDrawGroupColor->setName("drawNodesColor");
     _defaultDrawGroupColor->setAnimationEnabled(false);
-    _defaultDrawGroupColor->setHintToolTip("This is default color which draw nodes have when created.");
+    _defaultDrawGroupColor->setHintToolTip("The color used for newly created Draw nodes.");
     _nodegraphTab->addKnob(_defaultDrawGroupColor);
 
     _defaultKeyerGroupColor =  Natron::createKnob<Color_Knob>(this, "Keyer group",3);
     _defaultKeyerGroupColor->setName("keyerNodesColor");
     _defaultKeyerGroupColor->setAnimationEnabled(false);
-    _defaultKeyerGroupColor->setHintToolTip("This is default color which keying nodes have when created.");
+    _defaultKeyerGroupColor->setHintToolTip("The color used for newly created Keyer nodes.");
     _nodegraphTab->addKnob(_defaultKeyerGroupColor);
 
     _defaultChannelGroupColor =  Natron::createKnob<Color_Knob>(this, "Channel group",3);
     _defaultChannelGroupColor->setName("channelNodesColor");
     _defaultChannelGroupColor->setAnimationEnabled(false);
-    _defaultChannelGroupColor->setHintToolTip("This is default color which channel processing nodes have when created.");
+    _defaultChannelGroupColor->setHintToolTip("The color used for newly created Channel nodes.");
     _nodegraphTab->addKnob(_defaultChannelGroupColor);
 
     _defaultMergeGroupColor =  Natron::createKnob<Color_Knob>(this, "Merge group",3);
     _defaultMergeGroupColor->setName("defaultMergeColor");
     _defaultMergeGroupColor->setAnimationEnabled(false);
-    _defaultMergeGroupColor->setHintToolTip("This is default color which merge  nodes have when created.");
+    _defaultMergeGroupColor->setHintToolTip("The color used for newly created Merge nodes.");
     _nodegraphTab->addKnob(_defaultMergeGroupColor);
 
     _defaultViewsGroupColor =  Natron::createKnob<Color_Knob>(this, "Views group",3);
     _defaultViewsGroupColor->setName("defaultViewsColor");
     _defaultViewsGroupColor->setAnimationEnabled(false);
-    _defaultViewsGroupColor->setHintToolTip("This is default color which multi-view nodes have when created.");
+    _defaultViewsGroupColor->setHintToolTip("The color used for newly created Views nodes.");
     _nodegraphTab->addKnob(_defaultViewsGroupColor);
 
     _defaultDeepGroupColor =  Natron::createKnob<Color_Knob>(this, "Deep group",3);
     _defaultDeepGroupColor->setName("defaultDeepColor");
     _defaultDeepGroupColor->setAnimationEnabled(false);
-    _defaultDeepGroupColor->setHintToolTip("This is default color which deep compositing nodes have when created.");
+    _defaultDeepGroupColor->setHintToolTip("The color used for newly created Deep nodes.");
     _nodegraphTab->addKnob(_defaultDeepGroupColor);
 
     /////////// Caching tab
     _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
 
-    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching (% system total RAM)");
+    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum amount of RAM memory used for caching (% of total RAM)");
     _maxRAMPercent->setName("maxRAMPercent");
     _maxRAMPercent->setAnimationEnabled(false);
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
-    std::string ramHint("This setting indicates the percentage of the system's total RAM "
-                        NATRON_APPLICATION_NAME "'s caches are allowed to use."
-                        " Your system has ");
+    std::string ramHint("This setting indicates the percentage of the total RAM which can be used by the memory caches. "
+                        "This system has ");
     ramHint.append( printAsRAM( getSystemTotalRAM() ).toStdString() );
     ramHint.append(" of RAM.");
-    if ( isApplication32Bits() ) {
-        ramHint.append("\n The version of " NATRON_APPLICATION_NAME " you are running is 32 bits, that means the system's total RAM "
-                       "will be limited to 4Gib. In this case the percentage of RAM allowed will be min(4Gib,SystemtotalRAM) * MaxRamPercent.");
+    if ( isApplication32Bits() && getSystemTotalRAM() > 4ULL * 1024ULL * 1024ULL * 1024ULL) {
+        ramHint.append("\nThe version of " NATRON_APPLICATION_NAME " you are running is 32 bits, which means the available RAM "
+                       "is limited to 4GiB. The amount of RAM used for caching is 4GiB * MaxRamPercent.");
     }
 
     _maxRAMPercent->setHintToolTip(ramHint);
@@ -532,15 +530,13 @@ Settings::initializeKnobs()
     _maxRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_maxRAMLabel);
 
-    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage (% maximum RAM for caching");
+    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage (% of maximum RAM used for caching)");
     _maxPlayBackPercent->setName("maxPlaybackPercent");
     _maxPlayBackPercent->setAnimationEnabled(false);
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
-    _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the Maximum system's RAM for caching"
-                                        " dedicated for the playback cache. Normally you shouldn't change this value"
-                                        " as it is tuned automatically by the Maximum system's RAM for caching, but"
-                                        " this is made possible for convenience.");
+    _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the maximum RAM used for caching "
+                                        "dedicated to the playback cache. This is available for debugging purposes.");
     _maxPlayBackPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxPlayBackPercent);
 
@@ -551,20 +547,20 @@ Settings::initializeKnobs()
     _maxPlaybackLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_maxPlaybackLabel);
 
-    _unreachableRAMPercent = Natron::createKnob<Int_Knob>(this, "System RAM to keep free (% system total RAM)");
+    _unreachableRAMPercent = Natron::createKnob<Int_Knob>(this, "System RAM to keep free (% of total RAM)");
     _unreachableRAMPercent->setName("unreachableRAMPercent");
     _unreachableRAMPercent->setAnimationEnabled(false);
     _unreachableRAMPercent->setMinimum(0);
     _unreachableRAMPercent->setMaximum(90);
-    _unreachableRAMPercent->setHintToolTip("This determines how much system's RAM Natron's caches should keep free. "
-                                           "This overrides completely the 2 settings above in a sense that when falling "
-                                           "under that threshold Natron's caches will start recycling memory instead of growing "
-                                           "regardless of their size limit. "
-                                           "A reasonable value should be set for it allowing the caches to stay in physical RAM "
-                                           "and avoid being swapped-out on disk. This value should reflect the amount of memory "
+    _unreachableRAMPercent->setHintToolTip("This determines how much RAM should be kept free for other applications "
+                                           "running on the same system. "
+                                           "When this limit is reached, the caches start recycling memory instead of growing. "
+                                           //"A reasonable value should be set for it allowing the caches to stay in physical RAM " // users don't understand what swap is
+                                           //"and avoid being swapped-out on disk. "
+                                           "This value should reflect the amount of memory "
                                            "you want to keep available on your computer for other usage. "
-                                           "Failing to supply a good value will result in caches being swapped on disk "
-                                           "hence bad performances.");
+                                           "A low value may result in a massive slowdown and high disk usage."
+                                           );
     _unreachableRAMPercent->turnOffNewLine();
     _cachingTab->addKnob(_unreachableRAMPercent);
     _unreachableRAMLabel = Natron::createKnob<String_Knob>(this, "");
@@ -574,12 +570,12 @@ Settings::initializeKnobs()
     _unreachableRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_unreachableRAMLabel);
 
-    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GB)");
+    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GiB)");
     _maxDiskCacheGB->setName("maxDiskCache");
     _maxDiskCacheGB->setAnimationEnabled(false);
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setMaximum(100);
-    _maxDiskCacheGB->setHintToolTip("The maximum disk space the caches can use. (in GB)");
+    _maxDiskCacheGB->setHintToolTip("The maximum size that may be used by caches located on disk (in GiB)");
     _cachingTab->addKnob(_maxDiskCacheGB);
 
 
