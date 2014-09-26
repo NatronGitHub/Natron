@@ -315,7 +315,7 @@ protected:
     }
     
 
-    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
+    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool renderInSeparateProcess);
 
 private:
 

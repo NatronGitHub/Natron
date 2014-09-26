@@ -434,10 +434,9 @@ GuiAppInstance::setViewersCurrentView(int view)
 }
 
 void
-GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
+GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool renderInSeparateProcess)
 {
-    /*Start the renderer in a background process.*/
-    getProject()->autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
+   
 
 
     ///validate the frame range to render
@@ -470,7 +469,7 @@ GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
     }
 
 
-    if ( appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled() ) {
+    if ( renderInSeparateProcess ) {
         try {
             boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),writer) );
             QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
