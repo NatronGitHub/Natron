@@ -1804,11 +1804,20 @@ void
 Project::makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str)
 {
     
+    bool hasTrailingSep = !varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\');
     if (str.size() > varValue.size() && str.substr(0,varValue.size()) == varValue) {
-        if (!varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\')) {
+        if (hasTrailingSep) {
             str = '[' + varName + ']' + str.substr(varValue.size(),str.size());
         } else {
             str = '[' + varName + "]/" + str.substr(varValue.size() + 1,str.size());
+        }
+    } else {
+        QDir dir(varValue.c_str());
+        QString relative = dir.relativeFilePath(str.c_str());
+        if (hasTrailingSep) {
+            str = '[' + varName + ']' + relative.toStdString();
+        } else {
+            str = '[' + varName + "]/" + relative.toStdString();
         }
     }
 
