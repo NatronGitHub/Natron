@@ -475,6 +475,7 @@ GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
             boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),writer) );
             QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
             notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,process);
+            process->startProcess();
 
             {
                 QMutexLocker l(&_imp->_activeBgProcessesMutex);

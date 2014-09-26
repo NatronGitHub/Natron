@@ -35,6 +35,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
       ,_bgProcessInputSocket(0)
       ,_earlyCancel(false)
       ,_processLog()
+      ,_processArgs()
 {
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();
@@ -50,9 +51,8 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     _ipcServer->listen(serverName);
 
 
-    QStringList processArgs;
-    processArgs << projectPath << "-b" << "-w" << writer->getName().c_str();
-    processArgs << "--IPCpipe" << ( _ipcServer->fullServerName() );
+    _processArgs << projectPath << "-b" << "-w" << writer->getName().c_str();
+    _processArgs << "--IPCpipe" << ( _ipcServer->fullServerName() );
 
     ///connect the useful slots of the process
     QObject::connect( _process,SIGNAL( readyReadStandardOutput() ),this,SLOT( onStandardOutputBytesWritten() ) );
@@ -64,10 +64,10 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     ///start the process
     _processLog.push_back( "Starting background rendering: " + QCoreApplication::applicationFilePath() );
     _processLog.push_back(" ");
-    for (int i = 0; i < processArgs.size(); ++i) {
-        _processLog.push_back(processArgs[i] + " ");
+    for (int i = 0; i < _processArgs.size(); ++i) {
+        _processLog.push_back(_processArgs[i] + " ");
     }
-    _process->start(QCoreApplication::applicationFilePath(),processArgs);
+   
 }
 
 ProcessHandler::~ProcessHandler()
@@ -80,6 +80,12 @@ ProcessHandler::~ProcessHandler()
     delete _process;
     delete _ipcServer;
     delete _bgProcessInputSocket;
+}
+
+void
+ProcessHandler::startProcess()
+{
+     _process->start(QCoreApplication::applicationFilePath(),_processArgs);
 }
 
 const QString &
