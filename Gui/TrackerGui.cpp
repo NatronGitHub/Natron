@@ -231,8 +231,9 @@ TrackerGui::drawOverlays(double scaleX,
 
     _imp->viewer->getViewer()->getPixelScale(pixelScaleX, pixelScaleY);
 
-    glPushAttrib(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
     {
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
+
         ///For each instance: <pointer,selected ? >
         const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
         for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
@@ -256,6 +257,7 @@ TrackerGui::drawOverlays(double scaleX,
                     if (i == 0) {
                         // Draw a shadow for the cross hair
                         // shift by (1,1) pixel
+                        glMatrixMode(GL_PROJECTION);
                         glPushMatrix();
                         glTranslated(pixelScaleX, -pixelScaleY, 0);
                         glColor4d(0., 0., 0., 1.);
@@ -279,6 +281,7 @@ TrackerGui::drawOverlays(double scaleX,
                     glEnd();
 
                     if (i == 0) {
+                        glMatrixMode(GL_PROJECTION);
                         glPopMatrix();
                     }
                 }
@@ -298,6 +301,7 @@ TrackerGui::drawOverlays(double scaleX,
                 if (i == 0) {
                     // Draw a shadow for the cross hair
                     // shift by (1,1) pixel
+                    glMatrixMode(GL_PROJECTION);
                     glPushMatrix();
                     glTranslated(pixelScaleX, -pixelScaleY, 0);
                     glColor4d(0., 0., 0., 0.8);
@@ -321,15 +325,12 @@ TrackerGui::drawOverlays(double scaleX,
                 glEnd();
 
                 if (i == 0) {
+                    glMatrixMode(GL_PROJECTION);
                     glPopMatrix();
                 }
             }
         }
-        //glDisable(GL_LINE_SMOOTH);
-        //glDisable(GL_BLEND);
-        //glLineWidth(1.);
-    } // glPushAttrib(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
 } // drawOverlays
 
 bool

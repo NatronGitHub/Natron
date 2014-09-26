@@ -34,8 +34,9 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
 {
     GLuint savedTexture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
-    glPushAttrib(GL_ENABLE_BIT);
     {
+        GLProtectAttrib a(GL_ENABLE_BIT);
+
         glEnable(_target);
         glBindTexture (_target, _texID);
         if ( (texRect == _textureRect) && (_type == type) ) {
@@ -89,8 +90,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
             
             glCheckError();
         }
-    } // glPushAttrib(GL_ENABLE_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_ENABLE_BIT);
 } // fillOrAllocateTexture
 
 Texture::~Texture()

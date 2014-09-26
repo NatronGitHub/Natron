@@ -292,8 +292,9 @@ CurveGui::drawCurve(int curveIndex,
 
     const QColor & curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
+
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
         glPointSize(_thickness);
         glEnable(GL_BLEND);
@@ -380,16 +381,8 @@ CurveGui::drawCurve(int curveIndex,
                 glEnd();
             }
         }
+    } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
-        //glDisable(GL_LINE_SMOOTH);     // done by glPopAttrib(GL_LINE_BIT)
-        //glLineWidth(1.);               // done by glPopAttrib(GL_LINE_BIT)
-        //glDisable(GL_BLEND);           // done by glPopAttrib(GL_ENABLE_BIT)
-        //glDisable(GL_POINT_SMOOTH);    // done by glPopAttrib(GLPOINT_BIT)
-        //glPointSize(1.f);              // done by glPopAttrib(GL_POINT_BIT)
-        //reset back the color
-        //glColor4f(1.f, 1.f, 1.f, 1.f); // done by glPopAttrib(GL_CURRENT_BIT)
-    } // glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
-    glPopAttrib();
     glCheckError();
 } // drawCurve
 
@@ -729,8 +722,9 @@ CurveWidgetPrivate::drawSelectionRectangle()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
@@ -758,14 +752,8 @@ CurveWidgetPrivate::drawSelectionRectangle()
         glVertex2f( btmRight.x(),btmRight.y() );
         glEnd();
         
-        
-        //glDisable(GL_LINE_SMOOTH);
         glCheckError();
-        
-        //glLineWidth(1.);
-        //glColor4f(1., 1., 1., 1.);
-    } // glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
 void
@@ -813,43 +801,43 @@ CurveWidgetPrivate::drawTimelineMarkers()
     QPointF topLeft = zoomCtx.toZoomCoordinates(0,0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1,_widget->height() - 1);
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-    glColor4f(0.8,0.3,0.,1.);
+    {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
 
-    glBegin(GL_LINES);
-    glVertex2f( _timeline->leftBound(),btmRight.y() );
-    glVertex2f( _timeline->leftBound(),topLeft.y() );
-    glVertex2f( _timeline->rightBound(),btmRight.y() );
-    glVertex2f( _timeline->rightBound(),topLeft.y() );
-    glColor4f(0.95,0.58,0.,1.);
-    glVertex2f( _timeline->currentFrame(),btmRight.y() );
-    glVertex2f( _timeline->currentFrame(),topLeft.y() );
-    glEnd();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+        glColor4f(0.8,0.3,0.,1.);
 
-    glDisable(GL_LINE_SMOOTH);
+        glBegin(GL_LINES);
+        glVertex2f( _timeline->leftBound(),btmRight.y() );
+        glVertex2f( _timeline->leftBound(),topLeft.y() );
+        glVertex2f( _timeline->rightBound(),btmRight.y() );
+        glVertex2f( _timeline->rightBound(),topLeft.y() );
+        glColor4f(0.95,0.58,0.,1.);
+        glVertex2f( _timeline->currentFrame(),btmRight.y() );
+        glVertex2f( _timeline->currentFrame(),topLeft.y() );
+        glEnd();
 
+        glEnable(GL_POLYGON_SMOOTH);
+        glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
 
-    glEnable(GL_POLYGON_SMOOTH);
-    glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
+        assert(_timelineBtmPoly.size() == 3 && _timelineTopPoly.size() == 3);
 
-    assert(_timelineBtmPoly.size() == 3 && _timelineTopPoly.size() == 3);
+        glBegin(GL_POLYGON);
+        glVertex2f( _timelineBtmPoly.at(0).x(),_timelineBtmPoly.at(0).y() );
+        glVertex2f( _timelineBtmPoly.at(1).x(),_timelineBtmPoly.at(1).y() );
+        glVertex2f( _timelineBtmPoly.at(2).x(),_timelineBtmPoly.at(2).y() );
+        glEnd();
 
-    glBegin(GL_POLYGON);
-    glVertex2f( _timelineBtmPoly.at(0).x(),_timelineBtmPoly.at(0).y() );
-    glVertex2f( _timelineBtmPoly.at(1).x(),_timelineBtmPoly.at(1).y() );
-    glVertex2f( _timelineBtmPoly.at(2).x(),_timelineBtmPoly.at(2).y() );
-    glEnd();
-
-    glBegin(GL_POLYGON);
-    glVertex2f( _timelineTopPoly.at(0).x(),_timelineTopPoly.at(0).y() );
-    glVertex2f( _timelineTopPoly.at(1).x(),_timelineTopPoly.at(1).y() );
-    glVertex2f( _timelineTopPoly.at(2).x(),_timelineTopPoly.at(2).y() );
-    glEnd();
-
-    glDisable(GL_POLYGON_SMOOTH);
-    glPopAttrib();
+        glBegin(GL_POLYGON);
+        glVertex2f( _timelineTopPoly.at(0).x(),_timelineTopPoly.at(0).y() );
+        glVertex2f( _timelineTopPoly.at(1).x(),_timelineTopPoly.at(1).y() );
+        glVertex2f( _timelineTopPoly.at(2).x(),_timelineTopPoly.at(2).y() );
+        glEnd();
+        
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
 }
 
 void
@@ -912,8 +900,9 @@ CurveWidgetPrivate::drawScale()
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
 
-    glPushAttrib(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     {
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -975,12 +964,7 @@ CurveWidgetPrivate::drawScale()
                 }
             }
         }
-        
-        //glDisable(GL_BLEND);
-        //reset back the color
-        //glColor4f(1., 1., 1., 1.);
-    } // glPushAttrib(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 } // drawScale
 
 void
@@ -990,8 +974,9 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
@@ -1019,13 +1004,8 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(),std::min( _selectedKeyFramesCrossVertLine.p2().y(),topLeft.y() ) );
         glEnd();
         
-        //glDisable(GL_LINE_SMOOTH);
         glCheckError();
-        
-        //glLineWidth(1.);
-        //glColor4f(1., 1., 1., 1.);
-    }
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
 Curves::const_iterator
@@ -1949,20 +1929,37 @@ void
 CurveWidget::saveOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
-    
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
 
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushClientAttrib(GL_ALL_ATTRIB_BITS);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    // set defaults to work around OFX plugin bugs
+    glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glEnable(GL_TEXTURE_2D);					//Activate texturing
+    //glActiveTexture (GL_TEXTURE0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
 }
 
 void
 CurveWidget::restoreOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
-    
-    glPopAttrib();
-    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
 
+    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    //glActiveTexture(_imp->activeTexture);
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glPopClientAttrib();
+    glPopAttrib();
 }
 
 void
@@ -2001,47 +1998,53 @@ CurveWidget::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
     glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    assert( 0. < _imp->zoomCtx.factor() );
-    double zoomLeft, zoomRight, zoomBottom, zoomTop;
-    zoomLeft = _imp->zoomCtx.left();
-    zoomRight = _imp->zoomCtx.right();
-    zoomBottom = _imp->zoomCtx.bottom();
-    zoomTop = _imp->zoomCtx.top();
-    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        assert( 0. < _imp->zoomCtx.factor() );
+        double zoomLeft, zoomRight, zoomBottom, zoomTop;
+        zoomLeft = _imp->zoomCtx.left();
+        zoomRight = _imp->zoomCtx.right();
+        zoomBottom = _imp->zoomCtx.bottom();
+        zoomTop = _imp->zoomCtx.top();
+        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+            glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            return;
+        }
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glCheckError();
+
         glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
         glClear(GL_COLOR_BUFFER_BIT);
 
-        return;
-    }
-    glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
-    glCheckError();
+        _imp->drawScale();
 
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
+        _imp->drawBaseAxis();
 
-    glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
-    glClear(GL_COLOR_BUFFER_BIT);
+        if (_imp->_timelineEnabled) {
+            _imp->drawTimelineMarkers();
+        }
 
-    _imp->drawScale();
+        if (_imp->_drawSelectedKeyFramesBbox) {
+            _imp->drawSelectedKeyFramesBbox();
+        }
 
-    _imp->drawBaseAxis();
+        _imp->drawCurves();
 
-    if (_imp->_timelineEnabled) {
-        _imp->drawTimelineMarkers();
-    }
-
-    if (_imp->_drawSelectedKeyFramesBbox) {
-        _imp->drawSelectedKeyFramesBbox();
-    }
-
-
-    _imp->drawCurves();
-
-    if ( !_imp->_selectionRectangle.isNull() ) {
-        _imp->drawSelectionRectangle();
-    }
+        if ( !_imp->_selectionRectangle.isNull() ) {
+            _imp->drawSelectionRectangle();
+        }
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 }
 
 void
@@ -2059,22 +2062,23 @@ CurveWidget::renderText(double x,
         return;
     }
     glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glPushMatrix(); // save GL_PROJECTION
-    glLoadIdentity();
-    double h = (double)height();
-    double w = (double)width();
-    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-    glOrtho(0,w,0,h,-1,1);
-    glMatrixMode(GL_MODELVIEW);
-    QPointF pos = toWidgetCoordinates(x, y);
-    glCheckError();
-    _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
-    glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    glPopMatrix(); // restore GL_PROJECTION
-    glMatrixMode(GL_MODELVIEW);
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        double h = (double)height();
+        double w = (double)width();
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+        glOrtho(0,w,0,h,-1,1);
+
+        QPointF pos = toWidgetCoordinates(x, y);
+        glCheckError();
+        _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
 
 void

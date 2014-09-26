@@ -249,13 +249,14 @@ TimeLineGui::paintGL()
     double top = bottom +  h / (double)_imp->_zoomCtx.zoomFactor;
     double right = left +  (w / (double)_imp->_zoomCtx.zoomFactor);
 
-    glPushAttrib(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
     {
-        glMatrixMode (GL_MODELVIEW);
-        glPushMatrix();
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
+        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        glMatrixMode (GL_PROJECTION);
-        glPushMatrix();
+        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
         if ( (left == right) || (top == bottom) ) {
@@ -513,17 +514,7 @@ TimeLineGui::paintGL()
         }
         glEnd();
         glCheckErrorIgnoreOSXBug();
-        
-        //glDisable(GL_LINE_SMOOTH);
-        //glLineWidth(1.);
-        //glDisable(GL_BLEND);
-        //glColor4f(1.,1.,1.,1.);
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-    }
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
 
     glCheckError();
 } // paintGL
@@ -541,23 +532,24 @@ TimeLineGui::renderText(double x,
     if ( text.isEmpty() ) {
         return;
     }
-    glMatrixMode (GL_PROJECTION);
-    glPushMatrix(); // save GL_PROJECTION
-    glCheckError();
-    glLoadIdentity();
-    double h = (double)height();
-    double w = (double)width();
-    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-    glOrtho(0,w,0,h,-1,1);
-    glMatrixMode(GL_MODELVIEW);
-    QPointF pos = toWidgetCoordinates(x, y);
-    glCheckError();
-    _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
-    glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    glPopMatrix(); // restore GL_PROJECTION
-    glMatrixMode(GL_MODELVIEW);
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        glCheckError();
+        double h = (double)height();
+        double w = (double)width();
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+        glOrtho(0,w,0,h,-1,1);
+
+        QPointF pos = toWidgetCoordinates(x, y);
+        glCheckError();
+        _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
     glCheckError();
 }
 
