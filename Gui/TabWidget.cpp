@@ -301,7 +301,7 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
     /*Remove the container from everywhere*/
     _gui->unregisterSplitter(container);
     container->setParent(NULL);
-    delete container;
+    container->deleteLater();
 }
 
 void
