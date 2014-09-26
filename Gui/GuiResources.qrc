@@ -169,5 +169,7 @@
         <file>Resources/Images/checkerboard_on.png</file>
         <file>Resources/Images/zebra_off.png</file>
         <file>Resources/Images/zebra_on.png</file>
+        <file>Resources/Images/closeTab.png</file>
+        <file>Resources/Images/closeTab_hovered.png</file>
     </qresource>
 </RCC>

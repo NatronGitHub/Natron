@@ -1250,7 +1250,7 @@ Gui::restoreLayout(bool wipePrevious,
             }
             ///The window contains a splitter as central widget
             else if ( (*it)->child_asSplitter ) {
-                Splitter* centralWidget = new Splitter;
+                Splitter* centralWidget = new Splitter(this);
                 restoreSplitterRecursive(this,centralWidget, *(*it)->child_asSplitter);
                 mainWidget = centralWidget;
             }
