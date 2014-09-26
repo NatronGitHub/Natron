@@ -477,8 +477,10 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
     ///try to find a serialized value for this knob
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
+            
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
-            if ( knob->getIsPersistant() ) {
+            ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
+            //if ( knob->getIsPersistant() ) {
                 boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
                 
                 Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
@@ -506,7 +508,7 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
 
                 
                
-            }
+            //}
             break;
         }
     }

@@ -963,10 +963,7 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
         std::vector<std::string>::iterator it = std::find(_entries.begin(), _entries.end(), data->_choiceString);
         if ( it != _entries.end() ) {
             setValue(std::distance(_entries.begin(), it), 0);
-        } else {
-            // unlucky, restore default value
-            resetToDefaultValue(0);
-        }
+        } 
     }
     
 }
