@@ -558,7 +558,14 @@ QMenuBar
     background-color: %2;
 }
 
+QMenuBar::item
+{
+    color: %5;
+    background-color: %2;
+}
+
 QMenuBar::item:selected
 {
+	color: %5;
     background: %1;
 }
