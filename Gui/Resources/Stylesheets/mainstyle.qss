@@ -386,7 +386,7 @@ QTabBar::tab {
     border: 1px solid ;
     border-bottom-color: %2;
     min-width: 8ex;
-    padding: 0px;
+    padding: 2px;
     border-top-right-radius: 5px;
     border-top-left-radius: 5px;
 }
