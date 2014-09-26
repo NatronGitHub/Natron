@@ -21,6 +21,7 @@
 using namespace Natron;
 
 namespace {
+    // an RAII class to save OpenGL context
     class OGLContextSaver {
     public:
         OGLContextSaver(OverlaySupport* viewport)
