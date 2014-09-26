@@ -95,17 +95,17 @@ Settings::initializeKnobs()
     _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
     _linearPickers->setName("linearPickers");
     _linearPickers->setAnimationEnabled(false);
-    _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters will be converted"
-                                   " to linear before being fetched. Otherwise they will be in the same color-space "
-                                   " as the viewer they were picked from.");
+    _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters are linearized "
+                                   "before being fetched. Otherwise they are in the same colorspace "
+                                   "as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
 
-    _numberOfThreads = Natron::createKnob<Int_Knob>(this, "Number of render threads");
+    _numberOfThreads = Natron::createKnob<Int_Knob>(this, "Number of render threads (0=\"guess\")");
     _numberOfThreads->setName("noRenderThreads");
     _numberOfThreads->setAnimationEnabled(false);
     QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
-                                             "-1: Disable multi-threading totally (useful for debug) \n"
-                                             "0: Guess from the number of cores. The ideal threads count for your hardware is %1.").arg( QThread::idealThreadCount() );
+                                             "-1: Disable multithreading totally (useful for debugging) \n"
+                                             "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %1.").arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
     _numberOfThreads->setMinimum(-1);
@@ -115,34 +115,35 @@ Settings::initializeKnobs()
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
     _renderInSeparateProcess->setName("renderNewProcess");
     _renderInSeparateProcess->setAnimationEnabled(false);
-    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render (using the write nodes) in "
-                                             "a separate process. Disabling it is most helpful for the dev team.");
+    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " renders frames to disk in "
+                                             "a separate process (disabling it is only useful for debugging).");
     _generalTab->addKnob(_renderInSeparateProcess);
 
     _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
     _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
-    _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
-                                                      " will be enabled.");
+    _autoPreviewEnabledForNewProjects->setHintToolTip("If checked, then when creating a new project, the Auto-preview option"
+                                                      " is enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
 
 
     _firstReadSetProjectFormat = Natron::createKnob<Bool_Knob>(this, "First image read set project format");
     _firstReadSetProjectFormat->setName("autoProjectFormat");
     _firstReadSetProjectFormat->setAnimationEnabled(false);
-    _firstReadSetProjectFormat->setHintToolTip("If checked, the first image you read in the project will set the project format to the "
+    _firstReadSetProjectFormat->setHintToolTip("If checked, the first image you read in the project sets the project format to the "
                                                "image size.");
     _generalTab->addKnob(_firstReadSetProjectFormat);
     
     _fixPathsOnProjectPathChanged = Natron::createKnob<Bool_Knob>(this, "Auto fix relative file-paths");
     _fixPathsOnProjectPathChanged->setAnimationEnabled(false);
-    _fixPathsOnProjectPathChanged->setHintToolTip("If checked, when a project-path changes (either the name or the value pointed to), " NATRON_APPLICATION_NAME " will check all file-path parameters in the project and try to fix them.");
+    _fixPathsOnProjectPathChanged->setHintToolTip("If checked, when a project-path changes (either the name or the value pointed to), "
+                                                  NATRON_APPLICATION_NAME " checks all file-path parameters in the project and tries to fix them.");
     _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
     _generalTab->addKnob(_fixPathsOnProjectPathChanged);
     
-    _maxPanelsOpened = Natron::createKnob<Int_Knob>(this, "Maximum number of node settings panels opened");
+    _maxPanelsOpened = Natron::createKnob<Int_Knob>(this, "Maximum number of open settings panels (0=\"unlimited\")");
     _maxPanelsOpened->setName("maxPanels");
-    _maxPanelsOpened->setHintToolTip("This property holds the number of node settings pnaels that can be "
+    _maxPanelsOpened->setHintToolTip("This property holds the maximum number of settings panels that can be "
                                      "held by the properties dock at the same time."
                                      "The special value of 0 indicates there can be an unlimited number of panels opened.");
     _maxPanelsOpened->setAnimationEnabled(false);
@@ -151,42 +152,38 @@ Settings::initializeKnobs()
     _maxPanelsOpened->setMaximum(100);
     _generalTab->addKnob(_maxPanelsOpened);
 
-    _useCursorPositionIncrements = Natron::createKnob<Bool_Knob>(this, "Cursor position aware value fields");
+    _useCursorPositionIncrements = Natron::createKnob<Bool_Knob>(this, "Value increments based on cursor position");
     _useCursorPositionIncrements->setName("cursorPositionAwareFields");
     _useCursorPositionIncrements->setHintToolTip("When enabled, incrementing the value fields of parameters with the "
                                                  "mouse wheel or with arrow keys will increment the digits on the right "
                                                  "of the cursor. \n"
                                                  "When disabled, the value fields are incremented given what the plug-in "
                                                  "decided it should be. You can alter this increment by holding "
-                                                 "shift (x10) or control (/10) while incrementing.");
+                                                 "Shift (x10) or Control (/10) while incrementing.");
     _useCursorPositionIncrements->setAnimationEnabled(false);
     _generalTab->addKnob(_useCursorPositionIncrements);
 
     _defaultLayoutFile = Natron::createKnob<File_Knob>(this, "Default layout file");
     _defaultLayoutFile->setName("defaultLayout");
-    _defaultLayoutFile->setHintToolTip("When set, " NATRON_APPLICATION_NAME " will use the layout indicated in the file "
+    _defaultLayoutFile->setHintToolTip("When set, " NATRON_APPLICATION_NAME " uses the given layout file "
                                        "as default layout for new projects. You can export/import a layout to/from a file "
-                                       "from the Layout menu. If empty, the default layout of the application will be used.");
+                                       "from the Layout menu. If empty, the default application layout is used.");
     _defaultLayoutFile->setAnimationEnabled(false);
     _generalTab->addKnob(_defaultLayoutFile);
 
-    _renderOnEditingFinished = Natron::createKnob<Bool_Knob>(this, "Render on editing finished only");
+    _renderOnEditingFinished = Natron::createKnob<Bool_Knob>(this, "Refresh viewer only when editing is finished");
     _renderOnEditingFinished->setName("renderOnEditingFinished");
-    _renderOnEditingFinished->setHintToolTip("When checked, the render engine will run only when you finish editing "
-                                             "a curve or a parameter. For example, for curves editing, that is only when you release the button"
-                                             " of the mouse the render will be triggered."
-                                             "This also works for sliders and values of parameters."
-                                             " Note that this setting doesn't apply to roto splines editing.");
+    _renderOnEditingFinished->setHintToolTip("When checked, the viewer contents is updated only when parameters or curves editing is finished, "
+                                             "e.g. when releasing the mouse button. "
+                                             "This setting doesn't apply to roto splines editing.");
     _renderOnEditingFinished->setAnimationEnabled(false);
     _generalTab->addKnob(_renderOnEditingFinished);
     
-    _activateRGBSupport = Natron::createKnob<Bool_Knob>(this, "RGB support");
-    _activateRGBSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " will be able to process RGB opaque images and not "
-                                        "only RGBA images. However we found out that some plug-ins (not bundled with " NATRON_APPLICATION_NAME
-                                        " ) are not declaring correctly that "
-                                        "they do not support RGB images and as a result crash the whole application when providing them "
-                                        "with RGB data. Un-checking this option is a safe-mode that might avoid some crashs. "
-                                        "Changing this option requires a re-start of the application.");
+    _activateRGBSupport = Natron::createKnob<Bool_Knob>(this, "RGB components support");
+    _activateRGBSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to process images with only RGB components "
+                                        "(support for images with RGBA and Alpha components is always enabled). "
+                                        "Un-checking this option may prevent plugins that do not well support RGB components from crashing " NATRON_APPLICATION_NAME ". "
+                                        "Changing this option requires a restart of the application.");
     _activateRGBSupport->setAnimationEnabled(false);
     _activateRGBSupport->setName("rgbSupport");
     _generalTab->addKnob(_activateRGBSupport);
@@ -195,7 +192,7 @@ Settings::initializeKnobs()
 
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
     _extraPluginPaths->setName("extraPluginsSearchPaths");
-    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
+    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for plugins. "
                                                    "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
                                                    "The priority order for system-wide plugins, from high to low, is:\n"
                                                    "- plugins found in OFX_PLUGIN_PATH\n"
@@ -212,37 +209,37 @@ Settings::initializeKnobs()
 #endif
                                                    "\".\n"
                                                    "Plugins bundled with the binary distribution of Natron may have either "
-                                                   "higher or lower priority, depending on the \"Prefer bundled plug-ins over "
-                                                   "system-wide plug-ins\" setting.\n"
+                                                   "higher or lower priority, depending on the \"Prefer bundled plugins over "
+                                                   "system-wide plugins\" setting.\n"
                                                    "Any change will take effect on the next launch of " NATRON_APPLICATION_NAME ".") );
     _extraPluginPaths->setMultiPath(true);
     _generalTab->addKnob(_extraPluginPaths);
 
-    _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plug-ins");
+    _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plugins");
     _loadBundledPlugins->setName("useBundledPlugins");
-    _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will also use the plug-ins bundled "
+    _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " also uses the plugins bundled "
                                         "with the binary distribution.\n"
-                                        "When unchecked, only system-wide plug-ins will be loaded (more information can be "
+                                        "When unchecked, only system-wide plugins are loaded (more information can be "
                                         "found in the help for the \"Extra plugins search paths\" setting).");
     _loadBundledPlugins->setAnimationEnabled(false);
     _generalTab->addKnob(_loadBundledPlugins);
 
-    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer bundled plug-ins over system-wide plug-ins");
+    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer bundled plugins over system-wide plugins");
     _preferBundledPlugins->setName("preferBundledPlugins");
-    _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the "
-                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plug-ins.");
+    _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the "
+                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins.");
     _preferBundledPlugins->setAnimationEnabled(false);
     _generalTab->addKnob(_preferBundledPlugins);
 
 
     _hostName = Natron::createKnob<String_Knob>(this, "Host name");
     _hostName->setName("hostName");
-    _hostName->setHintToolTip("This is the name of the application as it appears to the OpenFX plug-ins. "
-                              "Changing it to the name of another application can help loading some plug-ins which "
-                              "restrict their usage to some particular application. This is kind of a hack and you shoud leave "
-                              "it to its original value, unless you know a plug-in that should load but doesn't. "
-                              "Changing this will take effect on the next application launch and only if you cleared "
-                              "the OpenFX plug-ins cache from the Cache menu. "
+    _hostName->setHintToolTip("This is the name of the OpenFX host as it appears to the OpenFX plugins. "
+                              "Changing it to the name of another application can help loading some plugins which "
+                              "restrict their usage to specific OpenFX hosts. You shoud leave "
+                              "this to its default value, unless you a specific plugin refuses to load or run. "
+                              "Changing this takes effect on the next application launch, and requires clearing "
+                              "the OpenFX plugins cache from the Cache menu. "
                               "Here is a list of known OpenFX hosts: \n"
                               "uk.co.thefoundry.nuke \n"
                               "com.eyeonline.Fusion \n"
@@ -257,7 +254,7 @@ Settings::initializeKnobs()
                               "IRIDAS Framecycler \n"
                               "Ramen \n"
                               "\n"
-                              "And finally the default host name being: \n"
+                              "The default host name is: \n"
                               NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _hostName->setAnimationEnabled(false);
     _generalTab->addKnob(_hostName);
@@ -289,20 +286,20 @@ Settings::initializeKnobs()
     configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
     _ocioConfigKnob->populateChoices(configs);
     _ocioConfigKnob->setDefaultValue(defaultIndex,0);
-    _ocioConfigKnob->setHintToolTip("Select the OpenColorIO config you would like to use globally for all "
-                                    "operators that use OpenColorIO. Note that changing it will set the OCIO "
-                                    "environment variable, hence any change to this parameter will be "
-                                    "taken into account on the next application launch. "
-                                    "When custom config is selected, you can use the custom OpenColorIO config file "
-                                    "setting to point to the config you would like to use.");
+    _ocioConfigKnob->setHintToolTip("Select the OpenColorIO configuration you would like to use globally for all "
+                                    "operators and plugins that use OpenColorIO, by setting the \"OCIO\" "
+                                    "environment variable. Only nodes created after changing this parameter will take "
+                                    "it into account, and it is better to restart the application after changing it. "
+                                    "When \"" NATRON_CUSTOM_OCIO_CONFIG_NAME "\" is selected, the "
+                                    "\"Custom OpenColorIO config file\" parameter is used.");
 
     ocioTab->addKnob(_ocioConfigKnob);
 
     _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setName("ocioCustomConfigFile");
     _customOcioConfigFile->setAllDimensionsEnabled(false);
-    _customOcioConfigFile->setHintToolTip("To use this, set the OpenColorIO config to custom config a point "
-                                          "to a custom OpenColorIO config file (.ocio).");
+    _customOcioConfigFile->setHintToolTip("OpenColorIO configuration file (*.ocio) to use when \"" NATRON_CUSTOM_OCIO_CONFIG_NAME "\" "
+                                          "is selected as the OpenColorIO config.");
     ocioTab->addKnob(_customOcioConfigFile);
 
     _viewersTab = Natron::createKnob<Page_Knob>(this, "Viewers");
@@ -313,25 +310,23 @@ Settings::initializeKnobs()
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
     textureModes.push_back("Byte");
-    helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
-                                      "by the software. Cached textures will be smaller in  the viewer cache.");
+    helpStringsTextureModes.push_back("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                      "by the CPU. As a results, the size of cached textures is smaller.");
     textureModes.push_back("16bits half-float");
     helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
     textureModes.push_back("32bits floating-point");
-    helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
-                                      "by the hardware using GLSL. Cached textures will be larger in the viewer cache.");
+    helpStringsTextureModes.push_back("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                      "by the GPU, using GLSL. As a results, the size of cached textures is larger.");
     _texturesMode->populateChoices(textureModes,helpStringsTextureModes);
-    _texturesMode->setHintToolTip("Bitdepth of the viewer textures used for rendering."
-                                  " Hover each option with the mouse for a more detailed comprehension.");
+    _texturesMode->setHintToolTip("Bit depth of the viewer textures used for rendering."
+                                  " Hover each option with the mouse for a detailed description.");
     _viewersTab->addKnob(_texturesMode);
 
     _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Viewer tile size is 2 to the power of...");
     _powerOf2Tiling->setName("viewerTiling");
-    _powerOf2Tiling->setHintToolTip("The power of 2 of the tiles size used by the Viewer to render."
-                                    " A high value means that the viewer will usually render big tiles, which means"
-                                    " you have good chances when panning/zooming to find an already rendered texture in the cache."
-                                    " On the other hand a small value means that the tiles will be closer to the real size of"
-                                    " images to be rendered and as a result of this there might be more cache misses." );
+    _powerOf2Tiling->setHintToolTip("The dimension of the viewer tiles is 2^n by 2^n (i.e. 256 by 256 pixels for n=8). "
+                                    "A high value means that the viewer renders large tiles, so that "
+                                    "rendering is done less often, but on larger areas." );
     _powerOf2Tiling->setMinimum(4);
     _powerOf2Tiling->setDisplayMinimum(4);
     _powerOf2Tiling->setMaximum(9);
@@ -344,19 +339,19 @@ Settings::initializeKnobs()
     _checkerboardTileSize->setName("checkerboardTileSize");
     _checkerboardTileSize->setMinimum(1);
     _checkerboardTileSize->setAnimationEnabled(false);
-    _checkerboardTileSize->setHintToolTip("The size in pixel of 1 tile of the checkerboard in pixels.");
+    _checkerboardTileSize->setHintToolTip("The size (in screen pixels) of one tile of the checkerboard.");
     _viewersTab->addKnob(_checkerboardTileSize);
     
     _checkerboardColor1 = Natron::createKnob<Color_Knob>(this, "Checkerboard color 1",4);
     _checkerboardColor1->setName("checkerboardColor1");
     _checkerboardColor1->setAnimationEnabled(false);
-    _checkerboardColor1->setHintToolTip("The first color used by the checkerboard");
+    _checkerboardColor1->setHintToolTip("The first color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor1);
     
     _checkerboardColor2 = Natron::createKnob<Color_Knob>(this, "Checkerboard color 2",4);
     _checkerboardColor2->setName("checkerboardColor2");
     _checkerboardColor2->setAnimationEnabled(false);
-    _checkerboardColor2->setHintToolTip("The second color used by the checkerboard");
+    _checkerboardColor2->setHintToolTip("The second color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor2);
     
     
@@ -365,14 +360,14 @@ Settings::initializeKnobs()
 
     _snapNodesToConnections = Natron::createKnob<Bool_Knob>(this, "Snap to node");
     _snapNodesToConnections->setName("enableSnapToNode");
-    _snapNodesToConnections->setHintToolTip("When moving nodes on the node graph, snap them to positions where it lines them up "
+    _snapNodesToConnections->setHintToolTip("When moving nodes on the node graph, snap to positions where they are lined up "
                                             "with the inputs and output nodes.");
     _snapNodesToConnections->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_snapNodesToConnections);
 
     _useBWIcons = Natron::createKnob<Bool_Knob>(this, "Use black & white toolbutton icons");
     _useBWIcons->setName("useBwIcons");
-    _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar will be in black and white. Changing this takes "
+    _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar are greyscale. Changing this takes "
                                 "effect upon the next launch of the application.");
     _useBWIcons->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_useBWIcons);
@@ -380,8 +375,8 @@ Settings::initializeKnobs()
     _useNodeGraphHints = Natron::createKnob<Bool_Knob>(this, "Use connection hints");
     _useNodeGraphHints->setName("useHints");
     _useNodeGraphHints->setHintToolTip("When checked, moving a node which is not connected to anything to arrows "
-                                       "nearby will display a hint for possible connections. Releasing the mouse on such a "
-                                       "hint will perform the connection for you.");
+                                       "nearby displays a hint for possible connections. Releasing the mouse when "
+                                       "hints are shown connects the node.");
     _useNodeGraphHints->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_useNodeGraphHints);
 
@@ -391,9 +386,9 @@ Settings::initializeKnobs()
     _maxUndoRedoNodeGraph->disableSlider();
     _maxUndoRedoNodeGraph->setMinimum(0);
     _maxUndoRedoNodeGraph->setMaximum(100);
-    _maxUndoRedoNodeGraph->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME
-                                          " will remember. Past this limit, older events will be deleted permanantly "
-                                          " allowing to re-use the RAM for better purposes since Nodes can hold a significant amount of RAM. \n"
+    _maxUndoRedoNodeGraph->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME " "
+                                          "remembers. Past this limit, older events will be deleted forever, "
+                                          "allowing to re-use the RAM for other purposes. \n"
                                           "Changing this value will clear the undo/redo stack.");
     _nodegraphTab->addKnob(_maxUndoRedoNodeGraph);
 
@@ -409,14 +404,14 @@ Settings::initializeKnobs()
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
     _defaultNodeColor->setAnimationEnabled(false);
-    _defaultNodeColor->setHintToolTip("This is default color which nodes have when created.");
+    _defaultNodeColor->setHintToolTip("The default color used for newly created nodes.");
 
     _nodegraphTab->addKnob(_defaultNodeColor);
 
     _defaultSelectedNodeColor = Natron::createKnob<Color_Knob>(this, "Default selected node color",3);
     _defaultSelectedNodeColor->setName("selectedNodeColor");
     _defaultSelectedNodeColor->setAnimationEnabled(false);
-    _defaultSelectedNodeColor->setHintToolTip("This is default color which the selected nodes have.");
+    _defaultSelectedNodeColor->setHintToolTip("The default selection color used for newly created nodes.");
 
     _nodegraphTab->addKnob(_defaultSelectedNodeColor);
 
@@ -424,7 +419,7 @@ Settings::initializeKnobs()
     _defaultBackdropColor =  Natron::createKnob<Color_Knob>(this, "Default backdrop color",3);
     _defaultBackdropColor->setName("backdropColor");
     _defaultBackdropColor->setAnimationEnabled(false);
-    _defaultBackdropColor->setHintToolTip("This is default color which backdrop nodes have when created.");
+    _defaultBackdropColor->setHintToolTip("The default color used for newly created backdrop nodes.");
     _nodegraphTab->addKnob(_defaultBackdropColor);
 
     ///////////////////DEFAULT GROUP COLORS
@@ -432,27 +427,28 @@ Settings::initializeKnobs()
     _defaultReaderColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_READERS,3);
     _defaultReaderColor->setName("readerColor");
     _defaultReaderColor->setAnimationEnabled(false);
-    _defaultReaderColor->setHintToolTip("This is default color which reader nodes have when created.");
+    _defaultReaderColor->setHintToolTip("The default color used for newly created reader nodes.");
     _nodegraphTab->addKnob(_defaultReaderColor);
 
     _defaultWriterColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
     _defaultWriterColor->setName("writerColor");
     _defaultWriterColor->setAnimationEnabled(false);
-    _defaultWriterColor->setHintToolTip("This is default color which writer nodes have when created.");
+    _defaultWriterColor->setHintToolTip("The default color used for newly created writer nodes.");
     _nodegraphTab->addKnob(_defaultWriterColor);
 
     _defaultGeneratorColor =  Natron::createKnob<Color_Knob>(this, "Generators",3);
     _defaultGeneratorColor->setName("generatorColor");
     _defaultGeneratorColor->setAnimationEnabled(false);
-    _defaultGeneratorColor->setHintToolTip("This is default color which generator nodes have when created.");
+    _defaultGeneratorColor->setHintToolTip("The default color used for newly created generator nodes.");
     _nodegraphTab->addKnob(_defaultGeneratorColor);
 
     _defaultColorGroupColor =  Natron::createKnob<Color_Knob>(this, "Color group",3);
     _defaultColorGroupColor->setName("colorNodesColor");
     _defaultColorGroupColor->setAnimationEnabled(false);
-    _defaultColorGroupColor->setHintToolTip("This is default color which color processing nodes have when created.");
+    _defaultColorGroupColor->setHintToolTip("The default color used for newly created color processing nodes.");
     _nodegraphTab->addKnob(_defaultColorGroupColor);
 
+    // TODO: fix strings below
     _defaultFilterGroupColor =  Natron::createKnob<Color_Knob>(this, "Filter group",3);
     _defaultFilterGroupColor->setName("filterNodesColor");
     _defaultFilterGroupColor->setAnimationEnabled(false);

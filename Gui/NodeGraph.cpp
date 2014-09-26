@@ -522,11 +522,11 @@ NodeGraph::onProjectNodesCleared()
         nodesCpy = _imp->_nodes;
     }
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
-        deleteNodePermanantly( *it );
+        deleteNodepluginsly( *it );
     }
 
     while ( !_imp->_nodesTrash.empty() ) {
-        deleteNodePermanantly( *( _imp->_nodesTrash.begin() ) );
+        deleteNodepluginsly( *( _imp->_nodesTrash.begin() ) );
     }
     _imp->_selection.nodes.clear();
     _imp->_magnifiedNode.reset();
@@ -1879,7 +1879,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
-                                                                                                  "remove these expressions permanantly "
+                                                                                                  "remove these expressions pluginsly "
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString() );
@@ -1938,7 +1938,7 @@ NodeGraph::deleteSelection()
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
                                                                               "or links. Deleting this node will "
-                                                                              "remove these expressions permanantly "
+                                                                              "remove these expressions pluginsly "
                                                                               "and undoing the action will not recover "
                                                                               "them. Do you wish to continue ?")
                                                                            .toStdString() );
@@ -2968,7 +2968,7 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 }
 
 void
-NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
+NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
 {
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
 
@@ -3023,7 +3023,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
             break;
         }
     }
-} // deleteNodePermanantly
+} // deleteNodepluginsly
 
 void
 NodeGraph::invalidateAllNodesParenting()

@@ -108,7 +108,7 @@ public:
 
     void setUndoRedoStackLimit(int limit);
 
-    void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
+    void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
 
     NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization & serialization);
 

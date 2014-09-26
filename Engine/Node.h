@@ -118,7 +118,7 @@ public:
     void restoreKnobsLinks(const NodeSerialization & serialization,const std::vector<boost::shared_ptr<Natron::Node> > & allNodes);
 
     /*@brief Quit all processing done by all render instances of this node
-       This is called when the effect is about to be deleted permanantly
+       This is called when the effect is about to be deleted pluginsly
      */
     void quitAnyProcessing();
 
