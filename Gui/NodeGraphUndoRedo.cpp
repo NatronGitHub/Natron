@@ -157,7 +157,7 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
     if (_isUndone) {
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            _graph->deleteNodePermanantly(*it);
+            _graph->deleteNodepluginsly(*it);
         }
 
         for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
@@ -277,7 +277,7 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 {
     if (_isRedone) {
         for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            _graph->deleteNodePermanantly(it->node);
+            _graph->deleteNodepluginsly(it->node);
         }
 
         for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
@@ -1019,11 +1019,11 @@ LoadNodePresetsCommand::~LoadNodePresetsCommand()
 {
 //    if (_isUndone) {
 //        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _newChildren.begin(); it != _newChildren.end(); ++it) {
-//            (*it)->getDagGui()->deleteNodePermanantly(*it);
+//            (*it)->getDagGui()->deleteNodepluginsly(*it);
 //        }
 //    } else {
 //        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _oldChildren.begin(); it != _oldChildren.end(); ++it) {
-//            (*it)->getDagGui()->deleteNodePermanantly(*it);
+//            (*it)->getDagGui()->deleteNodepluginsly(*it);
 //        }
 //    }
 
