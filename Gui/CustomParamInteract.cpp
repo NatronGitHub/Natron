@@ -78,25 +78,30 @@ CustomParamInteract::paintGL()
     glCheckError();
 
     /*
-       http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
-       The GL_PROJECTION matrix will be an orthographic 2D view with -0.5,-0.5 at the bottom left and viewport width-0.5, viewport height-0.5 at the top right.
+     http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
+     The GL_PROJECTION matrix will be an orthographic 2D view with -0.5,-0.5 at the bottom left and viewport width-0.5, viewport height-0.5 at the top right.
 
-       The GL_MODELVIEW matrix will be the identity matrix.
+     The GL_MODELVIEW matrix will be the identity matrix.
      */
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix p(GL_PROJECTION);
 
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-0.5, width() - 0.5, -0.5, height() - 0.5, 1, -1);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-0.5, width() - 0.5, -0.5, height() - 0.5, 1, -1);
 
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
 
-    /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
-    OfxPointD scale;
-    scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    _imp->entryPoint->drawAction(time, scale);
-    glCheckError();
+        /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
+        OfxPointD scale;
+        scale.x = scale.y = 1.;
+        int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        _imp->entryPoint->drawAction(time, scale);
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
 
 void
@@ -168,20 +173,37 @@ void
 CustomParamInteract::saveOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
-    
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
 
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushClientAttrib(GL_ALL_ATTRIB_BITS);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    // set defaults to work around OFX plugin bugs
+    glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glEnable(GL_TEXTURE_2D);					//Activate texturing
+    //glActiveTexture (GL_TEXTURE0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
 }
 
 void
 CustomParamInteract::restoreOpenGLContext()
 {
     assert(QThread::currentThread() == qApp->thread());
-    
-    glPopAttrib();
-    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
 
+    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    //glActiveTexture(_imp->activeTexture);
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glPopClientAttrib();
+    glPopAttrib();
 }
 
 void

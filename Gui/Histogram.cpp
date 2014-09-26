@@ -653,6 +653,7 @@ Histogram::initializeGL()
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
 
+    // enable globally : no glPushAttrib()
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 
 
@@ -804,7 +805,6 @@ startRenderingTo(GLuint fboId,
 {
     glBindFramebuffer(GL_FRAMEBUFFER,fboId);
     glDrawBuffer(attachment);
-    glPushAttrib(GL_VIEWPORT_BIT | GL_COLOR_BUFFER_BIT);
     glViewport(0,0,w,h);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -818,7 +818,6 @@ startRenderingTo(GLuint fboId,
 static void
 stopRenderingTo()
 {
-    glPopAttrib();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
@@ -935,7 +934,7 @@ HistogramPrivate::computeHistogram(Histogram::DisplayMode channel)
 
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
 
-#pragma message WARN("glPushAttrib(), and save currently bound VA and Buffer")
+#pragma message WARN("TODO: ave currently bound VA, Buffer, and bound texture")
     /*binding the VAO holding managing the VBO*/
     glBindVertexArray(vaoID);
     /*binding the VBO sending vertices to the vertex shader*/
@@ -944,68 +943,77 @@ HistogramPrivate::computeHistogram(Histogram::DisplayMode channel)
     glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,0,0);
     /*enabling the VBO 0 of the VAO*/
     glEnableVertexAttribArray(0);
-    /*start rendering to the histogram texture held by the _fboHistogram*/
-    startRenderingTo(fbohistogram,attachment,256,1);
-    /*clearing out the texture from previous computations*/
-    glClearColor(0.f,0.f,0.f,0.f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    /*enabling blending to add up the colors in texels :
-       this results in pixels suming up */
-    glEnable(GL_BLEND);
-    glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);
-    glBlendFuncSeparate(GL_ONE,GL_ONE,GL_ONE,GL_ONE);
-    /*binding the input image*/
-    glActiveTexture(GL_TEXTURE0);
 
-    glBindTexture( GL_TEXTURE_RECTANGLE_ARB,leftImageTexture->getTexID() );
-    /*making current the shader computing the histogram*/
-    activateHistogramComputingShader(channel);
-    /*the number of vertices in the VBO*/
-    int vertexCount = leftImageTexture->w() * leftImageTexture->h();
-    /*sending vertices to the GPU, they're handled by the vertex shader*/
-    glDrawArrays(GL_POINTS,0,vertexCount);
-    /*stop computing*/
-    histogramComputingShader->release();
-    /*reset our context state*/
-    glDisable(GL_BLEND);
-    glBindVertexArray(0);
-    stopRenderingTo();
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_RECTANGLE_ARB, (GLint*)&savedTexture);
+    {
+        GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TRANSFORM_BIT | GL_VIEWPORT_BIT);
 
-    /*At this point we have the Histogram filled. From now on we can compute the maximum
-       of the histogram with parallel reductions. 4 passes are needed : 256 -> 64 ,
-       64 -> 16 , 16 -> 4, 4 -> 1
-       The last pass is done after the loop as it is done in a separate FBO.
-       ---------------------------------------------------------------------
-     ** One pass does the following :
-       - binds the fbo holding the I'th reduction.`
-       - activates the shader with in input the I-1'th texture, the one resulting
-       from the previous reduction.
-       - does the rendering to the I'th reduced texture.*/
-    GLuint inputTex = histogramTexture[channel];
-    for (unsigned int i = 0; i < 3; i++) {
-        int wTarget = (int)( 256.f / pow( 4.f,(float)(i + 1) ) );
-        startRenderingTo(fboReductions[i],GL_COLOR_ATTACHMENT0,wTarget,1);
-        histogramMaximumShader->bind();
+        /*start rendering to the histogram texture held by the _fboHistogram*/
+        startRenderingTo(fbohistogram,attachment,256,1); // modifies GL_TRANSFORM & GL_VIEWPORT
+
+        /*clearing out the texture from previous computations*/
+        glClearColor(0.f,0.f,0.f,0.f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        /*enabling blending to add up the colors in texels :
+         this results in pixels suming up */
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_ONE,GL_ONE,GL_ONE,GL_ONE);
+        /*binding the input image*/
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,inputTex);
-        histogramMaximumShader->setUniformValue("Tex",0);
-        textureMap_Polygon(0,0,wTarget,1,0,0,wTarget,1);
-        histogramMaximumShader->release();
+
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, leftImageTexture->getTexID());
+        /*making current the shader computing the histogram*/
+        activateHistogramComputingShader(channel);
+        /*the number of vertices in the VBO*/
+        int vertexCount = leftImageTexture->w() * leftImageTexture->h();
+        /*sending vertices to the GPU, they're handled by the vertex shader*/
+        glDrawArrays(GL_POINTS,0,vertexCount);
+        /*stop computing*/
+        histogramComputingShader->release();
+        /*reset our context state*/
+        glDisable(GL_BLEND);
+        glBindVertexArray(0);
         stopRenderingTo();
-        inputTex = histogramReductionsTexture[i];
-    }
-    /*This part is similar to the loop above, but it is a special case since
-       we do not render in a fboReductions but in the fboMaximum.
-       The color attachment might change if we need to compute 3 histograms
-       In this case only the red histogram is computed.*/
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,histogramReductionsTexture[2]);
-    histogramMaximumShader->bind();
-    histogramMaximumShader->setUniformValue("Tex",0);
-    startRenderingTo(fboMaximum,attachment,1,1);
-    textureMap_Polygon(0,0,1,1,0,0,1,1);
-    histogramMaximumShader->release();
-    stopRenderingTo();
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+
+        /*At this point we have the Histogram filled. From now on we can compute the maximum
+         of the histogram with parallel reductions. 4 passes are needed : 256 -> 64 ,
+         64 -> 16 , 16 -> 4, 4 -> 1
+         The last pass is done after the loop as it is done in a separate FBO.
+         ---------------------------------------------------------------------
+         ** One pass does the following :
+         - binds the fbo holding the I'th reduction.`
+         - activates the shader with in input the I-1'th texture, the one resulting
+         from the previous reduction.
+         - does the rendering to the I'th reduced texture.*/
+        GLuint inputTex = histogramTexture[channel];
+        for (unsigned int i = 0; i < 3; i++) {
+            int wTarget = (int)( 256.f / pow( 4.f,(float)(i + 1) ) );
+            startRenderingTo(fboReductions[i],GL_COLOR_ATTACHMENT0,wTarget,1);
+            histogramMaximumShader->bind();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB,inputTex);
+            histogramMaximumShader->setUniformValue("Tex",0);
+            textureMap_Polygon(0,0,wTarget,1,0,0,wTarget,1);
+            histogramMaximumShader->release();
+            stopRenderingTo();
+            inputTex = histogramReductionsTexture[i];
+        }
+        /*This part is similar to the loop above, but it is a special case since
+         we do not render in a fboReductions but in the fboMaximum.
+         The color attachment might change if we need to compute 3 histograms
+         In this case only the red histogram is computed.*/
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, histogramReductionsTexture[2]);
+        histogramMaximumShader->bind();
+        histogramMaximumShader->setUniformValue("Tex",0);
+        startRenderingTo(fboMaximum,attachment,1,1);
+        textureMap_Polygon(0,0,1,1,0,0,1,1);
+        histogramMaximumShader->release();
+        stopRenderingTo(); // modifies GL_TRANSFORM
+        glCheckError();
+    } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, savedTexture);
     glCheckError();
 } // computeHistogram
 
@@ -1074,40 +1082,45 @@ Histogram::paintGL()
         return;
     }
 
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    assert(_imp->zoomCtx.factor() > 0.);
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix p(GL_PROJECTION);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        assert(_imp->zoomCtx.factor() > 0.);
 
-    double zoomLeft = _imp->zoomCtx.left();
-    double zoomRight = _imp->zoomCtx.right();
-    double zoomBottom = _imp->zoomCtx.bottom();
-    double zoomTop = _imp->zoomCtx.top();
-    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+        double zoomLeft = _imp->zoomCtx.left();
+        double zoomRight = _imp->zoomCtx.right();
+        double zoomBottom = _imp->zoomCtx.bottom();
+        double zoomTop = _imp->zoomCtx.top();
+        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+            glClearColor(0,0,0,1);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            return;
+        }
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glCheckError();
+
+
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        return;
-    }
-    glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
-    glCheckError();
-
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
-
-    glClearColor(0,0,0,1);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glCheckErrorIgnoreOSXBug();
+        glCheckErrorIgnoreOSXBug();
 
 
-    _imp->drawScale();
+        _imp->drawScale();
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
-    _imp->drawHistogramCPU();
+        _imp->drawHistogramCPU();
 #endif
-    if (_imp->drawCoordinates) {
-        _imp->drawPicker();
-    }
-    glCheckError();
+        if (_imp->drawCoordinates) {
+            _imp->drawPicker();
+        }
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // paintGL
 
 void
@@ -1425,8 +1438,9 @@ HistogramPrivate::drawScale()
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
 
-    glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1490,11 +1504,7 @@ HistogramPrivate::drawScale()
                 }
             }
         }
-        //glDisable(GL_BLEND);
-        //reset back the color
-        //glColor4f(1., 1., 1., 1.);
-    } // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
 } // drawScale
 
@@ -1644,8 +1654,9 @@ HistogramPrivate::drawHistogramCPU()
     assert( QGLContext::currentContext() == widget->context() );
 
     glCheckError();
-    glPushAttrib(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+
         glEnable(GL_BLEND);
         glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
         glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
@@ -1719,11 +1730,7 @@ HistogramPrivate::drawHistogramCPU()
         }
         glEnd(); // GL_LINES
         glCheckErrorIgnoreOSXBug();
-        
-        //glDisable(GL_BLEND);
-        //glColor4f(1, 1, 1, 1);
-    } // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
 } // drawHistogramCPU
 
@@ -1745,22 +1752,22 @@ Histogram::renderText(double x,
     }
 
     glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glPushMatrix(); // save GL_PROJECTION
-    glLoadIdentity();
-    double h = (double)height();
-    double w = (double)width();
-    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-    glOrtho(0,w,0,h,-1,1);
-    glMatrixMode(GL_MODELVIEW);
-    QPointF pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
-    glCheckError();
-    _imp->textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
-    glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    glPopMatrix(); // restore GL_PROJECTION
-    glMatrixMode(GL_MODELVIEW);
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        double h = (double)height();
+        double w = (double)width();
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+        glOrtho(0,w,0,h,-1,1);
+
+        QPointF pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
+        glCheckError();
+        _imp->textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
     glCheckError();
 }
 

@@ -754,8 +754,9 @@ RotoGui::drawOverlays(double /*scaleX*/,
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     _imp->viewer->getViewportSize(viewportSize.first, viewportSize.second);
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
@@ -995,14 +996,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
             }
             glCheckError();
         }
-        
-        //glDisable(GL_LINE_SMOOTH);
-        //glDisable(GL_POINT_SMOOTH);
-        //glLineWidth(1.);
-        //glPointSize(1.);
-        //glDisable(GL_BLEND);
-    } // glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
     if ( _imp->rotoData->showCpsBbox && _imp->node->isSettingsPanelVisible() ) {
         _imp->drawSelectedCpsBBOX();
@@ -1017,6 +1011,8 @@ RotoGui::RotoGuiPrivate::drawArrow(double centerX,
                                    bool hovered,
                                    const std::pair<double,double> & pixelScale)
 {
+    GLProtectMatrix p(GL_PROJECTION); // or should it be GL_MODELVIEW?
+
     if (hovered) {
         glColor3f(0., 1., 0.);
     } else {
@@ -1027,7 +1023,8 @@ RotoGui::RotoGuiPrivate::drawArrow(double centerX,
     double arrowWidth = kTransformArrowWidth * pixelScale.second;
     double arrowHeadHeight = 4 * pixelScale.second;
 
-    glPushMatrix();
+
+    glMatrixMode(GL_PROJECTION); // or should it be GL_MODELVIEW?
     glTranslatef(centerX, centerY, 0.);
     glRotatef(rotate, 0., 0., 1.);
     QPointF bottom(0.,-arrowLenght);
@@ -1049,7 +1046,6 @@ RotoGui::RotoGuiPrivate::drawArrow(double centerX,
     glVertex2f(top.x() - arrowWidth, top.y() - arrowHeadHeight);
     glVertex2f(top.x() + arrowWidth, top.y() - arrowHeadHeight);
     glEnd();
-    glPopMatrix();
 }
 
 void
@@ -1059,6 +1055,8 @@ RotoGui::RotoGuiPrivate::drawBendedArrow(double centerX,
                                          bool hovered,
                                          const std::pair<double,double> & pixelScale)
 {
+    GLProtectMatrix p(GL_PROJECTION); // or should it be GL_MODELVIEW?
+
     if (hovered) {
         glColor3f(0., 1., 0.);
     } else {
@@ -1068,7 +1066,8 @@ RotoGui::RotoGuiPrivate::drawBendedArrow(double centerX,
     double arrowLenght =  kTransformArrowLenght * pixelScale.second;
     double arrowWidth = kTransformArrowWidth * pixelScale.second;
     double arrowHeadHeight = 4 * pixelScale.second;
-    glPushMatrix();
+
+    glMatrixMode(GL_PROJECTION); // or should it be GL_MODELVIEW?
     glTranslatef(centerX, centerY, 0.);
     glRotatef(rotate, 0., 0., 1.);
 
@@ -1092,8 +1091,6 @@ RotoGui::RotoGuiPrivate::drawBendedArrow(double centerX,
     glVertex2f(right.x(), right.y() - arrowWidth);
     glVertex2f(right.x(), right.y() + arrowWidth);
     glEnd();
-
-    glPopMatrix();
 }
 
 void
@@ -1103,8 +1100,9 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
 
     viewer->getPixelScale(pixelScale.first, pixelScale.second);
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
@@ -1212,13 +1210,7 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
                 drawBendedArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 90, hoverState == HOVERING_BBOX_BTM_LEFT, pixelScale);
             }
         }
-        //glPointSize(1.f);
-        //glLineWidth(1.f);
-        //glDisable(GL_LINE_SMOOTH);
-        //glDisable(GL_BLEND);
-        glColor4f(1., 1., 1., 1.);
-    } // glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
-    glPopAttrib();
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 } // drawSelectedCpsBBOX
 
 void

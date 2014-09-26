@@ -259,10 +259,10 @@ TextRenderer::renderText(float x,
 
     GLuint savedTexture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
     {
+        GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
+        GLProtectMatrix pr(GL_PROJECTION);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_TEXTURE_2D);
@@ -294,10 +294,7 @@ TextRenderer::renderText(float x,
             glTranslatef(c->w, 0, 0);
             glCheckError();
         }
-        //glColor4f(1., 1., 1., 1.);
-    } // glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
-    glPopAttrib();
-    glPopMatrix();
+    } // GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
     glBindTexture(GL_TEXTURE_2D, savedTexture);
 
     glCheckError();
