@@ -551,3 +551,14 @@ AnimatedCheckBox[dirty="true"]::indicator:checked{
 AnimatedCheckBox[dirty="true"]::indicator:unchecked{
     image: url(:/Resources/Images/checkbox_dirty_unchecked.png);
 }
+
+QMenuBar
+{
+    color: %5;
+    background-color: %2;
+}
+
+QMenuBar::item:selected
+{
+    background: %1;
+}
