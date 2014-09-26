@@ -719,7 +719,7 @@ Settings::setDefaultValues()
 
 #pragma message WARN("This is kinda a big hack to promote the OpenImageIO plug-in, we should use Tuttle's notation extension")
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        const std::vector<std::string> & entries = _readersMapping[i]->getEntries();
+        const std::vector<std::string>  entries = _readersMapping[i]->getEntries_mt_safe();
         for (U32 j = 0; j < entries.size(); ++j) {
             if ( QString( entries[j].c_str() ).contains("ReadOIIOOFX") ) {
                 _readersMapping[i]->setDefaultValue(j,0);
@@ -729,7 +729,7 @@ Settings::setDefaultValues()
     }
 
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        const std::vector<std::string> & entries = _writersMapping[i]->getEntries();
+        const std::vector<std::string>  entries = _writersMapping[i]->getEntries_mt_safe();
         for (U32 j = 0; j < entries.size(); ++j) {
             if ( QString( entries[j].c_str() ).contains("WriteOIIOOFX") ) {
                 _writersMapping[i]->setDefaultValue(j,0);
@@ -761,7 +761,7 @@ Settings::saveSettings()
                 if (isChoice) {
                     ///For choices,serialize the choice name instead
                     int index = isChoice->getValue(j);
-                    const std::vector<std::string>& entries = isChoice->getEntries();
+                    const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                     assert((int)entries.size() > index);
                     settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
                 } else {
@@ -802,7 +802,7 @@ Settings::restoreSettings()
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
-                        const std::vector<std::string>& entries = isChoice->getEntries();
+                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         int found = -1;
                         for (U32 k = 0; k < entries.size(); ++k) {
                             if (entries[k] == value) {
@@ -853,7 +853,7 @@ Settings::tryLoadOpenColorIOConfig()
         configFile = file.c_str();
     } else {
         ///try to load from the combobox
-        QString activeEntryText( _ocioConfigKnob->getActiveEntryText().c_str() );
+        QString activeEntryText( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
         QString configFileName = QString(activeEntryText + ".ocio");
         QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
         for (int i = 0; i < defaultConfigsPaths.size(); ++i) {
@@ -952,7 +952,7 @@ Settings::onKnobValueChanged(KnobI* k,
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
     } else if ( k == _ocioConfigKnob.get() ) {
-        if ( _ocioConfigKnob->getActiveEntryText() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) {
+        if ( _ocioConfigKnob->getActiveEntryText_mt_safe() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
             _customOcioConfigFile->setAllDimensionsEnabled(false);
@@ -1034,7 +1034,7 @@ Settings::getReaderPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         if (_readersMapping[i]->getDescription() == extension) {
-            const std::vector<std::string> & entries =  _readersMapping[i]->getEntries();
+            const std::vector<std::string> entries =  _readersMapping[i]->getEntries_mt_safe();
             int index = _readersMapping[i]->getValue();
             assert( index < (int)entries.size() );
 
@@ -1049,7 +1049,7 @@ Settings::getWriterPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
         if (_writersMapping[i]->getDescription() == extension) {
-            const std::vector<std::string> & entries =  _writersMapping[i]->getEntries();
+            const std::vector<std::string>  entries =  _writersMapping[i]->getEntries_mt_safe();
             int index = _writersMapping[i]->getValue();
             assert( index < (int)entries.size() );
 
@@ -1101,7 +1101,7 @@ void
 Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats)
 {
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        const std::vector<std::string> & entries = _readersMapping[i]->getEntries();
+        const std::vector<std::string>  entries = _readersMapping[i]->getEntries_mt_safe();
         int index = _readersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );
@@ -1114,7 +1114,7 @@ void
 Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* formats)
 {
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        const std::vector<std::string> & entries = _writersMapping[i]->getEntries();
+        const std::vector<std::string>  entries = _writersMapping[i]->getEntries_mt_safe();
         int index = _writersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );

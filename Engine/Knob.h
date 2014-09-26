@@ -1059,6 +1059,10 @@ public:
     std::vector<T> getValueForEachDimension_mt_safe_vector() const WARN_UNUSED_RETURN;
     std::list<T> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
 
+    /**
+     * @brief Get Default values
+     **/
+    std::vector<T> getDefaultValues_mt_safe() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Set a default value for the particular dimension.

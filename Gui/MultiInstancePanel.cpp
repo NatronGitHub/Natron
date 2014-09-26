@@ -142,7 +142,7 @@ struct MultiInstancePanelPrivate
         } else if (isChoice) {
             boost::shared_ptr<Choice_Knob> choice = Natron::createKnob<Choice_Knob>(publicInterface,
                                                                                     ref->getDescription(),ref->getDimension(),declaredByPlugin);
-            choice->populateChoices( isChoice->getEntries(),isChoice->getEntriesHelp() );
+            choice->populateChoices( isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe() );
             ret = choice;
         } else if (isString) {
             boost::shared_ptr<String_Knob> strKnob = Natron::createKnob<String_Knob>(publicInterface,

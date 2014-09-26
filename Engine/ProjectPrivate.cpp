@@ -108,9 +108,22 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     for (U32 i = 0; i < projectKnobs.size(); ++i) {
         ///try to find a serialized value for this knob
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
+            
             if ( (*it)->getName() == projectKnobs[i]->getName() ) {
                 if ( projectKnobs[i]->getIsPersistant() ) {
-                    projectKnobs[i]->clone( (*it)->getKnob() );
+                    
+                    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(projectKnobs[i].get());
+                    if (isChoice) {
+                        const TypeExtraData* extraData = (*it)->getExtraData();
+                        const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+                        assert(choiceData);
+                        
+                        Choice_Knob* serializedKnob = dynamic_cast<Choice_Knob*>((*it)->getKnob().get());
+                        assert(serializedKnob);
+                        isChoice->choiceRestoration(serializedKnob, choiceData);
+                    } else {
+                        projectKnobs[i]->clone( (*it)->getKnob() );
+                    }
                 }
                 break;
             }

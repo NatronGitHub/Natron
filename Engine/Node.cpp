@@ -480,17 +480,32 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
             if ( knob->getIsPersistant() ) {
                 boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
-                if (updateKnobGui) {
-                    knob->cloneAndUpdateGui(serializedKnob.get());
+                
+                Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
+                if (isChoice) {
+                    const TypeExtraData* extraData = (*it)->getExtraData();
+                    const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+                    assert(choiceData);
+                    
+                    Choice_Knob* choiceSerialized = dynamic_cast<Choice_Knob*>(serializedKnob.get());
+                    assert(choiceSerialized);
+                    isChoice->choiceRestoration(choiceSerialized, choiceData);
                 } else {
-                    knob->clone(serializedKnob);
-                }
-                knob->setSecret( serializedKnob->getIsSecret() );
-                if ( knob->getDimension() == serializedKnob->getDimension() ) {
-                    for (int i = 0; i < knob->getDimension(); ++i) {
-                        knob->setEnabled( i, serializedKnob->isEnabled(i) );
+                    if (updateKnobGui) {
+                        knob->cloneAndUpdateGui(serializedKnob.get());
+                    } else {
+                        knob->clone(serializedKnob);
+                    }
+                    knob->setSecret( serializedKnob->getIsSecret() );
+                    if ( knob->getDimension() == serializedKnob->getDimension() ) {
+                        for (int i = 0; i < knob->getDimension(); ++i) {
+                            knob->setEnabled( i, serializedKnob->isEnabled(i) );
+                        }
                     }
                 }
+
+                
+               
             }
             break;
         }
