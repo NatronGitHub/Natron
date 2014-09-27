@@ -12,6 +12,7 @@
 
 #include <cfloat>
 #include <sstream>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #include <QDebug>
 #include <QThread>
@@ -25,6 +26,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
+#include "Engine/KnobSerialization.h"
 #include "Engine/Format.h"
 using namespace Natron;
 using std::make_pair;
@@ -795,6 +797,7 @@ Choice_Knob::Choice_Knob(KnobHolder* holder,
                          int dimension,
                          bool declaredByPlugin)
     : Knob<int>(holder, description, dimension,declaredByPlugin)
+    , _entriesMutex()
 {
 }
 
@@ -827,32 +830,40 @@ Choice_Knob::populateChoices(const std::vector<std::string> &entries,
                              const std::vector<std::string> &entriesHelp)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
-    _entriesHelp = entriesHelp;
-    _entries = entries;
+    {
+        QMutexLocker l(&_entriesMutex);
+        _entriesHelp = entriesHelp;
+        _entries = entries;
+    }
     emit populated();
 }
 
-const std::vector<std::string> &
-Choice_Knob::getEntries() const
+std::vector<std::string>
+Choice_Knob::getEntries_mt_safe() const
 {
+    QMutexLocker l(&_entriesMutex);
     return _entries;
 }
 
-const std::vector<std::string> &
-Choice_Knob::getEntriesHelp() const
+std::vector<std::string>
+Choice_Knob::getEntriesHelp_mt_safe() const
 {
+    QMutexLocker l(&_entriesMutex);
     return _entriesHelp;
 }
 
-const std::string &
-Choice_Knob::getActiveEntryText() const
+std::string
+Choice_Knob::getActiveEntryText_mt_safe() const
 {
     int activeIndex = getValue();
 
+    QMutexLocker l(&_entriesMutex);
     assert( activeIndex < (int)_entries.size() );
 
     return _entries[activeIndex];
 }
+
+
 
 static std::string
 trim(std::string const & str)
@@ -875,14 +886,14 @@ trim(std::string const & str)
 std::string
 Choice_Knob::getHintToolTipFull() const
 {
-    const std::vector<std::string> &entries = getEntries();
-    const std::vector<std::string> &help =  getEntriesHelp();
+    assert(QThread::currentThread() == qApp->thread());
+    
     bool gothelp = false;
 
-    if ( !help.empty() ) {
-        assert( help.size() == entries.size() );
+    if ( !_entriesHelp.empty() ) {
+        assert( _entriesHelp.size() == _entries.size() );
         for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !help.empty() && !help[i].empty() ) {
+            if ( !_entriesHelp.empty() && !_entriesHelp[i].empty() ) {
                 gothelp = true;
             }
         }
@@ -898,12 +909,12 @@ Choice_Knob::getHintToolTipFull() const
     }
     // param may have no hint but still have per-option help
     if (gothelp) {
-        for (U32 i = 0; i < help.size(); ++i) {
-            if ( !help[i].empty() ) { // no help line is needed if help is unavailable for this option
-                ss << trim(entries[i]);
+        for (U32 i = 0; i < _entriesHelp.size(); ++i) {
+            if ( !_entriesHelp[i].empty() ) { // no help line is needed if help is unavailable for this option
+                ss << trim(_entries[i]);
                 ss << ": ";
-                ss << trim(help[i]);
-                if (i < help.size() - 1) {
+                ss << trim(_entriesHelp[i]);
+                if (i < _entriesHelp.size() - 1) {
                     ss << '\n';
                 }
             }
@@ -920,8 +931,41 @@ Choice_Knob::deepCloneExtraData(KnobI* other)
     if (!isChoice) {
         return;
     }
-    _entries = isChoice->getEntries();
-    _entriesHelp = isChoice->getEntriesHelp();
+    
+    
+    QMutexLocker l(&_entriesMutex);
+    _entries = isChoice->getEntries_mt_safe();
+    _entriesHelp = isChoice->getEntriesHelp_mt_safe();
+}
+
+void
+Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
+{
+    assert(knob && data);
+    
+    
+    ///Clone first and then handle restoration of the static value
+    clone(knob);
+    setSecret( knob->getIsSecret() );
+    if ( getDimension() == knob->getDimension() ) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            setEnabled( i, knob->isEnabled(i) );
+        }
+    }
+    
+    int serializedIndex = knob->getValue();
+    
+    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex] == data->_choiceString) ) {
+        // we're lucky, entry hasn't changed
+        setValue(serializedIndex, 0);
+    } else {
+        // try to find the same label at some other index
+        std::vector<std::string>::iterator it = std::find(_entries.begin(), _entries.end(), data->_choiceString);
+        if ( it != _entries.end() ) {
+            setValue(std::distance(_entries.begin(), it), 0);
+        } 
+    }
+    
 }
 /******************************SEPARATOR_KNOB**************************************/
 
@@ -1467,7 +1511,11 @@ Parametric_Knob::addControlPoint(int dimension,
                                  double value)
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_curves.size() ) {
+    if (dimension >= (int)_curves.size() ||
+        boost::math::isnan(key) ||
+        boost::math::isinf(key) ||
+        boost::math::isnan(value) ||
+        boost::math::isinf(value)) {
         return StatFailed;
     }
 

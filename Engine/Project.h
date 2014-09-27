@@ -60,8 +60,9 @@ public:
     /**
      * @brief Saves the project with the given path and name corresponding to a file on disk.
      * @param autoSave If true then it will save the project in a temporary file instead (see autoSave()).
+     * @returns The actual filepath of the file saved
      **/
-    void saveProject(const QString & path,const QString & name,bool autoSave);
+    QString saveProject(const QString & path,const QString & name,bool autoSave);
 
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file
@@ -255,7 +256,7 @@ public:
      **/
     static void makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str);
     
-   
+    static bool isRelative(const std::string& str);
     
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
@@ -271,7 +272,29 @@ public:
      **/
     void fixPathName(const std::string& oldName,const std::string& newName);
     
+    /**
+     * @brief If str is relative it will canonicalize the path, i.e expand all variables and '.' and '..' that may 
+     * be. When returning from this function str will be an absolute path.
+     * It internally uses expandVariable
+     **/
+    void canonicalizePath(std::string& str);
+    
+    /**
+     * @brief Tries to find any variable that str could start with and simplify the given path with the longest
+     * variable matching. It internally uses findReplaceVariable
+     **/
+    void simplifyPath(std::string& str);
+    
+    /**
+     * @brief Same as simplifyPath but will only try with the [Project] variable
+     **/
+    void makeRelativeToProject(std::string& str);
+    
     void onOCIOConfigPathChanged(const std::string& path);
+
+
+    static std::string escapeXML(const std::string &input);
+    static std::string unescapeXML(const std::string &input);
 
 public slots:
 
@@ -308,7 +331,7 @@ private:
 
     bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,const QString& realFilePath);
 
-    QDateTime saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
+    QString saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
 
 
     /**

@@ -897,7 +897,7 @@ Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
     : KnobGui(knob, container)
 {
     _knob = boost::dynamic_pointer_cast<Choice_Knob>(knob);
-    _entries = _knob->getEntries();
+    _entries = _knob->getEntries_mt_safe();
     QObject::connect( _knob.get(), SIGNAL( populated() ), this, SLOT( onEntriesPopulated() ) );
 }
 
@@ -932,8 +932,8 @@ Choice_KnobGui::onEntriesPopulated()
     int activeIndex = _comboBox->activeIndex();
 
     _comboBox->clear();
-    _entries = _knob->getEntries();
-    const std::vector<std::string> &help =  _knob->getEntriesHelp();
+    _entries = _knob->getEntries_mt_safe();
+    const std::vector<std::string> help =  _knob->getEntriesHelp_mt_safe();
     for (U32 i = 0; i < _entries.size(); ++i) {
         std::string helpStr;
         if ( !help.empty() && !help[i].empty() ) {
@@ -2312,6 +2312,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
+        _label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
@@ -2992,11 +2993,12 @@ String_KnobGui::setReadOnly(bool readOnly,
 bool
 String_KnobGui::showDescriptionLabel() const
 {
-    if ( _knob->isLabel() ) {
+   /* if ( _knob->isLabel() ) {
         return false;
     } else {
         return true;
-    }
+    }*/
+    return !_knob->getDescription().empty();
 }
 
 void

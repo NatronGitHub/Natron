@@ -108,7 +108,7 @@ public:
     virtual std::string openImageFileDialog() OVERRIDE FINAL;
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
 
-    virtual void startRenderingFullSequence(const AppInstance::RenderWork& w) OVERRIDE FINAL;
+    virtual void startRenderingFullSequence(const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath) OVERRIDE FINAL;
 
 public slots:
 
@@ -124,6 +124,8 @@ private:
                                bool autoConnect,
                                double xPosHint,double yPosHint,
                                bool pushUndoRedoCommand) OVERRIDE FINAL;
+
+
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
 

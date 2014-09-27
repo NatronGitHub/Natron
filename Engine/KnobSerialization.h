@@ -64,16 +64,43 @@ struct MasterSerialization
     }
 };
 
+class TypeExtraData
+{
+public:
+    
+    TypeExtraData() {}
+    
+    virtual ~TypeExtraData() {}
+};
+
+class ChoiceExtraData : public TypeExtraData
+{
+public:
+    
+    
+    
+    ChoiceExtraData() : TypeExtraData(), _choiceString() {}
+    
+    virtual ~ChoiceExtraData() {}
+    
+    std::string _choiceString;
+    
+};
+
 struct ValueSerialization
 {
     boost::shared_ptr<KnobI> _knob;
     int _dimension;
     MasterSerialization _master;
-
+    
+    TypeExtraData* _extraData;
+    
     ValueSerialization(const boost::shared_ptr<KnobI> & knob,
+                       TypeExtraData* extraData,
                        int dimension,
                        bool save);
 
+    
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
@@ -108,7 +135,8 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("Value",v);
         } else if (isChoice) {
             int v = isChoice->getValue(_dimension);
-            std::string label = isChoice->getEntries()[v];
+            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::string label = entries[v];
             ar & boost::serialization::make_nvp("Value", v);
             ar & boost::serialization::make_nvp("Label", label);
         } else if (isString) {
@@ -183,26 +211,20 @@ struct ValueSerialization
             int v;
             ar & boost::serialization::make_nvp("Value", v);
             assert(v >= 0);
-            if (version < VALUE_SERIALIZATION_VERSION) {
-                isChoice->setValue(v, _dimension);
-            } else {
+            if (version >= VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
+                
                 std::string label;
                 ar & boost::serialization::make_nvp("Label", label);
-                const std::vector<std::string> &entries = isChoice->getEntries();
-                if ( ( v < (int)entries.size() ) && (entries[v] == label) ) {
-                    // we're lucky, entry hasn't changed
-                    isChoice->setValue(v, _dimension);
-                } else {
-                    // try to find the same label at some other index
-                    std::vector<std::string>::const_iterator it = std::find(entries.begin(), entries.end(), label);
-                    if ( it != entries.end() ) {
-                        isChoice->setValue(std::distance(entries.begin(), it), _dimension);
-                    } else {
-                        // unlucky
-                        isChoice->setValue(v, _dimension);
-                    }
-                }
+                
+                assert(_extraData);
+                ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
+                data->_choiceString = label;
+                
+                
+                
             }
+            isChoice->setValue(v, _dimension);
+
         } else if (isString) {
             std::string v;
             ar & boost::serialization::make_nvp("Value",v);
@@ -254,7 +276,10 @@ class KnobSerialization
     std::list<MasterSerialization> _masters; //< used when deserializating, we can't restore it before all knobs have been restored.
     std::list< Curve > parametricCurves;
     std::list<Double_Knob::SerializedTrack> slavedTracks; //< same as for master, can't be used right away when deserializing
+    
+    TypeExtraData* _extraData;
 
+    
     friend class boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
@@ -272,7 +297,7 @@ class KnobSerialization
         ar & boost::serialization::make_nvp("Secret",secret);
 
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(_knob,i,true);
+            ValueSerialization vs(_knob,NULL,i,true);
             ar & boost::serialization::make_nvp("item",vs);
         }
 
@@ -325,8 +350,14 @@ class KnobSerialization
         File_Knob* isFile = dynamic_cast<File_Knob*>( _knob.get() );
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>( _knob.get() );
         Double_Knob* isDouble = dynamic_cast<Double_Knob*>( _knob.get() );
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( _knob.get() );
+        if (isChoice) {
+            _extraData = new ChoiceExtraData;
+            
+        }
+        
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(_knob,i,false);
+            ValueSerialization vs(_knob,_extraData,i,false);
             ar & boost::serialization::make_nvp("item",vs);
             _masters.push_back(vs._master);
         }
@@ -369,6 +400,7 @@ public:
     ///Constructor used to serialize
     explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob,bool copyKnob)
         : _knob()
+        , _extraData(NULL)
     {
         initialize(knob,copyKnob);
     }
@@ -393,9 +425,12 @@ public:
     ///this the deserialization will not succeed.
     KnobSerialization()
         : _knob()
+        , _extraData(NULL)
     {
     }
 
+    ~KnobSerialization() { delete _extraData; }
+    
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
@@ -415,6 +450,8 @@ public:
 
     void restoreTracks(const boost::shared_ptr<KnobI> & knob,const std::vector<boost::shared_ptr<Natron::Node> > & allNodes);
 
+    const TypeExtraData* getExtraData() const { return _extraData; }
+    
 private:
 };
 

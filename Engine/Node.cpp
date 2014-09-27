@@ -506,21 +506,38 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
     ///try to find a serialized value for this knob
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
+            
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
-            if ( knob->getIsPersistant() ) {
+            ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
+            //if ( knob->getIsPersistant() ) {
                 boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
-                if (updateKnobGui) {
-                    knob->cloneAndUpdateGui(serializedKnob.get());
+                
+                Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
+                if (isChoice) {
+                    const TypeExtraData* extraData = (*it)->getExtraData();
+                    const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+                    assert(choiceData);
+                    
+                    Choice_Knob* choiceSerialized = dynamic_cast<Choice_Knob*>(serializedKnob.get());
+                    assert(choiceSerialized);
+                    isChoice->choiceRestoration(choiceSerialized, choiceData);
                 } else {
-                    knob->clone(serializedKnob);
-                }
-                knob->setSecret( serializedKnob->getIsSecret() );
-                if ( knob->getDimension() == serializedKnob->getDimension() ) {
-                    for (int i = 0; i < knob->getDimension(); ++i) {
-                        knob->setEnabled( i, serializedKnob->isEnabled(i) );
+                    if (updateKnobGui) {
+                        knob->cloneAndUpdateGui(serializedKnob.get());
+                    } else {
+                        knob->clone(serializedKnob);
+                    }
+                    knob->setSecret( serializedKnob->getIsSecret() );
+                    if ( knob->getDimension() == serializedKnob->getDimension() ) {
+                        for (int i = 0; i < knob->getDimension(); ++i) {
+                            knob->setEnabled( i, serializedKnob->isEnabled(i) );
+                        }
                     }
                 }
-            }
+
+                
+               
+            //}
             break;
         }
     }
@@ -691,6 +708,10 @@ Node::getInputNames(std::vector<std::string> & inputNames) const
     ///This is called by the serialization thread.
     ///We use the guiInputs because we want to serialize exactly how the tree was to the user
     
+    if (_imp->multiInstanceParent) {
+        _imp->multiInstanceParent->getInputNames(inputNames);
+        return;
+    }
     int maxInp = _imp->liveInstance->getMaxInputCount();
 
     QMutexLocker l(&_imp->inputsMutex);
@@ -1728,8 +1749,8 @@ Node::makePreviewImage(SequenceTime time,
                                                                             true,
                                                                             false,
                                                                             rod,
-                                                                            Natron::ImageComponentRGB,
-                                                                            getBitDepth() ) ); //< preview is always rgb...
+                                                                            Natron::ImageComponentRGB, //< preview is always rgb...
+                                                                            getBitDepth() ) );
     } catch (const std::exception & e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
         _imp->computingPreview = false;
@@ -2180,11 +2201,11 @@ Node::onAllKnobsSlaved(bool isSlave,
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode = masterNode;
         }
-        QObject::connect( masterNode.get(), SIGNAL( deactivated() ), this, SLOT( onMasterNodeDeactivated() ) );
+        QObject::connect( masterNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
         QObject::connect( masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
         QObject::connect( masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
     } else {
-        QObject::disconnect( _imp->masterNode.get(), SIGNAL( deactivated() ), this, SLOT( onMasterNodeDeactivated() ) );
+        QObject::disconnect( _imp->masterNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
         QObject::disconnect( _imp->masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
         QObject::disconnect( _imp->masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
         {

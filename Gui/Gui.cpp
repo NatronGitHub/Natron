@@ -1246,7 +1246,7 @@ Gui::restoreLayout(bool wipePrevious,
             }
             ///The window contains a splitter as central widget
             else if ( (*it)->child_asSplitter ) {
-                Splitter* centralWidget = new Splitter;
+                Splitter* centralWidget = new Splitter(this);
                 restoreSplitterRecursive(this,centralWidget, *(*it)->child_asSplitter);
                 mainWidget = centralWidget;
             }
@@ -3491,6 +3491,7 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
     RenderingProgressDialog *dialog = new RenderingProgressDialog(this,sequenceName,firstFrame,lastFrame,
                                                                   boost::shared_ptr<ProcessHandler>(),this);
     boost::shared_ptr<OutputSchedulerThread> scheduler = writer->getScheduler();
+
 
     QObject::connect( dialog,SIGNAL( canceled() ),scheduler.get(),SLOT( abortRendering_Blocking() ) );
     QObject::connect( scheduler.get(),SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );

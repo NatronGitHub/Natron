@@ -276,7 +276,8 @@ public:
     void startWritersRendering(const std::list<RenderRequest>& writers);
     void startWritersRendering(const std::list<RenderWork>& writers);
 
-    virtual void startRenderingFullSequence(const RenderWork& writerWork);
+    virtual void startRenderingFullSequence(const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
+
 
 public slots:
 

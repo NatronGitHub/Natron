@@ -18,6 +18,7 @@
 #include <QtConcurrentRun>
 
 #include <boost/bind.hpp>
+#include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
 #include "Engine/AppManager.h"
@@ -791,7 +792,7 @@ EffectInstance::getImage(int inputNb,
     RectI pixelRoI;
     roi.toPixelEnclosing(scale, &pixelRoI);
 
-    int channelForAlpha = !isMask ? 3 : getMaskChannel(inputNb);
+    int channelForAlpha = !isMask ? -1 : getMaskChannel(inputNb);
 
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
@@ -1766,7 +1767,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///but for the render args, we set byPassCache to false otherwise each input will not benefit of the
         ///cache, which would drastically reduce effiency.
         if ( isWriter() ) {
-            assert(byPassCache);
             byPassCache = false;
         }
 
@@ -1859,13 +1859,18 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///if the node has a roto context, pre-render the roto mask too
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
+            Natron::ImageComponents inputPrefComps;
+            Natron::ImageBitDepth inputPrefDepth;
+            int rotoIndex = getRotoBrushInputIndex();
+            assert(rotoIndex != -1);
+            getPreferredDepthAndComponents(rotoIndex, &inputPrefComps, &inputPrefDepth);
             boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(downscaledRectToRender,
-                                                                        image->getComponents(),
+                                                                        inputPrefComps,
                                                                         nodeHash,
                                                                         rotoAge,
                                                                         rod,
                                                                         time,
-                                                                        getBitDepth(),
+                                                                        inputPrefDepth,
                                                                         view,
                                                                         mipMapLevel,
                                                                         byPassCache);
@@ -2266,7 +2271,9 @@ EffectInstance::evaluate(KnobI* knob,
                 w.writer = dynamic_cast<OutputEffectInstance*>(this);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
-                getApp()->startRenderingFullSequence(w);
+                std::list<AppInstance::RenderWork> works;
+                works.push_back(w);
+                getApp()->startWritersRendering(works);
 
                 return;
             }
@@ -3189,8 +3196,22 @@ OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderControl
 {
     _renderController = renderController;
     
+    ///Make sure that the file path exists
+    boost::shared_ptr<KnobI> fileParam = getKnobByName(kOfxImageEffectFileParamName);
+    if (fileParam) {
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileParam.get());
+        if (isString) {
+            std::string pattern = isString->getValue();
+            std::string path = SequenceParsing::removePath(pattern);
+            std::map<std::string,std::string> env;
+            getApp()->getProject()->getEnvironmentVariables(env);
+            Project::expandVariable(env, path);
+            QDir().mkpath(path.c_str());
+        }
+    }
     ///If you want writers to render backward (from last to first), just change the flag in parameter here
     _scheduler->renderFrameRange(first,last,OutputSchedulerThread::RENDER_FORWARD);
+
 }
 
 void

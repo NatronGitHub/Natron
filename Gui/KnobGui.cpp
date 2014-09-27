@@ -57,6 +57,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/DockablePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/TimeLineGui.h"
+#include "Gui/MenuWithToolTips.h"
 #include "Gui/Gui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
@@ -102,7 +103,7 @@ struct KnobGui::KnobGuiPrivate
           , container(container)
           , animationMenu(NULL)
           , animationButton(NULL)
-          , copyRightClickMenu( new QMenu(container) )
+          , copyRightClickMenu( new MenuWithToolTips(container) )
           , fieldLayout(NULL)
           , row(-1)
           , knobsOnSameLine()
@@ -359,7 +360,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         _imp->copyRightClickMenu->addAction(masterNameAction);
     }
 
-
+    addRightClickMenuEntries(_imp->copyRightClickMenu);
     _imp->copyRightClickMenu->exec( QCursor::pos() );
 } // showRightClickMenuForDimension
 
@@ -1456,6 +1457,22 @@ KnobGui::getBackgroundColour(double &r,
 {
     if (_imp->customInteract) {
         _imp->customInteract->getBackgroundColour(r, g, b);
+    }
+}
+
+void
+KnobGui::saveOpenGLContext()
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->saveOpenGLContext();
+    }
+}
+
+void
+KnobGui::restoreOpenGLContext()
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->restoreOpenGLContext();
     }
 }
 

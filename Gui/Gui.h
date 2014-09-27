@@ -342,9 +342,9 @@ public:
     void setRotoInterface(NodeGui* n);
 
     /**
-     * @brief Called by Gui::deactivateRotoInterface and by NodeGraph::deleteNodePermanantly
+     * @brief Called by Gui::deactivateRotoInterface and by NodeGraph::deleteNodepluginsly
      **/
-    void removeRotoInterface(NodeGui* n,bool permanantly);
+    void removeRotoInterface(NodeGui* n,bool pluginsly);
 
     void onViewerRotoEvaluated(ViewerTab* viewer);
 
@@ -354,7 +354,7 @@ public:
      **/
     void createNewTrackerInterface(NodeGui* n);
 
-    void removeTrackerInterface(NodeGui* n,bool permanantly);
+    void removeTrackerInterface(NodeGui* n,bool pluginsly);
 
     void startProgress(Natron::EffectInstance* effect,const std::string & message);
 

@@ -25,6 +25,9 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 
+#include "Global/GitVersion.h"
+#include "Global/GlobalDefines.h"
+#include "Global/MemoryInfo.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
@@ -106,7 +109,19 @@ public:
               const unsigned int /*version*/) const
     {
         
-        std::string natronVersion = NATRON_VERSION_STRING;
+        std::string natronVersion(NATRON_APPLICATION_NAME);
+        natronVersion.append(" v" NATRON_VERSION_STRING);
+        natronVersion.append(" from git branch " GIT_BRANCH);
+        natronVersion.append(" commit " GIT_COMMIT);
+        natronVersion.append("  for ");
+#ifdef __NATRON_WIN32__
+        natronVersion.append("  Windows ");
+#elif defined(__NATRON_OSX__)
+        natronVersion.append("  MacOSX ");
+#elif defined(__NATRON_LINUX__)
+        natronVersion.append("  Linux ");
+#endif
+        natronVersion.append(isApplication32Bits() ? "32bit" : "64bit");
         ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
         
         int nodesCount = (int)_serializedNodes.size();

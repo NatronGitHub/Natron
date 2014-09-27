@@ -26,15 +26,11 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>
-#include <QSortFilterProxyModel>
-#include <QFileSystemModel>
 #include <QtCore/QByteArray>
 #include <QtGui/QStandardItemModel>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QDir>
-#include <QtCore/QMutex>
-#include <QtCore/QReadWriteLock>
 #include <QtCore/QUrl>
 #include <QtCore/QRegExp>
 #include <QtCore/QLatin1Char>
@@ -45,6 +41,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 #include "Global/QtCompat.h"
+#include "Engine/FileSystemModel.h"
+
+#define NATRON_FILE_DIALOG_PREVIEW_READER_NAME "Natron_File_Dialog_Preview_Provider_Reader"
+#define NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME "Natron_File_Dialog_Preview_Provider_Viewer"
 
 class LineEdit;
 class Button;
@@ -52,11 +52,13 @@ class QCheckBox;
 class ComboBox;
 class QWidget;
 class QLabel;
+class QFileInfo;
 class QHBoxLayout;
 class QVBoxLayout;
 class QSplitter;
 class QAction;
 class SequenceFileDialog;
+class QFileSystemModel;
 class SequenceItemDelegate;
 class Gui;
 class NodeGui;
@@ -64,6 +66,10 @@ namespace SequenceParsing {
 class SequenceFromFiles;
 }
 struct FileDialogPreviewProvider;
+
+
+
+
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
  * the file system and some urls.
@@ -228,51 +234,6 @@ public:
 };
 
 
-/**
- * @brief The SequenceDialogProxyModel class is a proxy that filters image sequences from the QFileSystemModel
- */
-class SequenceDialogProxyModel
-    : public QSortFilterProxyModel
-{
-    /*multimap of <sequence name, FileSequence >
-     * Several sequences can have a same name but a different file extension within a same directory.
-     */
-    mutable QMutex _frameSequencesMutex; // protects _frameSequences
-    mutable std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > _frameSequences;
-    mutable std::map<QString,bool> _filterCache; // used by filterAcceptsRow to avoid calling tryInsertFile()
-    SequenceFileDialog* _fd;
-    QString _filter;
-    std::list<QRegExp> _regexps;
-
-public:
-
-    explicit SequenceDialogProxyModel(SequenceFileDialog* fd)
-        : QSortFilterProxyModel(),_fd(fd)
-    {
-    }
-
-    virtual ~SequenceDialogProxyModel()
-    {
-    }
-
-    QString getUserFriendlyFileSequencePatternForFile(const QString & filename,quint64* sequenceSize) const;
-
-    void getSequenceFromFilesForFole(const QString & file,SequenceParsing::SequenceFromFiles* sequence) const;
-
-    void setFilter(const QString & filter);
-
-private:
-
-    virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
-
-private:
-    /*
-     * Check if the path is accepted by the filter installed by the user
-     */
-    bool isAcceptedByUser(const QString & path) const;
-};
-
-
 class FileDialogComboBox
     : public QComboBox
 {
@@ -300,7 +261,7 @@ private:
  * @brief The SequenceFileDialog class is the main dialog, containing the GUI and with whom the end user can interact.
  */
 class SequenceFileDialog
-    : public QDialog
+: public QDialog, public SortableViewI
 {
     Q_OBJECT
 
@@ -309,8 +270,6 @@ public:
     {
         OPEN_DIALOG = 0,SAVE_DIALOG = 1,DIR_DIALOG = 2
     };
-
-    typedef std::map<QString,std::pair<qint64,QString> > NameMapping;
 
 
 public:
@@ -329,9 +288,6 @@ public:
 
     ///set the view to show this model index which is a directory
     void setRootIndex(const QModelIndex & index);
-
-    ///Returns true if ext belongs to the user filters
-    bool isASupportedFileExtension(const std::string & ext) const;
 
     ///Returns the same as SequenceParsing::removePath excepts that str is left untouched.
     static QString getFilePath(const QString & str);
@@ -359,19 +315,15 @@ public:
 
     bool isDirectory(const QString & name) const;
 
-    inline QString rootPath() const
-    {
-        return _model->rootPath();
-    }
+    inline QString rootPath() const;
+    
+    QFileSystemModel* getFavoriteSystemModel() const;
+    
+    QFileSystemModel* getLookingFileSystemModel() const;
 
-    QFileSystemModel* getFileSystemModel() const
+    FileSystemModel* getFileSystemModel() const
     {
         return _model.get();
-    }
-
-    QFileSystemModel* getFavoriteSystemModel() const
-    {
-        return _favoriteViewModel.get();
     }
 
     SequenceDialogView* getSequenceView() const
@@ -379,17 +331,6 @@ public:
         return _view;
     }
 
-    inline QModelIndex mapToSource(const QModelIndex & index)
-    {
-        return _proxy->mapToSource(index);
-    }
-
-    inline QModelIndex mapFromSource(const QModelIndex & index)
-    {
-        _proxy->invalidate();
-
-        return _proxy->mapFromSource(index);
-    }
 
     static inline QString toInternal(const QString &path)
     {
@@ -409,6 +350,8 @@ public:
 #endif
     }
 
+
+    
     void setHistory(const QStringList &paths);
     QStringList history() const;
 
@@ -421,21 +364,14 @@ public:
         return _dialogMode;
     }
 
-    /**
-     * @brief Returns a vector of the different image file sequences found in the files given in parameter.
-     * Any file which has an extension not contained in the supportedFileType will be ignored.
-     **/
-    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > fileSequencesFromFilesList(const QStringList & files,const QStringList & supportedFileTypes);
 
     /**
      * @brief Append all files in the current directory and all its sub-directories recursively.
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir,QStringList* files);
 
-    /**
-     * @brief Get the mapped name for a sequence. This shouldn't be called for directories.
-     **/
-    void getMappedNameAndSizeForFile(const QString & absoluteFileName,QString* mappedName,quint64* sequenceSize) const;
+    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >
+    fileSequencesFromFilesList(const QStringList & files,const QStringList & supportedFileTypes);
 
     /**
      * @brief Get the user preference regarding how the file should be fetched.
@@ -443,6 +379,22 @@ public:
      * will be set to the project path desired.
      **/
     bool getRelativeChoiceProjectPath(std::string& varName,std::string& varValue) const;
+    
+    /**
+     * @brief Returns the order for the sort indicator. If no section has a sort indicator the return value of this function is undefined.
+     **/
+    virtual Qt::SortOrder sortIndicatorOrder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns the logical index of the section that has a sort indicator. By default this is section 0.
+     **/
+    virtual int	sortIndicatorSection() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Called when the section containing the sort indicator or the order indicated is changed.
+     * The section's logical index is specified by logicalIndex and the sort order is specified by order.
+     **/
+    virtual void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order) OVERRIDE FINAL;
     
 public slots:
 
@@ -460,7 +412,7 @@ public slots:
 
     ///slot called when the selected directory changed, it updates the view with the (not yet fetched) directory.
     void updateView(const QString & currentDirectory);
-
+    
     ////////
     ///////// Buttons slots
     void previousFolder();
@@ -485,13 +437,16 @@ public slots:
     void doubleClickOpen(const QModelIndex & index);
 
     ///slot called when the user selection changed
-    void selectionChanged();
+    void onSelectionChanged();
 
     ///slot called when the sequence mode has changed
     void enableSequenceMode(bool);
 
     ///combobox slot, it calls enableSequenceMode
     void sequenceComboBoxSlot(int index);
+    
+    
+    void onRelativeChoiceChanged(int index);
 
     ///slot called when the filter  is clicked
     void showFilterMenu();
@@ -528,8 +483,17 @@ public slots:
     
     void onTogglePreviewButtonClicked(bool toggled);
 
+    void onHeaderViewSortIndicatorChanged(int logicalIndex,Qt::SortOrder order);
+    
+    virtual void done(int r) OVERRIDE FINAL;
 private:
 
+    /**
+     * @brief Tries to find if text starts with a project path and if so replaces it,
+     * The line edit text will be set to the resulting text
+     **/
+    void proxyAndSetLineEditText(const QString& text);
+    
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
@@ -537,8 +501,6 @@ private:
     void createMenuActions();
 
     QModelIndex select(const QModelIndex & index);
-
-    QString generateStringFromFilters();
 
     QByteArray saveState() const;
 
@@ -551,19 +513,25 @@ private:
     boost::shared_ptr<NodeGui> findOrCreatePreviewReader(const std::string& filetype);
     
     void refreshPreviewAfterSelectionChange();
+    
+    
+    QString getUserFriendlyFileSequencePatternForFile(const QString & filename,quint64* sequenceSize) const;
+    
+    void getSequenceFromFilesForFole(const QString & file,SequenceParsing::SequenceFromFiles* sequence) const;
+    
+    
 private:
     // FIXME: PIMPL
 
-    mutable NameMapping _nameMapping; // the item whose names must be changed. Mutable, this is a cache filled in getMappedNameAndSizeForFile()
-    std::vector<std::string> _filters;
+    QStringList _filters;
     SequenceDialogView* _view;
     boost::scoped_ptr<SequenceItemDelegate> _itemDelegate;
-    boost::scoped_ptr<SequenceDialogProxyModel> _proxy;
-    boost::scoped_ptr<QFileSystemModel> _model;
-
+    boost::scoped_ptr<FileSystemModel> _model;
+    
     ///The favorite view and the dialog view don't share the same model as they don't have
     ///the same icon provider
     boost::scoped_ptr<QFileSystemModel> _favoriteViewModel;
+    boost::scoped_ptr<QFileSystemModel> _lookinViewModel;
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
     QLabel* _lookInLabel;
@@ -618,6 +586,7 @@ private:
     Gui* _gui;
     
     bool _relativePathsAllowed;
+    
 };
 
 /**

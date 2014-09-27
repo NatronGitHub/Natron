@@ -46,6 +46,11 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , colorSpace8bits()
       , colorSpace16bits()
       , colorSpace32bits()
+      , natronVersion()
+      , originalAuthorName()
+      , lastAuthorName()
+      , projectCreationDate()
+      , saveDate()
       , timeline( new TimeLine(project) )
       , autoSetProjectFormat(appPTR->getCurrentSettings()->isAutoProjectFormatEnabled())
       , currentNodes()
@@ -103,15 +108,35 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     for (U32 i = 0; i < projectKnobs.size(); ++i) {
         ///try to find a serialized value for this knob
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
+            
             if ( (*it)->getName() == projectKnobs[i]->getName() ) {
-                if ( projectKnobs[i]->getIsPersistant() ) {
-                    projectKnobs[i]->clone( (*it)->getKnob() );
-                }
+                
+                ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
+                //if ( projectKnobs[i]->getIsPersistant() ) {
+                    
+                    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(projectKnobs[i].get());
+                    if (isChoice) {
+                        const TypeExtraData* extraData = (*it)->getExtraData();
+                        const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+                        assert(choiceData);
+                        
+                        Choice_Knob* serializedKnob = dynamic_cast<Choice_Knob*>((*it)->getKnob().get());
+                        assert(serializedKnob);
+                        isChoice->choiceRestoration(serializedKnob, choiceData);
+                    } else {
+                        projectKnobs[i]->clone( (*it)->getKnob() );
+                    }
+                //}
                 break;
             }
         }
         if (projectKnobs[i] == envVars) {
-            autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+            
+            ///For APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI don't change the project path since it is controlled
+            ///by the main GUI process
+            if (appPTR->getAppType() != AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) {
+                autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+            }
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
         }
 
@@ -335,6 +360,9 @@ void
 ProjectPrivate::autoSetProjectDirectory(const QString& path)
 {
     std::string pathCpy = path.toStdString();
+    if (!pathCpy.empty() && pathCpy[pathCpy.size() -1] == '/') {
+        pathCpy.erase(pathCpy.size() - 1, 1);
+    }
     std::string env = envVars->getValue();
     std::map<std::string, std::string> envMap;
     Project::makeEnvMap(env, envMap);
@@ -351,10 +379,11 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     std::string newEnv;
     for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
         newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        newEnv += it->first;
+        // In order to use XML tags, the text inside the tags has to be escaped.
+        newEnv += Project::escapeXML(it->first);
         newEnv += NATRON_ENV_VAR_NAME_END_TAG;
         newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += it->second;
+        newEnv += Project::escapeXML(it->second);
         newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
     }
     if (env != newEnv) {

@@ -58,7 +58,8 @@ openimageio \
 swig-python \
 py27-numpy \
 flex \
-bison
+bison \
+ctl
 
 * for the OpenFX plugins and Natron:
 sudo port -v install \
@@ -114,7 +115,7 @@ git clone https://github.com/wdas/SeExpr
 git clone https://github.com/tuttleofx/TuttleOFX.git
 git clone https://github.com/MrKepzie/Natron.git
 # grab the latest openfx source
-for i in openfx* Natron; do (echo $i;cd $i; git submodule foreach git pull origin master); done
+for i in openfx* openfx-io/IOSupport/SequenceParsing  Natron Natron/libs/SequenceParsing; do (echo $i;cd $i; git submodule update -i -r; git submodule foreach git pull origin master); done
 
 - compile OpenFX plugins
 
@@ -308,6 +309,9 @@ dir_raw = macports_base
 dir_tiff = macports_base
 dir_turbojpeg = '/opt/libjpeg-turbo'
 dir_xlibs = macports_base
+dir_x264 = macports_base
+dir_mp3lame = macports_base
+dir_xvidcore = macports_base
 extern = '#3rdParty'
 dir_ctl = macports_base
 incdir_ctl = join(macports_include, 'CTL')

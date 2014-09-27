@@ -158,17 +158,19 @@ AppManager::printBackGroundWelcomeMessage()
 }
 
 void
-AppManager::printUsage()
+AppManager::printUsage(const std::string& programName)
 {
     std::cout << NATRON_APPLICATION_NAME << QObject::tr(" usage: ").toStdString() << std::endl;
-    std::cout << "./" NATRON_APPLICATION_NAME << QObject::tr("    <project file path>").toStdString() << std::endl;
-    std::cout << QObject::tr("[--background] or [-b] enables background mode rendering. No graphical interface will be shown.").toStdString() << std::endl;
+    std::cout << programName << QObject::tr("    <project file path>").toStdString() << std::endl;
+    std::cout << QObject::tr("[--background] or [-b] enables background mode rendering. No graphical interface will be shown."
+                             "When using NatronRenderer this argument is implicit and you don't need to use it.").toStdString() << std::endl;
     std::cout << QObject::tr("[--writer <Writer node name>] or [-w] When in background mode, the renderer will only try to render with the node"
                              " name following the this argument. If no such node exists in the project file, the process will abort."
                              "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file. After the writer node name you can pass an optional frame range in the format "
                              " firstFrame-lastFrame (e.g: 10-40). ").toStdString() << std::endl;
     std::cout << QObject::tr("An example of usage of the renderer can be: \n"
                              "./NatronRenderer -w MyWriter 1-100 /Users/Me/MyNatronProjects/MyProject.ntp").toStdString() << std::endl;
+
 }
 
 bool
@@ -198,7 +200,7 @@ AppManager::parseCmdLineArgs(int argc,
         bool frameRangeFound = false;
         if ( args.at(i).contains("." NATRON_PROJECT_FILE_EXT) ) {
             if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage();
+                AppManager::printUsage(argv[0]);
 
                 return false;
             }
@@ -206,7 +208,7 @@ AppManager::parseCmdLineArgs(int argc,
             continue;
         } else if ( (args.at(i) == "--background") || (args.at(i) == "-b") ) {
             if (expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage();
+                AppManager::printUsage(argv[0]);
 
                 return false;
             }
@@ -214,7 +216,7 @@ AppManager::parseCmdLineArgs(int argc,
             continue;
         } else if ( (args.at(i) == "--writer") || (args.at(i) == "-w") ) {
             if (expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage();
+                AppManager::printUsage(argv[0]);
 
                 return false;
             }
@@ -222,7 +224,7 @@ AppManager::parseCmdLineArgs(int argc,
             continue;
         } else if (args.at(i) == "--IPCpipe") {
             if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage();
+                AppManager::printUsage(argv[0]);
 
                 return false;
             }
@@ -233,17 +235,17 @@ AppManager::parseCmdLineArgs(int argc,
             frameRangeFound = true;
             QStringList strRange = args[i].split('-');
             if (strRange.size() != 2) {
-                AppManager::printUsage();
+                AppManager::printUsage(argv[0]);
             }
             std::pair<int, int> range;
             bool ok;
             range.first = strRange[0].toInt(&ok);
             if (!ok) {
-                AppManager::printUsage();
+                AppManager::printUsage(argv[0]);
             }
             range.second = strRange[1].toInt(&ok);
             if (!ok) {
-                AppManager::printUsage();
+                AppManager::printUsage(argv[0]);
             }
             
             frameRanges.push_back(range);
@@ -442,7 +444,11 @@ AppManager::loadInternal(const QString & projectFilename,
 
     if ( isBackground() ) {
         if ( !projectFilename.isEmpty() ) {
-            _imp->_appType = APP_BACKGROUND_AUTO_RUN;
+            if (!mainProcessServerName.isEmpty()) {
+                _imp->_appType = APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI;
+            } else {
+                _imp->_appType = APP_BACKGROUND_AUTO_RUN;
+            }
         } else {
             _imp->_appType = APP_BACKGROUND;
         }
@@ -460,7 +466,8 @@ AppManager::loadInternal(const QString & projectFilename,
         onLoadCompleted();
 
         ///In background project auto-run the rendering is finished at this point, just exit the instance
-        if ( (_imp->_appType == APP_BACKGROUND_AUTO_RUN) && mainInstance ) {
+        if ( (_imp->_appType == APP_BACKGROUND_AUTO_RUN ||
+              _imp->_appType == APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) && mainInstance ) {
             mainInstance->quit();
         }
 

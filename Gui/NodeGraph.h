@@ -102,13 +102,13 @@ public:
      **/
     void removeNode(const boost::shared_ptr<NodeGui> & node);
 
-    void centerOnNode(const boost::shared_ptr<NodeGui> & n);
+    void centerOnItem(QGraphicsItem* item);
 
     boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
 
     void setUndoRedoStackLimit(int limit);
 
-    void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
+    void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
 
     NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization & serialization);
 

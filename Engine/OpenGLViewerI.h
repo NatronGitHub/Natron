@@ -82,7 +82,10 @@ public:
      * 3) glUnmapBuffer to unmap the GPU buffer
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect & region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel,int textureIndex) = 0;
+    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount,
+                                            const TextureRect & region, double gain, double offset, int lut,
+                                            int pboIndex,unsigned int mipMapLevel,Natron::ImagePremultiplication premult,
+                                            int textureIndex) = 0;
 
     /**
      * @brief Called when the input of a viewer should render black.
@@ -137,7 +140,20 @@ public:
      **/
     virtual bool isFrameRangeLocked() const = 0;
     
+    /**
+     * @brief Must return a pointer to the current timeline used by the Viewer
+     **/
     virtual boost::shared_ptr<TimeLine> getTimeline() const = 0;
+    
+    /**
+     * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
+     **/
+    virtual void saveOpenGLContext() = 0;
+    
+    /**
+     * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
+     **/
+    virtual void restoreOpenGLContext() = 0;
 };
 
 

@@ -152,6 +152,7 @@ struct ViewerGL::Implementation
           , displayingImageGain()
           , displayingImageOffset()
           , displayingImageMipMapLevel(0)
+          , displayingImagePremult()
           , displayingImageLut(Natron::sRGB)
           , ms(UNDEFINED)
           , hs(HOVERING_NOTHING)
@@ -187,6 +188,7 @@ struct ViewerGL::Implementation
           , selectionRectangle()
           , checkerboardTextureID(0)
           , checkerboardTileSize(0)
+          , savedTexture(0)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -222,6 +224,7 @@ struct ViewerGL::Implementation
     double displayingImageGain[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel;
+    Natron::ImagePremultiplication displayingImagePremult[2];
     Natron::ViewerColorSpace displayingImageLut;
     MOUSE_STATE ms; /*!< Holds the mouse state*/
     HOVER_STATE hs;
@@ -273,6 +276,9 @@ struct ViewerGL::Implementation
     GLuint checkerboardTextureID;
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
 
+    GLuint savedTexture; // @see saveOpenGLContext/restoreOpenGLContext
+    GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
+
     bool isNearbyWipeCenter(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double tolerance) const;
     bool isNearbyWipeMixHandle(const QPointF & pos,double tolerance) const;
@@ -284,6 +290,7 @@ struct ViewerGL::Implementation
     {
         assert(activeTextures[i]);
         glActiveTexture(GL_TEXTURE0);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
         glBindTexture( GL_TEXTURE_2D, activeTextures[i]->getTexID() );
         // debug (so the OpenGL debugger can make a breakpoint here)
         //GLfloat d;
@@ -300,7 +307,7 @@ struct ViewerGL::Implementation
             shaderRGB->release();
         }
         glCheckError();
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_2D, prevBoundTexture);
     }
 
     /**
@@ -951,6 +958,43 @@ ViewerGL::resizeGL(int width,
     }
 }
 
+/**
+ * @brief Used to setup the blending mode to draw the first texture
+ **/
+class BlendSetter
+{
+    
+    bool didBlend;
+    
+public:
+    
+    BlendSetter(ImagePremultiplication premult)
+    {
+        didBlend = premult != ImageOpaque;
+        if (didBlend) {
+            glEnable(GL_BLEND);
+        }
+        switch (premult) {
+            case Natron::ImagePremultiplied:
+                glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+                break;
+            case Natron::ImageUnPremultiplied:
+                glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+                break;
+            case Natron::ImageOpaque:
+                break;
+        }
+
+    }
+    
+    ~BlendSetter()
+    {
+        if (didBlend) {
+            glDisable(GL_BLEND);
+        }
+    }
+};
+
 void
 ViewerGL::paintGL()
 {
@@ -963,140 +1007,165 @@ ViewerGL::paintGL()
     }
     glCheckError();
 
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-
-    double zoomLeft, zoomRight, zoomBottom, zoomTop;
     {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        assert(0 < _imp->zoomCtx.factor() && _imp->zoomCtx.factor() <= 1024);
-        zoomLeft = _imp->zoomCtx.left();
-        zoomRight = _imp->zoomCtx.right();
-        zoomBottom = _imp->zoomCtx.bottom();
-        zoomTop = _imp->zoomCtx.top();
-    }
-    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix p(GL_PROJECTION);
 
-        return;
-    }
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
 
-    glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
-    glCheckError();
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
 
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
-
-    clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
-    glCheckErrorIgnoreOSXBug();
-    
-
-    glEnable (GL_TEXTURE_2D);
-    
-   
-
-    // don't even bind the shader on 8-bits gamma-compressed textures
-    ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
-
-    ///Determine whether we need to draw each texture or not
-    int activeInputs[2];
-    _imp->viewerTab->getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
-    bool drawTexture[2];
-    drawTexture[0] = _imp->activeTextures[0];
-    drawTexture[1] = _imp->activeTextures[1] && compOp != OPERATOR_NONE;
-    if ( (activeInputs[0] == activeInputs[1]) && (compOp != OPERATOR_MINUS) ) {
-        drawTexture[1] = false;
-    }
-    double wipeMix;
-    {
-        QMutexLocker l(&_imp->wipeControlsMutex);
-        wipeMix = _imp->mixAmount;
-    }
-
-    glPushAttrib(GL_COLOR_BUFFER_BIT);
-    glBlendColor(1, 1, 1, wipeMix);
-
-    if (compOp == OPERATOR_WIPE) {
-        ///In wipe mode draw first the input A then only the portion we are interested in the input B
-
-        if (drawTexture[0]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+        double zoomLeft, zoomRight, zoomBottom, zoomTop;
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            assert(0 < _imp->zoomCtx.factor() && _imp->zoomCtx.factor() <= 1024);
+            zoomLeft = _imp->zoomCtx.left();
+            zoomRight = _imp->zoomCtx.right();
+            zoomBottom = _imp->zoomCtx.bottom();
+            zoomTop = _imp->zoomCtx.top();
         }
-        if (drawTexture[1]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-        }
-    } else if (compOp == OPERATOR_MINUS) {
-        if (drawTexture[0]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-        }
-        if (drawTexture[1]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
-            glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-        }
-    } else if (compOp == OPERATOR_UNDER) {
-        if (drawTexture[0]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-        }
-        if (drawTexture[1]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
+        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+            clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
 
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
+            return;
         }
-    } else if (compOp == OPERATOR_OVER) {
-        ///draw first B then A
-        if (drawTexture[1]) {
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
-        }
-        if (drawTexture[0]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
 
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_LEFT_PLANE);
-
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
-            glDisable(GL_BLEND);
-        }
-    } else {
-        if (drawTexture[0]) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
-            glDisable(GL_BLEND);
-        }
-    }
-
-    glPopAttrib();
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glCheckError();
 
 
-    glCheckError();
-    if (_imp->overlay) {
-        drawOverlay(_imp->displayingImageMipMapLevel);
-    }
 
-    if (_imp->displayPersistentMessage) {
-        drawPersistentMessage();
-    }
+        // don't even bind the shader on 8-bits gamma-compressed textures
+        ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
 
-    if (_imp->ms == SELECTING) {
-        _imp->drawSelectionRectangle();
-    }
-    glCheckErrorAssert();
+        ///Determine whether we need to draw each texture or not
+        int activeInputs[2];
+        _imp->viewerTab->getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
+        bool drawTexture[2];
+        drawTexture[0] = _imp->activeTextures[0];
+        drawTexture[1] = _imp->activeTextures[1] && compOp != OPERATOR_NONE;
+        if ( (activeInputs[0] == activeInputs[1]) && (compOp != OPERATOR_MINUS) ) {
+            drawTexture[1] = false;
+        }
+        double wipeMix;
+        {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            wipeMix = _imp->mixAmount;
+        }
+
+        GLuint savedTexture;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+        {
+            GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
+            clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
+            glCheckErrorIgnoreOSXBug();
+
+            glEnable (GL_TEXTURE_2D);
+
+            glBlendColor(1, 1, 1, wipeMix);
+            
+            ///Depending on the premultiplication of the input image we use a different blending func
+            ImagePremultiplication premultA = _imp->displayingImagePremult[0];
+            if (!_imp->viewerTab->isCheckerboardEnabled()) {
+                premultA = Natron::ImageOpaque; ///When no checkerboard, draw opaque
+            }
+
+            if (compOp == OPERATOR_WIPE) {
+                ///In wipe mode draw first the input A then only the portion we are interested in the input B
+
+                if (drawTexture[0]) {
+                    BlendSetter b(premultA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                }
+                if (drawTexture[1]) {
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    glDisable(GL_BLEND);
+                }
+            } else if (compOp == OPERATOR_MINUS) {
+                if (drawTexture[0]) {
+                    BlendSetter b(premultA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                }
+                if (drawTexture[1]) {
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
+                    glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    glDisable(GL_BLEND);
+                }
+            } else if (compOp == OPERATOR_UNDER) {
+                if (drawTexture[0]) {
+                    BlendSetter b(premultA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                }
+                if (drawTexture[1]) {
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    glDisable(GL_BLEND);
+
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    glDisable(GL_BLEND);
+                }
+            } else if (compOp == OPERATOR_OVER) {
+                ///draw first B then A
+                if (drawTexture[1]) {
+                    ///Depending on the premultiplication of the input image we use a different blending func
+                    ImagePremultiplication premultB = _imp->displayingImagePremult[1];
+                    if (!_imp->viewerTab->isCheckerboardEnabled()) {
+                        premultB = Natron::ImageOpaque; ///When no checkerboard, draw opaque
+                    }
+                    BlendSetter b(premultB);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                }
+                if (drawTexture[0]) {
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+                    glDisable(GL_BLEND);
+
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_LEFT_PLANE);
+
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+                    glDisable(GL_BLEND);
+                }
+            } else {
+                if (drawTexture[0]) {
+                    
+                    BlendSetter b(premultA);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+
+                }
+            }
+        } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
+        ///Unbind render textures for overlays
+        glBindTexture(GL_TEXTURE_2D, savedTexture);
+        
+        glCheckError();
+        if (_imp->overlay) {
+            drawOverlay(_imp->displayingImageMipMapLevel);
+        }
+        
+        if (_imp->displayPersistentMessage) {
+            drawPersistentMessage();
+        }
+        
+        if (_imp->ms == SELECTING) {
+            _imp->drawSelectionRectangle();
+        }
+        glCheckErrorAssert();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 } // paintGL
 
 void
@@ -1108,8 +1177,12 @@ ViewerGL::clearColorBuffer(double r,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
-    glClearColor(r,g,b,a);
-    glClear(GL_COLOR_BUFFER_BIT);
+    {
+        GLProtectAttrib att(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
+
+        glClearColor(r,g,b,a);
+        glClear(GL_COLOR_BUFFER_BIT);
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
 }
 
 void
@@ -1139,101 +1212,105 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     QPoint btmLeft( dispW.left(),dispW.bottom() );
     QPoint btmRight( dispW.right(),dispW.bottom() );
 
-    glBegin(GL_LINES);
-
-    glColor4f( _imp->displayWindowOverlayColor.redF(),
-               _imp->displayWindowOverlayColor.greenF(),
-               _imp->displayWindowOverlayColor.blueF(),
-               _imp->displayWindowOverlayColor.alphaF() );
-    glVertex3f(btmRight.x(),btmRight.y(),1);
-    glVertex3f(btmLeft.x(),btmLeft.y(),1);
-
-    glVertex3f(btmLeft.x(),btmLeft.y(),1);
-    glVertex3f(topLeft.x(),topLeft.y(),1);
-
-    glVertex3f(topLeft.x(),topLeft.y(),1);
-    glVertex3f(topRight.x(),topRight.y(),1);
-
-    glVertex3f(topRight.x(),topRight.y(),1);
-    glVertex3f(btmRight.x(),btmRight.y(),1);
-
-    glEnd();
-    glCheckErrorIgnoreOSXBug();
-
-
-    for (int i = 0; i < 2; ++i) {
-        if (!_imp->activeTextures[i]) {
-            break;
-        }
-        RectD dataW = getRoD(i);
-
-        if (dataW != dispW) {
-            renderText(dataW.right(), dataW.top(),
-                       _imp->currentViewerInfos_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
-            renderText(dataW.left(), dataW.bottom(),
-                       _imp->currentViewerInfos_btmLeftBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
-
-
-            QPoint topRight2( dataW.right(), dataW.top() );
-            QPoint topLeft2( dataW.left(),dataW.top() );
-            QPoint btmLeft2( dataW.left(),dataW.bottom() );
-            QPoint btmRight2( dataW.right(),dataW.bottom() );
-            glPushAttrib(GL_LINE_BIT);
-            glLineStipple(2, 0xAAAA);
-            glEnable(GL_LINE_STIPPLE);
-            glBegin(GL_LINES);
-            glColor4f( _imp->rodOverlayColor.redF(),
-                       _imp->rodOverlayColor.greenF(),
-                       _imp->rodOverlayColor.blueF(),
-                       _imp->rodOverlayColor.alphaF() );
-            glVertex3f(btmRight2.x(),btmRight2.y(),1);
-            glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
-
-            glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
-            glVertex3f(topLeft2.x(),topLeft2.y(),1);
-
-            glVertex3f(topLeft2.x(),topLeft2.y(),1);
-            glVertex3f(topRight2.x(),topRight2.y(),1);
-
-            glVertex3f(topRight2.x(),topRight2.y(),1);
-            glVertex3f(btmRight2.x(),btmRight2.y(),1);
-            glEnd();
-            glDisable(GL_LINE_STIPPLE);
-            glPopAttrib();
-            glCheckError();
-        }
-    }
-
-    bool userRoIEnabled;
     {
-        QMutexLocker l(&_imp->userRoIMutex);
-        userRoIEnabled = _imp->userRoIEnabled;
-    }
-    if (userRoIEnabled) {
-        drawUserRoI();
-    }
+        GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-    ViewerCompositingOperator compOperator = _imp->viewerTab->getCompositingOperator();
-    if (compOperator != OPERATOR_NONE) {
-        drawWipeControl();
-    }
+        glDisable(GL_BLEND);
 
-    _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
-    glCheckError();
+        glBegin(GL_LINES);
 
-    if (_imp->pickerState == PICKER_RECTANGLE) {
-        if ( _imp->viewerTab->getGui()->hasPickers() ) {
-            drawPickerRectangle();
+        glColor4f( _imp->displayWindowOverlayColor.redF(),
+                  _imp->displayWindowOverlayColor.greenF(),
+                  _imp->displayWindowOverlayColor.blueF(),
+                  _imp->displayWindowOverlayColor.alphaF() );
+        glVertex3f(btmRight.x(),btmRight.y(),1);
+        glVertex3f(btmLeft.x(),btmLeft.y(),1);
+
+        glVertex3f(btmLeft.x(),btmLeft.y(),1);
+        glVertex3f(topLeft.x(),topLeft.y(),1);
+
+        glVertex3f(topLeft.x(),topLeft.y(),1);
+        glVertex3f(topRight.x(),topRight.y(),1);
+
+        glVertex3f(topRight.x(),topRight.y(),1);
+        glVertex3f(btmRight.x(),btmRight.y(),1);
+
+        glEnd();
+        glCheckErrorIgnoreOSXBug();
+
+
+        for (int i = 0; i < 2; ++i) {
+            if (!_imp->activeTextures[i]) {
+                break;
+            }
+            RectD dataW = getRoD(i);
+
+            if (dataW != dispW) {
+                renderText(dataW.right(), dataW.top(),
+                           _imp->currentViewerInfos_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
+                renderText(dataW.left(), dataW.bottom(),
+                           _imp->currentViewerInfos_btmLeftBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
+
+
+                QPoint topRight2( dataW.right(), dataW.top() );
+                QPoint topLeft2( dataW.left(),dataW.top() );
+                QPoint btmLeft2( dataW.left(),dataW.bottom() );
+                QPoint btmRight2( dataW.right(),dataW.bottom() );
+                glLineStipple(2, 0xAAAA);
+                glEnable(GL_LINE_STIPPLE);
+                glBegin(GL_LINES);
+                glColor4f( _imp->rodOverlayColor.redF(),
+                          _imp->rodOverlayColor.greenF(),
+                          _imp->rodOverlayColor.blueF(),
+                          _imp->rodOverlayColor.alphaF() );
+                glVertex3f(btmRight2.x(),btmRight2.y(),1);
+                glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
+
+                glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
+                glVertex3f(topLeft2.x(),topLeft2.y(),1);
+
+                glVertex3f(topLeft2.x(),topLeft2.y(),1);
+                glVertex3f(topRight2.x(),topRight2.y(),1);
+
+                glVertex3f(topRight2.x(),topRight2.y(),1);
+                glVertex3f(btmRight2.x(),btmRight2.y(),1);
+                glEnd();
+                glDisable(GL_LINE_STIPPLE);
+                glCheckError();
+            }
         }
-    } else if (_imp->pickerState == PICKER_POINT) {
-        if ( _imp->viewerTab->getGui()->hasPickers() ) {
-            drawPickerPixel();
+
+        bool userRoIEnabled;
+        {
+            QMutexLocker l(&_imp->userRoIMutex);
+            userRoIEnabled = _imp->userRoIEnabled;
         }
-    }
+        if (userRoIEnabled) {
+            drawUserRoI();
+        }
+
+        ViewerCompositingOperator compOperator = _imp->viewerTab->getCompositingOperator();
+        if (compOperator != OPERATOR_NONE) {
+            drawWipeControl();
+        }
 
 
-    //reseting color for next pass
-    glColor4f(1., 1., 1., 1.);
+        glCheckError();
+        glColor4f(1., 1., 1., 1.);
+        _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
+        glCheckError();
+
+        if (_imp->pickerState == PICKER_RECTANGLE) {
+            if ( _imp->viewerTab->getGui()->hasPickers() ) {
+                drawPickerRectangle();
+            }
+        } else if (_imp->pickerState == PICKER_POINT) {
+            if ( _imp->viewerTab->getGui()->hasPickers() ) {
+                drawPickerPixel();
+            }
+        }
+
+    } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
 } // drawOverlay
 
@@ -1242,118 +1319,125 @@ ViewerGL::drawUserRoI()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    glColor4f(0.9, 0.9, 0.9, 1.);
-
-    double zoomScreenPixelWidth, zoomScreenPixelHeight;
+    
     {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
-        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
-    }
-    RectD userRoI;
-    {
-        QMutexLocker l(&_imp->userRoIMutex);
-        userRoI = _imp->userRoI;
-    }
+        GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-    ///base rect
-    glBegin(GL_LINE_LOOP);
-    glVertex2f(userRoI.x1, userRoI.y1); //bottom left
-    glVertex2f(userRoI.x1, userRoI.y2); //top left
-    glVertex2f(userRoI.x2, userRoI.y2); //top right
-    glVertex2f(userRoI.x2, userRoI.y1); //bottom right
-    glEnd();
+        glDisable(GL_BLEND);
 
+        glColor4f(0.9, 0.9, 0.9, 1.);
 
-    glBegin(GL_LINES);
-    ///border ticks
-    double borderTickWidth = USER_ROI_BORDER_TICK_SIZE * zoomScreenPixelWidth;
-    double borderTickHeight = USER_ROI_BORDER_TICK_SIZE * zoomScreenPixelHeight;
-    glVertex2f(userRoI.x1, (userRoI.y1 + userRoI.y2) / 2);
-    glVertex2f(userRoI.x1 - borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
+        double zoomScreenPixelWidth, zoomScreenPixelHeight;
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
+            zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
+        }
+        RectD userRoI;
+        {
+            QMutexLocker l(&_imp->userRoIMutex);
+            userRoI = _imp->userRoI;
+        }
 
-    glVertex2f(userRoI.x2, (userRoI.y1 + userRoI.y2) / 2);
-    glVertex2f(userRoI.x2 + borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
-
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 + borderTickHeight );
-
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 - borderTickHeight );
-
-    ///middle cross
-    double crossWidth = USER_ROI_CROSS_RADIUS * zoomScreenPixelWidth;
-    double crossHeight = USER_ROI_CROSS_RADIUS * zoomScreenPixelHeight;
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 - crossHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 + crossHeight );
-
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  - crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  + crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
-    glEnd();
+        ///base rect
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(userRoI.x1, userRoI.y1); //bottom left
+        glVertex2f(userRoI.x1, userRoI.y2); //top left
+        glVertex2f(userRoI.x2, userRoI.y2); //top right
+        glVertex2f(userRoI.x2, userRoI.y1); //bottom right
+        glEnd();
 
 
-    ///draw handles hint for the user
-    glBegin(GL_QUADS);
+        glBegin(GL_LINES);
+        ///border ticks
+        double borderTickWidth = USER_ROI_BORDER_TICK_SIZE * zoomScreenPixelWidth;
+        double borderTickHeight = USER_ROI_BORDER_TICK_SIZE * zoomScreenPixelHeight;
+        glVertex2f(userRoI.x1, (userRoI.y1 + userRoI.y2) / 2);
+        glVertex2f(userRoI.x1 - borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
 
-    double rectHalfWidth = (USER_ROI_SELECTION_POINT_SIZE * zoomScreenPixelWidth) / 2.;
-    double rectHalfHeight = (USER_ROI_SELECTION_POINT_SIZE * zoomScreenPixelWidth) / 2.;
-    //left
-    glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
-    glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-    glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-    glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        glVertex2f(userRoI.x2, (userRoI.y1 + userRoI.y2) / 2);
+        glVertex2f(userRoI.x2 + borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
 
-    //top
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 - rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 + rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 + rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 - rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 + borderTickHeight );
 
-    //right
-    glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
-    glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-    glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-    glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 - borderTickHeight );
 
-    //bottom
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 - rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 + rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 + rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 - rectHalfHeight );
+        ///middle cross
+        double crossWidth = USER_ROI_CROSS_RADIUS * zoomScreenPixelWidth;
+        double crossHeight = USER_ROI_CROSS_RADIUS * zoomScreenPixelHeight;
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 - crossHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 + crossHeight );
 
-    //middle
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
-    glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  - crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  + crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
+        glEnd();
 
 
-    //top left
-    glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
-    glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
-    glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
-    glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        ///draw handles hint for the user
+        glBegin(GL_QUADS);
 
-    //top right
-    glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
-    glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
-    glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
-    glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        double rectHalfWidth = (USER_ROI_SELECTION_POINT_SIZE * zoomScreenPixelWidth) / 2.;
+        double rectHalfHeight = (USER_ROI_SELECTION_POINT_SIZE * zoomScreenPixelWidth) / 2.;
+        //left
+        glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
 
-    //bottom right
-    glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
-    glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
-    glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
-    glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        //top
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 - rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 + rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 + rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 - rectHalfHeight );
+
+        //right
+        glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+
+        //bottom
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 - rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 + rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 + rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 - rectHalfHeight );
+
+        //middle
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
+        glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
 
 
-    //bottom left
-    glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
-    glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
-    glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
-    glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        //top left
+        glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
 
-    glEnd();
+        //top right
+        glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
+
+        //bottom right
+        glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        
+        
+        //bottom left
+        glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        
+        glEnd();
+    } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 } // drawUserRoI
 
 void
@@ -1403,105 +1487,107 @@ ViewerGL::drawWipeControl()
     oppositeAxisBottom.setX( wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
     oppositeAxisBottom.setY( wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
 
+    {
+        GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
+        GLProtectMatrix p(GL_PROJECTION);
 
-    // Draw everything twice
-    // l = 0: shadow
-    // l = 1: drawing
-    double baseColor[3];
-    for (int l = 0; l < 2; ++l) {
-        if (l == 0) {
-            // Draw a shadow for the cross hair
-            // shift by (1,1) pixel
-            glPushMatrix();
-            glTranslated(1. / zoomFactor, -1. / zoomFactor, 0);
-            baseColor[0] = baseColor[1] = baseColor[2] = 0.;
-        } else {
-            baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
-        }
+        // Draw everything twice
+        // l = 0: shadow
+        // l = 1: drawing
+        double baseColor[3];
+        for (int l = 0; l < 2; ++l) {
+            if (l == 0) {
+                // Draw a shadow for the cross hair
+                // shift by (1,1) pixel
+                glMatrixMode(GL_PROJECTION);
+                glPushMatrix();
+                glTranslated(1. / zoomFactor, -1. / zoomFactor, 0);
+                baseColor[0] = baseColor[1] = baseColor[2] = 0.;
+            } else {
+                baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
+            }
 
-        glLineWidth(1.5);
-        glEnable(GL_LINE_SMOOTH);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glBegin(GL_LINES);
-        if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
-            glColor4f(0., 1., 0., 1.);
-        }
-        glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
-        glVertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
-        glVertex2d( rotateAxisRight.x(), rotateAxisRight.y() );
-        glVertex2d( oppositeAxisBottom.x(), oppositeAxisBottom.y() );
-        glVertex2d( oppositeAxisTop.x(), oppositeAxisTop.y() );
-        glVertex2d( wipeCenter.x(),wipeCenter.y() );
-        glVertex2d( mixPos.x(), mixPos.y() );
-        glEnd();
-        glLineWidth(1.);
-
-        ///if hovering the rotate handle or dragging it show a small bended arrow
-        if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
-            glColor4f(0., 1., 0., 1.);
-            double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
-            ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
-            OfxPointD arrowRadius;
-            arrowRadius.x = 5. / zoomFactor;
-            arrowRadius.y = 10. / zoomFactor;
-
-            glPushMatrix ();
-            glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
-            glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
-            //  center the oval at x_center, y_center
-            glTranslatef (arrowCenterX, 0., 0);
-            //  draw the oval using line segments
-            glBegin (GL_LINE_STRIP);
-            glVertex2f (0, arrowRadius.y);
-            glVertex2f (arrowRadius.x, 0.);
-            glVertex2f (0, -arrowRadius.y);
-            glEnd ();
-
-
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_LINE_SMOOTH);
+            glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+            glLineWidth(1.5);
             glBegin(GL_LINES);
-            ///draw the top head
-            glVertex2f(0., arrowRadius.y);
-            glVertex2f(0., arrowRadius.y -  arrowRadius.x );
-
-            glVertex2f(0., arrowRadius.y);
-            glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
-
-            ///draw the bottom head
-            glVertex2f(0., -arrowRadius.y);
-            glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
-
-            glVertex2f(0., -arrowRadius.y);
-            glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
-
-            glEnd();
-
-            glPopMatrix ();
+            if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
+                glColor4f(0., 1., 0., 1.);
+            }
             glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
+            glVertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
+            glVertex2d( rotateAxisRight.x(), rotateAxisRight.y() );
+            glVertex2d( oppositeAxisBottom.x(), oppositeAxisBottom.y() );
+            glVertex2d( oppositeAxisTop.x(), oppositeAxisTop.y() );
+            glVertex2d( wipeCenter.x(),wipeCenter.y() );
+            glVertex2d( mixPos.x(), mixPos.y() );
+            glEnd();
+            glLineWidth(1.);
+
+            ///if hovering the rotate handle or dragging it show a small bended arrow
+            if ( (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE) || (_imp->ms == ROTATING_WIPE_HANDLE) ) {
+                GLProtectMatrix p(GL_PROJECTION);
+
+                glColor4f(0., 1., 0., 1.);
+                double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
+                ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
+                OfxPointD arrowRadius;
+                arrowRadius.x = 5. / zoomFactor;
+                arrowRadius.y = 10. / zoomFactor;
+
+                glMatrixMode(GL_PROJECTION);
+                glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
+                glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
+                //  center the oval at x_center, y_center
+                glTranslatef (arrowCenterX, 0., 0);
+                //  draw the oval using line segments
+                glBegin (GL_LINE_STRIP);
+                glVertex2f (0, arrowRadius.y);
+                glVertex2f (arrowRadius.x, 0.);
+                glVertex2f (0, -arrowRadius.y);
+                glEnd ();
+
+
+                glBegin(GL_LINES);
+                ///draw the top head
+                glVertex2f(0., arrowRadius.y);
+                glVertex2f(0., arrowRadius.y -  arrowRadius.x );
+
+                glVertex2f(0., arrowRadius.y);
+                glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
+
+                ///draw the bottom head
+                glVertex2f(0., -arrowRadius.y);
+                glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
+
+                glVertex2f(0., -arrowRadius.y);
+                glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
+
+                glEnd();
+
+                glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
+            }
+
+            glPointSize(5.);
+            glEnable(GL_POINT_SMOOTH);
+            glBegin(GL_POINTS);
+            glVertex2d( wipeCenter.x(), wipeCenter.y() );
+            if ( ( (_imp->hs == HOVERING_WIPE_MIX) && (_imp->ms != ROTATING_WIPE_HANDLE) ) || (_imp->ms == DRAGGING_WIPE_MIX_HANDLE) ) {
+                glColor4f(0., 1., 0., 1.);
+            }
+            glVertex2d( mixPos.x(), mixPos.y() );
+            glEnd();
+            glPointSize(1.);
+            
+            _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+            if (l == 0) {
+                glMatrixMode(GL_PROJECTION);
+                glPopMatrix();
+            }
         }
-
-        glPointSize(5.);
-        glEnable(GL_POINT_SMOOTH);
-        glBegin(GL_POINTS);
-        glVertex2d( wipeCenter.x(), wipeCenter.y() );
-        if ( ( (_imp->hs == HOVERING_WIPE_MIX) && (_imp->ms != ROTATING_WIPE_HANDLE) ) || (_imp->ms == DRAGGING_WIPE_MIX_HANDLE) ) {
-            glColor4f(0., 1., 0., 1.);
-        }
-        glVertex2d( mixPos.x(), mixPos.y() );
-        glEnd();
-        glPointSize(1.);
-
-        _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
-        if (l == 0) {
-            glPopMatrix();
-        }
-    }
-
-
-    glDisable(GL_POINT_SMOOTH);
-    glDisable(GL_LINE_SMOOTH);
-    glDisable(GL_BLEND);
+    } // GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
 } // drawWipeControl
 
 void
@@ -1529,40 +1615,47 @@ ViewerGL::Implementation::drawArcOfCircle(const QPointF & center,
 void
 ViewerGL::drawPickerRectangle()
 {
-    glColor3f(0.9, 0.7, 0.);
-    QPointF topLeft = _imp->pickerRect.topLeft();
-    QPointF btmRight = _imp->pickerRect.bottomRight();
-    ///base rect
-    glBegin(GL_LINE_LOOP);
-    glVertex2f( topLeft.x(), btmRight.y() ); //bottom left
-    glVertex2f( topLeft.x(), topLeft.y() ); //top left
-    glVertex2f( btmRight.x(), topLeft.y() ); //top right
-    glVertex2f( btmRight.x(), btmRight.y() ); //bottom right
-    glEnd();
+    {
+        GLProtectAttrib a(GL_CURRENT_BIT);
+
+        glColor3f(0.9, 0.7, 0.);
+        QPointF topLeft = _imp->pickerRect.topLeft();
+        QPointF btmRight = _imp->pickerRect.bottomRight();
+        ///base rect
+        glBegin(GL_LINE_LOOP);
+        glVertex2f( topLeft.x(), btmRight.y() ); //bottom left
+        glVertex2f( topLeft.x(), topLeft.y() ); //top left
+        glVertex2f( btmRight.x(), topLeft.y() ); //top right
+        glVertex2f( btmRight.x(), btmRight.y() ); //bottom right
+        glEnd();
+    } // GLProtectAttrib a(GL_CURRENT_BIT);
 }
 
 void
 ViewerGL::drawPickerPixel()
 {
     {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        glPointSize( 1. * _imp->zoomCtx.factor() );
-    }
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 
-    QPointF pos = _imp->lastPickerPos;
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_POINT_SMOOTH);
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            glPointSize( 1. * _imp->zoomCtx.factor() );
+        }
 
-    if (mipMapLevel != 0) {
-        pos *= (1 << mipMapLevel);
-    }
+        QPointF pos = _imp->lastPickerPos;
+        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 
-    glEnable(GL_POINT_SMOOTH);
-    glColor3f(0.9, 0.7, 0.);
-    glBegin(GL_POINTS);
-    glVertex2d( pos.x(),pos.y() );
-    glEnd();
-    glPointSize(1.);
-    glDisable(GL_POINT_SMOOTH);
+        if (mipMapLevel != 0) {
+            pos *= (1 << mipMapLevel);
+        }
+        glColor3f(0.9, 0.7, 0.);
+        glBegin(GL_POINTS);
+        glVertex2d( pos.x(),pos.y() );
+        glEnd();
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 }
 
 void
@@ -1614,65 +1707,67 @@ ViewerGL::drawPersistentMessage()
         textPos = _imp->zoomCtx.toZoomCoordinates(20, offset);
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
-    if (_imp->persistentMessageType == 1) { // error
-        glColor4f(0.5,0.,0.,1.);
-    } else { // warning
-        glColor4f(0.65,0.65,0.,1.);
-    }
-    glBegin(GL_POLYGON);
-    glVertex2f( topLeft.x(),topLeft.y() ); //top left
-    glVertex2f( topLeft.x(),bottomRight.y() ); //bottom left
-    glVertex2f( bottomRight.x(),bottomRight.y() ); //bottom right
-    glVertex2f( bottomRight.x(),topLeft.y() ); //top right
-    glEnd();
+    
+    {
+        GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
+        glDisable(GL_BLEND);
+
+        if (_imp->persistentMessageType == 1) { // error
+            glColor4f(0.5,0.,0.,1.);
+        } else { // warning
+            glColor4f(0.65,0.65,0.,1.);
+        }
+        glBegin(GL_POLYGON);
+        glVertex2f( topLeft.x(),topLeft.y() ); //top left
+        glVertex2f( topLeft.x(),bottomRight.y() ); //bottom left
+        glVertex2f( bottomRight.x(),bottomRight.y() ); //bottom right
+        glVertex2f( bottomRight.x(),topLeft.y() ); //top right
+        glEnd();
 
 
-    for (int j = 0; j < lines.size(); ++j) {
-        renderText(textPos.x(),textPos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
-        textPos.setY(textPos.y() - metrics.height() * 2 * zoomScreenPixelHeight);
-    }
-    glCheckError();
-    //reseting color for next pass
-    glColor4f(1., 1., 1., 1.);
+        for (int j = 0; j < lines.size(); ++j) {
+            renderText(textPos.x(),textPos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
+            textPos.setY(textPos.y() - metrics.height() * 2 * zoomScreenPixelHeight);
+        }
+        glCheckError();
+    } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 } // drawPersistentMessage
 
 void
 ViewerGL::Implementation::drawSelectionRectangle()
 {
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
-    glColor4f(0.5,0.8,1.,0.4);
-    QPointF btmRight = selectionRectangle.bottomRight();
-    QPointF topLeft = selectionRectangle.topLeft();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
-    glBegin(GL_POLYGON);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glColor4f(0.5,0.8,1.,0.4);
+        QPointF btmRight = selectionRectangle.bottomRight();
+        QPointF topLeft = selectionRectangle.topLeft();
 
-
-    glLineWidth(1.5);
-
-    glBegin(GL_LINE_LOOP);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glBegin(GL_POLYGON);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
 
 
-    glDisable(GL_LINE_SMOOTH);
-    glCheckError();
+        glLineWidth(1.5);
 
-    glLineWidth(1.);
-    glPopAttrib();
-    glColor4f(1., 1., 1., 1.);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
+
+        glCheckError();
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
 void
@@ -1696,21 +1791,27 @@ ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
     double xTilesCountF = screenW / (checkerboardTileSize * 4); //< 4 because the texture contains 4 tiles
     double yTilesCountF = screenH / (checkerboardTileSize * 4);
 
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y());
-    
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
-    glBegin(GL_POLYGON);
-    glTexCoord2d(0., 0.); glVertex2d(topLeft.x(),btmRight.y());
-    glTexCoord2d(0., yTilesCountF); glVertex2d(topLeft.x(),topLeft.y());
-    glTexCoord2d(xTilesCountF, yTilesCountF); glVertex2d(btmRight.x(), topLeft.y());
-    glTexCoord2d(xTilesCountF, 0.); glVertex2d(btmRight.x(), btmRight.y());
-    glEnd();
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    {
+        GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    
-    glDisable(GL_SCISSOR_TEST);
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y());
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
+        glBegin(GL_POLYGON);
+        glTexCoord2d(0., 0.); glVertex2d(topLeft.x(),btmRight.y());
+        glTexCoord2d(0., yTilesCountF); glVertex2d(topLeft.x(),topLeft.y());
+        glTexCoord2d(xTilesCountF, yTilesCountF); glVertex2d(btmRight.x(), topLeft.y());
+        glTexCoord2d(xTilesCountF, 0.); glVertex2d(btmRight.x(), btmRight.y());
+        glEnd();
+
+
+        //glDisable(GL_SCISSOR_TEST);
+    } // GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
+    glBindTexture(GL_TEXTURE_2D, savedTexture);
     glCheckError();
 }
 
@@ -1759,33 +1860,38 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
     if (mustCreateTexture) {
         glGenTextures(1, &checkerboardTextureID);
     }
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture (GL_TEXTURE_2D,checkerboardTextureID);
-    
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    
-    double color1[4];
-    double color2[4];
-    appPTR->getCurrentSettings()->getCheckerboardColor1(&color1[0], &color1[1], &color1[2], &color1[3]);
-    appPTR->getCurrentSettings()->getCheckerboardColor2(&color2[0], &color2[1], &color2[2], &color2[3]);
-    
-    unsigned char checkerboardTexture[16];
-    ///Fill the first line
-    for (int i = 0; i < 4; ++i) {
-        checkerboardTexture[i] = Color::floatToInt<256>(color1[i]);
-        checkerboardTexture[i + 4] = Color::floatToInt<256>(color2[i]);
-    }
-    ///Copy the first line to the second line
-    memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
-    memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
-    
-    glBindTexture(GL_TEXTURE_2D, 0);
+    GLuint savedTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    {
+        GLProtectAttrib a(GL_ENABLE_BIT);
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture (GL_TEXTURE_2D,checkerboardTextureID);
+
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        double color1[4];
+        double color2[4];
+        appPTR->getCurrentSettings()->getCheckerboardColor1(&color1[0], &color1[1], &color1[2], &color1[3]);
+        appPTR->getCurrentSettings()->getCheckerboardColor2(&color2[0], &color2[1], &color2[2], &color2[3]);
+
+        unsigned char checkerboardTexture[16];
+        ///Fill the first line
+        for (int i = 0; i < 4; ++i) {
+            checkerboardTexture[i] = Color::floatToInt<256>(color1[i]);
+            checkerboardTexture[i + 4] = Color::floatToInt<256>(color2[i]);
+        }
+        ///Copy the first line to the second line
+        memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
+        memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
+    } // GLProtectAttrib a(GL_ENABLE_BIT);
+    glBindTexture(GL_TEXTURE_2D, savedTexture);
     
     checkerboardTileSize = appPTR->getCurrentSettings()->getCheckerboardTileSize();
 
@@ -1989,7 +2095,7 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     // - 8-bits textures are stored non-linear and must be displayer as is
     // - floating-point textures are linear and must be decompressed according to the given lut
 
-    assert(supportsGLSL );
+    assert(supportsGLSL);
 
     if ( !shaderRGB->bind() ) {
         cout << qPrintable( shaderRGB->log() ) << endl;
@@ -2035,31 +2141,7 @@ ViewerGL::initShaderGLSL()
     }
 }
 
-void
-ViewerGL::saveGLState()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-}
 
-void
-ViewerGL::restoreGLState()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    glPopAttrib();
-}
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
@@ -2070,6 +2152,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int lut,
                                      int pboIndex,
                                      unsigned int mipMapLevel,
+                                     Natron::ImagePremultiplication premult,
                                      int textureIndex)
 {
     // always running in the main thread
@@ -2102,17 +2185,17 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::FLOAT);
     }
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+    //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
     glCheckError();
     _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
     _imp->displayingImageGain[textureIndex] = gain;
     _imp->displayingImageOffset[textureIndex] = offset;
     _imp->displayingImageMipMapLevel = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpace)lut;
-
-    updateGL();
+    _imp->displayingImagePremult[textureIndex] = premult;
     
+    updateGL();
     emit imageChanged(textureIndex);
 }
 
@@ -2325,6 +2408,10 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
+    
     bool mustRedraw = false;
     if (_imp->ms == BUILDING_PICKER_RECTANGLE) {
         updateRectangleColorPicker();
@@ -3287,28 +3374,26 @@ ViewerGL::renderText(double x,
     if ( string.isEmpty() ) {
         return;
     }
-
-    glMatrixMode (GL_PROJECTION);
-    glPushMatrix(); // save GL_PROJECTION
-    glLoadIdentity();
-    double h = (double)height();
-    double w = (double)width();
-    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-    glOrtho(0,w,0,h,-1,1);
-
-    glMatrixMode(GL_MODELVIEW);
-    QPointF pos;
     {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
-    }
-    glCheckError();
-    _imp->textRenderer.renderText(pos.x(),h - pos.y(),string,color,font);
-    glCheckError();
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix p(GL_PROJECTION);
 
-    glMatrixMode (GL_PROJECTION);
-    glPopMatrix(); // restore GL_PROJECTION
-    glMatrixMode(GL_MODELVIEW);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        double h = (double)height();
+        double w = (double)width();
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+        glOrtho(0,w,0,h,-1,1);
+
+        QPointF pos;
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
+        }
+        glCheckError();
+        _imp->textRenderer.renderText(pos.x(),h - pos.y(),string,color,font);
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
 
 void
@@ -3982,4 +4067,43 @@ ViewerGL::onCheckerboardSettingsChanged()
 {
     _imp->initializeCheckerboardTexture(false);
     update();
+}
+
+// used by the RAII class OGLContextSaver
+void
+ViewerGL::saveOpenGLContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushClientAttrib(GL_ALL_ATTRIB_BITS);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    // set defaults to work around OFX plugin bugs
+    glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glEnable(GL_TEXTURE_2D);					//Activate texturing
+    //glActiveTexture (GL_TEXTURE0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
+}
+
+// used by the RAII class OGLContextSaver
+void
+ViewerGL::restoreOpenGLContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    //glActiveTexture(_imp->activeTexture);
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glPopClientAttrib();
+    glPopAttrib();
 }

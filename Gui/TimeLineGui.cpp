@@ -239,8 +239,6 @@ TimeLineGui::paintGL()
 
     double w = (double)width();
     double h = (double)height();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
     //assert(_zoomCtx._zoomFactor > 0);
     if (_imp->_zoomCtx.zoomFactor <= 0) {
         return;
@@ -250,272 +248,274 @@ TimeLineGui::paintGL()
     double left = _imp->_zoomCtx.left;
     double top = bottom +  h / (double)_imp->_zoomCtx.zoomFactor;
     double right = left +  (w / (double)_imp->_zoomCtx.zoomFactor);
-    if ( (left == right) || (top == bottom) ) {
+
+    {
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
+        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        if ( (left == right) || (top == bottom) ) {
+            glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            return;
+        }
+        _imp->_zoomCtx.lastOrthoLeft = left;
+        _imp->_zoomCtx.lastOrthoRight = right;
+        _imp->_zoomCtx.lastOrthoBottom = bottom;
+        _imp->_zoomCtx.lastOrthoTop = top;
+        glOrtho(left, right, bottom, top, -1, 1);
+
+
         glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
         glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug();
 
-        return;
-    }
-    _imp->_zoomCtx.lastOrthoLeft = left;
-    _imp->_zoomCtx.lastOrthoRight = right;
-    _imp->_zoomCtx.lastOrthoBottom = bottom;
-    _imp->_zoomCtx.lastOrthoTop = top;
-    glOrtho(left, right, bottom, top, -1, 1);
-
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
-
-    glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
-    glClear(GL_COLOR_BUFFER_BIT);
-    glCheckErrorIgnoreOSXBug();
-
-    QPointF btmLeft = toTimeLineCoordinates(0,height() - 1);
-    QPointF topRight = toTimeLineCoordinates(width() - 1, 0);
+        QPointF btmLeft = toTimeLineCoordinates(0,height() - 1);
+        QPointF topRight = toTimeLineCoordinates(width() - 1, 0);
 
 
-    /// change the backgroud color of the portion of the timeline where images are lying
-    QPointF firstFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->firstFrame(),0);
-    QPointF lastFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->lastFrame(),0);
+        /// change the backgroud color of the portion of the timeline where images are lying
+        QPointF firstFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->firstFrame(),0);
+        QPointF lastFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->lastFrame(),0);
 
-    // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glScissor( firstFrameWidgetPos.x(),0,
-               lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
+        glScissor( firstFrameWidgetPos.x(),0,
+                  lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
 
-    glEnable(GL_SCISSOR_TEST);
-    glClearColor( _imp->_backgroundColor.redF(),_imp->_backgroundColor.greenF(),_imp->_backgroundColor.blueF(),_imp->_backgroundColor.alphaF() );
-    glClear(GL_COLOR_BUFFER_BIT);
-    glCheckErrorIgnoreOSXBug();
-    glDisable(GL_SCISSOR_TEST);
+        glEnable(GL_SCISSOR_TEST);
+        glClearColor( _imp->_backgroundColor.redF(),_imp->_backgroundColor.greenF(),_imp->_backgroundColor.blueF(),_imp->_backgroundColor.alphaF() );
+        glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug();
+        glDisable(GL_SCISSOR_TEST);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    QFontMetrics fontM(_imp->_font);
-    
-    double lineYPosWidget = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
-    double lineYpos = toTimeLineCoordinates(0,lineYPosWidget).y();
-    double cachedLineYPos = toTimeLineCoordinates(0,lineYPosWidget + 1).y();
+        QFontMetrics fontM(_imp->_font);
 
-    /*draw the horizontal axis*/
-    glColor4f( _imp->_scaleColor.redF(), _imp->_scaleColor.greenF(), _imp->_scaleColor.blueF(), _imp->_scaleColor.alphaF() );
-    glBegin(GL_LINES);
-    glVertex2f(btmLeft.x(), lineYpos);
-    glVertex2f(topRight.x(), lineYpos);
-    glEnd();
-    glCheckErrorIgnoreOSXBug();
+        double lineYPosWidget = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
+        double lineYpos = toTimeLineCoordinates(0,lineYPosWidget).y();
+        double cachedLineYPos = toTimeLineCoordinates(0,lineYPosWidget + 1).y();
 
-    double tickBottom = toTimeLineCoordinates( 0,height() - 1 - fontM.height() ).y();
-    double tickTop = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
-    const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
-    const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-    std::vector<double> acceptedDistances;
-    acceptedDistances.push_back(1.);
-    acceptedDistances.push_back(5.);
-    acceptedDistances.push_back(10.);
-    acceptedDistances.push_back(50.);
-    const double rangePixel =  width();
-    const double range_min = btmLeft.x();
-    const double range_max =  topRight.x();
-    const double range = range_max - range_min;
-    double smallTickSize;
-    bool half_tick;
-    ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
-    int m1, m2;
-    const int ticks_max = 1000;
-    double offset;
-    ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
-    std::vector<int> ticks;
-    ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
-    const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
-    const double largestTickSize = range * largestTickSizePixel / rangePixel;
-    const double minTickSizeTextPixel = fontM.width( QString("00") ); // AXIS-SPECIFIC
-    const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
-    for (int i = m1; i <= m2; ++i) {
-        double value = i * smallTickSize + offset;
-        const double tickSize = ticks[i - m1] * smallTickSize;
-        const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
-
-        glColor4f(_imp->_ticksColor.redF(), _imp->_ticksColor.greenF(), _imp->_ticksColor.blueF(), alpha);
-
+        /*draw the horizontal axis*/
+        glColor4f( _imp->_scaleColor.redF(), _imp->_scaleColor.greenF(), _imp->_scaleColor.blueF(), _imp->_scaleColor.alphaF() );
         glBegin(GL_LINES);
-        glVertex2f(value, tickBottom);
-        glVertex2f(value, tickTop);
+        glVertex2f(btmLeft.x(), lineYpos);
+        glVertex2f(topRight.x(), lineYpos);
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
-        if (tickSize > minTickSizeText) {
-            const int tickSizePixel = rangePixel * tickSize / range;
-            const QString s = QString::number(value);
-            const int sSizePixel =  fontM.width(s);
-            if (tickSizePixel > sSizePixel) {
-                const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
-                double alphaText = 1.0; //alpha;
-                if (tickSizePixel < sSizeFullPixel) {
-                    // when the text size is between sSizePixel and sSizeFullPixel,
-                    // draw it with a lower alpha
-                    alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
+        double tickBottom = toTimeLineCoordinates( 0,height() - 1 - fontM.height() ).y();
+        double tickTop = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
+        const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
+        const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
+        std::vector<double> acceptedDistances;
+        acceptedDistances.push_back(1.);
+        acceptedDistances.push_back(5.);
+        acceptedDistances.push_back(10.);
+        acceptedDistances.push_back(50.);
+        const double rangePixel =  width();
+        const double range_min = btmLeft.x();
+        const double range_max =  topRight.x();
+        const double range = range_max - range_min;
+        double smallTickSize;
+        bool half_tick;
+        ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+        int m1, m2;
+        const int ticks_max = 1000;
+        double offset;
+        ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
+        std::vector<int> ticks;
+        ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
+        const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
+        const double largestTickSize = range * largestTickSizePixel / rangePixel;
+        const double minTickSizeTextPixel = fontM.width( QString("00") ); // AXIS-SPECIFIC
+        const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
+        for (int i = m1; i <= m2; ++i) {
+            double value = i * smallTickSize + offset;
+            const double tickSize = ticks[i - m1] * smallTickSize;
+            const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
+
+            glColor4f(_imp->_ticksColor.redF(), _imp->_ticksColor.greenF(), _imp->_ticksColor.blueF(), alpha);
+
+            glBegin(GL_LINES);
+            glVertex2f(value, tickBottom);
+            glVertex2f(value, tickTop);
+            glEnd();
+            glCheckErrorIgnoreOSXBug();
+
+            if (tickSize > minTickSizeText) {
+                const int tickSizePixel = rangePixel * tickSize / range;
+                const QString s = QString::number(value);
+                const int sSizePixel =  fontM.width(s);
+                if (tickSizePixel > sSizePixel) {
+                    const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                    double alphaText = 1.0; //alpha;
+                    if (tickSizePixel < sSizeFullPixel) {
+                        // when the text size is between sSizePixel and sSizeFullPixel,
+                        // draw it with a lower alpha
+                        alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
+                    }
+                    QColor c = _imp->_ticksColor;
+                    c.setAlpha(255 * alphaText);
+                    glCheckError();
+                    renderText(value, btmLeft.y(), s, c, _imp->_font);
                 }
-                QColor c = _imp->_ticksColor;
-                c.setAlpha(255 * alphaText);
-                glCheckError();
-                renderText(value, btmLeft.y(), s, c, _imp->_font);
             }
         }
-    }
-    glCheckError();
-
-    QPointF cursorBtm(_imp->_timeline->currentFrame(),lineYpos);
-    QPointF cursorBtmWidgetCoord = toWidgetCoordinates( cursorBtm.x(),cursorBtm.y() );
-    QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2,
-                                                  cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-    QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2,
-                                                   cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-    QPointF leftBoundBtm(_imp->_timeline->leftBound(),lineYpos);
-    QPointF leftBoundWidgetCoord = toWidgetCoordinates( leftBoundBtm.x(),leftBoundBtm.y() );
-    QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2,
-                                                       leftBoundWidgetCoord.y() );
-    QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
-                                                 leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
-    QPointF rightBoundBtm(_imp->_timeline->rightBound(),lineYpos);
-    QPointF rightBoundWidgetCoord = toWidgetCoordinates( rightBoundBtm.x(),rightBoundBtm.y() );
-    QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2,
-                                                       rightBoundWidgetCoord.y() );
-    QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
-                                                  rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
-    std::list<SequenceTime> keyframes;
-    _imp->_timeline->getKeyframes(&keyframes);
-
-    //draw an alpha cursor if the mouse is hovering the timeline
-    glEnable(GL_POLYGON_SMOOTH);
-    glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
-    if (_imp->_alphaCursor) {
-        int currentPosBtmWidgetCoordX = _imp->_lastMouseEventWidgetCoord.x();
-        int currentPosBtmWidgetCoordY = toWidgetCoordinates(0,lineYpos).y();
-        QPointF currentPosBtm = toTimeLineCoordinates(currentPosBtmWidgetCoordX,currentPosBtmWidgetCoordY);
-        QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - CURSOR_WIDTH / 2,
-                                                          currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
-        QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH / 2,
-                                                           currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
-        int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
-        QString mouseNumber( QString::number(hoveredTime) );
-        QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber) / 2,
-                                      currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
-        QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y() );
-        QColor currentColor;
-        std::list<SequenceTime>::iterator foundHoveredAsKeyframe = std::find(keyframes.begin(),keyframes.end(),hoveredTime);
-        if ( foundHoveredAsKeyframe != keyframes.end() ) {
-            currentColor = _imp->_keyframesColor;
-        } else {
-            currentColor = _imp->_cursorColor;
-        }
-        currentColor.setAlpha(100);
-
-        glColor4f( currentColor.redF(),currentColor.greenF(),currentColor.blueF(),currentColor.alphaF() );
-        glBegin(GL_POLYGON);
-        glVertex2f( currentPosBtm.x(),currentPosBtm.y() );
-        glVertex2f( currentPosTopLeft.x(),currentPosTopLeft.y() );
-        glVertex2f( currentPosTopRight.x(),currentPosTopRight.y() );
-        glEnd();
         glCheckError();
 
-        renderText(mouseNumberPos.x(),mouseNumberPos.y(), mouseNumber, currentColor, _imp->_font);
-    }
+        QPointF cursorBtm(_imp->_timeline->currentFrame(),lineYpos);
+        QPointF cursorBtmWidgetCoord = toWidgetCoordinates( cursorBtm.x(),cursorBtm.y() );
+        QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2,
+                                                      cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
+        QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2,
+                                                       cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
+        QPointF leftBoundBtm(_imp->_timeline->leftBound(),lineYpos);
+        QPointF leftBoundWidgetCoord = toWidgetCoordinates( leftBoundBtm.x(),leftBoundBtm.y() );
+        QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2,
+                                                          leftBoundWidgetCoord.y() );
+        QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
+                                                     leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
+        QPointF rightBoundBtm(_imp->_timeline->rightBound(),lineYpos);
+        QPointF rightBoundWidgetCoord = toWidgetCoordinates( rightBoundBtm.x(),rightBoundBtm.y() );
+        QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2,
+                                                          rightBoundWidgetCoord.y() );
+        QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
+                                                      rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
+        std::list<SequenceTime> keyframes;
+        _imp->_timeline->getKeyframes(&keyframes);
 
-    //draw the bounds and the current time cursor
-    QColor actualCursorColor;
-    std::list<SequenceTime>::iterator isCurrentTimeAKeyframe = std::find( keyframes.begin(),keyframes.end(),_imp->_timeline->currentFrame() );
-    if ( isCurrentTimeAKeyframe != keyframes.end() ) {
-        actualCursorColor = _imp->_keyframesColor;
-    } else {
-        actualCursorColor = _imp->_cursorColor;
-    }
+        //draw an alpha cursor if the mouse is hovering the timeline
+        glEnable(GL_POLYGON_SMOOTH);
+        glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
+        if (_imp->_alphaCursor) {
+            int currentPosBtmWidgetCoordX = _imp->_lastMouseEventWidgetCoord.x();
+            int currentPosBtmWidgetCoordY = toWidgetCoordinates(0,lineYpos).y();
+            QPointF currentPosBtm = toTimeLineCoordinates(currentPosBtmWidgetCoordX,currentPosBtmWidgetCoordY);
+            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - CURSOR_WIDTH / 2,
+                                                              currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
+            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH / 2,
+                                                               currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
+            int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
+            QString mouseNumber( QString::number(hoveredTime) );
+            QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber) / 2,
+                                          currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
+            QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y() );
+            QColor currentColor;
+            std::list<SequenceTime>::iterator foundHoveredAsKeyframe = std::find(keyframes.begin(),keyframes.end(),hoveredTime);
+            if ( foundHoveredAsKeyframe != keyframes.end() ) {
+                currentColor = _imp->_keyframesColor;
+            } else {
+                currentColor = _imp->_cursorColor;
+            }
+            currentColor.setAlpha(100);
 
-    QString currentFrameStr( QString::number( _imp->_timeline->currentFrame() ) );
-    double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2;
-    double cursorTextPos = toTimeLineCoordinates(cursorTextXposWidget,0).x();
-    renderText(cursorTextPos,cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->_font);
-    glColor4f( actualCursorColor.redF(),actualCursorColor.greenF(),actualCursorColor.blueF(),actualCursorColor.alphaF() );
-    glBegin(GL_POLYGON);
-    glVertex2f( cursorBtm.x(),cursorBtm.y() );
-    glVertex2f( cursorTopLeft.x(),cursorTopLeft.y() );
-    glVertex2f( cursorTopRight.x(),cursorTopRight.y() );
-    glEnd();
-    glCheckErrorIgnoreOSXBug();
+            glColor4f( currentColor.redF(),currentColor.greenF(),currentColor.blueF(),currentColor.alphaF() );
+            glBegin(GL_POLYGON);
+            glVertex2f( currentPosBtm.x(),currentPosBtm.y() );
+            glVertex2f( currentPosTopLeft.x(),currentPosTopLeft.y() );
+            glVertex2f( currentPosTopRight.x(),currentPosTopRight.y() );
+            glEnd();
+            glCheckError();
 
-    if ( _imp->_timeline->leftBound() != _imp->_timeline->currentFrame() ) {
-        QString leftBoundStr( QString::number( _imp->_timeline->leftBound() ) );
-        double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2,0 ).x() - fontM.width(leftBoundStr) / 2;
-        double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
-        renderText(leftBoundTextPos,leftBoundTop.y(),
-                   leftBoundStr, _imp->_boundsColor, _imp->_font);
-    }
-    glColor4f( _imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF() );
-    glBegin(GL_POLYGON);
-    glVertex2f( leftBoundBtm.x(),leftBoundBtm.y() );
-    glVertex2f( leftBoundBtmRight.x(),leftBoundBtmRight.y() );
-    glVertex2f( leftBoundTop.x(),leftBoundTop.y() );
-    glEnd();
-    glCheckErrorIgnoreOSXBug();
-
-    if ( _imp->_timeline->rightBound() != _imp->_timeline->currentFrame() ) {
-        QString rightBoundStr( QString::number( _imp->_timeline->rightBound() ) );
-        double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2,0 ).x() - fontM.width(rightBoundStr) / 2;
-        double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
-        renderText(rightBoundTextPos,rightBoundTop.y(),
-                   rightBoundStr, _imp->_boundsColor, _imp->_font);
-    }
-    glColor4f( _imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF() );
-    glCheckError();
-    glBegin(GL_POLYGON);
-    glVertex2f( rightBoundBtm.x(),rightBoundBtm.y() );
-    glVertex2f( rightBoundBtmLeft.x(),rightBoundBtmLeft.y() );
-    glVertex2f( rightBoundTop.x(),rightBoundTop.y() );
-    glEnd();
-    glCheckErrorIgnoreOSXBug();
-
-    glDisable(GL_POLYGON_SMOOTH);
-
-    //draw cached frames
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-    glCheckError();
-    glLineWidth(2);
-    glCheckError();
-    glBegin(GL_LINES);
-    for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
-        if (i->mode == RAM) {
-            glColor4f( _imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),
-                       _imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF() );
-        } else if (i->mode == DISK) {
-            glColor4f( _imp->_diskCachedLineColor.redF(),_imp->_diskCachedLineColor.greenF(),
-                       _imp->_diskCachedLineColor.blueF(),_imp->_diskCachedLineColor.alphaF() );
+            renderText(mouseNumberPos.x(),mouseNumberPos.y(), mouseNumber, currentColor, _imp->_font);
         }
-        glVertex2f(i->time - 0.5,cachedLineYPos);
-        glVertex2f(i->time + 0.5,cachedLineYPos);
-    }
-    glEnd();
 
-    ///now draw keyframes
-    glColor4f( _imp->_keyframesColor.redF(),_imp->_keyframesColor.greenF(),_imp->_keyframesColor.blueF(),_imp->_keyframesColor.alphaF() );
-    std::set<SequenceTime> alreadyDrawnKeyframes;
-    glBegin(GL_LINES);
-    for (std::list<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
-        std::pair<std::set<SequenceTime>::iterator,bool> success = alreadyDrawnKeyframes.insert(*i);
-        if (success.second) {
-            glVertex2f(*i - 0.5,lineYpos);
-            glVertex2f(*i + 0.5,lineYpos);
+        //draw the bounds and the current time cursor
+        QColor actualCursorColor;
+        std::list<SequenceTime>::iterator isCurrentTimeAKeyframe = std::find( keyframes.begin(),keyframes.end(),_imp->_timeline->currentFrame() );
+        if ( isCurrentTimeAKeyframe != keyframes.end() ) {
+            actualCursorColor = _imp->_keyframesColor;
+        } else {
+            actualCursorColor = _imp->_cursorColor;
         }
-    }
-    glEnd();
 
-    glCheckErrorIgnoreOSXBug();
-    glDisable(GL_LINE_SMOOTH);
-    glLineWidth(1.);
+        QString currentFrameStr( QString::number( _imp->_timeline->currentFrame() ) );
+        double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2;
+        double cursorTextPos = toTimeLineCoordinates(cursorTextXposWidget,0).x();
+        renderText(cursorTextPos,cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->_font);
+        glColor4f( actualCursorColor.redF(),actualCursorColor.greenF(),actualCursorColor.blueF(),actualCursorColor.alphaF() );
+        glBegin(GL_POLYGON);
+        glVertex2f( cursorBtm.x(),cursorBtm.y() );
+        glVertex2f( cursorTopLeft.x(),cursorTopLeft.y() );
+        glVertex2f( cursorTopRight.x(),cursorTopRight.y() );
+        glEnd();
+        glCheckErrorIgnoreOSXBug();
 
-    glDisable(GL_BLEND);
-    glColor4f(1.,1.,1.,1.);
-    glPopAttrib();
+        if ( _imp->_timeline->leftBound() != _imp->_timeline->currentFrame() ) {
+            QString leftBoundStr( QString::number( _imp->_timeline->leftBound() ) );
+            double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2,0 ).x() - fontM.width(leftBoundStr) / 2;
+            double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
+            renderText(leftBoundTextPos,leftBoundTop.y(),
+                       leftBoundStr, _imp->_boundsColor, _imp->_font);
+        }
+        glColor4f( _imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF() );
+        glBegin(GL_POLYGON);
+        glVertex2f( leftBoundBtm.x(),leftBoundBtm.y() );
+        glVertex2f( leftBoundBtmRight.x(),leftBoundBtmRight.y() );
+        glVertex2f( leftBoundTop.x(),leftBoundTop.y() );
+        glEnd();
+        glCheckErrorIgnoreOSXBug();
+
+        if ( _imp->_timeline->rightBound() != _imp->_timeline->currentFrame() ) {
+            QString rightBoundStr( QString::number( _imp->_timeline->rightBound() ) );
+            double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2,0 ).x() - fontM.width(rightBoundStr) / 2;
+            double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
+            renderText(rightBoundTextPos,rightBoundTop.y(),
+                       rightBoundStr, _imp->_boundsColor, _imp->_font);
+        }
+        glColor4f( _imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF() );
+        glCheckError();
+        glBegin(GL_POLYGON);
+        glVertex2f( rightBoundBtm.x(),rightBoundBtm.y() );
+        glVertex2f( rightBoundBtmLeft.x(),rightBoundBtmLeft.y() );
+        glVertex2f( rightBoundTop.x(),rightBoundTop.y() );
+        glEnd();
+        glCheckErrorIgnoreOSXBug();
+
+        glDisable(GL_POLYGON_SMOOTH);
+
+        //draw cached frames
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+        glCheckError();
+        glLineWidth(2);
+        glCheckError();
+        glBegin(GL_LINES);
+        for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
+            if (i->mode == RAM) {
+                glColor4f( _imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),
+                          _imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF() );
+            } else if (i->mode == DISK) {
+                glColor4f( _imp->_diskCachedLineColor.redF(),_imp->_diskCachedLineColor.greenF(),
+                          _imp->_diskCachedLineColor.blueF(),_imp->_diskCachedLineColor.alphaF() );
+            }
+            glVertex2f(i->time - 0.5,cachedLineYPos);
+            glVertex2f(i->time + 0.5,cachedLineYPos);
+        }
+        glEnd();
+        
+        ///now draw keyframes
+        glColor4f( _imp->_keyframesColor.redF(),_imp->_keyframesColor.greenF(),_imp->_keyframesColor.blueF(),_imp->_keyframesColor.alphaF() );
+        std::set<SequenceTime> alreadyDrawnKeyframes;
+        glBegin(GL_LINES);
+        for (std::list<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+            std::pair<std::set<SequenceTime>::iterator,bool> success = alreadyDrawnKeyframes.insert(*i);
+            if (success.second) {
+                glVertex2f(*i - 0.5,lineYpos);
+                glVertex2f(*i + 0.5,lineYpos);
+            }
+        }
+        glEnd();
+        glCheckErrorIgnoreOSXBug();
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
+
     glCheckError();
 } // paintGL
 
@@ -532,23 +532,24 @@ TimeLineGui::renderText(double x,
     if ( text.isEmpty() ) {
         return;
     }
-    glMatrixMode (GL_PROJECTION);
-    glPushMatrix(); // save GL_PROJECTION
-    glCheckError();
-    glLoadIdentity();
-    double h = (double)height();
-    double w = (double)width();
-    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-    glOrtho(0,w,0,h,-1,1);
-    glMatrixMode(GL_MODELVIEW);
-    QPointF pos = toWidgetCoordinates(x, y);
-    glCheckError();
-    _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
-    glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    glPopMatrix(); // restore GL_PROJECTION
-    glMatrixMode(GL_MODELVIEW);
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        glCheckError();
+        double h = (double)height();
+        double w = (double)width();
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+        glOrtho(0,w,0,h,-1,1);
+
+        QPointF pos = toWidgetCoordinates(x, y);
+        glCheckError();
+        _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
     glCheckError();
 }
 

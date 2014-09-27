@@ -34,9 +34,12 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <ofxNatron.h>
 
+CLANG_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/utility.hpp>
+CLANG_DIAG_ON(unused-parameter)
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -106,6 +109,7 @@ struct DockablePanelPrivate
 
     /*Tab related*/
     QTabWidget* _tabWidget;
+    Button* _centerNodeButton;
     Button* _helpButton;
     Button* _minimize;
     Button* _floatButton;
@@ -155,6 +159,7 @@ struct DockablePanelPrivate
           ,_nameLineEdit(NULL)
           ,_nameLabel(NULL)
           ,_tabWidget(NULL)
+          , _centerNodeButton(NULL)
           ,_helpButton(NULL)
           ,_minimize(NULL)
           ,_floatButton(NULL)
@@ -197,22 +202,7 @@ struct DockablePanelPrivate
                                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
 };
 
-static QPixmap
-getColorButtonDefaultPixmap()
-{
-    QImage img(32,32,QImage::Format_ARGB32);
-    QColor gray(Qt::gray);
 
-    img.fill( gray.rgba() );
-    QPainter p(&img);
-    QPen pen;
-    pen.setColor(Qt::black);
-    pen.setWidth(2);
-    p.setPen(pen);
-    p.drawLine(0, 0, 31, 31);
-
-    return QPixmap::fromImage(img);
-}
 
 DockablePanel::DockablePanel(Gui* gui
                              ,
@@ -251,8 +241,16 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
-
-
+        
+        QPixmap pixCenter;
+        appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenter);
+        _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
+        _imp->_centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->_centerNodeButton->setToolTip( tr("Centers the node graph on this item.") );
+        QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
+        _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
+        
+        
         QPixmap pixHelp;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
@@ -333,8 +331,14 @@ DockablePanel::DockablePanel(Gui* gui
             } else {
                 r = g = b = 0.6;
             }
+            
+            
             _imp->_currentColor.setRgbF( Natron::clamp(r), Natron::clamp(g), Natron::clamp(b) );
-            _imp->_colorButton = new Button(QIcon( getColorButtonDefaultPixmap() ),"",_imp->_headerWidget);
+            QPixmap p(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+            p.fill(_imp->_currentColor);
+
+            
+            _imp->_colorButton = new Button(QIcon(p),"",_imp->_headerWidget);
             _imp->_colorButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
             _imp->_colorButton->setToolTip( Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                         "By default the color of the node is the one set in the "
@@ -823,7 +827,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             ClickableLabel* label = new ClickableLabel("",page->second.tab);
 
 
-            if (ret->showDescriptionLabel() && label) {
+            if (ret->showDescriptionLabel() && !knob->getDescription().empty() && label) {
                 label->setText_overload( QString(QString( ret->getKnob()->getDescription().c_str() ) + ":") );
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             }
@@ -940,7 +944,7 @@ DockablePanelPrivate::addPage(const QString & name)
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
     tabLayout->setContentsMargins(3, 0, 0, 0);
-    tabLayout->setSpacing(0); // unfortunately, this leaves extra space when parameters are hidden
+    tabLayout->setSpacing(3); // unfortunately, this leaves extra space when parameters are hidden
     tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
     tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
@@ -1385,6 +1389,13 @@ DockablePanel::removeAnimationOnAllParameters()
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),keysToRemove) );
 }
 
+
+void
+DockablePanel::onCenterButtonClicked()
+{
+    centerOnItem();
+}
+
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                      Gui* gui,
                                      boost::shared_ptr<NodeGui> NodeUi,
@@ -1402,7 +1413,6 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     parent)
       , _nodeGUI(NodeUi)
       , _selected(false)
-      , _centerNodeButton(0)
       , _settingsButton(0)
       , _multiPanel(multiPanel)
 {
@@ -1410,13 +1420,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
         multiPanel->initializeKnobsPublic();
     }
 
-    QPixmap pixC;
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
-    _centerNodeButton = new Button( QIcon(pixC),"",getHeaderWidget() );
-    _centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _centerNodeButton->setToolTip( tr("Centers the node graph on this node.") );
-    QObject::connect( _centerNodeButton,SIGNAL( clicked() ),this,SLOT( centerNode() ) );
-    insertHeaderWidget(0, _centerNodeButton);
+    
     QObject::connect( this,SIGNAL( closeChanged(bool) ),NodeUi.get(),SLOT( onSettingsPanelClosedChanged(bool) ) );
     
     QPixmap pixSettings;
@@ -1442,7 +1446,7 @@ NodeSettingsPanel::setSelected(bool s)
 }
 
 void
-NodeSettingsPanel::centerNode()
+NodeSettingsPanel::centerOnItem()
 {
     _nodeGUI->centerGraphOnIt();
 }
@@ -1587,4 +1591,36 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         return;
     }
  
+}
+
+NodeBackDropSettingsPanel::NodeBackDropSettingsPanel(NodeBackDrop* backdrop,
+                                                     Gui* gui,
+                                                     QVBoxLayout* container,
+                                                     const QString& name,
+                                                     QWidget* parent)
+: DockablePanel(gui,
+                backdrop,
+                container,
+                DockablePanel::FULLY_FEATURED,
+                false,
+                name,
+                QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
+                   "move all the nodes inside the backdrop."),
+                false, //< no default page
+                QObject::tr("BackDrop"), //< default page name
+                parent)
+, _backdrop(backdrop)
+{
+    
+}
+
+NodeBackDropSettingsPanel::~NodeBackDropSettingsPanel()
+{
+    
+}
+
+void
+NodeBackDropSettingsPanel::centerOnItem()
+{
+    _backdrop->centerOnIt();
 }

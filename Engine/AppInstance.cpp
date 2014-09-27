@@ -138,7 +138,7 @@ AppInstance::load(const QString & projectName,
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
         settings.beginGroup("General");
         bool checkUpdates = true;
-        if ( !settings.contains("CheckUpdates") ) {
+        if ( !settings.contains("checkForUpdates") ) {
             Natron::StandardButton reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                   "on launch of the application ?");
             if (reply == Natron::No) {
@@ -152,11 +152,13 @@ AppInstance::load(const QString & projectName,
     }
 
     ///if the app is a background project autorun and the project name is empty just throw an exception.
-    if ( (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN) && projectName.isEmpty() ) {
+    if ( (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN ||
+          appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) && projectName.isEmpty() ) {
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
-    if (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN) {
+    if (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN ||
+        appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) {
         QString realProjectName = projectName;
         int lastSep = realProjectName.lastIndexOf( QDir::separator() );
         if (lastSep == -1) {
@@ -462,18 +464,24 @@ AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
 {
     
     if ( appPTR->isBackground() ) {
+        
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1) );
+        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1,false,QString()) );
     } else {
+        
+        //Take a snapshot of the graph at this time, this will be the version loaded by the process
+        bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
+        QString savePath = getProject()->saveProject("","RENDER_SAVE.ntp",true);
+
         for (std::list<RenderWork>::const_iterator it = writers.begin();it!=writers.end();++it) {
             ///Use the frame range defined by the writer GUI because we're in an interactive session
-            startRenderingFullSequence(*it);
+            startRenderingFullSequence(*it,renderInSeparateProcess,savePath);
         }
     }
 }
 
 void
-AppInstance::startRenderingFullSequence(const RenderWork& writerWork)
+AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
 {
     BlockingBackgroundRender backgroundRender(writerWork.writer);
     int first,last;

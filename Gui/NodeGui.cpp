@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/SequenceFileDialog.h"
 #include "Gui/NodeGraphUndoRedo.h"
 
 #include "Engine/OfxEffectInstance.h"
@@ -689,6 +690,12 @@ void
 NodeGui::updatePreviewImage(int time)
 {
     if ( isVisible() && _internalNode->isPreviewEnabled()  && _internalNode->getApp()->getProject()->isAutoPreviewEnabled() ) {
+        
+        if (_internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
+            _internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
+            return;
+        }
+        
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -696,7 +703,14 @@ NodeGui::updatePreviewImage(int time)
 void
 NodeGui::forceComputePreview(int time)
 {
+    
     if ( isVisible() && _internalNode->isPreviewEnabled() ) {
+        
+        if (_internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
+            _internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
+            return;
+        }
+        
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -1327,9 +1341,8 @@ NodeGui::onPersistentMessageChanged(int type,
     //keep type in synch with this enum:
     //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
 
-
     ///don't do anything if the last persistent message is the same
-    if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator ) {
+    if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui() ) {
         return;
     }
     _persistentMessage->show();
@@ -1562,7 +1575,7 @@ NodeGui::setPos_mt_safe(const QPointF & pos)
 void
 NodeGui::centerGraphOnIt()
 {
-    _graph->centerOnNode( _graph->getNodeGuiSharedPtr(this) );
+    _graph->centerOnItem(this);
 }
 
 void
@@ -2003,6 +2016,9 @@ NodeGui::setNameItemHtml(const QString & name,
 void
 NodeGui::onNodeExtraLabelChanged(const QString & label)
 {
+    if (!_graph->getGui()) {
+        return;
+    }
     _nodeLabel = label;
     if ( _internalNode->isMultiInstance() ) {
         ///The multi-instances store in the kOfxParamStringSublabelName knob the name of the instance

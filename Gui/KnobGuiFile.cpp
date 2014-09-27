@@ -20,6 +20,8 @@
 #include <QStyle>
 #include <QApplication>
 #include <QStyledItemDelegate>
+#include <QAction>
+#include <QMenu>
 #include <QFileSystemWatcher>
 
 #include "Engine/Settings.h"
@@ -39,6 +41,7 @@
 #include "Gui/TableModelView.h"
 
 using namespace Natron;
+
 
 //===========================FILE_KNOB_GUI=====================================
 File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -81,7 +84,7 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _lineEdit->setToolTip( toolTip() );
     }
-    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onReturnPressed() ) );
+    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
 
     _openFileButton = new Button( layout->parentWidget() );
     _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
@@ -203,19 +206,29 @@ File_KnobGui::watchedFileChanged()
     
 }
 
-void
-File_KnobGui::onReturnPressed()
+void File_KnobGui::onTextEdited()
 {
-    QString str = _lineEdit->text();
-
+    std::string str = _lineEdit->text().toStdString();
+    
     ///don't do antyhing if the pattern is the same
     std::string oldValue = _knob->getValue();
-
-    if ( str == oldValue.c_str() ) {
+    
+    if ( str == oldValue ) {
         return;
     }
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,str.toStdString() ) );
+    
+//    
+//    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+//        std::map<std::string,std::string> envvar;
+//        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
+//        Natron::Project::findReplaceVariable(envvar,str);
+//    }
+    
+    
+    
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,str ) );
 }
+
 
 void
 File_KnobGui::_hide()
@@ -259,6 +272,63 @@ boost::shared_ptr<KnobI> File_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+File_KnobGui::addRightClickMenuEntries(QMenu* menu)
+{
+    QAction* makeAbsoluteAction = new QAction(QObject::tr("Make absolute"),menu);
+    QObject::connect(makeAbsoluteAction,SIGNAL(triggered()),this,SLOT(onMakeAbsoluteTriggered()));
+    makeAbsoluteAction->setToolTip(QObject::tr("Make the file-path absolute if it was previously relative to any project path"));
+    menu->addAction(makeAbsoluteAction);
+    QAction* makeRelativeToProject = new QAction(QObject::tr("Make relative to project"),menu);
+    makeRelativeToProject->setToolTip(QObject::tr("Make the file-path relative to the [Project] path"));
+    QObject::connect(makeRelativeToProject,SIGNAL(triggered()),this,SLOT(onMakeRelativeTriggered()));
+    menu->addAction(makeRelativeToProject);
+    QAction* simplify = new QAction(QObject::tr("Simplify"),menu);
+    QObject::connect(simplify,SIGNAL(triggered()),this,SLOT(onSimplifyTriggered()));
+    simplify->setToolTip(QObject::tr("Same as make relative but will pick the longest project variable to simplify"));
+    menu->addAction(simplify);
+
+    menu->addSeparator();
+    QMenu* qtMenu = _lineEdit->createStandardContextMenu();
+    qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    qtMenu->setTitle(tr("Edit"));
+    menu->addMenu(qtMenu);
+}
+
+void
+File_KnobGui::onMakeAbsoluteTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+}
+
+void
+File_KnobGui::onMakeRelativeTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+
+}
+
+void
+File_KnobGui::onSimplifyTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+}
+
 //============================OUTPUT_FILE_KNOB_GUI====================================
 OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<KnobI> knob,
                                        DockablePanel *container)
@@ -280,7 +350,8 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _lineEdit = new LineEdit( layout->parentWidget() );
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onReturnPressed() ) );
+    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+
     _lineEdit->setPlaceholderText( tr("File path...") );
     if ( hasToolTip() ) {
         _lineEdit->setToolTip( toolTip() );
@@ -304,7 +375,7 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
-
+ 
     layout->addWidget(container);
 }
 
@@ -355,11 +426,18 @@ OutputFile_KnobGui::updateGUI(int /*dimension*/)
 }
 
 void
-OutputFile_KnobGui::onReturnPressed()
+OutputFile_KnobGui::onTextEdited()
 {
-    QString newPattern = _lineEdit->text();
+    std::string newPattern = _lineEdit->text().toStdString();
 
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),newPattern.toStdString() ) );
+//    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+//        std::map<std::string,std::string> envvar;
+//        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
+//        Natron::Project::findReplaceVariable(envvar,newPattern);
+//    }
+//
+//    
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),newPattern ) );
 }
 
 void
@@ -402,6 +480,64 @@ OutputFile_KnobGui::setDirty(bool dirty)
 boost::shared_ptr<KnobI> OutputFile_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+
+void
+OutputFile_KnobGui::addRightClickMenuEntries(QMenu* menu)
+{
+    QAction* makeAbsoluteAction = new QAction(QObject::tr("Make absolute"),menu);
+    QObject::connect(makeAbsoluteAction,SIGNAL(triggered()),this,SLOT(onMakeAbsoluteTriggered()));
+    makeAbsoluteAction->setToolTip(QObject::tr("Make the file-path absolute if it was previously relative to any project path"));
+    menu->addAction(makeAbsoluteAction);
+    QAction* makeRelativeToProject = new QAction(QObject::tr("Make relative to project"),menu);
+    makeRelativeToProject->setToolTip(QObject::tr("Make the file-path relative to the [Project] path"));
+    QObject::connect(makeRelativeToProject,SIGNAL(triggered()),this,SLOT(onMakeRelativeTriggered()));
+    menu->addAction(makeRelativeToProject);
+    QAction* simplify = new QAction(QObject::tr("Simplify"),menu);
+    QObject::connect(simplify,SIGNAL(triggered()),this,SLOT(onSimplifyTriggered()));
+    simplify->setToolTip(QObject::tr("Same as make relative but will pick the longest project variable to simplify"));
+    menu->addAction(simplify);
+    
+    menu->addSeparator();
+    QMenu* qtMenu = _lineEdit->createStandardContextMenu();
+    qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    qtMenu->setTitle(tr("Edit"));
+    menu->addMenu(qtMenu);
+}
+
+void
+OutputFile_KnobGui::onMakeAbsoluteTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+}
+
+void
+OutputFile_KnobGui::onMakeRelativeTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+    
+}
+
+void
+OutputFile_KnobGui::onSimplifyTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
 }
 
 //============================PATH_KNOB_GUI====================================
@@ -553,6 +689,10 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         mainLayout->setContentsMargins(0, 0, 0, 0);
         _lineEdit = new LineEdit(_mainContainer);
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+        QObject::connect( _lineEdit, SIGNAL( textDropped() ), this, SLOT( onTextDropped() ) );
+        QObject::connect( _lineEdit, SIGNAL( textPasted() ), this, SLOT( onTextPasted() ) );
+
         if ( hasToolTip() ) {
             _lineEdit->setToolTip( toolTip() );
         }
@@ -580,8 +720,8 @@ Path_KnobGui::onAddButtonClicked()
     
     if ( dialog.exec() ) {
         std::string dirPath = dialog.selectedDirectory();
-        if (dirPath[dirPath.size() - 1] != '/') {
-            dirPath += '/';
+        if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
+            dirPath.erase(dirPath.size() - 1, 1);
         }
         updateLastOpened(dirPath.c_str());
         
@@ -608,13 +748,8 @@ Path_KnobGui::onOpenFileButtonClicked()
     SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, _lastOpened.toStdString(),getGui(),true );
     
     if ( dialog.exec() ) {
-        std::string dirPath = dialog.currentDirectory().absolutePath().toStdString();
+        std::string dirPath = dialog.selectedDirectory();
         updateLastOpened(dirPath.c_str());
-        std::string varName,varPath;
-        bool relative = dialog.getRelativeChoiceProjectPath(varName, varPath);
-        if (relative) {
-            Natron::Project::makeRelativeToVariable(varName, varPath, dirPath);
-        }
         
         std::string oldValue = _knob->getValue();
         
@@ -660,6 +795,29 @@ Path_KnobGui::onRemoveButtonClicked()
     pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
 }
 
+
+void
+Path_KnobGui::onTextEdited()
+{
+    std::string dirPath = _lineEdit->text().toStdString();
+    if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
+        dirPath.erase(dirPath.size() - 1, 1);
+    }
+    updateLastOpened(dirPath.c_str());
+    
+    
+    
+//    if (allowSimplification && _knob->getHolder() && _knob->getHolder()->getApp()) {
+//        std::map<std::string,std::string> envvar;
+//        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
+//        Natron::Project::findReplaceVariable(envvar,dirPath);
+//    }
+
+    
+    std::string oldValue = _knob->getValue();
+    
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,dirPath ) );
+}
 
 
 void
@@ -835,15 +993,77 @@ Path_KnobGui::rebuildPath() const
         ++next;
     }
     for (Variables::const_iterator it = _items.begin(); it!= _items.end(); ++it,++next) {
-            path += NATRON_ENV_VAR_NAME_START_TAG;
-            path += it->second.varName->text().toStdString();
-            path += NATRON_ENV_VAR_NAME_END_TAG;
-            path += NATRON_ENV_VAR_VALUE_START_TAG;
-            path += it->second.value->text().toStdString();
-            path += NATRON_ENV_VAR_VALUE_END_TAG;
+        // In order to use XML tags, the text inside the tags has to be escaped.
+        path += NATRON_ENV_VAR_NAME_START_TAG;
+        path += Project::escapeXML(it->second.varName->text().toStdString());
+        path += NATRON_ENV_VAR_NAME_END_TAG;
+        path += NATRON_ENV_VAR_VALUE_START_TAG;
+        path += Project::escapeXML(it->second.value->text().toStdString());
+        path += NATRON_ENV_VAR_VALUE_END_TAG;
         if (next == _items.end()) {
             --next;
         }
     }
     return path;
+}
+
+
+
+void
+Path_KnobGui::addRightClickMenuEntries(QMenu* menu)
+{
+    if (!_knob->isMultiPath()) {
+        QAction* makeAbsoluteAction = new QAction(QObject::tr("Make absolute"),menu);
+        QObject::connect(makeAbsoluteAction,SIGNAL(triggered()),this,SLOT(onMakeAbsoluteTriggered()));
+        makeAbsoluteAction->setToolTip(QObject::tr("Make the file-path absolute if it was previously relative to any project path"));
+        menu->addAction(makeAbsoluteAction);
+        QAction* makeRelativeToProject = new QAction(QObject::tr("Make relative to project"),menu);
+        makeRelativeToProject->setToolTip(QObject::tr("Make the file-path relative to the [Project] path"));
+        QObject::connect(makeRelativeToProject,SIGNAL(triggered()),this,SLOT(onMakeRelativeTriggered()));
+        menu->addAction(makeRelativeToProject);
+        QAction* simplify = new QAction(QObject::tr("Simplify"),menu);
+        QObject::connect(simplify,SIGNAL(triggered()),this,SLOT(onSimplifyTriggered()));
+        simplify->setToolTip(QObject::tr("Same as make relative but will pick the longest project variable to simplify"));
+        menu->addAction(simplify);
+        
+        menu->addSeparator();
+        QMenu* qtMenu = _lineEdit->createStandardContextMenu();
+        qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        qtMenu->setTitle(tr("Edit"));
+        menu->addMenu(qtMenu);
+    }
+}
+
+void
+Path_KnobGui::onMakeAbsoluteTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+}
+
+void
+Path_KnobGui::onMakeRelativeTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+    
+}
+
+void
+Path_KnobGui::onSimplifyTriggered()
+{
+    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
+        std::string oldValue = _knob->getValue();
+        std::string newValue = oldValue;
+        _knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
 }

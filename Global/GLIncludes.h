@@ -78,4 +78,24 @@
 #define glCheckFramebufferError() ( (void)0 )
 #endif // ifdef DEBUG
 
+// an RAII helper class to push/pop attribs
+class GLProtectAttrib
+{
+public:
+    GLProtectAttrib(GLbitfield mask = GL_ALL_ATTRIB_BITS) { glPushAttrib(mask); }
+
+    ~GLProtectAttrib() { glPopAttrib(); }
+};
+
+// an RAII helper class to push/pop matrix
+class GLProtectMatrix
+{
+public:
+    GLProtectMatrix(GLenum mode) : _mode(mode) { glMatrixMode(_mode); glPushMatrix(); }
+
+    ~GLProtectMatrix() { glMatrixMode(_mode); glPopMatrix(); }
+private:
+    GLenum _mode;
+};
+
 #endif // ifndef NATRON_GLOBAL_GLINCLUDES_H_

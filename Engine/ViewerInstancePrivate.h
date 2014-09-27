@@ -35,6 +35,7 @@ struct RenderViewerArgs
     RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
                      const TextureRect & texRect_,
                      ViewerInstance::DisplayChannels channels_,
+                      Natron::ImagePremultiplication srcPremult_,
                      int closestPowerOf2_,
                      int bitDepth_,
                      double gain_,
@@ -44,6 +45,7 @@ struct RenderViewerArgs
         : inputImage(inputImage_)
           , texRect(texRect_)
           , channels(channels_)
+          , srcPremult(srcPremult_)
           , closestPowerOf2(closestPowerOf2_)
           , bitDepth(bitDepth_)
           , gain(gain_)
@@ -56,6 +58,7 @@ struct RenderViewerArgs
     boost::shared_ptr<const Natron::Image> inputImage;
     TextureRect texRect;
     ViewerInstance::DisplayChannels channels;
+    Natron::ImagePremultiplication srcPremult;
     int closestPowerOf2;
     int bitDepth;
     double gain;
@@ -92,10 +95,12 @@ public:
     unsigned char* ramBuffer;
     int textureIndex;
     TextureRect textureRect;
+    Natron::ImagePremultiplication srcPremult;
     size_t bytesCount;
     double gain;
     double offset;
     unsigned int mipMapLevel;
+    Natron::ImagePremultiplication premult;
     Natron::ViewerColorSpace lut;
     boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
 };

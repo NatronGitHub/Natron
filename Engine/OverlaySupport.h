@@ -53,6 +53,16 @@ public:
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
+    
+    /**
+     * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
+     **/
+    virtual void saveOpenGLContext() = 0;
+    
+    /**
+     * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
+     **/
+    virtual void restoreOpenGLContext() = 0;
 };
 
 #endif // OVERLAYSUPPORT_H

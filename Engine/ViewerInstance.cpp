@@ -390,6 +390,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     ImageBitDepth imageDepth;
     activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
 
+    ImagePremultiplication srcPremult = activeInputToRender->getOutputPremultiplication();
+
+    
     emit imageFormatChanged(textureIndex,components, imageDepth);
     U64 inputNodeHash = activeInputToRender->getHash();
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
@@ -661,6 +664,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         }
     } else {
         byPassCache = true;
+        
+        ///Be sure to remove all textures (at any mipmaplevel) that could be left in the cache
+        appPTR->removeAllTexturesFromCacheWithMatchingKey(nodeHash);
     }
 
     unsigned char* ramBuffer = NULL;
@@ -870,7 +876,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         }
 
         ViewerColorSpace srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( lastRenderedImage->getBitDepth() );
-
+        
+        
         if (singleThreaded) {
             if (autoContrast) {
                 double vmin, vmax;
@@ -890,6 +897,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             const RenderViewerArgs args( lastRenderedImage,
                                          textureRect,
                                          channels,
+                                         srcPremult,
                                          1,
                                          bitDepth,
                                          gain,
@@ -953,6 +961,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             const RenderViewerArgs args( lastRenderedImage,
                                          textureRect,
                                          channels,
+                                         srcPremult,
                                          1,
                                          bitDepth,
                                          gain,
@@ -987,6 +996,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
         params->ramBuffer = ramBuffer;
         params->textureRect = textureRect;
+        params->srcPremult = srcPremult;
         params->bytesCount = bytesCount;
         params->gain = gain;
         params->offset = offset;
@@ -1120,7 +1130,7 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
     }
 } // findAutoContrastVminVmax
 
-template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
@@ -1130,7 +1140,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
     size_t pixelSize = sizeof(PIX);
     
     const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
-
+    
     ///offset the output buffer at the starting point
     output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
 
@@ -1163,26 +1173,30 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                     double r,g,b;
                     int a;
                     switch (nComps) {
-                    case 4:
-                        r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
-                        g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
-                        b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
-                        a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
-                        break;
-                    case 3:
-                        r = (src_pixels && rOffset < nComps) ? src_pixels[srcIndex * nComps + rOffset] : 0.;
-                        g = (src_pixels && gOffset < nComps) ? src_pixels[srcIndex * nComps + gOffset] : 0.;
-                        b = (src_pixels && bOffset < nComps) ? src_pixels[srcIndex * nComps + bOffset] : 0.;
-                        a = (src_pixels ? 255 : 0);
-                        break;
-                    case 1:
-                        r = src_pixels ? src_pixels[srcIndex] : 0.;
-                        g = b = r;
-                        a = src_pixels ? 255 : 0;
-                        break;
-                    default:
-                        assert(false);
-                        break;
+                        case 4:
+                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
+                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
+                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
+                            if (opaque) {
+                                a = 255;
+                            } else {
+                                a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
+                            }
+                            break;
+                        case 3:
+                            r = (src_pixels && rOffset < nComps) ? src_pixels[srcIndex * nComps + rOffset] : 0.;
+                            g = (src_pixels && gOffset < nComps) ? src_pixels[srcIndex * nComps + gOffset] : 0.;
+                            b = (src_pixels && bOffset < nComps) ? src_pixels[srcIndex * nComps + bOffset] : 0.;
+                            a = (src_pixels ? 255 : 0);
+                            break;
+                        case 1:
+                            r = src_pixels ? src_pixels[srcIndex] : 0.;
+                            g = b = r;
+                            a = src_pixels ? 255 : 0;
+                            break;
+                        default:
+                            assert(false);
+                            break;
                     }
                     
 
@@ -1260,6 +1274,26 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
 } // scaleToTexture8bits_internal
 
 
+template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+void
+scaleToTexture8bitsForPremult(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                             ViewerInstance* viewer,
+                             U32* output)
+{
+    switch (args.srcPremult) {
+        case Natron::ImageOpaque:
+            scaleToTexture8bits_internal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
+            break;
+        case Natron::ImagePremultiplied:
+        case Natron::ImageUnPremultiplied:
+        default:
+            scaleToTexture8bits_internal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
+            break;
+            
+    }
+}
+
 template <typename PIX,int maxValue,int nComps>
 void
 scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
@@ -1270,20 +1304,22 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
     switch (args.channels) {
         case ViewerInstance::RGB:
         case ViewerInstance::LUMINANCE:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
+
+            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
             break;
         case ViewerInstance::G:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
+            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
             break;
         case ViewerInstance::B:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
+            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
             break;
         case ViewerInstance::A:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
+            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
             break;
         case ViewerInstance::R:
         default:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+
             break;
     }
 }
@@ -1334,7 +1370,7 @@ scaleToTexture8bits(std::pair<int,int> yRange,
     }
 } // scaleToTexture8bits
 
-template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
@@ -1364,31 +1400,35 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
         ///we fill the scan-line with all the pixels of the input image
         for (int x = args.texRect.x1; x < args.texRect.x2; x += args.closestPowerOf2) {
             double r,g,b,a;
-
+            
             switch (nComps) {
-            case 4:
-                r = (double)(src_pixels[rOffset]);
-                g = (double)src_pixels[gOffset];
-                b = (double)src_pixels[bOffset];
-                a = (nComps < 4) ? 1. : src_pixels[3];
-                break;
-            case 3:
-                r = (double)(src_pixels[rOffset]);
-                g = (double)src_pixels[gOffset];
-                b = (double)src_pixels[bOffset];
-                a = 1.;
-                break;
-            case 1:
-                a = (nComps < 4) ? 1. : *src_pixels;
-                r = g = b = a;
-                a = 1.;
-                break;
-            default:
-                assert(false);
-                r = g = b = a = 0.;
-                break;
+                case 4:
+                    r = (double)(src_pixels[rOffset]);
+                    g = (double)src_pixels[gOffset];
+                    b = (double)src_pixels[bOffset];
+                    if (opaque) {
+                        a = 1.;
+                    } else {
+                        a = (nComps < 4) ? 1. : src_pixels[3];
+                    }
+                    break;
+                case 3:
+                    r = (double)(src_pixels[rOffset]);
+                    g = (double)src_pixels[gOffset];
+                    b = (double)src_pixels[bOffset];
+                    a = 1.;
+                    break;
+                case 1:
+                    a = (nComps < 4) ? 1. : *src_pixels;
+                    r = g = b = a;
+                    a = 1.;
+                    break;
+                default:
+                    assert(false);
+                    r = g = b = a = 0.;
+                    break;
             }
-
+            
             switch ( pixelSize ) {
             case sizeof(unsigned char):
                 if (args.srcColorSpace) {
@@ -1440,6 +1480,26 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
     }
 } // scaleToTexture32bitsInternal
 
+
+template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+void
+scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                             float *output)
+{
+    switch (args.srcPremult) {
+        case Natron::ImageOpaque:
+            scaleToTexture32bitsInternal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args, output);
+            break;
+        case Natron::ImagePremultiplied:
+        case Natron::ImageUnPremultiplied:
+        default:
+            scaleToTexture32bitsInternal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args, output);
+            break;
+        
+    }
+}
+
 template <typename PIX,int maxValue,int nComps>
 void
 scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
@@ -1452,11 +1512,11 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
         case ViewerInstance::LUMINANCE:
             switch (nComps) {
                 case 1:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
                     break;
                 case 3:
                 case 4:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
                     break;
                 default:
                     break;
@@ -1465,11 +1525,11 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
         case ViewerInstance::G:
             switch (nComps) {
                 case 1:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
                     break;
                 case 3:
                 case 4:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
                     break;
                 default:
                     break;
@@ -1478,11 +1538,11 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
         case ViewerInstance::B:
             switch (nComps) {
                 case 1:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
                     break;
                 case 3:
                 case 4:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
                     break;
                 default:
                     break;
@@ -1492,10 +1552,10 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
             switch (nComps) {
                 case 1:
                 case 3:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
                     break;
                 case 4:
-                    scaleToTexture32bitsInternal<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
                     break;
                 default:
                     break;
@@ -1503,7 +1563,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
             break;
         case ViewerInstance::R:
         default:
-            scaleToTexture32bitsInternal<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
             break;
     }
 
@@ -1580,6 +1640,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                                   params->lut,
                                                   updateViewerPboIndex,
                                                   params->mipMapLevel,
+                                                  params->srcPremult,
                                                   params->textureIndex);
             updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
         }

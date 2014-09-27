@@ -28,6 +28,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/GlobalDefines.h"
 
 class Curve;
+class ChoiceExtraData;
 class OverlaySupport;
 class StringAnimationManager;
 class BezierCP;
@@ -446,10 +447,10 @@ public:
 
     /*Must be called right away after the constructor.*/
     void populateChoices( const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>() );
-
-    const std::vector<std::string> &getEntries() const;
-    const std::vector<std::string> &getEntriesHelp() const;
-    const std::string &getActiveEntryText() const;
+    
+    std::vector<std::string> getEntries_mt_safe() const;
+    std::vector<std::string> getEntriesHelp_mt_safe() const;
+    std::string getActiveEntryText_mt_safe() const;
 
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
@@ -461,6 +462,8 @@ public:
 
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
+    
+    void choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data);
 
 signals:
 
@@ -473,6 +476,8 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void deepCloneExtraData(KnobI* other) OVERRIDE FINAL;
 private:
+    
+    mutable QMutex _entriesMutex;
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
     static const std::string _typeNameStr;

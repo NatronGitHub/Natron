@@ -41,13 +41,14 @@ main(int argc,
 
     ///auto-background without a project name is not valid.
     if ( projectName.isEmpty() ) {
-        AppManager::printUsage();
+        AppManager::printUsage(argv[0]);
 
         return 1;
     }
     AppManager manager;
+
     if ( !manager.load(argc,argv,projectName,writers,frameRanges,mainProcessServerName) ) {
-        AppManager::printUsage();
+        AppManager::printUsage(argv[0]);
 
         return 1;
     } else {

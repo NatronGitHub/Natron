@@ -85,6 +85,8 @@ public:
 
     ///MT-Safe
     bool getIsSelected() const;
+    
+    void centerOnIt();
 
 signals:
 

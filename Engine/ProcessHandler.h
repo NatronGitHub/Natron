@@ -15,6 +15,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QProcess>
 #include <QThread>
+#include <QStringList>
 #include <QString>
 CLANG_DIAG_ON(deprecated)
 #include "Global/GlobalDefines.h"
@@ -28,8 +29,6 @@ class OutputEffectInstance;
 //qt
 class QLocalServer;
 class QLocalSocket;
-class QString;
-class QStringList;
 class QMutex;
 class QWaitCondition;
 
@@ -87,7 +86,8 @@ class ProcessHandler
     QLocalSocket* _bgProcessInputSocket;
     bool _earlyCancel; //< true if the user pressed cancel but the _bgProcessInput socket was not created yet
     QString _processLog; //< used to record the log of the process
-
+    QStringList _processArgs;
+    
 public:
 
     /**
@@ -147,6 +147,11 @@ public slots:
      * @brief Called when the input pipe connection is successfully sealed.
      **/
     void onInputPipeConnectionMade();
+    
+    /**
+     * @brief Start the process execution
+     **/
+    void startProcess();
 
 signals:
 

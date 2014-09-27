@@ -764,6 +764,22 @@ KnobHelper::getBackgroundColour(double &r,
 }
 
 void
+KnobHelper::saveOpenGLContext()
+{
+    if (_imp->gui) {
+        _imp->gui->saveOpenGLContext();
+    }
+}
+
+void
+KnobHelper::restoreOpenGLContext()
+{
+    if (_imp->gui) {
+        _imp->gui->restoreOpenGLContext();
+    }
+}
+
+void
 KnobHelper::setOfxParamHandle(void* ofxParamHandle)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -1415,7 +1431,11 @@ KnobHolder::evaluate_public(KnobI* knob,
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
         if ( isSignificant && getApp() ) {
-            getApp()->triggerAutoSave();
+            ///Don't trigger autosaves for buttons
+            Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob);
+            if (!isButton) {
+                getApp()->triggerAutoSave();
+            }
         }
     }
 }

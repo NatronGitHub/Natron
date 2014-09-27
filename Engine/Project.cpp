@@ -12,6 +12,17 @@
 
 #include <fstream>
 #include <algorithm>
+#include <cstdlib> // strtoul
+#include <cerrno> // errno
+
+#ifdef __NATRON_WIN32__
+#include <stdio.h> //for _snprintf
+#include <windows.h> //for GetUserName
+#include <Lmcons.h> //for UNLEN
+#define snprintf _snprintf
+#elif defined(__NATRON_UNIX__)
+#include <pwd.h> //for getpwuid
+#endif
 
 #include <QtConcurrentRun>
 #include <QCoreApplication>
@@ -19,6 +30,9 @@
 #include <QThreadPool>
 #include <QDir>
 #include <QTemporaryFile>
+#include <QHostInfo>
+#include <QFileInfo>
+
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -36,6 +50,41 @@
 using std::cout; using std::endl;
 using std::make_pair;
 
+
+static std::string getUserName()
+{
+#ifdef __NATRON_WIN32__
+    char user_name[UNLEN+1];
+    DWORD user_name_size = sizeof(user_name);
+    GetUserName(user_name, &user_name_size);
+    return std::string(user_name);
+#elif defined(__NATRON_UNIX__)
+    struct passwd *passwd;
+    passwd = getpwuid( getuid() );
+    return passwd->pw_name;
+#endif
+}
+
+static std::string generateGUIUserName()
+{
+    return getUserName() + '@' + QHostInfo::localHostName().toStdString();
+}
+
+static std::string generateUserFriendlyNatronVersionName()
+{
+    std::string ret(NATRON_APPLICATION_NAME);
+    ret.append(" v");
+    ret.append(NATRON_VERSION_STRING);
+    if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_ALPHA) {
+        ret.append(" " NATRON_DEVELOPMENT_ALPHA);
+    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_BETA) {
+        ret.append(" " NATRON_DEVELOPMENT_BETA);
+    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        ret.append(" " NATRON_DEVELOPMENT_RELEASE_CANDIDATE);
+        ret.append(QString::number(NATRON_BUILD_NUMBER).toStdString());
+    }
+    return ret;
+}
 
 namespace Natron {
 Project::Project(AppInstance* appInstance)
@@ -188,7 +237,7 @@ Project::refreshViewersAndPreviews()
     }
 }
 
-void
+QString
 Project::saveProject(const QString & path,
                      const QString & name,
                      bool autoS)
@@ -196,31 +245,36 @@ Project::saveProject(const QString & path,
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {
-            return;
+            return QString();
         }
     }
 
     {
         QMutexLocker l(&_imp->isSavingProjectMutex);
         if (_imp->isSavingProject) {
-            return;
+            return QString();
         } else {
             _imp->isSavingProject = true;
         }
     }
 
+    QString ret;
     try {
         if (!autoS) {
             //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
 
-            saveProjectInternal(path,name);
-            ///also update the auto-save
+            ret = saveProjectInternal(path,name);
+            
+            ///We just saved, any auto-save left is then worthless
             removeAutoSaves();
 
             //}
         } else {
+            
+            ///Clean auto-saves before saving a new one
             removeAutoSaves();
-            saveProjectInternal(path,name,true);
+            
+            ret = saveProjectInternal(path,name,true);
         }
     } catch (const std::exception & e) {
         if (!autoS) {
@@ -234,6 +288,7 @@ Project::saveProject(const QString & path,
         QMutexLocker l(&_imp->isSavingProjectMutex);
         _imp->isSavingProject = false;
     }
+    return ret;
 }
 
 static bool
@@ -253,7 +308,7 @@ fileCopy(const QString & source,
     return success;
 }
 
-QDateTime
+QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave)
@@ -269,6 +324,10 @@ Project::saveProjectInternal(const QString & path,
     QString timeHashStr = QString::number( timeHash.value() );
     QString actualFileName = name;
     if (autoSave) {
+        
+        ///We encode the filename of the actual project file
+        ///into the autosave filename so that the "Do you want to restore this autosave?" dialog
+        ///knows to which project is linked the autosave.
         QString pathCpy = path;
 
 #ifdef __NATRON_WIN32__
@@ -313,12 +372,12 @@ Project::saveProjectInternal(const QString & path,
         ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ofile.open(tmpFilename.toStdString().c_str(),std::ofstream::out);
     } catch (const std::ofstream::failure & e) {
-        throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
+        throw std::runtime_error( std::string("Exception occured when opening file ") + tmpFilename.toStdString() + ": " + e.what() );
     }
 
     if ( !ofile.good() ) {
-        qDebug() << "Failed to open file " << filePath.toStdString().c_str();
-        throw std::runtime_error( "Failed to open file " + filePath.toStdString() );
+        qDebug() << "Failed to open file " << tmpFilename.toStdString().c_str();
+        throw std::runtime_error( "Failed to open file " + tmpFilename.toStdString() );
     }
 
     ///Fix file paths before saving.
@@ -327,7 +386,13 @@ Project::saveProjectInternal(const QString & path,
         QMutexLocker l(&_imp->projectLock);
         oldProjectPath = _imp->projectPath;
     }
-    _imp->autoSetProjectDirectory(path);
+    
+    if (!autoSave) {
+        _imp->autoSetProjectDirectory(path);
+        _imp->saveDate->setValue(timeStr.toStdString(), 0);
+        _imp->lastAuthorName->setValue(generateGUIUserName(), 0);
+        _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
+    }
     
     try {
         boost::archive::xml_oarchive oArchive(ofile);
@@ -341,8 +406,10 @@ Project::saveProjectInternal(const QString & path,
         }
     } catch (...) {
         ofile.close();
-        ///Reset the old project path in case of failure.
-        _imp->autoSetProjectDirectory(oldProjectPath);
+        if (!autoSave) {
+            ///Reset the old project path in case of failure.
+            _imp->autoSetProjectDirectory(oldProjectPath);
+        }
         throw;
     }
 
@@ -371,7 +438,7 @@ Project::saveProjectInternal(const QString & path,
     }
     _imp->lastAutoSave = time;
 
-    return time;
+    return filePath;
 } // saveProjectInternal
 
 void
@@ -687,6 +754,58 @@ Project::initializeKnobs()
     _imp->colorSpace32bits->populateChoices(colorSpaces);
     _imp->colorSpace32bits->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32bits);
+    
+    boost::shared_ptr<Page_Knob> infosPage = Natron::createKnob<Page_Knob>(this, "Infos");
+    
+    _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
+    _imp->natronVersion->setName("softwareVersion");
+    _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
+    _imp->natronVersion->setAsLabel();
+    _imp->natronVersion->setAnimationEnabled(false);
+    
+    _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
+    infosPage->addKnob(_imp->natronVersion);
+    
+    _imp->originalAuthorName = Natron::createKnob<String_Knob>(this, "Original author");
+    _imp->originalAuthorName->setName("originalAuthor");
+    _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
+    _imp->originalAuthorName->setAsLabel();
+    _imp->originalAuthorName->setAnimationEnabled(false);
+    std::string authorName = generateGUIUserName();
+    _imp->originalAuthorName->setDefaultValue(authorName);
+    infosPage->addKnob(_imp->originalAuthorName);
+    
+    _imp->lastAuthorName = Natron::createKnob<String_Knob>(this, "Last author");
+    _imp->lastAuthorName->setName("lastAuthor");
+    _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
+    _imp->lastAuthorName->setAsLabel();
+    _imp->lastAuthorName->setAnimationEnabled(false);
+    _imp->lastAuthorName->setDefaultValue(authorName);
+    infosPage->addKnob(_imp->lastAuthorName);
+
+
+    _imp->projectCreationDate = Natron::createKnob<String_Knob>(this, "Created on");
+    _imp->projectCreationDate->setName("creationDate");
+    _imp->projectCreationDate->setHintToolTip("The creation date of the project.");
+    _imp->projectCreationDate->setAsLabel();
+    _imp->projectCreationDate->setAnimationEnabled(false);
+    _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
+    infosPage->addKnob(_imp->projectCreationDate);
+    
+    _imp->saveDate = Natron::createKnob<String_Knob>(this, "Last saved on");
+    _imp->saveDate->setName("lastSaveDate");
+    _imp->saveDate->setHintToolTip("The date this project was last saved.");
+    _imp->saveDate->setAsLabel();
+    _imp->saveDate->setAnimationEnabled(false);
+    infosPage->addKnob(_imp->saveDate);
+    
+    boost::shared_ptr<String_Knob> comments = Natron::createKnob<String_Knob>(this, "Comments");
+    comments->setName("comments");
+    comments->setHintToolTip("This area is a good place to write some informations about the project such as its authors, license "
+                             "and anything worth mentionning about it.");
+    comments->setAsMultiLine();
+    comments->setAnimationEnabled(false);
+    infosPage->addKnob(comments);
     
     emit knobsInitialized();
 } // initializeKnobs
@@ -1126,6 +1245,13 @@ Project::removeAutoSaves()
 
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
+        
+        ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
+        /// @see AppInstance::startWritersRendering
+        if (entry.contains("RENDER_SAVE")) {
+            continue;
+        }
+        
         QString searchStr('.');
         searchStr.append(NATRON_PROJECT_FILE_EXT);
         searchStr.append('.');
@@ -1398,11 +1524,13 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
             selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
             for (std::map<boost::shared_ptr<Node>,int>::iterator it = outputsConnectedToSelectedNode.begin();
                  it != outputsConnectedToSelectedNode.end(); ++it) {
-                bool ok = disconnectNodes(selected, it->first);
-                assert(ok);
-
-                ok = connectNodes(it->second, created, it->first);
-                assert(ok);
+                if (it->first->getParentMultiInstanceName().empty()) {
+                    bool ok = disconnectNodes(selected, it->first);
+                    assert(ok);
+                    
+                    ok = connectNodes(it->second, created, it->first);
+                    assert(ok);
+                }
             }
         }
         ///finally we connect the created node to the selected node
@@ -1478,7 +1606,108 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
         break;
     }
 }
-    
+
+// Functions to escape / unescape characters from XML strings
+// Note that the unescape function matches the escape function,
+// and cannot decode any HTML entity (such as Unicode chars).
+// A far more complete decoding function can be found at:
+// https://bitbucket.org/cggaertner/cstuff/src/master/entities.c
+std::string
+Project::escapeXML(const std::string &istr)
+{
+    std::string str( istr );
+    for (size_t i = 0; i < str.size(); ++i) {
+        switch (str[i]) {
+            case '<':
+                str.replace(i, 1, "&lt;");
+                i += 3;
+                break;
+
+            case '>':
+                str.replace(i, 1, "&gt;");
+                i += 3;
+                break;
+            case '&':
+                str.replace(i, 1, "&amp;");
+                i += 4;
+                break;
+            case '"':
+                str.replace(i, 1, "&quot;");
+                i += 5;
+                break;
+            case '\'':
+                str.replace(i, 1, "&apos;");
+                i += 5;
+                break;
+
+                // control chars we allow:
+            case '\n':
+            case '\r':
+            case '\t':
+                break;
+
+            default: {
+                unsigned char c = (unsigned char)(str[i]);
+                if ((0x01 <= c && c <= 0x1f) || (0x7F <= c && c <= 0x9F)) {
+                    char escaped[7];
+                    // these characters must be escaped in XML 1.1
+                    snprintf(escaped, sizeof(escaped), "&#x%02X;", (unsigned int)c);
+                    str.replace(i, 1, escaped);
+                    i += 5;
+
+                }
+            }   break;
+        }
+    }
+    return str;
+}
+
+std::string
+Project::unescapeXML(const std::string &istr)
+{
+    size_t i;
+    std::string str = istr;
+    i = str.find_first_of("&");
+    while (i != std::string::npos) {
+        if (str[i] == '&') {
+            if (!str.compare(i + 1, 3, "lt;")) {
+                str.replace(i, 4, 1, '<');
+            } else if (!str.compare(i + 1, 3, "gt;")) {
+                str.replace(i, 4, 1, '>');
+            } else if (!str.compare(i + 1, 4, "amp;")) {
+                str.replace(i, 5, 1, '&');
+            } else if (!str.compare(i + 1, 5, "apos;")) {
+                str.replace(i, 6, 1, '\'');
+            } else if (!str.compare(i + 1, 5, "quot;")) {
+                str.replace(i, 6, 1, '"');
+            } else if (!str.compare(i + 1, 1, "#")) {
+                size_t end = str.find_first_of(";", i + 2);
+                if (end == std::string::npos) {
+                    // malformed XML
+                    return str;
+                }
+                char *tail = NULL;
+                int errno_save = errno;
+                bool hex = str[i+2] == 'x' || str[i+2] == 'X';
+                char *head = &str[i+ (hex ? 3 : 2)];
+
+                errno = 0;
+                unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
+
+                bool fail = errno || (tail - &str[0])!= (long)end || cp > 0xff; // only handle 0x01-0xff
+                errno = errno_save;
+                if (fail) {
+                    return str;
+                }
+                // replace from '&' to ';' (thus the +1)
+                str.replace(i, tail - head + 1, 1, (char)cp);
+            }
+        }
+        i = str.find_first_of("&", i + 1);
+    }
+    return str;
+}
+
 void
 Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables)
 {
@@ -1512,7 +1741,8 @@ Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>
             ++i;
         }
         
-        variables.insert(std::make_pair(name, value));
+        // In order to use XML tags, the text inside the tags has to be unescaped.
+        variables.insert(std::make_pair(unescapeXML(name), unescapeXML(value)));
         
         i = encoded.find(startNameTag,i);
     }
@@ -1581,17 +1811,26 @@ Project::findReplaceVariable(const std::map<std::string,std::string>& env,std::s
 void
 Project::makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str)
 {
-    QDir dir(varValue.c_str());
-    if (!dir.exists()) {
-        return;
+    
+    bool hasTrailingSep = !varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\');
+    if (str.size() > varValue.size() && str.substr(0,varValue.size()) == varValue) {
+        if (hasTrailingSep) {
+            str = '[' + varName + ']' + str.substr(varValue.size(),str.size());
+        } else {
+            str = '[' + varName + "]/" + str.substr(varValue.size() + 1,str.size());
+        }
+    } else {
+        QDir dir(varValue.c_str());
+        QString relative = dir.relativeFilePath(str.c_str());
+        if (hasTrailingSep) {
+            str = '[' + varName + ']' + relative.toStdString();
+        } else {
+            str = '[' + varName + "]/" + relative.toStdString();
+        }
     }
-    QString s(str.c_str());
-    s = dir.relativeFilePath(s);
-    if (varValue[varValue.size() - 1] != '/' && varValue[varValue.size() - 1] != '\\') {
-        ///append a '/'
-        s.prepend('/');
-    }
-    str = '[' + varName + ']' + s.toStdString();
+
+    
+    
 }
     
 void
@@ -1675,6 +1914,82 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     fixRelativeFilePaths(env,projectPathName, newProjectPath);
 }
     
+bool
+Project::isRelative(const std::string& str)
+{
+#ifdef __NATRON_WIN32__
+    return (str.empty() || (!str.empty() && (str[0] != '/')
+                            && (!(str.size() >= 2 && str[1] == ':'))));
+#else  //Unix
+    return (str.empty() || (str[0] != '/'));
+#endif
+}
+    
+    
+    
+void
+Project::canonicalizePath(std::string& str)
+{
+    std::map<std::string,std::string> envvar;
+    getEnvironmentVariables(envvar);
+    
+    expandVariable(envvar, str);
+    
+    ///Now check if the string is relative
+    if ( !str.empty() && isRelative(str) ) {
+        
+        ///If it doesn't start with an env var but is relative, prepend the project env var
+        std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+        if (foundProject != envvar.end()) {
+			if (foundProject->second.empty()) {
+				return;
+			}
+            const char& c = foundProject->second[foundProject->second.size() - 1];
+            bool addTrailingSlash = c != '/' && c != '\\';
+            std::string copy = foundProject->second;
+            if (addTrailingSlash) {
+                copy += '/';
+            }
+            copy += str;
+            str = copy;
+        }
+        
+        ///Canonicalize
+        QFileInfo info(str.c_str());
+        QString canonical =  info.canonicalFilePath();
+        if ( canonical.isEmpty() && !str.empty() ) {
+            return;
+        } else {
+            str = canonical.toStdString();
+        }
+    }
+
+}
+    
+    
+void
+Project::simplifyPath(std::string& str)
+{
+    std::map<std::string,std::string> envvar;
+    getEnvironmentVariables(envvar);
+    
+    Natron::Project::findReplaceVariable(envvar,str);
+}
+    
+    
+void
+Project::makeRelativeToProject(std::string& str)
+{
+    std::map<std::string,std::string> envvar;
+    getEnvironmentVariables(envvar);
+
+    std::map<std::string,std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+    if (found != envvar.end()) {
+        makeRelativeToVariable(found->first, found->second, str);
+    }
+}
+
+    
 void
 Project::onOCIOConfigPathChanged(const std::string& path)
 {
@@ -1694,11 +2009,12 @@ Project::onOCIOConfigPathChanged(const std::string& path)
 
     std::string newEnv;
     for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+        // In order to use XML tags, the text inside the tags has to be escaped.
         newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        newEnv += it->first;
+        newEnv += Project::escapeXML(it->first);
         newEnv += NATRON_ENV_VAR_NAME_END_TAG;
         newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += it->second;
+        newEnv += Project::escapeXML(it->second);
         newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
     }
     if (env != newEnv) {

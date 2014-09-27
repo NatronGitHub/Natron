@@ -292,103 +292,97 @@ CurveGui::drawCurve(int curveIndex,
 
     const QColor & curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
 
-    glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+    {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
-    glPointSize(_thickness);
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-    glLineWidth(1.5);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+        glPointSize(_thickness);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+        glLineWidth(1.5);
 
-    glBegin(GL_LINE_STRIP);
-    for (int i = 0; i < (int)vertices.size(); i += 2) {
-        glVertex2f(vertices[i],vertices[i + 1]);
-    }
-    glEnd();
-
-
-    //render the name of the curve
-    glColor4f(1.f, 1.f, 1.f, 1.f);
-
-
-    QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
-    QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
-    double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
-    double textX = _curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
-    double textY = evaluate(textX);
-
-    _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
-    glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
-
-
-    //draw keyframes
-    glPointSize(7.f);
-    glEnable(GL_POINT_SMOOTH);
-
-    const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
-    for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
-        glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
-        const KeyFrame & key = (*k);
-        //if the key is selected change its color to white
-        SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
-        for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
-             it2 != selectedKeyFrames.end(); ++it2) {
-            if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve == this ) ) {
-                isSelected = it2;
-                glColor4f(1.f,1.f,1.f,1.f);
-                break;
-            }
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i < (int)vertices.size(); i += 2) {
+            glVertex2f(vertices[i],vertices[i + 1]);
         }
-        double x = key.getTime();
-        double y = key.getValue();
-        glBegin(GL_POINTS);
-        glVertex2f(x,y);
         glEnd();
-        if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != KEYFRAME_CONSTANT) ) {
-            //draw the derivatives lines
-            if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
-                glLineStipple(2, 0xAAAA);
-                glEnable(GL_LINE_STIPPLE);
-            }
-            glBegin(GL_LINES);
-            glColor4f(1., 0.35, 0.35, 1.);
-            glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
-            glVertex2f(x, y);
-            glVertex2f(x, y);
-            glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
-            glEnd();
-            if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
-                glDisable(GL_LINE_STIPPLE);
-            }
 
-            if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
-                QString coordStr("x: %1, y: %2");
-                coordStr = coordStr.arg(x).arg(y);
-                double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
-                QFontMetrics m( _curveWidget->getFont() );
-                yWidgetCoord += (m.height() + 4);
-                glColor4f(1., 1., 1., 1.);
-                glCheckFramebufferError();
-                _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
-                                          coordStr, QColor(240,240,240), _curveWidget->getFont() );
+
+        //render the name of the curve
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+
+
+        QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
+        QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
+        double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
+        double textX = _curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
+        double textY = evaluate(textX);
+
+        _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
+        glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+
+
+        //draw keyframes
+        glPointSize(7.f);
+        glEnable(GL_POINT_SMOOTH);
+
+        const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
+            glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
+            const KeyFrame & key = (*k);
+            //if the key is selected change its color to white
+            SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
+            for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
+                 it2 != selectedKeyFrames.end(); ++it2) {
+                if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve == this ) ) {
+                    isSelected = it2;
+                    glColor4f(1.f,1.f,1.f,1.f);
+                    break;
+                }
             }
+            double x = key.getTime();
+            double y = key.getValue();
             glBegin(GL_POINTS);
-            glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
-            glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+            glVertex2f(x,y);
             glEnd();
-        }
-    }
+            if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != KEYFRAME_CONSTANT) ) {
+                //draw the derivatives lines
+                if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
+                    glLineStipple(2, 0xAAAA);
+                    glEnable(GL_LINE_STIPPLE);
+                }
+                glBegin(GL_LINES);
+                glColor4f(1., 0.35, 0.35, 1.);
+                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
+                glVertex2f(x, y);
+                glVertex2f(x, y);
+                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                glEnd();
+                if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
+                    glDisable(GL_LINE_STIPPLE);
+                }
 
-    glDisable(GL_LINE_SMOOTH);
-    glLineWidth(1.);
-    glDisable(GL_BLEND);
-    glDisable(GL_POINT_SMOOTH);
-    glPopAttrib();
-    glPointSize(1.f);
-    //reset back the color
-    glColor4f(1.f, 1.f, 1.f, 1.f);
+                if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                    QString coordStr("x: %1, y: %2");
+                    coordStr = coordStr.arg(x).arg(y);
+                    double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
+                    QFontMetrics m( _curveWidget->getFont() );
+                    yWidgetCoord += (m.height() + 4);
+                    glColor4f(1., 1., 1., 1.);
+                    glCheckFramebufferError();
+                    _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
+                                             coordStr, QColor(240,240,240), _curveWidget->getFont() );
+                }
+                glBegin(GL_POINTS);
+                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
+                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                glEnd();
+            }
+        }
+    } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
+
     glCheckError();
 } // drawCurve
 
@@ -530,6 +524,7 @@ public:
     boost::scoped_ptr<QUndoStack> _undoStack;
     Gui* _gui;
 
+    GLuint savedTexture;
 private:
 
     QColor _baseAxisColor;
@@ -571,6 +566,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _keyDragLastMovement()
       , _undoStack(new QUndoStack)
       , _gui(gui)
+      , savedTexture(0)
       , _baseAxisColor(118,215,90,255)
       , _scaleColor(67,123,52,255)
       , _keyDragMaxMovement()
@@ -726,41 +722,38 @@ CurveWidgetPrivate::drawSelectionRectangle()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
-    glColor4f(0.3,0.3,0.3,0.2);
-    QPointF btmRight = _selectionRectangle.bottomRight();
-    QPointF topLeft = _selectionRectangle.topLeft();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
-    glBegin(GL_POLYGON);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glColor4f(0.3,0.3,0.3,0.2);
+        QPointF btmRight = _selectionRectangle.bottomRight();
+        QPointF topLeft = _selectionRectangle.topLeft();
 
-
-    glLineWidth(1.5);
-
-    glColor4f(0.5,0.5,0.5,1.);
-    glBegin(GL_LINE_LOOP);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glBegin(GL_POLYGON);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
 
 
-    glDisable(GL_LINE_SMOOTH);
-    glCheckError();
+        glLineWidth(1.5);
 
-    glLineWidth(1.);
-    glPopAttrib();
-    glColor4f(1., 1., 1., 1.);
+        glColor4f(0.5,0.5,0.5,1.);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
+        
+        glCheckError();
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
 void
@@ -808,43 +801,43 @@ CurveWidgetPrivate::drawTimelineMarkers()
     QPointF topLeft = zoomCtx.toZoomCoordinates(0,0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1,_widget->height() - 1);
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-    glColor4f(0.8,0.3,0.,1.);
+    {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
 
-    glBegin(GL_LINES);
-    glVertex2f( _timeline->leftBound(),btmRight.y() );
-    glVertex2f( _timeline->leftBound(),topLeft.y() );
-    glVertex2f( _timeline->rightBound(),btmRight.y() );
-    glVertex2f( _timeline->rightBound(),topLeft.y() );
-    glColor4f(0.95,0.58,0.,1.);
-    glVertex2f( _timeline->currentFrame(),btmRight.y() );
-    glVertex2f( _timeline->currentFrame(),topLeft.y() );
-    glEnd();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+        glColor4f(0.8,0.3,0.,1.);
 
-    glDisable(GL_LINE_SMOOTH);
+        glBegin(GL_LINES);
+        glVertex2f( _timeline->leftBound(),btmRight.y() );
+        glVertex2f( _timeline->leftBound(),topLeft.y() );
+        glVertex2f( _timeline->rightBound(),btmRight.y() );
+        glVertex2f( _timeline->rightBound(),topLeft.y() );
+        glColor4f(0.95,0.58,0.,1.);
+        glVertex2f( _timeline->currentFrame(),btmRight.y() );
+        glVertex2f( _timeline->currentFrame(),topLeft.y() );
+        glEnd();
 
+        glEnable(GL_POLYGON_SMOOTH);
+        glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
 
-    glEnable(GL_POLYGON_SMOOTH);
-    glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
+        assert(_timelineBtmPoly.size() == 3 && _timelineTopPoly.size() == 3);
 
-    assert(_timelineBtmPoly.size() == 3 && _timelineTopPoly.size() == 3);
+        glBegin(GL_POLYGON);
+        glVertex2f( _timelineBtmPoly.at(0).x(),_timelineBtmPoly.at(0).y() );
+        glVertex2f( _timelineBtmPoly.at(1).x(),_timelineBtmPoly.at(1).y() );
+        glVertex2f( _timelineBtmPoly.at(2).x(),_timelineBtmPoly.at(2).y() );
+        glEnd();
 
-    glBegin(GL_POLYGON);
-    glVertex2f( _timelineBtmPoly.at(0).x(),_timelineBtmPoly.at(0).y() );
-    glVertex2f( _timelineBtmPoly.at(1).x(),_timelineBtmPoly.at(1).y() );
-    glVertex2f( _timelineBtmPoly.at(2).x(),_timelineBtmPoly.at(2).y() );
-    glEnd();
-
-    glBegin(GL_POLYGON);
-    glVertex2f( _timelineTopPoly.at(0).x(),_timelineTopPoly.at(0).y() );
-    glVertex2f( _timelineTopPoly.at(1).x(),_timelineTopPoly.at(1).y() );
-    glVertex2f( _timelineTopPoly.at(2).x(),_timelineTopPoly.at(2).y() );
-    glEnd();
-
-    glDisable(GL_POLYGON_SMOOTH);
-    glPopAttrib();
+        glBegin(GL_POLYGON);
+        glVertex2f( _timelineTopPoly.at(0).x(),_timelineTopPoly.at(0).y() );
+        glVertex2f( _timelineTopPoly.at(1).x(),_timelineTopPoly.at(1).y() );
+        glVertex2f( _timelineTopPoly.at(2).x(),_timelineTopPoly.at(2).y() );
+        glEnd();
+        
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
 }
 
 void
@@ -907,71 +900,71 @@ CurveWidgetPrivate::drawScale()
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    {
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-    for (int axis = 0; axis < 2; ++axis) {
-        const double rangePixel = (axis == 0) ? _widget->width() : _widget->height(); // AXIS-SPECIFIC
-        const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
-        const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
-        const double range = range_max - range_min;
-        double smallTickSize;
-        bool half_tick;
-        ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
-        int m1, m2;
-        const int ticks_max = 1000;
-        double offset;
-        ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
-        std::vector<int> ticks;
-        ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
-        const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
-        const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
-        const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
-        for (int i = m1; i <= m2; ++i) {
-            double value = i * smallTickSize + offset;
-            const double tickSize = ticks[i - m1] * smallTickSize;
-            const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+        for (int axis = 0; axis < 2; ++axis) {
+            const double rangePixel = (axis == 0) ? _widget->width() : _widget->height(); // AXIS-SPECIFIC
+            const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
+            const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
+            const double range = range_max - range_min;
+            double smallTickSize;
+            bool half_tick;
+            ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+            int m1, m2;
+            const int ticks_max = 1000;
+            double offset;
+            ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
+            std::vector<int> ticks;
+            ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
+            const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
+            const double largestTickSize = range * largestTickSizePixel / rangePixel;
+            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
+            for (int i = m1; i <= m2; ++i) {
+                double value = i * smallTickSize + offset;
+                const double tickSize = ticks[i - m1] * smallTickSize;
+                const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            glBegin(GL_LINES);
-            if (axis == 0) {
-                glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
-                glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
-            } else {
-                glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
-                glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
-            }
-            glEnd();
+                glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
-            if (tickSize > minTickSizeText) {
-                const int tickSizePixel = rangePixel * tickSize / range;
-                const QString s = QString::number(value);
-                const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
-                if (tickSizePixel > sSizePixel) {
-                    const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
-                    double alphaText = 1.0; //alpha;
-                    if (tickSizePixel < sSizeFullPixel) {
-                        // when the text size is between sSizePixel and sSizeFullPixel,
-                        // draw it with a lower alpha
-                        alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
-                    }
-                    QColor c = _scaleColor;
-                    c.setAlpha(255 * alphaText);
-                    if (axis == 0) {
-                        _widget->renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
-                    } else {
-                        _widget->renderText(btmLeft.x(), value, s, c, *_font); // AXIS-SPECIFIC
+                glBegin(GL_LINES);
+                if (axis == 0) {
+                    glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
+                    glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
+                } else {
+                    glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
+                    glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
+                }
+                glEnd();
+
+                if (tickSize > minTickSizeText) {
+                    const int tickSizePixel = rangePixel * tickSize / range;
+                    const QString s = QString::number(value);
+                    const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
+                    if (tickSizePixel > sSizePixel) {
+                        const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                        double alphaText = 1.0; //alpha;
+                        if (tickSizePixel < sSizeFullPixel) {
+                            // when the text size is between sSizePixel and sSizeFullPixel,
+                            // draw it with a lower alpha
+                            alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
+                        }
+                        QColor c = _scaleColor;
+                        c.setAlpha(255 * alphaText);
+                        if (axis == 0) {
+                            _widget->renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
+                        } else {
+                            _widget->renderText(btmLeft.x(), value, s, c, *_font); // AXIS-SPECIFIC
+                        }
                     }
                 }
             }
         }
-    }
-
-    glDisable(GL_BLEND);
-    //reset back the color
-    glColor4f(1., 1., 1., 1.);
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 } // drawScale
 
 void
@@ -981,40 +974,38 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
 
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    {
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
 
-    QPointF topLeft = _selectedKeyFramesBbox.topLeft();
-    QPointF btmRight = _selectedKeyFramesBbox.bottomRight();
+        QPointF topLeft = _selectedKeyFramesBbox.topLeft();
+        QPointF btmRight = _selectedKeyFramesBbox.bottomRight();
 
-    glLineWidth(1.5);
+        glLineWidth(1.5);
 
-    glColor4f(0.5,0.5,0.5,1.);
-    glBegin(GL_LINE_LOOP);
-    glVertex2f( topLeft.x(),btmRight.y() );
-    glVertex2f( topLeft.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),topLeft.y() );
-    glVertex2f( btmRight.x(),btmRight.y() );
-    glEnd();
+        glColor4f(0.5,0.5,0.5,1.);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f( topLeft.x(),btmRight.y() );
+        glVertex2f( topLeft.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),topLeft.y() );
+        glVertex2f( btmRight.x(),btmRight.y() );
+        glEnd();
 
 
-    glBegin(GL_LINES);
-    glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(),topLeft.x() ),_selectedKeyFramesCrossHorizLine.p1().y() );
-    glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(),btmRight.x() ),_selectedKeyFramesCrossHorizLine.p2().y() );
-    glVertex2f( _selectedKeyFramesCrossVertLine.p1().x(),std::max( _selectedKeyFramesCrossVertLine.p1().y(),btmRight.y() ) );
-    glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(),std::min( _selectedKeyFramesCrossVertLine.p2().y(),topLeft.y() ) );
-    glEnd();
-
-    glDisable(GL_LINE_SMOOTH);
-    glCheckError();
-
-    glLineWidth(1.);
-    glPopAttrib();
-    glColor4f(1., 1., 1., 1.);
+        glBegin(GL_LINES);
+        glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(),topLeft.x() ),_selectedKeyFramesCrossHorizLine.p1().y() );
+        glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(),btmRight.x() ),_selectedKeyFramesCrossHorizLine.p2().y() );
+        glVertex2f( _selectedKeyFramesCrossVertLine.p1().x(),std::max( _selectedKeyFramesCrossVertLine.p1().y(),btmRight.y() ) );
+        glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(),std::min( _selectedKeyFramesCrossVertLine.p2().y(),topLeft.y() ) );
+        glEnd();
+        
+        glCheckError();
+    } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
 Curves::const_iterator
@@ -1935,6 +1926,43 @@ CurveWidget::getBackgroundColour(double &r,
 }
 
 void
+CurveWidget::saveOpenGLContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushClientAttrib(GL_ALL_ATTRIB_BITS);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    // set defaults to work around OFX plugin bugs
+    glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glEnable(GL_TEXTURE_2D);					//Activate texturing
+    //glActiveTexture (GL_TEXTURE0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
+}
+
+void
+CurveWidget::restoreOpenGLContext()
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    //glActiveTexture(_imp->activeTexture);
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glPopClientAttrib();
+    glPopAttrib();
+}
+
+void
 CurveWidget::resizeGL(int width,
                       int height)
 {
@@ -1970,47 +1998,53 @@ CurveWidget::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
     glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    assert( 0. < _imp->zoomCtx.factor() );
-    double zoomLeft, zoomRight, zoomBottom, zoomTop;
-    zoomLeft = _imp->zoomCtx.left();
-    zoomRight = _imp->zoomCtx.right();
-    zoomBottom = _imp->zoomCtx.bottom();
-    zoomTop = _imp->zoomCtx.top();
-    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        assert( 0. < _imp->zoomCtx.factor() );
+        double zoomLeft, zoomRight, zoomBottom, zoomTop;
+        zoomLeft = _imp->zoomCtx.left();
+        zoomRight = _imp->zoomCtx.right();
+        zoomBottom = _imp->zoomCtx.bottom();
+        zoomTop = _imp->zoomCtx.top();
+        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+            glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            return;
+        }
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glCheckError();
+
         glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
         glClear(GL_COLOR_BUFFER_BIT);
 
-        return;
-    }
-    glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
-    glCheckError();
+        _imp->drawScale();
 
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
+        _imp->drawBaseAxis();
 
-    glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
-    glClear(GL_COLOR_BUFFER_BIT);
+        if (_imp->_timelineEnabled) {
+            _imp->drawTimelineMarkers();
+        }
 
-    _imp->drawScale();
+        if (_imp->_drawSelectedKeyFramesBbox) {
+            _imp->drawSelectedKeyFramesBbox();
+        }
 
-    _imp->drawBaseAxis();
+        _imp->drawCurves();
 
-    if (_imp->_timelineEnabled) {
-        _imp->drawTimelineMarkers();
-    }
-
-    if (_imp->_drawSelectedKeyFramesBbox) {
-        _imp->drawSelectedKeyFramesBbox();
-    }
-
-
-    _imp->drawCurves();
-
-    if ( !_imp->_selectionRectangle.isNull() ) {
-        _imp->drawSelectionRectangle();
-    }
+        if ( !_imp->_selectionRectangle.isNull() ) {
+            _imp->drawSelectionRectangle();
+        }
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 }
 
 void
@@ -2028,22 +2062,23 @@ CurveWidget::renderText(double x,
         return;
     }
     glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glPushMatrix(); // save GL_PROJECTION
-    glLoadIdentity();
-    double h = (double)height();
-    double w = (double)width();
-    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-    glOrtho(0,w,0,h,-1,1);
-    glMatrixMode(GL_MODELVIEW);
-    QPointF pos = toWidgetCoordinates(x, y);
-    glCheckError();
-    _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
-    glCheckError();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    glPopMatrix(); // restore GL_PROJECTION
-    glMatrixMode(GL_MODELVIEW);
+    {
+        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix p(GL_PROJECTION);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        double h = (double)height();
+        double w = (double)width();
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+        glOrtho(0,w,0,h,-1,1);
+
+        QPointF pos = toWidgetCoordinates(x, y);
+        glCheckError();
+        _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
+        glCheckError();
+    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
 
 void

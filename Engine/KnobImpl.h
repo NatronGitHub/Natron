@@ -700,12 +700,25 @@ std::vector<T> Knob<T>::getValueForEachDimension_mt_safe_vector() const
 }
 
 template<typename T>
+std::vector<T>
+Knob<T>::getDefaultValues_mt_safe() const
+{
+    
+    QReadLocker l(&_valueMutex);
+    
+    return _defaultValues;
+}
+
+template<typename T>
 void
 Knob<T>::setDefaultValue(const T & v,
                          int dimension)
 {
     assert( dimension < getDimension() );
-    _defaultValues[dimension] = v;
+    {
+        QWriteLocker l(&_valueMutex);
+        _defaultValues[dimension] = v;
+    }
     resetToDefaultValue(dimension);
 }
 
@@ -884,8 +897,12 @@ void
 Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(dimension);
-
-    (void)setValue(_defaultValues[dimension], dimension,Natron::RESTORE_DEFAULT,NULL);
+    T defaultV;
+    {
+        QReadLocker l(&_valueMutex);
+        defaultV = _defaultValues[dimension];
+    }
+    (void)setValue(defaultV, dimension,Natron::RESTORE_DEFAULT,NULL);
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::RESTORE_DEFAULT);
     }
@@ -917,7 +934,12 @@ Knob<double>::resetToDefaultValue(int dimension)
 
     ///A Knob<double> is not always a Double_Knob (it can also be a Color_Knob)
     Double_Knob* isDouble = dynamic_cast<Double_Knob*>(this);
-    double def = _defaultValues[dimension];
+    double def;
+    
+    {
+        QReadLocker l(&_valueMutex);
+        def = _defaultValues[dimension];
+    }
 
     if ( isDouble && isDouble->areDefaultValuesNormalized() ) {
         assert( getHolder() );
@@ -990,22 +1012,31 @@ Knob<double>::cloneValues(KnobI* other)
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    
+    ///can only clone pod
     assert(isInt || isBool || isDouble);
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
+        std::vector<int> defaultV = isInt->getDefaultValues_mt_safe();
+        assert(defaultV.size() == v.size());
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
             _values[i] = v[i];
+            _defaultValues[i] = defaultV[i];
         }
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
+        std::vector<bool> defaultV = isBool->getDefaultValues_mt_safe();
+        assert(defaultV.size() == v.size());
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
             _values[i] = v[i];
+            _defaultValues[i] = defaultV[i];
         }
     } else {
         _values = isDouble->getValueForEachDimension_mt_safe_vector();
+        _defaultValues = isDouble->getDefaultValues_mt_safe();
     }
 }
 
@@ -1014,8 +1045,17 @@ void
 Knob<std::string>::cloneValues(KnobI* other)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
+    
+    ///Can only clone strings
     assert(isString);
-    _values = isString->_values;
+    QWriteLocker k(&_valueMutex);
+    std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
+    std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
+    assert(defaultV.size() == v.size());
+    for (U32 i = 0; i < v.size(); ++i) {
+        _values[i] = v[i];
+        _defaultValues[i] = defaultV[i];
+    }
 }
 
 template<typename T>

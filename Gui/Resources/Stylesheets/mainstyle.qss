@@ -386,7 +386,7 @@ QTabBar::tab {
     border: 1px solid ;
     border-bottom-color: %2;
     min-width: 8ex;
-    padding: 0px;
+    padding: 2px;
     border-top-right-radius: 5px;
     border-top-left-radius: 5px;
 }
@@ -418,6 +418,12 @@ QTabBar::tab:only-one {
     margin: 0; /* if there is only one tab, we don't want overlapping margins */
 }
 QTabBar::close-button {
+    image: url(:/Resources/Images/closeTab.png);
+    subcontrol-position:right;
+}
+
+QTabBar::close-button:hover {
+    image: url(:/Resources/Images/closeTab_hovered.png);
     subcontrol-position:right;
 }
 
@@ -544,4 +550,22 @@ AnimatedCheckBox[dirty="true"]::indicator:checked{
 }
 AnimatedCheckBox[dirty="true"]::indicator:unchecked{
     image: url(:/Resources/Images/checkbox_dirty_unchecked.png);
+}
+
+QMenuBar
+{
+    color: %5;
+    background-color: %2;
+}
+
+QMenuBar::item
+{
+    color: %5;
+    background-color: %2;
+}
+
+QMenuBar::item:selected
+{
+	color: %5;
+    background: %1;
 }

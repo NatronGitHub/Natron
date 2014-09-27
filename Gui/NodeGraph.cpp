@@ -522,11 +522,11 @@ NodeGraph::onProjectNodesCleared()
         nodesCpy = _imp->_nodes;
     }
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
-        deleteNodePermanantly( *it );
+        deleteNodepluginsly( *it );
     }
 
     while ( !_imp->_nodesTrash.empty() ) {
-        deleteNodePermanantly( *( _imp->_nodesTrash.begin() ) );
+        deleteNodepluginsly( *( _imp->_nodesTrash.begin() ) );
     }
     _imp->_selection.nodes.clear();
     _imp->_magnifiedNode.reset();
@@ -1879,7 +1879,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
-                                                                                                  "remove these expressions permanantly "
+                                                                                                  "remove these expressions pluginsly "
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString() );
@@ -1938,7 +1938,7 @@ NodeGraph::deleteSelection()
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
                                                                               "or links. Deleting this node will "
-                                                                              "remove these expressions permanantly "
+                                                                              "remove these expressions pluginsly "
                                                                               "and undoing the action will not recover "
                                                                               "them. Do you wish to continue ?")
                                                                            .toStdString() );
@@ -2536,10 +2536,10 @@ NodeGraph::switchInputs1and2ForSelectedNodes()
 }
 
 void
-NodeGraph::centerOnNode(const boost::shared_ptr<NodeGui> & n)
+NodeGraph::centerOnItem(QGraphicsItem* item)
 {
     _imp->_refreshOverlays = true;
-    centerOn( n.get() );
+    centerOn(item);
 }
 
 void
@@ -2968,7 +2968,7 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 }
 
 void
-NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
+NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
 {
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
 
@@ -3023,7 +3023,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
             break;
         }
     }
-} // deleteNodePermanantly
+} // deleteNodepluginsly
 
 void
 NodeGraph::invalidateAllNodesParenting()
@@ -3056,7 +3056,7 @@ NodeGraph::centerOnAllNodes()
     double xmax = INT_MIN;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
-    {
+    if (_imp->_selection.nodes.empty() && _imp->_selection.bds.empty()) {
         QMutexLocker l(&_imp->_nodesMutex);
 
 
@@ -3078,6 +3078,26 @@ NodeGraph::centerOnAllNodes()
             xmax = std::max( xmax,bbox.x() + bbox.width() );
             ymax = std::max( ymax,bbox.y() + bbox.height() );
         }
+    } else {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+            if ( (*it)->isActive() && (*it)->isVisible() ) {
+                QSize size = (*it)->getSize();
+                QPointF pos = (*it)->scenePos();
+                xmin = std::min( xmin, pos.x() );
+                xmax = std::max( xmax,pos.x() + size.width() );
+                ymin = std::min( ymin,pos.y() );
+                ymax = std::max( ymax,pos.y() + size.height() ); 
+            }
+        }
+        
+        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
+            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+            xmin = std::min( xmin,bbox.x() );
+            ymin = std::min( ymin,bbox.y() );
+            xmax = std::max( xmax,bbox.x() + bbox.width() );
+            ymax = std::max( ymax,bbox.y() + bbox.height() );
+        }
+
     }
     QRect rect( xmin,ymin,(xmax - xmin),(ymax - ymin) );
     fitInView(rect,Qt::KeepAspectRatio);

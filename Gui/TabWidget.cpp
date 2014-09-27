@@ -301,7 +301,7 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
     /*Remove the container from everywhere*/
     _gui->unregisterSplitter(container);
     container->setParent(NULL);
-    delete container;
+    container->deleteLater();
 }
 
 void
@@ -457,7 +457,10 @@ TabWidget::setTabName(QWidget* tab,
 void
 TabWidget::floatCurrentWidget()
 {
-    if ( (_tabs.size() > 1) || !_closeButton->isEnabled() ) {
+    if (_tabs.empty()) {
+        return;
+    }
+    if ( !_closeButton->isEnabled() ) {
         ///Make a new tab widget and float it instead
         TabWidget* newPane = new TabWidget(_gui,_gui);
         newPane->setObjectName_mt_safe( _gui->getAvailablePaneName() );

@@ -231,100 +231,106 @@ TrackerGui::drawOverlays(double scaleX,
 
     _imp->viewer->getViewer()->getPixelScale(pixelScaleX, pixelScaleY);
 
-    ///For each instance: <pointer,selected ? >
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        if ( it->first->isNodeDisabled() ) {
-            continue;
-        }
-        if (it->second) {
-            ///The track is selected, use the plug-ins interact
-            Natron::EffectInstance* effect = it->first->getLiveInstance();
-            assert(effect);
-            effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
-            effect->drawOverlay_public(scaleX,scaleY);
-        } else {
-            ///Draw a custom interact, indicating the track isn't selected
-            boost::shared_ptr<KnobI> newInstanceKnob = it->first->getKnobByName("center");
-            assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
-            Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
-            assert(dblKnob);
+    {
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
 
+        ///For each instance: <pointer,selected ? >
+        const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+        for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            if (it->first->isNodeDisabled()) {
+                continue;
+            }
+            if (it->second) {
+                ///The track is selected, use the plug-ins interact
+                Natron::EffectInstance* effect = it->first->getLiveInstance();
+                assert(effect);
+                effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+                effect->drawOverlay_public(scaleX,scaleY);
+            } else {
+                ///Draw a custom interact, indicating the track isn't selected
+                boost::shared_ptr<KnobI> newInstanceKnob = it->first->getKnobByName("center");
+                assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
+                Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
+                assert(dblKnob);
+
+                for (int i = 0; i < 2; ++i) {
+                    if (i == 0) {
+                        // Draw a shadow for the cross hair
+                        // shift by (1,1) pixel
+                        glMatrixMode(GL_PROJECTION);
+                        glPushMatrix();
+                        glTranslated(pixelScaleX, -pixelScaleY, 0);
+                        glColor4d(0., 0., 0., 1.);
+                    } else {
+                        glColor4f(1., 1., 1., 1.);
+                    }
+
+                    double x = dblKnob->getValue(0);
+                    double y = dblKnob->getValue(1);
+                    glPointSize(POINT_SIZE);
+                    glBegin(GL_POINTS);
+                    glVertex2d(x,y);
+                    glEnd();
+
+                    glBegin(GL_LINES);
+                    glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
+                    glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
+
+                    glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
+                    glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
+                    glEnd();
+
+                    if (i == 0) {
+                        glMatrixMode(GL_PROJECTION);
+                        glPopMatrix();
+                    }
+                }
+                glPointSize(1.);
+            }
+        }
+
+        if (_imp->clickToAddTrackEnabled) {
+            ///draw a square of 20px around the mouse cursor
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_LINE_SMOOTH);
+            glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+            glLineWidth(1.5);
+            glMatrixMode(GL_PROJECTION);
             for (int i = 0; i < 2; ++i) {
                 if (i == 0) {
                     // Draw a shadow for the cross hair
                     // shift by (1,1) pixel
+                    glMatrixMode(GL_PROJECTION);
                     glPushMatrix();
                     glTranslated(pixelScaleX, -pixelScaleY, 0);
-                    glColor4d(0., 0., 0., 1.);
+                    glColor4d(0., 0., 0., 0.8);
                 } else {
-                    glColor4f(1., 1., 1., 1.);
+                    glColor4d(0., 1., 0.,0.8);
                 }
 
-                double x = dblKnob->getValue(0);
-                double y = dblKnob->getValue(1);
-                glPointSize(POINT_SIZE);
-                glBegin(GL_POINTS);
-                glVertex2d(x,y);
+                glBegin(GL_LINE_LOOP);
+                glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE * 2 * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE * 2 * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE * 2 * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE * 2 * pixelScaleY);
                 glEnd();
 
+                ///draw a cross at the cursor position
                 glBegin(GL_LINES);
-                glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
-                glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
-
-                glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
-                glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
+                glVertex2d( _imp->lastMousePos.x() - ADDTRACK_SIZE * pixelScaleX, _imp->lastMousePos.y() );
+                glVertex2d( _imp->lastMousePos.x() + ADDTRACK_SIZE * pixelScaleX, _imp->lastMousePos.y() );
+                glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - ADDTRACK_SIZE * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + ADDTRACK_SIZE * pixelScaleY);
                 glEnd();
 
                 if (i == 0) {
+                    glMatrixMode(GL_PROJECTION);
                     glPopMatrix();
                 }
             }
-            glPointSize(1.);
         }
-    }
-
-    if (_imp->clickToAddTrackEnabled) {
-        ///draw a square of 20px around the mouse cursor
-        glLineWidth(1.5);
-        glEnable(GL_LINE_SMOOTH);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        for (int i = 0; i < 2; ++i) {
-            if (i == 0) {
-                // Draw a shadow for the cross hair
-                // shift by (1,1) pixel
-                glPushMatrix();
-                glTranslated(pixelScaleX, -pixelScaleY, 0);
-                glColor4d(0., 0., 0., 0.8);
-            } else {
-                glColor4d(0., 1., 0.,0.8);
-            }
-
-            glBegin(GL_LINE_LOOP);
-            glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE * 2 * pixelScaleY);
-            glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE * 2 * pixelScaleY);
-            glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE * 2 * pixelScaleY);
-            glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE * 2 * pixelScaleY);
-            glEnd();
-
-            ///draw a cross at the cursor position
-            glBegin(GL_LINES);
-            glVertex2d( _imp->lastMousePos.x() - ADDTRACK_SIZE * pixelScaleX, _imp->lastMousePos.y() );
-            glVertex2d( _imp->lastMousePos.x() + ADDTRACK_SIZE * pixelScaleX, _imp->lastMousePos.y() );
-            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - ADDTRACK_SIZE * pixelScaleY);
-            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + ADDTRACK_SIZE * pixelScaleY);
-            glEnd();
-
-            if (i == 0) {
-                glPopMatrix();
-            }
-        }
-        glDisable(GL_LINE_SMOOTH);
-        glDisable(GL_BLEND);
-        glLineWidth(1.);
-    }
+    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
 } // drawOverlays
 
 bool

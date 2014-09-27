@@ -168,7 +168,9 @@ public:
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-
+    virtual void saveOpenGLContext() OVERRIDE FINAL;
+    virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
 
@@ -304,6 +306,9 @@ protected:
      **/
     virtual void updateGUI(int dimension) = 0;
 
+    virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
+    
+    
 private:
 
     void updateGuiInternal(int dimension);

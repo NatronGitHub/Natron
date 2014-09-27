@@ -174,6 +174,9 @@ public:
     int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r,double* g,double* b,double* a) const;
     void getCheckerboardColor2(double* r,double* g,double* b,double* a) const;
+    
+    bool areRGBPixelComponentsSupported() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -198,6 +201,7 @@ private:
     boost::shared_ptr<Bool_Knob> _useCursorPositionIncrements;
     boost::shared_ptr<File_Knob> _defaultLayoutFile;
     boost::shared_ptr<Bool_Knob> _renderOnEditingFinished;
+    boost::shared_ptr<Bool_Knob> _activateRGBSupport;
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;

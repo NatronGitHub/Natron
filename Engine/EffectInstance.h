@@ -268,6 +268,11 @@ public:
         return false;
     }
 
+    virtual int getRotoBrushInputIndex() const WARN_UNUSED_RETURN
+    {
+        return -1;
+    }
+    
     /**
      * @brief Returns the index of the channel to use to produce the mask.
      * None = -1

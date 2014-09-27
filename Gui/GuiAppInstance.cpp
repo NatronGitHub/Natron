@@ -446,10 +446,9 @@ GuiAppInstance::setViewersCurrentView(int view)
 }
 
 void
-GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w)
+GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath)
 {
-    /*Start the renderer in a background process.*/
-    getProject()->autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
+   
 
 
     ///validate the frame range to render
@@ -484,11 +483,12 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w)
     }
 
 
-    if ( appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled() ) {
+    if ( renderInSeparateProcess ) {
         try {
-            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),w.writer) );
+            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,savePath,w.writer) );
             QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
             notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,process);
+            process->startProcess();
 
             {
                 QMutexLocker l(&_imp->_activeBgProcessesMutex);
@@ -500,8 +500,8 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w)
             Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString() );
         }
     } else {
-        w.writer->renderFullSequence(NULL,firstFrame,lastFrame);
         _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, w.writer);
+        w.writer->renderFullSequence(NULL,firstFrame,lastFrame);
     }
 } // startRenderingFullSequence
 
