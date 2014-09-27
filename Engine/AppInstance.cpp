@@ -446,19 +446,20 @@ AppInstance::startWritersRendering(const QStringList & writers)
     if ( appPTR->isBackground() ) {
         
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( renderers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1,false) );
+        QtConcurrent::blockingMap( renderers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1,false,QString()) );
     } else {
-        getProject()->autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
+         //Take a snapshot of the graph at this time, this will be the version loaded by the process
+        QString savePath = getProject()->saveProject("","RENDER_SAVE.ntp",true);
         bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
         
         for (U32 i = 0; i < renderers.size(); ++i) {
-            startRenderingFullSequence(renderers[i],renderInSeparateProcess);
+            startRenderingFullSequence(renderers[i],renderInSeparateProcess,savePath);
         }
     }
 }
 
 void
-AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool /*renderInSeparateProcess*/)
+AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
 {
     BlockingBackgroundRender backgroundRender(writer);
 

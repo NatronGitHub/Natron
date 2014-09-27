@@ -246,7 +246,7 @@ Project::refreshViewersAndPreviews()
     }
 }
 
-void
+QString
 Project::saveProject(const QString & path,
                      const QString & name,
                      bool autoS)
@@ -254,31 +254,36 @@ Project::saveProject(const QString & path,
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {
-            return;
+            return QString();
         }
     }
 
     {
         QMutexLocker l(&_imp->isSavingProjectMutex);
         if (_imp->isSavingProject) {
-            return;
+            return QString();
         } else {
             _imp->isSavingProject = true;
         }
     }
 
+    QString ret;
     try {
         if (!autoS) {
             //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
 
-            saveProjectInternal(path,name);
-            ///also update the auto-save
+            ret = saveProjectInternal(path,name);
+            
+            ///We just saved, any auto-save left is then worthless
             removeAutoSaves();
 
             //}
         } else {
+            
+            ///Clean auto-saves before saving a new one
             removeAutoSaves();
-            saveProjectInternal(path,name,true);
+            
+            ret = saveProjectInternal(path,name,true);
         }
     } catch (const std::exception & e) {
         if (!autoS) {
@@ -292,6 +297,7 @@ Project::saveProject(const QString & path,
         QMutexLocker l(&_imp->isSavingProjectMutex);
         _imp->isSavingProject = false;
     }
+    return ret;
 }
 
 static bool
@@ -311,7 +317,7 @@ fileCopy(const QString & source,
     return success;
 }
 
-QDateTime
+QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave)
@@ -327,6 +333,10 @@ Project::saveProjectInternal(const QString & path,
     QString timeHashStr = QString::number( timeHash.value() );
     QString actualFileName = name;
     if (autoSave) {
+        
+        ///We encode the filename of the actual project file
+        ///into the autosave filename so that the "Do you want to restore this autosave?" dialog
+        ///knows to which project is linked the autosave.
         QString pathCpy = path;
 
 #ifdef __NATRON_WIN32__
@@ -371,12 +381,12 @@ Project::saveProjectInternal(const QString & path,
         ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ofile.open(tmpFilename.toStdString().c_str(),std::ofstream::out);
     } catch (const std::ofstream::failure & e) {
-        throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
+        throw std::runtime_error( std::string("Exception occured when opening file ") + tmpFilename.toStdString() + ": " + e.what() );
     }
 
     if ( !ofile.good() ) {
-        qDebug() << "Failed to open file " << filePath.toStdString().c_str();
-        throw std::runtime_error( "Failed to open file " + filePath.toStdString() );
+        qDebug() << "Failed to open file " << tmpFilename.toStdString().c_str();
+        throw std::runtime_error( "Failed to open file " + tmpFilename.toStdString() );
     }
 
     ///Fix file paths before saving.
@@ -437,7 +447,7 @@ Project::saveProjectInternal(const QString & path,
     }
     _imp->lastAutoSave = time;
 
-    return time;
+    return filePath;
 } // saveProjectInternal
 
 void
@@ -1244,6 +1254,13 @@ Project::removeAutoSaves()
 
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
+        
+        ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
+        /// @see AppInstance::startWritersRendering
+        if (entry.contains("RENDER_SAVE")) {
+            continue;
+        }
+        
         QString searchStr('.');
         searchStr.append(NATRON_PROJECT_FILE_EXT);
         searchStr.append('.');

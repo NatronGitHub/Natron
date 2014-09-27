@@ -434,7 +434,7 @@ GuiAppInstance::setViewersCurrentView(int view)
 }
 
 void
-GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool renderInSeparateProcess)
+GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool renderInSeparateProcess,const QString& savePath)
 {
    
 
@@ -471,7 +471,7 @@ GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer,
 
     if ( renderInSeparateProcess ) {
         try {
-            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),writer) );
+            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,savePath,writer) );
             QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
             notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,process);
             process->startProcess();

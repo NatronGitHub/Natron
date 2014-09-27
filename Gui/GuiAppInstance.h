@@ -123,7 +123,8 @@ private:
                                bool autoConnect,
                                double xPosHint,double yPosHint,
                                bool pushUndoRedoCommand) OVERRIDE FINAL;
-    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool renderInSeparateProcess) OVERRIDE FINAL;
+    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer,bool renderInSeparateProcess,
+                                            const QString& savePath) OVERRIDE FINAL;
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
 

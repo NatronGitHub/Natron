@@ -1426,7 +1426,11 @@ KnobHolder::evaluate_public(KnobI* knob,
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
         if ( isSignificant && getApp() ) {
-            getApp()->triggerAutoSave();
+            ///Don't trigger autosaves for buttons
+            Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob);
+            if (!isButton) {
+                getApp()->triggerAutoSave();
+            }
         }
     }
 }
