@@ -184,6 +184,8 @@ public:
     ///////////////////////////////////////Overriden from QAbstractItemModel///////////////////////////////////////
     
     virtual ~FileSystemModel();
+
+	static bool isDriveName(const QString& name);
     
     virtual QVariant headerData(int section, Qt::Orientation orientation,int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

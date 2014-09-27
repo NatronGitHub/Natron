@@ -484,7 +484,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("/") ) );
 #else
 
-    initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("C:") ) );
+    initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("C:/") ) );
 
 #endif
     
@@ -885,9 +885,7 @@ SequenceFileDialog::enterDirectory(const QModelIndex & index)
 void
 SequenceFileDialog::setDirectory(const QString &directory)
 {
-    if ( directory.isEmpty() ) {
-        return;
-    }
+   
     QString newDirectory = directory;
     _view->selectionModel()->clear();
     _view->verticalScrollBar()->setValue(0);
@@ -902,7 +900,7 @@ SequenceFileDialog::setDirectory(const QString &directory)
     _requestedDir = newDirectory;
     _model->setRootPath(newDirectory);
     _createDirButton->setEnabled(_dialogMode != OPEN_DIALOG);
-    if ( newDirectory.at(newDirectory.size() - 1) != QChar('/') ) {
+    if ( !newDirectory.isEmpty() && newDirectory.at(newDirectory.size() - 1) != QChar('/') ) {
         newDirectory.append("/");
     }
 
@@ -1117,13 +1115,12 @@ SequenceItemDelegate::paint(QPainter * painter,
         }
         painter->drawText(geom,Qt::TextSingleLine | Qt::AlignRight,itemSizeText,&r);
     } else {
-        
-        if (isDir) {
 #ifdef FILE_DIALOG_DISABLE_ICONS
+        if (isDir && !filename.endsWith('/')) {
             filename.append('/');
-#endif
+
         }
-        
+#endif
         // FIXME: with the default delegate (QStyledItemDelegate), there is a margin
         // of a few more pixels between border and icon, and between icon and text, not with this one
         
@@ -1165,9 +1162,8 @@ SequenceItemDelegate::paint(QPainter * painter,
 bool
 SequenceFileDialog::isDirectory(const QString & name) const
 {
-    QModelIndex index = _model->index(name);
-
-    return index.isValid() && _model->isDir(index);
+    QDir dir(name);
+	return dir.exists();
 }
 
 QString
@@ -1234,23 +1230,29 @@ SequenceFileDialog::nextFolder()
     }
 }
 
-
 void
 SequenceFileDialog::parentFolder()
 {
     
-    
+    QString newDir ;
+
     QString rootPath = _model->rootPath();
+
+
     QDir dir(rootPath);
     dir.cdUp();
-    
-    QString newDir = dir.absolutePath();
-    if (newDir.isEmpty() || newDir == "/") {
-        _upButton->setEnabled(false);
-    } else {
-        _upButton->setEnabled(true);
-    }
-    
+    newDir = dir.absolutePath();
+
+	if (FileSystemModel::isDriveName(rootPath)) {
+		newDir = "";
+	}
+
+	if (FileSystemModel::isDriveName(newDir)) {
+		_upButton->setEnabled(false);
+	} else {
+		 _upButton->setEnabled(true);
+	}
+
     setDirectory(newDir);
 }
 
@@ -1585,7 +1587,7 @@ SequenceFileDialog::autoCompleteFileName(const QString & text)
 void
 SequenceFileDialog::goToDirectory(const QString & path)
 {
-    QModelIndex index = _lookInCombobox->model()->index( _lookInCombobox->currentIndex(),
+   /* QModelIndex index = _lookInCombobox->model()->index( _lookInCombobox->currentIndex(),
                                                          _lookInCombobox->modelColumn(),
                                                          _lookInCombobox->rootModelIndex() );
     QString path2 = path;
@@ -1601,7 +1603,8 @@ SequenceFileDialog::goToDirectory(const QString & path)
 
     if ( dir.exists() || path2.isEmpty() || ( path2 == _model->myComputer().toString() ) ) {
         enterDirectory(index);
-    }
+    }*/
+	setDirectory(path);
 }
 
 QString
@@ -1623,9 +1626,8 @@ SequenceFileDialog::getEnvironmentVariable(const QString &string)
 void
 SequenceFileDialog::pathChanged(const QString &newPath)
 {
-    QDir dir( _model->rootPath() );
-
-    if (newPath == "/" || !dir.exists()) {
+    
+    if (newPath.isEmpty()) {
         _upButton->setEnabled(false);
     } else {
         _upButton->setEnabled(true);
@@ -1881,7 +1883,7 @@ UrlModel::setUrl(const QModelIndex &index,
 {
     setData(index, url, UrlRole);
     if ( url.path().isEmpty() ) {
-        setData(index, fileSystemModel->myComputer() );
+        setData(index, /*fileSystemModel->myComputer()*/"" );
         setData(index, fileSystemModel->myComputer(Qt::DecorationRole), Qt::DecorationRole);
     } else {
         QString newName;

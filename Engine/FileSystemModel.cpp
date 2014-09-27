@@ -22,6 +22,45 @@
 
 #include <SequenceParsing.h>
 
+
+
+static QStringList getSplitPath(const QString& path)
+{
+	if (path.isEmpty()) {
+		return QStringList();
+	}
+	QString pathCpy = path;
+
+	bool isdriveOrRoot;
+#ifdef __NATRON_WIN32__
+	QString startPath = pathCpy.mid(0,3);
+	 isdriveOrRoot = FileSystemModel::isDriveName(startPath);
+	if (isdriveOrRoot) {
+		pathCpy = pathCpy.remove(0,3);
+	}
+
+	QStringList splitPath = pathCpy.split('/');
+	if (isdriveOrRoot) {
+		splitPath.prepend(startPath.mid(0,3));
+	}
+
+#else
+	 isdriveOrRoot = pathCpy.startsWith("/");
+	if (isdriveOrRoot) {
+		pathCpy = pathCpy.remove(0,1);
+	}
+	QStringList splitPath = pathCpy.split('/');
+	if (isdriveOrRoot) {
+		splitPath.prepend("/");
+	}
+
+#endif
+	if (!isdriveOrRoot && pathCpy[pathCpy.size() - 1] == QChar('/')) {
+		pathCpy = pathCpy.mid(0,pathCpy.size() - 1);
+	} 
+	return splitPath;
+}
+
 /////////FileSystemItem
 
 static QString generateChildAbsoluteName(FileSystemItem* parent,const QString& name)
@@ -330,6 +369,16 @@ FileSystemModel::~FileSystemModel()
     delete _imp->watcher;
 }
 
+
+bool FileSystemModel::isDriveName(const QString& name)
+{
+#ifdef __NATRON_WIN32__
+	return name.size() == 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && name.at(2) == QLatin1Char('/');
+#else
+	return name == "/";
+#endif
+}
+
 QVariant
 FileSystemModel::headerData(int section, Qt::Orientation orientation,int role) const
 {
@@ -492,7 +541,7 @@ FileSystemModel::getFileSystemItem(const QString& path) const
     if ( !path.isEmpty() ) {
         return _imp->getItemFromPath(path);
     }
-    return boost::shared_ptr<FileSystemItem>();
+    return _imp->rootItem;
 }
 
 FileSystemItem*
@@ -550,7 +599,7 @@ FileSystemModel::myComputer(int /*role*/) const
 //    switch (role) {
 //        case Qt::DisplayRole:
 #ifdef Q_OS_WIN
-            return tr("My Computer");
+            return tr("Computer");
 #else
             return tr("Computer");
 #endif
@@ -716,23 +765,12 @@ static boost::shared_ptr<FileSystemItem> mkPathInternal(FileSystemItem* item,con
 boost::shared_ptr<FileSystemItem>
 FileSystemModelPrivate::mkPath(const QString& path)
 {
-    QStringList splitPath = path.split('/');
-
-    if (path.isEmpty() || splitPath.isEmpty()) {
+	
+    if (path.isEmpty()) {
         return rootItem;
     }
     
-#ifdef Q_OS_UNIX
-    if (path == "/") {
-        splitPath.clear();
-        splitPath << "/";
-    } else {
-        if (splitPath[0].isEmpty()) {
-            splitPath[0] = "/";
-        }
-    }
-#endif
-    
+	QStringList splitPath = getSplitPath(path);
     return mkPathInternal(rootItem.get(), splitPath,0);
 }
 
@@ -788,26 +826,9 @@ FileSystemModelPrivate::getItemFromPath(const QString &path) const
     if (path.isEmpty()) {
         return rootItem;
     }
-    
-    QString pathCpy;
-    if (path[path.size() - 1] == QChar('/')) {
-        pathCpy = path.mid(0,path.size() - 1);
-    } else {
-        pathCpy = path;
-    }
-    
-    QStringList list = pathCpy.split('/');
-    if (list.empty()) {
-        return rootItem;
-    }
-    
-    int startIndex = 0;
-    
-    ///On Unix the '/' of the root will be skipped by the QString::split function
-    if (list[0].isEmpty()) {
-        list[0] = "/";
-    }
-    return rootItem->matchPath( list, startIndex );
+	QStringList splitPath = getSplitPath(path);
+
+    return rootItem->matchPath( splitPath, 0 );
 }
 
 void
