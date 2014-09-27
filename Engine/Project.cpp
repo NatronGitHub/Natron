@@ -436,11 +436,11 @@ Project::saveProjectInternal(const QString & path,
 
     QFile::remove(tmpFilename);
 
-    _imp->projectName = name;
     if (!autoSave) {
+        _imp->projectName = name;
         emit projectNameChanged(name); //< notify the gui so it can update the title
     } else {
-        emit projectNameChanged(name + " (*)");
+        emit projectNameChanged(_imp->projectName + " (*)");
     }
     
     _imp->projectPath = path;
