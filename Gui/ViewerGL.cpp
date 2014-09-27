@@ -2407,6 +2407,10 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
+    
     bool mustRedraw = false;
     if (_imp->ms == BUILDING_PICKER_RECTANGLE) {
         updateRectangleColorPicker();
