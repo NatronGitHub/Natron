@@ -909,11 +909,13 @@ FileSystemModel::onWatchedDirectoryChanged(const QString& directory)
             if (item->parent()) {
                 
                 QModelIndex idx = index(item.get());
-                assert(idx.isValid());
-                
-                beginRemoveRows(idx.parent(), 0, item->parent()->childCount());
-                item->parent()->clearChildren();
-                endRemoveRows();
+				assert(idx.isValid());
+				int count = item->parent()->childCount();
+				if (count > 0) {
+					beginRemoveRows(idx.parent(), 0, count - 1);
+					item->parent()->clearChildren();
+					endRemoveRows();
+				}
             }
         }
     }
@@ -943,10 +945,12 @@ FileSystemModel::cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& it
 {
     QModelIndex idx = index(item.get(),0);
     assert(idx.isValid());
-    
-    beginRemoveRows(idx, 0, item->childCount() - 1);
-    item->clearChildren();
-    endRemoveRows();
+	int count = item->childCount();
+	if (count > 0) {
+		beginRemoveRows(idx, 0, count - 1);
+		item->clearChildren();
+		endRemoveRows();
+	}
     
     _imp->populateItem(item);
 }
