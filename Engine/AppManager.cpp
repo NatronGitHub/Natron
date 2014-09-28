@@ -173,6 +173,16 @@ AppManager::printUsage(const std::string& programName)
 
 }
 
+static void appendFakeFrameRange(std::list<std::pair<int,int> >& frameRanges)
+{
+    ///push a fake frame range indicating to the render engine that it needs to render using the frame range
+    ///defined by the writer node instead
+    std::pair<int, int> range;
+    range.first = INT_MIN;
+    range.second = INT_MAX;
+    frameRanges.push_back(range);
+}
+
 bool
 AppManager::parseCmdLineArgs(int argc,
                              char* argv[],
@@ -189,7 +199,7 @@ AppManager::parseCmdLineArgs(int argc,
     *isBackground = false;
     bool expectWriterNameOnNextArg = false;
     bool expectPipeFileNameOnNextArg = false;
-    bool canNextArgBeFrameRange = false;
+    bool expectedFrameRange = false;
     QStringList args;
     for (int i = 0; i < argc; ++i) {
         args.push_back( QString(argv[i]) );
@@ -197,12 +207,15 @@ AppManager::parseCmdLineArgs(int argc,
 
     for (int i = 0; i < args.size(); ++i) {
         
-        bool frameRangeFound = false;
         if ( args.at(i).contains("." NATRON_PROJECT_FILE_EXT) ) {
             if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
                 AppManager::printUsage(argv[0]);
 
                 return false;
+            }
+            if (expectedFrameRange) {
+                expectedFrameRange = false;
+                appendFakeFrameRange(frameRanges);
             }
             projectFilename = args.at(i);
             continue;
@@ -212,6 +225,10 @@ AppManager::parseCmdLineArgs(int argc,
 
                 return false;
             }
+            if (expectedFrameRange) {
+                expectedFrameRange = false;
+                appendFakeFrameRange(frameRanges);
+            }
             *isBackground = true;
             continue;
         } else if ( (args.at(i) == "--writer") || (args.at(i) == "-w") ) {
@@ -219,6 +236,10 @@ AppManager::parseCmdLineArgs(int argc,
                 AppManager::printUsage(argv[0]);
 
                 return false;
+            }
+            if (expectedFrameRange) {
+                expectedFrameRange = false;
+                appendFakeFrameRange(frameRanges);
             }
             expectWriterNameOnNextArg = true;
             continue;
@@ -228,54 +249,61 @@ AppManager::parseCmdLineArgs(int argc,
 
                 return false;
             }
+            if (expectedFrameRange) {
+                expectedFrameRange = false;
+                appendFakeFrameRange(frameRanges);
+            }
             expectPipeFileNameOnNextArg = true;
             continue;
-        } else if (canNextArgBeFrameRange) {
+        }
+        
+        if (expectedFrameRange) {
             
-            frameRangeFound = true;
+            bool frameRangeFound = true;
+            
             QStringList strRange = args[i].split('-');
             if (strRange.size() != 2) {
-                AppManager::printUsage(argv[0]);
-                return false;
-            }
-            std::pair<int, int> range;
-            bool ok;
-            range.first = strRange[0].toInt(&ok);
-            if (!ok) {
-                AppManager::printUsage(argv[0]);
-                return false;
-            }
-            range.second = strRange[1].toInt(&ok);
-            if (!ok) {
-                AppManager::printUsage(argv[0]);
-                return false;
+                frameRangeFound = false;
             }
             
-            frameRanges.push_back(range);
-        }
-
-        if (canNextArgBeFrameRange) {
-            canNextArgBeFrameRange = false;
-            if (!frameRangeFound) {
-                ///push a fake frame range indicating to the render engine that it needs to render using the frame range
-                ///defined by the writer node instead
-                std::pair<int, int> range;
-                range.first = INT_MIN;
-                range.second = INT_MAX;
-                frameRanges.push_back(range);
+            std::pair<int, int> range;
+            if (frameRangeFound) {
+                bool ok;
+                range.first = strRange[0].toInt(&ok);
+                if (!ok) {
+                    frameRangeFound = false;
+                }
+                
+                if (frameRangeFound) {
+                    range.second = strRange[1].toInt(&ok);
+                    if (!ok) {
+                        frameRangeFound = false;
+                    }
+                }
             }
+            
+            if (frameRangeFound) {
+                frameRanges.push_back(range);
+            } else {
+                appendFakeFrameRange(frameRanges);
+            }
+            
+            expectedFrameRange = false;
+            continue;
         }
         
         if (expectWriterNameOnNextArg) {
             assert(!expectPipeFileNameOnNextArg);
             writers << args.at(i);
             expectWriterNameOnNextArg = false;
-            canNextArgBeFrameRange = true;
+            expectedFrameRange = true;
+            continue;
         }
         if (expectPipeFileNameOnNextArg) {
             assert(!expectWriterNameOnNextArg);
             mainProcessServerName = args.at(i);
             expectPipeFileNameOnNextArg = false;
+            continue;
         }
     }
 
