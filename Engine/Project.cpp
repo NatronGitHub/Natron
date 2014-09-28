@@ -323,10 +323,13 @@ Project::saveProjectInternal(const QString & path,
     timeHash.computeHash();
     QString timeHashStr = QString::number( timeHash.value() );
     QString actualFileName = name;
+    
+    bool isRenderSave = name.contains("RENDER_SAVE");
+    
     if (autoSave) {
         
         ///For render save don't encode a hash into it
-        if (!name.contains("RENDER_SAVE")) {
+        if (!isRenderSave) {
             ///We encode the filename of the actual project file
             ///into the autosave filename so that the "Do you want to restore this autosave?" dialog
             ///knows to which project is linked the autosave.
@@ -431,7 +434,9 @@ Project::saveProjectInternal(const QString & path,
         _imp->projectName = name;
         emit projectNameChanged(name); //< notify the gui so it can update the title
     } else {
-        emit projectNameChanged(_imp->projectName + " (*)");
+        if (!isRenderSave) {
+            emit projectNameChanged(_imp->projectName + " (*)");
+        }
     }
     
     _imp->projectPath = path;
@@ -519,7 +524,7 @@ Project::findAndTryLoadAutoSave()
         searchStr.append(NATRON_PROJECT_FILE_EXT);
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos != -1) {
+        if (suffixPos != -1 && !entry.contains("RENDER_SAVE")) {
             QString filename = entry.left(suffixPos + searchStr.size() - 1);
             bool exists = false;
 

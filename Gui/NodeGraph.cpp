@@ -1425,6 +1425,9 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
 bool
 NodeGraph::event(QEvent* e)
 {
+    if (!_imp->_gui) {
+        return;
+    }
     if (e->type() == QEvent::KeyPress) {
         QKeyEvent* ke = static_cast<QKeyEvent*>(e);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {

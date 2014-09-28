@@ -234,6 +234,10 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
             }
         }
         
+        QPen pen;
+        pen.setColor(Qt::black);
+        p.setPen(pen);
+        
         double fw = frameWidth();
         QRectF roundedRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
         bRect.adjust(fw, fw, -fw, -fw);
@@ -249,7 +253,7 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     
     QColor textColor;
     if (_readOnly) {
-        textColor.setRgb(100,100,1000);
+        textColor.setRgb(100,100,100);
     } else if (!_enabled) {
         textColor = Qt::black;
     } else {

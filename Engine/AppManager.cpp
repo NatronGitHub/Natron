@@ -236,16 +236,19 @@ AppManager::parseCmdLineArgs(int argc,
             QStringList strRange = args[i].split('-');
             if (strRange.size() != 2) {
                 AppManager::printUsage(argv[0]);
+                return false;
             }
             std::pair<int, int> range;
             bool ok;
             range.first = strRange[0].toInt(&ok);
             if (!ok) {
                 AppManager::printUsage(argv[0]);
+                return false;
             }
             range.second = strRange[1].toInt(&ok);
             if (!ok) {
                 AppManager::printUsage(argv[0]);
+                return false;
             }
             
             frameRanges.push_back(range);
