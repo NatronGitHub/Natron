@@ -1485,16 +1485,17 @@ template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffs
 void
 scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
+                            ViewerInstance* viewer,
                              float *output)
 {
     switch (args.srcPremult) {
         case Natron::ImageOpaque:
-            scaleToTexture32bitsInternal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args, output);
+            scaleToTexture32bitsInternal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
             break;
         case Natron::ImagePremultiplied:
         case Natron::ImageUnPremultiplied:
         default:
-            scaleToTexture32bitsInternal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args, output);
+            scaleToTexture32bitsInternal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
             break;
         
     }

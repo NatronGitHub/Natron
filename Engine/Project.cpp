@@ -325,34 +325,37 @@ Project::saveProjectInternal(const QString & path,
     QString actualFileName = name;
     if (autoSave) {
         
-        ///We encode the filename of the actual project file
-        ///into the autosave filename so that the "Do you want to restore this autosave?" dialog
-        ///knows to which project is linked the autosave.
-        QString pathCpy = path;
-
+        ///For render save don't encode a hash into it
+        if (!name.contains("RENDER_SAVE")) {
+            ///We encode the filename of the actual project file
+            ///into the autosave filename so that the "Do you want to restore this autosave?" dialog
+            ///knows to which project is linked the autosave.
+            QString pathCpy = path;
+            
 #ifdef __NATRON_WIN32__
-        ///on windows, we must also modifiy the root name otherwise it would fail to save with a filename containing for example C:/
-        QFileInfoList roots = QDir::drives();
-        QString root;
-        for (int i = 0; i < roots.size(); ++i) {
-            QString rootPath = roots[i].absolutePath();
-            rootPath = rootPath.remove( QChar('\\') );
-            rootPath = rootPath.remove( QChar('/') );
-            if ( pathCpy.startsWith(rootPath) ) {
-                root = rootPath;
-                QString rootToPrepend("_ROOT_");
-                rootToPrepend.append( root.at(0) ); //< append the root character, e.g the 'C' of C:
-                rootToPrepend.append("_N_ROOT_");
-                pathCpy.replace(rootPath, rootToPrepend);
-                break;
+            ///on windows, we must also modifiy the root name otherwise it would fail to save with a filename containing for example C:/
+            QFileInfoList roots = QDir::drives();
+            QString root;
+            for (int i = 0; i < roots.size(); ++i) {
+                QString rootPath = roots[i].absolutePath();
+                rootPath = rootPath.remove( QChar('\\') );
+                rootPath = rootPath.remove( QChar('/') );
+                if ( pathCpy.startsWith(rootPath) ) {
+                    root = rootPath;
+                    QString rootToPrepend("_ROOT_");
+                    rootToPrepend.append( root.at(0) ); //< append the root character, e.g the 'C' of C:
+                    rootToPrepend.append("_N_ROOT_");
+                    pathCpy.replace(rootPath, rootToPrepend);
+                    break;
+                }
             }
-        }
-
+            
 #endif
-        pathCpy = pathCpy.replace("/", "_SEP_");
-        pathCpy = pathCpy.replace("\\", "_SEP_");
-        actualFileName.prepend(pathCpy);
-        actualFileName.append("." + timeHashStr);
+            pathCpy = pathCpy.replace("/", "_SEP_");
+            pathCpy = pathCpy.replace("\\", "_SEP_");
+            actualFileName.prepend(pathCpy);
+            actualFileName.append("." + timeHashStr);
+        }
     }
     QString filePath;
     if (autoSave) {
@@ -424,11 +427,11 @@ Project::saveProjectInternal(const QString & path,
 
     QFile::remove(tmpFilename);
 
-    _imp->projectName = name;
     if (!autoSave) {
+        _imp->projectName = name;
         emit projectNameChanged(name); //< notify the gui so it can update the title
     } else {
-        emit projectNameChanged(name + " (*)");
+        emit projectNameChanged(_imp->projectName + " (*)");
     }
     
     _imp->projectPath = path;

@@ -15,7 +15,9 @@
 #include <QLayout>
 #include <QStyle>
 #include <QFont>
+#include <QStyleOption>
 #include <QFontMetrics>
+#include <QPainter>
 #include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
@@ -28,63 +30,265 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiMacros.h"
 
+#define DROP_DOWN_ICON_SIZE 6
+
 using namespace Natron;
 
 ComboBox::ComboBox(QWidget* parent)
     : QFrame(parent)
-      , _currentIndex(0)
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-      , _maximumTextSize(0)
-#endif
-      , _wasDirtyPriorToMousePress(false)
+    , _readOnly(false)
+    , _enabled(true)
+    , _animation(0)
+    , _clicked(false)
+    , _dirty(false)
+    , _currentIndex(0)
+    , _currentText()
+    , _separators()
+    , _actions()
+    , _menu(0)
+    , _sh()
+    , _msh()
+    , _sizePolicy()
+    , _validHints(false)
+    , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
 {
-    _mainLayout = new QHBoxLayout(this);
-    _mainLayout->setSpacing(0);
-    _mainLayout->setContentsMargins(0, 0, 0, 0);
-    setLayout(_mainLayout);
+
     setFrameShape(QFrame::Box);
 
-    _currentText = new ClickableLabel("",this);
-    _currentText->setSunken(true);
-    _currentText->setObjectName("ComboBoxLabel");
     setCurrentIndex(-1);
-    _mainLayout->addWidget(_currentText);
-    _currentText->setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
-
-
-    _dropDownIcon = new ClickableLabel("",this);
-    _dropDownIcon->setSunken(true);
-    _dropDownIcon->setObjectName("ComboBoxDropDownLabel");
-    QPixmap pixC;
-    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
-    _dropDownIcon->setPixmap(pixC);
-    _mainLayout->addWidget(_dropDownIcon);
 
     _menu = new MenuWithToolTips(this);
 
-    setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed,QSizePolicy::Label));
+    setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
+}
+
+QSize
+ComboBox::sizeForWidth(int w) const
+{
+    if (minimumWidth() > 0) {
+        w = std::max(w,maximumWidth());
+    }
+    QSize contentsMargin;
+    {
+        QMargins margins = contentsMargins();
+        contentsMargin.setWidth(margins.left() + margins.right());
+        contentsMargin.setHeight(margins.bottom() + margins.top());
+    }
+    QRect br;
+    
+    QFontMetrics fm = fontMetrics();
+    
+    Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
+    
+    int hextra = DROP_DOWN_ICON_SIZE * 2,vextra = 0;
+    
+    ///Indent of 1 character
+    int indent = fm.width('x');
+    
+    if (indent > 0) {
+        if ((align & Qt::AlignLeft) || (align & Qt::AlignRight))
+            hextra += indent;
+        if ((align & Qt::AlignTop) || (align & Qt::AlignBottom))
+            vextra += indent;
+    }
+    // Turn off center alignment in order to avoid rounding errors for centering,
+    // since centering involves a division by 2. At the end, all we want is the size.
+    int flags = align & ~(Qt::AlignVCenter | Qt::AlignHCenter);
+    
+    bool tryWidth = (w < 0) && (align & Qt::TextWordWrap);
+    
+    if (tryWidth) {
+        w = std::min(fm.averageCharWidth() * 80, maximumSize().width());
+    } else if (w < 0) {
+        w = 2000;
+    }
+    
+    w -= (hextra + contentsMargin.width());
+    
+    br = fm.boundingRect(0, 0, w ,2000, flags, _currentText);
+    
+    if (tryWidth && br.height() < 4 * fm.lineSpacing() && br.width() > w / 2) {
+        br = fm.boundingRect(0, 0, w / 2, 2000, flags, _currentText);
+    }
+    
+    if (tryWidth && br.height() < 2 * fm.lineSpacing() && br.width() > w / 4) {
+        br = fm.boundingRect(0, 0, w / 4, 2000, flags, _currentText);
+    }
+    
+    const QSize contentsSize(br.width() + hextra, br.height() + vextra);
+    
+    return (contentsSize + contentsMargin).expandedTo(minimumSize());
+}
+
+QSize
+ComboBox::sizeHint() const
+{
+    if (_validHints) {
+        return minimumSizeHint();
+    }
+    return _sh;
+}
+
+QSize
+ComboBox::minimumSizeHint() const
+{
+    if (_validHints && _sizePolicy == sizePolicy()) {
+        return _msh;
+    }
+    ensurePolished();
+    _validHints = true;
+    _sh = sizeForWidth(-1);
+    
+    _msh.rheight() = sizeForWidth(QWIDGETSIZE_MAX).height(); // height for one line
+    _msh.rwidth() = sizeForWidth(0).width();
+    
+    if (_sh.height() < _msh.height()) {
+        _msh.rheight() = _sh.height();
+    }
+    _sizePolicy = sizePolicy();
+    return _msh;
 }
 
 void
-ComboBox::paintEvent(QPaintEvent* e)
+ComboBox::updateLabel()
 {
-//    QStyleOption opt;
-//    opt.init(this);
-//    QPainter p(this);
-//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-    QFrame::paintEvent(e);
+    _validHints = false;
+    updateGeometry(); //< force a call to minmumSizeHint
+    update();
+}
+
+void
+ComboBox::changeEvent(QEvent* e)
+{
+    if(e->type() == QEvent::FontChange || e->type() == QEvent::ApplicationFontChange ||
+       e->type() == QEvent::ContentsRectChange) {
+        updateLabel();
+    }
+    QFrame::changeEvent(e);
+}
+
+void
+ComboBox::resizeEvent(QResizeEvent* e)
+{
+    updateLabel();
+    QFrame::resizeEvent(e);
+}
+
+QRectF
+ComboBox::layoutRect() const
+{
+    QRect cr = contentsRect();
+    
+    Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
+    
+    int indent = fontMetrics().width('x') / 2;
+    if (indent > 0) {
+        
+        if (align & Qt::AlignLeft)
+            cr.setLeft(cr.left() + indent);
+        
+        if (align & Qt::AlignRight)
+            cr.setRight(cr.right() - indent);
+        
+        if (align & Qt::AlignTop)
+            cr.setTop(cr.top() + indent);
+        
+        if (align & Qt::AlignBottom)
+            cr.setBottom(cr.bottom() - indent);
+    }
+    cr.adjust(0, 0, -DROP_DOWN_ICON_SIZE * 2, 0);
+    return cr;
+}
+
+void
+ComboBox::paintEvent(QPaintEvent* /*e*/)
+{
+    
+    QStyleOption opt;
+    opt.initFrom(this);
+    
+    QPainter p(this);
+   
+    QRectF bRect = rect();
+
+    {
+        ///Now draw the frame
+
+        QColor fillColor;
+        if (_clicked || _dirty) {
+            fillColor = Qt::black;
+        } else {
+            switch (_animation) {
+                case 0:
+                default:
+                    fillColor.setRgb(71,71,71);
+                    break;
+                case 1:
+                    fillColor.setRgb(86,117,156);
+                    break;
+                case 2:
+                    fillColor.setRgb(21,97,248);
+                    break;
+                    
+            }
+        }
+        
+        double fw = frameWidth();
+        QRectF roundedRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
+        bRect.adjust(fw, fw, -fw, -fw);
+        p.fillRect(bRect, fillColor);
+        double roundPixels = 3;
+        
+        
+        QPainterPath path;
+        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+        p.drawPath(path);
+
+    }
+    
+    QColor textColor;
+    if (_readOnly) {
+        textColor.setRgb(100,100,1000);
+    } else if (!_enabled) {
+        textColor = Qt::black;
+    } else {
+        textColor.setRgb(200,200,200);
+    }
+    {
+        Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
+        
+        int flags = align | Qt::TextForceLeftToRight;
+        
+        ///Draw the text
+        QPen pen;
+        pen.setColor(textColor);
+        p.setPen(pen);
+        
+        QRectF lr = layoutRect().toAlignedRect();
+        p.drawText(lr.toRect(), flags, _currentText);
+    }
+    
+    {
+        ///Draw the dropdown icon
+        QPainterPath path;
+        QPolygonF poly;
+        poly.push_back(QPointF(bRect.right() - DROP_DOWN_ICON_SIZE * 3. / 2.,bRect.height() / 2. - DROP_DOWN_ICON_SIZE / 2.));
+        poly.push_back(QPointF(bRect.right() - DROP_DOWN_ICON_SIZE / 2.,bRect.height() / 2. - DROP_DOWN_ICON_SIZE / 2.));
+        poly.push_back(QPointF(bRect.right() - DROP_DOWN_ICON_SIZE,bRect.height() / 2. + DROP_DOWN_ICON_SIZE / 2.));
+        path.addPolygon(poly);
+        p.fillPath(path,textColor);
+        
+    }
 }
 
 void
 ComboBox::mousePressEvent(QMouseEvent* e)
 {
-    if ( buttonDownIsLeft(e) && _currentText->isEnabled() ) {
-        QPixmap pixC;
-        appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
-        _dropDownIcon->setPixmap(pixC);
-        _wasDirtyPriorToMousePress = _dropDownIcon->getDirty();
-        setDirty(true);
+    if ( buttonDownIsLeft(e) && !_readOnly && _enabled ) {
+        _clicked = true;
         createMenu();
+        repaint();
         QFrame::mousePressEvent(e);
     }
 }
@@ -92,13 +296,8 @@ ComboBox::mousePressEvent(QMouseEvent* e)
 void
 ComboBox::mouseReleaseEvent(QMouseEvent* e)
 {
-    QPixmap pixC;
-
-    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
-    _dropDownIcon->setPixmap(pixC);
-    if (!_wasDirtyPriorToMousePress) {
-        setDirty(false);
-    }
+    _clicked = false;
+    repaint();
     QFrame::mouseReleaseEvent(e);
 }
 
@@ -124,7 +323,7 @@ ComboBox::createMenu()
                 break;
             }
         }
-        _actions[i]->setEnabled( !_currentText->isReadOnly() );
+        _actions[i]->setEnabled( _enabled && !_readOnly );
         _menu->addAction(_actions[i]);
     }
     QAction* triggered = _menu->exec( this->mapToGlobal( QPoint( 0,height() ) ) );
@@ -134,13 +333,8 @@ ComboBox::createMenu()
             break;
         }
     }
-
-    QPixmap pixC;
-    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
-    _dropDownIcon->setPixmap(pixC);
-    if (!_wasDirtyPriorToMousePress) {
-        setDirty(false);
-    }
+    _clicked = false;
+    repaint();
 }
 
 int
@@ -168,11 +362,7 @@ ComboBox::insertItem(int index,
     if ( !key.isEmpty() ) {
         action->setShortcut(key);
     }
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-    if (item.size() > _maximumTextSize) {
-        _maximumTextSize = item.size();
-    }
-#endif
+
     growMaximumWidthFromText(item);
     _actions.insert(_actions.begin() + index, action);
     /*if this is the first action we add, make it current*/
@@ -185,11 +375,7 @@ void
 ComboBox::addAction(QAction* action)
 {
     QString text = action->text();
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-    if (text.size() > _maximumTextSize) {
-        _maximumTextSize = text.size();
-    }
-#endif
+
     growMaximumWidthFromText(text);
     action->setParent(this);
     _actions.push_back(action);
@@ -244,12 +430,10 @@ ComboBox::setCurrentText_internal(const QString & text)
     QString str(text);
 
     growMaximumWidthFromText(str);
-    str.prepend("  ");
-    str.append("  ");
-    assert(_currentText);
-    _currentText->setText_overload(str);
+    
+    _currentText = text;
     QFontMetrics m = fontMetrics();
-    _currentText->setMinimumWidth( m.width(str) );
+
     // if no action matches this text, set the index to a dirty value
     int index = -1;
     for (U32 i = 0; i < _actions.size(); ++i) {
@@ -263,22 +447,21 @@ ComboBox::setCurrentText_internal(const QString & text)
 
         return index;
     }
-
+    updateLabel();
     return -1;
 }
 
 void
 ComboBox::setMaximumWidthFromText(const QString & str)
 {
-    int w = _currentText->fontMetrics().width(str + "    ");
-
-    setMaximumWidth(w);
+    int w = fontMetrics().width(str);
+    setMaximumWidth(w + DROP_DOWN_ICON_SIZE * 2);
 }
 
 void
 ComboBox::growMaximumWidthFromText(const QString & str)
 {
-    int w = _currentText->fontMetrics().width(str + "    ");
+    int w = fontMetrics().width(str) + 2 * DROP_DOWN_ICON_SIZE;
 
     if ( w > maximumWidth() ) {
         setMaximumWidth(w);
@@ -309,30 +492,14 @@ ComboBox::setCurrentIndex_internal(int index)
         text = _actions[index]->text();
     }
     str = text;
-    /*before displaying,prepend and append the text by some spacing.
-       This is a dirty way to do this but QLayout::addSpacing() doesn't preserve
-       the same style for the label.*/
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-    int dsize = _maximumTextSize - str.size();
-    dsize /= 2;
-    str.prepend("  ");
-    for (int i = 0; i < dsize; ++i) {
-        str.prepend(" ");
-    }
-    str.append("  ");
-    for (int i = 0; i < dsize; ++i) {
-        str.append(" ");
-    }
-#endif
-    str.prepend("  ");
-    str.append("  ");
-    _currentText->setText_overload(str);
+
+    _currentText = str;
     QFontMetrics m = fontMetrics();
-    _currentText->setMinimumWidth( m.width(str) );
+    setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
 
     if ( (_currentIndex != index) && (index != -1) ) {
         _currentIndex = index;
-
+        updateLabel();
         return true;
     } else {
         return false;
@@ -400,7 +567,6 @@ ComboBox::removeItem(const QString & item)
         if (_actions[i]->text() == item) {
             QString currentText = getCurrentIndexText();
             _actions.erase(_actions.begin() + i);
-            assert(_currentText);
             if (currentText == item) {
                 setCurrentIndex(i - 1);
             }
@@ -412,16 +578,7 @@ ComboBox::removeItem(const QString & item)
             }
         }
     }
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-    /*we also need to re-calculate the maximum text size*/
-    _maximumTextSize = 0;
-    for (U32 i = 0; i < _actions.size(); ++i) {
-        assert(_actions[i]);
-        if (_actions[i]->text().size() > _maximumTextSize) {
-            _maximumTextSize = _actions[i]->text().size();
-        }
-    }
-#endif
+
 }
 
 void
@@ -431,9 +588,7 @@ ComboBox::clear()
     _menu->clear();
     _separators.clear();
     _currentIndex = 0;
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-    _maximumTextSize = 0;
-#endif
+    updateLabel();
 }
 
 void
@@ -447,16 +602,7 @@ ComboBox::setItemText(int index,
     if (index == _currentIndex) {
         setCurrentText_internal(item);
     }
-#if IS_MAXIMUMTEXTSIZE_USEFUL
-    /*we also need to re-calculate the maximum text size*/
-    _maximumTextSize = 0;
-    for (U32 i = 0; i < _actions.size(); ++i) {
-        assert(_actions[i]);
-        if (_actions[i]->text().size() > _maximumTextSize) {
-            _maximumTextSize = _actions[i]->text().size();
-        }
-    }
-#endif
+
 }
 
 void
@@ -496,35 +642,34 @@ ComboBox::enableItem(int index)
 void
 ComboBox::setReadOnly(bool readOnly)
 {
-    _currentText->setEnabled(!readOnly);
-    //   _dropDownIcon->setEnabled(!readOnly);
-    _currentText->setReadOnly(readOnly);
-    _dropDownIcon->setReadOnly(readOnly);
+    _readOnly = readOnly;
+    repaint();
 }
 
 void
 ComboBox::setEnabled_natron(bool enabled)
 {
-    _currentText->setEnabled(enabled);
+    _enabled = enabled;
+    repaint();
 }
 
-bool
+int
 ComboBox::getAnimation() const
 {
-    return _currentText->getAnimation();
+    return _animation;
 }
 
 void
 ComboBox::setAnimation(int i)
 {
-    _currentText->setAnimation(i);
-    _dropDownIcon->setAnimation(i);
+    _animation = i;
+    repaint();
 }
 
 void
 ComboBox::setDirty(bool b)
 {
-    _currentText->setDirty(b);
-    _dropDownIcon->setDirty(b);
+    _dirty = b;
+    repaint();
 }
 

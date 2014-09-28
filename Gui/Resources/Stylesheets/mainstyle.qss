@@ -13,11 +13,6 @@ QLabel {
 }
 
 
-/*QLabel#ComboBoxLabel,QLabel#ComboBoxDropDownLabel {
-    background-color: %3;
-}*/
-
-
 NodeSettingsPanel[_selected="true"] {
     border:1px solid yellow;
     border-radius : 2px;
@@ -179,8 +174,8 @@ QHeaderView:section {
 }
 
 ComboBox {
-    border-radius : 5px;
-    border:1px solid black;
+    border-radius : 2px;
+    border: 1px solid black;
 }
 
 ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
