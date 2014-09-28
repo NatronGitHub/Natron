@@ -25,7 +25,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/Macros.h"
 
 class QHBoxLayout;
-class ClickableLabel;
 class QMouseEvent;
 class QAction;
 
@@ -34,19 +33,29 @@ class MenuWithToolTips;
 class ComboBox
     : public QFrame
 {
+    
+    
 private:
+    
     Q_OBJECT
 
-
-    QHBoxLayout* _mainLayout;
-    ClickableLabel* _currentText;
-    ClickableLabel* _dropDownIcon;
+    bool _readOnly;
+    bool _enabled;
+    int _animation;
+    bool _clicked;
+    bool _dirty;
+    
     int _currentIndex;
-    int _maximumTextSize;
+    QString _currentText;
     std::vector<int> _separators;
     std::vector<QAction*> _actions;
     MenuWithToolTips* _menu;
-    bool _wasDirtyPriorToMousePress;
+    
+    mutable QSize _sh; ///size hint
+    mutable QSize _msh; ///minmum size hint
+    mutable QSizePolicy _sizePolicy;
+    mutable bool _validHints;
+    unsigned short _align;
 
 public:
 
@@ -97,7 +106,7 @@ public:
 
 
     void setDirty(bool b);
-    bool getAnimation() const;
+    int getAnimation() const;
     void setAnimation(int i);
     void setReadOnly(bool readOnly);
 
@@ -127,11 +136,15 @@ signals:
 
 private:
 
-    void paintEvent(QPaintEvent* e);
-    void mousePressEvent(QMouseEvent* e);
-    void mouseReleaseEvent(QMouseEvent* e);
-    void wheelEvent(QWheelEvent *e);
-
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    
     void growMaximumWidthFromText(const QString & str);
     void createMenu();
 
@@ -140,6 +153,12 @@ private:
 
     ///changes the combobox text and returns an entry index if a matching one with the same name was found, -1 otherwise.
     int setCurrentText_internal(const QString & text);
+    
+    QSize sizeForWidth(int w) const;
+    
+    QRectF layoutRect() const;
+    
+    void updateLabel();
 };
 
 #endif // ifndef NATRON_GUI_COMBOBOX_H_
