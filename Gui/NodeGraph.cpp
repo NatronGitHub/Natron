@@ -3268,7 +3268,6 @@ NodeGraph::onTimeChanged(SequenceTime time,
         (*it)->refreshKnobsAfterTimeChange(time);
     }
     Natron::OutputEffectInstance* lastTimelineSeekCaller = project->getLastTimelineSeekCaller();
-    project->setLastTimelineSeekCaller(NULL);
 
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {

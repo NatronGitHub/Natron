@@ -535,7 +535,7 @@ void
 OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads)
 {
     ///Make sure at least 1 frame is pushed
-    if (nThreads == 0) {
+    if (nThreads <= 0) {
         nThreads = 1;
     }
     
@@ -562,7 +562,7 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
             break;
         }
     }
-    
+  
     ///Wake up render threads to notify them theres work to do
     _imp->framesToRenderNotEmptyCond.wakeAll();
 
@@ -620,7 +620,6 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, frame,
                                                                         firstFrame, lastFrame, &frame, &direction);
     
-    
     if (canContinue) {
         pushFramesToRenderInternal(frame, nThreads);
     }
@@ -631,20 +630,19 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
 int
 OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
 {
-
+    ///Flag the thread as inactive
+    {
+        QMutexLocker l(&_imp->renderThreadsMutex);
+        RenderThreads::iterator found = _imp->getRunnableIterator(thread);
+        assert(found != _imp->renderThreads.end());
+        found->active = false;
+        
+        ///Wake up the scheduler if it is waiting for all threads do be inactive
+        _imp->allRenderThreadsInactiveCond.wakeOne();
+    }
+    
     QMutexLocker l(&_imp->framesToRenderMutex);
     while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
-        
-        ///Flag the thread as inactive
-        {
-            QMutexLocker l(&_imp->renderThreadsMutex);
-            RenderThreads::iterator found = _imp->getRunnableIterator(thread);
-            assert(found != _imp->renderThreads.end());
-            found->active = false;
-            
-            ///Wake up the scheduler if it is waiting for all threads do be inactive
-            _imp->allRenderThreadsInactiveCond.wakeOne();
-        }
         
         _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
         
@@ -713,9 +711,13 @@ OutputSchedulerThread::startRender()
     ///threads appropriately when finished rendering each frame.
     appPTR->resetCPUIdleTime();
     
+    int nThreads;
+    {
+        QMutexLocker l(&_imp->renderThreadsMutex);
+        _imp->removeAllQuitRenderThreads();
+        nThreads = (int)_imp->renderThreads.size();
+    }
     
-    
-    int nThreads = getNRenderThreads();
     ///Start with one thread if it doesn't exist
     if (nThreads == 0) {
         _imp->appendRunnable(createRunnable(playbackOrRender));
@@ -919,6 +921,7 @@ OutputSchedulerThread::run()
                     if (newDirection != timelineDirection) {
                         QMutexLocker l(&_imp->runArgsMutex);
                         _imp->livingRunArgs.timelineDirection = newDirection;
+                        _imp->requestedRunArgs.timelineDirection = newDirection;
                     }
                                         
                     if (!renderFinished) {
@@ -943,8 +946,21 @@ OutputSchedulerThread::run()
                     treatFrame(frameToRender.time, frameToRender.view, frameToRender.frame);
                 } else {
                     ///Treat on main-thread
-                    
+                                    
                     QMutexLocker treatLocker (&_imp->treatMutex);
+                    
+                    ///Check for abortion while under treatMutex to be sure the main thread is not deadlock in abortRendering
+                    {
+                        QMutexLocker locker(&_imp->abortedRequestedMutex);
+                        if (_imp->abortRequested > 0) {
+                            
+                            ///Do not wait in the buf wait condition and go directly into the stopEngine()
+                            renderFinished = true;
+                            
+                            break;
+                        }
+                    }
+                    
                     _imp->treatRunning = true;
                     
                     emit s_doTreatOnMainThread(frameToRender.time, frameToRender.view, frameToRender.frame);
@@ -1871,6 +1887,7 @@ ViewerDisplayScheduler::treatFrame(double /*time*/,int /*view*/,const boost::sha
 void
 ViewerDisplayScheduler::timelineStepOne(OutputSchedulerThread::RenderDirection direction)
 {
+    assert(_viewer);
     if (direction == OutputSchedulerThread::RENDER_FORWARD) {
         _viewer->getTimeline()->incrementCurrentFrame(_viewer);
     } else {
@@ -1881,6 +1898,7 @@ ViewerDisplayScheduler::timelineStepOne(OutputSchedulerThread::RenderDirection d
 void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
+    assert(_viewer);
     _viewer->getTimeline()->seekFrame(time, _viewer);
 }
 
