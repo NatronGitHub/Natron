@@ -253,7 +253,7 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     
     QColor textColor;
     if (_readOnly) {
-        textColor.setRgb(100,100,1000);
+        textColor.setRgb(100,100,100);
     } else if (!_enabled) {
         textColor = Qt::black;
     } else {
