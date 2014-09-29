@@ -57,7 +57,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 
     #build  Sigar
-    (cd $TRAVIS_BUILD_DIR; git clone https://github.com/hyperic/sigar.git; (cd sigar; ./autogen.sh; ./configure; make -C && sudo make install))
+    (cd $TRAVIS_BUILD_DIR; git clone https://github.com/hyperic/sigar.git; (cd sigar; ./autogen.sh; ./configure; make && sudo make install))
 
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     sw_vers -productVersion
