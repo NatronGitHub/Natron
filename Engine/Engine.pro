@@ -53,6 +53,7 @@ SOURCES += \
     CurveSerialization.cpp \
     EffectInstance.cpp \
     FileDownloader.cpp \
+    FileSystemModel.cpp \
     FrameEntry.cpp \
     FrameParamsSerialization.cpp \
     Hash64.cpp \
@@ -111,6 +112,7 @@ HEADERS += \
     ChannelSet.h \
     EffectInstance.h \
     FileDownloader.h \
+    FileSystemModel.h \
     Format.h \
     FrameEntry.h \
     FrameEntrySerialization.h \

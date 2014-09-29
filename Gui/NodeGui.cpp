@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/SequenceFileDialog.h"
 #include "Gui/NodeGraphUndoRedo.h"
 
 #include "Engine/OfxEffectInstance.h"
@@ -696,6 +697,12 @@ void
 NodeGui::updatePreviewImage(int time)
 {
     if ( isVisible() && _internalNode->isPreviewEnabled()  && _internalNode->getApp()->getProject()->isAutoPreviewEnabled() ) {
+        
+        if (_internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
+            _internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
+            return;
+        }
+        
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -703,7 +710,14 @@ NodeGui::updatePreviewImage(int time)
 void
 NodeGui::forceComputePreview(int time)
 {
+    
     if ( isVisible() && _internalNode->isPreviewEnabled() ) {
+        
+        if (_internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
+            _internalNode->getName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
+            return;
+        }
+        
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }

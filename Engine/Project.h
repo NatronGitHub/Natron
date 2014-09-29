@@ -60,8 +60,9 @@ public:
     /**
      * @brief Saves the project with the given path and name corresponding to a file on disk.
      * @param autoSave If true then it will save the project in a temporary file instead (see autoSave()).
+     * @returns The actual filepath of the file saved
      **/
-    void saveProject(const QString & path,const QString & name,bool autoSave);
+    QString saveProject(const QString & path,const QString & name,bool autoSave);
 
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file
@@ -330,7 +331,7 @@ private:
 
     bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,const QString& realFilePath);
 
-    QDateTime saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
+    QString saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
 
 
     /**

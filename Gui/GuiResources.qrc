@@ -77,7 +77,6 @@
         <file>Resources/Images/closePanel.png</file>
         <file>Resources/Images/color_picker.png</file>
         <file>Resources/Images/colorwheel.png</file>
-        <file>Resources/Images/combobox.png</file>
         <file>Resources/Images/cursor.png</file>
         <file>Resources/Images/curve.png</file>
         <file>Resources/Images/cuspPoints.png</file>
@@ -108,7 +107,6 @@
         <file>Resources/Images/openCloseCurve.png</file>
         <file>Resources/Images/openeffects.png</file>
         <file>Resources/Images/play.png</file>
-        <file>Resources/Images/pressed_combobox.png</file>
         <file>Resources/Images/prevKF.png</file>
         <file>Resources/Images/previousIncr.png</file>
         <file>Resources/Images/readImage.png</file>
@@ -171,5 +169,7 @@
         <file>Resources/Images/zebra_on.png</file>
         <file>Resources/Images/closeTab.png</file>
         <file>Resources/Images/closeTab_hovered.png</file>
+        <file>Resources/Images/combobox.png</file>
+        <file>Resources/Images/pressed_combobox.png</file>
     </qresource>
 </RCC>

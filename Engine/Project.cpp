@@ -246,7 +246,7 @@ Project::refreshViewersAndPreviews()
     }
 }
 
-void
+QString
 Project::saveProject(const QString & path,
                      const QString & name,
                      bool autoS)
@@ -254,31 +254,36 @@ Project::saveProject(const QString & path,
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {
-            return;
+            return QString();
         }
     }
 
     {
         QMutexLocker l(&_imp->isSavingProjectMutex);
         if (_imp->isSavingProject) {
-            return;
+            return QString();
         } else {
             _imp->isSavingProject = true;
         }
     }
 
+    QString ret;
     try {
         if (!autoS) {
             //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
 
-            saveProjectInternal(path,name);
-            ///also update the auto-save
+            ret = saveProjectInternal(path,name);
+            
+            ///We just saved, any auto-save left is then worthless
             removeAutoSaves();
 
             //}
         } else {
+            
+            ///Clean auto-saves before saving a new one
             removeAutoSaves();
-            saveProjectInternal(path,name,true);
+            
+            ret = saveProjectInternal(path,name,true);
         }
     } catch (const std::exception & e) {
         if (!autoS) {
@@ -292,6 +297,7 @@ Project::saveProject(const QString & path,
         QMutexLocker l(&_imp->isSavingProjectMutex);
         _imp->isSavingProject = false;
     }
+    return ret;
 }
 
 static bool
@@ -311,7 +317,7 @@ fileCopy(const QString & source,
     return success;
 }
 
-QDateTime
+QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave)
@@ -326,32 +332,42 @@ Project::saveProjectInternal(const QString & path,
     timeHash.computeHash();
     QString timeHashStr = QString::number( timeHash.value() );
     QString actualFileName = name;
+    
+    bool isRenderSave = name.contains("RENDER_SAVE");
+    
     if (autoSave) {
-        QString pathCpy = path;
-
+        
+        ///For render save don't encode a hash into it
+        if (!isRenderSave) {
+            ///We encode the filename of the actual project file
+            ///into the autosave filename so that the "Do you want to restore this autosave?" dialog
+            ///knows to which project is linked the autosave.
+            QString pathCpy = path;
+            
 #ifdef __NATRON_WIN32__
-        ///on windows, we must also modifiy the root name otherwise it would fail to save with a filename containing for example C:/
-        QFileInfoList roots = QDir::drives();
-        QString root;
-        for (int i = 0; i < roots.size(); ++i) {
-            QString rootPath = roots[i].absolutePath();
-            rootPath = rootPath.remove( QChar('\\') );
-            rootPath = rootPath.remove( QChar('/') );
-            if ( pathCpy.startsWith(rootPath) ) {
-                root = rootPath;
-                QString rootToPrepend("_ROOT_");
-                rootToPrepend.append( root.at(0) ); //< append the root character, e.g the 'C' of C:
-                rootToPrepend.append("_N_ROOT_");
-                pathCpy.replace(rootPath, rootToPrepend);
-                break;
+            ///on windows, we must also modifiy the root name otherwise it would fail to save with a filename containing for example C:/
+            QFileInfoList roots = QDir::drives();
+            QString root;
+            for (int i = 0; i < roots.size(); ++i) {
+                QString rootPath = roots[i].absolutePath();
+                rootPath = rootPath.remove( QChar('\\') );
+                rootPath = rootPath.remove( QChar('/') );
+                if ( pathCpy.startsWith(rootPath) ) {
+                    root = rootPath;
+                    QString rootToPrepend("_ROOT_");
+                    rootToPrepend.append( root.at(0) ); //< append the root character, e.g the 'C' of C:
+                    rootToPrepend.append("_N_ROOT_");
+                    pathCpy.replace(rootPath, rootToPrepend);
+                    break;
+                }
             }
-        }
-
+            
 #endif
-        pathCpy = pathCpy.replace("/", "_SEP_");
-        pathCpy = pathCpy.replace("\\", "_SEP_");
-        actualFileName.prepend(pathCpy);
-        actualFileName.append("." + timeHashStr);
+            pathCpy = pathCpy.replace("/", "_SEP_");
+            pathCpy = pathCpy.replace("\\", "_SEP_");
+            actualFileName.prepend(pathCpy);
+            actualFileName.append("." + timeHashStr);
+        }
     }
     QString filePath;
     if (autoSave) {
@@ -371,12 +387,12 @@ Project::saveProjectInternal(const QString & path,
         ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ofile.open(tmpFilename.toStdString().c_str(),std::ofstream::out);
     } catch (const std::ofstream::failure & e) {
-        throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
+        throw std::runtime_error( std::string("Exception occured when opening file ") + tmpFilename.toStdString() + ": " + e.what() );
     }
 
     if ( !ofile.good() ) {
-        qDebug() << "Failed to open file " << filePath.toStdString().c_str();
-        throw std::runtime_error( "Failed to open file " + filePath.toStdString() );
+        qDebug() << "Failed to open file " << tmpFilename.toStdString().c_str();
+        throw std::runtime_error( "Failed to open file " + tmpFilename.toStdString() );
     }
 
     ///Fix file paths before saving.
@@ -423,11 +439,13 @@ Project::saveProjectInternal(const QString & path,
 
     QFile::remove(tmpFilename);
 
-    _imp->projectName = name;
     if (!autoSave) {
+        _imp->projectName = name;
         emit projectNameChanged(name); //< notify the gui so it can update the title
     } else {
-        emit projectNameChanged(name + " (*)");
+        if (!isRenderSave) {
+            emit projectNameChanged(_imp->projectName + " (*)");
+        }
     }
     
     _imp->projectPath = path;
@@ -437,7 +455,7 @@ Project::saveProjectInternal(const QString & path,
     }
     _imp->lastAutoSave = time;
 
-    return time;
+    return filePath;
 } // saveProjectInternal
 
 void
@@ -515,7 +533,7 @@ Project::findAndTryLoadAutoSave()
         searchStr.append(NATRON_PROJECT_FILE_EXT);
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos != -1) {
+        if (suffixPos != -1 && !entry.contains("RENDER_SAVE")) {
             QString filename = entry.left(suffixPos + searchStr.size() - 1);
             bool exists = false;
 
@@ -1244,6 +1262,13 @@ Project::removeAutoSaves()
 
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
+        
+        ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
+        /// @see AppInstance::startWritersRendering
+        if (entry.contains("RENDER_SAVE")) {
+            continue;
+        }
+        
         QString searchStr('.');
         searchStr.append(NATRON_PROJECT_FILE_EXT);
         searchStr.append('.');
@@ -1804,11 +1829,20 @@ void
 Project::makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str)
 {
     
+    bool hasTrailingSep = !varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\');
     if (str.size() > varValue.size() && str.substr(0,varValue.size()) == varValue) {
-        if (!varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\')) {
+        if (hasTrailingSep) {
             str = '[' + varName + ']' + str.substr(varValue.size(),str.size());
         } else {
             str = '[' + varName + "]/" + str.substr(varValue.size() + 1,str.size());
+        }
+    } else {
+        QDir dir(varValue.c_str());
+        QString relative = dir.relativeFilePath(str.c_str());
+        if (hasTrailingSep) {
+            str = '[' + varName + ']' + relative.toStdString();
+        } else {
+            str = '[' + varName + "]/" + relative.toStdString();
         }
     }
 

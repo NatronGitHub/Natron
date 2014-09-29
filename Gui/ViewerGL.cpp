@@ -959,6 +959,43 @@ ViewerGL::resizeGL(int width,
     }
 }
 
+/**
+ * @brief Used to setup the blending mode to draw the first texture
+ **/
+class BlendSetter
+{
+    
+    bool didBlend;
+    
+public:
+    
+    BlendSetter(ImagePremultiplication premult)
+    {
+        didBlend = premult != ImageOpaque;
+        if (didBlend) {
+            glEnable(GL_BLEND);
+        }
+        switch (premult) {
+            case Natron::ImagePremultiplied:
+                glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+                break;
+            case Natron::ImageUnPremultiplied:
+                glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+                break;
+            case Natron::ImageOpaque:
+                break;
+        }
+
+    }
+    
+    ~BlendSetter()
+    {
+        if (didBlend) {
+            glDisable(GL_BLEND);
+        }
+    }
+};
+
 void
 ViewerGL::paintGL()
 {
@@ -1031,11 +1068,18 @@ ViewerGL::paintGL()
             glEnable (GL_TEXTURE_2D);
 
             glBlendColor(1, 1, 1, wipeMix);
+            
+            ///Depending on the premultiplication of the input image we use a different blending func
+            ImagePremultiplication premultA = _imp->displayingImagePremult[0];
+            if (!_imp->viewerTab->isCheckerboardEnabled()) {
+                premultA = Natron::ImageOpaque; ///When no checkerboard, draw opaque
+            }
 
             if (compOp == OPERATOR_WIPE) {
                 ///In wipe mode draw first the input A then only the portion we are interested in the input B
 
                 if (drawTexture[0]) {
+                    BlendSetter b(premultA);
                     drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
                 }
                 if (drawTexture[1]) {
@@ -1046,6 +1090,7 @@ ViewerGL::paintGL()
                 }
             } else if (compOp == OPERATOR_MINUS) {
                 if (drawTexture[0]) {
+                    BlendSetter b(premultA);
                     drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
                 }
                 if (drawTexture[1]) {
@@ -1057,6 +1102,7 @@ ViewerGL::paintGL()
                 }
             } else if (compOp == OPERATOR_UNDER) {
                 if (drawTexture[0]) {
+                    BlendSetter b(premultA);
                     drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
                 }
                 if (drawTexture[1]) {
@@ -1073,6 +1119,12 @@ ViewerGL::paintGL()
             } else if (compOp == OPERATOR_OVER) {
                 ///draw first B then A
                 if (drawTexture[1]) {
+                    ///Depending on the premultiplication of the input image we use a different blending func
+                    ImagePremultiplication premultB = _imp->displayingImagePremult[1];
+                    if (!_imp->viewerTab->isCheckerboardEnabled()) {
+                        premultB = Natron::ImageOpaque; ///When no checkerboard, draw opaque
+                    }
+                    BlendSetter b(premultB);
                     drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
                 }
                 if (drawTexture[0]) {
@@ -1090,35 +1142,10 @@ ViewerGL::paintGL()
                 }
             } else {
                 if (drawTexture[0]) {
-
-                    ///Depending on the premultiplication of the input image we use a different blending func
-                    ImagePremultiplication premult = _imp->displayingImagePremult[0];
-                    if (!_imp->viewerTab->isCheckerboardEnabled()) {
-                        premult = Natron::ImageOpaque; ///When no checkerboard, draw opaque
-                    }
-
-                    bool doBlend = premult != ImageOpaque;
-                    if (doBlend) {
-                        glEnable(GL_BLEND);
-                    }
-                    switch (premult) {
-                        case Natron::ImagePremultiplied:
-                            glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
-                            break;
-                        case Natron::ImageUnPremultiplied:
-                            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-                            break;
-                        case Natron::ImageOpaque:
-                            break;
-                    }
-
-
-
+                    
+                    BlendSetter b(premultA);
                     drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
 
-                    if (doBlend) {
-                        glDisable(GL_BLEND);
-                    }
                 }
             }
         } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -2384,6 +2411,10 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
+    
     bool mustRedraw = false;
     if (_imp->ms == BUILDING_PICKER_RECTANGLE) {
         updateRectangleColorPicker();

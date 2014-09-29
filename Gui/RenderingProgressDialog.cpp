@@ -99,6 +99,7 @@ RenderingProgressDialog::onProcessCanceled()
         hide();
         Natron::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
     }
+	close();
 }
 
 void
@@ -146,6 +147,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             log.exec();
         }
     }
+	close();
 }
 
 void
