@@ -136,7 +136,10 @@ struct ValueSerialization
         } else if (isChoice) {
             int v = isChoice->getValue(_dimension);
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-            std::string label = entries[v];
+            std::string label ;
+            if (v < (int)entries.size() && v >= 0) {
+                label = entries[v];
+            }
             ar & boost::serialization::make_nvp("Value", v);
             ar & boost::serialization::make_nvp("Label", label);
         } else if (isString) {

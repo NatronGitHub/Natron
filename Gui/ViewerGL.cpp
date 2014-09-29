@@ -1599,17 +1599,21 @@ ViewerGL::Implementation::drawArcOfCircle(const QPointF & center,
     double alpha = startAngle;
     double x,y;
 
-    if ( (hs == HOVERING_WIPE_MIX) || (ms == DRAGGING_WIPE_MIX_HANDLE) ) {
-        glColor3f(0, 1, 0);
-    }
-    glBegin(GL_POINTS);
-    while (alpha <= endAngle) {
-        x = center.x()  + radius * std::cos(alpha);
-        y = center.y()  + radius * std::sin(alpha);
-        glVertex2d(x, y);
-        alpha += 0.01;
-    }
-    glEnd();
+    {
+        GLProtectAttrib a(GL_CURRENT_BIT);
+
+        if ( (hs == HOVERING_WIPE_MIX) || (ms == DRAGGING_WIPE_MIX_HANDLE) ) {
+            glColor3f(0, 1, 0);
+        }
+        glBegin(GL_POINTS);
+        while (alpha <= endAngle) {
+            x = center.x()  + radius * std::cos(alpha);
+            y = center.y()  + radius * std::sin(alpha);
+            glVertex2d(x, y);
+            alpha += 0.01;
+        }
+        glEnd();
+    } // GLProtectAttrib a(GL_CURRENT_BIT);
 }
 
 void
