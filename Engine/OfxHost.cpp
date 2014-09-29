@@ -47,6 +47,7 @@ CLANG_DIAG_ON(deprecated-register)
 //our version of parametric param suite support
 #include "ofxhParametricParam.h"
 
+#include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
 
 #include "Engine/AppManager.h"
