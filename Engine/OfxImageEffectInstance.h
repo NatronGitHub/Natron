@@ -20,6 +20,16 @@
 class OfxClipInstance;
 class OfxEffectInstance;
 class RectD;
+
+namespace OFX {
+    namespace Host {
+        namespace Property
+        {
+            class Set;
+        }
+    }
+}
+
 namespace Natron {
 class Image;
 
@@ -45,6 +55,12 @@ public:
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     // overridden for ImageEffect::Instance
+    
+    /// call the effect entry point
+    virtual OfxStatus mainEntry(const char *action,
+                                const void *handle,
+                                OFX::Host::Property::Set *inArgs,
+                                OFX::Host::Property::Set *outArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
 

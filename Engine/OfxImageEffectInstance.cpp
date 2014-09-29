@@ -56,6 +56,18 @@ OfxImageEffectInstance::~OfxImageEffectInstance()
 {
 }
 
+
+
+OfxStatus
+OfxImageEffectInstance::mainEntry(const char *action,
+                                  const void *handle,
+                                  OFX::Host::Property::Set *inArgs,
+                                  OFX::Host::Property::Set *outArgs)
+{
+    
+    return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
+}
+
 const std::string &
 OfxImageEffectInstance::getDefaultOutputFielding() const
 {
