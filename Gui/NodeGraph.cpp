@@ -1426,7 +1426,7 @@ bool
 NodeGraph::event(QEvent* e)
 {
     if (!_imp->_gui) {
-        return;
+        return false;
     }
     if (e->type() == QEvent::KeyPress) {
         QKeyEvent* ke = static_cast<QKeyEvent*>(e);

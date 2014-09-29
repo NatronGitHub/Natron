@@ -1753,7 +1753,9 @@ AppManager::evaluateBestNoConcurrentThreads(int currentNoThreads) const
     } else {
         ret = currentNoThreads - 1; 
     }
-    return std::min(QThread::idealThreadCount(), ret);
+    unsigned int suiteNCpus;
+    (void)_imp->ofxHost->multiThreadNumCPUS(&suiteNCpus);
+    return std::min((int)suiteNCpus, ret);
 }
 
 void
