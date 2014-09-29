@@ -47,9 +47,11 @@ CLANG_DIAG_ON(deprecated-register)
 //our version of parametric param suite support
 #include "ofxhParametricParam.h"
 
-#include "Engine/AppManager.h"
-#include "Engine/LibraryBinary.h"
+#include "Global/MemoryInfo.h"
 
+#include "Engine/AppManager.h"
+#include "Engine/OfxMemory.h"
+#include "Engine/LibraryBinary.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
@@ -106,7 +108,7 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxPropAPIVersion, 3, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MAJOR, 0);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MINOR, 1);
-    _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_REVISION, 0);
+    _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_REVISION, 2);
     _properties.setStringProperty(kOfxPropVersionLabel, NATRON_VERSION_STRING);
     _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 1);
@@ -608,6 +610,20 @@ Natron::OfxHost::fetchSuite(const char *suiteName,
     } else {
         return OFX::Host::ImageEffect::Host::fetchSuite(suiteName, suiteVersion);
     }
+}
+
+OFX::Host::Memory::Instance*
+Natron::OfxHost::newMemoryInstance(size_t nBytes)
+{
+    OfxMemory* ret = new OfxMemory(NULL);
+    bool allocated = ret->alloc(nBytes);
+    
+    if ((nBytes != 0 && !ret->getPtr()) || !allocated) {
+        Natron::errorDialog(QObject::tr("Out of memory").toStdString(),
+                            QObject::tr("Failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+    }
+    
+    return ret;
 }
 
 /////////////////
