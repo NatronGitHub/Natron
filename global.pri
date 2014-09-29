@@ -66,16 +66,30 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
   }
 }
 
-macx{
+macx {
   # Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
   # (else qmake generates an old pbproj on Snow Leopard)
   QMAKE_PBUILDER_VERSION = 46
-  universal {
-    CONFIG += x86 x86_64
-  }
 
-    #link against the CoreFoundation framework for the StandardPaths functionnality
-   LIBS += -framework CoreServices
+  QMAKE_MACOSX_DEPLOYMENT_VERSION = $$split(QMAKE_MACOSX_DEPLOYMENT_TARGET, ".")
+  QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION = $$last(QMAKE_MACOSX_DEPLOYMENT_VERSION)
+  universal {
+    equal(QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION, 10) {
+      equal(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 4)|equal(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 5) {
+        # OSX 10.4 (Tiger) and 10.5 (Leopard) are x86/ppc
+        CONFIG += x86 ppc
+      }
+      equal(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 6) {
+        # OSX 10.6 (Snow Leopard) may run on Intel 32 or 64 bits architectures
+        CONFIG += x86 x86_64
+      }
+      # later OSX instances only run on x86_64, universal builds are useless
+      # (unless a later OSX supports ARM)
+    }
+  } 
+
+  #link against the CoreFoundation framework for the StandardPaths functionnality
+  LIBS += -framework CoreServices
 }
 
 !macx|!universal {
@@ -88,7 +102,7 @@ macx{
   #CONFIG += c++11
 }
 
-win32{
+win32 {
   #ofx needs WINDOWS def
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
