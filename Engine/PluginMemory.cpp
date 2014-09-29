@@ -40,12 +40,16 @@ struct PluginMemory::Implementation
 PluginMemory::PluginMemory(Natron::EffectInstance* effect)
     : _imp( new Implementation(effect) )
 {
-    _imp->effect->addPluginMemoryPointer(this);
+    if (effect) {
+        _imp->effect->addPluginMemoryPointer(this);
+    }
 }
 
 PluginMemory::~PluginMemory()
 {
-    _imp->effect->removePluginMemoryPointer(this);
+    if (_imp->effect) {
+        _imp->effect->removePluginMemoryPointer(this);
+    }
 }
 
 bool
@@ -57,7 +61,9 @@ PluginMemory::alloc(size_t nBytes)
         return false;
     } else {
         _imp->data.resize(nBytes);
-        _imp->effect->registerPluginMemory( _imp->data.size() );
+        if (_imp->effect) {
+            _imp->effect->registerPluginMemory( _imp->data.size() );
+        }
 
         return true;
     }
@@ -67,8 +73,9 @@ void
 PluginMemory::freeMem()
 {
     QMutexLocker l(&_imp->mutex);
-
-    _imp->effect->unregisterPluginMemory( _imp->data.size() );
+    if (_imp->effect) {
+        _imp->effect->unregisterPluginMemory( _imp->data.size() );
+    }
     _imp->data.clear();
     _imp->locked = 0;
 }
