@@ -47,8 +47,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     echo 'sigar { ' >> config.pri
-    echo 'INCLUDEPATH += /usr/local/include' >> config.pri
-    echo 'LIBS += -L/usr/local/lib -lsigar' >> config.pri
+    echo 'INCLUDEPATH += /opt/sigar/include' >> config.pri
+    echo 'LIBS += -L/opt/sigar/lib -lsigar' >> config.pri
     echo '}' >> config.pri
 
     # build OpenFX-IO
@@ -57,7 +57,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 
     #build  Sigar
-    (cd $TRAVIS_BUILD_DIR; git clone https://github.com/hyperic/sigar.git; (cd sigar; ./autogen.sh; ./configure; make && sudo make install))
+(cd $TRAVIS_BUILD_DIR; git clone https://github.com/hyperic/sigar.git; sudo mkdir /opt/sigar;  (cd sigar; ./autogen.sh; ./configure --enable-static --disable-shared --prefix=/opt/sigar; make && sudo make install))
 
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     sw_vers -productVersion
