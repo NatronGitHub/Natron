@@ -24,6 +24,14 @@ class PluginMemory
 {
 public:
 
+    /**
+     * @brief Constructs a new memory chunk that can be used freely and that will be registered and known
+     * about by Natron.
+     * @param effect If not NULL, it will register the size allocated to the associated node so that Natron
+     * can clear this memory when in situation of low memory or when the node is no longer used.
+     * On the other hand if the parameter is set to NULL, the memory will not be registered and will live
+     * until the plug-in decides to free the memory.
+     **/
     PluginMemory(Natron::EffectInstance* effect);
 
     ~PluginMemory();
