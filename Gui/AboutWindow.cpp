@@ -130,12 +130,14 @@ AboutWindow::AboutWindow(Gui* gui,
                                "<p> Boost %2 </p>"
                                "<p> GLEW %3 </p>"
                                "<p> OpenGL %4 </p>"
-                               "<p> Cairo %5 </p>")
+                               "<p> Cairo %5 </p>"
+                               "<p> Sigar: %6 </p>")
                        .arg( gui->getQtVersion() )
                        .arg( gui->getBoostVersion() )
                        .arg( gui->getGlewVersion() )
                        .arg( gui->getOpenGLVersion() )
-                       .arg( gui->getCairoVersion() );
+                       .arg( gui->getCairoVersion() )
+                       .arg( gui->getSigarVersion() );
     _libsText->setText(libsText);
     _tabWidget->addTab( _libsText, QObject::tr("Libraries") );
 
@@ -165,12 +167,14 @@ AboutWindow::updateLibrariesVersions()
                                "<p> Boost %2 </p>"
                                "<p> Glew %3 </p>"
                                "<p> OpenGL %4 </p>"
-                               "<p> Cairo %5 </p>")
+                               "<p> Cairo %5 </p>"
+                               "<p> Sigar: %6 </p>")
                        .arg( _gui->getQtVersion() )
                        .arg( _gui->getBoostVersion() )
                        .arg( _gui->getGlewVersion() )
                        .arg( _gui->getOpenGLVersion() )
-                       .arg( _gui->getCairoVersion() );
+                       .arg( _gui->getCairoVersion() )
+                       .arg( _gui->getSigarVersion() );
 
     _libsText->setText(libsText);
 }

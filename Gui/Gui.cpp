@@ -47,6 +47,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QProgressDialog>
 
 #include <cairo/cairo.h>
+#include <sigar.h>
 
 #include <boost/version.hpp>
 CLANG_DIAG_OFF(unused-parameter)
@@ -3541,6 +3542,13 @@ QString
 Gui::getCairoVersion() const
 {
     return QString(CAIRO_VERSION_STRING) + " / " + QString( cairo_version_string() );
+}
+
+QString
+Gui::getSigarVersion() const
+{
+    sigar_version_t* sigar = sigar_version_get();
+    return QString("%1.%2.%3").arg(sigar->major).arg(sigar->minor).arg(sigar->maint);
 }
 
 void

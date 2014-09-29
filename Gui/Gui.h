@@ -330,6 +330,8 @@ public:
     QString getQtVersion() const;
 
     QString getCairoVersion() const;
+    
+    QString getSigarVersion() const;
     /**
      * @brief Make a new rotoscoping/painting interface for the given node.
      * This will create new widgets and enrich the interface of the viewer tab.

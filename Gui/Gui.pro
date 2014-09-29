@@ -7,7 +7,7 @@ TARGET = Gui
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
-CONFIG += boost glew opengl qt cairo
+CONFIG += boost glew opengl qt cairo sigar
 QT += gui core opengl network 
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
