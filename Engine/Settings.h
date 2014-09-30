@@ -75,6 +75,8 @@ public:
     int getNumberOfThreads() const;
 
     void setNumberOfThreads(int threadsNb);
+    
+    int getNumberOfThreadsPerEffect() const;
 
     const std::string & getReaderPluginIDForFileType(const std::string & extension);
     const std::string & getWriterPluginIDForFileType(const std::string & extension);
@@ -190,6 +192,7 @@ private:
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Int_Knob> _numberOfThreads;
+    boost::shared_ptr<Int_Knob> _nThreadsPerEffect;
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<Bool_Knob> _firstReadSetProjectFormat;

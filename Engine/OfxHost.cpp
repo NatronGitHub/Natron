@@ -845,7 +845,11 @@ Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+    
+    int nThreadsToRender,nThreadsPerEffect;
+    appPTR->getNThreadsSettings(&nThreadsToRender, &nThreadsPerEffect);
+    
+    if (nThreadsToRender == -1) {
         *nCPUs = 1;
     } else {
         // activeThreadCount may be negative (for example if releaseThread() is called)
@@ -862,7 +866,21 @@ Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         // better than QThread::idealThreadCount();, because it can be set by a global preference:
         int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
         assert(maxThreadsCount >= 0);
-        *nCPUs = std::max(1, maxThreadsCount - activeThreadsCount);
+        
+        if (nThreadsPerEffect == 0) {
+            ///Simple heuristic: limit 1 effect to start at most 8 threads because otherwise it might spend too much
+            ///time scheduling than just processing
+            int hwConcurrency = appPTR->getHardwareIdealThreadCount();
+            
+            if (hwConcurrency <= 0) {
+                nThreadsPerEffect = 1;
+            } else if (hwConcurrency <= 8) {
+                nThreadsPerEffect = hwConcurrency;
+            } else {
+                nThreadsPerEffect = 8;
+            }
+        }
+        *nCPUs = std::max(1,std::min(maxThreadsCount - activeThreadsCount, nThreadsPerEffect));
     }
 
     return kOfxStatOK;

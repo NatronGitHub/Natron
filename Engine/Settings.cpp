@@ -111,6 +111,17 @@ Settings::initializeKnobs()
     _numberOfThreads->setMinimum(-1);
     _numberOfThreads->setDisplayMinimum(-1);
     _generalTab->addKnob(_numberOfThreads);
+    
+    _nThreadsPerEffect = Natron::createKnob<Int_Knob>(this, "Max threads usable per effect (0=\"guess\")");
+    _nThreadsPerEffect->setName("nThreadsPerEffect");
+    _nThreadsPerEffect->setAnimationEnabled(false);
+    _nThreadsPerEffect->setHintToolTip("Controls how many threads a specific effect can use at most to do its processing. "
+                                       "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
+                                       "the time spent to launch all the threads might exceed the time spent actually processing."
+                                       "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
+                                       "for an effect");
+    _nThreadsPerEffect->setMinimum(0);
+    _generalTab->addKnob(_nThreadsPerEffect);
 
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
     _renderInSeparateProcess->setName("renderNewProcess");
@@ -618,6 +629,7 @@ Settings::setDefaultValues()
     _useBWIcons->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
+    _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
@@ -822,6 +834,10 @@ Settings::restoreSettings()
         ///Load even though there's no settings!
         tryLoadOpenColorIOConfig();
     }
+    
+    appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
+    appPTR->setNThreadsToRender(getNumberOfThreads());
+    
     _restoringSettings = false;
 } // restoreSettings
 
@@ -935,6 +951,7 @@ Settings::onKnobValueChanged(KnobI* k,
         setCachingLabels();
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
+        appPTR->setNThreadsToRender(nbThreads);
         if (nbThreads == -1) {
             QThreadPool::globalInstance()->setMaxThreadCount(1);
             appPTR->abortAnyProcessing();
@@ -943,6 +960,8 @@ Settings::onKnobValueChanged(KnobI* k,
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
+    } else if ( k == _nThreadsPerEffect.get() ) {
+        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
     } else if ( k == _ocioConfigKnob.get() ) {
         if ( _ocioConfigKnob->getActiveEntryText_mt_safe() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
@@ -1001,6 +1020,12 @@ bool
 Settings::getColorPickerLinear() const
 {
     return _linearPickers->getValue();
+}
+
+int
+Settings::getNumberOfThreadsPerEffect() const
+{
+    return _nThreadsPerEffect->getValue();
 }
 
 int

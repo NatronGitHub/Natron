@@ -214,10 +214,7 @@ public:
 
     virtual void setLoadingStatus(const QString & str);
 
-    /**
-     * @brief Toggle on/off multi-threading globally in Natron
-     **/
-    void setNumberOfThreads(int threadsNb);
+  
 
     const QString & getApplicationBinaryPath() const;
     static bool parseCmdLineArgs(int argc,char* argv[],
@@ -281,7 +278,30 @@ public:
     ///Non MT-safe!
     const std::string& getOCIOConfigPath() const;
     
+    int getHardwareIdealThreadCount();
+    
+    
+    /**
+     * @brief Toggle on/off multi-threading globally in Natron
+     **/
+    void setNumberOfThreads(int threadsNb);
+    
+    /**
+     * @brief The value held by the Number of render threads settings.
+     * It is stored it for faster access (1 mutex instead of 3 read/write locks)
+     *
+     * WARNING: This has nothing to do with the setNumberOfThreads function!
+     * This function is just called by the Settings so that the getNThreadsSettings
+     * function is cheap (no need to pass by the Knob API), whereas the 
+     * setNumberOfThreads function actually set the value of the Knob in the settings!
+     **/
+    void setNThreadsToRender(int nThreads);
+    void setNThreadsPerEffect(int nThreadsPerEffect);
+    
+    void getNThreadsSettings(int* nThreadsToRender,int* nThreadsPerEffect) const;
+    
 public slots:
+    
 
     ///Closes the application not saving any projects.
     virtual void exitApp();

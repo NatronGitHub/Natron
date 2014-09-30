@@ -81,6 +81,12 @@ struct AppManagerPrivate
 
     std::string currentOCIOConfigPath; //< the currentOCIO config path
     
+    int idealThreadCount;
+    
+    int nThreadsToRender;
+    int nThreadsPerEffect;
+    mutable QMutex nThreadsMutex;
+    
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
           , _appInstances()
@@ -103,6 +109,10 @@ struct AppManagerPrivate
           ,maxCacheFiles(0)
           ,currentCacheFilesCount(0)
           ,currentCacheFilesCountMutex()
+          ,idealThreadCount(0)
+          ,nThreadsToRender(0)
+          ,nThreadsPerEffect(0)
+          ,nThreadsMutex()
 
     {
         setMaxCacheFiles();
@@ -125,6 +135,12 @@ struct AppManagerPrivate
      **/
     void setMaxCacheFiles();
 };
+
+int
+AppManager::getHardwareIdealThreadCount()
+{
+    return _imp->idealThreadCount;
+}
 
 void
 AppManager::printBackGroundWelcomeMessage()
@@ -253,6 +269,9 @@ AppManager::load(int &argc,
     }
     initializeQApp(argc, argv);
 
+    _imp->idealThreadCount = QThread::idealThreadCount();
+
+    
     assert(argv);
     if (!hadArgs) {
         delete [] argv[0];
@@ -1677,6 +1696,29 @@ const std::string&
 AppManager::getOCIOConfigPath() const
 {
     return _imp->currentOCIOConfigPath;
+}
+
+void
+AppManager::setNThreadsToRender(int nThreads)
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    _imp->nThreadsToRender = nThreads;
+}
+
+void
+AppManager::getNThreadsSettings(int* nThreadsToRender,int* nThreadsPerEffect) const
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    *nThreadsToRender = _imp->nThreadsToRender;
+    *nThreadsPerEffect = _imp->nThreadsPerEffect;
+}
+
+
+void
+AppManager::setNThreadsPerEffect(int nThreadsPerEffect)
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    _imp->nThreadsPerEffect = nThreadsPerEffect;
 }
 
 namespace Natron {
