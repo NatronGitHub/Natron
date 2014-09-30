@@ -21,6 +21,8 @@
 #include <QAbstractSocket>
 #include <QCoreApplication>
 #include <QThread>
+#include <QtCore/QAtomicInt>
+
 
 #include <sigar.h>
 
@@ -86,14 +88,28 @@ struct AppManagerPrivate
     std::string currentOCIOConfigPath; //< the currentOCIO config path
     
     mutable sigar_t* sigarInfos; // for CPU idle time
-    QMutex  cpuIdleTimeMutex;
-    qint64 cpuIdleTime;
-    U64 cpuTotalTime;
-    int idealThreadCount;
+    QMutex  cpuIdleTimeMutex; // protects sigarInfos & cpuIdleTime & cpuTotalTime
+    qint64 cpuIdleTime; // idle time (sumed up over all cores)
+    U64 cpuTotalTime; // wall time (sumped up over all cores) recorded at a given time
     
-    int nThreadsToRender;
-    int nThreadsPerEffect;
-    mutable QMutex nThreadsMutex;
+    int idealThreadCount; // return value of QThread::idealThreadCount() cached here
+    
+    int nThreadsToRender; // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
+    int nThreadsPerEffect;  // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
+    mutable QMutex nThreadsMutex; // protects nThreadsToRender & nThreadsPerEffect
+    
+    //The idea here is to keep track of the number of threads launched by Natron (except the ones of the global thread pool of QtConcurrent)
+    //So that we can properly have an estimation of how much the cores of the CPU are used.
+    //This method has advantages and drawbacks:
+    // Advantages:
+    // - This is quick and fast
+    // - This very well describes the render activity of Natron
+    //
+    // Disadvantages:
+    // - This only takes into account the current Natron process and disregard completly CPU activity.
+    // - We might count a thread that is actually waiting in a mutex as a running thread
+    // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
+    QAtomicInt runningThreadsCount;
     
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
@@ -125,9 +141,12 @@ struct AppManagerPrivate
           ,nThreadsToRender(0)
           ,nThreadsPerEffect(0)
           ,nThreadsMutex()
+          ,runningThreadsCount()
     {
         setMaxCacheFiles();
         sigar_open(&sigarInfos);
+        
+        runningThreadsCount = 0;
     }
     
     ~AppManagerPrivate()
@@ -1812,6 +1831,18 @@ AppManager::setNThreadsPerEffect(int nThreadsPerEffect)
 {
     QMutexLocker l(&_imp->nThreadsMutex);
     _imp->nThreadsPerEffect = nThreadsPerEffect;
+}
+
+void
+AppManager::fetchAndAddNRunningThreads(int nThreads)
+{
+    _imp->runningThreadsCount.fetchAndAddRelaxed(nThreads);
+}
+
+int
+AppManager::getNRunningThreads() const
+{
+    return (int)_imp->runningThreadsCount;
 }
 
 namespace Natron {

@@ -22,7 +22,6 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QtCore/QThreadPool>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
-#include <QtCore/QAtomicInt>
 CLANG_DIAG_ON(deprecated-register)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
@@ -64,8 +63,6 @@ CLANG_DIAG_ON(deprecated-register)
 
 using namespace Natron;
 
-// This corresponds to the active number of threads launched by the thread-pool
-static QAtomicInt runningThreadsCount;
 
 Natron::OfxHost::OfxHost()
     : _imageEffectPluginCache( new OFX::Host::ImageEffect::PluginCache(*this) )
@@ -75,7 +72,6 @@ Natron::OfxHost::OfxHost()
     , _pluginsMutexesLock(new QMutex)
 #endif
 {
-    runningThreadsCount = 0;
 }
 
 Natron::OfxHost::~OfxHost()
@@ -647,6 +643,15 @@ static QThreadStorage<int> gThreadIndex;
 
 namespace {
 #ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
+    
+///Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
+///to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
+///We think this is because Furnace must keep an internal thread-local state that becomes then dirty
+///if we re-use the same thread. We chose to allow maximum compatibility with plug-ins even though our back-up
+///solution is not as efficient as if we could use QtConcurrent's thread-pool.
+///
+/// TL;DR: USE IT AT YOUR OWN RISKS! But don't expect it to work with the Foundry Furnace (and probably some other plug-ins).
+
 #pragma message WARN("QtConcurrent enabled in multithread suite")
 static OfxStatus
 threadFunctionWrapper(OfxThreadFunctionV1 func,
@@ -809,7 +814,7 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
             }
             
             ///We just started threadsStarted threads
-            runningThreadsCount.fetchAndAddRelaxed(threadsStarted);
+            appPTR->fetchAndAddNRunningThreads(threadsStarted);
             
             // now we've got at most maxConcurrentThread running. wait for each thread and launch a new one
             threads[j]->wait();
@@ -820,7 +825,7 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
             --running;
             
             ///We just stopped 1 thread
-            runningThreadsCount.fetchAndAddRelaxed(-1);
+            appPTR->fetchAndAddNRunningThreads(-1);
         }
         assert(running == 0);
     }
@@ -855,8 +860,8 @@ Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         // activeThreadCount may be negative (for example if releaseThread() is called)
         int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
         
-        // Add the number of threads already running by the multiThreadSuite
-        activeThreadsCount += (int)runningThreadsCount;
+        // Add the number of threads already running by the multiThreadSuite + parallel renders
+        activeThreadsCount += appPTR->getNRunningThreads();
         
         // Clamp to 0
         activeThreadsCount = std::max( 0, activeThreadsCount);
@@ -880,7 +885,9 @@ Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
                 nThreadsPerEffect = 8;
             }
         }
-        *nCPUs = std::max(1,std::min(maxThreadsCount - activeThreadsCount, nThreadsPerEffect));
+        ///+1 because the current thread is going to wait during the multiThread call so we're better off
+        ///not counting it.
+        *nCPUs = std::max(1,std::min(maxThreadsCount - activeThreadsCount + 1, nThreadsPerEffect));
     }
 
     return kOfxStatOK;

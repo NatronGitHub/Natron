@@ -1993,7 +1993,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             ///If the plug-in is FULLY_SAFE_FRAME that means it wants the host to perform SMP aka slice up the RoI into chunks
             ///but if the effect doesn't support tiles it won't work.
             ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
-            if ( !tilesSupported || (nbThreads == -1) || (nbThreads == 1) || ( (nbThreads == 0) && (QThread::idealThreadCount() == 1) ) ||
+            if ( !tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
+                ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
                  ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ) {
                 safety = FULLY_SAFE;
             } else {

@@ -918,7 +918,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                           this,
                           ramBuffer);
         } else {
-            int rowsPerThread = std::ceil( (double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount() );
+            int rowsPerThread = std::ceil( (double)(texRectClipped.x2 - texRectClipped.x1) / appPTR->getHardwareIdealThreadCount() );
             // group of group of rows where first is image coordinate, second is texture coordinate
             QList< std::pair<int, int> > splitRows;
             int k = texRectClipped.y1;
@@ -931,7 +931,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
             ///if autoContrast is enabled, find out the vmin/vmax before rendering and mapping against new values
             if (autoContrast) {
-                rowsPerThread = std::ceil( (double)( roi.width() ) / (double)QThread::idealThreadCount() );
+                rowsPerThread = std::ceil( (double)( roi.width() ) / (double)appPTR->getHardwareIdealThreadCount() );
                 std::vector<RectI> splitRects;
                 k = roi.y1;
                 while (k < roi.y2) {

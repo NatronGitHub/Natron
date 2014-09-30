@@ -317,6 +317,18 @@ public:
     
     void getNThreadsSettings(int* nThreadsToRender,int* nThreadsPerEffect) const;
     
+    /**
+     * @brief Updates the global runningThreadsCount maintained across the whole application
+     **/
+    void fetchAndAddNRunningThreads(int nThreads);
+    
+    /**
+     * @brief Returns the number of threads that were launched by Natron for rendering.
+     * This sums up threads launched by the multi-thread suite and threads launched for 
+     * parallel rendering.
+     **/
+    int getNRunningThreads() const;
+    
 public slots:
     
 
