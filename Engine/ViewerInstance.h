@@ -20,6 +20,7 @@
 
 namespace Natron {
 class Image;
+class FrameEntry;
 namespace Color {
 class Lut;
 }
@@ -29,7 +30,7 @@ class OpenGLViewerI;
 struct TextureRect;
 
 class ViewerInstance
-    : public QObject, public Natron::OutputEffectInstance
+: public QObject, public Natron::OutputEffectInstance, public LockManagerI<Natron::FrameEntry>
 {
     Q_OBJECT
 
@@ -149,7 +150,11 @@ public:
     bool isFrameRangeLocked() const;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
-
+    
+    virtual void lock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL;
+    
+    virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL ;
+    
 public slots:
 
 

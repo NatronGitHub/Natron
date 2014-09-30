@@ -142,6 +142,10 @@ struct ValueSerialization
             }
             ar & boost::serialization::make_nvp("Value", v);
             ar & boost::serialization::make_nvp("Label", label);
+            assert(_extraData);
+            ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
+            data->_choiceString = label;
+            
         } else if (isString) {
             std::string v = isString->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
@@ -280,7 +284,7 @@ class KnobSerialization
     std::list< Curve > parametricCurves;
     std::list<Double_Knob::SerializedTrack> slavedTracks; //< same as for master, can't be used right away when deserializing
     
-    TypeExtraData* _extraData;
+    mutable TypeExtraData* _extraData;
 
     
     friend class boost::serialization::access;
@@ -292,6 +296,8 @@ class KnobSerialization
         AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( _knob.get() );
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>( _knob.get() );
         Double_Knob* isDouble = dynamic_cast<Double_Knob*>( _knob.get() );
+     
+        
         std::string name = _knob->getName();
         ar & boost::serialization::make_nvp("Name",name);
         ar & boost::serialization::make_nvp("Type",_typeName);
@@ -300,7 +306,7 @@ class KnobSerialization
         ar & boost::serialization::make_nvp("Secret",secret);
 
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(_knob,NULL,i,true);
+            ValueSerialization vs(_knob,_extraData,i,true);
             ar & boost::serialization::make_nvp("item",vs);
         }
 
@@ -354,7 +360,7 @@ class KnobSerialization
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>( _knob.get() );
         Double_Knob* isDouble = dynamic_cast<Double_Knob*>( _knob.get() );
         Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( _knob.get() );
-        if (isChoice) {
+        if (isChoice && !_extraData) {
             _extraData = new ChoiceExtraData;
             
         }
@@ -421,6 +427,12 @@ public:
         }
         _typeName = knob->typeName();
         _dimension = knob->getDimension();
+        
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( _knob.get() );
+        if (isChoice) {
+            _extraData = new ChoiceExtraData;
+            
+        }
     }
 
     ///Constructor used to deserialize: It will try to deserialize the next knob in the archive

@@ -49,6 +49,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/CacheEntry.h"
 #include "Engine/LRUHashTable.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/ImageLocker.h"
 #include "Global/MemoryInfo.h"
 ///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
 //#define NATRON_DEBUG_CACHE
@@ -108,6 +109,7 @@ signals:
 };
 
 
+    
 /*
  * ValueType must be derived of CacheEntryHelper
  */
@@ -294,95 +296,8 @@ public:
     {
         ///lock the cache before reading it.
         QMutexLocker locker(&_lock);
-
-        ///find a matching value in the internal memory container
-        CacheIterator memoryCached = _memoryCache( key.getHash() );
-
-        if ( memoryCached != _memoryCache.end() ) {
-            /*we found something with a matching hash key. There may be several entries linked to
-                this key, we need to find one with matching params*/
-            std::list<CachedValue> & ret = getValueFromIterator(memoryCached);
-            for (typename std::list<CachedValue>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
-                if (it->entry->getKey() == key) {
-                    *returnValue = it->entry;
-                    *params = it->params;
-
-                    ///emit te added signal otherwise when first reading something that's already cached
-                    ///the timeline wouldn't update
-                    if (_signalEmitter) {
-                        _signalEmitter->emitAddedEntry( key.getTime() );
-                    }
-
-                    return true;
-                }
-            }
-
-            return false;
-        } else {
-            ///fallback on the disk cache internal container
-            CacheIterator diskCached = _diskCache( key.getHash() );
-
-            if ( diskCached == _diskCache.end() ) {
-                /*the entry was neither in memory or disk, just allocate a new one*/
-                return false;
-            } else {
-                /*we found something with a matching hash key. There may be several entries linked to
-                     this key, we need to find one with matching values(operator ==)*/
-                std::list<CachedValue> & ret = getValueFromIterator(diskCached);
-
-                for (typename std::list<CachedValue>::iterator it = ret.begin();
-                     it != ret.end(); ++it) {
-                    if (it->entry->getKey() == key) {
-                        /*If we found 1 entry in the list that has exactly the same key params,
-                           we re-open the mapping to the RAM put the entry
-                           back into the memoryCache.*/
-
-                        if ( ret.empty() ) {
-                            _diskCache.erase(diskCached);
-                        }
-
-                        try {
-                            it->entry->reOpenFileMapping();
-                        } catch (const std::exception & e) {
-                            qDebug() << "Error while reopening cache file: " << e.what();
-                            ret.erase(it);
-
-                            return false;
-                        } catch (...) {
-                            qDebug() << "Error while reopening cache file";
-                            ret.erase(it);
-
-                            return false;
-                        }
-
-                        //put it back into the RAM
-                        _memoryCache.insert(it->entry->getHashKey(),*it);
-
-                        //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
-                        while (_memoryCacheSize > _maximumInMemorySize) {
-                            if ( !tryEvictEntry() ) {
-                                break;
-                            }
-                        }
-
-                        *returnValue = it->entry;
-                        *params = it->params;
-                        ret.erase(it);
-                        ///emit te added signal otherwise when first reading something that's already cached
-                        ///the timeline wouldn't update
-                        if (_signalEmitter) {
-                            _signalEmitter->emitAddedEntry( key.getTime() );
-                        }
-
-                        return true;
-                    }
-                }
-
-                /*if we reache here it means no entries linked to the hash key matches the params,then
-                     we allocate a new one*/
-                return false;
-            }
-        }
+        return getInternal(key,params,returnValue);
+        
     } // get
 
     /**
@@ -393,25 +308,36 @@ public:
      * the hash key. It is a safe place to cache any extra data that is relative to an entry,
      * but doesn't make it an identifier of that entry. The base class just adds the necessary
      * infos for the cache to be able to instantiate a new entry (that is the cost and the elements count).
+     *
      * @param key The key identifying the entry we're looking for.
+     *
      * @param params The non unique parameters. They do not help to identify they entry, rather
      * this class can be used to cache other parameters along with the value_type.
+     *
+     * @param imageLocker A pointer to an ImageLockerI which will lock the image if it was freshly
+     * created so that you can call allocateMemory() safely without another thread accessing it.
+     *
      * @param [out] returnValue The returnValue, contains the cache entry.
      * Internally the allocation of the new entry might fail on the requested device,
      * e.g: if you ask for an entry with a large cost, the cache will try to put the
      * entry on disk to preserve it, but if the allocation failed it will fallback
      * on RAM instead.
+     *
      * Either way the returnValue parameter can never be NULL.
      * @returns True if the cache successfully found an entry matching the key.
      * False otherwise.
      **/
     bool getOrCreate(const typename EntryType::key_type & key,
                      NonKeyParamsPtr params,
+                     ImageLockerHelper<EntryType>* imageLocker,
                      EntryTypePtr* returnValue) const
     {
         NonKeyParamsPtr cachedParams;
 
-        if ( !get(key,&cachedParams,returnValue) ) {
+        ///Be atomic, so it cannot be created by another thread in the meantime
+        QMutexLocker locker(&_lock);
+        
+        if ( !getInternal(key,&cachedParams,returnValue) ) {
             
             ///Before allocating the memory check that there's enough space to fit in memory
             appPTR->checkCacheFreeMemoryIsGoodEnough();
@@ -430,9 +356,7 @@ public:
                 ++safeCounter;
             }
             
-            ///lock the cache before writing it.
-            QMutexLocker locker(&_lock);
-            *returnValue = newEntry(key,params);
+            *returnValue = newEntry(key,params,imageLocker);
 
             return false;
         } else {
@@ -651,7 +575,7 @@ public:
     {
         ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
         ///lock should already be taken.
-        assert( !_lock.tryLock() );
+        QMutexLocker locker(&_lock);
         _memoryCacheSize += size;
         if (_signalEmitter) {
             _signalEmitter->emitAddedEntry(time);
@@ -939,8 +863,8 @@ public:
                 QMutexLocker locker(&_lock);
                 
                 try {
-                    value = new EntryType(it->key,it->params,this);
-                    value->allocateMemory( true, storage, QString( getCachePath() + QDir::separator() ).toStdString() );
+                    value = new EntryType(it->key,it->params,this,storage, QString( getCachePath() + QDir::separator() ).toStdString());
+                    value->restoreMemory();
                 } catch (const std::bad_alloc & e) {
                     qDebug() << e.what();
                     continue;
@@ -957,12 +881,110 @@ public:
 
 private:
 
+    
+    bool getInternal(const typename EntryType::key_type & key,
+             NonKeyParamsPtr* params,
+             EntryTypePtr* returnValue) const
+    {
+        ///Private should be locked
+        assert(!_lock.tryLock());
+        
+        ///find a matching value in the internal memory container
+        CacheIterator memoryCached = _memoryCache( key.getHash() );
+        
+        if ( memoryCached != _memoryCache.end() ) {
+            ///we found something with a matching hash key. There may be several entries linked to
+             ///this key, we need to find one with matching params
+            std::list<CachedValue> & ret = getValueFromIterator(memoryCached);
+            for (typename std::list<CachedValue>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
+                if (it->entry->getKey() == key) {
+                    *returnValue = it->entry;
+                    *params = it->params;
+                    
+                    ///emit te added signal otherwise when first reading something that's already cached
+                    ///the timeline wouldn't update
+                    if (_signalEmitter) {
+                        _signalEmitter->emitAddedEntry( key.getTime() );
+                    }
+                    
+                    return true;
+                }
+            }
+            
+            return false;
+        } else {
+            ///fallback on the disk cache internal container
+            CacheIterator diskCached = _diskCache( key.getHash() );
+            
+            if ( diskCached == _diskCache.end() ) {
+                /*the entry was neither in memory or disk, just allocate a new one*/
+                return false;
+            } else {
+                /*we found something with a matching hash key. There may be several entries linked to
+                 this key, we need to find one with matching values(operator ==)*/
+                std::list<CachedValue> & ret = getValueFromIterator(diskCached);
+                
+                for (typename std::list<CachedValue>::iterator it = ret.begin();
+                     it != ret.end(); ++it) {
+                    if (it->entry->getKey() == key) {
+                        /*If we found 1 entry in the list that has exactly the same key params,
+                         we re-open the mapping to the RAM put the entry
+                         back into the memoryCache.*/
+                        
+                        if ( ret.empty() ) {
+                            _diskCache.erase(diskCached);
+                        }
+                        
+                        try {
+                            it->entry->reOpenFileMapping();
+                        } catch (const std::exception & e) {
+                            qDebug() << "Error while reopening cache file: " << e.what();
+                            ret.erase(it);
+                            
+                            return false;
+                        } catch (...) {
+                            qDebug() << "Error while reopening cache file";
+                            ret.erase(it);
+                            
+                            return false;
+                        }
+                        
+                        //put it back into the RAM
+                        _memoryCache.insert(it->entry->getHashKey(),*it);
+                        
+                        //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
+                        while (_memoryCacheSize > _maximumInMemorySize) {
+                            if ( !tryEvictEntry() ) {
+                                break;
+                            }
+                        }
+                        
+                        *returnValue = it->entry;
+                        *params = it->params;
+                        ret.erase(it);
+                        ///emit te added signal otherwise when first reading something that's already cached
+                        ///the timeline wouldn't update
+                        if (_signalEmitter) {
+                            _signalEmitter->emitAddedEntry( key.getTime() );
+                        }
+                        
+                        return true;
+                    }
+                }
+                
+                /*if we reache here it means no entries linked to the hash key matches the params,then
+                 we allocate a new one*/
+                return false;
+            }
+        }
+    }
 
     /** @brief Allocates a new entry by the cache. On failure a NULL pointer is returned.
      * The storage is then handled by the cache solely.
      **/
     EntryTypePtr newEntry(const typename EntryType::key_type & key,
-                          const NonKeyParamsPtr & params) const
+                          const NonKeyParamsPtr & params,
+                          ImageLockerHelper<EntryType>* imageLocker) const
     {
         assert( !_lock.tryLock() );   // must be locked
         EntryTypePtr entryptr;
@@ -990,12 +1012,18 @@ private:
         ///true. This is likely because the other cache is taking all the memory.
         // We still allocate the entry because otherwise we would never be able to continue the render.
         try {
-            entryptr.reset( new EntryType(key,params,this) );
-            entryptr->allocateMemory( false, storage, QString( getCachePath() + QDir::separator() ).toStdString() );
+            entryptr.reset( new EntryType(key,params,this,storage,
+                                        storage == Natron::DISK ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
+
+            ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
+            
         } catch (const std::bad_alloc & e) {
             return EntryTypePtr();
         }
 
+        
+        imageLocker->lock(entryptr);
+        
         CachedValue cachedValue;
         cachedValue.entry = entryptr;
         cachedValue.params = params;

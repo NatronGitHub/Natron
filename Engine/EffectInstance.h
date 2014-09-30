@@ -19,6 +19,7 @@
 #include "Global/KeySymbols.h"
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/Rect.h"
+#include "Engine/ImageLocker.h"
 
 class Hash64;
 class Format;
@@ -39,6 +40,7 @@ class ImageParams;
  **/
 class EffectInstance
     : public NamedKnobHolder
+    , public LockManagerI<Natron::Image>
 {
 public:
 
@@ -434,6 +436,10 @@ public:
      * @brief Returns the output aspect ratio to render with
      **/
     virtual double getPreferredAspectRatio() const { return 1.; }
+
+    virtual void lock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL;
+    virtual void unlock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL ;
+
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -1103,22 +1109,7 @@ private:
 };
 
 
-/**
- * @brief This object locks an image for writing (and waits until it can lock it) and releases
- * the lock when it is destroyed.
- **/
-class OutputImageLocker
-{
-    Natron::Node* n;
-    boost::shared_ptr<Natron::Image> img;
 
-public:
-
-    OutputImageLocker(Natron::Node* node,
-                      const boost::shared_ptr<Natron::Image> & image);
-
-    ~OutputImageLocker();
-};
 
 
 /**

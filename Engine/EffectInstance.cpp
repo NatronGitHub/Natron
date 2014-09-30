@@ -40,6 +40,7 @@
 #include "Engine/Settings.h"
 #include "Engine/RotoContext.h"
 #include "Engine/OutputSchedulerThread.h"
+
 using namespace Natron;
 
 
@@ -47,18 +48,6 @@ class File_Knob;
 class OutputFile_Knob;
 
 
-OutputImageLocker::OutputImageLocker(Natron::Node* node,
-                                     const boost::shared_ptr<Natron::Image> & image)
-    : n (node), img(image)
-{
-    assert(n && img);
-    n->addImageBeingRendered(img);
-}
-
-OutputImageLocker::~OutputImageLocker()
-{
-    n->removeImageBeingRendered(img);
-}
 
 namespace  {
     struct ActionKey {
@@ -534,6 +523,19 @@ EffectInstance::~EffectInstance()
         appPTR->removeAllImagesFromCacheWithMatchingKey( getHash() );
     }
     clearPluginMemoryChunks();
+}
+
+
+void
+EffectInstance::lock(const boost::shared_ptr<Natron::Image>& entry)
+{
+    _node->lock(entry);
+}
+
+void
+EffectInstance::unlock(const boost::shared_ptr<Natron::Image>& entry)
+{
+    _node->unlock(entry);
 }
 
 void
@@ -1151,7 +1153,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if ( lastRenderedImage &&
              (lastRenderHash != nodeHash) ) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
-            OutputImageLocker imgLocker(_node.get(),lastRenderedImage);
+            ImageLocker imgLocker(this,lastRenderedImage);
             ///once we got it remove it from the cache
             appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
             {
@@ -1166,12 +1168,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ////Lock the output image so that multiple threads do not access for writing at the same time.
     ////When it goes out of scope the lock will be released automatically
-    boost::shared_ptr<OutputImageLocker> imageLock;
+    boost::shared_ptr<ImageLocker> imageLock;
 
     if (isCached) {
         assert(cachedImgParams && image);
 
-        imageLock.reset( new OutputImageLocker(_node.get(),image) );
+        imageLock.reset( new ImageLocker(this,image) );
 
         if ( cachedImgParams->isRodProjectFormat() ) {
             ////If the image was cached with a RoD dependent on the project format, but the project format changed,
@@ -1356,13 +1358,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                     inputTimeIdentity,
                                                     framesNeeded);
 
+        imageLock.reset( new ImageLocker(this) );
+        
         ///even though we called getImage before and it returned false, it may now
         ///return true if another thread created the image in the cache, so we can't
         ///make any assumption on the return value of this function call.
         ///
         ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
         boost::shared_ptr<Image> newImage;
-        bool cached = appPTR->getImageOrCreate(key, cachedImgParams, &newImage);
+        bool cached = appPTR->getImageOrCreate(key, cachedImgParams, imageLock.get(), &newImage);
         if (!newImage) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
@@ -1373,7 +1377,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         assert(newImage);
         assert(newImage->getRoD() == rod);
-        imageLock.reset( new OutputImageLocker(_node.get(),newImage) );
+        
+        ///Take the lock for the output image flagging that we're accessing it.
+        ///If !cached the lock has already been taken, we just have to allocate memory for the image
+        if (cached) {
+            imageLock->lock(newImage);
+        } else {
+            newImage->allocateMemory();
+        }
 
         if (cached && byPassCache) {
             ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so

@@ -2617,7 +2617,7 @@ NodeGraphPrivate::copyNodesInternal(NodeClipBoard & clipboard)
     }
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode() ) );
+        boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
         boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
         (*it)->serialize( nGuiS.get() );
         clipboard.nodes.push_back(ns);

@@ -22,6 +22,7 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QtCore/QThreadPool>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
+#include <QtCore/QAtomicInt>
 CLANG_DIAG_ON(deprecated-register)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
@@ -63,6 +64,9 @@ CLANG_DIAG_ON(deprecated-register)
 
 using namespace Natron;
 
+// This corresponds to the active number of threads launched by the thread-pool
+static QAtomicInt runningThreadsCount;
+
 Natron::OfxHost::OfxHost()
     : _imageEffectPluginCache( new OFX::Host::ImageEffect::PluginCache(*this) )
     , _ofxPlugins()
@@ -71,6 +75,7 @@ Natron::OfxHost::OfxHost()
     , _pluginsMutexesLock(new QMutex)
 #endif
 {
+    runningThreadsCount = 0;
 }
 
 Natron::OfxHost::~OfxHost()
@@ -668,6 +673,9 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
 }
 
 #else
+    
+
+    
 class OfxThread
     : public QThread
 {
@@ -792,11 +800,17 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
         unsigned int j = 0; // index of first running thread. all threads before this one are finished running
         while (j < nThreads) {
             // have no more than maxConcurrentThread threads launched at the same time
+            int threadsStarted = 0;
             while (i < nThreads && running < maxConcurrentThread) {
                 threads[i]->start();
                 ++i;
                 ++running;
+                ++threadsStarted;
             }
+            
+            ///We just started threadsStarted threads
+            runningThreadsCount.fetchAndAddRelaxed(threadsStarted);
+            
             // now we've got at most maxConcurrentThread running. wait for each thread and launch a new one
             threads[j]->wait();
             assert( !threads[j]->isRunning() );
@@ -804,6 +818,9 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
             delete threads[j];
             ++j;
             --running;
+            
+            ///We just stopped 1 thread
+            runningThreadsCount.fetchAndAddRelaxed(-1);
         }
         assert(running == 0);
     }
@@ -828,16 +845,42 @@ Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+    
+    int nThreadsToRender,nThreadsPerEffect;
+    appPTR->getNThreadsSettings(&nThreadsToRender, &nThreadsPerEffect);
+    
+    if (nThreadsToRender == -1) {
         *nCPUs = 1;
     } else {
         // activeThreadCount may be negative (for example if releaseThread() is called)
-        int activeThreadsCount = std::max( 0,QThreadPool::globalInstance()->activeThreadCount() );
+        int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
+        
+        // Add the number of threads already running by the multiThreadSuite
+        activeThreadsCount += (int)runningThreadsCount;
+        
+        // Clamp to 0
+        activeThreadsCount = std::max( 0, activeThreadsCount);
+        
         assert(activeThreadsCount >= 0);
+        
         // better than QThread::idealThreadCount();, because it can be set by a global preference:
         int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
         assert(maxThreadsCount >= 0);
-        *nCPUs = std::max(1, maxThreadsCount - activeThreadsCount);
+        
+        if (nThreadsPerEffect == 0) {
+            ///Simple heuristic: limit 1 effect to start at most 8 threads because otherwise it might spend too much
+            ///time scheduling than just processing
+            int hwConcurrency = appPTR->getHardwareIdealThreadCount();
+            
+            if (hwConcurrency <= 0) {
+                nThreadsPerEffect = 1;
+            } else if (hwConcurrency <= 8) {
+                nThreadsPerEffect = hwConcurrency;
+            } else {
+                nThreadsPerEffect = 8;
+            }
+        }
+        *nCPUs = std::max(1,std::min(maxThreadsCount - activeThreadsCount, nThreadsPerEffect));
     }
 
     return kOfxStatOK;

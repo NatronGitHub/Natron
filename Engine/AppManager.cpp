@@ -89,6 +89,11 @@ struct AppManagerPrivate
     QMutex  cpuIdleTimeMutex;
     U64 cpuIdleTime;
     U64 cpuTotalTime;
+    int idealThreadCount;
+    
+    int nThreadsToRender;
+    int nThreadsPerEffect;
+    mutable QMutex nThreadsMutex;
     
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
@@ -116,7 +121,10 @@ struct AppManagerPrivate
           ,cpuIdleTimeMutex()
           ,cpuIdleTime(0)
           ,cpuTotalTime(0)
-
+          ,idealThreadCount(0)
+          ,nThreadsToRender(0)
+          ,nThreadsPerEffect(0)
+          ,nThreadsMutex()
     {
         setMaxCacheFiles();
         sigar_open(&sigarInfos);
@@ -144,6 +152,12 @@ struct AppManagerPrivate
      **/
     void setMaxCacheFiles();
 };
+
+int
+AppManager::getHardwareIdealThreadCount()
+{
+    return _imp->idealThreadCount;
+}
 
 void
 AppManager::printBackGroundWelcomeMessage()
@@ -343,6 +357,9 @@ AppManager::load(int &argc,
     }
     initializeQApp(argc, argv);
 
+    _imp->idealThreadCount = QThread::idealThreadCount();
+
+    
     assert(argv);
     if (!hadArgs) {
         delete [] argv[0];
@@ -1108,9 +1125,10 @@ AppManager::getImage(const Natron::ImageKey & key,
 bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              boost::shared_ptr<Natron::ImageParams> params,
+                             ImageLocker* imageLocker,
                              boost::shared_ptr<Natron::Image>* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key,params,returnValue);
+    return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
 }
 
 bool
@@ -1132,9 +1150,10 @@ AppManager::getTexture(const Natron::FrameKey & key,
 bool
 AppManager::getTextureOrCreate(const Natron::FrameKey & key,
                                boost::shared_ptr<Natron::FrameParams> params,
+                               FrameEntryLocker* entryLocker,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
-    return _imp->_viewerCache->getOrCreate(key, params,returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params,entryLocker,returnValue);
 }
 
 U64
@@ -1768,6 +1787,29 @@ AppManager::resetCPUIdleTime()
     _imp->cpuIdleTime = cpuInfos.idle;
     _imp->cpuTotalTime = cpuInfos.user + cpuInfos.sys + cpuInfos.idle;
 
+}
+
+void
+AppManager::setNThreadsToRender(int nThreads)
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    _imp->nThreadsToRender = nThreads;
+}
+
+void
+AppManager::getNThreadsSettings(int* nThreadsToRender,int* nThreadsPerEffect) const
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    *nThreadsToRender = _imp->nThreadsToRender;
+    *nThreadsPerEffect = _imp->nThreadsPerEffect;
+}
+
+
+void
+AppManager::setNThreadsPerEffect(int nThreadsPerEffect)
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    _imp->nThreadsPerEffect = nThreadsPerEffect;
 }
 
 namespace Natron {

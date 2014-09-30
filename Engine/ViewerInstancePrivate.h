@@ -194,6 +194,10 @@ public:
     QMutex lastRenderedTextureMutex;
     U64 lastRenderHash;
     boost::shared_ptr<Natron::FrameEntry> lastRenderedTexture;
+    
+    mutable QMutex textureBeingRenderedMutex;
+    QWaitCondition textureBeingRenderedCond;
+    std::list< boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
 };
 
 //} // namespace Natron

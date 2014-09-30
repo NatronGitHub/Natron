@@ -25,7 +25,7 @@ CLANG_DIAG_ON(deprecated)
 #endif
 
 #include "Engine/KnobFactory.h"
-
+#include "Engine/ImageLocker.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -38,6 +38,7 @@ class Settings;
 class KnobHolder;
 class NodeSerialization;
 class KnobSerialization;
+
 namespace Natron {
 class Node;
 class EffectInstance;
@@ -170,12 +171,14 @@ public:
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
     bool getImageOrCreate(const Natron::ImageKey & key,boost::shared_ptr<Natron::ImageParams> params,
+                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
 
     bool getTexture(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams>* params,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     bool getTextureOrCreate(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams> params,
+                            FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     U64 getCachesTotalMemorySize() const;
@@ -214,10 +217,7 @@ public:
 
     virtual void setLoadingStatus(const QString & str);
 
-    /**
-     * @brief Toggle on/off multi-threading globally in Natron
-     **/
-    void setNumberOfThreads(int threadsNb);
+  
 
     const QString & getApplicationBinaryPath() const;
     static bool parseCmdLineArgs(int argc,char* argv[],
@@ -294,8 +294,31 @@ public:
      * @brief Reset the CPU Idle time tracked, this is to be called when starting a new render
      **/
     void resetCPUIdleTime();
+
+    int getHardwareIdealThreadCount();
+    
+    
+    /**
+     * @brief Toggle on/off multi-threading globally in Natron
+     **/
+    void setNumberOfThreads(int threadsNb);
+    
+    /**
+     * @brief The value held by the Number of render threads settings.
+     * It is stored it for faster access (1 mutex instead of 3 read/write locks)
+     *
+     * WARNING: This has nothing to do with the setNumberOfThreads function!
+     * This function is just called by the Settings so that the getNThreadsSettings
+     * function is cheap (no need to pass by the Knob API), whereas the 
+     * setNumberOfThreads function actually set the value of the Knob in the settings!
+     **/
+    void setNThreadsToRender(int nThreads);
+    void setNThreadsPerEffect(int nThreadsPerEffect);
+    
+    void getNThreadsSettings(int* nThreadsToRender,int* nThreadsPerEffect) const;
     
 public slots:
+    
 
     ///Closes the application not saving any projects.
     virtual void exitApp();
@@ -402,9 +425,10 @@ getImageFromCache(const Natron::ImageKey & key,
 inline bool
 getImageFromCacheOrCreate(const Natron::ImageKey & key,
                           boost::shared_ptr<Natron::ImageParams> params,
+                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image> *returnValue)
 {
-    return appPTR->getImageOrCreate(key,params, returnValue);
+    return appPTR->getImageOrCreate(key,params, imageLocker, returnValue);
 }
 
 inline bool
@@ -418,9 +442,10 @@ getTextureFromCache(const Natron::FrameKey & key,
 inline bool
 getTextureFromCacheOrCreate(const Natron::FrameKey & key,
                             boost::shared_ptr<Natron::FrameParams> params,
+                            FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue)
 {
-    return appPTR->getTextureOrCreate(key,params,returnValue);
+    return appPTR->getTextureOrCreate(key,params,entryLocker, returnValue);
 }
 } // namespace Natron
 

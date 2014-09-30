@@ -405,12 +405,16 @@ public:
      **/
     CacheEntryHelper(const KeyType & key,
                      const boost::shared_ptr<NonKeyParams> & params,
-                     const CacheAPI* cache)
+                     const CacheAPI* cache,
+                     Natron::StorageMode storage,
+                     const std::string & path)
         : _key(key)
           , _params(params)
           , _data()
           , _cache(cache)
           , _removeBackingFileBeforeDestruction(false)
+          , _requestedPath(path)
+          , _requestedStorage(storage)
     {
     }
 
@@ -424,37 +428,52 @@ public:
 
     void setCacheEntry(const KeyType & key,
                        const boost::shared_ptr<NonKeyParams> & params,
-                       const CacheAPI* cache)
+                       const CacheAPI* cache,
+                       Natron::StorageMode storage,
+                       const std::string & path)
     {
         assert(!_params && _cache == NULL);
         _key = key;
         _params = params;
         _cache = cache;
+        _requestedPath = path;
+        _requestedStorage = storage;
     }
 
     /**
      * @brief Allocates the memory required by the cache entry. It allocates enough memory to contain at least the
      * memory specified by the key.
-     * @param restore If true then the entry will try to restore its buffer from a file pointed to
-     * by path.
-     * @param path The path of the file where to save/restore the buffer. If empty then it assumes
-     * the buffer will be in RAM, hence volatile.
-     *
      * WARNING: This function throws a std::bad_alloc if the allocation fails.
      **/
-    void allocateMemory(bool restore,
-                        Natron::StorageMode storage,
-                        const std::string & path)
+    void allocateMemory()
     {
-        if (storage == Natron::NO_STORAGE) {
+        if (_requestedStorage == Natron::NO_STORAGE) {
             return;
         }
 
-        if (restore) {
-            restoreBufferFromFile(path);
-        } else {
-            allocate(_params->getElementsCount(),storage,path);
+        allocate(_params->getElementsCount(),_requestedStorage,_requestedPath);
+        
+        if (_cache) {
+            _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
         }
+        onMemoryAllocated();
+    }
+    
+    /**
+     * @brief To be called for disk-cached entries when restoring them from a file.
+     * The file-path will be the one passed to the constructor
+     * WARNING: This function throws a std::bad_alloc if the allocation fails.
+     **/
+    void restoreMemory()
+    {
+        if (_requestedStorage == Natron::NO_STORAGE) {
+            return;
+        }
+        
+        assert(!_requestedPath.empty());
+        
+        restoreBufferFromFile(_requestedPath);
+        
         if (_cache) {
             _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
         }
@@ -625,6 +644,7 @@ private:
                 fileName = generateStringFromHash(path);
             } catch (const std::invalid_argument & e) {
                 std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
+                return;
             }
         }
         _data.allocate(count, storage, fileName);
@@ -643,13 +663,11 @@ private:
             fileName = generateStringFromHash(path);
         } catch (const std::invalid_argument & e) {
             std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
+            return;
         }
 
-        try {
-            _data.restoreBufferFromFile(fileName);
-        } catch (const std::bad_alloc & e) {
-            throw e;
-        }
+        _data.restoreBufferFromFile(fileName);
+       
     }
 
 protected:
@@ -659,6 +677,8 @@ protected:
     Buffer<DataType> _data;
     const CacheAPI* _cache;
     bool _removeBackingFileBeforeDestruction;
+    std::string _requestedPath;
+    Natron::StorageMode _requestedStorage;
 };
 }
 
