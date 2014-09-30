@@ -2774,6 +2774,20 @@ ViewerTab::setInfobarVisible(bool visible)
     QMutexLocker l(&_imp->_visibleToolbarsMutex);
     _imp->_infobarVisible = visible;
     for (int i = 0; i < 2; ++i) {
+        if (i == 1) {
+            int inputIndex = -1;
+            
+            for (InputNamesMap::iterator it = _imp->_inputNamesMap.begin(); it != _imp->_inputNamesMap.end(); ++it) {
+                if (it->second.name == _imp->_secondInputImage->getCurrentIndexText()) {
+                    inputIndex = it->first;
+                    break;
+                }
+            }
+            if (getCompositingOperator() == OPERATOR_NONE || inputIndex == -1) {
+                continue;
+            }
+        }
+        
         _imp->_infosWidget[i]->setVisible(_imp->_infobarVisible);
     }
 

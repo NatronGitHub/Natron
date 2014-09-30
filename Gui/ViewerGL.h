@@ -82,8 +82,8 @@ public:
     /**
      *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX) in canonical coordinates
      **/
-    // MT-SAFE: don't return a reference
-    RectD getRoD(int textureIndex) const;
+    // MT-SAFE: used only by the main-thread, can return a const ref
+    const RectD& getRoD(int textureIndex) const;
 
 
     /**

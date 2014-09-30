@@ -2470,9 +2470,10 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     }
     Format dispW = getDisplayWindow();
     for (int i = 0; i < 2; ++i) {
-        RectD rod = getRoD(i);
+        const RectD& rod = getRoD(i);
         updateInfoWidgetColorPicker(zoomPos, e->pos(), width(), height(), rod, dispW, i);
     }
+    
     //update the cursor if it is hovering an overlay and we're not dragging the image
     bool userRoIEnabled;
     RectD userRoI;
@@ -2779,7 +2780,7 @@ ViewerGL::updateColorPicker(int textureIndex,
                             int x,
                             int y)
 {
-    if (_imp->pickerState != PICKER_INACTIVE) {
+    if (_imp->pickerState != PICKER_INACTIVE || _imp->viewerTab->getGui()->isGUIFrozen()) {
         return;
     }
 
@@ -3021,7 +3022,7 @@ ViewerGL::disconnectViewer()
 }
 
 /* The dataWindow of the currentFrame(BBOX) in canonical coordinates */
-RectD
+const RectD&
 ViewerGL::getRoD(int textureIndex) const
 {
     // always running in the main thread
@@ -3047,8 +3048,11 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
     _imp->currentViewerInfos[textureIndex].setRoD(rod);
-    if (_imp->infoViewer[textureIndex]) {
+    if (_imp->infoViewer[textureIndex] && !_imp->viewerTab->getGui()->isGUIFrozen()) {
         _imp->infoViewer[textureIndex]->setDataWindow(rod);
     }
 
@@ -3752,6 +3756,10 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                                       const RectD & dispW, // in canonical coordinates
                                       int texIndex)
 {
+    if (_imp->viewerTab->getGui()->isGUIFrozen()) {
+        return;
+    }
+    
     if ( _imp->activeTextures[texIndex] &&
          ( imgPos.x() >= rod.left() ) &&
          ( imgPos.x() < rod.right() ) &&
