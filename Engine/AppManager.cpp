@@ -87,7 +87,7 @@ struct AppManagerPrivate
     
     mutable sigar_t* sigarInfos; // for CPU idle time
     QMutex  cpuIdleTimeMutex;
-    U64 cpuIdleTime;
+    qint64 cpuIdleTime;
     U64 cpuTotalTime;
     int idealThreadCount;
     
@@ -1746,24 +1746,26 @@ AppManager::evaluateBestNoConcurrentThreads(int currentNoThreads) const
 {
     sigar_cpu_t cpuInfos;
     
-    U64 idleTimeElapsed;
-    U64 totalTimeElapsed;
+    qint64 idleTimeElapsed;
+    qint64 totalTimeElapsed;
     {
         QMutexLocker l(&_imp->cpuIdleTimeMutex);
+        
+        ///sigar_cpu_get returns infos that are multiple of the numbers of logical cores on the hardware
         sigar_cpu_get(_imp->sigarInfos, &cpuInfos);
 
         idleTimeElapsed = cpuInfos.idle - _imp->cpuIdleTime;
-        U64 newTotalTime =  cpuInfos.user + cpuInfos.sys + cpuInfos.idle;
-        totalTimeElapsed = newTotalTime - _imp->cpuTotalTime;
+        totalTimeElapsed = cpuInfos.total - _imp->cpuTotalTime;
+        
+        ///No time has elapsed or invalid values, we can't interpret this
+        if (totalTimeElapsed <= 0 || idleTimeElapsed < 0) {
+            return currentNoThreads;
+        }
         _imp->cpuIdleTime = cpuInfos.idle;
-        _imp->cpuTotalTime = newTotalTime;
+        _imp->cpuTotalTime = cpuInfos.total;
     }
     
-    ///This can happen somehow, we don't treat this case
-    if (totalTimeElapsed == 0) {
-        return currentNoThreads;
-    }
-    
+
     double activityPercent =  1. - idleTimeElapsed / (double)totalTimeElapsed;    
     int ret;
     
@@ -1785,7 +1787,7 @@ AppManager::resetCPUIdleTime()
     QMutexLocker l(&_imp->cpuIdleTimeMutex);
     sigar_cpu_get(_imp->sigarInfos, &cpuInfos);
     _imp->cpuIdleTime = cpuInfos.idle;
-    _imp->cpuTotalTime = cpuInfos.user + cpuInfos.sys + cpuInfos.idle;
+    _imp->cpuTotalTime = cpuInfos.total;
 
 }
 
