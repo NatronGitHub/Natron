@@ -1162,7 +1162,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              (lastRenderHash != nodeHash) ) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
             ImageLocker imgLocker(this,lastRenderedImage);
-            imgLocker.lock(lastRenderedImage);
             ///once we got it remove it from the cache
             appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
             {
