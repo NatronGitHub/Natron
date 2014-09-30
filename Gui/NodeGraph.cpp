@@ -2704,16 +2704,18 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     boost::shared_ptr<NodeGui> gui = _gui->getApp()->getNodeGui(n);
     assert(gui);
 
+    int no = 1;
+    
     std::stringstream ss;
     ss << internalSerialization.getPluginLabel();
-    ss << (" - copy");
-    std::string bearName = ss.str();
-    int no = 0;
+    ss << '.';
+    ss << no;
     while ( _publicInterface->checkIfNodeNameExists( ss.str(),gui.get() ) ) {
         ++no;
         ss.str( std::string() );
         ss.clear();
-        ss << bearName;
+        ss << internalSerialization.getPluginLabel();
+        ss << '.';
         ss << no;
     }
 
