@@ -59,7 +59,6 @@ SOURCES += \
     DockablePanel.cpp \
     Edge.cpp \
     FromQtEnums.cpp \
-    GroupBoxLabel.cpp \
     Gui.cpp \
     GuiApplicationManager.cpp \
     GuiAppInstance.cpp \

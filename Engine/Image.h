@@ -137,7 +137,9 @@ public:
 
     Image(const ImageKey & key,
           const boost::shared_ptr<NonKeyParams> &  params,
-          const Natron::CacheAPI* cache);
+          const Natron::CacheAPI* cache,
+          Natron::StorageMode storage,
+          const std::string & path);
 
 
     /*This constructor can be used to allocate a local Image. The deallocation should

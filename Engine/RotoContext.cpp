@@ -4825,7 +4825,7 @@ RotoContext::renderMask(const RectI & roi,
     if ( lastRenderedImage &&
          ( lastRenderHash != hash.value() ) ) {
         ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
-        Natron::OutputImageLocker imgLocker(_imp->node,lastRenderedImage);
+        ImageLocker imgLocker(_imp->node->getLiveInstance(),lastRenderedImage);
         ///once we got it remove it from the cache
         appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
         {
@@ -4844,9 +4844,14 @@ RotoContext::renderMask(const RectI & roi,
         image.reset();
         params.reset();
     }
+    
+    ImageLocker imgLocker(_imp->node->getLiveInstance());
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
     if (cached) {
+        
+        imgLocker.lock(image);
+        
         if (cached && byPassCache) {
             ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
             ///we're sure renderRoIInternal will compute the whole image again.
@@ -4855,13 +4860,14 @@ RotoContext::renderMask(const RectI & roi,
             image->clearBitmap();
         }
     } else {
+        
         params = Natron::Image::makeParams( 0, nodeRoD, mipmapLevel, false,
                                             components,
                                             depth,
                                             -1, time,
                                             std::map<int, std::vector<RangeD> >() );
 
-        cached = appPTR->getImageOrCreate(key, params, &image);
+        cached = appPTR->getImageOrCreate(key, params, &imgLocker, &image);
         if (!image) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
@@ -4870,10 +4876,18 @@ RotoContext::renderMask(const RectI & roi,
 
             return image;
         }
-
-        if (cached && byPassCache) {
-            image->clearBitmap();
+        if (cached) {
+            
+            ///Image wasn't locked by the cache
+            imgLocker.lock(image);
+            
+            if (byPassCache) {
+                image->clearBitmap();
+            }
+        } else {
+            image->allocateMemory();
         }
+    
     }
 
     ///////////////////////////////////Render internal

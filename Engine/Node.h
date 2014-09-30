@@ -549,8 +549,9 @@ public:
      * rendering that image, this function will wait until the image is available for render again.
      * This is used internally by EffectInstance::renderRoI
      **/
-    void addImageBeingRendered(const boost::shared_ptr<Natron::Image> & image);
-    void removeImageBeingRendered(const boost::shared_ptr<Natron::Image> & image);
+    void lock(const boost::shared_ptr<Natron::Image>& entry);
+    void unlock(const boost::shared_ptr<Natron::Image>& entry);
+
 
     /**
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that

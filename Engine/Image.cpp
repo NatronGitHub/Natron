@@ -322,8 +322,10 @@ Natron::Bitmap::getBitmapAt(int x,
 
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<NonKeyParams> & params,
-             const Natron::CacheAPI* cache)
-    : CacheEntryHelper<unsigned char, ImageKey>(key, params, cache)
+             const Natron::CacheAPI* cache,
+             Natron::StorageMode storage,
+             const std::string & path)
+    : CacheEntryHelper<unsigned char, ImageKey>(key, params, cache,storage,path)
 {
      ImageParams* p = dynamic_cast<ImageParams*>( params.get() );
 
@@ -355,7 +357,10 @@ Image::Image(ImageComponents components,
                                                                           -1,
                                                                           0,
                                                                           std::map<int,std::vector<RangeD> >() ) ),
-                  NULL);
+                  NULL,
+                  Natron::RAM,
+                  std::string()
+                  );
 
     ImageParams* p = dynamic_cast<ImageParams*>( _params.get() );
     _components = components;
@@ -363,7 +368,8 @@ Image::Image(ImageComponents components,
     _rod = regionOfDefinition;
     _bounds = p->getBounds();
     _bitmap.initialize(_bounds);
-    allocateMemory(false,Natron::RAM, "");
+    
+    allocateMemory();
 }
 
 void

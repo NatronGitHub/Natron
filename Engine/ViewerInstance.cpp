@@ -425,11 +425,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     ////Lock the output image so that multiple threads do not access for writing at the same time.
     ////When it goes out of scope the lock will be released automatically
-    boost::shared_ptr<OutputImageLocker> imageLock;
+    boost::shared_ptr<ImageLocker> imageLock;
 
     if (isInputImgCached) {
         assert(inputImage);
-        imageLock.reset( new OutputImageLocker(getNode().get(),inputImage) );
+        imageLock.reset( new ImageLocker(this,inputImage) );
 
         inputIdentityNumber = cachedImgParams->getInputNbIdentity();
         inputIdentityTime = cachedImgParams->getInputTimeIdentity();
@@ -720,6 +720,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     } else { // !isCached
         /*We didn't find it in the viewer cache, hence we render
            the frame*/
+        
+        FrameEntryLocker entryLocker(this);
+        
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
@@ -741,9 +744,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             ramBuffer = (unsigned char*)_imp->buffer;
             usingRAMBuffer = true;
         } else {
+            
+            
+            
             boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
                 FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);
-            bool textureIsCached = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
+            bool textureIsCached = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &entryLocker, &params->cachedFrame);
             if (!params->cachedFrame) {
                 std::stringstream ss;
                 ss << "Failed to allocate a texture of ";
@@ -752,10 +758,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
                 return StatFailed;
             }
-            ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
-            ///are sure that this time the image was not in the cache and we created it because this functino
-            ///is not multi-threaded.
-            assert(!textureIsCached);
+            
+            if (!textureIsCached) {
+                params->cachedFrame->allocateMemory();
+            } else {
+                entryLocker.lock(params->cachedFrame);
+            }
 
             assert(params->cachedFrame);
             // how do you make sure cachedFrame->data() is not freed after this line?
@@ -2305,4 +2313,38 @@ boost::shared_ptr<TimeLine>
 ViewerInstance::getTimeline() const
 {
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
+}
+
+void
+ViewerInstance::lock(const boost::shared_ptr<Natron::FrameEntry>& entry)
+{
+    QMutexLocker l(&_imp->textureBeingRenderedMutex);
+    std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+    std::find(_imp->textureBeingRendered.begin(), _imp->textureBeingRendered.end(), entry);
+    
+    while ( it != _imp->textureBeingRendered.end() ) {
+        _imp->textureBeingRenderedCond.wait(&_imp->textureBeingRenderedMutex);
+        it = std::find(_imp->textureBeingRendered.begin(), _imp->textureBeingRendered.end(), entry);
+    }
+    ///Okay the image is not used by any other thread, claim that we want to use it
+    assert( it == _imp->textureBeingRendered.end() );
+    _imp->textureBeingRendered.push_back(entry);
+
+}
+
+void
+ViewerInstance::unlock(const boost::shared_ptr<Natron::FrameEntry>& entry)
+{
+    QMutexLocker l(&_imp->textureBeingRenderedMutex);
+    std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+    std::find(_imp->textureBeingRendered.begin(), _imp->textureBeingRendered.end(), entry);
+    
+    ///The image must exist, otherwise this is a bug
+    assert( it != _imp->textureBeingRendered.end() );
+    
+    _imp->textureBeingRendered.erase(it);
+    
+    ///Notify all waiting threads that we're finished
+    _imp->textureBeingRenderedCond.wakeAll();
+ 
 }

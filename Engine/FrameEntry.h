@@ -117,8 +117,10 @@ class FrameEntry
 public:
     FrameEntry(const FrameKey & key,
                const boost::shared_ptr<NonKeyParams> &  params,
-               const Natron::CacheAPI* cache)
-        : CacheEntryHelper<U8,FrameKey>(key,params,cache)
+               const Natron::CacheAPI* cache,
+               Natron::StorageMode storage,
+               const std::string & path)
+        : CacheEntryHelper<U8,FrameKey>(key,params,cache,storage,path)
     {
     }
 

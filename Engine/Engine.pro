@@ -122,6 +122,7 @@ HEADERS += \
     HistogramCPU.h \
     ImageInfo.h \
     Image.h \
+    ImageLocker.h \
     ImageSerialization.h \
     ImageParams.h \
     ImageParamsSerialization.h \

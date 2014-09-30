@@ -2347,7 +2347,7 @@ Node::isMaskEnabled(int inputNb) const
 }
 
 void
-Node::addImageBeingRendered(const boost::shared_ptr<Natron::Image> & image)
+Node::lock(const boost::shared_ptr<Natron::Image> & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
     std::list<boost::shared_ptr<Natron::Image> >::iterator it =
@@ -2363,7 +2363,7 @@ Node::addImageBeingRendered(const boost::shared_ptr<Natron::Image> & image)
 }
 
 void
-Node::removeImageBeingRendered(const boost::shared_ptr<Natron::Image> & image)
+Node::unlock(const boost::shared_ptr<Natron::Image> & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
     std::list<boost::shared_ptr<Natron::Image> >::iterator it =

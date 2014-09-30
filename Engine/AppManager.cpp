@@ -1021,11 +1021,12 @@ AppManager::getImage(const Natron::ImageKey & key,
 bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              boost::shared_ptr<Natron::ImageParams> params,
+                             ImageLocker* imageLocker,
                              boost::shared_ptr<Natron::Image>* returnValue) const
 {
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getImage");
-    bool ret = _imp->_nodeCache->getOrCreate(key,params,returnValue);
+    bool ret = _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
     if (ret) {
         Log::print("Image found in cache!");
     } else {
@@ -1036,7 +1037,7 @@ AppManager::getImageOrCreate(const Natron::ImageKey & key,
     return ret;
 #else
 
-    return _imp->_nodeCache->getOrCreate(key,params,returnValue);
+    return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
 #endif
 }
 
@@ -1073,11 +1074,12 @@ AppManager::getTexture(const Natron::FrameKey & key,
 bool
 AppManager::getTextureOrCreate(const Natron::FrameKey & key,
                                boost::shared_ptr<Natron::FrameParams> params,
+                               FrameEntryLocker* entryLocker,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getTexture");
-    bool ret = _imp->_viewerCache->getOrCreate(key,params, returnValue);
+    bool ret = _imp->_viewerCache->getOrCreate(key,params,entryLocker returnValue);
     if (ret) {
         Log::print("Texture found in cache!");
     } else {
@@ -1088,7 +1090,7 @@ AppManager::getTextureOrCreate(const Natron::FrameKey & key,
     return ret;
 #else
 
-    return _imp->_viewerCache->getOrCreate(key, params,returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params,entryLocker, returnValue);
 #endif
 }
 

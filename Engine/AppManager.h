@@ -25,7 +25,7 @@ CLANG_DIAG_ON(deprecated)
 #endif
 
 #include "Engine/KnobFactory.h"
-
+#include "Engine/ImageLocker.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -38,6 +38,7 @@ class Settings;
 class KnobHolder;
 class NodeSerialization;
 class KnobSerialization;
+
 namespace Natron {
 class Node;
 class EffectInstance;
@@ -167,12 +168,14 @@ public:
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
     bool getImageOrCreate(const Natron::ImageKey & key,boost::shared_ptr<Natron::ImageParams> params,
+                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
 
     bool getTexture(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams>* params,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     bool getTextureOrCreate(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams> params,
+                            FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     U64 getCachesTotalMemorySize() const;
@@ -382,9 +385,10 @@ getImageFromCache(const Natron::ImageKey & key,
 inline bool
 getImageFromCacheOrCreate(const Natron::ImageKey & key,
                           boost::shared_ptr<Natron::ImageParams> params,
+                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image> *returnValue)
 {
-    return appPTR->getImageOrCreate(key,params, returnValue);
+    return appPTR->getImageOrCreate(key,params, imageLocker, returnValue);
 }
 
 inline bool
@@ -398,9 +402,10 @@ getTextureFromCache(const Natron::FrameKey & key,
 inline bool
 getTextureFromCacheOrCreate(const Natron::FrameKey & key,
                             boost::shared_ptr<Natron::FrameParams> params,
+                            FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue)
 {
-    return appPTR->getTextureOrCreate(key,params,returnValue);
+    return appPTR->getTextureOrCreate(key,params,entryLocker, returnValue);
 }
 } // namespace Natron
 
