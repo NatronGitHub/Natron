@@ -279,6 +279,8 @@ struct GuiPrivate
     Button* _clearAllPanelsButton;
     SpinBox* _maxPanelsOpenedSpinBox;
     Button* _freezeUIButton;
+    
+    QMutex _isGUIFrozenMutex;
     bool _isGUIFrozen;
     
     ///The menu bar and all the menus
@@ -401,6 +403,7 @@ struct GuiPrivate
           , _maxPanelsOpenedSpinBox(0)
           , _freezeUIButton(0)
           , _isGUIFrozen(false)
+          , _isGUIFrozenMutex()
           , menubar(0)
           , menuFile(0)
           , menuRecentFiles(0)
@@ -3900,16 +3903,17 @@ Gui::getAnchor() const
 bool
 Gui::isGUIFrozen() const
 {
-    ///Can only be called on the main thread
-    assert(QThread::currentThread() == qApp->thread());
-    
+    QMutexLocker k(&_imp->_isGUIFrozenMutex);
     return _imp->_isGUIFrozen;
 }
 
 void
 Gui::onFreezeUIButtonClicked(bool clicked)
 {
-    _imp->_isGUIFrozen = clicked;
+    {
+        QMutexLocker k(&_imp->_isGUIFrozenMutex);
+        _imp->_isGUIFrozen = clicked;
+    }
     _imp->_freezeUIButton->setDown(clicked);
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
 }

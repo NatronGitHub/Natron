@@ -91,6 +91,8 @@ public:
     void setUndoRedoStackLimit(int limit);
 
     bool isClosing() const;
+    
+    virtual bool isGuiFrozen() const OVERRIDE FINAL;
 
     virtual bool isShowingDialog() const OVERRIDE FINAL;
     virtual void startProgress(Natron::EffectInstance* effect,const std::string & message) OVERRIDE FINAL;

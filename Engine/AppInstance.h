@@ -222,6 +222,8 @@ public:
     {
         return false;
     }
+    
+    virtual bool isGuiFrozen() const { return false; }
 
     virtual void startProgress(Natron::EffectInstance* /*effect*/,
                                const std::string & /*message*/)

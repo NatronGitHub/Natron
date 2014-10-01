@@ -2042,6 +2042,9 @@ Node::purgeAllInstancesCaches()
 bool
 Node::notifyInputNIsRendering(int inputNb)
 {
+    if (getApp()->isGuiFrozen()) {
+        return false;
+    }
     
     timeval now;
     
@@ -2076,6 +2079,10 @@ Node::notifyInputNIsFinishedRendering(int inputNb)
 bool
 Node::notifyRenderingStarted()
 {
+    if (getApp()->isGuiFrozen()) {
+        return false;
+    }
+    
     timeval now;
     
     gettimeofday(&now, 0);

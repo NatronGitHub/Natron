@@ -634,3 +634,9 @@ GuiAppInstance::projectFormatChanged(const Format& /*f*/)
         _imp->_previewProvider->viewerUI->getInternalNode()->renderCurrentFrame();
     }
 }
+
+bool
+GuiAppInstance::isGuiFrozen() const
+{
+    return _imp->_gui->isGUIFrozen();
+}

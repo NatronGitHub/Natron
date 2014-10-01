@@ -461,12 +461,12 @@ KnobHelper::evaluateValueChange(int dimension,
         return;
     }
     
-    if ( _imp->gui && _imp->gui->isGuiFrozenForPlayback() ) {
-        return;
-    }
+    bool guiFrozen = _imp->gui && _imp->gui->isGuiFrozenForPlayback();
     
 
-    if (_imp->holder) {
+    /// For TIME_CHANGED we never call the instanceChangedAction and evaluate otherwise it would just throttle down
+    /// the application responsiveness
+    if (reason != Natron::TIME_CHANGED && _imp->holder) {
         int time;
         AppInstance* app = _imp->holder->getApp();
         if (app) {
@@ -476,19 +476,22 @@ KnobHelper::evaluateValueChange(int dimension,
         }
         if ( ( app && !app->getProject()->isLoadingProject() ) || !app ) {
             
-            ///Notify that a value has changed, this may lead to this function being called recursively.
+            ///Notify that a value has changed, this may lead to this function being called recursively because it calls the plugin's
+            ///instance changed action.
             _imp->holder->onKnobValueChanged_public(this, reason, time);
-
-
-            if (reason != Natron::TIME_CHANGED && reason != Natron::SLAVE_REFRESH) {
+            
+            
+            if (reason != Natron::SLAVE_REFRESH && !guiFrozen) {
                 ///Evaluate the change only if the reason is not time changed or slave refresh
                 _imp->holder->evaluate_public(this, _imp->EvaluateOnChange, reason);
             }
-
+            
+            
+            
         }
     }
 
-    if (_signalSlotHandler) {
+    if (!guiFrozen && _signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
         _signalSlotHandler->s_updateSlaves(dimension);
         checkAnimationLevel(dimension);
