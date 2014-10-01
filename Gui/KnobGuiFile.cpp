@@ -50,11 +50,14 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob,
     , _lineEdit(0)
     , _openFileButton(0)
     , _lastOpened()
-    , _watcher(0)
+    , _watcher(new QFileSystemWatcher)
+    , _fileBeingWatched()
 {
     _knob = boost::dynamic_pointer_cast<File_Knob>(knob);
     assert(_knob);
     QObject::connect( _knob.get(), SIGNAL( openFile() ), this, SLOT( open_file() ) );
+    QObject::connect(_watcher, SIGNAL(fileChanged(QString)), this, SLOT(watchedFileChanged()));
+
 }
 
 File_KnobGui::~File_KnobGui()
@@ -158,17 +161,20 @@ File_KnobGui::updateLastOpened(const QString &str)
 void
 File_KnobGui::updateGUI(int /*dimension*/)
 {
-    QString file(_knob->getValue().c_str());
+    std::string newValue = _knob->getValue();
+    QString file(newValue.c_str());
     _lineEdit->setText(file);
-    if (_knob->getHolder() && _knob->getEvaluateOnChange() && QFile::exists(file)) {
-        if (_watcher && _watcher->files().contains(file)) {
-            return;
+    
+    if (newValue != _fileBeingWatched && _knob->getHolder() && _knob->getEvaluateOnChange() ) {
+        if (!_fileBeingWatched.empty()) {
+            _watcher->removePath(_fileBeingWatched.c_str());
+            _fileBeingWatched.clear();
         }
-        delete _watcher;
-        _watcher = new QFileSystemWatcher;
-        _watcher->addPath(file);
-        QObject::connect(_watcher, SIGNAL(fileChanged(QString)), this, SLOT(watchedFileChanged()));
-
+        
+        if (QFile::exists(file)) {
+            _watcher->addPath(file);
+            _fileBeingWatched = newValue;
+        }
     }
 }
 
@@ -178,15 +184,24 @@ File_KnobGui::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
     std::string filepath = _knob->getFileName(time, 0);
-    QString qfilePath(filepath.c_str());
-    if (!QFile::exists(qfilePath)) {
-        return;
-    }
     
-    delete _watcher;
-    _watcher = new QFileSystemWatcher;
-    _watcher->addPath(qfilePath);
-    QObject::connect(_watcher, SIGNAL(fileChanged(QString)), this, SLOT(watchedFileChanged()));
+    if (filepath != _fileBeingWatched  && _knob->getHolder() && _knob->getEvaluateOnChange() ) {
+        
+        if (!_fileBeingWatched.empty()) {
+            _watcher->removePath(_fileBeingWatched.c_str());
+            _fileBeingWatched.clear();
+        }
+        
+        QString qfilePath(filepath.c_str());
+        
+        if (QFile::exists(qfilePath)) {
+            _watcher->addPath(qfilePath);
+            _fileBeingWatched = filepath;
+        }
+    }
+   
+    
+
 }
 
 void

@@ -102,6 +102,7 @@ private:
     Button *_openFileButton;
     QString _lastOpened;
     QFileSystemWatcher* _watcher;
+    std::string _fileBeingWatched;
     boost::shared_ptr<File_Knob> _knob;
 };
 
