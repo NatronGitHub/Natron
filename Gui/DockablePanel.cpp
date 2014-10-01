@@ -242,14 +242,15 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
         
-        QPixmap pixCenter;
-        appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenter);
-        _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
-        _imp->_centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->_centerNodeButton->setToolTip( tr("Centers the node graph on this item.") );
-        QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
-        _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
-        
+        if (!holder->isProject()) {
+            QPixmap pixCenter;
+            appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenter);
+            _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
+            _imp->_centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+            _imp->_centerNodeButton->setToolTip( tr("Centers the node graph on this item.") );
+            QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
+            _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
+        }
         
         QPixmap pixHelp;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
