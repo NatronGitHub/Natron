@@ -92,6 +92,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _curveWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
     _tree = new QTreeWidget(_splitter);
+    _tree->setObjectName("tree");
     _tree->setSelectionMode(QAbstractItemView::NoSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();

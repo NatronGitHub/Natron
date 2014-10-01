@@ -1,5 +1,5 @@
 #ifndef NATRON_GITVERSION_H_
 #define NATRON_GITVERSION_H_
 #define GIT_BRANCH "multiCoreOpt"
-#define GIT_COMMIT "3769f967c60a3a3306f53fe7775eb81f392db41e"
+#define GIT_COMMIT "b3b32aef9f5f74402f242257442c4cc36c21d199"
 #endif
