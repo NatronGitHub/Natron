@@ -3341,10 +3341,10 @@ ViewerGL::populateMenu()
                                               showHideMenu);
    
     
-    showAll = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideAll,kShortcutDescActionHideAll,
+    showAll = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionShowAll,kShortcutDescActionShowAll,
                                      showHideMenu);
 
-    hideAll = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionShowAll,kShortcutDescActionShowAll,
+    hideAll = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideAll,kShortcutDescActionHideAll,
                                      showHideMenu);
     
     QObject::connect(showHidePlayer,SIGNAL(triggered()),_imp->viewerTab,SLOT(togglePlayerVisibility()));
