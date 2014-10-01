@@ -552,7 +552,8 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
     
     QMutexLocker l(&_imp->framesToRenderMutex);
 
-    while ((int)_imp->framesToRender.size() < nThreads) {
+    ///Push 2x the count of threads to be sure no one will be waiting
+    while ((int)_imp->framesToRender.size() < nThreads * 2) {
         _imp->framesToRender.push_back(startingFrame);
         
         _imp->lastFramePushedIndex = startingFrame;
@@ -1061,8 +1062,8 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
             playbackOrRender = _imp->livingRunArgs.playbackOrRender;
         }
         
-        
-        ///Launch more threads
+        ////////
+        ///Launch 1 thread
         QMutexLocker l(&_imp->renderThreadsMutex);
         
         _imp->appendRunnable(createRunnable(playbackOrRender));
@@ -1070,11 +1071,13 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
         
     } else if (runningThreads > optimalNThreads && currentParallelRenders > 1) {
         ////////
-        ///Stop some threads
-        stopRenderThreads(runningThreads - optimalNThreads);
-        *newNThreads = optimalNThreads;
+        ///Stop 1 thread
+        stopRenderThreads(1);
+        *newNThreads = currentParallelRenders - 1;
         
     } else {
+        /////////
+        ///Keep the current count
         *newNThreads = std::max(1,currentParallelRenders);
     }
     
