@@ -879,10 +879,10 @@ Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
             
             if (hwConcurrency <= 0) {
                 nThreadsPerEffect = 1;
-            } else if (hwConcurrency <= 8) {
+            } else if (hwConcurrency <= 4) {
                 nThreadsPerEffect = hwConcurrency;
             } else {
-                nThreadsPerEffect = 8;
+                nThreadsPerEffect = 4;
             }
         }
         ///+1 because the current thread is going to wait during the multiThread call so we're better off
