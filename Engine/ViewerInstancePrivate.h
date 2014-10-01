@@ -149,29 +149,31 @@ public:
     
     virtual void lock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
     {
+
+
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::map<boost::shared_ptr<Natron::FrameEntry>,QMutex* > ::iterator it = textureBeingRendered.find(entry);
-        
-        if (it != textureBeingRendered.end()) {
-            it->second->lock();
-        } else {
-            QMutex* mutex = new QMutex(QMutex::Recursive);
-            mutex->lock();
-            textureBeingRendered.insert(std::make_pair(entry,mutex));
+        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+                std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+        while ( it != textureBeingRendered.end() ) {
+            textureBeingRenderedCond.wait(&textureBeingRenderedMutex);
+            it = std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         }
+        ///Okay the image is not used by any other thread, claim that we want to use it
+        assert( it == textureBeingRendered.end() );
+        textureBeingRendered.push_back(entry);
     }
     
     virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
     {
+
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::map<boost::shared_ptr<Natron::FrameEntry>,QMutex* > ::iterator it = textureBeingRendered.find(entry);
-        
+        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+                std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         ///The image must exist, otherwise this is a bug
         assert( it != textureBeingRendered.end() );
-        
-        it->second->unlock();
-        
         textureBeingRendered.erase(it);
+        ///Notify all waiting threads that we're finished
+        textureBeingRenderedCond.wakeAll();
     }
 
 
@@ -228,7 +230,8 @@ public:
     boost::shared_ptr<Natron::FrameEntry> lastRenderedTexture;
     
     mutable QMutex textureBeingRenderedMutex;
-    std::map<boost::shared_ptr<Natron::FrameEntry>,QMutex* > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    QWaitCondition textureBeingRenderedCond;
+    std::list<boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
 };
 
 

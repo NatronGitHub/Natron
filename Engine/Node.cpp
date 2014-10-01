@@ -59,7 +59,6 @@ namespace { // protect local classes in anonymous namespace
 typedef std::map<boost::shared_ptr<Node>,int > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<boost::shared_ptr<Node> > InputsV;
-typedef std::map<boost::shared_ptr<Image>,QMutex*> ImagesRenderedMap;
 }
 
 struct Node::Implementation
@@ -85,7 +84,6 @@ struct Node::Implementation
           , plugin(plugin_)
           , computingPreview(false)
           , computingPreviewMutex()
-          , computingPreviewCond()
           , pluginInstanceMemoryUsed(0)
           , memoryUsedMutex()
           , mustQuitPreview(false)
@@ -106,6 +104,7 @@ struct Node::Implementation
           , disableNodeKnob()
           , rotoContext()
           , imagesBeingRenderedMutex()
+          , imageBeingRenderedCond()
           , imagesBeingRendered()
           , supportedDepths()
           , isMultiInstance(false)
@@ -123,6 +122,11 @@ struct Node::Implementation
     }
 
     void abortPreview();
+
+    void setComputingPreview(bool v) {
+        QMutexLocker l(&computingPreviewMutex);
+        computingPreview = v;
+    }
 
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
     bool knobsInitialized;
@@ -158,7 +162,6 @@ struct Node::Implementation
     LibraryBinary* plugin; //< the plugin which stores the function to instantiate the effect
     bool computingPreview;
     mutable QMutex computingPreviewMutex;
-    QWaitCondition computingPreviewCond;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
     bool mustQuitPreview;
@@ -186,7 +189,8 @@ struct Node::Implementation
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
     mutable QMutex imagesBeingRenderedMutex;
-    ImagesRenderedMap imagesBeingRendered; ///< a list of all the images being rendered simultaneously
+    QWaitCondition imageBeingRenderedCond;
+    std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     
     std::list <Natron::ImageBitDepth> supportedDepths;
 
@@ -1689,6 +1693,23 @@ renderPreview(const Natron::Image & srcImg,
 } // renderPreview
 }
 
+class ComputingPreviewSetter_RAII
+{
+    Node::Implementation* _imp;
+
+public:
+    ComputingPreviewSetter_RAII(Node::Implementation* imp)
+        : _imp(imp)
+    {
+        _imp->setComputingPreview(true);
+    }
+
+    ~ComputingPreviewSetter_RAII()
+    {
+        _imp->setComputingPreview(false);
+    }
+};
+
 void
 Node::makePreviewImage(SequenceTime time,
                        int *width,
@@ -1709,8 +1730,8 @@ Node::makePreviewImage(SequenceTime time,
         }
     }
 
-    QMutexLocker locker(&_imp->computingPreviewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
-    _imp->computingPreview = true;
+     /// prevent 2 previews to occur at the same time since there's only 1 preview instance
+    ComputingPreviewSetter_RAII computingPreviewRAII(_imp.get());
 
     RectD rod;
     bool isProjectFormat;
@@ -1718,9 +1739,6 @@ Node::makePreviewImage(SequenceTime time,
     scale.x = scale.y = 1.;
     Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == StatFailed) || rod.isNull() ) {
-        _imp->computingPreview = false;
-        _imp->computingPreviewCond.wakeOne();
-
         return;
     }
     assert( !rod.isNull() );
@@ -1754,20 +1772,15 @@ Node::makePreviewImage(SequenceTime time,
     } catch (const std::exception & e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
         _imp->computingPreview = false;
-        _imp->computingPreviewCond.wakeOne();
-
         return;
     } catch (...) {
         qDebug() << "Error: Cannot create preview";
         _imp->computingPreview = false;
-        _imp->computingPreviewCond.wakeOne();
-
         return;
     }
 
     if (!img) {
         _imp->computingPreview = false;
-        _imp->computingPreviewCond.wakeOne();
 
         return;
     }
@@ -1796,8 +1809,6 @@ Node::makePreviewImage(SequenceTime time,
         break;
     }
 
-    _imp->computingPreview = false;
-    _imp->computingPreviewCond.wakeOne();
 
 } // makePreviewImage
 
@@ -2409,32 +2420,30 @@ Node::isMaskEnabled(int inputNb) const
 void
 Node::lock(const boost::shared_ptr<Natron::Image> & image)
 {
+
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    ImagesRenderedMap::iterator it = _imp->imagesBeingRendered.find(image);
-
-    if (it != _imp->imagesBeingRendered.end()) {
-        it->second->lock();
-    } else {
-        QMutex* mutex = new QMutex(QMutex::Recursive);
-        mutex->lock();
-        _imp->imagesBeingRendered.insert(std::make_pair(image,mutex));
+    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
+            std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    while ( it != _imp->imagesBeingRendered.end() ) {
+        _imp->imageBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
+        it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
     }
-
+    ///Okay the image is not used by any other thread, claim that we want to use it
+    assert( it == _imp->imagesBeingRendered.end() );
+    _imp->imagesBeingRendered.push_back(image);
 }
 
 void
 Node::unlock(const boost::shared_ptr<Natron::Image> & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    ImagesRenderedMap::iterator it = _imp->imagesBeingRendered.find(image);
-
-
+    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
+            std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
     ///The image must exist, otherwise this is a bug
     assert( it != _imp->imagesBeingRendered.end() );
-    
-    it->second->unlock();
-    
     _imp->imagesBeingRendered.erase(it);
+    ///Notify all waiting threads that we're finished
+    _imp->imageBeingRenderedCond.wakeAll();
 }
 
 boost::shared_ptr<Natron::Image>
@@ -2443,15 +2452,13 @@ Node::getImageBeingRendered(int time,
                             int view)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-
-    for (ImagesRenderedMap::iterator it = _imp->imagesBeingRendered.begin();
+    for (std::list<boost::shared_ptr<Natron::Image> >::iterator it = _imp->imagesBeingRendered.begin();
          it != _imp->imagesBeingRendered.end(); ++it) {
-        const Natron::ImageKey &key = it->first->getKey();
+        const Natron::ImageKey &key = (*it)->getKey();
         if ( (key._view == view) && (key._mipMapLevel == mipMapLevel) && (key._time == time) ) {
-            return it->first;
+            return *it;
         }
     }
-
     return boost::shared_ptr<Natron::Image>();
 }
 
