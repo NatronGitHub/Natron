@@ -23,10 +23,6 @@
 #include <QThread>
 #include <QtCore/QAtomicInt>
 
-
-#include <sigar.h>
-
-
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h" // for removeRecursively
 #include "Global/GlobalDefines.h" // for removeRecursively
@@ -87,11 +83,6 @@ struct AppManagerPrivate
 
     std::string currentOCIOConfigPath; //< the currentOCIO config path
     
-    mutable sigar_t* sigarInfos; // for CPU idle time
-    QMutex  cpuIdleTimeMutex; // protects sigarInfos & cpuIdleTime & cpuTotalTime
-    qint64 cpuIdleTime; // idle time (sumed up over all cores)
-    U64 cpuTotalTime; // wall time (sumped up over all cores) recorded at a given time
-    
     int idealThreadCount; // return value of QThread::idealThreadCount() cached here
     
     int nThreadsToRender; // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
@@ -133,10 +124,6 @@ struct AppManagerPrivate
           ,maxCacheFiles(0)
           ,currentCacheFilesCount(0)
           ,currentCacheFilesCountMutex()
-          ,sigarInfos(0)
-          ,cpuIdleTimeMutex()
-          ,cpuIdleTime(0)
-          ,cpuTotalTime(0)
           ,idealThreadCount(0)
           ,nThreadsToRender(0)
           ,nThreadsPerEffect(0)
@@ -144,14 +131,12 @@ struct AppManagerPrivate
           ,runningThreadsCount()
     {
         setMaxCacheFiles();
-        sigar_open(&sigarInfos);
         
         runningThreadsCount = 0;
     }
     
     ~AppManagerPrivate()
     {
-        sigar_close(sigarInfos);
     }
 
     void initProcessInputChannel(const QString & mainProcessServerName);
@@ -1760,55 +1745,7 @@ AppManager::getOCIOConfigPath() const
     return _imp->currentOCIOConfigPath;
 }
 
-int
-AppManager::evaluateBestNoConcurrentThreads(int currentNoThreads) const
-{
-    sigar_cpu_t cpuInfos;
-    
-    qint64 idleTimeElapsed;
-    qint64 totalTimeElapsed;
-    {
-        QMutexLocker l(&_imp->cpuIdleTimeMutex);
-        
-        ///sigar_cpu_get returns infos that are multiple of the numbers of logical cores on the hardware
-        sigar_cpu_get(_imp->sigarInfos, &cpuInfos);
 
-        idleTimeElapsed = cpuInfos.idle - _imp->cpuIdleTime;
-        totalTimeElapsed = cpuInfos.total - _imp->cpuTotalTime;
-        
-        ///No time has elapsed or invalid values, we can't interpret this
-        if (totalTimeElapsed <= 0 || idleTimeElapsed < 0) {
-            return currentNoThreads;
-        }
-        _imp->cpuIdleTime = cpuInfos.idle;
-        _imp->cpuTotalTime = cpuInfos.total;
-    }
-    
-
-    double activityPercent =  1. - idleTimeElapsed / (double)totalTimeElapsed;    
-    int ret;
-    
-    if (activityPercent < 1.) {
-        ret = activityPercent > 0. ? currentNoThreads / activityPercent : currentNoThreads;
-    } else {
-        ret = currentNoThreads - 1; 
-    }
-    unsigned int suiteNCpus;
-    (void)_imp->ofxHost->multiThreadNumCPUS(&suiteNCpus);
-    return std::min((int)suiteNCpus, ret);
-}
-
-void
-AppManager::resetCPUIdleTime()
-{
-    sigar_cpu_t cpuInfos;
-    
-    QMutexLocker l(&_imp->cpuIdleTimeMutex);
-    sigar_cpu_get(_imp->sigarInfos, &cpuInfos);
-    _imp->cpuIdleTime = cpuInfos.idle;
-    _imp->cpuTotalTime = cpuInfos.total;
-
-}
 
 void
 AppManager::setNThreadsToRender(int nThreads)
