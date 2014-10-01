@@ -635,33 +635,40 @@ Natron::OfxHost::newMemoryInstance(size_t nBytes)
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
-// comment out the following to disable the use of QtConcurrent
-//#define OFX_MULTITHREAD_USES_QTCONCURRENT
 
-///Stored as int, because we need -1
-static QThreadStorage<int> gThreadIndex;
+///Stored as int, because we need -1; list because we need it recursive for the multiThread func
+static QThreadStorage<std::list<int> > gThreadIndex;
+
+
+void
+Natron::OfxHost::setThreadAsActionCaller(bool actionCaller)
+{
+    if (actionCaller) {
+        gThreadIndex.localData().push_back(-1);
+    } else {
+        std::list<int>& local = gThreadIndex.localData();
+        assert(!local.empty());
+        local.pop_back();
+    }
+}
 
 namespace {
-#ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
     
 ///Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
 ///to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
 ///We think this is because Furnace must keep an internal thread-local state that becomes then dirty
-///if we re-use the same thread. We chose to allow maximum compatibility with plug-ins even though our back-up
-///solution is not as efficient as if we could use QtConcurrent's thread-pool.
-///
-/// TL;DR: USE IT AT YOUR OWN RISKS! But don't expect it to work with the Foundry Furnace (and probably some other plug-ins).
+///if we re-use the same thread.
 
-#pragma message WARN("QtConcurrent enabled in multithread suite")
 static OfxStatus
 threadFunctionWrapper(OfxThreadFunctionV1 func,
                       unsigned int threadIndex,
                       unsigned int threadMax,
                       void *customArg)
 {
-    assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() == -1);
     assert(threadIndex < threadMax);
-    gThreadIndex.localData() = (int)threadIndex;
+    std::list<int>& localData = gThreadIndex.localData();
+    localData.push_back((int)threadIndex);
+
     OfxStatus ret = kOfxStatOK;
     try {
         func(threadIndex, threadMax, customArg);
@@ -672,12 +679,11 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     }
 
     ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-    gThreadIndex.localData() = -1;
+    localData.pop_back();
 
     return ret;
 }
 
-#else
     
 
     
@@ -700,9 +706,10 @@ public:
 
     void run() OVERRIDE
     {
-        assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() == -1);
         assert(_threadIndex < _threadMax);
-        gThreadIndex.localData() = _threadIndex;
+        std::list<int>& localData = gThreadIndex.localData();
+        localData.push_back((int)_threadIndex);
+        
         assert(*_stat == kOfxStatFailed);
         try {
             _func(_threadIndex, _threadMax, _customArg);
@@ -713,7 +720,7 @@ public:
         }
 
         ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        gThreadIndex.localData() = -1;
+        localData.pop_back();
     }
 
 private:
@@ -724,7 +731,6 @@ private:
     OfxStatus *_stat;
 };
 
-#endif // ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
 }
 
 
@@ -767,76 +773,75 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
         }
     }
 
-    // check that this thread does not already have an ID
-    if ( gThreadIndex.hasLocalData() && (gThreadIndex.localData() != -1) ) {
-        return kOfxStatErrExists;
-    }
-
-#ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
-    std::vector<unsigned int> threadIndexes(nThreads);
-    for (unsigned int i = 0; i < nThreads; ++i) {
-        threadIndexes[i] = i;
-    }
-
-    /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
-    //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
-    QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, customArg) );
-    future.waitForFinished();
-    ///DON'T reset back to the original value the maximum thread count
-    //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
-
-    for (QFuture<OfxStatus>::const_iterator it = future.begin(); it != future.end(); ++it) {
-        OfxStatus stat = *it;
-        if (stat != kOfxStatOK) {
-            return stat;
-        }
-    }
-#else
-    QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
-    status.fill(kOfxStatFailed); // by default, a thread fails
-    {
-        // at most maxConcurrentThread should be running at the same time
-        QVector<OfxThread*> threads(nThreads);
+    bool useThreadPool = appPTR->getUseThreadPool();
+    
+    if (useThreadPool) {
+        
+        std::vector<unsigned int> threadIndexes(nThreads);
         for (unsigned int i = 0; i < nThreads; ++i) {
-            threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
+            threadIndexes[i] = i;
         }
-        unsigned int i = 0; // index of next thread to launch
-        unsigned int running = 0; // number of running threads
-        unsigned int j = 0; // index of first running thread. all threads before this one are finished running
-        while (j < nThreads) {
-            // have no more than maxConcurrentThread threads launched at the same time
-            int threadsStarted = 0;
-            while (i < nThreads && running < maxConcurrentThread) {
-                threads[i]->start();
-                ++i;
-                ++running;
-                ++threadsStarted;
+        
+        /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
+        //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
+        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, customArg) );
+        future.waitForFinished();
+        ///DON'T reset back to the original value the maximum thread count
+        //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
+        
+        for (QFuture<OfxStatus>::const_iterator it = future.begin(); it != future.end(); ++it) {
+            OfxStatus stat = *it;
+            if (stat != kOfxStatOK) {
+                return stat;
             }
-            
-            ///We just started threadsStarted threads
-            appPTR->fetchAndAddNRunningThreads(threadsStarted);
-            
-            // now we've got at most maxConcurrentThread running. wait for each thread and launch a new one
-            threads[j]->wait();
-            assert( !threads[j]->isRunning() );
-            assert( threads[j]->isFinished() );
-            delete threads[j];
-            ++j;
-            --running;
-            
-            ///We just stopped 1 thread
-            appPTR->fetchAndAddNRunningThreads(-1);
         }
-        assert(running == 0);
-    }
-    // check the return status of each thread, return the first error found
-    for (QVector<OfxStatus>::const_iterator it = status.begin(); it != status.end(); ++it) {
-        OfxStatus stat = *it;
-        if (stat != kOfxStatOK) {
-            return stat;
+
+    } else {
+        QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
+        status.fill(kOfxStatFailed); // by default, a thread fails
+        {
+            // at most maxConcurrentThread should be running at the same time
+            QVector<OfxThread*> threads(nThreads);
+            for (unsigned int i = 0; i < nThreads; ++i) {
+                threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
+            }
+            unsigned int i = 0; // index of next thread to launch
+            unsigned int running = 0; // number of running threads
+            unsigned int j = 0; // index of first running thread. all threads before this one are finished running
+            while (j < nThreads) {
+                // have no more than maxConcurrentThread threads launched at the same time
+                int threadsStarted = 0;
+                while (i < nThreads && running < maxConcurrentThread) {
+                    threads[i]->start();
+                    ++i;
+                    ++running;
+                    ++threadsStarted;
+                }
+                
+                ///We just started threadsStarted threads
+                appPTR->fetchAndAddNRunningThreads(threadsStarted);
+                
+                // now we've got at most maxConcurrentThread running. wait for each thread and launch a new one
+                threads[j]->wait();
+                assert( !threads[j]->isRunning() );
+                assert( threads[j]->isFinished() );
+                delete threads[j];
+                ++j;
+                --running;
+                
+                ///We just stopped 1 thread
+                appPTR->fetchAndAddNRunningThreads(-1);
+            }
+            assert(running == 0);
         }
-    }
-#endif // ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
+        // check the return status of each thread, return the first error found
+        for (QVector<OfxStatus>::const_iterator it = status.begin(); it != status.end(); ++it) {
+            OfxStatus stat = *it;
+            if (stat != kOfxStatOK) {
+                return stat;
+            }
+        }
+    } // useThreadPool
 
     return kOfxStatOK;
 } // multiThread
@@ -906,11 +911,17 @@ Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
         return kOfxStatFailed;
     }
 
-    if ( !multiThreadIsSpawnedThread() ) {
+    if (!gThreadIndex.hasLocalData()) {
         *threadIndex = 0;
     } else {
-        *threadIndex = gThreadIndex.localData();
+        std::list<int>& localData = gThreadIndex.localData();
+        if (!localData.empty() && localData.back() != -1) {
+            *threadIndex = localData.back();
+        } else {
+            *threadIndex = 0;
+        }
     }
+
 
     return kOfxStatOK;
 }
@@ -920,7 +931,12 @@ Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 int
 Natron::OfxHost::multiThreadIsSpawnedThread() const
 {
-    return gThreadIndex.hasLocalData() && gThreadIndex.localData() != -1;
+    if (!gThreadIndex.hasLocalData()) {
+        return 0;
+    } else {
+        std::list<int>& localData = gThreadIndex.localData();
+        return !localData.empty() && localData.back() != -1;
+    }
 }
 
 // Create a mutex

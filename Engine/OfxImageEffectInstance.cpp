@@ -56,6 +56,20 @@ OfxImageEffectInstance::~OfxImageEffectInstance()
 }
 
 
+class ThreadIsActionCaller_RAII
+{
+public:
+    
+    ThreadIsActionCaller_RAII()
+    {
+        appPTR->setThreadAsActionCaller(true);
+    }
+    
+    ~ThreadIsActionCaller_RAII()
+    {
+        appPTR->setThreadAsActionCaller(false);
+    }
+};
 
 OfxStatus
 OfxImageEffectInstance::mainEntry(const char *action,
@@ -63,7 +77,7 @@ OfxImageEffectInstance::mainEntry(const char *action,
                                   OFX::Host::Property::Set *inArgs,
                                   OFX::Host::Property::Set *outArgs)
 {
-    
+    ThreadIsActionCaller_RAII t;
     return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
 }
 

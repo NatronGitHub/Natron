@@ -87,7 +87,8 @@ struct AppManagerPrivate
     
     int nThreadsToRender; // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
     int nThreadsPerEffect;  // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
-    mutable QMutex nThreadsMutex; // protects nThreadsToRender & nThreadsPerEffect
+    bool useThreadPool; // whether the multi-thread suite should use the global thread pool (of QtConcurrent) or not
+    mutable QMutex nThreadsMutex; // protects nThreadsToRender & nThreadsPerEffect & useThreadPool
     
     //The idea here is to keep track of the number of threads launched by Natron (except the ones of the global thread pool of QtConcurrent)
     //So that we can properly have an estimation of how much the cores of the CPU are used.
@@ -127,6 +128,7 @@ struct AppManagerPrivate
           ,idealThreadCount(0)
           ,nThreadsToRender(0)
           ,nThreadsPerEffect(0)
+          ,useThreadPool(true)
           ,nThreadsMutex()
           ,runningThreadsCount()
     {
@@ -1771,6 +1773,20 @@ AppManager::setNThreadsPerEffect(int nThreadsPerEffect)
 }
 
 void
+AppManager::setUseThreadPool(bool useThreadPool)
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    _imp->useThreadPool = useThreadPool;
+}
+
+bool
+AppManager::getUseThreadPool() const
+{
+    QMutexLocker l(&_imp->nThreadsMutex);
+    return _imp->useThreadPool;
+}
+
+void
 AppManager::fetchAndAddNRunningThreads(int nThreads)
 {
     _imp->runningThreadsCount.fetchAndAddRelaxed(nThreads);
@@ -1780,6 +1796,12 @@ int
 AppManager::getNRunningThreads() const
 {
     return (int)_imp->runningThreadsCount;
+}
+
+void
+AppManager::setThreadAsActionCaller(bool actionCaller)
+{
+    _imp->ofxHost->setThreadAsActionCaller(actionCaller);
 }
 
 namespace Natron {

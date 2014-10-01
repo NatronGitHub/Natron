@@ -302,8 +302,10 @@ public:
      **/
     void setNThreadsToRender(int nThreads);
     void setNThreadsPerEffect(int nThreadsPerEffect);
+    void setUseThreadPool(bool useThreadPool);
     
     void getNThreadsSettings(int* nThreadsToRender,int* nThreadsPerEffect) const;
+    bool getUseThreadPool() const;
     
     /**
      * @brief Updates the global runningThreadsCount maintained across the whole application
@@ -316,6 +318,8 @@ public:
      * parallel rendering.
      **/
     int getNRunningThreads() const;
+    
+    void setThreadAsActionCaller(bool actionCaller);
     
 public slots:
     

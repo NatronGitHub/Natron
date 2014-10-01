@@ -112,6 +112,7 @@ public:
 
     void clearPluginsLoadedCache();
 
+    void setThreadAsActionCaller(bool actionCaller);
 private:
 
     void getPluginAndContextByID(const std::string & pluginID, OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string & context);

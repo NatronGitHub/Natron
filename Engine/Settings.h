@@ -79,6 +79,10 @@ public:
     int getNumberOfParallelRenders() const;
     
     int getNumberOfThreadsPerEffect() const;
+    
+    bool useGlobalThreadPool() const;
+    
+    void setUseGlobalThreadPool(bool use) ;
 
     const std::string & getReaderPluginIDForFileType(const std::string & extension);
     const std::string & getWriterPluginIDForFileType(const std::string & extension);
@@ -195,6 +199,7 @@ private:
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Int_Knob> _numberOfThreads;
     boost::shared_ptr<Int_Knob> _numberOfParallelRenders;
+    boost::shared_ptr<Bool_Knob> _useThreadPool;
     boost::shared_ptr<Int_Knob> _nThreadsPerEffect;
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;

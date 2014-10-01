@@ -124,6 +124,19 @@ Settings::initializeKnobs()
     _numberOfParallelRenders->disableSlider();
     _numberOfParallelRenders->setAnimationEnabled(false);
     _generalTab->addKnob(_numberOfParallelRenders);
+    
+    _useThreadPool = Natron::createKnob<Bool_Knob>(this, "Effects use thread-pool");
+    _useThreadPool->setName("useThreadPool");
+    _useThreadPool->setHintToolTip("When checked, all effects will use a global thread-pool to do their processing instead of launching "
+                                   "their own threads. "
+                                   "This suppresses the overhead created by the operating system creating new threads on demand for "
+                                   "each rendering of a special effect. As a result of this, the rendering might be faster on systems "
+                                   "with a lot of cores (>= 8). \n"
+                                   "WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially "
+                                   "some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, "
+                                   "make sure to uncheck this option first otherwise it will crash " NATRON_APPLICATION_NAME);
+    _useThreadPool->setAnimationEnabled(false);
+    _generalTab->addKnob(_useThreadPool);
 
     _nThreadsPerEffect = Natron::createKnob<Int_Knob>(this, "Max threads usable per effect (0=\"guess\")");
     _nThreadsPerEffect->setName("nThreadsPerEffect");
@@ -132,7 +145,8 @@ Settings::initializeKnobs()
                                        "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
                                        "the time spent to launch all the threads might exceed the time spent actually processing."
                                        "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
-                                       "for an effect");
+                                       "for an effect.");
+    
     _nThreadsPerEffect->setMinimum(0);
     _generalTab->addKnob(_nThreadsPerEffect);
 
@@ -643,8 +657,9 @@ Settings::setDefaultValues()
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
     _numberOfParallelRenders->setDefaultValue(0,0);
+    _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
-    _renderInSeparateProcess->setDefaultValue(true,0);
+    _renderInSeparateProcess->setDefaultValue(false,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(false);
@@ -881,6 +896,10 @@ Settings::restoreSettings()
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
     appPTR->setNThreadsToRender(getNumberOfThreads());
     
+    bool useTP = _useThreadPool->getValue();
+    appPTR->setUseThreadPool(useTP);
+
+
     _restoringSettings = false;
 } // restoreSettings
 
@@ -1012,6 +1031,9 @@ Settings::onKnobValueChanged(KnobI* k,
             _customOcioConfigFile->setAllDimensionsEnabled(false);
         }
         tryLoadOpenColorIOConfig();
+    } else if ( k == _useThreadPool.get() ) {
+        bool useTP = _useThreadPool->getValue();
+        appPTR->setUseThreadPool(useTP);
     } else if ( k == _customOcioConfigFile.get() ) {
         tryLoadOpenColorIOConfig();
     } else if ( k == _maxUndoRedoNodeGraph.get() ) {
@@ -1532,4 +1554,16 @@ bool
 Settings::areRGBPixelComponentsSupported() const
 {
     return _activateRGBSupport->getValue();
+}
+
+bool
+Settings::useGlobalThreadPool() const
+{
+    return _useThreadPool->getValue();
+}
+
+void
+Settings::setUseGlobalThreadPool(bool use)
+{
+    _useThreadPool->setValue(use,0);
 }

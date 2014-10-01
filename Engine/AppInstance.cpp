@@ -213,7 +213,21 @@ AppInstance::createNodeInternal(const QString & pluginID,
     } else {
         node.reset( new InspectorNode(this,pluginBinary) );
     }
-
+    
+    {
+        ///Furnace plug-ins don't handle using the thread pool
+        if (pluginID.contains("Furnace") && appPTR->getUseThreadPool()) {
+            Natron::StandardButton reply = Natron::questionDialog(tr("Warning").toStdString(),
+                                                                  tr("The settings of the application are currently set to use "
+                                                                     "the global thread-pool for rendering effects. The Foundry Furnace "
+                                                                     "is known not to work well when this setting is checked. "
+                                                                     "Would you like to turn it off ? ").toStdString());
+            if (reply == Natron::Yes) {
+                appPTR->getCurrentSettings()->setUseGlobalThreadPool(false);
+            }
+        }
+    }
+    
     try {
         node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {

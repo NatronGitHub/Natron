@@ -19,7 +19,7 @@
 #include <QWaitCondition>
 #include <QCoreApplication>
 #include <QString>
-
+#include <QThreadPool>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -1041,7 +1041,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     
     int userSettingParallelThreads = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
     
-    int runningThreads = appPTR->getNRunningThreads();
+    int runningThreads = appPTR->getNRunningThreads() + QThreadPool::globalInstance()->activeThreadCount();
     int currentParallelRenders = getNRenderThreads();
     
     if (userSettingParallelThreads == 0) {
