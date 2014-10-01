@@ -13,6 +13,7 @@
 
 #include "ViewerInstance.h"
 
+#include <map>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QThread>
@@ -106,11 +107,12 @@ public:
 };
 
 struct ViewerInstance::ViewerInstancePrivate
-    : public QObject
+: public QObject, public LockManagerI<Natron::FrameEntry>
 {
     Q_OBJECT
 
 public:
+    
     ViewerInstancePrivate(const ViewerInstance* parent)
         : instance(parent)
           , uiContext(NULL)
@@ -142,6 +144,36 @@ public:
     {
         emit mustRedrawViewer();
     }
+    
+public:
+    
+    virtual void lock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    {
+        QMutexLocker l(&textureBeingRenderedMutex);
+        std::map<boost::shared_ptr<Natron::FrameEntry>,QMutex* > ::iterator it = textureBeingRendered.find(entry);
+        
+        if (it != textureBeingRendered.end()) {
+            it->second->lock();
+        } else {
+            QMutex* mutex = new QMutex(QMutex::Recursive);
+            mutex->lock();
+            textureBeingRendered.insert(std::make_pair(entry,mutex));
+        }
+    }
+    
+    virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    {
+        QMutexLocker l(&textureBeingRenderedMutex);
+        std::map<boost::shared_ptr<Natron::FrameEntry>,QMutex* > ::iterator it = textureBeingRendered.find(entry);
+        
+        ///The image must exist, otherwise this is a bug
+        assert( it != textureBeingRendered.end() );
+        
+        it->second->unlock();
+        
+        textureBeingRendered.erase(it);
+    }
+
 
 public slots:
     /**
@@ -196,9 +228,9 @@ public:
     boost::shared_ptr<Natron::FrameEntry> lastRenderedTexture;
     
     mutable QMutex textureBeingRenderedMutex;
-    QWaitCondition textureBeingRenderedCond;
-    std::list< boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    std::map<boost::shared_ptr<Natron::FrameEntry>,QMutex* > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
 };
+
 
 //} // namespace Natron
 

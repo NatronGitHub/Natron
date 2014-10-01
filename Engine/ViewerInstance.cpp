@@ -691,7 +691,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         /*We didn't find it in the viewer cache, hence we render
            the frame*/
         
-        FrameEntryLocker entryLocker(this);
+        FrameEntryLocker entryLocker(_imp.get());
         
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
@@ -2277,36 +2277,3 @@ ViewerInstance::createOutputScheduler()
 
 }
 
-void
-ViewerInstance::lock(const boost::shared_ptr<Natron::FrameEntry>& entry)
-{
-    QMutexLocker l(&_imp->textureBeingRenderedMutex);
-    std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
-    std::find(_imp->textureBeingRendered.begin(), _imp->textureBeingRendered.end(), entry);
-    
-    while ( it != _imp->textureBeingRendered.end() ) {
-        _imp->textureBeingRenderedCond.wait(&_imp->textureBeingRenderedMutex);
-        it = std::find(_imp->textureBeingRendered.begin(), _imp->textureBeingRendered.end(), entry);
-    }
-    ///Okay the image is not used by any other thread, claim that we want to use it
-    assert( it == _imp->textureBeingRendered.end() );
-    _imp->textureBeingRendered.push_back(entry);
-
-}
-
-void
-ViewerInstance::unlock(const boost::shared_ptr<Natron::FrameEntry>& entry)
-{
-    QMutexLocker l(&_imp->textureBeingRenderedMutex);
-    std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
-    std::find(_imp->textureBeingRendered.begin(), _imp->textureBeingRendered.end(), entry);
-    
-    ///The image must exist, otherwise this is a bug
-    assert( it != _imp->textureBeingRendered.end() );
-    
-    _imp->textureBeingRendered.erase(it);
-    
-    ///Notify all waiting threads that we're finished
-    _imp->textureBeingRenderedCond.wakeAll();
- 
-}

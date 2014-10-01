@@ -30,7 +30,7 @@ class OpenGLViewerI;
 struct TextureRect;
 
 class ViewerInstance
-: public QObject, public Natron::OutputEffectInstance, public LockManagerI<Natron::FrameEntry>
+: public QObject, public Natron::OutputEffectInstance
 {
     Q_OBJECT
 
@@ -151,10 +151,7 @@ public:
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
-    virtual void lock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL;
-    
-    virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL ;
-    
+
 public slots:
 
 

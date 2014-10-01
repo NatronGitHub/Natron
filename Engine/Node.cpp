@@ -59,6 +59,7 @@ namespace { // protect local classes in anonymous namespace
 typedef std::map<boost::shared_ptr<Node>,int > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<boost::shared_ptr<Node> > InputsV;
+typedef std::map<boost::shared_ptr<Image>,QMutex*> ImagesRenderedMap;
 }
 
 struct Node::Implementation
@@ -183,9 +184,10 @@ struct Node::Implementation
     boost::shared_ptr<Bool_Knob> previewEnabledKnob;
     boost::shared_ptr<Bool_Knob> disableNodeKnob;
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
+    
     mutable QMutex imagesBeingRenderedMutex;
-    QWaitCondition imageBeingRenderedCond;
-    std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
+    ImagesRenderedMap imagesBeingRendered; ///< a list of all the images being rendered simultaneously
+    
     std::list <Natron::ImageBitDepth> supportedDepths;
 
     ///True when several effect instances are represented under the same node.
@@ -2408,32 +2410,31 @@ void
 Node::lock(const boost::shared_ptr<Natron::Image> & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
-        std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    ImagesRenderedMap::iterator it = _imp->imagesBeingRendered.find(image);
 
-    while ( it != _imp->imagesBeingRendered.end() ) {
-        _imp->imageBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
-        it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    if (it != _imp->imagesBeingRendered.end()) {
+        it->second->lock();
+    } else {
+        QMutex* mutex = new QMutex(QMutex::Recursive);
+        mutex->lock();
+        _imp->imagesBeingRendered.insert(std::make_pair(image,mutex));
     }
-    ///Okay the image is not used by any other thread, claim that we want to use it
-    assert( it == _imp->imagesBeingRendered.end() );
-    _imp->imagesBeingRendered.push_back(image);
+
 }
 
 void
 Node::unlock(const boost::shared_ptr<Natron::Image> & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
-        std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    ImagesRenderedMap::iterator it = _imp->imagesBeingRendered.find(image);
+
 
     ///The image must exist, otherwise this is a bug
     assert( it != _imp->imagesBeingRendered.end() );
-
+    
+    it->second->unlock();
+    
     _imp->imagesBeingRendered.erase(it);
-
-    ///Notify all waiting threads that we're finished
-    _imp->imageBeingRenderedCond.wakeAll();
 }
 
 boost::shared_ptr<Natron::Image>
@@ -2443,11 +2444,11 @@ Node::getImageBeingRendered(int time,
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
 
-    for (std::list<boost::shared_ptr<Natron::Image> >::iterator it = _imp->imagesBeingRendered.begin();
+    for (ImagesRenderedMap::iterator it = _imp->imagesBeingRendered.begin();
          it != _imp->imagesBeingRendered.end(); ++it) {
-        const Natron::ImageKey &key = (*it)->getKey();
+        const Natron::ImageKey &key = it->first->getKey();
         if ( (key._view == view) && (key._mipMapLevel == mipMapLevel) && (key._time == time) ) {
-            return *it;
+            return it->first;
         }
     }
 
