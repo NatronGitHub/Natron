@@ -61,6 +61,9 @@ class Node
 
 public:
 
+    struct Implementation;
+
+
     Node(AppInstance* app,
          Natron::LibraryBinary* plugin);
 
@@ -783,7 +786,6 @@ private:
      **/
     void isNodeUpstream(const Natron::Node* input,bool* ok) const;
 
-    struct Implementation;
     boost::scoped_ptr<Implementation> _imp;
 };
 } //namespace Natron
