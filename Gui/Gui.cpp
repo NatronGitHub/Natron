@@ -2781,6 +2781,9 @@ Gui::questionDialog(const std::string & title,
 void
 Gui::selectNode(boost::shared_ptr<NodeGui> node)
 {
+    if (!node) {
+        return;
+    }
     _imp->_nodeGraphArea->selectNode(node,false); //< wipe current selection
 }
 

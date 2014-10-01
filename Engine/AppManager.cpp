@@ -1711,11 +1711,12 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
     size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
     size_t totalFreeRAM = getAmountFreePhysicalRAM();
     
+
     double playbackRAMPercent = appPTR->getCurrentSettings()->getRamPlaybackMaximumPercent();
     while (totalFreeRAM <= systemRAMToKeepFree) {
         
-        size_t nodeCacheSize = _imp->_nodeCache->getMemoryCacheSize();
-        size_t viewerRamCacheSize = _imp->_viewerCache->getMemoryCacheSize();
+        size_t nodeCacheSize =  _imp->_nodeCache->getMemoryCacheSize();
+        size_t viewerRamCacheSize =  _imp->_viewerCache->getMemoryCacheSize();
         
         ///If the viewer cache represents more memory than the node cache, clear some of the viewer cache
         if (nodeCacheSize == 0 || (viewerRamCacheSize / (double)nodeCacheSize) > playbackRAMPercent) {
@@ -1724,8 +1725,7 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
             << ", clearing last recently used ViewerCache texture...";
 #endif
             
-            
-            if (! _imp->_viewerCache->evictLRUInMemoryEntry()) {
+            if (!_imp->_viewerCache->evictLRUInMemoryEntry()) {
                 break;
             }
             
@@ -1735,7 +1735,7 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
             qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)
             << ", clearing last recently used NodeCache image...";
 #endif
-            if (! _imp->_nodeCache->evictLRUInMemoryEntry()) {
+            if (!_imp->_nodeCache->evictLRUInMemoryEntry()) {
                 break;
             }
         }

@@ -228,7 +228,9 @@ private:
      */
     mutable std::size_t _memoryCacheSize;     // current size of the cache in bytes
     mutable std::size_t _diskCacheSize;
-    mutable QMutex _lock;
+    mutable QMutex _lock; //protects all data structures of the cache
+
+    mutable QMutex _getLock;  //prevents get() and getOrCreate() to be called simultaneously
 
     /*These 2 are mutable because we need to modify the LRU list even
          when we call get() and we want this function to be const.*/
@@ -254,11 +256,13 @@ public:
           U64 maximumCacheSize      // total size
           ,
           double maximumInMemoryPercentage)      //how much should live in RAM
-        : _maximumInMemorySize(maximumCacheSize * maximumInMemoryPercentage)
+        : CacheAPI()
+          , _maximumInMemorySize(maximumCacheSize * maximumInMemoryPercentage)
           ,_maximumCacheSize(maximumCacheSize)
           ,_memoryCacheSize(0)
           ,_diskCacheSize(0)
           ,_lock()
+          , _getLock()
           ,_memoryCache()
           ,_diskCache()
           ,_cacheName(cacheName)
@@ -294,6 +298,10 @@ public:
              NonKeyParamsPtr* params,
              EntryTypePtr* returnValue) const
     {
+
+        ///Be atomic, so it cannot be created by another thread in the meantime
+        QMutexLocker getlocker(&_getLock);
+
         ///lock the cache before reading it.
         QMutexLocker locker(&_lock);
         return getInternal(key,params,returnValue);
@@ -335,12 +343,17 @@ public:
         NonKeyParamsPtr cachedParams;
 
         ///Be atomic, so it cannot be created by another thread in the meantime
-        QMutexLocker locker(&_lock);
+        QMutexLocker getlocker(&_getLock);
         
-        if ( !getInternal(key,&cachedParams,returnValue) ) {
+        bool didGetSucceed;
+        {
+            QMutexLocker locker(&_lock);
+            didGetSucceed = getInternal(key,&cachedParams,returnValue);
+        }
+        if (!didGetSucceed) {
             
             ///Before allocating the memory check that there's enough space to fit in memory
-            appPTR->checkCacheFreeMemoryIsGoodEnough();
+             appPTR->checkCacheFreeMemoryIsGoodEnough();
             
             
             ///Just in case, we don't allow more than X files to be removed at once.
@@ -356,6 +369,7 @@ public:
                 ++safeCounter;
             }
             
+            QMutexLocker locker(&_lock);
             *returnValue = newEntry(key,params,imageLocker);
 
             return false;
@@ -517,7 +531,7 @@ public:
         QMutexLocker locker(&_lock);
         return tryEvictEntry();
     }
-    
+
     /**
      * @brief Removes the last recently used entry from the disk cache.
      * This is expensive since it takes the lock. Returns false
@@ -830,8 +844,10 @@ public:
             EntryType* value = NULL;
 
             ///Before allocating the memory check that there's enough space to fit in memory
-            appPTR->checkCacheFreeMemoryIsGoodEnough();
-           
+            {
+                QMutexLocker locker(&_lock);
+                appPTR->checkCacheFreeMemoryIsGoodEnough();
+            }
             size_t entryDataSize = it->params->getElementsCount() * sizeof(data_t);
             
             {
