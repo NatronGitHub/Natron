@@ -69,6 +69,8 @@ public:
 
     bool hasQuit() const;
     
+    void notifyIsRunning(bool running);
+    
 protected:
     
     /**

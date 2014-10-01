@@ -641,25 +641,21 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
         _imp->allRenderThreadsInactiveCond.wakeOne();
     }
     
-    bool hasWait = false;
     QMutexLocker l(&_imp->framesToRenderMutex);
     while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
         
-        if (!hasWait) {
-            ///Notify that we're no longer doing work
-            appPTR->fetchAndAddNRunningThreads(-1);
-            hasWait = true;
-        }
+        ///Notify that we're no longer doing work
+        thread->notifyIsRunning(false);
+        
         
         _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
     }
     
     if (!_imp->framesToRender.empty()) {
         
-        if (hasWait) {
-            ///Notify that we're running for good
-            appPTR->fetchAndAddNRunningThreads(1);
-        }
+        ///Notify that we're running for good, will do nothing if flagged already running
+        thread->notifyIsRunning(true);
+        
         
         int ret = _imp->framesToRender.front();
         _imp->framesToRender.pop_front();
@@ -675,9 +671,8 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
         return ret;
     } else {
         // thread is quitting, make sure we notified the application it is no longer running
-        if (!hasWait) {
-            appPTR->fetchAndAddNRunningThreads(-1);
-        }
+        thread->notifyIsRunning(false);
+        
     }
     return -1;
 }
@@ -1058,7 +1053,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     
     
     
-    if (runningThreads < optimalNThreads) {
+    if (runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) {
         
         bool playbackOrRender;
         {
@@ -1525,6 +1520,9 @@ struct RenderThreadTaskPrivate
     bool mustQuit;
     bool hasQuit;
     
+    QMutex runningMutex;
+    bool running;
+    
     RenderThreadTaskPrivate(bool playbackOrRender,Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler)
     : playbackOrRender(playbackOrRender)
     , scheduler(scheduler)
@@ -1532,6 +1530,8 @@ struct RenderThreadTaskPrivate
     , mustQuitMutex()
     , mustQuit(false)
     , hasQuit(false)
+    , runningMutex()
+    , running(false)
     {
         
     }
@@ -1554,36 +1554,30 @@ void
 RenderThreadTask::run()
 {
     
-    appPTR->fetchAndAddNRunningThreads(1);
+    notifyIsRunning(true);
     
     for (;;) {
+        
         int time = _imp->scheduler->pickFrameToRender(this);
         
         if ( mustQuit() ) {
-            {
-                QMutexLocker l(&_imp->mustQuitMutex);
-                _imp->hasQuit = true;
-            }
-            ///We don't need to call (-1) because pickFrameToRender didn't call this if mustQuit == true
-            _imp->scheduler->notifyThreadAboutToQuit(this);
-            return;
+            break;
         }
         
         renderFrame(time);
         
         if ( mustQuit() ) {
-            {
-                QMutexLocker l(&_imp->mustQuitMutex);
-                _imp->hasQuit = true;
-            }
-            
-            ///Notify we're no longer doing work
-            appPTR->fetchAndAddNRunningThreads(-1);
-            
-            _imp->scheduler->notifyThreadAboutToQuit(this);
-            return;
+            break;
         }
     }
+    
+    {
+        QMutexLocker l(&_imp->mustQuitMutex);
+        _imp->hasQuit = true;
+    }
+    notifyIsRunning(false);
+    _imp->scheduler->notifyThreadAboutToQuit(this);
+
 }
 
 bool
@@ -1607,6 +1601,20 @@ RenderThreadTask::mustQuit() const
 {
     QMutexLocker l(&_imp->mustQuitMutex);
     return _imp->mustQuit;
+}
+
+void
+RenderThreadTask::notifyIsRunning(bool running)
+{
+    {
+        QMutexLocker l(&_imp->runningMutex);
+        if (_imp->running == running) {
+            return;
+        }
+        _imp->running = running;
+    }
+    
+    appPTR->fetchAndAddNRunningThreads(running ? 1 : - 1);
 }
 
 ////////////////////////////////////////////////////////////
