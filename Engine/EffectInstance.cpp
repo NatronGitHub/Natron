@@ -1972,14 +1972,12 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         bool callBegin = false;
 
         ///neer call beginsequenceRender here if the render is sequential
-        if (!args._isSequentialRender) {
-            if ( !_imp->beginEndRenderCount.hasLocalData() ) {
-                callBegin = true;
-                _imp->beginEndRenderCount.localData() = 0;
-            } else if (_imp->beginEndRenderCount.localData() == 0) {
-                callBegin = true;
-            }
+        
+        Natron::SequentialPreference pref = getSequentialPreference();
+        if (!isWriter() || pref == EFFECT_NOT_SEQUENTIAL) {
+            callBegin = true;
         }
+
         if (callBegin) {
             assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
             if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,

@@ -699,12 +699,15 @@ OutputSchedulerThread::startRender()
     
     RenderDirection direction;
     int startingFrame;
+    int firstFrame,lastFrame;
     {
         ///Copy the last requested run args
         
         QMutexLocker l(&_imp->runArgsMutex);
         _imp->livingRunArgs = _imp->requestedRunArgs;
         direction = _imp->livingRunArgs.timelineDirection;
+        firstFrame = _imp->livingRunArgs.firstFrame;
+        lastFrame = _imp->livingRunArgs.lastFrame;
         startingFrame = timelineGetTime();
     }
     
@@ -742,6 +745,23 @@ OutputSchedulerThread::startRender()
         pushAllFrameRange();
     } else {
         
+        ///If the output effect is sequential (only WriteFFMPEG for now)
+        Natron::SequentialPreference pref = _imp->outputEffect->getSequentialPreference();
+        if (pref == EFFECT_ONLY_SEQUENTIAL || pref == EFFECT_PREFER_SEQUENTIAL) {
+            
+            RenderScale scaleOne;
+            scaleOne.x = scaleOne.y = 1.;
+            if (_imp->outputEffect->beginSequenceRender_public(firstFrame, lastFrame,
+                                                               1,
+                                                               false,
+                                                               scaleOne, true,
+                                                               true,
+                                                               _imp->outputEffect->getApp()->getMainView()) == StatFailed) {
+                l.unlock();
+                abortRendering(false);
+                return;
+            }
+        }
         
         ///Push as many frames as there are threads
         pushFramesToRender(startingFrame,nThreads);
@@ -763,6 +783,32 @@ OutputSchedulerThread::stopRender()
         _imp->removeAllQuitRenderThreads();
         _imp->waitForRenderThreadsToBeDone();
     }
+    
+    
+    ///If the output effect is sequential (only WriteFFMPEG for now)
+    Natron::SequentialPreference pref = _imp->outputEffect->getSequentialPreference();
+    if (pref == EFFECT_ONLY_SEQUENTIAL || pref == EFFECT_PREFER_SEQUENTIAL) {
+        
+        int firstFrame,lastFrame;
+        {
+            QMutexLocker l(&_imp->runArgsMutex);
+            firstFrame = _imp->livingRunArgs.firstFrame;
+            lastFrame = _imp->livingRunArgs.lastFrame;
+        }
+
+        
+        RenderScale scaleOne;
+        scaleOne.x = scaleOne.y = 1.;
+        (void)_imp->outputEffect->endSequenceRender_public(firstFrame, lastFrame,
+                                                           1,
+                                                           !appPTR->isBackground(),
+                                                           scaleOne, true,
+                                                           !appPTR->isBackground(),
+                                                           _imp->outputEffect->getApp()->getMainView());
+           
+        
+    }
+    
     {
         QMutexLocker abortBeingProcessedLocker(&_imp->abortBeingProcessedMutex);
         _imp->abortBeingProcessed = true;
@@ -1606,26 +1652,33 @@ private:
         
             bool renderDirectly = sequentiallity == Natron::EFFECT_NOT_SEQUENTIAL;
             
+            
+            // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+            // it comes from Natron itself. All exceptions from plugins are already caught
+            // by the HostSupport library.
+            EffectInstance* activeInputToRender;
+            if (renderDirectly) {
+                activeInputToRender = _imp->output;
+            } else {
+                activeInputToRender = _imp->output->getInput(0);
+                if (activeInputToRender) {
+                    activeInputToRender = activeInputToRender->getNearestNonDisabled();
+                } else {
+                    _imp->scheduler->notifyRenderFailure("No input to render");
+                    return;
+                }
+                
+            }
+            
+            assert(activeInputToRender);
+            U64 activeInputToRenderHash = activeInputToRender->getHash();
+
+            
             for (int i = 0; i < viewsCount; ++i) {
                 if ( canOnlyHandleOneView && (i != mainView) ) {
                     ///@see the warning in EffectInstance::evaluate
                     continue;
                 }
-                
-                // Do not catch exceptions: if an exception occurs here it is probably fatal, since
-                // it comes from Natron itself. All exceptions from plugins are already caught
-                // by the HostSupport library.
-                EffectInstance* activeInputToRender;
-                if (renderDirectly) {
-                    activeInputToRender = _imp->output;
-                } else {
-                    activeInputToRender = _imp->output->getInput(0);
-                    if (activeInputToRender) {
-                        activeInputToRender = activeInputToRender->getNearestNonDisabled();
-                    }
-                    
-                }
-                U64 activeInputToRenderHash = activeInputToRender->getHash();
                 
                 Status stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash,time, scale, i, &rod, &isProjectFormat);
                 if (stat != StatFailed) {
