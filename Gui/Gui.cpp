@@ -401,8 +401,8 @@ struct GuiPrivate
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
           , _freezeUIButton(0)
-          , _isGUIFrozen(false)
           , _isGUIFrozenMutex()
+          , _isGUIFrozen(false)
           , menubar(0)
           , menuFile(0)
           , menuRecentFiles(0)
@@ -557,7 +557,6 @@ Gui::closeProject()
     abortProject(false);
 }
 
-#pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
 void
 Gui::abortProject(bool quitApp)
 {
@@ -3496,12 +3495,12 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
 
     RenderingProgressDialog *dialog = new RenderingProgressDialog(this,sequenceName,firstFrame,lastFrame,
                                                                   boost::shared_ptr<ProcessHandler>(),this);
-    boost::shared_ptr<OutputSchedulerThread> scheduler = writer->getScheduler();
+    RenderEngine* engine = writer->getRenderEngine();
 
 
-    QObject::connect( dialog,SIGNAL( canceled() ),scheduler.get(),SLOT( abortRendering_Blocking() ) );
-    QObject::connect( scheduler.get(),SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );
-    QObject::connect( scheduler.get(),SIGNAL( renderFinished(int) ),dialog,SLOT( onVideoEngineStopped(int) ) );
+    QObject::connect( dialog,SIGNAL( canceled() ),engine,SLOT( abortRendering_Blocking() ) );
+    QObject::connect( engine,SIGNAL( frameRendered(int) ),dialog,SLOT( onFrameRendered(int) ) );
+    QObject::connect( engine,SIGNAL( renderFinished(int) ),dialog,SLOT( onVideoEngineStopped(int) ) );
     dialog->show();
 }
 

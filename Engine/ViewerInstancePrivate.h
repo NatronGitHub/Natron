@@ -76,6 +76,7 @@ public:
     
     UpdateViewerParams()
         : ramBuffer(NULL)
+          , mustFreeRamBuffer(false)
           , textureIndex(0)
           , textureRect()
           , bytesCount(0)
@@ -86,7 +87,11 @@ public:
     {
     }
     
-    virtual ~UpdateViewerParams() {}
+    virtual ~UpdateViewerParams() {
+        if (mustFreeRamBuffer) {
+            free(ramBuffer);
+        }
+    }
     
     virtual std::size_t sizeInRAM() const OVERRIDE FINAL
     {
@@ -94,6 +99,7 @@ public:
     }
 
     unsigned char* ramBuffer;
+    bool mustFreeRamBuffer; //< set to true when !cachedFrame
     int textureIndex;
     TextureRect textureRect;
     Natron::ImagePremultiplication srcPremult;
@@ -119,8 +125,6 @@ public:
           , forceRenderMutex()
           , forceRender(false)
           , updateViewerPboIndex(0)
-          , buffer(NULL)
-          , bufferAllocated(0)
           , viewerParamsMutex()
           , viewerParamsGain(1.)
           , viewerParamsLut(Natron::sRGB)
@@ -201,10 +205,6 @@ public:
     //until the texture upload is finished by the main thread.
     int updateViewerPboIndex;                // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
 
-    /// a private buffer for storing frames that are not in the viewer cache.
-    /// This buffer only grows in size, and is definitely freed in the destructor
-    void* buffer;
-    size_t bufferAllocated;
 
     // viewerParams: The viewer parameters that may be accessed from the GUI
     mutable QMutex viewerParamsMutex;   //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels

@@ -3778,8 +3778,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
             }
         } else {
             if (_imp->pickerState == PICKER_INACTIVE) {
-                boost::shared_ptr<OutputSchedulerThread> scheduler = _imp->viewerTab->getInternalNode()->getScheduler();
-                if ( !scheduler->isWorking() ) {
+                if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
                     updateColorPicker( texIndex,widgetPos.x(),widgetPos.y() );
                 }
             } else if ( ( _imp->pickerState == PICKER_POINT) || ( _imp->pickerState == PICKER_RECTANGLE) ) {

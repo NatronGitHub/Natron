@@ -815,8 +815,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_gainSlider, SIGNAL( positionChanged(double) ), this, SLOT( onGainSliderChanged(double) ) );
     QObject::connect( _imp->_gainBox, SIGNAL( valueChanged(double) ), _imp->_gainSlider, SLOT( seekScalePosition(double) ) );
     QObject::connect( _imp->_currentFrameBox, SIGNAL( valueChanged(double) ), this, SLOT( onCurrentTimeSpinBoxChanged(double) ) );
-    boost::shared_ptr<OutputSchedulerThread> scheduler = _imp->_viewerNode->getScheduler();
-    assert(scheduler);
+    RenderEngine* engine = _imp->_viewerNode->getRenderEngine();
+    assert(engine);
 
     QObject::connect( _imp->play_Forward_Button,SIGNAL( clicked(bool) ),this,SLOT( startPause(bool) ) );
     QObject::connect( _imp->stop_Button,SIGNAL( clicked() ),this,SLOT( abortRendering() ) );
@@ -834,7 +834,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_refreshButton, SIGNAL( clicked() ), this, SLOT( refresh() ) );
     QObject::connect( _imp->_centerViewerButton, SIGNAL( clicked() ), this, SLOT( centerViewer() ) );
     QObject::connect( _imp->_viewerNode,SIGNAL( viewerDisconnected() ),this,SLOT( disconnectViewer() ) );
-    QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), scheduler.get(), SLOT( setDesiredFPS(double) ) );
+    QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), engine, SLOT( setDesiredFPS(double) ) );
 
     manageSlotsForInfoWidget(0,true);
 
@@ -935,7 +935,7 @@ ViewerTab::getCurrentView() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    Natron::PlaybackMode mode = _imp->_viewerNode->getScheduler()->getPlaybackMode();
+    Natron::PlaybackMode mode = _imp->_viewerNode->getRenderEngine()->getPlaybackMode();
     mode = (Natron::PlaybackMode)(((int)mode + 1) % 3);
     QPixmap pix;
     switch (mode) {
@@ -952,7 +952,7 @@ ViewerTab::togglePlaybackMode()
             break;
     }
     _imp->playbackMode_Button->setIcon(QIcon(pix));
-    _imp->_viewerNode->getScheduler()->setPlaybackMode(mode);
+    _imp->_viewerNode->getRenderEngine()->setPlaybackMode(mode);
 }
 
 void
@@ -984,7 +984,7 @@ ViewerTab::startPause(bool b)
         _imp->play_Forward_Button->setDown(true);
         _imp->play_Forward_Button->setChecked(true);
         boost::shared_ptr<TimeLine> timeline = _imp->_timeLineGui->getTimeline();
-        _imp->_viewerNode->getScheduler()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_FORWARD);
+        _imp->_viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_FORWARD);
     }
 }
 
@@ -1001,7 +1001,7 @@ ViewerTab::abortRendering()
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
         if (isViewer) {
-            isViewer->getScheduler()->abortRendering(false);
+            isViewer->getRenderEngine()->abortRendering(false);
         }
     }
 }
@@ -1014,7 +1014,7 @@ ViewerTab::startBackward(bool b)
         _imp->play_Backward_Button->setDown(true);
         _imp->play_Backward_Button->setChecked(true);
         boost::shared_ptr<TimeLine> timeline = _imp->_timeLineGui->getTimeline();
-        _imp->_viewerNode->getScheduler()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_BACKWARD);
+        _imp->_viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_BACKWARD);
 
     }
 }
@@ -2527,14 +2527,15 @@ void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    boost::shared_ptr<OutputSchedulerThread> scheduler = _imp->_viewerNode->getScheduler();
+    RenderEngine* engine = _imp->_viewerNode->getRenderEngine();
+    assert(engine);
     if (connect) {
-        QObject::connect( scheduler.get(), SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( scheduler.get(),SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
+        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
     } else {
-        QObject::disconnect( scheduler.get(), SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex],
+        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex],
                             SLOT( setFps(double,double) ) );
-        QObject::disconnect( scheduler.get(),SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
     }
 }
 

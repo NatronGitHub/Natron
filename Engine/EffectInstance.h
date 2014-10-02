@@ -26,7 +26,7 @@ class Format;
 class OverlaySupport;
 class PluginMemory;
 class BlockingBackgroundRender;
-class OutputSchedulerThread;
+class RenderEngine;
 class BufferableObject;
 
 namespace Natron {
@@ -119,12 +119,7 @@ public:
      * the createInstanceAction
      **/
     virtual bool isEffectCreated() const { return true; }
-    
-    /**
-     * @brief Called right away after the effect is created and before any parameters or input is populated.
-     **/
-    virtual void initializeData() {}
-    
+   
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
@@ -835,7 +830,9 @@ public:
      * This is always called on the main-thread.
      **/
     void onNodeHashChanged(U64 hash);
-    
+
+    virtual void initializeData() {}
+
 protected:
 
 
@@ -918,6 +915,7 @@ protected:
     virtual void initializeKnobs() OVERRIDE
     {
     };
+
 
 
     /**
@@ -1127,23 +1125,22 @@ class OutputEffectInstance
     SequenceTime _writerLastFrame;
     mutable QMutex* _outputEffectDataLock;
     BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
-    boost::shared_ptr<OutputSchedulerThread> _scheduler;
+    
+    RenderEngine* _engine;
 public:
 
     OutputEffectInstance(boost::shared_ptr<Node> node);
 
     virtual ~OutputEffectInstance();
-
-    virtual void initializeData() OVERRIDE FINAL;
     
     virtual bool isOutput() const
     {
         return true;
     }
 
-    boost::shared_ptr<OutputSchedulerThread> getScheduler() const
+    RenderEngine* getRenderEngine() const
     {
-        return _scheduler;
+        return _engine;
     }
 
     /**
@@ -1178,14 +1175,17 @@ public:
 
     void setLastFrame(int f);
     
+    virtual void initializeData() OVERRIDE FINAL;
+    
 protected:
-    
-    void appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
-    
+        
     /**
-     * @brief Creates the scheduler that will regulate the output rendering
+     * @brief Creates the engine that will control the output rendering
      **/
-    virtual OutputSchedulerThread*  createOutputScheduler();
+    virtual RenderEngine* createRenderEngine();
+    
+    
+ 
 };
 } // Natron
 #endif // NATRON_ENGINE_EFFECTINSTANCE_H_

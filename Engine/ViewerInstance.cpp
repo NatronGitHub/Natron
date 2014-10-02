@@ -148,11 +148,6 @@ ViewerInstance::~ViewerInstance()
         _imp->uiContext->removeGUI();
     }
 
-    if (_imp->bufferAllocated) {
-        free(_imp->buffer);
-        _imp->bufferAllocated = 0;
-    }
-
     U64 sizeToUnregister = 0;
     if (_imp->lastRenderedImage[0]) {
         sizeToUnregister += _imp->lastRenderedImage[0]->size();
@@ -163,6 +158,12 @@ ViewerInstance::~ViewerInstance()
     if (sizeToUnregister != 0) {
         unregisterPluginMemory(sizeToUnregister);
     }
+}
+
+RenderEngine*
+ViewerInstance::createRenderEngine()
+{
+    return new ViewerRenderEngine(this);
 }
 
 void
@@ -280,8 +281,10 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
 
 Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
+                             int view,
                              bool singleThreaded,
-                             bool isSequentialRender)
+                             bool isSequentialRender,
+                             std::list<boost::shared_ptr<BufferableObject> >& outputFrames)
 {
     if (!_imp->uiContext) {
         return StatFailed;
@@ -293,7 +296,13 @@ ViewerInstance::renderViewer(SequenceTime time,
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::OPERATOR_NONE) ) {
             break;
         }
-        ret[i] = renderViewer_internal(time, singleThreaded, isSequentialRender, i);
+        
+        boost::shared_ptr<BufferableObject> output;
+        ret[i] = renderViewer_internal(time,view, singleThreaded, isSequentialRender, i,&output);
+        if (output) {
+            outputFrames.push_back(output);
+        }
+        
         if (ret[i] == StatFailed) {
             emit disconnectTextureRequest(i);
         }
@@ -310,9 +319,11 @@ ViewerInstance::renderViewer(SequenceTime time,
 
 Natron::Status
 ViewerInstance::renderViewer_internal(SequenceTime time,
+                                      int view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
-                                      int textureIndex)
+                                      int textureIndex,
+                                      boost::shared_ptr<BufferableObject>* outputObject)
 {
     // always running in the render thread
     // Sadly we had to get rid of this useful debug function since now there can be several concurrent threads running this function.
@@ -325,8 +336,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     Format dispW;
     getRenderFormat(&dispW);
-    int viewsCount = getRenderViewsCount();
-    int view = (viewsCount > 0  && _imp->uiContext) ? _imp->uiContext->getCurrentView() : 0;
     int activeInputIndex;
     if (textureIndex == 0) {
         QMutexLocker l(&_imp->activeInputsMutex);
@@ -698,20 +707,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///overload the ViewerCache which may become slowe
         assert(_imp->uiContext);
         if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
+            
             assert(!params->cachedFrame);
-            // don't reallocate if we need less memory (avoid fragmentation)
-            if (_imp->bufferAllocated < bytesCount) {
-                if (_imp->bufferAllocated > 0) {
-                    free(_imp->buffer);
-                }
-                _imp->bufferAllocated = bytesCount;
-                _imp->buffer = (unsigned char*)malloc(_imp->bufferAllocated);
-                if (!_imp->buffer) {
-                    _imp->bufferAllocated = 0;
-                    throw std::bad_alloc();
-                }
-            }
-            ramBuffer = (unsigned char*)_imp->buffer;
+            params->mustFreeRamBuffer = true;
+            params->ramBuffer =  (unsigned char*)malloc(bytesCount);
+            ramBuffer = (params->ramBuffer);
+            
         } else {
             
             
@@ -728,10 +729,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 return StatFailed;
             }
             
-            if (!textureIsCached) {
-                params->cachedFrame->allocateMemory();
-            } else {
+            if (textureIsCached) {
                 entryLocker.lock(params->cachedFrame);
+            } else {
+                ///The entry has already been locked by the cache
+                params->cachedFrame->allocateMemory();
             }
 
             assert(params->cachedFrame);
@@ -918,46 +920,64 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                           this,
                           ramBuffer);
         } else {
+            
             int rowsPerThread = std::ceil( (double)(texRectClipped.x2 - texRectClipped.x1) / appPTR->getHardwareIdealThreadCount() );
             // group of group of rows where first is image coordinate, second is texture coordinate
             QList< std::pair<int, int> > splitRows;
-            int k = texRectClipped.y1;
-            while (k < texRectClipped.y2) {
-                int top = k + rowsPerThread;
-                int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
-                splitRows.push_back( std::make_pair(k,realTop) );
-                k += rowsPerThread;
+            
+            bool runInCurrentThread = QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount();
+            
+            if (!runInCurrentThread) {
+                int k = texRectClipped.y1;
+                while (k < texRectClipped.y2) {
+                    int top = k + rowsPerThread;
+                    int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
+                    splitRows.push_back( std::make_pair(k,realTop) );
+                    k += rowsPerThread;
+                }
             }
-
+            
             ///if autoContrast is enabled, find out the vmin/vmax before rendering and mapping against new values
             if (autoContrast) {
                 rowsPerThread = std::ceil( (double)( roi.width() ) / (double)appPTR->getHardwareIdealThreadCount() );
+                
                 std::vector<RectI> splitRects;
-                k = roi.y1;
-                while (k < roi.y2) {
-                    int top = k + rowsPerThread;
-                    int realTop = top > roi.top() ? roi.top() : top;
-                    splitRects.push_back( RectI(roi.left(), k, roi.right(), realTop) );
-                    k += rowsPerThread;
-                }
-
-                QFuture<std::pair<double,double> > future = QtConcurrent::mapped( splitRects,
-                                                                                  boost::bind(findAutoContrastVminVmax,
-                                                                                              lastRenderedImage,
-                                                                                              channels,
-                                                                                              _1) );
-                future.waitForFinished();
+                
                 double vmin = std::numeric_limits<double>::infinity();
                 double vmax = -std::numeric_limits<double>::infinity();
-                std::pair<double,double> vMinMax;
-                foreach ( vMinMax, future.results() ) {
-                    if (vMinMax.first < vmin) {
-                        vmin = vMinMax.first;
+                
+                if (!runInCurrentThread) {
+                    int k = roi.y1;
+                    while (k < roi.y2) {
+                        int top = k + rowsPerThread;
+                        int realTop = top > roi.top() ? roi.top() : top;
+                        splitRects.push_back( RectI(roi.left(), k, roi.right(), realTop) );
+                        k += rowsPerThread;
                     }
-                    if (vMinMax.second > vmax) {
-                        vmax = vMinMax.second;
+                    
+                    
+                    QFuture<std::pair<double,double> > future = QtConcurrent::mapped( splitRects,
+                                                                                     boost::bind(findAutoContrastVminVmax,
+                                                                                                 lastRenderedImage,
+                                                                                                 channels,
+                                                                                                 _1) );
+                    future.waitForFinished();
+                    
+                    std::pair<double,double> vMinMax;
+                    foreach ( vMinMax, future.results() ) {
+                        if (vMinMax.first < vmin) {
+                            vmin = vMinMax.first;
+                        }
+                        if (vMinMax.second > vmax) {
+                            vmax = vMinMax.second;
+                        }
                     }
+                } else { //!runInCurrentThread
+                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(lastRenderedImage, channels, roi);
+                    vmin = vMinMax.first;
+                    vmax = vMinMax.second;
                 }
+                
                 if (vmax == vmin) {
                     vmin = vmax - 1.;
                 }
@@ -976,12 +996,19 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                          offset,
                                          lutFromColorspace(srcColorSpace),
                                          lutFromColorspace(lut) );
-            QtConcurrent::map( splitRows,
-                               boost::bind(&renderFunctor,
-                                           _1,
-                                           args,
-                                           this,
-                                           ramBuffer) ).waitForFinished();
+            if (runInCurrentThread) {
+                renderFunctor(std::make_pair(textureRect.y1,textureRect.y2),
+                              args, this, ramBuffer);
+            } else {
+                QtConcurrent::map( splitRows,
+                                  boost::bind(&renderFunctor,
+                                              _1,
+                                              args,
+                                              this,
+                                              ramBuffer) ).waitForFinished();
+            }
+            
+            
         }
         if ( activeInputToRender->aborted() ) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -993,15 +1020,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         appPTR->clearExceedingEntriesFromNodeCache();
     } // !isCached
 
-    if ( getScheduler()->mustQuitThread() ) {
-        return StatFailed;
-    }
 
     /////////////////////////////////////////
     // call updateViewer()
 
     if ( !activeInputToRender->aborted() ) {
-
+        
         params->ramBuffer = ramBuffer;
         params->textureRect = textureRect;
         params->srcPremult = srcPremult;
@@ -1011,9 +1035,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         params->lut = lut;
         params->mipMapLevel = (unsigned int)mipMapLevel;
         params->textureIndex = textureIndex;
-        if ( !activeInputToRender->aborted() ) {
-            appendToBuffer(time, view, boost::dynamic_pointer_cast<BufferableObject>(params));
-        }
+        *outputObject = boost::dynamic_pointer_cast<BufferableObject>(params);
+        
     }
     // end of boost::shared_ptr<UpdateUserParams> scope... but it still lives inside updateViewer()
 
@@ -1021,6 +1044,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     return StatOK;
 } // renderViewer_internal
 
+
+void
+ViewerInstance::updateViewer(const boost::shared_ptr<BufferableObject>& frame)
+{
+    _imp->updateViewer(boost::dynamic_pointer_cast<UpdateViewerParams>(frame));
+}
 
 void
 renderFunctor(std::pair<int,int> yRange,
@@ -2180,9 +2209,7 @@ ViewerInstance::addAcceptedComponents(int /*inputNb*/,
 int
 ViewerInstance::getCurrentView() const
 {
-    assert(_imp->uiContext);
-
-    return _imp->uiContext->getCurrentView();
+    return _imp->uiContext ? _imp->uiContext->getCurrentView() : 0;
 }
 
 void
@@ -2270,10 +2297,4 @@ ViewerInstance::getTimeline() const
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
 }
 
-OutputSchedulerThread*
-ViewerInstance::createOutputScheduler()
-{
-    return new ViewerDisplayScheduler(this);
-
-}
 

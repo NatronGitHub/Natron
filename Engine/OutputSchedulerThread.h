@@ -28,7 +28,7 @@ namespace Natron {
     class OutputEffectInstance;
 }
 
-
+class RenderEngine;
 
 /**
  * @brief Stub class used by internal implementation of OutputSchedulerThread to pass objects through signal/slots
@@ -54,7 +54,7 @@ class RenderThreadTask :  public QThread
     
 public:
     
-    RenderThreadTask(bool playbackOrRender,Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler);
+    RenderThreadTask(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler);
     
     virtual ~RenderThreadTask();
     
@@ -106,7 +106,7 @@ public:
         TREAT_ON_MAIN_THREAD //< the treatFrame_blocking function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(Natron::OutputEffectInstance* effect,Mode mode);
+    OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,Mode mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -138,11 +138,6 @@ public:
      * This is not appropriate to call this function from a writer.
      **/
     void renderFromCurrentFrame(RenderDirection forward);
-    
-    /**
-     * @brief Basically it just calls render(...) with the current frame on the timeline.
-     **/
-    void renderCurrentFrame(bool abortPrevious = true);
 
     
     /**
@@ -163,16 +158,7 @@ public:
      * @brief Returns true if the scheduler is active and some render threads are doing work.
      **/
     bool isWorking() const;
-    
-    /**
-     * @brief Returns true if the scheduler is currently rendering and doing playback.
-     **/
-    bool isDoingPlayback() const;
-    
-    /**
-     * @brief Return the playback mode
-     **/
-    Natron::PlaybackMode getPlaybackMode() const;
+
     
     void doAbortRenderingOnMainThread (bool blocking)
     {
@@ -206,7 +192,18 @@ public:
      **/
     void notifyThreadAboutToQuit(RenderThreadTask* thread);
     
+    /**
+     *@brief The slot called by the GUI to set the requested fps.
+     **/
+    void setDesiredFPS(double d);
     
+    
+    /**
+     * @brief Returns the desired user FPS that the internal scheduler should stick to
+     **/
+    double getDesiredFPS() const;
+    
+
     
 public slots:
     
@@ -227,36 +224,12 @@ public slots:
      * If you want to abortRendering() from one of those threads, call doAbortRenderingOnMainThreadInstead
      **/
     void abortRendering(bool blocking);
-    
-    void abortRendering_Blocking() { abortRendering(true); }
-    
-    /**
-     * @brief Set the playback mode
-     * @param mode Corresponds to the Natron::PlaybackMode enum
-     **/
-    void setPlaybackMode(int mode);
-    
-    
-    /**
-     *@brief The slot called by the GUI to set the requested fps.
-     **/
-    void setDesiredFPS(double d);
-    
 signals:
     
     void s_doTreatOnMainThread(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
     
     void s_abortRenderingOnMainThread(bool blocking);
     
-    void fpsChanged(double actualFps,double desiredFps);
-    
-    void frameRendered(int time);
-    
-    /**
-     * @brief Emitted when the stopRender() function is called
-     * @param retCode Will be set to 1 if the render was finished because it was aborted, 0 otherwise.
-     **/
-    void renderFinished(int retCode);
     
 protected:
     
@@ -333,7 +306,7 @@ protected:
      * @param playbackOrRender Used as a hint to know that we're rendering for playback or render on disk
      * and not just for one frame
      **/
-    virtual RenderThreadTask* createRunnable(bool playbackOrRender) = 0;
+    virtual RenderThreadTask* createRunnable() = 0;
     
     /**
      * @brief Called upon failure of a thread to render an image
@@ -403,7 +376,7 @@ class DefaultScheduler : public OutputSchedulerThread
 {
 public:
     
-    DefaultScheduler(Natron::OutputEffectInstance* effect);
+    DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect);
     
     virtual ~DefaultScheduler();
     
@@ -421,7 +394,7 @@ private:
     
     virtual void timelineSetBounds(int left,int right) OVERRIDE FINAL;
     
-    virtual RenderThreadTask* createRunnable(bool playbackOrRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
@@ -440,7 +413,7 @@ class ViewerDisplayScheduler : public OutputSchedulerThread
 {
 public:
     
-    ViewerDisplayScheduler(ViewerInstance* viewer);
+    ViewerDisplayScheduler(RenderEngine* engine,ViewerInstance* viewer);
     
     virtual ~ViewerDisplayScheduler();
     
@@ -464,7 +437,7 @@ private:
     
     virtual void getFrameRangeToRender(int& first,int& last) const OVERRIDE FINAL;
     
-    virtual RenderThreadTask* createRunnable(bool playbackOrRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
@@ -473,6 +446,152 @@ private:
     virtual void onRenderStopped() OVERRIDE FINAL;
     
     ViewerInstance* _viewer;
+};
+
+
+/**
+ * @brief This class manages multiple OutputThreadScheduler so that each render request gets treated as soon as possible.
+ **/
+struct RenderEnginePrivate;
+class RenderEngine : public QObject
+{
+    
+    Q_OBJECT
+    
+    
+    friend class OutputSchedulerThread;
+    
+public:
+    
+    RenderEngine(Natron::OutputEffectInstance* output);
+    
+    virtual ~RenderEngine();
+   
+    
+    /**
+     * @brief Call this to render from firstFrame to lastFrame included.
+     **/
+    void renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirection forward);
+    
+    /**
+     * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
+     * start from the current frame.
+     * This is not appropriate to call this function from a writer.
+     **/
+    void renderFromCurrentFrame(OutputSchedulerThread::RenderDirection forward);
+    
+    /**
+     * @brief Basically it just renders with the current frame on the timeline.
+     * @param abortPrevious If true then it will stop any ongoing render and render the current frame
+     * in a separate thread
+     **/
+    void renderCurrentFrame(bool abortPrevious = true);
+
+    /**
+     * @brief Returns the playback mode of the internal scheduler
+     **/
+    Natron::PlaybackMode getPlaybackMode() const;
+    
+    /**
+     * @brief Returns the desired user FPS that the internal scheduler should stick to
+     **/
+    double getDesiredFPS() const;
+    
+    /**
+     * @brief Quit all processing, making sure all threads are finished.
+     **/
+    void quitEngine();
+    
+    /**
+     * @brief Returns true if threads owned by the engine are still alive
+     **/
+    bool hasThreadsAlive() const;
+    
+    /**
+     * @brief Returns true if the scheduler is active and some render threads are doing work.
+     **/
+    bool hasThreadsWorking() const;
+    
+public slots:
+
+    
+    /**
+     * @brief Set the playback mode
+     * @param mode Corresponds to the Natron::PlaybackMode enum
+     **/
+    void setPlaybackMode(int mode);
+    
+    
+    /**
+     *@brief The slot called by the GUI to set the requested fps.
+     **/
+    void setDesiredFPS(double d);
+    
+    
+    /**
+     * @brief Aborts the internal scheduler
+     **/
+    void abortRendering(bool blocking);
+    void abortRendering_Blocking() { abortRendering(true); }
+
+    void onFutureFinished();
+    void onFutureCanceled();
+    
+signals:
+    
+    /**
+     * @brief Emitted when the fps has changed
+     * This will not be emitted after calling renderCurrentFrame
+     **/
+    void fpsChanged(double actualFps,double desiredFps);
+    
+    /**
+     * @brief Emitted after a frame is rendered.
+     * This will not be emitted after calling renderCurrentFrame
+     **/
+    void frameRendered(int time);
+    
+    /**
+     * @brief Emitted when the stopRender() function is called
+     * @param retCode Will be set to 1 if the render was finished because it was aborted, 0 otherwise.
+     * This will not be emitted after calling renderCurrentFrame
+     **/
+    void renderFinished(int retCode);
+
+protected:
+    
+    
+    /**
+     * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
+     **/
+    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) ;
+    
+private:
+    
+    /**
+     * The following functions are called by the OutputThreadScheduler to emit the corresponding signals
+     **/
+    void s_fpsChanged(double actual,double desired) { emit fpsChanged(actual, desired); }
+    void s_frameRendered(int time) { emit frameRendered(time); }
+    void s_renderFinished(int retCode) { emit renderFinished(retCode); }
+    
+    boost::scoped_ptr<RenderEnginePrivate> _imp;
+};
+
+class ViewerRenderEngine : public RenderEngine
+{
+    
+public:
+    
+    ViewerRenderEngine(Natron::OutputEffectInstance* output)
+    : RenderEngine(output)
+    {}
+    
+    virtual ~ViewerRenderEngine() {}
+    
+private:
+    
+    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 #endif // OUTPUTSCHEDULERTHREAD_H

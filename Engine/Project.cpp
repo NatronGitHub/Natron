@@ -231,7 +231,7 @@ Project::refreshViewersAndPreviews()
             _imp->currentNodes[i]->computePreviewImage(time);
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance());
             if (n) {
-                n->getScheduler()->renderCurrentFrame();
+                n->getRenderEngine()->renderCurrentFrame();
             }
         }
     }
@@ -493,7 +493,7 @@ Project::onAutoSaveTimerTriggered()
             if ( (*it)->isOutputNode() ) {
                 Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getLiveInstance() );
                 assert(effect);
-                if ( effect->getScheduler()->isWorking() ) {
+                if ( effect->getRenderEngine()->hasThreadsWorking() ) {
                     canAutoSave = false;
                     break;
                 }

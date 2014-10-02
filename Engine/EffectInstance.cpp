@@ -3151,23 +3151,24 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
       , _writerLastFrame(0)
       , _outputEffectDataLock(new QMutex)
       , _renderController(0)
-      , _scheduler()
+      , _engine(0)
 {
 }
 
 OutputEffectInstance::~OutputEffectInstance()
 {
-    if (_scheduler) {
+    if (_engine) {
         ///Thread must have been killed before.
-        assert( !_scheduler->isRunning() );
+        assert( !_engine->hasThreadsAlive() );
     }
+    delete _engine;
     delete _outputEffectDataLock;
 }
 
 void
 OutputEffectInstance::renderCurrentFrame(bool abortPrevious)
 {
-    _scheduler->renderCurrentFrame(abortPrevious);
+    _engine->renderCurrentFrame(abortPrevious);
 }
 
 bool
@@ -3222,7 +3223,7 @@ OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderControl
         }
     }
     ///If you want writers to render backward (from last to first), just change the flag in parameter here
-    _scheduler->renderFrameRange(first,last,OutputSchedulerThread::RENDER_FORWARD);
+    _engine->renderFrameRange(first,last,OutputSchedulerThread::RENDER_FORWARD);
 
 }
 
@@ -3297,22 +3298,16 @@ OutputEffectInstance::setLastFrame(int f)
     _writerLastFrame = f;
 }
 
-
-
-OutputSchedulerThread*
-OutputEffectInstance::createOutputScheduler()
-{
-    return new DefaultScheduler(this);
-}
-
 void
 OutputEffectInstance::initializeData()
 {
-    _scheduler.reset(createOutputScheduler());
+    _engine= createRenderEngine();
 }
 
-void
-OutputEffectInstance::appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& frame)
+RenderEngine*
+OutputEffectInstance::createRenderEngine()
 {
-    _scheduler->appendToBuffer(time, view, frame);
+    return new RenderEngine(this);
 }
+
+

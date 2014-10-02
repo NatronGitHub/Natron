@@ -33,8 +33,7 @@ class ViewerInstance
 : public QObject, public Natron::OutputEffectInstance
 {
     Q_OBJECT
-
-    friend class ViewerDisplayScheduler;
+    
 public:
     
     
@@ -56,8 +55,6 @@ public:
 
     virtual ~ViewerInstance();
     
-    OutputSchedulerThread* createOutputScheduler() OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
     ///Called upon node creation and then never changed
@@ -79,9 +76,12 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    Natron::Status renderViewer(SequenceTime time,bool singleThreaded,bool isSequentialRender) WARN_UNUSED_RETURN;
+    Natron::Status renderViewer(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
+                                std::list<boost::shared_ptr<BufferableObject> >& outputFrames) WARN_UNUSED_RETURN;
 
 
+    void updateViewer(const boost::shared_ptr<BufferableObject>& frame);
+    
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully
      **/
@@ -240,9 +240,10 @@ private:
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
     /*******************************************/
     
-    Natron::Status renderViewer_internal(SequenceTime time,bool singleThreaded,bool isSequentialRender,
-                                         int textureIndex) WARN_UNUSED_RETURN;
+    Natron::Status renderViewer_internal(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
+                                         int textureIndex,boost::shared_ptr<BufferableObject>* outputObject) WARN_UNUSED_RETURN;
 
+    virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
 private:
     
     struct ViewerInstancePrivate;

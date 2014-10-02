@@ -644,7 +644,7 @@ Node::abortAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
 
     if (isOutput) {
-        isOutput->getScheduler()->abortRendering(true);
+        isOutput->getRenderEngine()->abortRendering(true);
     }
     _imp->abortPreview();
 }
@@ -655,7 +655,7 @@ Node::quitAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
 
     if (isOutput) {
-        isOutput->getScheduler()->quitThread();
+        isOutput->getRenderEngine()->quitEngine();
     }
     _imp->abortPreview();
 }
@@ -672,8 +672,8 @@ Node::removeReferences()
 {
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance);
 
-    if ( isOutput && isOutput->getScheduler()->isRunning() ) {
-        isOutput->getScheduler()->quitThread();
+    if (isOutput) {
+        isOutput->getRenderEngine()->quitEngine();
     }
     delete _imp->liveInstance;
     _imp->liveInstance = 0;
@@ -2424,6 +2424,7 @@ Node::lock(const boost::shared_ptr<Natron::Image> & image)
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
     std::list<boost::shared_ptr<Natron::Image> >::iterator it =
             std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    
     while ( it != _imp->imagesBeingRendered.end() ) {
         _imp->imageBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
         it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
