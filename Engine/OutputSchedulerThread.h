@@ -203,7 +203,16 @@ public:
      **/
     double getDesiredFPS() const;
     
-
+    /**
+     * @brief Must return whether the user has unlocked the timeline range.
+     * If true then the scheduler should not attempt to calculate it automatically
+     **/
+    virtual bool isTimelineRangeSetByUser() const { return false; }
+    
+    /**
+     * @brief Returns the frame range of the output node, as given by the getFrameRange action
+     **/
+    void getPluginFrameRange(int& first,int &last) const;
     
 public slots:
     
@@ -272,21 +281,13 @@ protected:
      **/
     void getFrameRangeRequestedToRender(int &first,int& last) const;
     
-    /**
-     * @brief Returns the frame range of the output node, as given by the getFrameRange action
-     **/
-    void getPluginFrameRange(int& first,int &last) const;
+
 
     /**
      * @brief Return the frame expected to be rendered
      **/
     virtual int timelineGetTime() const = 0;
     
-    /**
-     * @brief Must return whether the user has unlocked the timeline range.
-     * If true then the scheduler should not attempt to calculate it automatically
-     **/
-    virtual bool isTimelineRangeSetByUser() const { return false; }
     
     /**
      * @brief Typically if the user has changed the timeline bounds on the GUI, we want to update the frame range on which the scheduler
@@ -417,6 +418,8 @@ public:
     
     virtual ~ViewerDisplayScheduler();
     
+    virtual bool isTimelineRangeSetByUser() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 private:
 
     virtual void treatFrame(double time,int view,const boost::shared_ptr<BufferableObject>& frame) OVERRIDE FINAL;
@@ -426,8 +429,6 @@ private:
     virtual void timelineGoTo(int time) OVERRIDE FINAL;
     
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    virtual bool isTimelineRangeSetByUser() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void timelineSetBounds(int left,int right) OVERRIDE FINAL;
     

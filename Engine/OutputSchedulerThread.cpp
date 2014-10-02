@@ -2078,6 +2078,20 @@ RenderEngine::renderCurrentFrame(bool abortPrevious)
     }
     
     
+    {
+        QMutexLocker k(&_imp->schedulerCreationLock);
+        if (!_imp->scheduler) {
+            _imp->scheduler = createScheduler(_imp->output);
+        }
+    }
+    
+    {
+        if ( !_imp->scheduler->isTimelineRangeSetByUser() ) {
+            int firstFrame,lastFrame;
+            _imp->scheduler->getPluginFrameRange(firstFrame,lastFrame);
+            isViewer->getTimeline()->setFrameRange(firstFrame, lastFrame);
+        }
+    }
     
     ///If the user doesn't want to use any thread, run it into the main thread
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
