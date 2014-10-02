@@ -1356,9 +1356,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
         ///Cache the image with the requested components instead of the remapped ones
+#pragma message WARN("IS IT CORRECT? use mipmaplevel=0 if renderFullScaleThenDownscale")
         cachedImgParams = Natron::Image::makeParams(cost,
                                                     rod,
-                                                    args.mipMapLevel,
+                                                    renderFullScaleThenDownscale ? 0 : args.mipMapLevel,
                                                     isProjectFormat,
                                                     args.components,
                                                     args.bitdepth,
