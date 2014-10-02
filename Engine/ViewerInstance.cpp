@@ -688,8 +688,14 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///Since it is used during the whole function scope it is guaranteed not to be freed before
         ///The viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        ramBuffer = params->cachedFrame->data();
+        ///
+        ///Edit: Also make sure we have the lock on the texture because it may be in the cache already
+        ///but not yet allocated.
+        {
+            FrameEntryLocker entryLocker(_imp.get(),params->cachedFrame);
 
+            ramBuffer = params->cachedFrame->data();
+        }
         {
             QMutexLocker l(&_imp->lastRenderedTextureMutex);
             _imp->lastRenderedTexture = params->cachedFrame;
@@ -1025,7 +1031,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     // call updateViewer()
 
     if ( !activeInputToRender->aborted() ) {
-        
+        assert(ramBuffer);
         params->ramBuffer = ramBuffer;
         params->textureRect = textureRect;
         params->srcPremult = srcPremult;

@@ -2062,12 +2062,17 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             // and read-write on it.
             // It is probably safer to assume that several clones may write to the same output image only in the FULLY_SAFE case.
 
-            // FULLY_SAFE means that there is only one render per FRAME for a given instance take a per-frame lock here (the map of per-frame
+            // FULLY_SAFE means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
             ///locks belongs to an instance)
 
-            QMutexLocker l( (safety == INSTANCE_SAFE) ? &getNode()->getRenderInstancesSharedMutex() :
-                            ( (safety == FULLY_SAFE) ? &getNode()->getFrameMutex(time) :
-                              appPTR->getMutexForPlugin( getPluginID().c_str() ) ) );
+            QMutexLocker *locker = 0;
+
+            if (safety == INSTANCE_SAFE) {
+                 locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
+            } else if (safety == UNSAFE) {
+                locker = new QMutexLocker( appPTR->getMutexForPlugin( getPluginID().c_str() ) );
+            }
+            ///For FULLY_SAFE, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
             renderStatus = tiledRenderingFunctor(args,
                                                  renderFullScaleThenDownscale,
@@ -2077,6 +2082,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                  downscaledMappedImage,
                                                  fullScaleMappedImage,
                                                  renderMappedImage);
+
+            delete locker;
             break;
         }
         } // switch

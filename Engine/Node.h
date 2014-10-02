@@ -519,9 +519,6 @@ public:
     //only 1 clone can render at any time
     QMutex & getRenderInstancesSharedMutex();
 
-    ///see FULLY_SAFE in EffectInstance::renderRoI
-    QMutex & getFrameMutex(int time);
-
     void refreshPreviewsRecursivelyDownstream(int time);
 
     void refreshPreviewsRecursivelyUpstream(int time);

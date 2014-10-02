@@ -89,8 +89,6 @@ struct Node::Implementation
           , mustQuitPreview(false)
           , mustQuitPreviewMutex()
           , mustQuitPreviewCond()
-          , perFrameMutexesLock()
-          , renderInstancesFullySafePerFrameMutexes()
           , knobsAge(0)
           , knobsAgeMutex()
           , masterNodeMutex()
@@ -169,9 +167,7 @@ struct Node::Implementation
     QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see INSTANCE_SAFE in EffectInstance::renderRoI
                                        //only 1 clone can render at any time
-    QMutex perFrameMutexesLock; //< protects renderInstancesFullySafePerFrameMutexes
-    std::map<int,boost::shared_ptr<QMutex> > renderInstancesFullySafePerFrameMutexes; //< see FULLY_SAFE in EffectInstance::renderRoI
-    //only 1 render per frame
+
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the liveInstance has its evaluate() function called.
     mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
     Hash64 hash; //< recomputed everytime knobsAge is changed.
@@ -2154,23 +2150,6 @@ QMutex &
 Node::getRenderInstancesSharedMutex()
 {
     return _imp->renderInstancesSharedMutex;
-}
-
-QMutex &
-Node::getFrameMutex(int time)
-{
-    QMutexLocker l(&_imp->perFrameMutexesLock);
-    std::map<int,boost::shared_ptr<QMutex> >::const_iterator it = _imp->renderInstancesFullySafePerFrameMutexes.find(time);
-
-    if ( it != _imp->renderInstancesFullySafePerFrameMutexes.end() ) {
-        // found the mutex, return it
-        return *(it->second);
-    }
-    // create new map entry containing the mutex for this frame
-    shared_ptr<QMutex> m(new QMutex);
-    _imp->renderInstancesFullySafePerFrameMutexes.insert( std::make_pair(time,m) );
-
-    return *m;
 }
 
 void
