@@ -72,14 +72,18 @@ macx {
   QMAKE_PBUILDER_VERSION = 46
 
   QMAKE_MACOSX_DEPLOYMENT_VERSION = $$split(QMAKE_MACOSX_DEPLOYMENT_TARGET, ".")
+  QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION = $$first(QMAKE_MACOSX_DEPLOYMENT_VERSION)
   QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION = $$last(QMAKE_MACOSX_DEPLOYMENT_VERSION)
   universal {
-    equal(QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION, 10) {
-      equal(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 4)|equal(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 5) {
+    message("Compiling for universal OSX $${QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION}.$$QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION")
+    contains(QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION, 10) {
+      contains(QMAKE_MACOSX_DEPLOYMENT_TARGET, 4)|contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 5) {
         # OSX 10.4 (Tiger) and 10.5 (Leopard) are x86/ppc
+        message("Compiling for universal ppc/i386")
         CONFIG += x86 ppc
       }
-      equal(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 6) {
+      contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 6) {
+        message("Compiling for universal i386/x86_64")
         # OSX 10.6 (Snow Leopard) may run on Intel 32 or 64 bits architectures
         CONFIG += x86 x86_64
       }

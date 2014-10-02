@@ -1753,10 +1753,18 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
         assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
 
+        RectI renderMappedRectToRender;
+        
+        if (renderFullScaleThenDownscale) {
+            canonicalRectToRender.toPixelEnclosing(0, &renderMappedRectToRender);
+            renderMappedRectToRender.intersect(renderMappedImage->getBounds(), &renderMappedRectToRender);
+        } else {
+            renderMappedRectToRender = downscaledRectToRender;
+        }
         
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs);
         scopedArgs.setArgs_firstPass(rod,
-                                     downscaledRectToRender,
+                                     renderMappedRectToRender,
                                      time,
                                      view,
                                      isSequentialRender,
@@ -2015,7 +2023,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(downscaledRectToRender, nbThreads);
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
             QFuture<Natron::Status> ret = QtConcurrent::mapped( splitRects,
-                                                                boost::bind(&EffectInstance::tiledRenderingFunctor, this,
+                                                                boost::bind(&EffectInstance::tiledRenderingFunctor_separateThread,
+                                                                            this,
                                                                             args,
                                                                             renderFullScaleThenDownscale,
                                                                             _1,
@@ -2074,7 +2083,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             }
             ///For FULLY_SAFE, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
-            renderStatus = tiledRenderingFunctor(args,
+            renderStatus = tiledRenderingFunctor_currentThread(args,
                                                  renderFullScaleThenDownscale,
                                                  downscaledRectToRender,
                                                  downscaledImage,
@@ -2108,8 +2117,37 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     return retCode;
 } // renderRoIInternal
 
+
 Natron::Status
-EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
+EffectInstance::tiledRenderingFunctor_separateThread(const RenderArgs & args,
+                                               bool renderFullScaleThenDownscale,
+                                               const RectI & downscaledRectToRender,
+                                               const boost::shared_ptr<Natron::Image> & downscaledImage,
+                                               const boost::shared_ptr<Natron::Image> & fullScaleImage,
+                                               const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
+                                               const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
+                                               const boost::shared_ptr<Natron::Image> & renderMappedImage)
+{
+    return tiledRenderingFunctor_internal(args, true, renderFullScaleThenDownscale, downscaledRectToRender, downscaledImage, fullScaleImage, downscaledMappedImage, fullScaleMappedImage, renderMappedImage);
+}
+
+Natron::Status
+EffectInstance::tiledRenderingFunctor_currentThread(const RenderArgs & args,
+                                                     bool renderFullScaleThenDownscale,
+                                                     const RectI & downscaledRectToRender,
+                                                     const boost::shared_ptr<Natron::Image> & downscaledImage,
+                                                     const boost::shared_ptr<Natron::Image> & fullScaleImage,
+                                                     const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
+                                                     const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
+                                                     const boost::shared_ptr<Natron::Image> & renderMappedImage)
+{
+    return tiledRenderingFunctor_internal(args, false, renderFullScaleThenDownscale, downscaledRectToRender, downscaledImage, fullScaleImage, downscaledMappedImage, fullScaleMappedImage, renderMappedImage);
+}
+
+
+Natron::Status
+EffectInstance::tiledRenderingFunctor_internal(const RenderArgs & args,
+                                      bool setThreadLocalStorage,
                                       bool renderFullScaleThenDownscale,
                                       const RectI & downscaledRectToRender,
                                       const boost::shared_ptr<Natron::Image> & downscaledImage,
@@ -2126,7 +2164,10 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     }
     assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
     assert( fullScaleMappedImage->getBounds() == fullScaleImage->getBounds() );
-    Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,args);
+    
+    
+    
+    
     const SequenceTime time = args._time;
     int mipMapLevel = downscaledImage->getMipMapLevel();
     const int view = args._view;
@@ -2141,67 +2182,94 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     assert(renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
            renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2);
 
-    // check the bitmap!
-    const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
-
-    assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
-           renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
-
-
+   
+    
+    
     RectI renderRectToRender; // rectangle to render, in renderMappedImage's pixel coordinates
-    if (renderFullScaleThenDownscale) {
-        RectD canonicalrenderRectToRender;
-        downscaledRectToRenderMinimal.toCanonical(mipMapLevel, args._rod, &canonicalrenderRectToRender);
-        canonicalrenderRectToRender.toPixelEnclosing(0, &renderRectToRender);
-        renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
-    } else {
-        renderRectToRender = downscaledRectToRenderMinimal;
-    }
-
-    if ( !renderRectToRender.isNull() ) {
-        RenderScale renderMappedScale;
-        renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel( renderMappedImage->getMipMapLevel() );
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
-        Natron::Status st = render_public(time, renderMappedScale, renderRectToRender, view,
-                                          isSequentialRender,
-                                          isRenderResponseToUserInteraction,
-                                          renderMappedImage);
-        if (st != StatOK) {
-            return st;
-        }
-
-        if ( !aborted() ) {
-            renderMappedImage->markForRendered(renderRectToRender);
-        }
-
-        ///copy the rectangle rendered in the full scale image to the downscaled output
+    
+    RenderScale renderMappedScale;
+    renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel( renderMappedImage->getMipMapLevel() );
+    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+    
+    
+    ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in FULLY_SAFE_FRAME mode
+    boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
+    
+    if (setThreadLocalStorage) {
+        
+        ///At this point if we're in FULLY_SAFE_FRAME mode, we are a thread that might have been launched way after
+        ///the time renderRectToRender was computed. We recompute it to update the portion to render
+        
+        // check the bitmap!
+        const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
+        
+        assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
+               renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
+        
         if (renderFullScaleThenDownscale) {
-            ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
-            if ( (renderMappedImage == fullScaleMappedImage) && (fullScaleMappedImage != fullScaleImage) ) {
-                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
-                renderMappedImage->convertToFormat( renderRectToRender,
-                                                    getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
-                                                    getApp()->getDefaultColorSpaceForBitDepth( fullScaleMappedImage->getBitDepth() ),
-                                                    channelForAlpha, false, true,unPremultIfNeeded,
-                                                    fullScaleImage.get() );
-            }
-            if (mipMapLevel != 0) {
-                assert(fullScaleImage != downscaledImage);
-                fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, downscaledImage.get() );
-            }
+            RectD canonicalrenderRectToRender;
+            downscaledRectToRenderMinimal.toCanonical(mipMapLevel, args._rod, &canonicalrenderRectToRender);
+            canonicalrenderRectToRender.toPixelEnclosing(0, &renderRectToRender);
+            renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
         } else {
-            assert(renderMappedImage == downscaledMappedImage);
-            assert(renderRectToRender == downscaledRectToRenderMinimal);
-            if (renderMappedImage != downscaledImage) {
-                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
-                renderMappedImage->convertToFormat( renderRectToRender,
-                                                    getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
-                                                    getApp()->getDefaultColorSpaceForBitDepth( downscaledMappedImage->getBitDepth() ),
-                                                    channelForAlpha, false, true,unPremultIfNeeded,
-                                                    downscaledImage.get() );
-            }
+            renderRectToRender = downscaledRectToRenderMinimal;
+        }
+        
+        
+        
+        RenderArgs argsCpy = args;
+        ///Update the renderWindow which might have changed
+        argsCpy._renderWindowPixel = renderRectToRender;
+        
+        scopedArgs.reset(new Implementation::ScopedRenderArgs(&_imp->renderArgs,args));
+    } else {
+        renderRectToRender = args._renderWindowPixel;
+    }
+    
+    if ( renderRectToRender.isNull() ) {
+        ///We've got nothing to do
+        return StatOK;
+    }
+    
+    Natron::Status st = render_public(time, renderMappedScale, renderRectToRender, view,
+                                      isSequentialRender,
+                                      isRenderResponseToUserInteraction,
+                                      renderMappedImage);
+    if (st != StatOK) {
+        return st;
+    }
+    
+    if ( !aborted() ) {
+        renderMappedImage->markForRendered(renderRectToRender);
+    }
+    
+    ///copy the rectangle rendered in the full scale image to the downscaled output
+    if (renderFullScaleThenDownscale) {
+        ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
+        if ( (renderMappedImage == fullScaleMappedImage) && (fullScaleMappedImage != fullScaleImage) ) {
+            bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+            renderMappedImage->convertToFormat( renderRectToRender,
+                                               getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
+                                               getApp()->getDefaultColorSpaceForBitDepth( fullScaleMappedImage->getBitDepth() ),
+                                               channelForAlpha, false, true,unPremultIfNeeded,
+                                               fullScaleImage.get() );
+        }
+        if (mipMapLevel != 0) {
+            assert(fullScaleImage != downscaledImage);
+            fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, downscaledImage.get() );
+        }
+    } else {
+        assert(renderMappedImage == downscaledMappedImage);
+        if (renderMappedImage != downscaledImage) {
+            bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+            renderMappedImage->convertToFormat( renderRectToRender,
+                                               getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
+                                               getApp()->getDefaultColorSpaceForBitDepth( downscaledMappedImage->getBitDepth() ),
+                                               channelForAlpha, false, true,unPremultIfNeeded,
+                                               downscaledImage.get() );
         }
     }
+    
 
     return StatOK;
 } // tiledRenderingFunctor

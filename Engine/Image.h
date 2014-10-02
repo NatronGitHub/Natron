@@ -409,7 +409,7 @@ private:
      * function computes the mip map of this image in the given roi.
      * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
      **/
-    void buildMipMapLevel(const RectI & roi, unsigned int level, Natron::Image* output) const;
+    void buildMipMapLevel(const RectI & roiCanonical, unsigned int level, Natron::Image* output) const;
 
 
     /**

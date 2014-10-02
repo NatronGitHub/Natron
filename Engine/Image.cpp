@@ -777,8 +777,6 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
 #endif
 
-    int srcRoIWidth = srcRoI.width();
-    //int srcRoIHeight = srcRoI.height();
     int dstRoIWidth = dstRoI.width();
     int dstRoIHeight = dstRoI.height();
     const PIX* src = (const PIX*)pixelAt(srcRoI.x1, srcRoI.y1);
@@ -792,7 +790,7 @@ Image::halveRoIForDepth(const RectI & roi,
     // Please don't change this, and don't remove the comments.
     for (int y = 0; y < dstRoIHeight;
          ++y,
-         src += (srcRowSize + srcRowSize) - srcRoIWidth * components, // two rows minus what was done on previous iteration
+         src += (srcRowSize + srcRowSize) - dstRoIWidth * 2 * components, // two rows minus what was done on previous iteration
          dst += (dstRowSize) - dstRoIWidth * components) { // one row minus what was done on previous iteration
         for (int x = 0; x < dstRoIWidth;
              ++x,
@@ -807,11 +805,21 @@ Image::halveRoIForDepth(const RectI & roi,
             assert( src == (const PIX*)pixelAt(srcRoI.x1 + 2 * x, srcRoI.y1 + 2 * y) );
 
 #endif
-            for (int k = 0; k < components; ++k, ++dst, ++src) {
-                *dst = PIX( (float)( *src +
-                                     *(src + components) +
-                                     *(src + srcRowSize) +
-                                     *(src + srcRowSize  + components) ) / 4. );
+            
+            //The src image can be in this implementation smaller than dstBounds * 2
+            if (y * 2 + 1 < srcRoI.height()) {
+                
+                for (int k = 0; k < components; ++k, ++dst, ++src) {
+                    *dst = PIX( (float)( *src +
+                                        *(src + components) +
+                                        *(src + srcRowSize) +
+                                        *(src + srcRowSize  + components) ) / 4. );
+                }
+            } else {
+                for (int k = 0; k < components; ++k, ++dst, ++src) {
+                    *dst = PIX( (float)( *src +
+                                        *(src + components) ) / 2. );
+                }
             }
         }
     }
@@ -920,11 +928,12 @@ Image::downscaleMipMap(const RectI & roi,
 
     assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
            _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
-    RectD roiCanonical;
-    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
-    RectI dstRoI;
-    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
-
+//    RectD roiCanonical;
+//    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
+//    RectI dstRoI;
+//    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
+    RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(toLevel);
+    
     std::auto_ptr<Natron::Image> tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getBitDepth() ) );
 
     buildMipMapLevel( roi, toLevel - fromLevel, tmpImg.get() );
@@ -1308,7 +1317,7 @@ Image::buildMipMapLevel(const RectI & roi,
     ///Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 1; i <= level; ++i) {
         ///Halve the smallest enclosing po2 rect as we need to render a minimum of the renderWindow
-        RectI halvedRoI = roi.downscalePowerOfTwoSmallestEnclosing(i);
+        RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
         dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getBitDepth() );

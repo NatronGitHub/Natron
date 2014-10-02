@@ -1091,7 +1091,7 @@ private:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    Natron::Status tiledRenderingFunctor(const RenderArgs & args,
+    Natron::Status tiledRenderingFunctor_separateThread(const RenderArgs & args,
                                          bool renderFullScaleThenDownscale,
                                          const RectI & roi,
                                          const boost::shared_ptr<Natron::Image> & downscaledImage,
@@ -1099,6 +1099,25 @@ private:
                                          const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
                                          const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
                                          const boost::shared_ptr<Natron::Image> & renderMappedImage);
+
+    Natron::Status tiledRenderingFunctor_currentThread(const RenderArgs & args,
+                                     bool renderFullScaleThenDownscale,
+                                     const RectI & roi,
+                                     const boost::shared_ptr<Natron::Image> & downscaledImage,
+                                     const boost::shared_ptr<Natron::Image> & fullScaleImage,
+                                     const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
+                                     const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
+                                     const boost::shared_ptr<Natron::Image> & renderMappedImage);
+
+    Natron::Status tiledRenderingFunctor_internal(const RenderArgs & args,
+                                     bool setThreadLocalStorage,
+                                     bool renderFullScaleThenDownscale,
+                                     const RectI & roi,
+                                     const boost::shared_ptr<Natron::Image> & downscaledImage,
+                                     const boost::shared_ptr<Natron::Image> & fullScaleImage,
+                                     const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
+                                     const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
+                                     const boost::shared_ptr<Natron::Image> & renderMappedImage);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
