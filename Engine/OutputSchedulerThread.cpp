@@ -1715,7 +1715,11 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
                                                components,
                                                imageDepth,
                                                3);
-    (void)_effect->renderRoI(args);
+    try {
+        (void)_effect->renderRoI(args);
+    } catch (const std::exception& e) {
+        notifyRenderFailure(e.what());
+    }
 }
 
 void
