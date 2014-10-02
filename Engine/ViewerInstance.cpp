@@ -1664,12 +1664,16 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
    // if (updateViewerRunning) {
         uiContext->makeOpenGLcontextCurrent();
         if ( !instance->aborted() ) {
+            
             // how do you make sure params->ramBuffer is not freed during this operation?
             /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
             /// i.e. until renderViewer exits.
             /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
             /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
             /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+            
+            assert(params->ramBuffer);
+            
             uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
                                                   params->bytesCount,
                                                   params->textureRect,
