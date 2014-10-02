@@ -97,8 +97,6 @@ public:
 
     int getMipMapLevel() const WARN_UNUSED_RETURN;
 
-    ///same as getMipMapLevel but with the zoomFactor taken into account
-    int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
@@ -112,19 +110,6 @@ public:
 
     void setDisplayChannels(DisplayChannels channels);
 
-    /**
-     * @brief Get the color of the currently displayed image at position x,y.
-     * @param forceLinear If true, then it will not use the viewer current colorspace
-     * to get r,g and b values, otherwise the color returned will be in the same color-space
-     * than the one chosen by the user on the gui.
-     * X and Y are in CANONICAL COORDINATES
-     * @return true if the point is inside the image and colors were set
-     **/
-    bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a) WARN_UNUSED_RETURN;
-
-    // same as getColor, but computes the mean over a given rectangle
-    bool getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
-                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
@@ -151,6 +136,8 @@ public:
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
+    static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpace cs) WARN_UNUSED_RETURN;
+
 
 public slots:
 
@@ -164,15 +151,9 @@ public slots:
      **/
     void redrawViewer();
 
-    /**
-     * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
-     * rendered image by the viewer.
-     **/
-    boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
-
+  
     void executeDisconnectTextureRequestOnMainThread(int index);
 
-    void clearLastRenderedTexture();
 
 signals:
 

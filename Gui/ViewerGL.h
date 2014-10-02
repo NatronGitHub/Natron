@@ -35,6 +35,7 @@ class QGLShaderProgram;
 
 namespace Natron {
 class ChannelSet;
+class Image;
 }
 class InfoViewerWidget;
 class AppInstance;
@@ -159,10 +160,12 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
+                                            const boost::shared_ptr<Natron::Image>& image,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double offset, int lut, int pboIndex,
                                             unsigned int mipMapLevel,Natron::ImagePremultiplication premult,
                                             int textureIndex) OVERRIDE FINAL;
+    
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
      *@returns Returns true if the graphic card supports GLSL.
@@ -231,6 +234,9 @@ public slots:
     void resetWipeControls();
 
     void onCheckerboardSettingsChanged();
+    
+    void clearLastRenderedTexture();
+
 public:
 
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
@@ -303,6 +309,29 @@ public:
      **/
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     
+    /**
+     * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
+     * rendered image by the viewer.
+     **/
+    boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
+
+    /**
+     * @brief Get the color of the currently displayed image at position x,y.
+     * @param forceLinear If true, then it will not use the viewer current colorspace
+     * to get r,g and b values, otherwise the color returned will be in the same color-space
+     * than the one chosen by the user on the gui.
+     * X and Y are in CANONICAL COORDINATES
+     * @return true if the point is inside the image and colors were set
+     **/
+    bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a) WARN_UNUSED_RETURN;
+    
+    // same as getColor, but computes the mean over a given rectangle
+    bool getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
+                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a);
+    
+    
+    ///same as getMipMapLevel but with the zoomFactor taken into account
+    int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
 signals:
 
     /**

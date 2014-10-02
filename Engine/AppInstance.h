@@ -280,7 +280,9 @@ public:
 
     virtual void startRenderingFullSequence(const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
 
+    virtual void clearViewersLastRenderedTexture() {}
 
+    
 public slots:
 
     void quit();
@@ -295,8 +297,6 @@ public slots:
     void clearOpenFXPluginsCaches();
 
     void clearAllLastRenderedImages();
-
-    void clearViewersLastRenderedTexture();
 
     void newVersionCheckDownloaded();
 

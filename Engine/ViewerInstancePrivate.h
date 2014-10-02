@@ -84,6 +84,8 @@ public:
           , offset(0.)
           , mipMapLevel(0)
           , lut(Natron::sRGB)
+          , cachedFrame()
+          , image()
     {
     }
     
@@ -109,7 +111,10 @@ public:
     unsigned int mipMapLevel;
     Natron::ImagePremultiplication premult;
     Natron::ViewerColorSpace lut;
-    boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
+    
+    // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
+    boost::shared_ptr<Natron::FrameEntry> cachedFrame;
+    boost::shared_ptr<Natron::Image> image;
 };
 
 struct ViewerInstance::ViewerInstancePrivate
@@ -131,13 +136,11 @@ public:
           , viewerParamsAutoContrast(false)
           , viewerParamsChannels(ViewerInstance::RGB)
           , viewerMipMapLevel(0)
-          , lastRenderedImageMutex()
-          , lastRenderedImage()
           , activeInputsMutex()
           , activeInputs()
-          , lastRenderedTextureMutex()
-          , lastRenderHash(0)
-          , lastRenderedTexture()
+          , lastRenderedHashMutex()
+          , lastRenderedHash(0)
+          , lastRenderedHashValid(false)
     {
 
         activeInputs[0] = -1;
@@ -214,9 +217,7 @@ public:
     bool viewerParamsAutoContrast;
     DisplayChannels viewerParamsChannels;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
-    mutable QMutex lastRenderedImageMutex;
-    boost::shared_ptr<Natron::Image> lastRenderedImage[2]; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
-
+    
     ////Commented-out: Now that the VideoEngine is gone, there can be several threads running  the render function
     ////and we have no way to identify the threads since they belong to a thread pool.
     // store the threadId of the VideoEngine thread - used for debugging purposes
@@ -225,9 +226,10 @@ public:
     
     mutable QMutex activeInputsMutex;
     int activeInputs[2]; //< indexes of the inputs used for the wipe
-    QMutex lastRenderedTextureMutex;
-    U64 lastRenderHash;
-    boost::shared_ptr<Natron::FrameEntry> lastRenderedTexture;
+    
+    QMutex lastRenderedHashMutex;
+    U64 lastRenderedHash;
+    bool lastRenderedHashValid;
     
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;

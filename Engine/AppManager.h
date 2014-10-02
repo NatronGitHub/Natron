@@ -320,6 +320,7 @@ public:
     int getNRunningThreads() const;
     
     void setThreadAsActionCaller(bool actionCaller);
+
     
 public slots:
     
@@ -381,6 +382,8 @@ protected:
     virtual void onAllPluginsLoaded()
     {
     }
+    
+    virtual void clearLastRenderedTextures() {}
 
 private:
 

@@ -21,6 +21,7 @@
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeBackDropSerialization.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
 
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
@@ -639,4 +640,14 @@ bool
 GuiAppInstance::isGuiFrozen() const
 {
     return _imp->_gui->isGUIFrozen();
+}
+
+
+void
+GuiAppInstance::clearViewersLastRenderedTexture()
+{
+    std::list<ViewerTab*> tabs = _imp->_gui->getViewersList_mt_safe();
+    for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+        (*it)->getViewer()->clearLastRenderedTexture();
+    }
 }

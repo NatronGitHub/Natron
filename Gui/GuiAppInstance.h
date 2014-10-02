@@ -112,6 +112,8 @@ public:
 
     virtual void startRenderingFullSequence(const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath) OVERRIDE FINAL;
 
+    virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
+    
 public slots:
 
     void onProcessFinished();

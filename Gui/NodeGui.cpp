@@ -1248,6 +1248,7 @@ NodeGui::hideGui()
                 _graph->getGui()->setLastSelectedViewer(NULL);
             }
         }
+        viewerGui->clearLastRenderedTexture();
         _graph->getGui()->deactivateViewerTab(isViewer);
     } else {
         if ( isSettingsPanelVisible() ) {

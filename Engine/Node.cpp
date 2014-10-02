@@ -1540,10 +1540,6 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToD
     ///Free all memory used by the plug-in.
     _imp->liveInstance->clearPluginMemoryChunks();
     clearLastRenderedImage();
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
-    if (isViewer) {
-        isViewer->clearLastRenderedTexture();
-    }
 
     if (hideGui) {
         emit deactivated(triggerRender);

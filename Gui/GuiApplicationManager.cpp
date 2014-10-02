@@ -1681,3 +1681,15 @@ GuiApplicationManager::showOfxLog()
     }
     
 }
+
+void
+GuiApplicationManager::clearLastRenderedTextures()
+{
+    const std::map<int,AppInstanceRef>& instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+        if (guiApp) {
+            guiApp->clearAllLastRenderedImages();
+        }
+    }
+}
