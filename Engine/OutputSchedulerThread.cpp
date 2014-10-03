@@ -1067,7 +1067,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     int runningThreads = appPTR->getNRunningThreads() + QThreadPool::globalInstance()->activeThreadCount();
     
     
-    int currentParallelRenders = getNActiveRenderThreads();
+    int currentParallelRenders = getNRenderThreads();
     
     if (userSettingParallelThreads == 0) {
         ///User wants it to be automatically computed, do a simple heuristic: launch as many parallel renders
@@ -1076,7 +1076,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     } else {
         optimalNThreads = userSettingParallelThreads;
     }
-    
+    optimalNThreads = std::max(1,optimalNThreads);
     
     
     if (runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) {
@@ -1088,7 +1088,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
         _imp->appendRunnable(createRunnable());
         *newNThreads = currentParallelRenders +  1;
         
-    } else if (runningThreads > optimalNThreads && currentParallelRenders > 1) {
+    } else if (runningThreads > optimalNThreads && currentParallelRenders > optimalNThreads) {
         ////////
         ///Stop 1 thread
         stopRenderThreads(1);
