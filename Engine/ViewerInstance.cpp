@@ -319,10 +319,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     // Sadly we had to get rid of this useful debug function since now there can be several concurrent threads running this function.
    // _imp->assertVideoEngine();
 
-    if ( aborted() ) {
-        return StatOK;
-    }
-
 
     Format dispW;
     getRenderFormat(&dispW);
@@ -680,7 +676,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
            the frame*/
         
         ///Check that we were not aborted already
-        if ( activeInputToRender->getHash() != inputNodeHash || time != getTimeline()->currentFrame() ) {
+        if ( !isSequentialRender && (activeInputToRender->getHash() != inputNodeHash || time != getTimeline()->currentFrame()) ) {
             return StatOK;
         }
         
