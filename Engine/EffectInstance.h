@@ -29,6 +29,53 @@ class BlockingBackgroundRender;
 class RenderEngine;
 class BufferableObject;
 
+
+/**
+ * @brief Thread-local arguments given to render a frame by the tree.
+ * This is different than the RenderArgs because it is not local to a
+ * renderRoI call but to the rendering of a whole frame.
+ **/
+struct ParallelRenderArgs
+{
+    ///The initial time requested to render.
+    ///This may be different than the time held in RenderArgs
+    ///which are local to a renderRoI call whilst this is local
+    ///to a frame being rendered by the tree.
+    int time;
+    
+    ///The initial view requested to render.
+    ///This may be different than the view held in RenderArgs
+    ///which are local to a renderRoI call whilst this is local
+    ///to a frame being rendered by the tree.
+    int view;
+    
+    ///The node hash as it was when starting the rendering of the frame
+    U64 nodeHash;
+    
+    ///The age of the roto as it was when starting the rendering of the frame
+    U64 rotoAge;
+    
+    ///True if the args were set for the current thread
+    bool validArgs;
+    
+    /// is this a render due to user interaction ? Generally this is true when rendering because
+    /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame
+    bool isRenderResponseToUserInteraction;
+    
+    /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
+    bool isSequentialRender;
+    
+    /// Should we skip cache look-ups ? True for writers always or when the user pressed Refresh on the viewer
+    bool byPassCache;
+    
+    ParallelRenderArgs()
+    : validArgs(false)
+    {
+        
+    }
+};
+
+
 namespace Natron {
 class Node;
 class Image;
@@ -54,9 +101,6 @@ public:
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         int view; //< the view to render
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
-        bool isSequentialRender; //< is this render part of a sequential render (playback or render on disk) ?
-        bool isRenderUserInteraction; // is this render due to user interaction ? (parameter tweek)
-        bool byPassCache; //< turn-off the cache ability to look-up existing images ? (false when a refresh is forced)
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
         Natron::ImageComponents components; //< the requested image components
         Natron::ImageBitDepth bitdepth; //< the requested bit depth
@@ -71,9 +115,6 @@ public:
                       unsigned int mipMapLevel_,
                       int view_,
                       const RectI & roi_,
-                      bool isSequentialRender_,
-                      bool isRenderUserInteraction_,
-                      bool byPassCache_,
                       const RectD & preComputedRoD_,
                       Natron::ImageComponents components_,
                       Natron::ImageBitDepth bitdepth_,
@@ -83,9 +124,6 @@ public:
               , mipMapLevel(mipMapLevel_)
               , view(view_)
               , roi(roi_)
-              , isSequentialRender(isSequentialRender_)
-              , isRenderUserInteraction(isRenderUserInteraction_)
-              , byPassCache(byPassCache_)
               , preComputedRoD(preComputedRoD_)
               , components(components_)
               , bitdepth(bitdepth_)
@@ -375,11 +413,8 @@ public:
     /**
      * @brief Renders the image at the given time,scale and for the given view & render window.
      * @param args See the definition of the class for comments on each argument.
-     * @param hashUsed, if not null, it will be set to the hash of this effect used by this function to render.
-     * This is useful if we want to retrieve results from the cache with this exact hash key afterwards because the
-     * real hash key of the effect might have changed due to user interaction already.
      **/
-    boost::shared_ptr<Image> renderRoI(const RenderRoIArgs & args,U64* hashUsed = NULL) WARN_UNUSED_RETURN;
+    boost::shared_ptr<Image> renderRoI(const RenderRoIArgs & args) WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as renderRoI(...) but takes in parameter
@@ -394,11 +429,23 @@ public:
                    const RectD & rod, //!< effect rod in canonical coords
                    const boost::shared_ptr<ImageParams> & cachedImgParams,
                    const boost::shared_ptr<Image> & image,
-                   const boost::shared_ptr<Image> & downscaledImage,
-                   bool isSequentialRender,
-                   bool isRenderMadeInResponseToUserInteraction,
-                   bool byPassCache,
-                   U64 nodeHash);
+                   const boost::shared_ptr<Image> & downscaledImage);
+
+  
+
+    /**
+    * @brief Sets render preferences for the rendering of a frame for the current thread.
+    * This is thread local storage. This is NOT local to a call to renderRoI
+    **/
+    void setParallelRenderArgs(int time,
+                               int view,
+                               bool isRenderUserInteraction,
+                               bool isSequential,
+                               bool byPassCache,
+                               U64 nodeHash,
+                               U64 rotoAge);
+
+    void invalidateParallelRenderArgs();
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
@@ -1059,6 +1106,14 @@ private:
                                       bool renderFullScaleThenDownscale);
 
     /**
+     * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not
+     * a thread controlled by Natron).
+     **/
+bool retrieveGetImageDataUponFailure(const int time,const int view,const RenderScale& scale,const RectD* optionalBoundsParam,
+                                         U64& nodeHash,U64& rotoAge,bool& isIdentity,int& identityInputNb,int& identityTime,
+                                         RectD& rod,RoIMap& inputRois,RectD& optionalBounds);
+
+    /**
      * @brief Must be implemented to evaluate a value change
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
@@ -1070,6 +1125,18 @@ private:
     virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & knob,int dimension,bool isSlave,KnobHolder* master) OVERRIDE FINAL;
 
 
+    struct TiledRenderingFunctorArgs
+    {
+        const RenderArgs* args;
+        bool renderFullScaleThenDownscale;
+        bool isSequentialRender;
+        bool isRenderResponseToUserInteraction;
+        boost::shared_ptr<Natron::Image>  downscaledImage;
+        boost::shared_ptr<Natron::Image>  fullScaleImage;
+        boost::shared_ptr<Natron::Image>  downscaledMappedImage;
+        boost::shared_ptr<Natron::Image>  fullScaleMappedImage;
+        boost::shared_ptr<Natron::Image>  renderMappedImage;
+    };
     ///These are the image passed to the plug-in to render
     /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
     /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
@@ -1091,27 +1158,17 @@ private:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    Natron::Status tiledRenderingFunctor_separateThread(const RenderArgs & args,
-                                         bool renderFullScaleThenDownscale,
-                                         const RectI & roi,
-                                         const boost::shared_ptr<Natron::Image> & downscaledImage,
-                                         const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                         const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                         const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
-                                         const boost::shared_ptr<Natron::Image> & renderMappedImage);
+    Natron::Status tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
+                                         const ParallelRenderArgs& frameArgs,
+                                         bool setThreadLocalStorage,
+                                         const RectI & roi );
 
-    Natron::Status tiledRenderingFunctor_currentThread(const RenderArgs & args,
-                                     bool renderFullScaleThenDownscale,
-                                     const RectI & roi,
-                                     const boost::shared_ptr<Natron::Image> & downscaledImage,
-                                     const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                     const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                     const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
-                                     const boost::shared_ptr<Natron::Image> & renderMappedImage);
-
-    Natron::Status tiledRenderingFunctor_internal(const RenderArgs & args,
+    Natron::Status tiledRenderingFunctor(const RenderArgs & args,
+                                    const ParallelRenderArgs& frameArgs,
                                      bool setThreadLocalStorage,
                                      bool renderFullScaleThenDownscale,
+                                     bool isSequentialRender,
+                                     bool isRenderResponseToUserInteraction,
                                      const RectI & roi,
                                      const boost::shared_ptr<Natron::Image> & downscaledImage,
                                      const boost::shared_ptr<Natron::Image> & fullScaleImage,

@@ -229,6 +229,10 @@ namespace  {
 
 }
 
+/**
+ * @brief These args are local to a renderRoI call and used to retrieve these infos 
+ * in a thread-safe and thread-local manner in getImage
+ **/
 struct EffectInstance::RenderArgs
 {
     RectD _rod; //!< the effect's RoD in CANONICAL coordinates
@@ -236,12 +240,7 @@ struct EffectInstance::RenderArgs
     RectI _renderWindowPixel; //< the current renderWindow in PIXEL coordinates
     SequenceTime _time; //< the time to render
     int _view; //< the view to render
-    bool _isSequentialRender; //< is this sequential ?
-    bool _isRenderResponseToUserInteraction; //< is this a render due to user interaction ?
-    bool _byPassCache; //< use cache lookups  ?
     bool _validArgs; //< are the args valid ?
-    U64 _nodeHash;
-    U64 _rotoAge;
     int _channelForAlpha;
     bool _isIdentity;
     SequenceTime _identityTime;
@@ -256,12 +255,7 @@ struct EffectInstance::RenderArgs
           , _renderWindowPixel()
           , _time(0)
           , _view(0)
-          , _isSequentialRender(false)
-          , _isRenderResponseToUserInteraction(false)
-          , _byPassCache(false)
           , _validArgs(false)
-          , _nodeHash(0)
-          , _rotoAge(0)
           , _channelForAlpha(3)
           , _isIdentity(false)
           , _identityTime(0)
@@ -273,12 +267,14 @@ struct EffectInstance::RenderArgs
     }
 };
 
+
 struct EffectInstance::Implementation
 {
     Implementation()
         : renderAbortedMutex()
           , renderAborted(false)
           , renderArgs()
+          , frameRenderArgs()
           , beginEndRenderCount()
           , inputImages()
           , lastRenderArgsMutex()
@@ -296,24 +292,39 @@ struct EffectInstance::Implementation
     mutable QReadWriteLock renderAbortedMutex;
     bool renderAborted; //< was rendering aborted ?
 
+    ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
     ThreadStorage<RenderArgs> renderArgs;
+    
+    ///Thread-local storage living through the whole rendering of a frame
+    ThreadStorage<ParallelRenderArgs> frameRenderArgs;
+    
+    ///Keep track of begin/end sequence render calls to make sure they are called in the right order even when
+    ///recursive renders are called
     ThreadStorage<int> beginEndRenderCount;
 
     ///Whenever a render thread is running, it stores here a temp copy used in getImage
     ///to make sure these images aren't cleared from the cache.
     ThreadStorage< std::list< boost::shared_ptr<Natron::Image> > > inputImages;
+    
 
-    QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastImageKey
+    QMutex lastRenderArgsMutex; //< protects lastImage & lastRenderHash
     U64 lastRenderHash;  //< the last hash given to render
     boost::shared_ptr<Natron::Image> lastImage; //< the last image rendered
+    
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
+    
+    ///Current chuncks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
     std::list<PluginMemory*> pluginMemoryChunks;
+    
+    ///Does this plug-in supports render scale ?
     QMutex supportsRenderScaleMutex;
     SupportsEnum supportsRenderScale;
 
-    ActionsCache actionsCache; //< Mt-Safe actions cache
+    /// Mt-Safe actions cache
+    ActionsCache actionsCache;
+    
     
     void setDuringInteractAction(bool b)
     {
@@ -369,11 +380,6 @@ public:
                          const RectI& renderWindow,
                          SequenceTime time,
                          int view,
-                         bool sequential,
-                         bool userInteraction,
-                         bool bypassCache,
-                         U64 nodeHash,
-                         U64 rotoAge,
                          int channelForAlpha,
                          bool isIdentity,
                          SequenceTime identityTime,
@@ -390,11 +396,6 @@ public:
             args._renderWindowPixel = renderWindow;
             args._time = time;
             args._view = view;
-            args._isSequentialRender = sequential;
-            args._isRenderResponseToUserInteraction = userInteraction;
-            args._byPassCache = bypassCache;
-            args._nodeHash = nodeHash;
-            args._rotoAge = rotoAge;
             args._channelForAlpha = channelForAlpha;
             args._isIdentity = isIdentity;
             args._identityTime = identityTime;
@@ -449,11 +450,6 @@ public:
                                const RectI& renderWindow,
                                SequenceTime time,
                                int view,
-                               bool sequential,
-                               bool userInteraction,
-                               bool bypassCache,
-                               U64 nodeHash,
-                               U64 rotoAge,
                                int channelForAlpha,
                                bool isIdentity,
                                SequenceTime identityTime,
@@ -464,11 +460,6 @@ public:
             args._renderWindowPixel = renderWindow;
             args._time = time;
             args._view = view;
-            args._isSequentialRender = sequential;
-            args._isRenderResponseToUserInteraction = userInteraction;
-            args._byPassCache = bypassCache;
-            args._nodeHash = nodeHash;
-            args._rotoAge = rotoAge;
             args._channelForAlpha = channelForAlpha;
             args._isIdentity = isIdentity;
             args._identityTime = identityTime;
@@ -558,6 +549,44 @@ EffectInstance::clearPluginMemoryChunks()
     }
 }
 
+void
+EffectInstance::setParallelRenderArgs(int time,
+                           int view,
+                           bool isRenderUserInteraction,
+                           bool isSequential,
+                           bool byPassCache,
+                           U64 nodeHash,
+                           U64 rotoAge)
+{
+    ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+    assert(!args.validArgs);
+    
+    args.time = time;
+    args.view = view;
+    args.isRenderResponseToUserInteraction = isRenderUserInteraction;
+    args.isSequentialRender = isSequential;
+    
+    if ( !byPassCache && isWriter() ) {
+        args.byPassCache = true;
+    } else {
+        args.byPassCache = byPassCache;
+    }
+    
+    args.nodeHash = nodeHash;
+    args.rotoAge = rotoAge;
+    
+    args.validArgs = true;
+    
+}
+
+void
+EffectInstance::invalidateParallelRenderArgs()
+{
+    assert(_imp->frameRenderArgs.hasLocalData());
+    ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+    args.validArgs = false;
+}
+
 U64
 EffectInstance::getHash() const
 {
@@ -567,19 +596,59 @@ EffectInstance::getHash() const
 U64
 EffectInstance::getRenderHash() const
 {
-    if (!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs) {
+    
+    if ( !_imp->frameRenderArgs.hasLocalData() ) {
         return getHash();
     } else {
-        return _imp->renderArgs.localData()._nodeHash;
+        ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (!args.validArgs) {
+            return getHash();
+        } else {
+            return args.nodeHash;
+        }
     }
 }
 
 bool
 EffectInstance::aborted() const
 {
-    QReadLocker l(&_imp->renderAbortedMutex);
+    {
+        ///This flag is set in OutputSchedulerThread::abortRendering
+        ///This will be used when playback or rendering on disk
+        QReadLocker l(&_imp->renderAbortedMutex);
+        if (_imp->renderAborted) {
+            return true;
+        }
+    }
+    
+    ///Now check thread-local storage to find out in the case of renders made upon user interaction
+    ///(i.e: issued by RenderEngine::renderCurrentFrame) whether the hash or time has changed
+    
+    if ( !_imp->frameRenderArgs.hasLocalData() ) {
+        
+        ///No local data, we're either not rendering or calling this from a thread not controlled by Natron
+        return false;
+        
+    } else {
+        
+        ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (!args.validArgs) {
+            ///No valid args, probably not rendering
+            return false;
+        } else {
+            if (args.isRenderResponseToUserInteraction) {
+                ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
+                return args.nodeHash != getHash() ||
+                args.time != getApp()->getTimeLine()->currentFrame();
+                
+            } else {
+                ///Rendering is playback or render on disk, we rely on the _imp->renderAborted flag for this.
+                return false;
+                
+            }
+        }
 
-    return _imp->renderAborted;
+    }
 }
 
 void
@@ -656,6 +725,71 @@ EffectInstance::getInputLabel(int inputNb) const
     return out;
 }
 
+bool
+EffectInstance::retrieveGetImageDataUponFailure(const int time,const int view,const RenderScale& scale,const RectD* optionalBoundsParam,
+                                                U64& nodeHash,U64& rotoAge,bool& isIdentity,int& identityInputNb,int& identityTime,
+                                                RectD& rod,RoIMap& inputRois,RectD& optionalBounds)
+{
+    /////Update 09/02/14
+    /// We now AUTHORIZE GetRegionOfDefinition and isIdentity and getRegionsOfInterest to be called recursively.
+    /// It didn't make much sense to forbid them from being recursive.
+    
+#ifdef DEBUG
+    if (QThread::currentThread() != qApp->thread()) {
+        ///This is a bad plug-in
+        qDebug() << getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
+        "Developers of that plug-in should fix it. \n Reminder from the OpenFX spec: \n "
+        "Images may be fetched from an attached clip in the following situations... \n"
+        "- in the kOfxImageEffectActionRender action\n"
+        "- in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason or kOfxChangeUserEdited";
+    }
+#endif
+    
+    ///Try to compensate for the mistake
+    
+    nodeHash = getHash();
+    boost::shared_ptr<RotoContext> roto =  getNode()->getRotoContext();
+    if (roto) {
+        rotoAge = roto->getAge();
+    } else {
+        rotoAge = 0;
+    }
+    
+    Natron::Status stat = getRegionOfDefinition(nodeHash,time, scale, view, &rod);
+    if (stat == StatFailed) {
+        return false;
+    }
+    
+    
+    if (!optionalBoundsParam) {
+        ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
+        optionalBounds = rod;
+        ifInfiniteApplyHeuristic(nodeHash,time, scale, view, &optionalBounds);
+        
+        
+        /// If the region parameter is not set to NULL, then it will be clipped to the clip's
+        /// Region of Definition for the given time. The returned image will be m at m least as big as this region.
+        /// If the region parameter is not set, then the region fetched will be at least the Region of Interest
+        /// the effect has previously specified, clipped the clip's Region of Definition.
+        /// (renderRoI will do the clipping for us).
+        
+        
+        ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
+        ///// should never happen.
+        inputRois = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
+    }
+    
+    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
+    try {
+        isIdentity = isIdentity_public(nodeHash,time, scale, rod, view, &identityTime, &identityInputNb);
+    } catch (...) {
+        return false;
+    }
+
+
+    return true;
+}
+
 boost::shared_ptr<Natron::Image>
 EffectInstance::getImage(int inputNb,
                          const SequenceTime time,
@@ -689,13 +823,15 @@ EffectInstance::getImage(int inputNb,
     if (optionalBoundsParam) {
         optionalBounds = *optionalBoundsParam;
     }
-    bool isSequentialRender,isRenderUserInteraction,byPassCache;
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
     RectD rod;
     bool isIdentity;
     SequenceTime identityTime;
     int inputNbIdentity;
+    U64 nodeHash;
+    U64 rotoAge;
+    bool byPassCache = false;
     
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
@@ -704,82 +840,46 @@ EffectInstance::getImage(int inputNb,
     //    Images may be fetched from an attached clip in the following situations...
     //    in the kOfxImageEffectActionRender action
     //    in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason of kOfxChangeUserEdited
-    if (!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs) {
+
+    if ( !_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData() ) {
         
-        /////Update 09/02/14
-        /// We now AUTHORIZE GetRegionOfDefinition and isIdentity and getRegionsOfInterest to be called recursively.
-        /// It didn't make much sense to forbid them from being recursive.
-        
-#ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread()) {
-            ///This is a bad plug-in
-            qDebug() << getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
-            "Developers of that plug-in should fix it. \n Reminder from the OpenFX spec: \n "
-            "Images may be fetched from an attached clip in the following situations... \n"
-            "- in the kOfxImageEffectActionRender action\n"
-            "- in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason or kOfxChangeUserEdited";
-        }
-#endif
-        ///Try to compensate for the mistake
-        isSequentialRender = true;
-        isRenderUserInteraction = true;
-        byPassCache = false;
-        U64 hash = getHash();
-
-        Natron::Status stat = getRegionOfDefinition(hash,time, scale, view, &rod);
-        if (stat == StatFailed) {
-            return boost::shared_ptr<Natron::Image>();
-        }
-
-        if (!optionalBounds) {
-            ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
-            optionalBounds = rod;
-            ifInfiniteApplyHeuristic(hash,time, scale, view, &optionalBounds);
-
-
-            /// If the region parameter is not set to NULL, then it will be clipped to the clip's
-            /// Region of Definition for the given time. The returned image will be m at m least as big as this region.
-            /// If the region parameter is not set, then the region fetched will be at least the Region of Interest
-            /// the effect has previously specified, clipped the clip's Region of Definition.
-            /// (renderRoI will do the clipping for us).
-
-
-            ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
-            ///// should never happen.
-            inputsRoI = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
-        }
-
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-        try {
-            isIdentity = isIdentity_public(hash,time, scale, rod, view, &identityTime, &inputNbIdentity);
-        } catch (...) {
+        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, nodeHash, rotoAge, isIdentity, inputNbIdentity, identityTime, rod, inputsRoI, optionalBounds) ) {
             return boost::shared_ptr<Image>();
         }
+       
     } else {
-        isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
-        isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
-        byPassCache = _imp->renderArgs.localData()._byPassCache;
-        inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
-        rod = _imp->renderArgs.localData()._rod;
-        isIdentity = _imp->renderArgs.localData()._isIdentity;
-        identityTime = _imp->renderArgs.localData()._identityTime;
-        inputNbIdentity = _imp->renderArgs.localData()._identityInputNb;
+        
+        RenderArgs& renderArgs = _imp->renderArgs.localData();
+        ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
+        
+        if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
+            
+            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, nodeHash, rotoAge, isIdentity, inputNbIdentity, identityTime, rod, inputsRoI, optionalBounds) ) {
+                return boost::shared_ptr<Image>();
+            }
+            
+        } else {
+            inputsRoI = renderArgs._regionOfInterestResults;
+            rod = renderArgs._rod;
+            isIdentity = renderArgs._isIdentity;
+            identityTime = renderArgs._identityTime;
+            inputNbIdentity = renderArgs._identityInputNb;
+            nodeHash = frameRenderArgs.nodeHash;
+            rotoAge = frameRenderArgs.rotoAge;
+            byPassCache = frameRenderArgs.byPassCache;
+        }
+        
+        
     }
 
     RectD roi;
-    if (!optionalBounds) {
+    if (!optionalBoundsParam) {
         RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
         assert( found != inputsRoI.end() );
         ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
         roi = found->second;
     } else {
         roi = optionalBounds;
-    }
-    
-    ///For writers, bypassCache was set to true in the renderRoI call, make sure it is set to false now! otherwise
-    ///we would render twice the frame.
-    if (isWriter()) {
-        byPassCache = false;
     }
 
 
@@ -797,8 +897,7 @@ EffectInstance::getImage(int inputNb,
     int channelForAlpha = !isMask ? -1 : getMaskChannel(inputNb);
 
     if (useRotoInput) {
-        U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
-        U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
+        
         Natron::ImageComponents outputComps;
         Natron::ImageBitDepth outputDepth;
         getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
@@ -817,27 +916,17 @@ EffectInstance::getImage(int inputNb,
         return boost::shared_ptr<Natron::Image>();
     }
 
-    ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
-    ///hence it might have a thread-id.
-    QThreadPool::globalInstance()->reserveThread();
-    U64 inputNodeHash;
-    QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
-                                                                    RenderRoIArgs(time,
-                                                                                  scale,
-                                                                                  mipMapLevel,
-                                                                                  view,
-                                                                                  pixelRoI,
-                                                                                  isSequentialRender,
-                                                                                  isRenderUserInteraction,
-                                                                                  byPassCache,
-                                                                                  RectD(),
-                                                                                  comp,
-                                                                                  depth,
-                                                                                  channelForAlpha)
-                                                                    ,&inputNodeHash);
-    future.waitForFinished();
-    QThreadPool::globalInstance()->releaseThread();
-    boost::shared_ptr<Natron::Image> inputImg = future.result();
+
+    boost::shared_ptr<Image > inputImg = n->renderRoI( RenderRoIArgs(time,
+                                                                    scale,
+                                                                    mipMapLevel,
+                                                                    view,
+                                                                    pixelRoI,
+                                                                    RectD(),
+                                                                    comp,
+                                                                    depth,
+                                                                    channelForAlpha) );
+
     if (!inputImg) {
         return inputImg;
     }
@@ -1075,22 +1164,22 @@ EffectInstance::getFrameRange(SequenceTime *first,
 }
 
 boost::shared_ptr<Natron::Image>
-EffectInstance::renderRoI(const RenderRoIArgs & args,
-                          U64* hashUsed)
+EffectInstance::renderRoI(const RenderRoIArgs & args)
 {
    
+    assert(_imp->frameRenderArgs.hasLocalData() && _imp->frameRenderArgs.localData().validArgs);
+    ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
+    
+    ///The args must have been set calling setParallelRenderArgs
+    assert(frameRenderArgs.validArgs);
+    
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
-    bool byPassCache = args.byPassCache;
-    if ( isWriter() ) {
-        byPassCache = true;
-    }
+    bool byPassCache = frameRenderArgs.byPassCache;
 
     ///Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
     ///through all the rendering of this frame.
-    U64 nodeHash = getHash();
-    if (hashUsed) {
-        *hashUsed = nodeHash;
-    }
+    U64 nodeHash = frameRenderArgs.nodeHash;
+ 
 
     boost::shared_ptr<ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
@@ -1271,7 +1360,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     RenderRoIArgs argCpy = args;
                     argCpy.time = inputTimeIdentity;
 
-                    return renderRoI(argCpy,&nodeHash);
+                    return renderRoI(argCpy);
                 }
             }
             
@@ -1291,11 +1380,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         args.roi,
                                                         args.time,
                                                         args.view,
-                                                        args.isSequentialRender,
-                                                        args.isRenderUserInteraction,
-                                                        byPassCache,
-                                                        nodeHash,
-                                                        0,
                                                         args.channelForAlpha,
                                                         identity,
                                                         inputTimeIdentity,
@@ -1441,11 +1525,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         args.roi,
                                                         args.time,
                                                         args.view,
-                                                        args.isSequentialRender,
-                                                        args.isRenderUserInteraction,
-                                                        byPassCache,
-                                                        nodeHash,
-                                                        0,
                                                         args.channelForAlpha,
                                                         true,
                                                         inputTimeIdentity,
@@ -1513,8 +1592,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                                       cachedImgParams,
                                                                       image,
                                                                       downscaledImage,
-                                                                      args.isSequentialRender,
-                                                                      args.isRenderUserInteraction,
+                                                                      frameRenderArgs.isSequentialRender,
+                                                                      frameRenderArgs.isRenderResponseToUserInteraction,
                                                                       byPassCache,
                                                                       nodeHash,
                                                                       args.channelForAlpha,
@@ -1547,12 +1626,12 @@ EffectInstance::renderRoI(SequenceTime time,
                           const RectD & rod, //!< effect rod in canonical coords
                           const boost::shared_ptr<ImageParams> & cachedImgParams,
                           const boost::shared_ptr<Image> & image,
-                          const boost::shared_ptr<Image> & downscaledImage,
-                          bool isSequentialRender,
-                          bool isRenderMadeInResponseToUserInteraction,
-                          bool byPassCache,
-                          U64 nodeHash)
+                          const boost::shared_ptr<Image> & downscaledImage)
 {
+    
+    assert(_imp->frameRenderArgs.hasLocalData());
+    ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
+    
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
     ///wether the plug-in should render in the full scale image, and then we downscale afterwards or
@@ -1567,10 +1646,10 @@ EffectInstance::renderRoI(SequenceTime time,
                                                                       cachedImgParams,
                                                                       image,
                                                                       downscaledImage,
-                                                                      isSequentialRender,
-                                                                      isRenderMadeInResponseToUserInteraction,
-                                                                      byPassCache,
-                                                                      nodeHash,
+                                                                      frameRenderArgs.isSequentialRender,
+                                                                      frameRenderArgs.isRenderResponseToUserInteraction,
+                                                                      frameRenderArgs.byPassCache,
+                                                                      frameRenderArgs.nodeHash,
                                                                       3,
                                                                       renderFullScaleThenDownscale);
 
@@ -1767,11 +1846,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                      renderMappedRectToRender,
                                      time,
                                      view,
-                                     isSequentialRender,
-                                     isRenderMadeInResponseToUserInteraction,
-                                     byPassCache,
-                                     nodeHash,
-                                     rotoAge,
                                      channelForAlpha,
                                      false, //< if we reached here the node is not an identity!
                                      0.,
@@ -1848,9 +1922,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                   mipMapLevel, //< mipmapLevel (redundant with the scale)
                                                                   view, //< view
                                                                   inputRoIPixelCoords, //< roi in pixel coordinates
-                                                                  isSequentialRender, //< sequential render ?
-                                                                  isRenderMadeInResponseToUserInteraction, // < user interaction ?
-                                                                  byPassCache, //< look-up the cache for existing images ?
                                                                   RectD(), // < did we precompute any RoD to speed-up the call ?
                                                                   inputPrefComps, //< requested comps
                                                                   inputPrefDepth,
@@ -2011,6 +2082,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 }
             }
         }
+        
+        assert(_imp->frameRenderArgs.hasLocalData());
+        const ParallelRenderArgs& frameArgs = _imp->frameRenderArgs.localData();
 
         switch (safety) {
         case FULLY_SAFE_FRAME: {     // the plugin will not perform any per frame SMP threading
@@ -2019,29 +2093,31 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 nbThreads = QThreadPool::globalInstance()->maxThreadCount();
             }
             std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(downscaledRectToRender, nbThreads);
+            
+            TiledRenderingFunctorArgs tiledArgs;
+            tiledArgs.args = &args;
+            tiledArgs.isSequentialRender = isSequentialRender;
+            tiledArgs.isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
+            tiledArgs.downscaledImage = downscaledImage;
+            tiledArgs.downscaledMappedImage = downscaledMappedImage;
+            tiledArgs.fullScaleImage = image;
+            tiledArgs.fullScaleMappedImage = fullScaleMappedImage;
+            tiledArgs.renderMappedImage = renderMappedImage;
+            
+            
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
             QFuture<Natron::Status> ret = QtConcurrent::mapped( splitRects,
-                                                                boost::bind(&EffectInstance::tiledRenderingFunctor_separateThread,
+                                                                boost::bind(&EffectInstance::tiledRenderingFunctor,
                                                                             this,
-                                                                            args,
-                                                                            renderFullScaleThenDownscale,
-                                                                            _1,
-                                                                            downscaledImage,
-                                                                            image,
-                                                                            downscaledMappedImage,
-                                                                            fullScaleMappedImage,
-                                                                            renderMappedImage) );
+                                                                            tiledArgs,
+                                                                            frameArgs,
+                                                                            true,
+                                                                            _1) );
             ret.waitForFinished();
 
-            bool callEndRender = false;
             ///never call endsequence render here if the render is sequential
-            if (!args._isSequentialRender) {
-                assert( _imp->beginEndRenderCount.hasLocalData() );
-                if (_imp->beginEndRenderCount.localData() ==  1) {
-                    callEndRender = true;
-                }
-            }
-            if (callEndRender) {
+
+            if (callBegin) {
                 assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
                 if (endSequenceRender_public(time, time, time, false, renderMappedScale,
                                              isSequentialRender,
@@ -2080,9 +2156,14 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 locker = new QMutexLocker( appPTR->getMutexForPlugin( getPluginID().c_str() ) );
             }
             ///For FULLY_SAFE, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
-
-            renderStatus = tiledRenderingFunctor_currentThread(args,
+            
+            
+            renderStatus = tiledRenderingFunctor(args,
+                                                 frameArgs,
+                                                 false,
                                                  renderFullScaleThenDownscale,
+                                                 isSequentialRender,
+                                                 isRenderMadeInResponseToUserInteraction,
                                                  downscaledRectToRender,
                                                  downscaledImage,
                                                  image,
@@ -2115,38 +2196,33 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     return retCode;
 } // renderRoIInternal
 
-
 Natron::Status
-EffectInstance::tiledRenderingFunctor_separateThread(const RenderArgs & args,
-                                               bool renderFullScaleThenDownscale,
-                                               const RectI & downscaledRectToRender,
-                                               const boost::shared_ptr<Natron::Image> & downscaledImage,
-                                               const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                               const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                               const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
-                                               const boost::shared_ptr<Natron::Image> & renderMappedImage)
+EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
+                                      const ParallelRenderArgs& frameArgs,
+                                     bool setThreadLocalStorage,
+                                     const RectI & roi )
 {
-    return tiledRenderingFunctor_internal(args, true, renderFullScaleThenDownscale, downscaledRectToRender, downscaledImage, fullScaleImage, downscaledMappedImage, fullScaleMappedImage, renderMappedImage);
+    return tiledRenderingFunctor(*args.args,
+                                 frameArgs,
+                                 setThreadLocalStorage,
+                                 args.renderFullScaleThenDownscale,
+                                 args.isSequentialRender,
+                                 args.isRenderResponseToUserInteraction,
+                                 roi,
+                                 args.downscaledImage,
+                                 args.fullScaleImage,
+                                 args.downscaledMappedImage,
+                                 args.fullScaleMappedImage,
+                                 args.renderMappedImage);
 }
 
 Natron::Status
-EffectInstance::tiledRenderingFunctor_currentThread(const RenderArgs & args,
-                                                     bool renderFullScaleThenDownscale,
-                                                     const RectI & downscaledRectToRender,
-                                                     const boost::shared_ptr<Natron::Image> & downscaledImage,
-                                                     const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                                     const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                                     const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
-                                                     const boost::shared_ptr<Natron::Image> & renderMappedImage)
-{
-    return tiledRenderingFunctor_internal(args, false, renderFullScaleThenDownscale, downscaledRectToRender, downscaledImage, fullScaleImage, downscaledMappedImage, fullScaleMappedImage, renderMappedImage);
-}
-
-
-Natron::Status
-EffectInstance::tiledRenderingFunctor_internal(const RenderArgs & args,
+EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
+                                      const ParallelRenderArgs& frameArgs,
                                       bool setThreadLocalStorage,
                                       bool renderFullScaleThenDownscale,
+                                      bool isSequentialRender,
+                                      bool isRenderResponseToUserInteraction,
                                       const RectI & downscaledRectToRender,
                                       const boost::shared_ptr<Natron::Image> & downscaledImage,
                                       const boost::shared_ptr<Natron::Image> & fullScaleImage,
@@ -2169,8 +2245,6 @@ EffectInstance::tiledRenderingFunctor_internal(const RenderArgs & args,
     const SequenceTime time = args._time;
     int mipMapLevel = downscaledImage->getMipMapLevel();
     const int view = args._view;
-    const bool isSequentialRender = args._isSequentialRender;
-    const bool isRenderResponseToUserInteraction = args._isRenderResponseToUserInteraction;
     const int channelForAlpha = args._channelForAlpha;
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
@@ -2192,6 +2266,7 @@ EffectInstance::tiledRenderingFunctor_internal(const RenderArgs & args,
     
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in FULLY_SAFE_FRAME mode
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
+    boost::shared_ptr<Node::ParallelRenderArgsSetter> scopedFrameArgs;
     
     if (setThreadLocalStorage) {
         
@@ -2219,7 +2294,15 @@ EffectInstance::tiledRenderingFunctor_internal(const RenderArgs & args,
         ///Update the renderWindow which might have changed
         argsCpy._renderWindowPixel = renderRectToRender;
         
-        scopedArgs.reset(new Implementation::ScopedRenderArgs(&_imp->renderArgs,args));
+        scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,args) );
+        scopedFrameArgs.reset( new Node::ParallelRenderArgsSetter(_node.get(),
+                                                           frameArgs.time,
+                                                           frameArgs.view,
+                                                           frameArgs.isRenderResponseToUserInteraction,
+                                                           frameArgs.isSequentialRender,
+                                                           frameArgs.byPassCache,
+                                                           frameArgs.nodeHash) );
+        
     } else {
         renderRectToRender = args._renderWindowPixel;
     }

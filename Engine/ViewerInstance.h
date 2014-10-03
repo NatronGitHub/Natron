@@ -77,6 +77,7 @@ public:
      * and then render to the PBO.
      **/
     Natron::Status renderViewer(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
+                                U64 viewerHash,
                                 std::list<boost::shared_ptr<BufferableObject> >& outputFrames) WARN_UNUSED_RETURN;
 
 
@@ -222,7 +223,8 @@ private:
     /*******************************************/
     
     Natron::Status renderViewer_internal(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
-                                         int textureIndex,boost::shared_ptr<BufferableObject>* outputObject) WARN_UNUSED_RETURN;
+                                         int textureIndex, U64 viewerHash,
+                                         boost::shared_ptr<BufferableObject>* outputObject) WARN_UNUSED_RETURN;
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
 private:

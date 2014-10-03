@@ -1747,6 +1747,15 @@ Node::makePreviewImage(SequenceTime time,
     boost::shared_ptr<Image> img;
     RectI renderWindow;
     rod.toPixelEnclosing(mipMapLevel, &renderWindow);
+    
+    ParallelRenderArgsSetter frameRenderArgs(this,
+                                             time,
+                                             0, //< preview only renders view 0 (left)
+                                             true,
+                                             false,
+                                             false,
+                                             getHashValue());
+    
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
@@ -1755,9 +1764,6 @@ Node::makePreviewImage(SequenceTime time,
                                                                             mipMapLevel,
                                                                             0, //< preview only renders view 0 (left)
                                                                             renderWindow,
-                                                                            false,
-                                                                            true,
-                                                                            false,
                                                                             rod,
                                                                             Natron::ImageComponentRGB, //< preview is always rgb...
                                                                             getBitDepth() ) );
@@ -2721,6 +2727,90 @@ Node::canOthersConnectToThisNode() const
 # else // !DEBUG
     return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL && !_imp->liveInstance->isWriter();
 # endif // !DEBUG
+}
+
+void
+Node::setParallelRenderArgs(int time,
+                           int view,
+                           bool isRenderUserInteraction,
+                           bool isSequential,
+                           bool byPassCache,
+                        U64 nodeHash)
+{
+    std::list<Natron::Node*> marked;
+    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, byPassCache,nodeHash,marked);
+}
+
+void
+Node::invalidateParallelRenderArgs()
+{
+    std::list<Natron::Node*> marked;
+    invalidateParallelRenderArgsInternal(marked);
+}
+
+void
+Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes)
+{
+    ///If marked, we alredy set render args
+    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    _imp->liveInstance->invalidateParallelRenderArgs();
+    
+    ///mark this
+    markedNodes.push_back(this);
+    
+    
+    ///Call recursively
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        for (InputsV::iterator it = _imp->inputs.begin(); it!=_imp->inputs.end(); ++it) {
+            if (*it) {
+                (*it)->invalidateParallelRenderArgsInternal(markedNodes);
+            }
+        }
+    }
+}
+
+void
+Node::setParallelRenderArgsInternal(int time,
+                                    int view,
+                                    bool isRenderUserInteraction,
+                                    bool isSequential,
+                                    bool byPassCache,
+                                    U64 nodeHash,
+                                    std::list<Natron::Node*>& markedNodes)
+{
+    ///If marked, we alredy set render args
+    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    
+    U64 rotoAge;
+    if (_imp->rotoContext) {
+        rotoAge = _imp->rotoContext->getAge();
+    } else {
+        rotoAge = 0;
+    }
+    
+    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, byPassCache, nodeHash, rotoAge);
+    
+    ///mark this
+    markedNodes.push_back(this);
+    
+    
+    ///Call recursively
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        for (InputsV::iterator it = _imp->inputs.begin(); it!=_imp->inputs.end(); ++it) {
+            if (*it) {
+                (*it)->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, byPassCache, (*it)->getHashValue(),
+                                                     markedNodes);
+            }
+        }
+    }
 }
 
 //////////////////////////////////

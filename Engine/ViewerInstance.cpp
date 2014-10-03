@@ -272,6 +272,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                              int view,
                              bool singleThreaded,
                              bool isSequentialRender,
+                             U64 viewerHash,
                              std::list<boost::shared_ptr<BufferableObject> >& outputFrames)
 {
     if (!_imp->uiContext) {
@@ -286,7 +287,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         
         boost::shared_ptr<BufferableObject> output;
-        ret[i] = renderViewer_internal(time,view, singleThreaded, isSequentialRender, i,&output);
+        ret[i] = renderViewer_internal(time,view, singleThreaded, isSequentialRender, i,viewerHash,&output);
         if (output) {
             outputFrames.push_back(output);
         }
@@ -311,6 +312,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                       bool singleThreaded,
                                       bool isSequentialRender,
                                       int textureIndex,
+                                      U64 viewerHash,
                                       boost::shared_ptr<BufferableObject>* outputObject)
 {
     // always running in the render thread
@@ -596,9 +598,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         channels = _imp->viewerParamsChannels;
     }
     std::string inputToRenderName = activeInputToRender->getNode()->getName_mt_safe();
-    U64 nodeHash = getHash();
+
     FrameKey key(time,
-                 nodeHash,
+                 viewerHash,
                  gain,
                  lut,
                  (int)bitDepth,
@@ -634,7 +636,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 lastRenderHash = _imp->lastRenderedHash;
                 lastRenderedHashValid = _imp->lastRenderedHashValid;
             }
-            if ( lastRenderedHashValid && (lastRenderHash != nodeHash) ) {
+            if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
                 appPTR->removeAllTexturesFromCacheWithMatchingKey(lastRenderHash);
                 {
                     QMutexLocker l(&_imp->lastRenderedHashMutex);
@@ -646,7 +648,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         byPassCache = true;
         
         ///Be sure to remove all textures (at any mipmaplevel) that could be left in the cache
-        appPTR->removeAllTexturesFromCacheWithMatchingKey(nodeHash);
+        appPTR->removeAllTexturesFromCacheWithMatchingKey(viewerHash);
     }
 
     unsigned char* ramBuffer = NULL;
@@ -669,13 +671,18 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         }
         {
             QMutexLocker l(&_imp->lastRenderedHashMutex);
-            _imp->lastRenderedHash = nodeHash;
+            _imp->lastRenderedHash = viewerHash;
             _imp->lastRenderedHashValid = true;
         }
 
     } else { // !isCached
         /*We didn't find it in the viewer cache, hence we render
            the frame*/
+        
+        ///Check that we were not aborted already
+        if ( activeInputToRender->getHash() != inputNodeHash || time != getTimeline()->currentFrame() ) {
+            return StatOK;
+        }
         
         FrameEntryLocker entryLocker(_imp.get());
         
@@ -724,7 +731,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             {
                 QMutexLocker l(&_imp->lastRenderedHashMutex);
                 _imp->lastRenderedHashValid = true;
-                _imp->lastRenderedHash = nodeHash;
+                _imp->lastRenderedHash = viewerHash;
             }
         }
         assert(ramBuffer);
@@ -766,8 +773,19 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
        
         bool didEmitInputNRenderingSignal = _node->notifyInputNIsRendering(activeInputIndex);
 
+        
+        Node::ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getNode().get(),
+                                                                 time,
+                                                                 view,
+                                                                 !isSequentialRender,  // is this render due to user interaction ?
+                                                                 isSequentialRender, // is this sequential ?
+                                                                 byPassCache, //< bypass cache ?
+                                                                 inputNodeHash);
+        
+
 
         if (!renderedCompletely) {
+            
             // If an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
@@ -776,7 +794,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 if (isInputImgCached) {
                     ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                     ///cache lookup things because we already did it ourselves.
-                    activeInputToRender->renderRoI(time, scale, mipMapLevel, view, texRectClipped, rod, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true,byPassCache,inputNodeHash);
+                    activeInputToRender->renderRoI(time, scale, mipMapLevel, view, texRectClipped, rod, cachedImgParams, inputImage,downscaledImage);
                 } else {
                     params->image = activeInputToRender->renderRoI(
                         EffectInstance::RenderRoIArgs(time,
@@ -784,13 +802,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                       mipMapLevel,
                                                       view,
                                                       texRectClipped,
-                                                      isSequentialRender,
-                                                      true,
-                                                      byPassCache,
                                                       rod,
                                                       components,
-                                                      imageDepth), //< render the input depth as the viewer can handle it
-                                                            &inputNodeHash);
+                                                      imageDepth) );
 
                     if (!params->image) {
                         
@@ -814,6 +828,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 if ( !activeInputToRender->aborted() ) {
                     throw;
                 } else {
+                    //if render was aborted, remove the frame from the cache as it contains only garbage
+                    appPTR->removeFromViewerCache(params->cachedFrame);
                     return StatOK;
                 }
             }
@@ -978,20 +994,19 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     /////////////////////////////////////////
     // call updateViewer()
 
-    if ( !activeInputToRender->aborted() ) {
-        assert(ramBuffer);
-        params->ramBuffer = ramBuffer;
-        params->textureRect = textureRect;
-        params->srcPremult = srcPremult;
-        params->bytesCount = bytesCount;
-        params->gain = gain;
-        params->offset = offset;
-        params->lut = lut;
-        params->mipMapLevel = (unsigned int)mipMapLevel;
-        params->textureIndex = textureIndex;
-        *outputObject = boost::dynamic_pointer_cast<BufferableObject>(params);
-        
-    }
+    assert(ramBuffer);
+    params->ramBuffer = ramBuffer;
+    params->textureRect = textureRect;
+    params->srcPremult = srcPremult;
+    params->bytesCount = bytesCount;
+    params->gain = gain;
+    params->offset = offset;
+    params->lut = lut;
+    params->mipMapLevel = (unsigned int)mipMapLevel;
+    params->textureIndex = textureIndex;
+    *outputObject = boost::dynamic_pointer_cast<BufferableObject>(params);
+    
+    
     // end of boost::shared_ptr<UpdateUserParams> scope... but it still lives inside updateViewer()
 
     ////////////////////////////////////

@@ -650,7 +650,41 @@ public:
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
     
+    /**
+     * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
+     * This is thread local storage
+     **/
+    void setParallelRenderArgs(int time,
+                               int view,
+                               bool isRenderUserInteraction,
+                               bool isSequential,
+                               bool byPassCache,
+                               U64 nodeHash);
     
+    void invalidateParallelRenderArgs();
+    
+    class ParallelRenderArgsSetter
+    {
+        Node* node;
+    public:
+        
+        ParallelRenderArgsSetter(Node* node,
+                                 int time,
+                                 int view,
+                                 bool isRenderUserInteraction,
+                                 bool isSequential,
+                                 bool byPassCache,
+                                 U64 nodeHash)
+        : node(node)
+        {
+            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,byPassCache,nodeHash);
+        }
+        
+        ~ParallelRenderArgsSetter()
+        {
+            node->invalidateParallelRenderArgs();
+        }
+    };
 
 public slots:
 
@@ -770,8 +804,16 @@ protected:
 
 private:
 
-
-
+    void invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes);
+    
+    void setParallelRenderArgsInternal(int time,
+                                       int view,
+                                       bool isRenderUserInteraction,
+                                       bool isSequential,
+                                       bool byPassCache,
+                                       U64 nodeHash,
+                                       std::list<Natron::Node*>& markedNodes);
+    
 
 
     void loadKnob(const boost::shared_ptr<KnobI> & knob,const NodeSerialization & serialization,bool updateKnobGui = false);

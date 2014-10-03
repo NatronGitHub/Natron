@@ -1065,7 +1065,9 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     int userSettingParallelThreads = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
     
     int runningThreads = appPTR->getNRunningThreads() + QThreadPool::globalInstance()->activeThreadCount();
-    int currentParallelRenders = getNRenderThreads();
+    
+    
+    int currentParallelRenders = getNActiveRenderThreads();
     
     if (userSettingParallelThreads == 0) {
         ///User wants it to be automatically computed, do a simple heuristic: launch as many parallel renders
@@ -1643,9 +1645,7 @@ private:
             if (canOnlyHandleOneView) {
                 mainView = _imp->output->getApp()->getMainView();
             }
-            
-            ///The hash at which the writer will render
-            U64 writerHash = _imp->output->getHash();
+       
             
             /// If the writer dosn't need to render the frames in any sequential order (such as image sequences for instance), then
             /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
@@ -1688,19 +1688,23 @@ private:
                     RectI renderWindow;
                     rod.toPixelEnclosing(scale, &renderWindow);
                     
+                    Node::ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
+                                                             time,
+                                                             i,
+                                                             false,  // is this render due to user interaction ?
+                                                             canOnlyHandleOneView, // is this sequential ?
+                                                             false, //< bypass cache ?
+                                                             activeInputToRenderHash);
+                    
                     boost::shared_ptr<Natron::Image> img =
                     activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                   scale, //< the scale at which to render
                                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                   i, //< the view to render
                                                                                   renderWindow, //< the region of interest (in pixel coordinates)
-                                                                                  canOnlyHandleOneView, // is this sequential
-                                                                                  false, // is this render due to user interaction ?
-                                                                                  false, //< bypass cache ?
                                                                                   rod, // < any precomputed rod ? in canonical coordinates
                                                                                   components,
-                                                                                  imageDepth),
-                                                   &writerHash);
+                                                                                  imageDepth));
                     
                     ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                     if (!renderDirectly) {
@@ -1756,14 +1760,22 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
     (void)_effect->getRegionOfDefinition_public(hash,time, scale, view, &rod, &isProjectFormat);
     rod.toPixelEnclosing(0, &roi);
 
+    Natron::SequentialPreference sequentiallity = _effect->getSequentialPreference();
+    bool canOnlyHandleOneView = sequentiallity == Natron::EFFECT_ONLY_SEQUENTIAL || sequentiallity == Natron::EFFECT_PREFER_SEQUENTIAL;
+    
+    Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+                                                             time,
+                                                             view,
+                                                             false,  // is this render due to user interaction ?
+                                                             canOnlyHandleOneView, // is this sequential ?
+                                                             false, //< bypass cache ?
+                                                             hash);
+
     
     Natron::EffectInstance::RenderRoIArgs args(time,
                                                scale,0,
                                                view,
                                                roi,
-                                               true,
-                                               false,
-                                               false,
                                                rod,
                                                components,
                                                imageDepth,
@@ -1958,7 +1970,7 @@ private:
 
         std::list<boost::shared_ptr<BufferableObject> > frames;
         try {
-            stat = _viewer->renderViewer(time,view,false,true,frames);
+            stat = _viewer->renderViewer(time,view,false,true,_viewer->getHash(),frames);
         } catch (...) {
             stat = StatFailed;
         }
@@ -2013,7 +2025,7 @@ ViewerDisplayScheduler::timelineSetBounds(int left, int right)
 
 typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
 
-BufferableObjectList renderCurrentFrameFunctor(ViewerInstance* viewer,int frame)
+BufferableObjectList renderCurrentFrameFunctor(ViewerInstance* viewer,int frame,U64 viewerHash)
 {
     ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
     ///it calls appendToBuffer by itself
@@ -2024,7 +2036,7 @@ BufferableObjectList renderCurrentFrameFunctor(ViewerInstance* viewer,int frame)
     
     BufferableObjectList ret;
     try {
-        stat = viewer->renderViewer(frame,view,QThread::currentThread() == qApp->thread(),false,ret);
+        stat = viewer->renderViewer(frame,view,QThread::currentThread() == qApp->thread(),false,viewerHash,ret);
     } catch (...) {
         stat = StatFailed;
     }
@@ -2152,7 +2164,7 @@ RenderEngine::renderCurrentFrame(bool abortPrevious)
     
     ///If the user doesn't want to use any thread, run it into the main thread
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
-        renderCurrentFrameFunctor(isViewer, isViewer->getTimeline()->currentFrame());
+        renderCurrentFrameFunctor(isViewer, isViewer->getTimeline()->currentFrame(),isViewer->getHash());
     } else {
         
         ///Run in a separate thread, we don't need to abort the other threads (and we can't since the abort flag
@@ -2165,7 +2177,8 @@ RenderEngine::renderCurrentFrame(bool abortPrevious)
             _imp->futures.push_back(watcher); 
         }
         
-        QFuture<BufferableObjectList> future = QtConcurrent::run(renderCurrentFrameFunctor,isViewer,isViewer->getTimeline()->currentFrame());
+        QFuture<BufferableObjectList> future = QtConcurrent::run(renderCurrentFrameFunctor,isViewer,isViewer->getTimeline()->currentFrame(),
+                                                                 isViewer->getHash());
         watcher->setFuture(future);
     }
 }
