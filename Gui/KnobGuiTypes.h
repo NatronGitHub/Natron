@@ -541,7 +541,7 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
-    void updateLabel(const QColor &color);
+    void updateLabel(double r, double g, double b, double a);
 
 private:
     QWidget *mainContainer;

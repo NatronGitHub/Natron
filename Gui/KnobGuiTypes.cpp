@@ -1709,32 +1709,25 @@ Color_KnobGui::updateGUI(int dimension)
     }
 
 
-    double rf = _rBox->value();
-    uchar r = Color::floatToInt<256>( Natron::Color::to_func_srgb(rf) );
-    double gf = rf;
-    uchar g = r;
-    double bf = rf;
-    uchar b = r;
-    double af = 1.;
-    uchar a = 255;
+    double r = _rBox->value();
+    double g = r;
+    double b = r;
+    double a = 1.;
+
     if (_dimension >= 3) {
-        gf = _gBox->value();
-        g = Color::floatToInt<256>( Natron::Color::to_func_srgb(gf) );
-        bf = _bBox->value();
-        b = Color::floatToInt<256>( Natron::Color::to_func_srgb(bf) );
+        g = _gBox->value();
+        b = _bBox->value();
     }
     if (_dimension >= 4) {
-        af = _aBox->value();
-        a = Color::floatToInt<256>( Natron::Color::to_func_srgb(af) );
+        a = _aBox->value();
     }
-    QColor color(r, g, b, a);
-    updateLabel(color);
+    updateLabel(r, g, b, a);
 
     bool colorsEqual = true;
     if (_dimension == 3) {
-        colorsEqual = (rf == gf && rf == bf);
+        colorsEqual = (r == g && r == b);
     } else {
-        colorsEqual = (rf == gf && rf == bf && rf == af);
+        colorsEqual = (r == g && r == b && r == a);
     }
     if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
         expandAllDimensions();
@@ -1824,12 +1817,17 @@ void
 Color_KnobGui::showColorDialog()
 {
     QColorDialog dialog( _rBox->parentWidget() );
-    double curR = 0,curG = 0,curB = 0;
 
-    curR = _rBox->value();
+    double curR = _rBox->value();
+    double curG = curR;
+    double curB = curR;
+    double curA = 1.;
     if (_dimension > 1) {
         curG = _gBox->value();
         curB = _bBox->value();
+    }
+    if (_dimension > 3) {
+        curA = _aBox->value();
     }
 
     for (int i = 0; i < _dimension; ++i) {
@@ -1837,12 +1835,18 @@ Color_KnobGui::showColorDialog()
     }
 
     QColor curColor;
-    curColor.setRedF(curR);
-    curColor.setGreenF(curG);
-    curColor.setBlueF(curB);
+    curColor.setRgbF(Natron::clamp(Natron::Color::to_func_srgb(curR)),
+                     Natron::clamp(Natron::Color::to_func_srgb(curG)),
+                     Natron::clamp(Natron::Color::to_func_srgb(curB)),
+                     Natron::clamp(Natron::Color::to_func_srgb(curA)));
     dialog.setCurrentColor(curColor);
     QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
-    if ( dialog.exec() ) {
+    _knob->blockEvaluation();
+    if (!dialog.exec()) {
+        for (int i = 0; i < _dimension; ++i) {
+            _knob->setValue(_lastColor[i],i);
+        }
+    } else {
         ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         for (int i = 0; i < _dimension; ++i) {
             _knob->setValue(_lastColor[i],i);
@@ -1857,97 +1861,92 @@ Color_KnobGui::showColorDialog()
 
         QColor userColor = dialog.currentColor();
         QColor realColor = userColor;
-        realColor.setGreen( userColor.red() );
-        realColor.setBlue( userColor.red() );
+        realColor.setGreen(userColor.red());
+        realColor.setBlue(userColor.red());
         realColor.setAlpha(255);
 
-        if ( getKnob()->isEnabled(0) ) {
-            _rBox->setValue( realColor.redF() );
+        if (getKnob()->isEnabled(0)) {
+            _rBox->setValue(Natron::Color::from_func_srgb(realColor.redF()));
         }
 
         if (_dimension >= 3) {
-            if ( getKnob()->isEnabled(1) ) {
-                _gBox->setValue( userColor.greenF() );
+            if (getKnob()->isEnabled(1)) {
+                _gBox->setValue(Natron::Color::from_func_srgb(userColor.greenF()));
             }
-            if ( getKnob()->isEnabled(2) ) {
-                _bBox->setValue( userColor.blueF() );
+            if (getKnob()->isEnabled(2)) {
+                _bBox->setValue(Natron::Color::from_func_srgb(userColor.blueF()));
             }
-            realColor.setGreen( userColor.green() );
-            realColor.setBlue( userColor.blue() );
+            realColor.setGreen(userColor.green());
+            realColor.setBlue(userColor.blue());
         }
         if (_dimension >= 4) {
-            if ( getKnob()->isEnabled(3) ) {
-                _aBox->setValue( userColor.alphaF() );
+            if (getKnob()->isEnabled(3)) {
+                _aBox->setValue(userColor.alphaF()); // no conversion, alpha is linear
             }
-            realColor.setGreen( userColor.green() );
-            realColor.setBlue( userColor.blue() );
-            realColor.setAlpha( userColor.alpha() );
+            realColor.setAlpha(userColor.alpha());
         }
 
         onColorChanged();
-    } else {
-        for (int i = 0; i < _dimension; ++i) {
-            _knob->setValue(_lastColor[i],i);
-        }
-        updateLabel(curColor);
     }
+    _knob->unblockEvaluation();
+    _knob->evaluateValueChange(0, PLUGIN_EDITED);
 } // showColorDialog
 
 void
 Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 {
-    updateLabel(color);
-    _knob->setValue(color.redF(), 0);
+    _knob->blockEvaluation();
+    _knob->setValue(Natron::Color::from_func_srgb(color.redF()), 0);
     if (_dimension > 1) {
-        _knob->setValue(color.greenF(), 1);
-        _knob->setValue(color.blueF(), 2);
+        _knob->setValue(Natron::Color::from_func_srgb(color.greenF()), 1);
+        _knob->setValue(Natron::Color::from_func_srgb(color.blueF()), 2);
         if (_dimension > 3) {
-            _knob->setValue(color.alphaF(), 3);
+            _knob->setValue(color.alphaF(), 3); // no conversion, alpha is linear
         }
     }
+    _knob->unblockEvaluation();
+    _knob->evaluateValueChange(0, PLUGIN_EDITED);
 }
 
 void
 Color_KnobGui::onColorChanged()
 {
     std::list<double> newValues;
-    QColor color;
     double r = _rBox->value();
-    double rClamped = Natron::clamp(r);
-
-    color.setRedF(rClamped);
+    double g = r;
+    double b = r;
+    double a = r;
     newValues.push_back(r);
     if ( _dimensionSwitchButton->isChecked() ) {
         if (_dimension >= 3) {
-            color.setGreenF( Natron::clamp( _gBox->value() ) );
-            newValues.push_back( _gBox->value() );
-            color.setBlueF( Natron::clamp( _bBox->value() ) );
-            newValues.push_back( _bBox->value() );
+            g = _gBox->value();
+            b = _bBox->value();
         }
         if (_dimension >= 4) {
-            color.setAlphaF( Natron::clamp( _aBox->value() ) );
-            newValues.push_back( _aBox->value() );
-        }
-    } else {
-        if (_dimension >= 3) {
-            color.setGreenF(rClamped);
-            newValues.push_back(r);
-            color.setBlueF(rClamped);
-            newValues.push_back(r);
-        }
-        if (_dimension >= 4) {
-            newValues.push_back(r);
-            color.setAlphaF(rClamped);
+            a = _aBox->value();
         }
     }
+    if (_dimension >= 3) {
+        newValues.push_back(g);
+        newValues.push_back(b);
+    }
+    if (_dimension >= 4) {
+        newValues.push_back(a);
+    }
 
-    updateLabel(color);
+    updateLabel(r, g, b, a);
     pushUndoCommand( new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues,false) );
 }
 
 void
-Color_KnobGui::updateLabel(const QColor &color)
+Color_KnobGui::updateLabel(double r, double g, double b, double a)
 {
+    QColor color;
+    color.setRgbF(Natron::clamp(Natron::Color::to_func_srgb(r)),
+                  Natron::clamp(Natron::Color::to_func_srgb(g)),
+                  Natron::clamp(Natron::Color::to_func_srgb(b)),
+                  Natron::clamp(a));
+    printf("r=%g g=%g b=%g\n",color.redF(), color.greenF(), color.blueF());
     _colorLabel->setColor(color);
 }
 
