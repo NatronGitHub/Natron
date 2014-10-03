@@ -232,7 +232,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
                               SequenceTime *last)
 {
 
-    SequenceTime inpFirst = 0,inpLast = 0;
+    SequenceTime inpFirst = 1,inpLast = 1;
     int activeInputs[2];
     getActiveInputs(activeInputs[0], activeInputs[1]);
     EffectInstance* n1 = getInput(activeInputs[0]);
@@ -242,8 +242,8 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     *first = inpFirst;
     *last = inpLast;
 
-    inpFirst = 0;
-    inpLast = 0;
+    inpFirst = 1;
+    inpLast = 1;
 
     EffectInstance* n2 = getInput(activeInputs[1]);
     if (n2) {

@@ -18,9 +18,9 @@
 #include "Engine/Node.h"
 
 TimeLine::TimeLine(Natron::Project* project)
-    : _firstFrame(0)
-      , _lastFrame(0)
-      , _currentFrame(0)
+    : _firstFrame(1)
+      , _lastFrame(1)
+      , _currentFrame(1)
       , _leftBoundary(_firstFrame)
       , _rightBoundary(_lastFrame)
       , _keyframes()
