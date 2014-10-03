@@ -1946,7 +1946,6 @@ Color_KnobGui::updateLabel(double r, double g, double b, double a)
                   Natron::clamp(Natron::Color::to_func_srgb(g)),
                   Natron::clamp(Natron::Color::to_func_srgb(b)),
                   Natron::clamp(a));
-    printf("r=%g g=%g b=%g\n",color.redF(), color.greenF(), color.blueF());
     _colorLabel->setColor(color);
 }
 
