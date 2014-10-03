@@ -70,11 +70,6 @@ Then this page has a complete answer on how to compile the dependencies:
 http://stackoverflow.com/questions/85622/how-to-compile-cairo-for-visual-c-2008-express-edition
 This will work successfully.
 
-### Hyperic-Sigar
-
-Download the binary from https://sourceforge.net/projects/sigar/files/sigar/1.6/
-or compile it from github directly :
-https://github.com/hyperic/sigar
 
 
 ###Add the config.pri file
@@ -117,11 +112,6 @@ cairo {
 	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\lib\\x64) -lcairo
 }
 
-sigar {
-	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\sigar_1.6.4\\include)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\sigar_1.6.4\\lib\\x64) -lsigar-amd64-winnt
-}
-
 }
 
 32bit {
@@ -147,11 +137,6 @@ expat{
 cairo {
 	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\include)
 	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\lib\\x86) -lcairo
-}
-
-sigar {
-	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\sigar_1.6.4\\include)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\sigar_1.6.4\\lib\\x64) -lsigar-amd64-winnt
 }
 
 }

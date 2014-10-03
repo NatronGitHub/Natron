@@ -47,13 +47,6 @@ Download Cairo 1.12 and install.
 make && make install
 ```
 
-### Sigar
-
-Download the binary from https://sourceforge.net/projects/sigar/files/sigar/1.6/
-or compile it from github directly :
-https://github.com/hyperic/sigar
-
-
 We're done here for libraries.
 
 ###Add the config.pri file
@@ -79,9 +72,6 @@ LIBS is the path to the libs
     boost: LIBS += -lboost_serialization
     expat: LIBS += -lexpat
     expat: PKGCONFIG -= expat
-    INCLUDEPATH+=/usr/local/include
-    LIBS+="-L/usr/local/lib"
-    LIBS+= -L/usr/local/lib -lsigar-x86-freebsd-6
     EOF
     ----- end -----
 
