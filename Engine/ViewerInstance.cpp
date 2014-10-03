@@ -297,7 +297,6 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
     }
 
-    _imp->redrawViewer();
 
     if ( (ret[0] == StatFailed) && (ret[1] == StatFailed) ) {
         return StatFailed;
