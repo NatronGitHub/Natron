@@ -559,7 +559,6 @@ EffectInstance::setParallelRenderArgs(int time,
                            U64 rotoAge)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
-    assert(!args.validArgs);
     
     args.time = time;
     args.view = view;
@@ -575,7 +574,7 @@ EffectInstance::setParallelRenderArgs(int time,
     args.nodeHash = nodeHash;
     args.rotoAge = rotoAge;
     
-    args.validArgs = true;
+    ++args.validArgs;
     
 }
 
@@ -584,7 +583,7 @@ EffectInstance::invalidateParallelRenderArgs()
 {
     assert(_imp->frameRenderArgs.hasLocalData());
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
-    args.validArgs = false;
+    --args.validArgs;
 }
 
 U64
@@ -3174,7 +3173,14 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         
-        
+        Node::ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+                                                       time,
+                                                       0, /*view*/
+                                                       true,
+                                                       false,
+                                                       false,
+                                                       getHash());
+
         RECURSIVE_ACTION();
         knobChanged(k, reason, /*view*/ 0, time);
     }

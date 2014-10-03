@@ -1806,6 +1806,7 @@ TrackerPanel::trackForward()
     setKnobsFrozen(true);
     gui->startProgress( selectedInstances.front()->getLiveInstance(), tr("Tracking...").toStdString() );
     while (cur < end) {
+        
         handleTrackNextAndPrevious(instanceButtons,cur);
         QCoreApplication::processEvents();
         if ( ( getGui() && !getGui()->progressUpdate( selectedInstances.front()->getLiveInstance(),
@@ -1815,6 +1816,7 @@ TrackerPanel::trackForward()
             _imp->abortTrackingRequested = false;
             emit trackingEnded();
             _imp->isTracking = false;
+            gui->endProgress( selectedInstances.front()->getLiveInstance() );
             return true;
         }
         ++cur;

@@ -55,8 +55,8 @@ struct ParallelRenderArgs
     ///The age of the roto as it was when starting the rendering of the frame
     U64 rotoAge;
     
-    ///True if the args were set for the current thread
-    bool validArgs;
+    ///> 0 if the args were set for the current thread
+    int validArgs;
     
     /// is this a render due to user interaction ? Generally this is true when rendering because
     /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame

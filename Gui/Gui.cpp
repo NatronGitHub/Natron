@@ -3738,7 +3738,7 @@ Gui::endProgress(Natron::EffectInstance* effect)
 
     std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
     if ( found == _imp->_progressBars.end() ) {
-        qDebug() << effect->getNode()->getName_mt_safe().c_str() <<  " called endProgress but didn't called startProgress first.";
+        return;
     }
 
 
