@@ -833,8 +833,8 @@ GuiApplicationManager::setLoadingStatus(const QString & str)
 
 void
 GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                              std::map<std::string,std::vector<std::string> >* readersMap,
-                                              std::map<std::string,std::vector<std::string> >* writersMap)
+                                              std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+                                              std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
 {
     ////Use ReadQt and WriteQt only for debug versions of Natron.
     // these  are built-in nodes
@@ -857,14 +857,14 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
 
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
-            std::map<std::string,std::vector<std::string> >::iterator it;
+            std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
             it = readersMap->find(extensions[k]);
 
             if ( it != readersMap->end() ) {
-                it->second.push_back( reader->getPluginID() );
+                it->second.push_back( std::make_pair(reader->getPluginID(), -1) );
             } else {
-                std::vector<std::string> newVec(1);
-                newVec[0] = reader->getPluginID();
+                std::vector<std::pair<std::string,double> > newVec(1);
+                newVec[0] = std::make_pair(reader->getPluginID(),-1);
                 readersMap->insert( std::make_pair(extensions[k], newVec) );
             }
         }
@@ -884,14 +884,14 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
 
         std::vector<std::string> extensions = writer->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
-            std::map<std::string,std::vector<std::string> >::iterator it;
+            std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
             it = writersMap->find(extensions[k]);
 
             if ( it != writersMap->end() ) {
-                it->second.push_back( writer->getPluginID() );
+                it->second.push_back( std::make_pair(writer->getPluginID(), -1) );
             } else {
-                std::vector<std::string> newVec(1);
-                newVec[0] = writer->getPluginID();
+                std::vector<std::pair<std::string,double> > newVec(1);
+                newVec[0] = std::make_pair(writer->getPluginID(),-1);
                 writersMap->insert( std::make_pair(extensions[k], newVec) );
             }
         }

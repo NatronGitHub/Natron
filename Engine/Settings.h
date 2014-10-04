@@ -87,9 +87,9 @@ public:
     const std::string & getReaderPluginIDForFileType(const std::string & extension);
     const std::string & getWriterPluginIDForFileType(const std::string & extension);
 
-    void populateReaderPluginsAndFormats(const std::map<std::string,std::vector<std::string> > & rows);
+    void populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
 
-    void populateWriterPluginsAndFormats(const std::map<std::string,std::vector<std::string> > & rows);
+    void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
 
     void getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats);
 

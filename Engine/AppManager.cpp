@@ -807,8 +807,8 @@ AppManager::loadAllPlugins()
     assert( _imp->_formats.empty() );
 
 
-    std::map<std::string,std::vector<std::string> > readersMap;
-    std::map<std::string,std::vector<std::string> > writersMap;
+    std::map<std::string,std::vector< std::pair<std::string,double> > > readersMap;
+    std::map<std::string,std::vector< std::pair<std::string,double> > > writersMap;
 
     /*loading node plugins*/
 
@@ -825,8 +825,8 @@ AppManager::loadAllPlugins()
 
 void
 AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                   std::map<std::string,std::vector<std::string> >* /*readersMap*/,
-                                   std::map<std::string,std::vector<std::string> >* /*writersMap*/)
+                                   std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
+                                   std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
     {
         boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );

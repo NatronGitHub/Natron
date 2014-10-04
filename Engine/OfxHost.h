@@ -107,8 +107,8 @@ public:
 
     /*Reads OFX plugin cache and scan plugins directories
        to load them all.*/
-    void loadOFXPlugins(std::map<std::string,std::vector<std::string> >* readersMap,
-                        std::map<std::string,std::vector<std::string> >* writersMap);
+    void loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+                        std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
 
     void clearPluginsLoadedCache();
 

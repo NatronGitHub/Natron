@@ -363,8 +363,8 @@ protected:
     }
 
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                        std::map<std::string,std::vector<std::string> >* readersMap,
-                                        std::map<std::string,std::vector<std::string> >* writersMap);
+                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
     virtual AppInstance* makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {

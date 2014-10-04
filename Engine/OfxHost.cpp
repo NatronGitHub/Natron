@@ -392,8 +392,8 @@ const TCHAR * getStdOFXPluginPath(const std::string &hostId);
 #endif
 
 void
-Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector<std::string> >* readersMap,
-                                std::map<std::string,std::vector<std::string> >* writersMap)
+Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+                                std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
 {
     assert( OFX::Host::PluginCache::getPluginCache() );
     /// set the version label in the global cache
@@ -511,7 +511,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector<std::string> >*
             std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
         }
 
-
+        double evaluation = p->getDescriptor().getProps().getDoubleProperty(kTuttleOfxImageEffectPropEvaluation);
+        
         const std::set<std::string> & contexts = p->getContexts();
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
@@ -520,28 +521,28 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector<std::string> >*
         if ( ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap ) {
             ///we're safe to assume that this plugin is a reader
             for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string,std::vector<std::string> >::iterator it;
+                std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
                 it = readersMap->find(formats[k]);
 
                 if ( it != readersMap->end() ) {
-                    it->second.push_back(pluginId);
+                    it->second.push_back(std::make_pair(pluginId, evaluation));
                 } else {
-                    std::vector<std::string> newVec(1);
-                    newVec[0] = pluginId;
+                    std::vector<std::pair<std::string,double> > newVec(1);
+                    newVec[0] = std::make_pair(pluginId,evaluation);
                     readersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }
         } else if ( ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap ) {
             ///we're safe to assume that this plugin is a writer.
             for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string,std::vector<std::string> >::iterator it;
+                std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
                 it = writersMap->find(formats[k]);
 
                 if ( it != writersMap->end() ) {
-                    it->second.push_back(pluginId);
+                    it->second.push_back(std::make_pair(pluginId, evaluation));
                 } else {
-                    std::vector<std::string> newVec(1);
-                    newVec[0] = pluginId;
+                    std::vector<std::pair<std::string,double> > newVec(1);
+                    newVec[0] = std::make_pair(pluginId,evaluation);
                     writersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }

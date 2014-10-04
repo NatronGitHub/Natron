@@ -750,26 +750,7 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.,1);
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
 
-#pragma message WARN("This is kinda a big hack to promote the OpenImageIO plug-in, we should use Tuttle's notation extension")
-    for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        const std::vector<std::string>  entries = _readersMapping[i]->getEntries_mt_safe();
-        for (U32 j = 0; j < entries.size(); ++j) {
-            if ( QString( entries[j].c_str() ).contains("ReadOIIOOFX") ) {
-                _readersMapping[i]->setDefaultValue(j,0);
-                break;
-            }
-        }
-    }
 
-    for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        const std::vector<std::string>  entries = _writersMapping[i]->getEntries_mt_safe();
-        for (U32 j = 0; j < entries.size(); ++j) {
-            if ( QString( entries[j].c_str() ).contains("WriteOIIOOFX") ) {
-                _writersMapping[i]->setDefaultValue(j,0);
-                break;
-            }
-        }
-    }
     endKnobsValuesChanged(Natron::PLUGIN_EDITED);
 } // setDefaultValues
 
@@ -1142,38 +1123,58 @@ Settings::getWriterPluginIDForFileType(const std::string & extension)
 }
 
 void
-Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector<std::string> > & rows)
+Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
-    for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
+    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setAnimationEnabled(false);
-        k->populateChoices(it->second);
+        
+        std::vector<std::string> entries;
+        double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
+        int bestPluginIndex = -1;
+        
+        
         for (U32 i = 0; i < it->second.size(); ++i) {
-            ///promote ReadOIIO !
-            if ( QString( it->second[i].c_str() ).contains("ReadOIIOOFX") ) {
-                k->setValue(i,0);
-                break;
+            
+            if (it->second[i].second > bestPluginEvaluation) {
+                bestPluginIndex = i;
             }
+            entries.push_back(it->second[i].first);
+            
         }
+        if (bestPluginIndex > -1) {
+            k->setDefaultValue(bestPluginIndex,0);
+        }
+        k->populateChoices(entries);
         _readersMapping.push_back(k);
         _readersTab->addKnob(k);
     }
 }
 
 void
-Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector<std::string> > & rows)
+Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
-    for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
+    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setAnimationEnabled(false);
-        k->populateChoices(it->second);
+        
+        std::vector<std::string> entries;
+        double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
+        int bestPluginIndex = -1;
+        
+        
         for (U32 i = 0; i < it->second.size(); ++i) {
-            ///promote WriteOIIOOFX !
-            if ( QString( it->second[i].c_str() ).contains("WriteOIIOOFX") ) {
-                k->setValue(i,0);
-                break;
+            
+            if (it->second[i].second > bestPluginEvaluation) {
+                bestPluginIndex = i;
             }
+            entries.push_back(it->second[i].first);
+            
         }
+        if (bestPluginIndex > -1) {
+            k->setDefaultValue(bestPluginIndex,0);
+        }
+        k->populateChoices(entries);
         _writersMapping.push_back(k);
         _writersTab->addKnob(k);
     }

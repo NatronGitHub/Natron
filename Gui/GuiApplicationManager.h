@@ -144,8 +144,8 @@ private:
     virtual void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                        std::map<std::string,std::vector<std::string> >* readersMap,
-                                        std::map<std::string,std::vector<std::string> >* writersMap);
+                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
     virtual void initGui() OVERRIDE FINAL;
     virtual AppInstance* makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
