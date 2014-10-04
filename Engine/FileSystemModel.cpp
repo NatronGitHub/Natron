@@ -836,6 +836,14 @@ FileSystemModel::setRootPath(const QString& path)
 {
     assert(QThread::currentThread() == qApp->thread());
     
+    ///Check if the path exists
+    {
+        QDir dir(path);
+        if ( !dir.exists() ) {
+            return;
+        }
+    }
+    
     _imp->currentRootPath = path;
     
     ///Set it to false so that onDirectoryLoadedByGatherer will watch the content of the directory
