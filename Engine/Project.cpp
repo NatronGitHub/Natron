@@ -429,20 +429,17 @@ Project::saveProjectInternal(const QString & path,
     }
 
     QFile::remove(tmpFilename);
-
+    
     if (!autoSave) {
         _imp->projectName = name;
         emit projectNameChanged(name); //< notify the gui so it can update the title
+        _imp->projectPath = path;
+        _imp->hasProjectBeenSavedByUser = true;
+        _imp->ageSinceLastSave = time;
     } else {
         if (!isRenderSave) {
             emit projectNameChanged(_imp->projectName + " (*)");
         }
-    }
-    
-    _imp->projectPath = path;
-    if (!autoSave) {
-        _imp->hasProjectBeenSavedByUser = true;
-        _imp->ageSinceLastSave = time;
     }
     _imp->lastAutoSave = time;
 
