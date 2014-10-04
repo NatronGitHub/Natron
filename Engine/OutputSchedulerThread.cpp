@@ -705,6 +705,7 @@ OutputSchedulerThread::startRender()
         
         QMutexLocker l(&_imp->runArgsMutex);
         _imp->livingRunArgs = _imp->requestedRunArgs;
+#pragma message WARN("Value stored to 'direction' is never read - please fix and comment")
         direction = _imp->livingRunArgs.timelineDirection;
         firstFrame = _imp->livingRunArgs.firstFrame;
         lastFrame = _imp->livingRunArgs.lastFrame;

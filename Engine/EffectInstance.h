@@ -616,7 +616,11 @@ protected:
      * project format.
      * @returns true if the rod is set to the project format.
      **/
-    bool ifInfiniteApplyHeuristic(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) ;
+    bool ifInfiniteApplyHeuristic(U64 hash,
+                                  SequenceTime time,
+                                  const RenderScale & scale,
+                                  int view,
+                                  RectD* rod); //!< input/output
 
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest
@@ -1109,9 +1113,19 @@ private:
      * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not
      * a thread controlled by Natron).
      **/
-bool retrieveGetImageDataUponFailure(const int time,const int view,const RenderScale& scale,const RectD* optionalBoundsParam,
-                                         U64& nodeHash,U64& rotoAge,bool& isIdentity,int& identityInputNb,int& identityTime,
-                                         RectD& rod,RoIMap& inputRois,RectD& optionalBounds);
+    // TODO: shouldn't this be documented a bit more? (parameters?)
+    bool retrieveGetImageDataUponFailure(const int time,
+                                         const int view,
+                                         const RenderScale& scale,
+                                         const RectD* optionalBoundsParam,
+                                         U64* nodeHash_p,
+                                         U64* rotoAge_p,
+                                         bool* isIdentity_p,
+                                         int* identityInputNb_p,
+                                         int* identityTime_p,
+                                         RectD* rod_p,
+                                         RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
+                                         RectD* optionalBounds_p); //!< output, only set if optionalBoundsParam != NULL
 
     /**
      * @brief Must be implemented to evaluate a value change

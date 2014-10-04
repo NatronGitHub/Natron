@@ -725,9 +725,18 @@ EffectInstance::getInputLabel(int inputNb) const
 }
 
 bool
-EffectInstance::retrieveGetImageDataUponFailure(const int time,const int view,const RenderScale& scale,const RectD* optionalBoundsParam,
-                                                U64& nodeHash,U64& rotoAge,bool& isIdentity,int& identityInputNb,int& identityTime,
-                                                RectD& rod,RoIMap& inputRois,RectD& optionalBounds)
+EffectInstance::retrieveGetImageDataUponFailure(const int time,
+                                                const int view,
+                                                const RenderScale& scale,
+                                                const RectD* optionalBoundsParam,
+                                                U64* nodeHash_p,
+                                                U64* rotoAge_p,
+                                                bool* isIdentity_p,
+                                                int* identityInputNb_p,
+                                                int* identityTime_p,
+                                                RectD* rod_p,
+                                                RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
+                                                RectD* optionalBounds_p) //!< output, only set if optionalBoundsParam != NULL
 {
     /////Update 09/02/14
     /// We now AUTHORIZE GetRegionOfDefinition and isIdentity and getRegionsOfInterest to be called recursively.
@@ -746,25 +755,28 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,const int view,co
     
     ///Try to compensate for the mistake
     
-    nodeHash = getHash();
+    *nodeHash_p = getHash();
+    const U64& nodeHash = *nodeHash_p;
     boost::shared_ptr<RotoContext> roto =  getNode()->getRotoContext();
     if (roto) {
-        rotoAge = roto->getAge();
+        *rotoAge_p = roto->getAge();
     } else {
-        rotoAge = 0;
+        *rotoAge_p = 0;
     }
     
-    Natron::Status stat = getRegionOfDefinition(nodeHash,time, scale, view, &rod);
+    Natron::Status stat = getRegionOfDefinition(nodeHash, time, scale, view, rod_p);
     if (stat == StatFailed) {
         return false;
     }
+    const RectD& rod = *rod_p;
     
     
     if (!optionalBoundsParam) {
+#pragma message WARN("The actual contents pointed to by optionalBoundsParam is never used, is this normal? please comment.")
         ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
-        optionalBounds = rod;
-        ifInfiniteApplyHeuristic(nodeHash,time, scale, view, &optionalBounds);
-        
+        *optionalBounds_p = rod;
+        ifInfiniteApplyHeuristic(nodeHash, time, scale, view, optionalBounds_p);
+        const RectD& optionalBounds = *optionalBounds_p;
         
         /// If the region parameter is not set to NULL, then it will be clipped to the clip's
         /// Region of Definition for the given time. The returned image will be m at m least as big as this region.
@@ -775,12 +787,12 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,const int view,co
         
         ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
         ///// should never happen.
-        inputRois = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
+        *inputRois_p = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
     }
     
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
     try {
-        isIdentity = isIdentity_public(nodeHash,time, scale, rod, view, &identityTime, &identityInputNb);
+        *isIdentity_p = isIdentity_public(nodeHash, time, scale, rod, view, identityTime_p, identityInputNb_p);
     } catch (...) {
         return false;
     }
@@ -842,7 +854,7 @@ EffectInstance::getImage(int inputNb,
 
     if ( !_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData() ) {
         
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, nodeHash, rotoAge, isIdentity, inputNbIdentity, identityTime, rod, inputsRoI, optionalBounds) ) {
+        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputNbIdentity, &identityTime, &rod, &inputsRoI, &optionalBounds) ) {
             return boost::shared_ptr<Image>();
         }
        
@@ -852,8 +864,8 @@ EffectInstance::getImage(int inputNb,
         ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
         
         if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
-            
-            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, nodeHash, rotoAge, isIdentity, inputNbIdentity, identityTime, rod, inputsRoI, optionalBounds) ) {
+#pragma message WARN("Value stored to 'identityTime is never read' - please fix and comment")
+            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputNbIdentity, &identityTime, &rod, &inputsRoI, &optionalBounds) ) {
                 return boost::shared_ptr<Image>();
             }
             
@@ -1006,7 +1018,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                                          SequenceTime time,
                                          const RenderScale & scale,
                                          int view,
-                                         RectD* rod)
+                                         RectD* rod) //!< input/output
 {
     /*If the rod is infinite clip it to the project's default*/
 
