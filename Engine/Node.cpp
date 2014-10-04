@@ -2763,14 +2763,14 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     
     
     ///Call recursively
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        for (InputsV::iterator it = _imp->inputs.begin(); it!=_imp->inputs.end(); ++it) {
-            if (*it) {
-                (*it)->invalidateParallelRenderArgsInternal(markedNodes);
-            }
+    int maxInpu = _imp->liveInstance->getMaxInputCount();
+    for (int i = 0; i < maxInpu; ++i) {
+        boost::shared_ptr<Node> input = getInput(i);
+        if (input) {
+            input->invalidateParallelRenderArgsInternal(markedNodes);
         }
     }
+
 }
 
 void
@@ -2802,15 +2802,17 @@ Node::setParallelRenderArgsInternal(int time,
     
     
     ///Call recursively
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        for (InputsV::iterator it = _imp->inputs.begin(); it!=_imp->inputs.end(); ++it) {
-            if (*it) {
-                (*it)->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, byPassCache, (*it)->getHashValue(),
-                                                     markedNodes);
-            }
+    
+    int maxInpu = _imp->liveInstance->getMaxInputCount();
+    for (int i = 0; i < maxInpu; ++i) {
+        boost::shared_ptr<Node> input = getInput(i);
+        if (input) {
+            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, byPassCache, input->getHashValue(),
+                                                 markedNodes);
+            
         }
     }
+    
 }
 
 //////////////////////////////////

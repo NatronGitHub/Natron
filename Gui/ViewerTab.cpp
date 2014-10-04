@@ -167,6 +167,9 @@ struct ViewerTabPrivate
     mutable QMutex _checkerboardMutex;
     bool _checkerboardEnabled;
 
+    mutable QMutex _fpsMutex;
+    double _fps;
+    
     ViewerTabPrivate(Gui* gui,
                      ViewerInstance* node)
         : app( gui->getApp() )
@@ -187,6 +190,8 @@ struct ViewerTabPrivate
           , _isFileDialogViewer(false)
           , _checkerboardMutex()
           , _checkerboardEnabled(false)
+          , _fpsMutex()
+          , _fps(24.)
     {
         _currentRoto.first = NULL;
         _currentRoto.second = NULL;
@@ -815,8 +820,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_gainSlider, SIGNAL( positionChanged(double) ), this, SLOT( onGainSliderChanged(double) ) );
     QObject::connect( _imp->_gainBox, SIGNAL( valueChanged(double) ), _imp->_gainSlider, SLOT( seekScalePosition(double) ) );
     QObject::connect( _imp->_currentFrameBox, SIGNAL( valueChanged(double) ), this, SLOT( onCurrentTimeSpinBoxChanged(double) ) );
-    RenderEngine* engine = _imp->_viewerNode->getRenderEngine();
-    assert(engine);
 
     QObject::connect( _imp->play_Forward_Button,SIGNAL( clicked(bool) ),this,SLOT( startPause(bool) ) );
     QObject::connect( _imp->stop_Button,SIGNAL( clicked() ),this,SLOT( abortRendering() ) );
@@ -834,7 +837,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_refreshButton, SIGNAL( clicked() ), this, SLOT( refresh() ) );
     QObject::connect( _imp->_centerViewerButton, SIGNAL( clicked() ), this, SLOT( centerViewer() ) );
     QObject::connect( _imp->_viewerNode,SIGNAL( viewerDisconnected() ),this,SLOT( disconnectViewer() ) );
-    QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), engine, SLOT( setDesiredFPS(double) ) );
+    QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinboxFpsChanged(double) ) );
 
     manageSlotsForInfoWidget(0,true);
 
@@ -2966,3 +2969,29 @@ void ViewerTab::setCheckerboardEnabled(bool enabled)
     _imp->_checkerboardButton->setChecked(enabled);
 
 }
+
+void
+ViewerTab::onSpinboxFpsChanged(double fps)
+{
+    _imp->_viewerNode->getRenderEngine()->setDesiredFPS(fps);
+    QMutexLocker k(&_imp->_fpsMutex);
+    _imp->_fps = fps;
+}
+
+double
+ViewerTab::getDesiredFps() const
+{
+    QMutexLocker l(&_imp->_fpsMutex);
+    return _imp->_fps;
+}
+
+void
+ViewerTab::setDesiredFps(double fps)
+{
+    {
+        QMutexLocker l(&_imp->_fpsMutex);
+        _imp->_fps = fps;
+    }
+    _imp->fpsBox->setValue(fps);
+}
+

@@ -187,6 +187,8 @@ public:
     bool isCheckerboardEnabled() const;
     void setCheckerboardEnabled(bool enabled);
     
+    double getDesiredFps() const;
+    void setDesiredFps(double fps);
     
 public slots:
 
@@ -277,6 +279,8 @@ public slots:
     void onVideoEngineStopped();
     
     void onCheckerboardButtonClicked();
+    
+    void onSpinboxFpsChanged(double fps);
 private:
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);

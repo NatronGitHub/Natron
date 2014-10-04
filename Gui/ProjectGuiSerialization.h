@@ -31,7 +31,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_FRAME_RANGE 3
 #define VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY 4
 #define VIEWER_DATA_INTRODUCES_CHECKERBOARD 5
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_CHECKERBOARD
+#define VIEWER_DATA_INTRODUCES_FPS 6
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FPS
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -87,6 +88,8 @@ struct ViewerData
 
     bool checkerboardEnabled;
     
+    double fps;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
@@ -139,6 +142,12 @@ struct ViewerData
             ar & boost::serialization::make_nvp("CheckerboardEnabled",checkerboardEnabled);
         } else {
             checkerboardEnabled = false;
+        }
+        
+        if (version >= VIEWER_DATA_INTRODUCES_FPS) {
+            ar & boost::serialization::make_nvp("Fps",fps);
+        } else {
+            fps = 24.;
         }
     }
 };

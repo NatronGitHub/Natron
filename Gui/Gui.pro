@@ -186,9 +186,6 @@ Resources/Images/natronIcon.svg \
 Resources/Images/natronIcon256_osx.icns \
 Resources/Images/natronIcon256_windows.ico \
 Resources/Images/splashscreen.svg \
-Resources/Images/treeview_end.png \
-Resources/Images/treeview_more.png \
-Resources/Images/treeview_vline.png \
 Resources/OpenColorIO-Configs/ChangeLog \
 Resources/OpenColorIO-Configs/README \
 Resources/OpenColorIO-Configs/aces_0.1.1/README \
@@ -324,4 +321,4 @@ Resources/OpenColorIO-Configs/spi-vfx/luts/vd10.spi1d \
 Resources/OpenColorIO-Configs/spi-vfx/luts/vd16.spi1d \
 Resources/OpenColorIO-Configs/spi-vfx/luts/vd8.spi1d \
 Resources/OpenColorIO-Configs/spi-vfx/luts/version_8_whitebalanced.spimtx \
-Resources/OpenColorIO-Configs/spi-vfx/make_vfx_ocio.py \
+Resources/OpenColorIO-Configs/spi-vfx/make_vfx_ocio.py
