@@ -2233,7 +2233,9 @@ ViewerGL::disconnectInputTexture(int textureIndex)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert(textureIndex == 0 || textureIndex == 1);
-    _imp->activeTextures[textureIndex] = 0;
+    if (_imp->activeTextures[textureIndex] != 0) {
+        _imp->activeTextures[textureIndex] = 0;
+    }
 }
 
 void

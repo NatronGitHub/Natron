@@ -1714,8 +1714,20 @@ std::string
 SequenceFileDialog::filesToSave()
 {
     assert(_dialogMode == SAVE_DIALOG);
-
-    return _selectionLineEdit->text().toStdString();
+    QString text = _selectionLineEdit->text();
+    ///Find last dot position and remove everything after the extension which we might added on the line edit
+    int lastDotPos = text.lastIndexOf('.');
+    if (lastDotPos != -1) {
+        int i = lastDotPos + 1;
+        while (i < text.size() && text.at(i) != QChar(' ')) {
+            ++i;
+        }
+        return text.mid(0,i).toStdString();
+        
+    } else {
+        return text.toStdString();
+    }
+    
 }
 
 QDir

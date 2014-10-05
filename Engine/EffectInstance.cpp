@@ -2201,8 +2201,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     if (renderStatus != StatOK) {
         retCode = eImageRenderFailed;
     }
-    //we released the input images and force the cache to clear exceeding entries
-    appPTR->clearExceedingEntriesFromNodeCache();
 
     return retCode;
 } // renderRoIInternal
