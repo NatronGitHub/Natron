@@ -573,6 +573,11 @@ public:
     bool aborted() const WARN_UNUSED_RETURN;
 
     /**
+     * @brief Used internally by aborted()
+     **/
+    bool isAbortedFromPlayback() const WARN_UNUSED_RETURN;
+
+    /**
      * @brief Called externally when the rendering is aborted. You should never
      * call this yourself.
      **/

@@ -609,15 +609,21 @@ EffectInstance::getRenderHash() const
 }
 
 bool
+EffectInstance::isAbortedFromPlayback() const
+{
+    
+    ///This flag is set in OutputSchedulerThread::abortRendering
+    ///This will be used when playback or rendering on disk
+    QReadLocker l(&_imp->renderAbortedMutex);
+    return _imp->renderAborted;
+    
+}
+
+bool
 EffectInstance::aborted() const
 {
-    {
-        ///This flag is set in OutputSchedulerThread::abortRendering
-        ///This will be used when playback or rendering on disk
-        QReadLocker l(&_imp->renderAbortedMutex);
-        if (_imp->renderAborted) {
-            return true;
-        }
+    if ( isAbortedFromPlayback() ) {
+        return true;
     }
     
     ///Now check thread-local storage to find out in the case of renders made upon user interaction

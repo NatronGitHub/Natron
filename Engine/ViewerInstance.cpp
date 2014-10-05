@@ -308,7 +308,8 @@ ViewerInstance::renderViewer(SequenceTime time,
 
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
-#define abortCheck(input) if (!isSequentialRender && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time))  {\
+#define abortCheck(input) if ( (!isSequentialRender && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time) ) ||  \
+                            (isSequentialRender && input->isAbortedFromPlayback()) )  {\
                                 appPTR->removeFromViewerCache(params->cachedFrame); \
                                 return StatOK; \
                           }
@@ -473,6 +474,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 }
             }
             activeInputToRender = recursiveInput;
+            inputNodeHash = activeInputToRender->getHash();
         } else {
             isInputImgCached = false;
         }
@@ -810,7 +812,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                       imageDepth) );
 
                     if (!params->image) {
-                        
+                        appPTR->removeFromViewerCache(params->cachedFrame);
                         if (didEmitInputNRenderingSignal) {
                             _node->notifyInputNIsFinishedRendering(activeInputIndex);
                         }
