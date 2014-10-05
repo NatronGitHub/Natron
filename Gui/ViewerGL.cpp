@@ -1075,7 +1075,7 @@ ViewerGL::paintGL()
             glCheckErrorIgnoreOSXBug();
 
             glEnable (GL_TEXTURE_2D);
-
+            glColor4d(1., 1., 1., 1.);
             glBlendColor(1, 1, 1, wipeMix);
             
             ///Depending on the premultiplication of the input image we use a different blending func
@@ -1498,7 +1498,7 @@ ViewerGL::drawWipeControl()
     oppositeAxisBottom.setY( wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
 
     {
-        GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
+        GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
         GLProtectMatrix p(GL_PROJECTION);
 
         // Draw everything twice
@@ -1597,7 +1597,7 @@ ViewerGL::drawWipeControl()
                 glPopMatrix();
             }
         }
-    } // GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
+    } // GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // drawWipeControl
 
 void
