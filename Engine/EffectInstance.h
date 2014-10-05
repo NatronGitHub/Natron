@@ -1241,7 +1241,7 @@ public:
 
     void notifyRenderFinished();
 
-    void renderCurrentFrame(bool abortPrevious = true);
+    void renderCurrentFrame();
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 

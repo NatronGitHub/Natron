@@ -486,7 +486,7 @@ public:
      * @param abortPrevious If true then it will stop any ongoing render and render the current frame
      * in a separate thread
      **/
-    void renderCurrentFrame(bool abortPrevious = true);
+    void renderCurrentFrame();
 
     /**
      * @brief Returns the playback mode of the internal scheduler

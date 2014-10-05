@@ -1198,7 +1198,8 @@ OutputSchedulerThread::abortRendering(bool blocking)
         ///Before posting an abort request, we must make sure the scheduler thread is not currently processing an abort request
         ///in stopRender(), we ensure the former by taking the abortBeingProcessedMutex lock
         QMutexLocker l(&_imp->abortedRequestedMutex);
-
+        _imp->abortBeingProcessed = false;
+        
         ///We make sure the render-thread doesn't wait for the main-thread to treat a frame
         ///This function (abortRendering) was probably called from a user event that was posted earlier in the
         ///event-loop, we just flag that the next event that will treat the frame should NOT treat it by
@@ -2127,7 +2128,7 @@ RenderEngine::renderFromCurrentFrame(OutputSchedulerThread::RenderDirection forw
 }
 
 void
-RenderEngine::renderCurrentFrame(bool abortPrevious)
+RenderEngine::renderCurrentFrame()
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2140,9 +2141,7 @@ RenderEngine::renderCurrentFrame(bool abortPrevious)
     
     ///If the scheduler is already doing playback, continue it
     if ( _imp->scheduler && _imp->scheduler->isWorking() ) {
-        if (abortPrevious) {
-            _imp->scheduler->abortRendering(false);
-        }
+        _imp->scheduler->abortRendering(false);
         _imp->scheduler->renderFromCurrentFrame( _imp->scheduler->getDirectionRequestedToRender() );
         return;
     }
@@ -2212,9 +2211,13 @@ RenderEngine::onFutureFinished()
     
     BufferableObjectList ret = watcher->result();
     
-    for (BufferableObjectList::iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-        assert(*it2);
-        isViewer->updateViewer(*it2);
+    if (!ret.empty()) {
+        for (BufferableObjectList::iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+            assert(*it2);
+            isViewer->updateViewer(*it2);
+        }
+    } else {
+        isViewer->disconnectViewer();
     }
     
     {

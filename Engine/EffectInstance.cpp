@@ -3340,9 +3340,9 @@ OutputEffectInstance::~OutputEffectInstance()
 }
 
 void
-OutputEffectInstance::renderCurrentFrame(bool abortPrevious)
+OutputEffectInstance::renderCurrentFrame()
 {
-    _engine->renderCurrentFrame(abortPrevious);
+    _engine->renderCurrentFrame();
 }
 
 bool
