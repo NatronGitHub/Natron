@@ -701,7 +701,8 @@ OutputSchedulerThread::startRender()
         _imp->timer->playState = RUNNING;
     }
     
-    RenderDirection direction;
+    ///We will push frame to renders starting at startingFrame.
+    ///They will be in the range determined by firstFrame-lastFrame
     int startingFrame;
     int firstFrame,lastFrame;
     {
@@ -709,8 +710,6 @@ OutputSchedulerThread::startRender()
         
         QMutexLocker l(&_imp->runArgsMutex);
         _imp->livingRunArgs = _imp->requestedRunArgs;
-#pragma message WARN("Value stored to 'direction' is never read - please fix and comment")
-        direction = _imp->livingRunArgs.timelineDirection;
         firstFrame = _imp->livingRunArgs.firstFrame;
         lastFrame = _imp->livingRunArgs.lastFrame;
         startingFrame = timelineGetTime();
