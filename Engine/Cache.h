@@ -341,48 +341,56 @@ public:
                      ImageLockerHelper<EntryType>* imageLocker,
                      EntryTypePtr* returnValue) const
     {
-        NonKeyParamsPtr cachedParams;
-
-        ///Be atomic, so it cannot be created by another thread in the meantime
-        QMutexLocker getlocker(&_getLock);
         
-        bool didGetSucceed;
-        {
-            QMutexLocker locker(&_lock);
-            didGetSucceed = getInternal(key,&cachedParams,returnValue);
-        }
-        if (!didGetSucceed) {
-            
-            ///Before allocating the memory check that there's enough space to fit in memory
-             appPTR->checkCacheFreeMemoryIsGoodEnough();
-            
-            
-            ///Just in case, we don't allow more than X files to be removed at once.
-            int safeCounter = 0;
-            ///If too many files are opened, fall-back on RAM storage.
-            while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
-#ifdef NATRON_DEBUG_CACHE
-                qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
-#endif
-                if ( !evictLRUDiskEntry() ) {
-                    break;
-                }
-                ++safeCounter;
-            }
-            
-            QMutexLocker locker(&_lock);
-            *returnValue = newEntry(key,params,imageLocker);
+        ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
+        ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
+        std::list<EntryTypePtr> entriesToBeDeleted;
 
-            return false;
-        } else {
-#ifdef DEBUG
-            if (*cachedParams != *params) {
-                qDebug() << "WARNING: A cache entry was found in the cache for the given key, but the cached parameters that "
-                    " go along the entry do not match what's expected. This is a bug.";
+        
+        NonKeyParamsPtr cachedParams;
+        bool ret = true;
+        {
+            ///Be atomic, so it cannot be created by another thread in the meantime
+            QMutexLocker getlocker(&_getLock);
+            
+            bool didGetSucceed;
+            {
+                QMutexLocker locker(&_lock);
+                didGetSucceed = getInternal(key,&cachedParams,returnValue);
             }
+            if (!didGetSucceed) {
+                
+                ///Before allocating the memory check that there's enough space to fit in memory
+                appPTR->checkCacheFreeMemoryIsGoodEnough();
+                
+                
+                ///Just in case, we don't allow more than X files to be removed at once.
+                int safeCounter = 0;
+                ///If too many files are opened, fall-back on RAM storage.
+                while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
+#ifdef NATRON_DEBUG_CACHE
+                    qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
 #endif
-            return true;
+                    if ( !evictLRUDiskEntry() ) {
+                        break;
+                    }
+                    ++safeCounter;
+                }
+                
+                QMutexLocker locker(&_lock);
+                *returnValue = newEntry(key,params,entriesToBeDeleted,imageLocker);
+                
+                ret =  false;
+            } else {
+#ifdef DEBUG
+                if (*cachedParams != *params) {
+                    qDebug() << "WARNING: A cache entry was found in the cache for the given key, but the cached parameters that "
+                    " go along the entry do not match what's expected. This is a bug.";
+                }
+#endif
+            }
         }
+        return ret;
     }
 
     /**
@@ -501,27 +509,33 @@ public:
 
     void clearExceedingEntries()
     {
-        QMutexLocker locker(&_lock);
-
-        U64 memoryCacheSize,maximumInMemorySize;
+        ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
+        ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
+        std::list<EntryTypePtr> entriesToBeDeleted;
+        
         {
-            QMutexLocker k(&_sizeLock);
-            memoryCacheSize = _memoryCacheSize;
-            maximumInMemorySize = _maximumInMemorySize;
-        }
-        while (memoryCacheSize >= maximumInMemorySize) {
-            if ( !tryEvictEntry() ) {
-                break;
-            }
+            QMutexLocker locker(&_lock);
             
+            U64 memoryCacheSize,maximumInMemorySize;
             {
                 QMutexLocker k(&_sizeLock);
                 memoryCacheSize = _memoryCacheSize;
                 maximumInMemorySize = _maximumInMemorySize;
             }
+            while (memoryCacheSize >= maximumInMemorySize) {
+                if ( !tryEvictEntry(entriesToBeDeleted) ) {
+                    break;
+                }
+                
+                {
+                    QMutexLocker k(&_sizeLock);
+                    memoryCacheSize = _memoryCacheSize;
+                    maximumInMemorySize = _maximumInMemorySize;
+                }
+            }
         }
     }
-
+    
     /**
      * @brief Get a copy of the cache at the moment it gets the lock for reading.
      * Returning this function, the caller can assume the entries will not be removed
@@ -552,8 +566,16 @@ public:
      **/
     bool evictLRUInMemoryEntry() const
     {
-        QMutexLocker locker(&_lock);
-        return tryEvictEntry();
+        ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
+        ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
+        std::list<EntryTypePtr> entriesToBeDeleted;
+        
+        bool ret ;
+        {
+            QMutexLocker locker(&_lock);
+            ret = tryEvictEntry(entriesToBeDeleted);
+        }
+        return ret;
     }
 
     /**
@@ -833,6 +855,11 @@ public:
     void restore(const CacheTOC & tableOfContents)
     {
 
+        ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
+        ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
+        std::list<EntryTypePtr> entriesToBeDeleted;
+        
+
         for (typename CacheTOC::const_iterator it =
                  tableOfContents.begin(); it != tableOfContents.end(); ++it) {
             if ( it->hash != it->key.getHash() ) {
@@ -870,7 +897,7 @@ public:
                 
                 
                 while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) ) {
-                    if ( !tryEvictEntry() ) {
+                    if ( !tryEvictEntry(entriesToBeDeleted) ) {
                         break;
                     }
                     
@@ -1001,9 +1028,11 @@ private:
                             
                         }
                         
+                        std::list<EntryTypePtr> entriesToBeDeleted;
+                        
                         //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
                         while (memoryCacheSize > maximumInMemorySize) {
-                            if ( !tryEvictEntry() ) {
+                            if ( !tryEvictEntry(entriesToBeDeleted) ) {
                                 break;
                             }
                             
@@ -1041,6 +1070,7 @@ private:
      **/
     EntryTypePtr newEntry(const typename EntryType::key_type & key,
                           const NonKeyParamsPtr & params,
+                          std::list<EntryTypePtr> &entriesToBeDeleted,
                           ImageLockerHelper<EntryType>* imageLocker) const
     {
         assert( !_lock.tryLock() );   // must be locked
@@ -1065,10 +1095,11 @@ private:
             
         }
         
+      
         ///While the current cache size can't fit the new entry, erase the last recently used entries.
         ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
         while ( (memoryCacheSize + entryDataSize >= maximumInMemorySize)) {
-            if ( !tryEvictEntry() ) {
+            if ( !tryEvictEntry(entriesToBeDeleted) ) {
                 break;
             }
             {
@@ -1120,7 +1151,7 @@ private:
         }
     }
 
-    bool tryEvictEntry() const
+    bool tryEvictEntry(std::list<EntryTypePtr>& entriesToBeDeleted) const
     {
         assert( !_lock.tryLock() );
         std::pair<hash_type,CachedValue> evicted = _memoryCache.evict();
@@ -1159,6 +1190,9 @@ private:
                     
                     ///Erase the file from the disk if we reach the limit.
                     evictedFromDisk.second.entry->scheduleForDestruction();
+                    
+                    
+                    entriesToBeDeleted.push_back(evictedFromDisk.second.entry);
                 }
                 {
                     QMutexLocker k(&_sizeLock);
@@ -1175,6 +1209,8 @@ private:
             } else {   /*append to the existing list*/
                 getValueFromIterator(existingDiskCacheEntry).push_back(evicted.second);
             }
+        } else {
+            entriesToBeDeleted.push_back(evicted.second.entry);
         }
 
         return true;
