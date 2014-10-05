@@ -230,6 +230,8 @@ private:
                                          boost::shared_ptr<BufferableObject>* outputObject) WARN_UNUSED_RETURN;
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    
 private:
     
     struct ViewerInstancePrivate;

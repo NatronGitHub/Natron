@@ -306,6 +306,13 @@ ViewerInstance::renderViewer(SequenceTime time,
     return StatOK;
 }
 
+
+//if render was aborted, remove the frame from the cache as it contains only garbage
+#define abortCheck(input) if (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time)  {\
+                                appPTR->removeFromViewerCache(params->cachedFrame); \
+                                return StatOK; \
+                          }
+
 Natron::Status
 ViewerInstance::renderViewer_internal(SequenceTime time,
                                       int view,
@@ -821,13 +828,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
                 ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
                 ///Don't forward the exception in that case.
-                if ( !activeInputToRender->aborted() ) {
-                    throw;
-                } else {
-                    //if render was aborted, remove the frame from the cache as it contains only garbage
-                    appPTR->removeFromViewerCache(params->cachedFrame);
-                    return StatOK;
-                }
+                abortCheck(activeInputToRender);
+                throw;
             }
         }
         
@@ -844,12 +846,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         }
 
 
-        if ( activeInputToRender->aborted() ) {
-            //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(params->cachedFrame);
-
-            return StatOK;
-        }
+        abortCheck(activeInputToRender);
+        
 
         ViewerColorSpace srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( params->image->getBitDepth() );
         
@@ -976,14 +974,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             
             
         }
-        if ( activeInputToRender->aborted() ) {
-            //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(params->cachedFrame);
-
-            return StatOK;
-        }
-        //we released the input image and force the cache to clear exceeding entries
-        appPTR->clearExceedingEntriesFromNodeCache();
+        abortCheck(activeInputToRender);
+        
     } // !isCached
 
 
