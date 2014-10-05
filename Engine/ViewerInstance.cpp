@@ -127,6 +127,7 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     }
     QObject::connect( this,SIGNAL( disconnectTextureRequest(int) ),this,SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
     QObject::connect( _imp.get(),SIGNAL( mustRedrawViewer() ),this,SLOT( redrawViewer() ) );
+    QObject::connect( this,SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
 }
 
 ViewerInstance::~ViewerInstance()
@@ -279,7 +280,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         return StatFailed;
     }
     Natron::Status ret[2] = {
-        StatOK,StatOK
+        StatFailed,StatFailed
     };
     for (int i = 0; i < 2; ++i) {
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::OPERATOR_NONE) ) {

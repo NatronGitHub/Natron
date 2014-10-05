@@ -138,7 +138,8 @@ public:
     boost::shared_ptr<TimeLine> getTimeline() const;
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpace cs) WARN_UNUSED_RETURN;
-
+    
+    void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 
 public slots:
 
@@ -158,6 +159,8 @@ public slots:
 
 signals:
 
+    void s_callRedrawOnMainThread();
+    
     ///Emitted when the image bit depth and components changes
     void imageFormatChanged(int,int,int);
 

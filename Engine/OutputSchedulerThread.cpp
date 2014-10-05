@@ -2220,7 +2220,8 @@ RenderEngine::onFutureFinished()
             isViewer->updateViewer(*it2);
         }
     } else {
-        isViewer->disconnectViewer();
+        ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
+        isViewer->callRedrawOnMainThread();
     }
     
     {
