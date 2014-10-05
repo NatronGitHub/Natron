@@ -228,7 +228,9 @@ private:
      */
     mutable std::size_t _memoryCacheSize;     // current size of the cache in bytes
     mutable std::size_t _diskCacheSize;
-    mutable QMutex _lock; //protects all data structures of the cache
+    mutable QMutex _sizeLock; // protects _memoryCacheSize & _diskCacheSize & _maximumInMemorySize & _maximumCacheSize
+    
+    mutable QMutex _lock; //protects _memoryCache & _diskCache
 
     mutable QMutex _getLock;  //prevents get() and getOrCreate() to be called simultaneously
 
@@ -261,13 +263,14 @@ public:
           ,_maximumCacheSize(maximumCacheSize)
           ,_memoryCacheSize(0)
           ,_diskCacheSize(0)
+          ,_sizeLock()
           ,_lock()
           , _getLock()
           ,_memoryCache()
           ,_diskCache()
           ,_cacheName(cacheName)
           ,_version(version)
-          ,_signalEmitter(NULL)
+          ,_signalEmitter(new CacheSignalEmitter)
           ,_maxPhysicalRAM( getSystemTotalRAM() )
     {
     }
@@ -278,9 +281,7 @@ public:
 
         _memoryCache.clear();
         _diskCache.clear();
-        if (_signalEmitter) {
-            delete _signalEmitter;
-        }
+        delete _signalEmitter;
     }
 
     /**
@@ -435,10 +436,8 @@ public:
         }
 
         
-        if (_signalEmitter) {
-            _signalEmitter->blockSignals(false);
-            _signalEmitter->emitClearedDiskPortion();
-        }
+        _signalEmitter->blockSignals(false);
+        _signalEmitter->emitClearedDiskPortion();
     }
 
     /**
@@ -458,16 +457,31 @@ public:
                 evictedFromMemory.second.entry->deallocate();
                 /*insert it back into the disk portion */
 
+                U64 diskCacheSize,maximumCacheSize;
+                {
+                    QMutexLocker k(&_sizeLock);
+                    diskCacheSize = _diskCacheSize;
+                    maximumCacheSize = _maximumCacheSize;
+                }
+                
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                while (_diskCacheSize + evictedFromMemory.second.entry->size() >= _maximumCacheSize) {
-                    std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
-                    //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
-                    //we'll let the user of these entries purge the extra entries left in the cache later on
-                    if (!evictedFromDisk.second.entry) {
-                        break;
+                while (diskCacheSize + evictedFromMemory.second.entry->size() >= maximumCacheSize) {
+                    
+                    {
+                        std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
+                        //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                        //we'll let the user of these entries purge the extra entries left in the cache later on
+                        if (!evictedFromDisk.second.entry) {
+                            break;
+                        }
+                        ///Erase the file from the disk if we reach the limit.
+                        evictedFromDisk.second.entry->removeAnyBackingFile();
                     }
-                    ///Erase the file from the disk if we reach the limit.
-                    evictedFromDisk.second.entry->removeAnyBackingFile();
+                    {
+                        QMutexLocker k(&_sizeLock);
+                        diskCacheSize = _diskCacheSize;
+                        maximumCacheSize = _maximumCacheSize;
+                    }
                 }
 
                 /*update the disk cache size*/
@@ -481,19 +495,29 @@ public:
             evictedFromMemory = _memoryCache.evict();
         }
 
-        if (_signalEmitter) {
-            _signalEmitter->blockSignals(false);
-            _signalEmitter->emitSignalClearedInMemoryPortion();
-        }
+        _signalEmitter->blockSignals(false);
+        _signalEmitter->emitSignalClearedInMemoryPortion();
     }
 
     void clearExceedingEntries()
     {
         QMutexLocker locker(&_lock);
 
-        while (_memoryCacheSize >= _maximumInMemorySize) {
+        U64 memoryCacheSize,maximumInMemorySize;
+        {
+            QMutexLocker k(&_sizeLock);
+            memoryCacheSize = _memoryCacheSize;
+            maximumInMemorySize = _maximumInMemorySize;
+        }
+        while (memoryCacheSize >= maximumInMemorySize) {
             if ( !tryEvictEntry() ) {
                 break;
+            }
+            
+            {
+                QMutexLocker k(&_sizeLock);
+                memoryCacheSize = _memoryCacheSize;
+                maximumInMemorySize = _maximumInMemorySize;
             }
         }
     }
@@ -561,9 +585,8 @@ public:
     virtual void notifyEntrySizeChanged(std::size_t oldSize,
                                         std::size_t newSize) const OVERRIDE FINAL
     {
-        ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
-        ///lock should already be taken.
-        assert( !_lock.tryLock() );
+        ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache
+        QMutexLocker k(&_sizeLock);
 
         ///This function can only be called for RAM buffers or while a memory mapped file is mapped into the RAM, so
         ///we just have to modify the RAM size.
@@ -589,11 +612,10 @@ public:
     {
         ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
         ///lock should already be taken.
-        QMutexLocker locker(&_lock);
+        QMutexLocker k(&_sizeLock);
+        
         _memoryCacheSize += size;
-        if (_signalEmitter) {
-            _signalEmitter->emitAddedEntry(time);
-        }
+        _signalEmitter->emitAddedEntry(time);
 
         if (storage == Natron::DISK) {
             appPTR->increaseNCacheFilesOpened();
@@ -610,10 +632,7 @@ public:
                                       std::size_t size,
                                       Natron::StorageMode storage) const OVERRIDE FINAL
     {
-        ///The entry could be destoryed at any time when the boost shared ptr use count reaches 0.
-        ///This might not be while the cache is still under control of the thread safety
-        ///make sure we lock this part by trying to lock
-        bool gotLock = _lock.tryLock();
+        QMutexLocker k(&_sizeLock);
 
         if (storage == Natron::RAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
@@ -626,12 +645,9 @@ public:
             qDebug() << cacheName().c_str() << " disk size: " << printAsRAM(_diskCacheSize);
 #endif
         }
-        if (gotLock) {
-            _lock.unlock();
-        }
-        if (_signalEmitter) {
-            _signalEmitter->emitRemovedEntry(time,(int)storage);
-        }
+        
+        _signalEmitter->emitRemovedEntry(time,(int)storage);
+    
     }
 
     /**
@@ -643,11 +659,8 @@ public:
                                            int time,
                                            std::size_t size) const OVERRIDE FINAL
     {
-        ///The entry could be destoryed at any time when the boost shared ptr use count reaches 0.
-        ///This might not be while the cache is still under control of the thread safety
-        ///make sure we lock this part by trying to lock
-        bool gotLock = _lock.tryLock();
-
+        QMutexLocker k(&_sizeLock);
+        
         assert(oldStorage != newStorage);
 
         if (oldStorage == Natron::RAM) {
@@ -669,12 +682,9 @@ public:
             ///We switched from DISK to RAM that means the MemoryFile object has been created and the file opened
             appPTR->increaseNCacheFilesOpened();
         }
-        if (gotLock) {
-            _lock.unlock();
-        }
-        if (_signalEmitter) {
-            _signalEmitter->emitEntryStorageChanged(time, (int)oldStorage, (int)newStorage);
-        }
+       
+        _signalEmitter->emitEntryStorageChanged(time, (int)oldStorage, (int)newStorage);
+        
     }
 
     virtual void backingFileClosed() const OVERRIDE FINAL
@@ -721,42 +731,38 @@ public:
 
     void setMaximumCacheSize(U64 newSize)
     {
+        QMutexLocker k(&_sizeLock);
         _maximumCacheSize = newSize;
     }
 
     void setMaximumInMemorySize(double percentage)
     {
+        QMutexLocker k(&_sizeLock);
         _maximumInMemorySize = _maximumCacheSize * percentage;
     }
 
     std::size_t getMaximumSize() const
     {
-        QMutexLocker locker(&_lock); return _maximumCacheSize;
+        QMutexLocker k(&_sizeLock); return _maximumCacheSize;
     }
 
     std::size_t getMaximumMemorySize() const
     {
-        QMutexLocker locker(&_lock); return _maximumInMemorySize;
+        QMutexLocker k(&_sizeLock); return _maximumInMemorySize;
     }
 
     std::size_t getMemoryCacheSize() const
     {
-        QMutexLocker locker(&_lock); return _memoryCacheSize;
+        QMutexLocker k(&_sizeLock); return _memoryCacheSize;
     }
 
     std::size_t getDiskCacheSize() const
     {
-        QMutexLocker locker(&_lock); return _diskCacheSize;
+        QMutexLocker k(&_sizeLock); return _diskCacheSize;
     }
 
     CacheSignalEmitter* activateSignalEmitter() const
     {
-        QMutexLocker locker(&_lock);
-
-        if (!_signalEmitter) {
-            _signalEmitter = new CacheSignalEmitter;
-        }
-
         return _signalEmitter;
     }
 
@@ -853,9 +859,26 @@ public:
             {
                 QMutexLocker locker(&_lock);
                 
+                
+                U64 memoryCacheSize,maximumInMemorySize;
+                {
+                    QMutexLocker k(&_sizeLock);
+                    memoryCacheSize = _memoryCacheSize;
+                    maximumInMemorySize = _maximumInMemorySize;
+                    
+                }
+                
+                
                 while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) ) {
                     if ( !tryEvictEntry() ) {
                         break;
+                    }
+                    
+                    {
+                        QMutexLocker k(&_sizeLock);
+                        memoryCacheSize = _memoryCacheSize;
+                        maximumInMemorySize = _maximumInMemorySize;
+                        
                     }
                 }
             }
@@ -970,11 +993,27 @@ private:
                         //put it back into the RAM
                         _memoryCache.insert(it->entry->getHashKey(),*it);
                         
+                        U64 memoryCacheSize,maximumInMemorySize;
+                        {
+                            QMutexLocker k(&_sizeLock);
+                            memoryCacheSize = _memoryCacheSize;
+                            maximumInMemorySize = _maximumInMemorySize;
+                            
+                        }
+                        
                         //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
-                        while (_memoryCacheSize > _maximumInMemorySize) {
+                        while (memoryCacheSize > maximumInMemorySize) {
                             if ( !tryEvictEntry() ) {
                                 break;
                             }
+                            
+                            {
+                                QMutexLocker k(&_sizeLock);
+                                memoryCacheSize = _memoryCacheSize;
+                                maximumInMemorySize = _maximumInMemorySize;
+                                
+                            }
+
                         }
                         
                         *returnValue = it->entry;
@@ -1018,11 +1057,25 @@ private:
     
         size_t entryDataSize = params->getElementsCount() * sizeof(data_t);
 
+        U64 memoryCacheSize,maximumInMemorySize;
+        {
+            QMutexLocker k(&_sizeLock);
+            memoryCacheSize = _memoryCacheSize;
+            maximumInMemorySize = _maximumInMemorySize;
+            
+        }
+        
         ///While the current cache size can't fit the new entry, erase the last recently used entries.
         ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
-        while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize)) {
+        while ( (memoryCacheSize + entryDataSize >= maximumInMemorySize)) {
             if ( !tryEvictEntry() ) {
                 break;
+            }
+            {
+                QMutexLocker k(&_sizeLock);
+                memoryCacheSize = _memoryCacheSize;
+                maximumInMemorySize = _maximumInMemorySize;
+                
             }
         }
 
@@ -1085,18 +1138,34 @@ private:
             evicted.second.entry->deallocate();
             
             /*insert it back into the disk portion */
+            
+            U64 diskCacheSize,maximumCacheSize,maximumInMemorySize;
+            {
+                QMutexLocker k(&_sizeLock);
+                diskCacheSize = _diskCacheSize;
+                maximumInMemorySize = _maximumInMemorySize;
+                maximumCacheSize = _maximumCacheSize;
+            }
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-            while ( ( _diskCacheSize  + evicted.second.entry->size() ) >= (_maximumCacheSize - _maximumInMemorySize) ) {
-                std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
-                //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
-                //we'll let the user of these entries purge the extra entries left in the cache later on
-                if (!evictedFromDisk.second.entry) {
-                    break;
+            while ( ( diskCacheSize  + evicted.second.entry->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
+                {
+                    std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
+                    //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                    //we'll let the user of these entries purge the extra entries left in the cache later on
+                    if (!evictedFromDisk.second.entry) {
+                        break;
+                    }
+                    
+                    ///Erase the file from the disk if we reach the limit.
+                    evictedFromDisk.second.entry->scheduleForDestruction();
                 }
-
-                ///Erase the file from the disk if we reach the limit.
-                evictedFromDisk.second.entry->scheduleForDestruction();
+                {
+                    QMutexLocker k(&_sizeLock);
+                    diskCacheSize = _diskCacheSize;
+                    maximumInMemorySize = _maximumInMemorySize;
+                    maximumCacheSize = _maximumCacheSize;
+                }
             }
 
             CacheIterator existingDiskCacheEntry = _diskCache(evicted.first);
