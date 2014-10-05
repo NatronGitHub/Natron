@@ -113,12 +113,13 @@ Settings::initializeKnobs()
     _numberOfThreads->setDisplayMinimum(-1);
     _generalTab->addKnob(_numberOfThreads);
     
-    _numberOfParallelRenders = Natron::createKnob<Int_Knob>(this, "Number of parallel renders");
+    _numberOfParallelRenders = Natron::createKnob<Int_Knob>(this, "Number of parallel renders (0=\"guess\")");
     _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
                                              "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
-                                             "what is the best number of parallel renders to launch given your CPU activity. "
+                                             "the best number of parallel renders to launch given your CPU activity. "
                                              "Setting a value different than 0 should be done only if you know what you're doing and can lead "
-                                             "in some situations to worse performances.");
+                                             "in some situations to worse performances. Overall to get the best performances you should have your "
+                                             "CPU at 100% activity without idle times. ");
     _numberOfParallelRenders->setName("nParallelRenders");
     _numberOfParallelRenders->setMinimum(0);
     _numberOfParallelRenders->disableSlider();

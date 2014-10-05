@@ -427,6 +427,10 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackMode pMode,OutputSc
                                                      int* nextFrame,OutputSchedulerThread::RenderDirection* newDirection)
 {
     *newDirection = direction;
+    if (firstFrame == lastFrame) {
+        *nextFrame = firstFrame;
+        return true;
+    }
     if (frame <= firstFrame) {
         switch (pMode) {
                 case Natron::PLAYBACK_LOOP:
