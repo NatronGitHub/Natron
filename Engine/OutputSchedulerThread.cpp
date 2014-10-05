@@ -2327,9 +2327,13 @@ RenderEngine::getPlaybackMode() const
 void
 RenderEngine::setDesiredFPS(double d)
 {
-    if (_imp->scheduler) {
-        _imp->scheduler->setDesiredFPS(d);
+    {
+        QMutexLocker k(&_imp->schedulerCreationLock);
+        if (!_imp->scheduler) {
+            _imp->scheduler = createScheduler(_imp->output);
+        }
     }
+    _imp->scheduler->setDesiredFPS(d);
 }
 
 double
