@@ -2993,5 +2993,6 @@ ViewerTab::setDesiredFps(double fps)
         _imp->_fps = fps;
     }
     _imp->fpsBox->setValue(fps);
+    _imp->_viewerNode->getRenderEngine()->setDesiredFPS(fps);
 }
 
