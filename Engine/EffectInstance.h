@@ -1122,7 +1122,6 @@ private:
                                          U64* rotoAge_p,
                                          bool* isIdentity_p,
                                          int* identityInputNb_p,
-                                         int* identityTime_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
                                          RectD* optionalBounds_p); //!< output, only set if optionalBoundsParam != NULL
