@@ -308,7 +308,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
-#define abortCheck(input) if (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time)  {\
+#define abortCheck(input) if (!isSequentialRender && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time))  {\
                                 appPTR->removeFromViewerCache(params->cachedFrame); \
                                 return StatOK; \
                           }
