@@ -1069,7 +1069,7 @@ ViewerGL::paintGL()
         GLuint savedTexture;
         glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
         {
-            GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+            GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
             clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
             glCheckErrorIgnoreOSXBug();
@@ -1157,7 +1157,7 @@ ViewerGL::paintGL()
 
                 }
             }
-        } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
         ///Unbind render textures for overlays
         glBindTexture(GL_TEXTURE_2D, savedTexture);

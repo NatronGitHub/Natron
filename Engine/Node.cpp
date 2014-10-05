@@ -1767,19 +1767,12 @@ Node::makePreviewImage(SequenceTime time,
                                                                             rod,
                                                                             Natron::ImageComponentRGB, //< preview is always rgb...
                                                                             getBitDepth() ) );
-    } catch (const std::exception & e) {
-        qDebug() << "Error: Cannot create preview" << ": " << e.what();
-        _imp->computingPreview = false;
-        return;
     } catch (...) {
-        qDebug() << "Error: Cannot create preview";
-        _imp->computingPreview = false;
+        qDebug() << "Error: Cannot render preview";
         return;
     }
 
     if (!img) {
-        _imp->computingPreview = false;
-
         return;
     }
 

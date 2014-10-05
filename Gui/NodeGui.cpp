@@ -1386,7 +1386,7 @@ NodeGui::onPersistentMessageChanged(int type,
 void
 NodeGui::onPersistentMessageCleared()
 {
-    if ( !_persistentMessage || !_persistentMessage->isVisible() ) {
+    if ( !_persistentMessage || !_persistentMessage->isVisible() || !_graph->getGui() ) {
         return;
     }
     if (!_lastPersistentMessage.isEmpty()) {
