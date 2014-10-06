@@ -174,6 +174,7 @@ struct ViewerGL::Implementation
           , lastMousePosition()
           , lastDragStartPos()
           , currentViewerInfos()
+          , projectFormat()
           , currentViewerInfos_btmLeftBBOXoverlay()
           , currentViewerInfos_topRightBBOXoverlay()
           , currentViewerInfos_resolutionOverlay()
@@ -255,6 +256,7 @@ struct ViewerGL::Implementation
 
     /////// currentViewerInfos
     ImageInfo currentViewerInfos[2]; /*!< Pointer to the ViewerInfos  used for rendering*/
+    Format projectFormat;
     QString currentViewerInfos_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
     QString currentViewerInfos_topRightBBOXoverlay[2]; /*!< The string holding the top right corner coordinates of the dataWindow*/
     QString currentViewerInfos_resolutionOverlay; /*!< The string holding the resolution overlay, e.g: "1920x1080"*/
@@ -1215,15 +1217,14 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     assert( QGLContext::currentContext() == context() );
 
     glCheckError();
-    RectD dispW = getDisplayWindow();
 
-    renderText(dispW.right(),dispW.bottom(), _imp->currentViewerInfos_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
+    renderText(_imp->projectFormat.right(),_imp->projectFormat.bottom(), _imp->currentViewerInfos_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
 
 
-    QPoint topRight( dispW.right(),dispW.top() );
-    QPoint topLeft( dispW.left(),dispW.top() );
-    QPoint btmLeft( dispW.left(),dispW.bottom() );
-    QPoint btmRight( dispW.right(),dispW.bottom() );
+    QPoint topRight( _imp->projectFormat.right(),_imp->projectFormat.top() );
+    QPoint topLeft( _imp->projectFormat.left(),_imp->projectFormat.top() );
+    QPoint btmLeft( _imp->projectFormat.left(),_imp->projectFormat.bottom() );
+    QPoint btmRight( _imp->projectFormat.right(),_imp->projectFormat.bottom() );
 
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
@@ -1258,7 +1259,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
             }
             RectD dataW = getRoD(i);
 
-            if (dataW != dispW) {
+            if (dataW != _imp->projectFormat) {
                 renderText(dataW.right(), dataW.top(),
                            _imp->currentViewerInfos_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
@@ -2976,10 +2977,9 @@ ViewerGL::fitImageToFormat()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     double w,h,zoomPAR;
-    const Format & format = _imp->currentViewerInfos[0].getDisplayWindow();
-    h = format.height();
-    w = format.width();
-    zoomPAR = format.getPixelAspect();
+    h = _imp->projectFormat.height();
+    w = _imp->projectFormat.width();
+    zoomPAR = _imp->projectFormat.getPixelAspect();
 
     assert(h > 0. && w > 0.);
 
@@ -3115,9 +3115,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
             _imp->infoViewer[i]->setResolution(format);
         }
     }
-
-    _imp->currentViewerInfos[0].setDisplayWindow(format);
-    _imp->currentViewerInfos[1].setDisplayWindow(format);
+    _imp->projectFormat = format;
     _imp->currentViewerInfos_resolutionOverlay.clear();
     _imp->currentViewerInfos_resolutionOverlay.append( QString::number( std::ceil(format.width()) ) );
     _imp->currentViewerInfos_resolutionOverlay.append("x");
