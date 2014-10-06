@@ -1254,10 +1254,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
         if ( lastRenderedImage &&
              (lastRenderHash != nodeHash) ) {
-            ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
-            ImageLocker imgLocker(this,lastRenderedImage);
             ///once we got it remove it from the cache
             appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+            ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
+            ImageLocker imgLocker(this,lastRenderedImage);
+
             {
                 QMutexLocker l(&_imp->lastRenderArgsMutex);
                 _imp->lastImage.reset();

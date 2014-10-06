@@ -4824,10 +4824,12 @@ RotoContext::renderMask(const RectI & roi,
 
     if ( lastRenderedImage &&
          ( lastRenderHash != hash.value() ) ) {
+        
+        appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+
         ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
         ImageLocker imgLocker(_imp->node->getLiveInstance(),lastRenderedImage);
         ///once we got it remove it from the cache
-        appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
         {
             QMutexLocker l(&_imp->lastRenderArgsMutex);
             _imp->lastRenderedImage.reset();

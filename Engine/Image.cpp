@@ -333,7 +333,6 @@ Image::Image(const ImageKey & key,
     _bitDepth = p->getBitDepth();
     _rod = p->getRoD();
     _bounds = p->getBounds();
-    _bitmap.initialize(_bounds);
 }
 
 
@@ -367,7 +366,6 @@ Image::Image(ImageComponents components,
     _bitDepth = bitdepth;
     _rod = regionOfDefinition;
     _bounds = p->getBounds();
-    _bitmap.initialize(_bounds);
     
     allocateMemory();
 }
@@ -375,6 +373,9 @@ Image::Image(ImageComponents components,
 void
 Image::onMemoryAllocated()
 {
+    
+    _bitmap.initialize(_bounds);
+
 
 #ifdef DEBUG
     ///fill with red, to recognize unrendered pixels

@@ -28,6 +28,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QDebug>
 #include <QtCore/QTextStream>
 #include <QtCore/QBuffer>
+#include <QtCore/QThreadPool>
+#include <QtCore/QRunnable>
 CLANG_DIAG_ON(deprecated)
 #include <boost/shared_ptr.hpp>
 CLANG_DIAG_OFF(unused-parameter)
@@ -55,6 +57,30 @@ CLANG_DIAG_ON(unused-parameter)
 //#define NATRON_DEBUG_CACHE
 
 namespace Natron {
+    
+/**
+* @brief The point of this function is to delete the content of the list in a separate thread so the thread calling
+* getImageOrCreate() doesn't wait for all the entries to be deleted (which can be expensive for large images)
+**/
+template <typename T>
+class DeleterThread : public QRunnable
+{
+    std::list<boost::shared_ptr<T> > _entriesToDelete;
+public:
+    
+    DeleterThread(const std::list<boost::shared_ptr<T> >& entriesToDelete)
+    : _entriesToDelete(entriesToDelete)
+    {}
+    
+    virtual ~DeleterThread() {}
+    
+    virtual void run() OVERRIDE FINAL
+    {
+        _entriesToDelete.clear();
+    }
+};
+
+    
 class CacheSignalEmitter
     : public QObject
 {
@@ -309,6 +335,8 @@ public:
         
     } // get
 
+    
+    
     /**
      * @brief Look-up the cache for an entry whose key matches the params.
      * Unlike get(...) this function creates a new entry if it couldn't be found.
@@ -389,6 +417,16 @@ public:
                 }
 #endif
             }
+        } // getlocker
+        
+        if (!entriesToBeDeleted.empty()) {
+            ///Launch a separate thread whose function will be to delete all the entries to be deleted
+            DeleterThread<EntryType>* dThread = new DeleterThread<EntryType>(entriesToBeDeleted);
+            QThreadPool::globalInstance()->start(dThread);
+            
+            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+            ///that the separate thread will delete
+            entriesToBeDeleted.clear();
         }
         return ret;
     }
@@ -506,6 +544,8 @@ public:
         _signalEmitter->blockSignals(false);
         _signalEmitter->emitSignalClearedInMemoryPortion();
     }
+    
+    
 
     void clearExceedingEntries()
     {

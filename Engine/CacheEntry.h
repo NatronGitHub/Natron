@@ -452,11 +452,11 @@ public:
         }
 
         allocate(_params->getElementsCount(),_requestedStorage,_requestedPath);
-        
+        onMemoryAllocated();
+
         if (_cache) {
             _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
         }
-        onMemoryAllocated();
     }
     
     /**
