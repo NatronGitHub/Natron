@@ -424,34 +424,37 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             inputImage->clearBitmap();
         }
 
-        ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
-        ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
-        if ( ( (inputImage->getComponents() != components) &&
-               Image::hasEnoughDataToConvert(inputImage->getComponents(),components) ) ||
-             ( inputImage->getBitDepth() != imageDepth) ) {
-            ///Convert the image to the requested components
-            boost::shared_ptr<Image> remappedImage( new Image(components,
-                                                              inputImage->getRoD(),
-                                                              inputImage->getBounds(),
-                                                              mipMapLevel,
-                                                              imageDepth) );
-            bool unPremultIfNeeded = activeInputToRender->getOutputPremultiplication() == ImagePremultiplied;
-            inputImage->convertToFormat( inputImage->getBounds(),
-                                         getApp()->getDefaultColorSpaceForBitDepth( inputImage->getBitDepth() ),
-                                         getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
-                                         3, false, true,unPremultIfNeeded,
-                                         remappedImage.get() );
+        if (inputIdentityNumber == -1) {
+            ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
+            ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
+            if ( ( (inputImage->getComponents() != components) &&
+                  Image::hasEnoughDataToConvert(inputImage->getComponents(),components) ) ||
+                ( inputImage->getBitDepth() != imageDepth) ) {
+                ///Convert the image to the requested components
+                boost::shared_ptr<Image> remappedImage( new Image(components,
+                                                                  inputImage->getRoD(),
+                                                                  inputImage->getBounds(),
+                                                                  mipMapLevel,
+                                                                  imageDepth) );
+                bool unPremultIfNeeded = activeInputToRender->getOutputPremultiplication() == ImagePremultiplied;
+                inputImage->convertToFormat( inputImage->getBounds(),
+                                            getApp()->getDefaultColorSpaceForBitDepth( inputImage->getBitDepth() ),
+                                            getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
+                                            3, false, true,unPremultIfNeeded,
+                                            remappedImage.get() );
+                
+                ///switch the pointer
+                inputImage = remappedImage;
+            } else if (inputImage->getComponents() != components) {
+                assert( !Image::hasEnoughDataToConvert(inputImage->getComponents(),components) );
+                ///we cannot convert without loosing data of some channels, we better off render everything again
+                isInputImgCached = false;
+                appPTR->removeFromNodeCache(inputImage);
+                cachedImgParams.reset();
+                imageLock.reset();
+                inputImage.reset();
+            }
 
-            ///switch the pointer
-            inputImage = remappedImage;
-        } else if (inputImage->getComponents() != components) {
-            assert( !Image::hasEnoughDataToConvert(inputImage->getComponents(),components) );
-            ///we cannot convert without loosing data of some channels, we better off render everything again
-            isInputImgCached = false;
-            appPTR->removeFromNodeCache(inputImage);
-            cachedImgParams.reset();
-            imageLock.reset();
-            inputImage.reset();
         }
     }
 
