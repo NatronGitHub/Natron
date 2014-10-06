@@ -2130,6 +2130,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.fullScaleMappedImage = fullScaleMappedImage;
             tiledArgs.renderMappedImage = renderMappedImage;
             tiledArgs.par = par;
+            tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
             
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
             QFuture<Natron::Status> ret = QtConcurrent::mapped( splitRects,
