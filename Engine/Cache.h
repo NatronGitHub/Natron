@@ -896,7 +896,7 @@ public:
                 }
                 
                 
-                while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) ) {
+                while ( (memoryCacheSize + entryDataSize >= maximumInMemorySize) ) {
                     if ( !tryEvictEntry(entriesToBeDeleted) ) {
                         break;
                     }
