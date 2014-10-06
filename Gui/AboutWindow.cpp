@@ -102,20 +102,20 @@ AboutWindow::AboutWindow(Gui* gui,
     .arg(GIT_COMMIT); // %4
     aboutText.append(endAbout);
     
-    if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_ALPHA) {
+    if (!strcmp(NATRON_DEVELOPMENT_STATUS, NATRON_DEVELOPMENT_ALPHA)) {
         QString toAppend = QString("<p>Note: This software is currently in alpha version, meaning there are missing features,"
                                    " bugs and untested stuffs. If you feel like reporting a bug, please do so "
                                    "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
         .arg("https://github.com/MrKepzie/Natron/issues"); // %1
         ;
-    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_BETA) {
+    } else if (!strcmp(NATRON_DEVELOPMENT_STATUS, NATRON_DEVELOPMENT_BETA)) {
         QString toAppend = QString("<p>Note: This software is currently under beta testing, meaning there are "
                                    " bugs and untested stuffs. If you feel like reporting a bug, please do so "
                                    "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
                            .arg("https://github.com/MrKepzie/Natron/issues"); // %1
         ;
 
-    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+    } else if (!strcmp(NATRON_DEVELOPMENT_STATUS, NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
         QString toAppend = QString("The version of this sofware is a release candidate, which means it has the potential of becoming "
                                    "the future stable release but might still have some bugs.");
         aboutText.append(toAppend);
