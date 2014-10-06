@@ -511,7 +511,6 @@ QtReader::render(SequenceTime /*time*/,
 
         return StatFailed;
     }
-    output->setPixelAspect( _img->dotsPerMeterX() / _img->dotsPerMeterY() );
 
     return StatOK;
 } // render

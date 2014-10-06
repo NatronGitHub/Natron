@@ -333,6 +333,7 @@ Image::Image(const ImageKey & key,
     _bitDepth = p->getBitDepth();
     _rod = p->getRoD();
     _bounds = p->getBounds();
+    _par = p->getPixelAspect();
 }
 
 
@@ -348,14 +349,15 @@ Image::Image(ImageComponents components,
 {
     setCacheEntry(makeKey(0,0,mipMapLevel,0),
                   boost::shared_ptr<NonKeyParams>( new ImageParams( 0,
-                                                                          regionOfDefinition,
-                                                                          bounds,
-                                                                          bitdepth,
-                                                                          false,
-                                                                          components,
-                                                                          -1,
-                                                                          0,
-                                                                          std::map<int,std::vector<RangeD> >() ) ),
+                                                                   regionOfDefinition,
+                                                                   1.,
+                                                                   bounds,
+                                                                   bitdepth,
+                                                                   false,
+                                                                   components,
+                                                                   -1,
+                                                                   0,
+                                                                   std::map<int,std::vector<RangeD> >() ) ),
                   NULL,
                   Natron::RAM,
                   std::string()
@@ -366,7 +368,7 @@ Image::Image(ImageComponents components,
     _bitDepth = bitdepth;
     _rod = regionOfDefinition;
     _bounds = p->getBounds();
-    
+    _par = 1.;
     allocateMemory();
 }
 
@@ -402,6 +404,7 @@ Image::makeKey(U64 nodeHashKey,
 boost::shared_ptr<ImageParams>
 Image::makeParams(int cost,
                   const RectD & rod,
+                  const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   ImageComponents components,
@@ -412,10 +415,11 @@ Image::makeParams(int cost,
 {
     RectI bounds;
 
-    rod.toPixelEnclosing(mipMapLevel, &bounds);
+    rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
     return boost::shared_ptr<ImageParams>( new ImageParams(cost,
                                                            rod,
+                                                           par,
                                                            bounds,
                                                            bitdepth,
                                                            isRoDProjectFormat,
@@ -968,9 +972,9 @@ Image::upscaleMipMapForDepth(const RectI & roi,
 
     ///The source rectangle, intersected to this image region of definition in pixels
     RectD roiCanonical;
-    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
+    roi.toCanonical(fromLevel, _par, getRoD(), &roiCanonical);
     RectI dstRoi;
-    roiCanonical.toPixelEnclosing(toLevel, &dstRoi);
+    roiCanonical.toPixelEnclosing(toLevel, _par, &dstRoi);
 
     const RectI & srcRoi = roi;
 

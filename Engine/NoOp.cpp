@@ -34,6 +34,7 @@ bool
 NoOpBase::isIdentity(SequenceTime time,
                      const RenderScale & /*scale*/,
                      const RectD & /*rod*/,
+                     const double /*par*/,
                      int /*view*/,
                      SequenceTime* inputTime,
                      int* inputNb)

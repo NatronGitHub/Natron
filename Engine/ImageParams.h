@@ -63,6 +63,7 @@ public:
           , _inputTimeIdentity(0)
           , _framesNeeded()
           , _components(Natron::ImageComponentRGBA)
+          , _par(1.)
     {
     }
 
@@ -75,11 +76,13 @@ public:
           , _inputTimeIdentity(other._inputTimeIdentity)
           , _framesNeeded(other._framesNeeded)
           , _components(other._components)
+          , _par(other._par)
     {
     }
 
     ImageParams(int cost,
                 const RectD & rod,
+                const double par,
                 const RectI & bounds,
                 Natron::ImageBitDepth bitdepth,
                 bool isRoDProjectFormat,
@@ -96,6 +99,7 @@ public:
           , _framesNeeded(framesNeeded)
           , _components(components)
           , _bitdepth(bitdepth)
+          , _par(par)
     {
     }
 
@@ -142,6 +146,10 @@ public:
     ImageComponents getComponents() const
     {
         return _components;
+    }
+    
+    double getPixelAspect() const  {
+        return _par;
     }
 
     template<class Archive>
@@ -190,6 +198,8 @@ private:
     std::map<int, std::vector<RangeD> > _framesNeeded;
     Natron::ImageComponents _components;
     Natron::ImageBitDepth _bitdepth;
+    
+    double _par;
 };
 }
 

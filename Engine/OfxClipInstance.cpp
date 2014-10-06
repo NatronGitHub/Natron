@@ -570,7 +570,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     // Natron::Image::getRoD() is in *CANONICAL* coordinates
     // OFX::Image RoD is in *PIXEL* coordinates
     RectI pixelRod;
-    rod.toPixelEnclosing(mipMapLevel, &pixelRod);
+    rod.toPixelEnclosing(mipMapLevel, internalImage->getPixelAspect(), &pixelRod);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);

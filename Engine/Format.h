@@ -73,6 +73,14 @@ public:
           , _name()
     {
     }
+    
+    Format(const RectD& rect,const double par)
+    : RectD(rect)
+    , _pixel_aspect(par)
+    , _name()
+    {
+        
+    }
 
     Format(const Format & other)
         : RectD( other.left(),other.bottom(),other.right(),other.top() )

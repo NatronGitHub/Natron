@@ -1677,7 +1677,8 @@ private:
             
             assert(activeInputToRender);
             U64 activeInputToRenderHash = activeInputToRender->getHash();
-
+            
+            const double par = activeInputToRender->getPreferredAspectRatio();
             
             for (int i = 0; i < viewsCount; ++i) {
                 if ( canOnlyHandleOneView && (i != mainView) ) {
@@ -1691,7 +1692,7 @@ private:
                     ImageBitDepth imageDepth;
                     activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
                     RectI renderWindow;
-                    rod.toPixelEnclosing(scale, &renderWindow);
+                    rod.toPixelEnclosing(scale, par, &renderWindow);
                     
                     Node::ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
                                                              time,
@@ -1762,8 +1763,10 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
     Natron::ImageBitDepth imageDepth;
     _effect->getPreferredDepthAndComponents(-1, &components, &imageDepth);
     
+    const double par = _effect->getPreferredAspectRatio();
+    
     (void)_effect->getRegionOfDefinition_public(hash,time, scale, view, &rod, &isProjectFormat);
-    rod.toPixelEnclosing(0, &roi);
+    rod.toPixelEnclosing(0, par, &roi);
 
     Natron::SequentialPreference sequentiallity = _effect->getSequentialPreference();
     bool canOnlyHandleOneView = sequentiallity == Natron::EFFECT_ONLY_SEQUENTIAL || sequentiallity == Natron::EFFECT_PREFER_SEQUENTIAL;

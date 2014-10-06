@@ -479,6 +479,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             isInputImgCached = false;
         }
     }
+    
+    const double par = activeInputToRender->getPreferredAspectRatio();
 
     if (isInputImgCached) {
         ////If the image was cached with a RoD dependent on the project format, but the project format changed,
@@ -517,10 +519,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
         // For the viewer, we need the enclosing rectangle to avoid black borders.
         // Do this here to avoid infinity values.
-        rod.toPixelEnclosing(mipMapLevel, &bounds);
+        rod.toPixelEnclosing(mipMapLevel, par, &bounds);
     }
 
-    emit rodChanged(rod, textureIndex);
 
     assert(_imp->uiContext);
     bool isClippingToProjectWindow = _imp->uiContext->isClippingImageToProjectWindow();
@@ -533,13 +534,13 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     ///The RoI of the viewer, given the bounds (which takes into account the current render scale).
     ///The roi is then in pixel coordinates.
     assert(_imp->uiContext);
-    RectI roi = _imp->uiContext->getImageRectangleDisplayed(bounds,mipMapLevel);
+    RectI roi = _imp->uiContext->getImageRectangleDisplayed(bounds, par, mipMapLevel);
 
 
     ///Clip the roi  the project window (in pixel coordinates)
     RectI pixelDispW;
     if (isClippingToProjectWindow) {
-        dispW.toPixelEnclosing(mipMapLevel, &pixelDispW);
+        dispW.toPixelEnclosing(mipMapLevel, par, &pixelDispW);
         roi.intersect(pixelDispW, &roi);
     }
 
@@ -755,7 +756,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
             RectI bounds;
             unsigned int mipMapLevel = 0;
-            rod.toPixelEnclosing(mipMapLevel, &bounds);
+            rod.toPixelEnclosing(mipMapLevel, par, &bounds);
             if ( !rectsToRender.empty() ) {
                 boost::shared_ptr<Natron::Image> upscaledImage( new Natron::Image( components,
                                                                                    rod,

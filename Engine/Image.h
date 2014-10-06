@@ -165,6 +165,7 @@ public:
                             int view);
     static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                      const RectD & rod,    // the image rod in canonical coordinates
+                                                     const double par,
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
                                                      ImageComponents components,
@@ -233,14 +234,9 @@ public:
         return this->_bitDepth;
     }
 
-    void setPixelAspect(double pa)
-    {
-        this->_key._pixelAspect = pa;
-    }
-
     double getPixelAspect() const
     {
-        return this->_key._pixelAspect;
+        return this->_par;
     }
 
     /**
@@ -448,6 +444,7 @@ private:
     Bitmap _bitmap;
     RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
     RectI _bounds;
+    double _par;
 };
 
 template <typename SRCPIX,typename DSTPIX>

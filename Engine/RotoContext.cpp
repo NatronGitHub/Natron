@@ -4863,7 +4863,11 @@ RotoContext::renderMask(const RectI & roi,
         }
     } else {
         
-        params = Natron::Image::makeParams( 0, nodeRoD, mipmapLevel, false,
+        params = Natron::Image::makeParams( 0,
+                                           nodeRoD,
+                                           1., // par
+                                           mipmapLevel,
+                                           false,
                                             components,
                                             depth,
                                             -1, time,

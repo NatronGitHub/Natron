@@ -192,6 +192,7 @@ public:
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale & scale,
                             const RectD & rod, //!< image rod in canonical coordinates
+                            const double par,
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE;

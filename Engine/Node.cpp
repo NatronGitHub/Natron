@@ -1744,9 +1744,11 @@ Node::makePreviewImage(SequenceTime time,
     scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
 
+    const double par = _imp->liveInstance->getPreferredAspectRatio();
+    
     boost::shared_ptr<Image> img;
     RectI renderWindow;
-    rod.toPixelEnclosing(mipMapLevel, &renderWindow);
+    rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
     
     ParallelRenderArgsSetter frameRenderArgs(this,
                                              time,

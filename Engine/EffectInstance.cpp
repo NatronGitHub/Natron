@@ -797,7 +797,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
     try {
         int identityTime;
-        *isIdentity_p = isIdentity_public(nodeHash, time, scale, rod, view, &identityTime, identityInputNb_p);
+        *isIdentity_p = isIdentity_public(nodeHash, time, scale, rod, getPreferredAspectRatio(), view, &identityTime, identityInputNb_p);
     } catch (...) {
         return false;
     }
@@ -902,10 +902,15 @@ EffectInstance::getImage(int inputNb,
         return boost::shared_ptr<Image>();
     }
 
+    double par = 1.;
+    if (n && !useRotoInput) {
+        par = n->getPreferredAspectRatio();
+    }
+    
     ///Both the result of getRegionsOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates
     RectI pixelRoI;
-    roi.toPixelEnclosing(scale, &pixelRoI);
+    roi.toPixelEnclosing(scale, par, &pixelRoI);
 
     int channelForAlpha = !isMask ? -1 : getMaskChannel(inputNb);
 
@@ -954,7 +959,7 @@ EffectInstance::getImage(int inputNb,
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         int mipMapLevel = 0;
         RectI bounds;
-        inputImg->getRoD().toPixelEnclosing(mipMapLevel, &bounds);
+        inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
         boost::shared_ptr<Natron::Image> upscaledImg( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
                                                                         bounds, mipMapLevel, bitdepth) );
         //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
@@ -1193,6 +1198,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///through all the rendering of this frame.
     U64 nodeHash = frameRenderArgs.nodeHash;
  
+    const double par = getPreferredAspectRatio();
 
     boost::shared_ptr<ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
@@ -1301,7 +1307,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 ///Convert the image to the requested components
                 assert( !rod.isNull() );
                 RectI bounds;
-                rod.toPixelEnclosing(args.mipMapLevel, &bounds);
+                rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
                 boost::shared_ptr<Image> remappedImage( new Image(args.components, rod, bounds, args.mipMapLevel, args.bitdepth) );
                 if (!byPassCache) {
                     
@@ -1347,7 +1353,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         bool identity;
         try {
-            identity = isIdentity_public(nodeHash,args.time, renderMappedScale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
+            identity = isIdentity_public(nodeHash,args.time, renderMappedScale, rod, par, args.view, &inputTimeIdentity, &inputNbIdentity);
         } catch (...) {
             return boost::shared_ptr<Natron::Image>();
         }
@@ -1385,7 +1391,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             ///WRONG! We can't clip against the RoD of *this* effect. We should clip against the RoD of the input effect, but this is done
             ///later on for us already.
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
-            args.roi.toCanonical_noClipping(args.mipMapLevel, &canonicalRoI);
+            args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
             RoIMap inputsRoI;
             inputsRoI.insert( std::make_pair(getInput(inputNbIdentity), canonicalRoI) );
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
@@ -1448,6 +1454,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ///Cache the image with the requested components instead of the remapped ones
         cachedImgParams = Natron::Image::makeParams(cost,
                                                     rod,
+                                                    par,
                                                     args.mipMapLevel,
                                                     isProjectFormat,
                                                     args.components,
@@ -1504,7 +1511,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             ///Allocate the upscaled image
             assert(renderMappedMipMapLevel == 0);
             RectI bounds;
-            rod.toPixelEnclosing(renderMappedMipMapLevel, &bounds);
+            rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
             image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, args.bitdepth) );
         }
 
@@ -1530,7 +1537,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             ///WRONG! We can't clip against the RoD of *this* effect. We should clip against the RoD of the input effect, but this is done
             ///later on for us already.
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
-            args.roi.toCanonical_noClipping(args.mipMapLevel, &canonicalRoI);
+            args.roi.toCanonical_noClipping(args.mipMapLevel, par, &canonicalRoI);
             RoIMap inputsRoI;
             inputsRoI.insert( std::make_pair(getInput(inputNbIdentity), canonicalRoI) );
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
@@ -1583,7 +1590,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             assert(renderMappedMipMapLevel == 0);
             RectD rod = cachedImgParams->getRoD();
             RectI bounds;
-            rod.toPixelEnclosing(renderMappedMipMapLevel, &bounds);
+            rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
             ///Allocate the upscaled image
             boost::shared_ptr<Natron::Image> upscaledImage( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, args.bitdepth) );
             downscaledImage->scaleBox( downscaledImage->getBounds(),upscaledImage.get() );
@@ -1603,6 +1610,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                                       args.view,
                                                                       args.roi,
                                                                       rod,
+                                                                      par,
                                                                       cachedImgParams,
                                                                       image,
                                                                       downscaledImage,
@@ -1657,6 +1665,7 @@ EffectInstance::renderRoI(SequenceTime time,
                                                                       view,
                                                                       renderWindow,
                                                                       rod,
+                                                                      getPreferredAspectRatio(),
                                                                       cachedImgParams,
                                                                       image,
                                                                       downscaledImage,
@@ -1677,8 +1686,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   const RenderScale & scale,
                                   unsigned int mipMapLevel,
                                   int view,
-                                  const RectI & renderWindow, //!< seems to be in downscaledImage's pixel coordinates ??
+                                  const RectI & renderWindow, //!<   in downscaledImage's pixel coordinates
                                   const RectD & rod, //!< effect rod in canonical coords
+                                  const double par,
                                   const boost::shared_ptr<ImageParams> & cachedImgParams,
                                   const boost::shared_ptr<Image> & image,
                                   const boost::shared_ptr<Image> & downscaledImage,
@@ -1797,7 +1807,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 // one rectangle should be allocated for each rendered rectangle
                 RectD rod = image->getRoD();
                 RectI bounds;
-                rod.toPixelEnclosing(renderMappedMipMapLevel, &bounds);
+                rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
                 fullScaleMappedImage.reset( new Image(outputComponents, rod, bounds, renderMappedMipMapLevel, outputDepth) );
                 downscaledMappedImage = downscaledImage;
                 assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
@@ -1805,7 +1815,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             } else {
                 RectD rod = downscaledImage->getRoD();
                 RectI bounds;
-                rod.toPixelEnclosing(mipMapLevel, &bounds);
+                rod.toPixelEnclosing(mipMapLevel, par, &bounds);
                 downscaledMappedImage.reset( new Image(outputComponents, rod, bounds, mipMapLevel, outputDepth) );
                 fullScaleMappedImage = image;
                 assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
@@ -1835,7 +1845,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
         ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
         RectD canonicalRectToRender;
-        downscaledRectToRender.toCanonical(mipMapLevel, rod, &canonicalRectToRender);
+        downscaledRectToRender.toCanonical(mipMapLevel, par, rod, &canonicalRectToRender);
 
         ///the getRegionsOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
@@ -1849,7 +1859,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         RectI renderMappedRectToRender;
         
         if (renderFullScaleThenDownscale) {
-            canonicalRectToRender.toPixelEnclosing(0, &renderMappedRectToRender);
+            canonicalRectToRender.toPixelEnclosing(0, par, &renderMappedRectToRender);
             renderMappedRectToRender.intersect(renderMappedImage->getBounds(), &renderMappedRectToRender);
         } else {
             renderMappedRectToRender = downscaledRectToRender;
@@ -1913,9 +1923,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 if ( foundInputRoI->second.isInfinite() ) {
                     throw std::runtime_error(std::string("Plugin ") + this->getPluginLabel() + " asked for an infinite region of interest!");
                 }
+                
+                const double inputPar = inputEffect->getPreferredAspectRatio();
 
                 RectI inputRoIPixelCoords;
-                foundInputRoI->second.toPixelEnclosing(scale, &inputRoIPixelCoords);
+                foundInputRoI->second.toPixelEnclosing(scale, inputPar, &inputRoIPixelCoords);
 
                 ///Notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
@@ -1993,11 +2005,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             RectI srcBounds = (*it)->getBounds();
             const RectD & srcRodCanonical = (*it)->getRoD();
             RectI srcRod;
-            srcRodCanonical.toPixelEnclosing(0, &srcRod);
+            srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspect(), &srcRod);
             const RectI & dstBounds = renderMappedImage->getBounds();
             const RectD & dstRodCanonical = renderMappedImage->getRoD();
             RectI dstRod;
-            dstRodCanonical.toPixelEnclosing(scale, &dstRod);
+            dstRodCanonical.toPixelEnclosing(scale, par, &dstRod);
 
             if (!tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -2117,7 +2129,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.fullScaleImage = image;
             tiledArgs.fullScaleMappedImage = fullScaleMappedImage;
             tiledArgs.renderMappedImage = renderMappedImage;
-            
+            tiledArgs.par = par;
             
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
             QFuture<Natron::Status> ret = QtConcurrent::mapped( splitRects,
@@ -2179,6 +2191,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                  isSequentialRender,
                                                  isRenderMadeInResponseToUserInteraction,
                                                  downscaledRectToRender,
+                                                 par,
                                                  downscaledImage,
                                                  image,
                                                  downscaledMappedImage,
@@ -2221,6 +2234,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  args.isSequentialRender,
                                  args.isRenderResponseToUserInteraction,
                                  roi,
+                                 args.par,
                                  args.downscaledImage,
                                  args.fullScaleImage,
                                  args.downscaledMappedImage,
@@ -2236,6 +2250,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       bool isSequentialRender,
                                       bool isRenderResponseToUserInteraction,
                                       const RectI & downscaledRectToRender,
+                                      const double par,
                                       const boost::shared_ptr<Natron::Image> & downscaledImage,
                                       const boost::shared_ptr<Natron::Image> & fullScaleImage,
                                       const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
@@ -2293,8 +2308,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         if (renderFullScaleThenDownscale) {
             RectD canonicalrenderRectToRender;
-            downscaledRectToRenderMinimal.toCanonical(mipMapLevel, args._rod, &canonicalrenderRectToRender);
-            canonicalrenderRectToRender.toPixelEnclosing(0, &renderRectToRender);
+            downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
+            canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
             renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
         } else {
             renderRectToRender = downscaledRectToRenderMinimal;
@@ -2853,6 +2868,7 @@ EffectInstance::isIdentity_public(U64 hash,
                                   SequenceTime time,
                                   const RenderScale & scale,
                                   const RectD& rod,
+                                  const double par,
                                   int view,
                                   SequenceTime* inputTime,
                                   int* inputNb)
@@ -2904,7 +2920,7 @@ EffectInstance::isIdentity_public(U64 hash,
             /// Don't call isIdentity if plugin is sequential only.
             if (getSequentialPreference() != Natron::EFFECT_ONLY_SEQUENTIAL) {
                 try {
-                    ret = isIdentity(time, scale,rod, view, inputTime, inputNb);
+                    ret = isIdentity(time, scale,rod, par, view, inputTime, inputNb);
                 } catch (...) {
                     throw;
                 }
@@ -3289,13 +3305,15 @@ EffectInstance::getNearestNonIdentity(int time)
     bool isProjectFormat;
     Natron::Status stat = getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProjectFormat);
     
+    double par = getPreferredAspectRatio();
+    
     ///Ignore the result of getRoD if it failed
     (void)stat;
     
     SequenceTime inputTimeIdentity;
     int inputNbIdentity;
     
-    if ( !isIdentity_public(hash, time, scale, rod, 0, &inputTimeIdentity, &inputNbIdentity) ) {
+    if ( !isIdentity_public(hash, time, scale, rod, par, 0, &inputTimeIdentity, &inputNbIdentity) ) {
         return this;
     } else {
         

@@ -164,8 +164,8 @@ public:
         return ret;
     }
 
-    inline void toCanonical(unsigned int thisLevel, const RectD & rod, RectD *rect) const;
-    inline void toCanonical_noClipping(unsigned int thisLevel, RectD *rect) const;
+    inline void toCanonical(unsigned int thisLevel, double par, const RectD & rod, RectD *rect) const;
+    inline void toCanonical_noClipping(unsigned int thisLevel, double par, RectD *rect) const;
 
     // the following should never be used: only canonical coordinates may be downscaled
     /**
@@ -776,11 +776,9 @@ public:
     }
 
     void toPixelEnclosing(const RenderScale & scale,
-                          /*double par,*/
+                          double par,
                           RectI *rect) const
     {
-#pragma message WARN("Take PAR into account")
-        double par = 1.;
         rect->x1 = std::floor(x1 * scale.x / par);
         rect->y1 = std::floor(y1 * scale.y);
         rect->x2 = std::ceil(x2 * scale.x / par);
@@ -788,11 +786,9 @@ public:
     }
 
     void toPixelEnclosing(unsigned int mipMapLevel,
-                          /*double par,*/
+                          double par,
                           RectI *rect) const
     {
-#pragma message WARN("Take PAR into account")
-        double par = 1.;
         double scale = 1. / (1 << mipMapLevel);
 
         rect->x1 = std::floor(x1 * scale / par);
@@ -835,22 +831,19 @@ operator!=(const RectD & b1,
 
 inline void
 RectI::toCanonical(unsigned int thisLevel,
-                   /*double par,*/
+                   double par,
                    const RectD & rod,
                    RectD *rect) const
 {
-#pragma message WARN("Take PAR into account")
-    toCanonical_noClipping(thisLevel, /*par,*/ rect);
+    toCanonical_noClipping(thisLevel, par, rect);
     rect->intersect(rod, rect);
 }
 
 void
 RectI::toCanonical_noClipping(unsigned int thisLevel,
-                              /*double par,*/
+                              double par,
                               RectD *rect) const
 {
-#pragma message WARN("Take PAR into account")
-    double par = 1.;
     rect->x1 = (x1 << thisLevel) * par;
     rect->x2 = (x2 << thisLevel) * par;
     rect->y1 = y1 << thisLevel;

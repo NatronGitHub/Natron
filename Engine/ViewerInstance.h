@@ -164,8 +164,6 @@ signals:
     ///Emitted when the image bit depth and components changes
     void imageFormatChanged(int,int,int);
 
-    void rodChanged(RectD, int);
-
     void viewerDisconnected();
 
     void activeInputsChanged();

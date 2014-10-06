@@ -1485,6 +1485,7 @@ bool
 OfxEffectInstance::isIdentity(SequenceTime time,
                               const RenderScale & scale,
                               const RectD & rod,
+                              const double par,
                               int view,
                               SequenceTime* inputTime,
                               int* inputNb)
@@ -1538,7 +1539,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         
         // In Natron, we only consider isIdentity for whole images
         RectI roi;
-        rod.toPixelEnclosing(scale, &roi);
+        rod.toPixelEnclosing(scale, par, &roi);
         OfxRectI ofxRoI;
         ofxRoI.x1 = roi.left();
         ofxRoI.x2 = roi.right();
@@ -1564,7 +1565,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 OfxPointD scaleOne;
                 scaleOne.x = scaleOne.y = 1.;
                 
-                rod.toPixelEnclosing(scaleOne, &roi);
+                rod.toPixelEnclosing(scaleOne, par, &roi);
                 ofxRoI.x1 = roi.left();
                 ofxRoI.x2 = roi.right();
                 ofxRoI.y1 = roi.bottom();
@@ -1729,7 +1730,7 @@ OfxEffectInstance::render(SequenceTime time,
         const RectI & dstBounds = output->getBounds();
         const RectD & dstRodCanonical = output->getRoD();
         RectI dstRod;
-        dstRodCanonical.toPixelEnclosing(scale, &dstRod);
+        dstRodCanonical.toPixelEnclosing(scale, output->getPixelAspect(), &dstRod);
 
         if ( !supportsTiles() ) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles

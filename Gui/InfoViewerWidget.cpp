@@ -224,8 +224,8 @@ InfoViewerWidget::setResolution(const Format & f)
     if ( format.getName() == std::string("") ) {
         QString reso;
         reso = QString("<font color=\"#DBE0E0\">%1x%2\t</font>")
-               .arg( format.width() )
-               .arg( format.height() );
+        .arg( std::ceil(format.width()) )
+        .arg( std::ceil(format.height()) );
         resolution->setText(reso);
         resolution->setMaximumWidth( resolution->sizeHint().width() );
     } else {

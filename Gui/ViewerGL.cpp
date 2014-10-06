@@ -473,14 +473,15 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     }
     if (clipToDisplayWindow) {
         ///clip the RoD to the project format.
-        if ( !rod.intersect(getDisplayWindow(),&rod) ) {
+        if ( !rod.intersect(_imp->currentViewerInfos[textureIndex].getDisplayWindow(),&rod) ) {
             return;
         }
     }
    
-
+    const double par = _imp->currentViewerInfos[textureIndex].getDisplayWindow().getPixelAspect();
+    
     RectD canonicalTexRect;
-    texRect.toCanonical(mipMapLevel, rod, &canonicalTexRect);
+    texRect.toCanonical(mipMapLevel,par, rod, &canonicalTexRect);
 
     //if user RoI is enabled, clip the rod to that roi
     bool userRoiEnabled;
@@ -496,6 +497,8 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     ////the texture that contains the bounds.
     ////Notice that r.w and r.h are scaled to the closest Po2 of the current scaling factor, so we need to scale it up
     ////So it is in the same coordinates as the bounds.
+    ///Edit: we no longer divide by the closestPo2 since the viewer now computes images at lower resolution by itself, the drawing
+    ///doesn't need to be scaled.
     GLfloat texBottom =  0;
     GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
     GLfloat texLeft = 0;
@@ -862,7 +865,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     onProjectFormatChanged(projectFormat);
     resetWipeControls();
     populateMenu();
-    QObject::connect( getInternalNode(), SIGNAL( rodChanged(RectD, int) ), this, SLOT( setRegionOfDefinition(RectD, int) ) );
+
     QObject::connect( appPTR, SIGNAL(checkerboardSettingsChanged()), this, SLOT(onCheckerboardSettingsChanged()));
 }
 
@@ -1974,6 +1977,7 @@ ViewerGL::getZoomFactor() const
 ///imageRoD is in PIXEL COORDINATES
 RectI
 ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel coordinates
+                                     const double par,
                                      unsigned int mipMapLevel)
 {
     // MT-SAFE
@@ -1991,12 +1995,12 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
 
     if (mipMapLevel != 0) {
         // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-        visibleArea.toPixelEnclosing(mipMapLevel,&ret);
+        visibleArea.toPixelEnclosing(mipMapLevel,par,&ret);
     } else {
-        ret.x1 = visibleArea.x1;
-        ret.x2 = visibleArea.x2;
-        ret.y1 = visibleArea.y1;
-        ret.y2 = visibleArea.y2;
+        ret.x1 = std::floor(visibleArea.x1 / par);
+        ret.x2 = std::ceil(visibleArea.x2 / par);
+        ret.y1 = std::floor(visibleArea.y1);
+        ret.y2 = std::ceil(visibleArea.y2);
     }
 
     ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle
@@ -2017,7 +2021,7 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
         RectI userRoIpixel;
 
         ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
-        userRoI.toPixelEnclosing(mipMapLevel, &userRoIpixel);
+        userRoI.toPixelEnclosing(mipMapLevel,par, &userRoIpixel);
 
         ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
         if ( !ret.intersect(userRoIpixel, &ret) ) {
@@ -2219,6 +2223,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     
     
     if (image) {
+        setRegionOfDefinition(image->getRoD(), textureIndex);
+        _imp->currentViewerInfos[textureIndex].setDisplayWindow(Format(image->getRoD(),image->getPixelAspect()));
         _imp->lastRenderedImage[textureIndex] = image;
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
@@ -2837,30 +2843,30 @@ ViewerGL::updateColorPicker(int textureIndex,
         pos.setY( currentPos.y() );
     }
     float r,g,b,a;
-    QPointF imgPos;
+    QPointF imgPosCanonical;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        imgPos = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
+        imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
     }
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     RectD rod = getRoD(textureIndex);
     Format dispW = getDisplayWindow();
-    if ( ( imgPos.x() >= rod.left() ) &&
-         ( imgPos.x() < rod.right() ) &&
-         ( imgPos.y() >= rod.bottom() ) &&
-         ( imgPos.y() < rod.top() ) &&
+    if ( ( imgPosCanonical.x() >= rod.left() ) &&
+         ( imgPosCanonical.x() < rod.right() ) &&
+         ( imgPosCanonical.y() >= rod.bottom() ) &&
+         ( imgPosCanonical.y() < rod.top() ) &&
          ( pos.x() >= 0) && ( pos.x() < width() ) &&
          ( pos.y() >= 0) && ( pos.y() < height() ) ) {
         ///if the clip to project format is enabled, make sure it is in the project format too
         bool clipping = isClippingImageToProjectWindow();
         if ( !clipping ||
-             ( ( imgPos.x() >= dispW.left() ) &&
-               ( imgPos.x() < dispW.right() ) &&
-               ( imgPos.y() >= dispW.bottom() ) &&
-               ( imgPos.y() < dispW.top() ) ) ) {
+             ( ( imgPosCanonical.x() >= dispW.left() ) &&
+               ( imgPosCanonical.x() < dispW.right() ) &&
+               ( imgPosCanonical.y() >= dispW.bottom() ) &&
+               ( imgPosCanonical.y() < dispW.top() ) ) ) {
             //imgPos must be in canonical coordinates
-            picked = getColorAt(imgPos.x(), imgPos.y(), linear, textureIndex, &r, &g, &b, &a);
+            picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a);
         }
     }
     if (!picked) {
@@ -3113,9 +3119,9 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     _imp->currentViewerInfos[0].setDisplayWindow(format);
     _imp->currentViewerInfos[1].setDisplayWindow(format);
     _imp->currentViewerInfos_resolutionOverlay.clear();
-    _imp->currentViewerInfos_resolutionOverlay.append( QString::number( format.width() ) );
+    _imp->currentViewerInfos_resolutionOverlay.append( QString::number( std::ceil(format.width()) ) );
     _imp->currentViewerInfos_resolutionOverlay.append("x");
-    _imp->currentViewerInfos_resolutionOverlay.append( QString::number( format.height() ) );
+    _imp->currentViewerInfos_resolutionOverlay.append( QString::number( std::ceil(format.height()) ) );
 
 
     if ( !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
@@ -3815,8 +3821,11 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                 ///unkwn state
                 assert(false);
             }
-
-            _imp->infoViewer[texIndex]->setMousePos( QPoint( (int)( imgPos.x() ),(int)( imgPos.y() ) ) );
+            double par = _imp->currentViewerInfos[texIndex].getDisplayWindow().getPixelAspect();
+            QPoint imgPosPixel;
+            imgPosPixel.rx() = std::floor(imgPos.x() / par);
+            imgPosPixel.ry() = std::floor(imgPos.y());
+            _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
         }
     } else {
         if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
@@ -4264,13 +4273,13 @@ getColorAtInternal(Natron::Image* image,
 
 bool
 ViewerGL::getColorAt(double x,
-                           double y,           // x and y in canonical coordinates
-                           bool forceLinear,
-                           int textureIndex,
-                           float* r,
-                           float* g,
-                           float* b,
-                           float* a)                               // output values
+                     double y,           // x and y in canonical coordinates
+                     bool forceLinear,
+                     int textureIndex,
+                     float* r,
+                     float* g,
+                     float* b,
+                     float* a)                               // output values
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4316,9 +4325,13 @@ ViewerGL::getColorAt(double x,
         dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
     }
     
+    const double par = img->getPixelAspect();
+    
+    double scale = 1. / (1 << mipMapLevel);
+    
     ///Convert to pixel coords
-    int xPixel = int( std::floor(x) ) >> mipMapLevel;
-    int yPixel = int( std::floor(y) ) >> mipMapLevel;
+    int xPixel = std::floor(x  * scale / par);
+    int yPixel = std::floor(y * scale);
     bool gotval;
     switch (depth) {
         case IMAGE_BYTE:

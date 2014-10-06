@@ -527,6 +527,7 @@ protected:
     virtual bool isIdentity(SequenceTime /*time*/,
                             const RenderScale & /*scale*/,
                             const RectD & /*rod*/,
+                            const double /*par*/,
                             int /*view*/,
                             SequenceTime* /*inputTime*/,
                             int* /*inputNb*/) WARN_UNUSED_RETURN
@@ -540,6 +541,7 @@ public:
                            SequenceTime time,
                            const RenderScale & scale,
                            const RectD & rod, //!< image rod in canonical coordinates
+                           const double par,
                            int view,SequenceTime* inputTime,
                            int* inputNb) WARN_UNUSED_RETURN;
     enum RenderSafety
@@ -1104,6 +1106,7 @@ private:
                                       int view,
                                       const RectI & renderWindow, //< renderWindow in pixel coordinates
                                       const RectD & rod, //!< rod in canonical coordinates
+                                      const double par,
                                       const boost::shared_ptr<ImageParams> & cachedImgParams,
                                       const boost::shared_ptr<Image> & image,
                                       const boost::shared_ptr<Image> & downscaledImage,
@@ -1149,6 +1152,7 @@ private:
         bool renderFullScaleThenDownscale;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
+        double par;
         boost::shared_ptr<Natron::Image>  downscaledImage;
         boost::shared_ptr<Natron::Image>  fullScaleImage;
         boost::shared_ptr<Natron::Image>  downscaledMappedImage;
@@ -1188,6 +1192,7 @@ private:
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      const RectI & roi,
+                                     const double par,
                                      const boost::shared_ptr<Natron::Image> & downscaledImage,
                                      const boost::shared_ptr<Natron::Image> & fullScaleImage,
                                      const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
