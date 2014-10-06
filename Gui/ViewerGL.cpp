@@ -475,7 +475,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     }
     if (clipToDisplayWindow) {
         ///clip the RoD to the project format.
-        if ( !rod.intersect(_imp->currentViewerInfos[textureIndex].getDisplayWindow(),&rod) ) {
+        if ( !rod.intersect(_imp->projectFormat,&rod) ) {
             return;
         }
     }
