@@ -412,7 +412,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     if (isInputImgCached) {
         assert(inputImage);
-        imageLock.reset( new ImageLocker(this,inputImage) );
+        imageLock.reset( new ImageLocker(activeInputToRender,inputImage) );
 
         inputIdentityNumber = cachedImgParams->getInputNbIdentity();
         inputIdentityTime = cachedImgParams->getInputTimeIdentity();
