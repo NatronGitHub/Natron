@@ -45,9 +45,9 @@ generateStringFromFormat(const Format & f)
 
     formatStr.append( f.getName().c_str() );
     formatStr.append("  ");
-    formatStr.append( QString::number( f.width() ) );
+    formatStr.append( QString::number( std::ceil(f.width()) ) );
     formatStr.append(" x ");
-    formatStr.append( QString::number( f.height() ) );
+    formatStr.append( QString::number( std::ceil(f.height()) ) );
     formatStr.append("  ");
     formatStr.append( QString::number( f.getPixelAspect() ) );
 
