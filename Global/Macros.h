@@ -44,6 +44,9 @@
 #define NATRON_VERSION_MINOR 0
 #define NATRON_VERSION_REVISION 0
 
+///For example RC 1, RC 2 etc...
+#define NATRON_BUILD_NUMBER 2
+
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
 #define NATRON_CUSTOM_BUILD_USER_NAME ""
 
@@ -77,8 +80,7 @@
 
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_CANDIDATE
 
-///For example RC 1, RC 2 etc...
-#define NATRON_BUILD_NUMBER 1
+
 
 #define NATRON_ROOT "/"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
