@@ -4186,7 +4186,9 @@ ViewerGL::getLastRenderedImage(int textureIndex) const
     return _imp->lastRenderedImage[textureIndex];
 }
 
-
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
 int
 ViewerGL::getMipMapLevelCombinedToZoomFactor() const
 {
