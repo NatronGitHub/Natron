@@ -151,7 +151,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
             box->setToolTip( toolTip() );
         }
         boxContainerLayout->addWidget(box);
-        if ( (getKnob()->getDimension() == 1) && !_knob->isSliderDisabled() ) {
+        if ( (getKnob()->getDimension() == 1) && !_knob->isSliderDisabled() && getKnobsCountOnSameLine() == 0 ) {
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
             double sliderMin = dispmin;
@@ -596,7 +596,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         }
         boxContainerLayout->addWidget(box);
 
-        if ( (_knob->getDimension() == 1) && !_knob->isSliderDisabled() ) {
+        if ( (_knob->getDimension() == 1) && !_knob->isSliderDisabled()  && getKnobsCountOnSameLine() == 0) {
             double dispmin = displayMins[i];
             double dispmax = displayMaxs[i];
             valueAccordingToType(false, i, &dispmin);
