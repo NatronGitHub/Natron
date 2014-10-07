@@ -827,6 +827,17 @@ OfxEffectInstance::onInputChanged(int inputNo)
     s.x = s.y = 1.;
     
     
+    /**
+     * The plug-in might call getImage, set a valid thread storage on the tree.
+     **/
+    Node::ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+                                                   time,
+                                                   0 /*view*/,
+                                                   true,
+                                                   false,
+                                                   false,
+                                                   getHash());
+    
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
     
     ///if all non optional clips are connected, call getClipPrefs
