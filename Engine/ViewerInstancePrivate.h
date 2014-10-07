@@ -86,6 +86,7 @@ public:
           , lut(Natron::sRGB)
           , cachedFrame()
           , image()
+          , rod()
     {
     }
     
@@ -115,6 +116,7 @@ public:
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
     boost::shared_ptr<Natron::FrameEntry> cachedFrame;
     boost::shared_ptr<Natron::Image> image;
+    RectD rod;
 };
 
 struct ViewerInstance::ViewerInstancePrivate

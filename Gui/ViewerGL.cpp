@@ -2165,6 +2165,7 @@ ViewerGL::initShaderGLSL()
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      const boost::shared_ptr<Natron::Image>& image,
+                                     const RectD& rod,
                                      size_t bytesCount,
                                      const TextureRect & region,
                                      double gain,
@@ -2222,9 +2223,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->memoryHeldByLastRenderedImages[textureIndex] = 0;
     }
     
+    setRegionOfDefinition(rod, textureIndex);
+
     
     if (image) {
-        setRegionOfDefinition(image->getRoD(), textureIndex);
         _imp->currentViewerInfos[textureIndex].setDisplayWindow(Format(image->getRoD(),image->getPixelAspect()));
         _imp->lastRenderedImage[textureIndex] = image;
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();

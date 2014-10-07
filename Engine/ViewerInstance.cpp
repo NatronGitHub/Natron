@@ -990,6 +990,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     assert(ramBuffer);
     params->ramBuffer = ramBuffer;
+    params->rod = rod;
     params->textureRect = textureRect;
     params->srcPremult = srcPremult;
     params->bytesCount = bytesCount;
@@ -1639,6 +1640,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
             
             uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
                                                   params->image,
+                                                  params->rod,
                                                   params->bytesCount,
                                                   params->textureRect,
                                                   params->gain,
