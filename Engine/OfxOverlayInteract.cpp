@@ -262,7 +262,7 @@ Natron::OfxParamOverlayInteract::setSize(int w,
 }
 
 void
-Natron::OfxParamOverlayInteract::getPixelAspect(double & par) const
+Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
 }

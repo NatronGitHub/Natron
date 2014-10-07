@@ -1333,9 +1333,9 @@ Project::setOrAddProjectFormat(const Format & frmt,
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 
-            Format* df = appPTR->findExistingFormat( dispW.width(), dispW.height(),dispW.getPixelAspect() );
+            Format* df = appPTR->findExistingFormat(dispW.width(), dispW.height(), dispW.getPixelAspectRatio());
             if (df) {
-                dispW.setName( df->getName() );
+                dispW.setName(df->getName());
                 setProjectDefaultFormat(dispW);
             } else {
                 setProjectDefaultFormat(dispW);

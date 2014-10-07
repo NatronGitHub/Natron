@@ -218,7 +218,7 @@ OfxImageEffectInstance::getProjectPixelAspectRatio() const
     Format f;
     _ofxEffectInstance->getRenderFormat(&f);
 
-    return f.getPixelAspect();
+    return f.getPixelAspectRatio();
 }
 
 // The duration of the effect

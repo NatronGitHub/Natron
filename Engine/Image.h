@@ -234,7 +234,7 @@ public:
         return this->_bitDepth;
     }
 
-    double getPixelAspect() const
+    double getPixelAspectRatio() const
     {
         return this->_par;
     }

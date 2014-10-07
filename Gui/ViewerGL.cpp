@@ -480,7 +480,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         }
     }
    
-    const double par = _imp->currentViewerInfos[textureIndex].getDisplayWindow().getPixelAspect();
+    const double par = _imp->currentViewerInfos[textureIndex].getDisplayWindow().getPixelAspectRatio();
     
     RectD canonicalTexRect;
     texRect.toCanonical(mipMapLevel,par, rod, &canonicalTexRect);
@@ -2227,7 +2227,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 
     
     if (image) {
-        _imp->currentViewerInfos[textureIndex].setDisplayWindow(Format(image->getRoD(),image->getPixelAspect()));
+        _imp->currentViewerInfos[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
         _imp->lastRenderedImage[textureIndex] = image;
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
@@ -2981,7 +2981,7 @@ ViewerGL::fitImageToFormat()
     double w,h,zoomPAR;
     h = _imp->projectFormat.height();
     w = _imp->projectFormat.width();
-    zoomPAR = _imp->projectFormat.getPixelAspect();
+    zoomPAR = _imp->projectFormat.getPixelAspectRatio();
 
     assert(h > 0. && w > 0.);
 
@@ -3821,7 +3821,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                 ///unkwn state
                 assert(false);
             }
-            double par = _imp->currentViewerInfos[texIndex].getDisplayWindow().getPixelAspect();
+            double par = _imp->currentViewerInfos[texIndex].getDisplayWindow().getPixelAspectRatio();
             QPoint imgPosPixel;
             imgPosPixel.rx() = std::floor(imgPos.x() / par);
             imgPosPixel.ry() = std::floor(imgPos.y());
@@ -4327,7 +4327,7 @@ ViewerGL::getColorAt(double x,
         dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
     }
     
-    const double par = img->getPixelAspect();
+    const double par = img->getPixelAspectRatio();
     
     double scale = 1. / (1 << mipMapLevel);
     

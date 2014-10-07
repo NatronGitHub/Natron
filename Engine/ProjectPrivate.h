@@ -43,13 +43,13 @@ generateStringFromFormat(const Format & f)
 {
     QString formatStr;
 
-    formatStr.append( f.getName().c_str() );
+    formatStr.append(f.getName().c_str());
     formatStr.append("  ");
-    formatStr.append( QString::number( std::ceil(f.width()) ) );
+    formatStr.append(QString::number(std::ceil(f.width())));
     formatStr.append(" x ");
-    formatStr.append( QString::number( std::ceil(f.height()) ) );
+    formatStr.append(QString::number(std::ceil(f.height())));
     formatStr.append("  ");
-    formatStr.append( QString::number( f.getPixelAspect() ) );
+    formatStr.append(QString::number(f.getPixelAspectRatio()));
 
     return formatStr;
 }

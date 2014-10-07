@@ -1730,7 +1730,7 @@ OfxEffectInstance::render(SequenceTime time,
         const RectI & dstBounds = output->getBounds();
         const RectD & dstRodCanonical = output->getRoD();
         RectI dstRod;
-        dstRodCanonical.toPixelEnclosing(scale, output->getPixelAspect(), &dstRod);
+        dstRodCanonical.toPixelEnclosing(scale, output->getPixelAspectRatio(), &dstRod);
 
         if ( !supportsTiles() ) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles

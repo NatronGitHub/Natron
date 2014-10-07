@@ -227,7 +227,7 @@ AddFormatDialog::onCopyFromViewer()
             Format format = tab->getViewer()->getDisplayWindow();
             _widthSpinBox->setValue( f.width() );
             _heightSpinBox->setValue( f.height() );
-            _pixelAspectSpinBox->setValue( format.getPixelAspect() );
+            _pixelAspectSpinBox->setValue(format.getPixelAspectRatio());
         }
     }
 }

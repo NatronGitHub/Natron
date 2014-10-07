@@ -296,7 +296,7 @@ public:
 
     void setSize(int w,int h);
 
-    void getPixelAspect(double & par) const;
+    void getPixelAspectRatio(double & par) const;
 };
 }
 

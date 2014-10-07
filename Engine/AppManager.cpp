@@ -944,12 +944,12 @@ AppManagerPrivate::loadBuiltinFormats()
 Format*
 AppManager::findExistingFormat(int w,
                                int h,
-                               double pixel_aspect) const
+                               double par) const
 {
     for (U32 i = 0; i < _imp->_formats.size(); ++i) {
         Format* frmt = _imp->_formats[i];
         assert(frmt);
-        if ( (frmt->width() == w) && (frmt->height() == h) && (frmt->getPixelAspect() == pixel_aspect) ) {
+        if ( (frmt->width() == w) && (frmt->height() == h) && (frmt->getPixelAspectRatio() == par) ) {
             return frmt;
         }
     }

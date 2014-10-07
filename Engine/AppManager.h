@@ -150,7 +150,7 @@ public:
     Natron::LibraryBinary* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
-    Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
+    Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
     const std::vector<Format*> & getFormats() const WARN_UNUSED_RETURN;
 
     /*Tries to load all plugins in directory "where"*/

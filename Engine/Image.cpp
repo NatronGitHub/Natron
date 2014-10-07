@@ -333,7 +333,7 @@ Image::Image(const ImageKey & key,
     _bitDepth = p->getBitDepth();
     _rod = p->getRoD();
     _bounds = p->getBounds();
-    _par = p->getPixelAspect();
+    _par = p->getPixelAspectRatio();
 }
 
 

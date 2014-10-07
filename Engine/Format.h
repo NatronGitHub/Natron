@@ -50,7 +50,7 @@ class Format
                                                                     static_cast<RectD *>(NULL) );
             ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectD);
         }
-        ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_pixel_aspect);
+        ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_par);
         ar & boost::serialization::make_nvp("Name",_name);
     }
 
@@ -60,38 +60,38 @@ public:
            int r,
            int t,
            const std::string & name,
-           double pa)
+           double par)
         : RectD(l,b,r,t)
-          , _pixel_aspect(pa)
+          , _par(par)
           , _name(name)
     {
     }
 
     Format(const RectD & rect)
         : RectD(rect)
-          , _pixel_aspect(1.)
+          , _par(1.)
           , _name()
     {
     }
     
-    Format(const RectD& rect,const double par)
+    Format(const RectD& rect, const double par)
     : RectD(rect)
-    , _pixel_aspect(par)
+    , _par(par)
     , _name()
     {
         
     }
 
     Format(const Format & other)
-        : RectD( other.left(),other.bottom(),other.right(),other.top() )
-          , _pixel_aspect( other.getPixelAspect() )
-          , _name( other.getName() )
+        : RectD(other.left(), other.bottom(), other.right(), other.top())
+          , _par(other.getPixelAspectRatio())
+          , _name(other.getName())
     {
     }
 
     Format()
         : RectD()
-          , _pixel_aspect(1.0)
+          , _par(1.0)
           , _name()
     {
     }
@@ -110,36 +110,36 @@ public:
         _name = n;
     }
 
-    double getPixelAspect() const
+    double getPixelAspectRatio() const
     {
-        return _pixel_aspect;
+        return _par;
     }
 
-    void setPixelAspect( double p)
+    void setPixelAspectRatio(double p)
     {
-        _pixel_aspect = p;
+        _par = p;
     }
 
     Format & operator=(const Format & other)
     {
-        set( other.left(), other.bottom(), other.right(), other.top() );
-        setName( other.getName() );
-        setPixelAspect( other.getPixelAspect() );
+        set(other.left(), other.bottom(), other.right(), other.top());
+        setName(other.getName());
+        setPixelAspectRatio(other.getPixelAspectRatio());
 
         return *this;
     }
 
     bool operator==(const Format & other) const
     {
-        return _pixel_aspect == other.getPixelAspect() &&
-               left() == other.left() &&
-               bottom() == other.bottom() &&
-               right() == other.right() &&
-               top() == other.top();
+        return (_par == other.getPixelAspectRatio() &&
+                left() == other.left() &&
+                bottom() == other.bottom() &&
+                right() == other.right() &&
+                top() == other.top());
     }
 
 private:
-    double _pixel_aspect;
+    double _par;
     std::string _name;
 };
 

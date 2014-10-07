@@ -2005,7 +2005,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             RectI srcBounds = (*it)->getBounds();
             const RectD & srcRodCanonical = (*it)->getRoD();
             RectI srcRod;
-            srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspect(), &srcRod);
+            srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspectRatio(), &srcRod);
             const RectI & dstBounds = renderMappedImage->getBounds();
             const RectD & dstRodCanonical = renderMappedImage->getRoD();
             RectI dstRod;

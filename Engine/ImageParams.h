@@ -148,7 +148,7 @@ public:
         return _components;
     }
     
-    double getPixelAspect() const  {
+    double getPixelAspectRatio() const  {
         return _par;
     }
 
