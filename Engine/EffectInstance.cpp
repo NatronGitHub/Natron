@@ -1994,7 +1994,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             inputImages.push_back(mask);
         }
 
-#     ifdef DEBUG
+#     ifndef NDEBUG
         RenderScale scale;
         scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
         scale.y = scale.x;
@@ -2002,11 +2002,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImages.begin();
              it != inputImages.end();
              ++it) {
-            RectI srcBounds = (*it)->getBounds();
+            assert((*it)->getMipMapLevel() == mipMapLevel);
             const RectD & srcRodCanonical = (*it)->getRoD();
             RectI srcRod;
             srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspectRatio(), &srcRod); // compute srcRod at level 0
-            const RectI & dstBounds = renderMappedImage->getBounds();
             const RectD & dstRodCanonical = renderMappedImage->getRoD();
             RectI dstRod;
             dstRodCanonical.toPixelEnclosing(0, par, &dstRod); // compute dstRod at level 0
@@ -2030,9 +2029,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 ///quality compared to the images rendered at scale 1, hence we don't cache them.
                 ///If we were to cache them, we would need to change the way the cache works and return a list of potential images instead.
                 ///This way we could add a "quality" identifier to images and pick the best one from the list returned by the cache.
-                if ( (*it)->getMipMapLevel() != 0 ) {
-                    srcBounds = srcBounds.upscalePowerOfTwo( (*it)->getMipMapLevel() );
+                RectI srcBounds = (*it)->getBounds();
+                RectI dstBounds = renderMappedImage->getBounds();
+                if (mipMapLevel) {
+                    srcBounds = srcBounds.upscalePowerOfTwo(mipMapLevel);
                     srcBounds.intersect(srcRod, &srcBounds);
+                    dstBounds = dstBounds.upscalePowerOfTwo(mipMapLevel);
+                    dstBounds.intersect(dstRod, &dstBounds);
                 }
                 assert(srcRod.x1 == srcBounds.x1);
                 assert(srcRod.x2 == srcBounds.x2);
