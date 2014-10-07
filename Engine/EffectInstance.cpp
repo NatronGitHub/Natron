@@ -2005,11 +2005,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             RectI srcBounds = (*it)->getBounds();
             const RectD & srcRodCanonical = (*it)->getRoD();
             RectI srcRod;
-            srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspectRatio(), &srcRod);
+            srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspectRatio(), &srcRod); // compute srcRod at level 0
             const RectI & dstBounds = renderMappedImage->getBounds();
             const RectD & dstRodCanonical = renderMappedImage->getRoD();
             RectI dstRod;
-            dstRodCanonical.toPixelEnclosing(scale, par, &dstRod);
+            dstRodCanonical.toPixelEnclosing(0, par, &dstRod); // compute dstRod at level 0
 
             if (!tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
