@@ -68,8 +68,8 @@ public:
     void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
 
     ///The visible portion of the graph, in scene coordinates.
-    QRectF visibleSceneRect();
-    QRect visibleWidgetRect();
+    QRectF visibleSceneRect() const;
+    QRect visibleWidgetRect() const;
 
     void deselect();
 
@@ -205,6 +205,8 @@ private:
      * so they do not overlap.
      **/
     void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n);
+    
+    bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
 
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;

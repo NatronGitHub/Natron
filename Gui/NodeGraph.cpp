@@ -127,6 +127,7 @@ enum EVENT_STATE
     DEFAULT,
     MOVING_AREA,
     ARROW_DRAGGING,
+    NAVIGATOR_DRAGGING,
     NODE_DRAGGING,
     BACKDROP_DRAGGING,
     BACKDROP_RESIZING,
@@ -572,13 +573,13 @@ NodeGraph::paintEvent(QPaintEvent* e)
 }
 
 QRectF
-NodeGraph::visibleSceneRect()
+NodeGraph::visibleSceneRect() const
 {
     return mapToScene( visibleWidgetRect() ).boundingRect();
 }
 
 QRect
-NodeGraph::visibleWidgetRect()
+NodeGraph::visibleWidgetRect() const
 {
     return viewport()->rect();
 }
@@ -889,6 +890,20 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         didSomething = true;
         _imp->_evtState = ARROW_DRAGGING;
     }
+    
+    ///Test if mouse is inside the navigator
+    {
+        QPointF mousePosSceneCoordinates;
+        bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
+        if (insideNavigator) {
+            updateNavigator();
+            _imp->_refreshOverlays = true;
+            centerOn(mousePosSceneCoordinates);
+            _imp->_evtState = NAVIGATOR_DRAGGING;
+            didSomething = true;
+        }
+    }
+                      
 
     if (_imp->_evtState == DEFAULT) {
         ///check if nearby a backdrop
@@ -953,6 +968,62 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
     }
 } // mousePressEvent
+
+bool
+NodeGraph::isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const
+{
+    if (!_imp->_navigator->isVisible()) {
+        return false;
+    }
+    
+    QRect visibleWidget = visibleWidgetRect();
+    
+    int navWidth = std::ceil(width() * NATRON_NAVIGATOR_BASE_WIDTH);
+    int navHeight = std::ceil(height() * NATRON_NAVIGATOR_BASE_HEIGHT);
+
+    QPoint btmRightWidget = visibleWidget.bottomRight();
+    QPoint navTopLeftWidget = btmRightWidget - QPoint(navWidth,navHeight );
+    
+    if (widgetPos.x() >= navTopLeftWidget.x() && widgetPos.x() < btmRightWidget.x() &&
+        widgetPos.y() >= navTopLeftWidget.y() && widgetPos.y() <= btmRightWidget.y()) {
+        
+        ///The bbox of all nodes in the nodegraph
+        QRectF sceneR = _imp->calcNodesBoundingRect();
+        
+        ///The visible portion of the nodegraph
+        QRectF viewRect = visibleSceneRect();
+        sceneR = sceneR.united(viewRect);
+        
+        ///Make sceneR and viewRect keep the same aspect ratio as the navigator
+        double xScale = navWidth / sceneR.width();
+        double yScale =  navHeight / sceneR.height();
+        double scaleFactor = std::max(0.001,std::min(xScale,yScale));
+        
+        int sceneW_navPixelCoord = std::floor(sceneR.width() * scaleFactor);
+        int sceneH_navPixelCoord = std::floor(sceneR.height() * scaleFactor);
+        
+        int xOffset = navWidth - sceneW_navPixelCoord;
+        int yOffset = navHeight - sceneH_navPixelCoord;
+        
+        ///Make the widgetPos relative to the navTopLeftWidget
+        QPoint clickNavPos(widgetPos.x() - navTopLeftWidget.x(), widgetPos.y() - navTopLeftWidget.y());
+        if (clickNavPos.x() < xOffset / 2. || clickNavPos.x() > (navWidth - xOffset / 2.) ||
+            clickNavPos.y() < yOffset / 2. || clickNavPos.y() > (navHeight - yOffset / 2.)) {
+            return false;
+        }
+        
+        scenePos.rx() = clickNavPos.x() / scaleFactor;
+        scenePos.ry() = clickNavPos.y() / scaleFactor;
+        
+        ///Now scenePos is in scene coordinates, but relative to the sceneR top left
+        scenePos.rx() += sceneR.x();
+        scenePos.ry() += sceneR.y();
+        return true;
+    }
+    
+    return false;
+    
+}
 
 void
 NodeGraph::deselect()
@@ -1337,10 +1408,20 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
         break;
     }
+    case NAVIGATOR_DRAGGING: {
+        QPointF mousePosSceneCoordinates;
+        bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
+        if (insideNavigator) {
+            updateNavigator();
+            _imp->_refreshOverlays = true;
+            centerOn(mousePosSceneCoordinates);
+        }
+    } break;
     default:
         break;
     } // switch
 
+    
     _imp->_lastScenePosClick = newPos;
 
     if (mustUpdateNavigator) {
@@ -2094,21 +2175,23 @@ NodeGraph::getFullSceneScreenShot()
     ///The visible portion of the nodegraph
     QRectF viewRect = visibleSceneRect();
 
-    sceneR = sceneR.united(viewRect);
     ///Make sure the visible rect is included in the scene rect
-    //viewRect = viewRect.intersect(sceneR);
+    sceneR = sceneR.united(viewRect);
 
-    double navWidth = width() * NATRON_NAVIGATOR_BASE_WIDTH;
-    double navHeight = height() * NATRON_NAVIGATOR_BASE_HEIGHT;
+    int navWidth = std::ceil(width() * NATRON_NAVIGATOR_BASE_WIDTH);
+    int navHeight = std::ceil(height() * NATRON_NAVIGATOR_BASE_HEIGHT);
 
     ///Make sceneR and viewRect keep the same aspect ratio as the navigator
     double xScale = navWidth / sceneR.width();
     double yScale =  navHeight / sceneR.height();
-    double scaleFactor = std::min(xScale,yScale);
-    QRectF renderRect(0,0,sceneR.width() * scaleFactor, sceneR.height() * scaleFactor);
+    double scaleFactor = std::max(0.001,std::min(xScale,yScale));
+    
+    int sceneW_navPixelCoord = std::floor(sceneR.width() * scaleFactor);
+    int sceneH_navPixelCoord = std::floor(sceneR.height() * scaleFactor);
 
     ///Render the scene in an image with the same aspect ratio  as the scene rect
-    QImage renderImage(renderRect.width(),renderRect.height(),QImage::Format_ARGB32_Premultiplied);
+    QImage renderImage(sceneW_navPixelCoord,sceneH_navPixelCoord,QImage::Format_ARGB32_Premultiplied);
+    
     ///Fill the background
     renderImage.fill( QColor(71,71,71,255) );
 
@@ -2118,11 +2201,11 @@ NodeGraph::getFullSceneScreenShot()
     viewRect.setWidth( viewRect.width() - sceneR.x() );
     viewRect.setHeight( viewRect.height() - sceneR.y() );
 
-    QRectF scaledViewRect = viewRect;
-    scaledViewRect.setLeft(viewRect.left() * scaleFactor);
-    scaledViewRect.setBottom(viewRect.bottom() * scaleFactor);
-    scaledViewRect.setRight(viewRect.right() * scaleFactor);
-    scaledViewRect.setTop(viewRect.top() * scaleFactor);
+    QRectF viewRect_navCoordinates = viewRect;
+    viewRect_navCoordinates.setLeft(viewRect.left() * scaleFactor);
+    viewRect_navCoordinates.setBottom(viewRect.bottom() * scaleFactor);
+    viewRect_navCoordinates.setRight(viewRect.right() * scaleFactor);
+    viewRect_navCoordinates.setTop(viewRect.top() * scaleFactor);
 
     ///Paint the visible portion with a highlight
     QPainter painter(&renderImage);
@@ -2138,17 +2221,20 @@ NodeGraph::getFullSceneScreenShot()
     scene()->addItem(_imp->_navigator);
     scene()->addItem(_imp->_cacheSizeText);
 
-    painter.fillRect( scaledViewRect, QColor(200,200,200,100) );
+    ///Fill the highlight with a semi transparant whitish grey
+    painter.fillRect( viewRect_navCoordinates, QColor(200,200,200,100) );
+    
+    ///Draw a border surrounding the
     QPen p;
     p.setWidth(2);
     p.setBrush(Qt::yellow);
     painter.setPen(p);
     ///Make sure the border is visible
-    scaledViewRect.adjust(2, 2, -2, -2);
-    painter.drawRect(scaledViewRect);
+    viewRect_navCoordinates.adjust(2, 2, -2, -2);
+    painter.drawRect(viewRect_navCoordinates);
 
-    ///Now make an image of the size of the navigator and center the render image into it
-    QImage img(std::ceil(navWidth), std::ceil(navHeight), QImage::Format_ARGB32_Premultiplied);
+    ///Now make an image of the requested size of the navigator and center the render image into it
+    QImage img(navWidth, navHeight, QImage::Format_ARGB32_Premultiplied);
     img.fill( QColor(71,71,71,255) );
 
     int xOffset = ( img.width() - renderImage.width() ) / 2;
