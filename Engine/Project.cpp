@@ -654,21 +654,22 @@ Project::initializeKnobs()
 
     _imp->envVars = Natron::createKnob<Path_Knob>(this, "Project paths");
     _imp->envVars->setName("projectPaths");
-    _imp->envVars->setHintToolTip("Specify here environment variables for the project. Any environment variable can be used "
+    _imp->envVars->setHintToolTip("Specify here project paths. Any path can be used "
                                   "in file paths and can be used between brackets, for example: \n"
                                   "[" NATRON_PROJECT_ENV_VAR_NAME "]MyProject.ntp \n"
-                                  "You can add as many env. variables as you want and can name them as you want. This way it "
+                                  "You can add as many project paths as you want and can name them as you want. This way it "
                                   "makes it easy to share your projects and move files around."
-                                  " You can chain up variables, like so:\n "
-                                  "[" NATRON_PROJECT_ENV_VAR_NAME "] = <PathToProject>/ \n"
-                                  "[Scene1] = [" NATRON_PROJECT_ENV_VAR_NAME "]Rush/S_01/ \n"
-                                  "[Shot1] = [Scene1]Shot001/ \n"
+                                  " You can chain up paths, like so:\n "
+                                  "[" NATRON_PROJECT_ENV_VAR_NAME "] = <PathToProject> \n"
+                                  "[Scene1] = [" NATRON_PROJECT_ENV_VAR_NAME "]/Rush/S_01 \n"
+                                  "[Shot1] = [Scene1]/Shot001 \n"
                                   "By default if a file-path is NOT absolute (i.e: not starting with '/' "
                                   " on Unix or a drive name on Windows) "
-                                  "then it will be expanded using the [" NATRON_PROJECT_ENV_VAR_NAME "] environment variable. "
+                                  "then it will be expanded using the [" NATRON_PROJECT_ENV_VAR_NAME "] path. "
                                   "Absolute paths are treated as normal."
-                                  " The [" NATRON_PROJECT_ENV_VAR_NAME "] environment variable will be set automatically to "
-                                  " the location of the project file when saving and loading a project.");
+                                  " The [" NATRON_PROJECT_ENV_VAR_NAME "] path will be set automatically to "
+                                  " the location of the project file when saving and loading a project."
+                                  " The [" NATRON_OCIO_ENV_VAR_NAME "] path will also be set automatically for better sharing of projects with reader nodes.");
     _imp->envVars->setSecret(false);
     _imp->envVars->setMultiPath(true);
     
