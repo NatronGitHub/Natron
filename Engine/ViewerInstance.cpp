@@ -713,7 +713,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             
         } else {
             
-            
+            ///Notify the gui we're rendering.
+            EffectInstance::NotifyRenderingStarted_RAII renderingNotifier(_node.get());
             
             boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
                 FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);

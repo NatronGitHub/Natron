@@ -431,6 +431,18 @@ public:
                    const boost::shared_ptr<Image> & image,
                    const boost::shared_ptr<Image> & downscaledImage);
 
+
+
+    class NotifyRenderingStarted_RAII
+    {
+        Node* _node;
+        bool _didEmit;
+    public:
+    
+        NotifyRenderingStarted_RAII(Node* node);
+    
+        ~NotifyRenderingStarted_RAII();
+    };
   
 
     /**

@@ -1185,6 +1185,19 @@ EffectInstance::getFrameRange(SequenceTime *first,
     }
 }
 
+EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
+: _node(node)
+{
+    _didEmit = node->notifyRenderingStarted();
+}
+
+EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
+{
+    if (_didEmit) {
+        _node->notifyRenderingEnded();
+    }
+}
+
 boost::shared_ptr<Natron::Image>
 EffectInstance::renderRoI(const RenderRoIArgs & args)
 {
@@ -1658,6 +1671,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     return downscaledImage;
 } // renderRoI
 
+
 void
 EffectInstance::renderRoI(SequenceTime time,
                           const RenderScale & scale,
@@ -1699,6 +1713,7 @@ EffectInstance::renderRoI(SequenceTime time,
         throw std::runtime_error("Rendering Failed");
     }
 }
+
 
 EffectInstance::RenderRoIStatus
 EffectInstance::renderRoIInternal(SequenceTime time,
@@ -1858,6 +1873,14 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
         assert( fullScaleMappedImage->getBounds() == image->getBounds() );
     }
+    
+    ///Notify the gui we're rendering
+    boost::shared_ptr<NotifyRenderingStarted_RAII> renderingNotifier;
+    if (!rectsToRender.empty()) {
+        renderingNotifier.reset(new NotifyRenderingStarted_RAII(_node.get()));
+    }
+  
+
 
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         const RectI & downscaledRectToRender = *it; // please leave it as const, copy it if necessary
@@ -2077,15 +2100,15 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 assert(srcRod.y1 == dstRod.y1);
                 assert(srcRod.y2 == dstRod.y2);
             }
-        }
+        } //end for
+        
         if (supportsRenderScaleMaybe() == eSupportsNo) {
             assert(renderMappedMipMapLevel == 0);
             assert(renderMappedScale.x == 1. && renderMappedScale.y == 1.);
         }
 #     endif // DEBUG
 
-        ///notify the node we're starting a render
-        bool didEmitRenderingStartedSignal = _node->notifyRenderingStarted();
+       
 
         ///We only need to call begin if we've not already called it.
         bool callBegin = false;
@@ -2226,17 +2249,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         }
         } // switch
 
-        ///notify the node we've finished rendering
         
-        if (didEmitRenderingStartedSignal) {
-            _node->notifyRenderingEnded();
-        }
 
         if (renderStatus != StatOK) {
             break;
         }
-    }
-
+    } // for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+    
     if (renderStatus != StatOK) {
         retCode = eImageRenderFailed;
     }

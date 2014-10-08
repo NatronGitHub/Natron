@@ -800,14 +800,16 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///try to find a selected edge
             for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
                 boost::shared_ptr<NodeGui> & n = *it;
-                Edge* bendPointEdge = n->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
-                if (bendPointEdge) {
-                    selectedBendPoint = bendPointEdge;
-                    break;
-                }
-                Edge* edge = n->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
-                if (edge) {
-                    selectedEdge = edge;
+                if (!n->areEdgesFrozen()) {
+                    Edge* bendPointEdge = n->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
+                    if (bendPointEdge) {
+                        selectedBendPoint = bendPointEdge;
+                        break;
+                    }
+                    Edge* edge = n->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
+                    if (edge) {
+                        selectedEdge = edge;
+                    }
                 }
             }
         }
@@ -1060,51 +1062,55 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         boost::shared_ptr<NodeGui> nodeHoldingEdge = _imp->_arrowSelected->isOutputEdge() ?
                                                      _imp->_arrowSelected->getSource() : _imp->_arrowSelected->getDest();
         assert(nodeHoldingEdge);
-
+        
         std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
         QPointF ep = mapToScene( e->pos() );
-
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-            boost::shared_ptr<NodeGui> & n = *it;
-
-            if ( n->isActive() && n->isVisible() && n->isNearby(ep) &&
-                 ( n->getNode()->getName() != nodeHoldingEdge->getNode()->getName() ) ) {
-                if ( !_imp->_arrowSelected->isOutputEdge() ) {
-                    if ( !n->getNode()->canOthersConnectToThisNode() ) {
-                        break;
-                    }
-
-                    _imp->_arrowSelected->stackBefore( n.get() );
-                    _imp->_undoStack->setActive();
-                    _imp->_undoStack->push( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
-                } else {
-                    ///Find the input edge of the node we just released the mouse over,
-                    ///and use that edge to connect to the source of the selected edge.
-                    int preferredInput = n->getNode()->getPreferredInputForConnection();
-                    if (preferredInput != -1) {
-                        const std::map<int,Edge*> & inputEdges = n->getInputsArrows();
-                        std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
-                        assert( foundInput != inputEdges.end() );
+        
+        if (!nodeHoldingEdge->areEdgesFrozen()) {
+            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+                boost::shared_ptr<NodeGui> & n = *it;
+                
+                if (n->isActive() && n->isVisible() && n->isNearby(ep) &&
+                    n->getNode()->getName() != nodeHoldingEdge->getNode()->getName() &&
+                    !n->areEdgesFrozen()) {
+                    
+                    if ( !_imp->_arrowSelected->isOutputEdge() ) {
+                        if ( !n->getNode()->canOthersConnectToThisNode() ) {
+                            break;
+                        }
+                        
+                        _imp->_arrowSelected->stackBefore( n.get() );
                         _imp->_undoStack->setActive();
-                        _imp->_undoStack->push( new ConnectCommand( this,foundInput->second,
-                                                                    foundInput->second->getSource(),_imp->_arrowSelected->getSource() ) );
+                        _imp->_undoStack->push( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
+                    } else {
+                        ///Find the input edge of the node we just released the mouse over,
+                        ///and use that edge to connect to the source of the selected edge.
+                        int preferredInput = n->getNode()->getPreferredInputForConnection();
+                        if (preferredInput != -1) {
+                            const std::map<int,Edge*> & inputEdges = n->getInputsArrows();
+                            std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
+                            assert( foundInput != inputEdges.end() );
+                            _imp->_undoStack->setActive();
+                            _imp->_undoStack->push( new ConnectCommand( this,foundInput->second,
+                                                                       foundInput->second->getSource(),_imp->_arrowSelected->getSource() ) );
+                        }
                     }
+                    foundSrc = true;
+                    
+                    break;
                 }
-                foundSrc = true;
-
-                break;
             }
-        }
+            ///if we disconnected the input edge, use the undo/redo stack.
+            ///Output edges can never be really connected, they're just there
+            ///So the user understands some nodes can have output
+            if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
+                _imp->_undoStack->setActive();
+                _imp->_undoStack->push( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
+                                                           boost::shared_ptr<NodeGui>() ) );
+            }
 
-        ///if we disconnected the input edge, use the undo/redo stack.
-        ///Output edges can never be really connected, they're just there
-        ///So the user understands some nodes can have output
-        if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
-            _imp->_undoStack->setActive();
-            _imp->_undoStack->push( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
-                                                        boost::shared_ptr<NodeGui>() ) );
-            scene()->update();
         }
+        
         nodeHoldingEdge->refreshEdges();
         scene()->update();
     } else if (state == NODE_DRAGGING) {

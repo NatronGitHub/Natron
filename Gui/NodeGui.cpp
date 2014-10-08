@@ -122,6 +122,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _magnecStartingPos()
       , _nodeLabel()
       , _parentMultiInstance()
+      , _edgesFrozen(false)
 {
 }
 
@@ -335,6 +336,12 @@ NodeGui::createGui()
     _disabledBtmLeftTopRight->hide();
     _disabledTopLeftBtmRight = new QGraphicsLineItem(this);
     _disabledTopLeftBtmRight->hide();
+}
+
+bool
+NodeGui::areEdgesFrozen() const
+{
+    return _edgesFrozen;
 }
 
 void
@@ -1490,7 +1497,7 @@ NodeGui::getUndoStack() const
 void
 NodeGui::onRenderingStarted()
 {
-    
+    _edgesFrozen = true;
     _stateIndicator->setBrush(Qt::yellow);
     _stateIndicator->show();
     
@@ -1499,6 +1506,7 @@ NodeGui::onRenderingStarted()
 void
 NodeGui::onRenderingFinished()
 {
+    _edgesFrozen = false;
     _stateIndicator->hide();
 }
 
