@@ -461,14 +461,18 @@ KnobHelper::evaluateValueChange(int dimension,
         return;
     }
     
-    bool guiFrozen = _imp->gui && _imp->gui->isGuiFrozenForPlayback();
+    AppInstance* app = 0;
+    if (_imp->holder) {
+        app = _imp->holder->getApp();
+    }
+
+    bool guiFrozen = app && _imp->gui && _imp->gui->isGuiFrozenForPlayback();
     
 
     /// For TIME_CHANGED we never call the instanceChangedAction and evaluate otherwise it would just throttle down
     /// the application responsiveness
-    if (reason != Natron::TIME_CHANGED && _imp->holder) {
+    if (reason != Natron::TIME_CHANGED && app) {
         int time;
-        AppInstance* app = _imp->holder->getApp();
         if (app) {
             time = app->getTimeLine()->currentFrame();
         } else {
@@ -491,7 +495,7 @@ KnobHelper::evaluateValueChange(int dimension,
         }
     }
 
-    if (!guiFrozen && _signalSlotHandler) {
+    if (!guiFrozen && app && _signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
         _signalSlotHandler->s_updateSlaves(dimension);
         checkAnimationLevel(dimension);
