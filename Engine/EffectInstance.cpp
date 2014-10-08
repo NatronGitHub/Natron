@@ -888,9 +888,13 @@ EffectInstance::getImage(int inputNb,
     RectD roi;
     if (!optionalBoundsParam) {
         RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
-        assert( found != inputsRoI.end() );
-        ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
-        roi = found->second;
+        if ( found != inputsRoI.end() ) {
+            ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
+            roi = found->second;
+        } else {
+            ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
+            roi = rod;
+        }
     } else {
         roi = optionalBounds;
     }
