@@ -973,15 +973,16 @@ void
 FileSystemModel::cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& item)
 {
     QModelIndex idx = index(item.get(),0);
-    assert(idx.isValid());
-	int count = item->childCount();
-	if (count > 0) {
-		beginRemoveRows(idx, 0, count - 1);
-		item->clearChildren();
-		endRemoveRows();
-	}
-    
-    _imp->populateItem(item);
+    if (idx.isValid()) {
+        int count = item->childCount();
+        if (count > 0) {
+            beginRemoveRows(idx, 0, count - 1);
+            item->clearChildren();
+            endRemoveRows();
+        }
+        
+        _imp->populateItem(item);
+    }
 }
 
 FileSystemItem *
