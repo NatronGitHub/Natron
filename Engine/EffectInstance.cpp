@@ -1262,9 +1262,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
              (lastRenderHash != nodeHash) ) {
             ///once we got it remove it from the cache
             appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
-            ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
-            ImageLocker imgLocker(this,lastRenderedImage);
-
             {
                 QMutexLocker l(&_imp->lastRenderArgsMutex);
                 _imp->lastImage.reset();
@@ -1275,14 +1272,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
 
-    ////Lock the output image so that multiple threads do not access for writing at the same time.
-    ////When it goes out of scope the lock will be released automatically
-    boost::shared_ptr<ImageLocker> imageLock;
 
     if (isCached) {
+        
+        //Take the lock after getting the image from the cache
+        ///to make sure a thread will not attempt to write to the image while its being allocated.
+        ///When calling allocateMemory() on the image, the cache already has the lock since it added it
+        ///so taking this lock now ensures the image will be allocated completetly
+        {
+            ImageLocker imageLock(this, image);
+        }
+        
         assert(cachedImgParams && image);
-
-        imageLock.reset( new ImageLocker(this,image) );
 
         if ( cachedImgParams->isRodProjectFormat() ) {
             ////If the image was cached with a RoD dependent on the project format, but the project format changed,
@@ -1293,7 +1294,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 isCached = false;
                 appPTR->removeFromNodeCache(image);
                 cachedImgParams.reset();
-                imageLock.reset(); //< release the lock after cleaning it from the cache
                 image.reset();
             }
         }
@@ -1327,7 +1327,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 isCached = false;
                 appPTR->removeFromNodeCache(image);
                 cachedImgParams.reset();
-                imageLock.reset(); //< release the lock after cleaning it from the cache
                 image.reset();
             }
 
@@ -1463,7 +1462,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                     inputTimeIdentity,
                                                     framesNeeded);
 
-        imageLock.reset( new ImageLocker(this) );
+        //Take the lock after getting the image from the cache or while allocating it
+        ///to make sure a thread will not attempt to write to the image while its being allocated.
+        ///When calling allocateMemory() on the image, the cache already has the lock since it added it
+        ///so taking this lock now ensures the image will be allocated completetly
+        
+        ImageLocker imageLock(this);
         
         ///even though we called getImage before and it returned false, it may now
         ///return true if another thread created the image in the cache, so we can't
@@ -1471,7 +1475,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ///
         ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
         boost::shared_ptr<Image> newImage;
-        bool cached = appPTR->getImageOrCreate(key, cachedImgParams, imageLock.get(), &newImage);
+        bool cached = appPTR->getImageOrCreate(key, cachedImgParams, &imageLock, &newImage);
         if (!newImage) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
@@ -1483,12 +1487,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         assert(newImage);
         assert(newImage->getRoD() == rod);
         
-        ///Take the lock for the output image flagging that we're accessing it.
         ///If !cached the lock has already been taken, we just have to allocate memory for the image
-        if (cached) {
-            imageLock->lock(newImage);
-        } else {
+        if (!cached) {
             newImage->allocateMemory();
+        } else {
+            imageLock.lock(newImage);
         }
 
         if (cached && byPassCache) {
@@ -1598,9 +1601,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
     }
 
-    ////The lock must be taken here otherwise this could lead to corruption if multiple threads
-    ////are accessing the output image.
-    assert(imageLock);
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.

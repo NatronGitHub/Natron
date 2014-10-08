@@ -61,9 +61,7 @@ public:
     
     ~ImageLockerHelper()
     {
-        if (_entry && _manager) {
-            _manager->unlock(_entry);
-        }
+        unlock();
     }
     
     void lock(const boost::shared_ptr<EntryType>& entry) {
@@ -71,6 +69,14 @@ public:
         _entry = entry;
         if (_manager) {
             _manager->lock(_entry);
+        }
+    }
+    
+    void unlock()
+    {
+        if (_entry && _manager) {
+            _manager->unlock(_entry);
+            _entry.reset();
         }
     }
 

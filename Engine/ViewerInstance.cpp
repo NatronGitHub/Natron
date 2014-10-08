@@ -406,13 +406,18 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     SequenceTime inputIdentityTime = time;
     bool isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
 
-    ////Lock the output image so that multiple threads do not access for writing at the same time.
-    ////When it goes out of scope the lock will be released automatically
-    boost::shared_ptr<ImageLocker> imageLock;
 
     if (isInputImgCached) {
         assert(inputImage);
-        imageLock.reset( new ImageLocker(activeInputToRender,inputImage) );
+        
+        {
+            ///Take the lock after getting the image from the cache 
+            ///to make sure a thread will not attempt to write to the image while its being allocated.
+            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
+            ///so taking this lock now ensures the image will be allocated completetly
+            
+            ImageLocker locker(activeInputToRender,inputImage);
+        }
 
         inputIdentityNumber = cachedImgParams->getInputNbIdentity();
         inputIdentityTime = cachedImgParams->getInputTimeIdentity();
@@ -451,7 +456,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 isInputImgCached = false;
                 appPTR->removeFromNodeCache(inputImage);
                 cachedImgParams.reset();
-                imageLock.reset();
                 inputImage.reset();
             }
 
@@ -693,6 +697,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             return StatOK;
         }
         
+        ///Don't different threads to write the texture entry
         FrameEntryLocker entryLocker(_imp.get());
         
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion

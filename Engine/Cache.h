@@ -1163,7 +1163,8 @@ private:
             return EntryTypePtr();
         }
 
-        
+        ///Take the lock before sealing the entry into the cache, making sure no-one will be able to get the image before it's allocated
+        assert(imageLocker);
         imageLocker->lock(entryptr);
         
         CachedValue cachedValue;

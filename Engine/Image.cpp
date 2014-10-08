@@ -1375,7 +1375,8 @@ Image::getLevelFromScale(double s)
 
 void
 Image::clearBitmap()
-{ 
+{
+    QWriteLocker locker(&_lock);
     _bitmap.clear();
 }
 
