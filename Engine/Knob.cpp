@@ -1333,22 +1333,24 @@ KnobHolder::slaveAllKnobs(KnobHolder* other)
     const std::vector<boost::shared_ptr<KnobI> > & otherKnobs = other->getKnobs();
     const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
     for (U32 i = 0; i < otherKnobs.size(); ++i) {
-        boost::shared_ptr<KnobI> foundKnob;
-        for (U32 j = 0; j < thisKnobs.size(); ++j) {
-            if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
-                foundKnob = thisKnobs[j];
-                break;
+        
+        if (otherKnobs[i]->isDeclaredByPlugin()) {
+            boost::shared_ptr<KnobI> foundKnob;
+            for (U32 j = 0; j < thisKnobs.size(); ++j) {
+                if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
+                    foundKnob = thisKnobs[j];
+                    break;
+                }
             }
-        }
-        assert(foundKnob);
-        int dims = foundKnob->getDimension();
-        for (int j = 0; j < dims; ++j) {
-            if ( (i == otherKnobs.size() - 1) && (j == dims - 1) ) {
-                unblockEvaluation();
+            assert(foundKnob);
+            int dims = foundKnob->getDimension();
+            for (int j = 0; j < dims; ++j) {
+                foundKnob->slaveTo(j, otherKnobs[i], j);
             }
-            foundKnob->slaveTo(j, otherKnobs[i], j);
         }
     }
+    unblockEvaluation();
+    evaluate_public(NULL, true, Natron::USER_EDITED);
     _imp->isSlave = true;
 }
 
