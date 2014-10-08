@@ -697,6 +697,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             return StatOK;
         }
         
+        ///Notify the gui we're rendering.
+        EffectInstance::NotifyRenderingStarted_RAII renderingNotifier(_node.get());
+        
         ///Don't different threads to write the texture entry
         FrameEntryLocker entryLocker(_imp.get());
         
@@ -713,8 +716,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             
         } else {
             
-            ///Notify the gui we're rendering.
-            EffectInstance::NotifyRenderingStarted_RAII renderingNotifier(_node.get());
+          
             
             boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
                 FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);
