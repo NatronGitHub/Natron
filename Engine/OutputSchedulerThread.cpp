@@ -527,16 +527,19 @@ OutputSchedulerThreadPrivate::getNearestInSequence(OutputSchedulerThread::Render
 void
 OutputSchedulerThread::pushFramesToRender(int startingFrame,int nThreads)
 {
-    {
-        QMutexLocker l(&_imp->framesToRenderMutex);
-        _imp->lastFramePushedIndex = startingFrame;
-    }
+
+    QMutexLocker l(&_imp->framesToRenderMutex);
+    _imp->lastFramePushedIndex = startingFrame;
+    
     pushFramesToRenderInternal(startingFrame, nThreads);
 }
 
 void
 OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads)
 {
+    
+    assert(!_imp->framesToRenderMutex.tryLock());
+    
     ///Make sure at least 1 frame is pushed
     if (nThreads <= 0) {
         nThreads = 1;
@@ -553,7 +556,6 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
     
     PlaybackMode pMode = _imp->engine->getPlaybackMode();
     
-    QMutexLocker l(&_imp->framesToRenderMutex);
 
     ///Push 2x the count of threads to be sure no one will be waiting
     while ((int)_imp->framesToRender.size() < nThreads * 2) {
@@ -601,7 +603,8 @@ OutputSchedulerThread::pushAllFrameRange()
 void
 OutputSchedulerThread::pushFramesToRender(int nThreads)
 {
-    
+    QMutexLocker l(&_imp->framesToRenderMutex);
+
     RenderDirection direction;
     int firstFrame,lastFrame;
     {
@@ -612,23 +615,15 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     }
     
     PlaybackMode pMode = _imp->engine->getPlaybackMode();
-    int frame;
-    {
-        QMutexLocker l(&_imp->framesToRenderMutex);
-        frame = _imp->lastFramePushedIndex;
+    int frame = _imp->lastFramePushedIndex;
 
-    }
-    bool canContinue = true;
-    
     ///If startingTime is already taken into account in the framesToRender, push new frames from the last one in the stack instead
-    canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, frame,
+    bool canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, frame,
                                                                         firstFrame, lastFrame, &frame, &direction);
     
     if (canContinue) {
         pushFramesToRenderInternal(frame, nThreads);
     }
-    ///Wake up render threads to notify them theres work to do
-    _imp->framesToRenderNotEmptyCond.wakeAll();
 }
 
 int
@@ -1007,6 +1002,7 @@ OutputSchedulerThread::run()
                         _imp->treatCondition.wait(&_imp->treatMutex);
                     }
                 }
+                
                 
                 ////////////
                 /////At this point the frame has been treated by the output device
