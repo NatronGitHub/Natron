@@ -1185,8 +1185,23 @@ boost::shared_ptr<Natron::Image>
 EffectInstance::renderRoI(const RenderRoIArgs & args)
 {
    
-    assert(_imp->frameRenderArgs.hasLocalData() && _imp->frameRenderArgs.localData().validArgs);
     ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
+    if (!frameRenderArgs.validArgs) {
+        qDebug() << "Thread-storage for the render of the frame was not set, this is a bug.";
+        frameRenderArgs.time = args.time;
+        frameRenderArgs.nodeHash = getHash();
+        frameRenderArgs.view = args.view;
+        frameRenderArgs.isSequentialRender = false;
+        frameRenderArgs.isRenderResponseToUserInteraction = true;
+        frameRenderArgs.byPassCache = false;
+        boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+        if (roto) {
+            frameRenderArgs.rotoAge = roto->getAge();
+        } else {
+            frameRenderArgs.rotoAge = 0;
+        }
+        frameRenderArgs.validArgs = true;
+    }
     
     ///The args must have been set calling setParallelRenderArgs
     assert(frameRenderArgs.validArgs);
