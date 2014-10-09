@@ -15,6 +15,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <QtCore/QObject>
+#include <QtCore/QMutex>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -121,6 +122,8 @@ public:
                Natron::StorageMode storage,
                const std::string & path)
         : CacheEntryHelper<U8,FrameKey>(key,params,cache,storage,path)
+        , _aborted(false)
+        , _abortedMutex()
     {
     }
 
@@ -151,6 +154,23 @@ public:
     {
         return _data.writable();
     }
+
+    void setAborted(bool aborted) {
+        QMutexLocker k(&_abortedMutex);
+        _aborted = aborted;
+    }
+
+    bool getAborted() const {
+        QMutexLocker k(&_abortedMutex);
+        return _aborted;
+    }
+private:
+
+    ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
+    ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
+    ///is invalid.
+    bool _aborted;
+    mutable QMutex _abortedMutex;
 };
 }
 

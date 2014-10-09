@@ -310,6 +310,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 //if render was aborted, remove the frame from the cache as it contains only garbage
 #define abortCheck(input) if ( (!isSequentialRender && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time) ) ||  \
                             (isSequentialRender && input->isAbortedFromPlayback()) )  {\
+                                params->cachedFrame->setAborted(true); \
                                 appPTR->removeFromViewerCache(params->cachedFrame); \
                                 return StatOK; \
                           }
@@ -665,7 +666,22 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     }
 
     unsigned char* ramBuffer = NULL;
-
+    
+    
+    if (isCached) {
+        
+        /// make sure we have the lock on the texture because it may be in the cache already
+        ///but not yet allocated.
+        FrameEntryLocker entryLocker(_imp.get(),params->cachedFrame);
+        
+        if (params->cachedFrame->getAborted()) {
+            ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
+            ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
+            ///is invalid.
+            isCached = false;
+        }
+    }
+    
     if (isCached) {
         /*Found in viewer cache, we execute the cached engine and leave*/
 
@@ -675,13 +691,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///The viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
         ///
-        ///Edit: Also make sure we have the lock on the texture because it may be in the cache already
-        ///but not yet allocated.
-        {
-            FrameEntryLocker entryLocker(_imp.get(),params->cachedFrame);
-
-            ramBuffer = params->cachedFrame->data();
-        }
+        
+        
+        ramBuffer = params->cachedFrame->data();
+        
         {
             QMutexLocker l(&_imp->lastRenderedHashMutex);
             _imp->lastRenderedHash = viewerHash;
@@ -838,8 +851,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 if (didEmitInputNRenderingSignal) {
                     _node->notifyInputNIsFinishedRendering(activeInputIndex);
                 }
-                appPTR->removeFromViewerCache(params->cachedFrame);
-
                 ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
                 ///Don't forward the exception in that case.
                 abortCheck(activeInputToRender);
@@ -854,8 +865,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
         if (!params->image) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
+            params->cachedFrame->setAborted(true);
             appPTR->removeFromViewerCache(params->cachedFrame);
-
+        
             return StatFailed;
         }
 
@@ -1628,40 +1640,39 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-   // QMutexLocker locker(&updateViewerMutex);
-   // if (updateViewerRunning) {
-        uiContext->makeOpenGLcontextCurrent();
-        if ( !instance->aborted() ) {
-            
-            // how do you make sure params->ramBuffer is not freed during this operation?
-            /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
-            /// i.e. until renderViewer exits.
-            /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
-            /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
-            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-            
-            assert(params->ramBuffer);
-            
-            uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
-                                                  params->image,
-                                                  params->rod,
-                                                  params->bytesCount,
-                                                  params->textureRect,
-                                                  params->gain,
-                                                  params->offset,
-                                                  params->lut,
-                                                  updateViewerPboIndex,
-                                                  params->mipMapLevel,
-                                                  params->srcPremult,
-                                                  params->textureIndex);
-            updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
-        }
-
-        uiContext->updateColorPicker(params->textureIndex);
-//
-//        updateViewerRunning = false;
-//    }
-//    updateViewerCond.wakeOne();
+    // QMutexLocker locker(&updateViewerMutex);
+    // if (updateViewerRunning) {
+    uiContext->makeOpenGLcontextCurrent();
+    
+    // how do you make sure params->ramBuffer is not freed during this operation?
+    /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
+    /// i.e. until renderViewer exits.
+    /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
+    /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
+    /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+    
+    assert(params->ramBuffer);
+    
+    uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
+                                          params->image,
+                                          params->rod,
+                                          params->bytesCount,
+                                          params->textureRect,
+                                          params->gain,
+                                          params->offset,
+                                          params->lut,
+                                          updateViewerPboIndex,
+                                          params->mipMapLevel,
+                                          params->srcPremult,
+                                          params->textureIndex);
+    updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
+    
+    
+    uiContext->updateColorPicker(params->textureIndex);
+    //
+    //        updateViewerRunning = false;
+    //    }
+    //    updateViewerCond.wakeOne();
 }
 
 bool
