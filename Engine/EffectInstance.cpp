@@ -581,9 +581,12 @@ EffectInstance::setParallelRenderArgs(int time,
 void
 EffectInstance::invalidateParallelRenderArgs()
 {
-    assert(_imp->frameRenderArgs.hasLocalData());
-    ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
-    --args.validArgs;
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        --args.validArgs;
+    } else {
+        qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+    }
 }
 
 U64
