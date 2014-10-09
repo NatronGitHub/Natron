@@ -143,8 +143,9 @@ cd ..
 
 #compile openfx-misc
 cd openfx-misc
-make BITS=$BITS CONFIG=$CONFIG $MAKEJFLAGS || exit
+make BITS=$BITS HAVE_CIMG=1 CONFIG=$CONFIG $MAKEJFLAGS || exit
 mv Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "../$PLUGINDIR" || exit
+mv CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "../$PLUGINDIR" || exit
 cd ..
 
 #make the dmg
