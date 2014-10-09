@@ -1143,7 +1143,7 @@ template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffs
 void
 scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                             ViewerInstance* viewer,
+                             ViewerInstance* /*viewer*/,
                              U32* output)
 {
     size_t pixelSize = sizeof(PIX);
@@ -1156,10 +1156,6 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
     ///iterating over the scan-lines of the input image
     int dstY = 0;
     for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
-        
-        if (viewer->aborted()) {
-            return;
-        }
         
         int start = (int)( rand() % std::max( ( (args.texRect.x2 - args.texRect.x1) / args.closestPowerOf2 ),1 ) );
         const PIX* src_pixels = (const PIX*)args.inputImage->pixelAt(args.texRect.x1, y);
