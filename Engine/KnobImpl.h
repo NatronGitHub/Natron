@@ -1018,25 +1018,25 @@ Knob<double>::cloneValues(KnobI* other)
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-        std::vector<int> defaultV = isInt->getDefaultValues_mt_safe();
-        assert(defaultV.size() == v.size());
+        //std::vector<int> defaultV = isInt->getDefaultValues_mt_safe();
+        //assert(defaultV.size() == v.size());
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
             _values[i] = v[i];
-            _defaultValues[i] = defaultV[i];
+            //_defaultValues[i] = defaultV[i];
         }
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        std::vector<bool> defaultV = isBool->getDefaultValues_mt_safe();
-        assert(defaultV.size() == v.size());
+        //std::vector<bool> defaultV = isBool->getDefaultValues_mt_safe();
+        //assert(defaultV.size() == v.size());
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
             _values[i] = v[i];
-            _defaultValues[i] = defaultV[i];
+            //_defaultValues[i] = defaultV[i];
         }
     } else {
         _values = isDouble->getValueForEachDimension_mt_safe_vector();
-        _defaultValues = isDouble->getDefaultValues_mt_safe();
+        //_defaultValues = isDouble->getDefaultValues_mt_safe();
     }
 }
 
@@ -1050,11 +1050,11 @@ Knob<std::string>::cloneValues(KnobI* other)
     assert(isString);
     QWriteLocker k(&_valueMutex);
     std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
-    std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
-    assert(defaultV.size() == v.size());
+    //std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
+    //assert(defaultV.size() == v.size());
     for (U32 i = 0; i < v.size(); ++i) {
         _values[i] = v[i];
-        _defaultValues[i] = defaultV[i];
+        //_defaultValues[i] = defaultV[i];
     }
 }
 

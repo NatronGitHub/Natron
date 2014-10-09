@@ -819,6 +819,9 @@ KnobGui::hide()
 void
 KnobGui::show(int index)
 {
+    if (!getGui()) {
+        return;
+    }
     if (!_imp->customInteract) {
         _show();
     } else {
