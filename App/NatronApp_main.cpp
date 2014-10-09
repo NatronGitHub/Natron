@@ -59,7 +59,7 @@ main(int argc,
         }
     } else {
         GuiApplicationManager manager;
-        bool loaded = manager.load(argc,argv,projectName);
+        bool loaded = manager.load(argc,argv,projectName, QStringList(), std::list<std::pair<int, int> >(), QString());
         if (!loaded) {
             return 1;
         }

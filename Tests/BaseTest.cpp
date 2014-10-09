@@ -75,7 +75,7 @@ BaseTest::SetUp()
     AppManager* manager = new AppManager;
     int argc = 0;
 
-    manager->load(argc,NULL);
+    manager->load(argc,NULL,QString(),QStringList(),std::list<std::pair<int,int> >(),QString());
     //////WARNING: This test disables multi-threading! if it fails it will never re-enable it
     ////// hence the next time you launch the application multi-threading will be DISABLED.
     manager->setNumberOfThreads(-1);

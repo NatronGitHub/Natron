@@ -2297,7 +2297,7 @@ GuiPrivate::setUndoRedoActions(QAction* undoAction,
 void
 Gui::newProject()
 {
-    appPTR->newAppInstance();
+    appPTR->newAppInstance(QString(),QStringList(),std::list<std::pair<int,int> >());
 }
 
 void
@@ -2331,7 +2331,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     } else {
         ///remove autosaves otherwise the new instance might try to load an autosave
         Project::removeAutoSaves();
-        AppInstance* newApp = appPTR->newAppInstance();
+        AppInstance* newApp = appPTR->newAppInstance(QString(),QStringList(),std::list<std::pair<int,int> >());
         newApp->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
     }
 
@@ -3093,7 +3093,7 @@ Gui::openRecentFile()
         } else {
             ///remove autosaves otherwise the new instance might try to load an autosave
             Project::removeAutoSaves();
-            AppInstance* newApp = appPTR->newAppInstance();
+            AppInstance* newApp = appPTR->newAppInstance(QString(),QStringList(),std::list<std::pair<int,int> >());
             newApp->getProject()->loadProject( path,f.fileName() );
         }
     }

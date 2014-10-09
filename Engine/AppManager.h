@@ -100,10 +100,10 @@ public:
      * @param mainProcessServerName The name of the main process named pipe so the background application can communicate with the
      * main process.
      **/
-    bool load( int &argc, char **argv, const QString & projectFilename = QString(),
-               const QStringList & writers = QStringList(),
-               const std::list<std::pair<int,int> >& frameRanges =  std::list<std::pair<int,int> >(),
-               const QString & mainProcessServerName = QString() );
+    bool load( int &argc, char **argv, const QString & projectFilename,
+               const QStringList & writers,
+               const std::list<std::pair<int,int> >& frameRanges,
+               const QString & mainProcessServerName  );
 
     virtual ~AppManager();
 
@@ -123,9 +123,9 @@ public:
 
     bool isLoaded() const;
 
-    AppInstance* newAppInstance( const QString & projectName = QString(),
-                                const QStringList & writers = QStringList(),
-                                const std::list<std::pair<int,int> >& frameRanges = std::list<std::pair<int,int> >());
+    AppInstance* newAppInstance( const QString & projectName,
+                                const QStringList & writers,
+                                const std::list<std::pair<int,int> >& frameRanges);
     virtual void hideSplashScreen()
     {
     }
