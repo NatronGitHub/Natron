@@ -2893,7 +2893,14 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         return;
     }
 
-    _imp->viewerTab->getGui()->selectNode( _imp->viewerTab->getGui()->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
+    if (!_imp->viewerTab) {
+        return;
+    }
+    Gui* gui = _imp->viewerTab->getGui();
+    if (!gui) {
+        return;
+    }
+    gui->selectNode(gui->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
 
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
