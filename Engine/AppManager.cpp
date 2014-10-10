@@ -400,6 +400,10 @@ AppManager::~AppManager()
     _instance = 0;
 
 
+    ///Kill caches now because decreaseNCacheFilesOpened can be called 
+    _imp->_nodeCache.reset();
+    _imp->_viewerCache.reset();
+    
     if (qApp) {
         delete qApp;
     }
