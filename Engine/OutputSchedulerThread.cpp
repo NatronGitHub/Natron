@@ -1695,7 +1695,6 @@ private:
                                                              i,
                                                              false,  // is this render due to user interaction ?
                                                              canOnlyHandleOneView, // is this sequential ?
-                                                             false, //< bypass cache ?
                                                              activeInputToRenderHash);
                     
                     boost::shared_ptr<Natron::Image> img =
@@ -1703,6 +1702,7 @@ private:
                                                                                   scale, //< the scale at which to render
                                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                   i, //< the view to render
+                                                                                  false,
                                                                                   renderWindow, //< the region of interest (in pixel coordinates)
                                                                                   rod, // < any precomputed rod ? in canonical coordinates
                                                                                   components,
@@ -1772,13 +1772,13 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
                                                              view,
                                                              false,  // is this render due to user interaction ?
                                                              canOnlyHandleOneView, // is this sequential ?
-                                                             false, //< bypass cache ?
                                                              hash);
 
     
     Natron::EffectInstance::RenderRoIArgs args(time,
                                                scale,0,
                                                view,
+                                               true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
                                                roi,
                                                rod,
                                                components,

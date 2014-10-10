@@ -398,6 +398,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     
     emit imageFormatChanged(textureIndex,components, imageDepth);
+    
     U64 inputNodeHash = activeInputToRender->getHash();
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
     RectD rod;
@@ -405,7 +406,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
     SequenceTime inputIdentityTime = time;
-    bool isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
+    
+    bool isInputImgCached = false;
+    
+    if (!forceRender) {
+        isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
+    }
 
 
     if (isInputImgCached) {
@@ -809,7 +815,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                                  view,
                                                                  !isSequentialRender,  // is this render due to user interaction ?
                                                                  isSequentialRender, // is this sequential ?
-                                                                 byPassCache, //< bypass cache ?
                                                                  inputNodeHash);
         
 
@@ -831,6 +836,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                       scale,
                                                       mipMapLevel,
                                                       view,
+                                                      byPassCache,
                                                       texRectClipped,
                                                       rod,
                                                       components,

@@ -65,9 +65,6 @@ struct ParallelRenderArgs
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
     bool isSequentialRender;
     
-    /// Should we skip cache look-ups ? True for writers always or when the user pressed Refresh on the viewer
-    bool byPassCache;
-    
     ParallelRenderArgs()
     : validArgs(false)
     {
@@ -100,6 +97,7 @@ public:
         RenderScale scale; //< the scale at which to render
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         int view; //< the view to render
+        bool byPassCache;
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
         Natron::ImageComponents components; //< the requested image components
@@ -114,6 +112,7 @@ public:
                       const RenderScale & scale_,
                       unsigned int mipMapLevel_,
                       int view_,
+                      bool byPassCache_,
                       const RectI & roi_,
                       const RectD & preComputedRoD_,
                       Natron::ImageComponents components_,
@@ -123,6 +122,7 @@ public:
               , scale(scale_)
               , mipMapLevel(mipMapLevel_)
               , view(view_)
+              , byPassCache(byPassCache_)
               , roi(roi_)
               , preComputedRoD(preComputedRoD_)
               , components(components_)
@@ -453,7 +453,6 @@ public:
                                int view,
                                bool isRenderUserInteraction,
                                bool isSequential,
-                               bool byPassCache,
                                U64 nodeHash,
                                U64 rotoAge);
 

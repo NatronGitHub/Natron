@@ -554,7 +554,6 @@ EffectInstance::setParallelRenderArgs(int time,
                            int view,
                            bool isRenderUserInteraction,
                            bool isSequential,
-                           bool byPassCache,
                            U64 nodeHash,
                            U64 rotoAge)
 {
@@ -564,12 +563,6 @@ EffectInstance::setParallelRenderArgs(int time,
     args.view = view;
     args.isRenderResponseToUserInteraction = isRenderUserInteraction;
     args.isSequentialRender = isSequential;
-    
-    if ( !byPassCache && isWriter() ) {
-        args.byPassCache = true;
-    } else {
-        args.byPassCache = byPassCache;
-    }
     
     args.nodeHash = nodeHash;
     args.rotoAge = rotoAge;
@@ -849,6 +842,9 @@ EffectInstance::getImage(int inputNb,
     int inputNbIdentity;
     U64 nodeHash;
     U64 rotoAge;
+    
+    /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
+    /// re-computing of the same image many many times
     bool byPassCache = false;
     
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
@@ -882,7 +878,6 @@ EffectInstance::getImage(int inputNb,
             inputNbIdentity = renderArgs._identityInputNb;
             nodeHash = frameRenderArgs.nodeHash;
             rotoAge = frameRenderArgs.rotoAge;
-            byPassCache = frameRenderArgs.byPassCache;
         }
         
         
@@ -946,6 +941,7 @@ EffectInstance::getImage(int inputNb,
                                                                     scale,
                                                                     mipMapLevel,
                                                                     view,
+                                                                    byPassCache,
                                                                     pixelRoI,
                                                                     RectD(),
                                                                     comp,
@@ -1213,7 +1209,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         frameRenderArgs.view = args.view;
         frameRenderArgs.isSequentialRender = false;
         frameRenderArgs.isRenderResponseToUserInteraction = true;
-        frameRenderArgs.byPassCache = false;
         boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
         if (roto) {
             frameRenderArgs.rotoAge = roto->getAge();
@@ -1227,7 +1222,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     assert(frameRenderArgs.validArgs);
     
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
-    bool byPassCache = frameRenderArgs.byPassCache;
+    bool byPassCache = args.byPassCache;
 
     ///Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
     ///through all the rendering of this frame.
@@ -1707,7 +1702,7 @@ EffectInstance::renderRoI(SequenceTime time,
                                                                       downscaledImage,
                                                                       frameRenderArgs.isSequentialRender,
                                                                       frameRenderArgs.isRenderResponseToUserInteraction,
-                                                                      frameRenderArgs.byPassCache,
+                                                                      false,
                                                                       frameRenderArgs.nodeHash,
                                                                       3,
                                                                       renderFullScaleThenDownscale);
@@ -1737,6 +1732,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   bool renderFullScaleThenDownscale)
 {
     EffectInstance::RenderRoIStatus retCode;
+    
+    //For writers, we always want to call the render action, but we still want to use the cache for nodes upstream
+    if (byPassCache && isWriter()) {
+        byPassCache = false;
+    }
 
     ///First off check if the requested components and bitdepth are supported by the output clip
     Natron::ImageBitDepth outputDepth;
@@ -1992,6 +1992,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                   scale, //< scale
                                                                   mipMapLevel, //< mipmapLevel (redundant with the scale)
                                                                   view, //< view
+                                                                  byPassCache,
                                                                   inputRoIPixelCoords, //< roi in pixel coordinates
                                                                   RectD(), // < did we precompute any RoD to speed-up the call ?
                                                                   inputPrefComps, //< requested comps
@@ -2372,8 +2373,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                            frameArgs.view,
                                                            frameArgs.isRenderResponseToUserInteraction,
                                                            frameArgs.isSequentialRender,
-                                                           frameArgs.byPassCache,
-                                                           frameArgs.nodeHash) );
+                                                                frameArgs.nodeHash) );
         
     } else {
         renderRectToRender = args._renderWindowPixel;
@@ -3251,7 +3251,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                        time,
                                                        0, /*view*/
                                                        true,
-                                                       false,
                                                        false,
                                                        getHash());
 

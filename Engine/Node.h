@@ -658,7 +658,6 @@ public:
                                int view,
                                bool isRenderUserInteraction,
                                bool isSequential,
-                               bool byPassCache,
                                U64 nodeHash);
     
     void invalidateParallelRenderArgs();
@@ -673,11 +672,10 @@ public:
                                  int view,
                                  bool isRenderUserInteraction,
                                  bool isSequential,
-                                 bool byPassCache,
                                  U64 nodeHash)
         : node(node)
         {
-            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,byPassCache,nodeHash);
+            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,nodeHash);
         }
         
         ~ParallelRenderArgsSetter()
@@ -810,7 +808,6 @@ private:
                                        int view,
                                        bool isRenderUserInteraction,
                                        bool isSequential,
-                                       bool byPassCache,
                                        U64 nodeHash,
                                        std::list<Natron::Node*>& markedNodes);
     

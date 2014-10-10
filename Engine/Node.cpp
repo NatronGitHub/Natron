@@ -1755,7 +1755,6 @@ Node::makePreviewImage(SequenceTime time,
                                              0, //< preview only renders view 0 (left)
                                              true,
                                              false,
-                                             false,
                                              getHashValue());
     
     // Exceptions are caught because the program can run without a preview,
@@ -1765,6 +1764,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                             scale,
                                                                             mipMapLevel,
                                                                             0, //< preview only renders view 0 (left)
+                                                                            false,
                                                                             renderWindow,
                                                                             rod,
                                                                             Natron::ImageComponentRGB, //< preview is always rgb...
@@ -2729,11 +2729,10 @@ Node::setParallelRenderArgs(int time,
                            int view,
                            bool isRenderUserInteraction,
                            bool isSequential,
-                           bool byPassCache,
                         U64 nodeHash)
 {
     std::list<Natron::Node*> marked;
-    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, byPassCache,nodeHash,marked);
+    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential,nodeHash,marked);
 }
 
 void
@@ -2773,7 +2772,6 @@ Node::setParallelRenderArgsInternal(int time,
                                     int view,
                                     bool isRenderUserInteraction,
                                     bool isSequential,
-                                    bool byPassCache,
                                     U64 nodeHash,
                                     std::list<Natron::Node*>& markedNodes)
 {
@@ -2790,7 +2788,7 @@ Node::setParallelRenderArgsInternal(int time,
         rotoAge = 0;
     }
     
-    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, byPassCache, nodeHash, rotoAge);
+    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, nodeHash, rotoAge);
     
     ///mark this
     markedNodes.push_back(this);
@@ -2802,7 +2800,7 @@ Node::setParallelRenderArgsInternal(int time,
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
-            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, byPassCache, input->getHashValue(),
+            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),
                                                  markedNodes);
             
         }
