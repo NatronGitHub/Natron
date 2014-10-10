@@ -531,7 +531,6 @@ Gui::closeInstance()
             return false;
         }
     }
-    removeEventFilter(this);
     _imp->saveGuiGeometry();
     abortProject(true);
 
@@ -676,6 +675,9 @@ bool
 Gui::eventFilter(QObject *target,
                  QEvent* e)
 {
+    if (_imp->_aboutToClose) {
+        return true;
+    }
     assert(_imp->_appInstance);
     if ( dynamic_cast<QInputEvent*>(e) ) {
         /*Make top level instance this instance since it receives all
