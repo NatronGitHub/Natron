@@ -4810,7 +4810,7 @@ RotoContext::renderMask(const RectI & roi,
     hash.append(ageToRender);
     hash.computeHash();
 
-    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel, view);
+    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, view);
 
     ///If the last rendered image  was with a different hash key (i.e a parameter changed or an input changed)
     ///just remove the old image from the cache to recycle memory.
@@ -4835,69 +4835,44 @@ RotoContext::renderMask(const RectI & roi,
 
 
     boost::shared_ptr<Natron::ImageParams> params;
-    boost::shared_ptr<Natron::Image> image;
-    bool cached = Natron::getImageFromCache(key, &params, &image);
-
-    if ( cached && ( (image->getBitDepth() != depth) || (image->getComponents() != components) ) ) {
-        cached = false;
-        image.reset();
-        params.reset();
+    ImagePtr image;
+    
+    if (!byPassCache) {
+        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(key, mipmapLevel, depth, components, 3, &image);
+        if (image) {
+            params = image->getParams();
+        }
     }
     
-    {
-        ///Take the lock after getting the image from the cache or while allocating it
-        ///to make sure a thread will not attempt to write to the image while its being allocated.
-        ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-        ///so taking this lock now ensures the image will be allocated completetly
-        
+    ///If there's only 1 shape to render and this shape is inverted, initialize the image
+    ///with the invert instead of the default fill value to speed up rendering
+    if (!image) {
         ImageLocker imgLocker(_imp->node->getLiveInstance());
-        ///If there's only 1 shape to render and this shape is inverted, initialize the image
-        ///with the invert instead of the default fill value to speed up rendering
-        if (cached) {
+        
+        params = Natron::Image::makeParams( 0,
+                                           nodeRoD,
+                                           1., // par
+                                           mipmapLevel,
+                                           false,
+                                           components,
+                                           depth,
+                                           -1, time,
+                                           std::map<int, std::vector<RangeD> >() );
+        
+        appPTR->createImageInCache(key, params, &imgLocker, &image);
+        if (!image) {
+            std::stringstream ss;
+            ss << "Failed to allocate an image of ";
+            ss << printAsRAM( params->getElementsCount() * sizeof(Natron::Image::data_t) ).toStdString();
+            Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
             
-            imgLocker.lock(image);
-            
-            if (byPassCache) {
-                ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
-                ///we're sure renderRoIInternal will compute the whole image again.
-                ///We must use the cache facility anyway because we rely on it for caching the results
-                ///of actions which is necessary to avoid recursive actions.
-                image->clearBitmap();
-            }
-        } else {
-            
-            params = Natron::Image::makeParams( 0,
-                                               nodeRoD,
-                                               1., // par
-                                               mipmapLevel,
-                                               false,
-                                               components,
-                                               depth,
-                                               -1, time,
-                                               std::map<int, std::vector<RangeD> >() );
-            
-            cached = appPTR->getImageOrCreate(key, params, &imgLocker, &image);
-            if (!image) {
-                std::stringstream ss;
-                ss << "Failed to allocate an image of ";
-                ss << printAsRAM( params->getElementsCount() * sizeof(Natron::Image::data_t) ).toStdString();
-                Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-                
-                return image;
-            }
-            if (cached) {
-                
-                imgLocker.lock(image);
-                
-                if (byPassCache) {
-                    image->clearBitmap();
-                }
-            } else {
-                image->allocateMemory();
-            }
-            
+            return image;
         }
-    } // imgLocker
+    
+        image->allocateMemory();
+        
+    }
+
     
     ///////////////////////////////////Render internal
     RectI pixelRod = params->getBounds();

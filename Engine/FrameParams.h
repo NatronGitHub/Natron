@@ -1,24 +1,25 @@
 #ifndef FRAMEPARAMS_H
 #define FRAMEPARAMS_H
 
-#include "Engine/NonKeyParams.h"
 #include "Engine/Rect.h"
+#include "Engine/NonKeyParams.h"
 
 namespace Natron {
+
 class FrameParams
-    : public NonKeyParams
+        : public NonKeyParams
 {
 public:
 
     FrameParams()
         : NonKeyParams()
-          , _rod()
+        , _rod()
     {
     }
 
     FrameParams(const FrameParams & other)
         : NonKeyParams(other)
-          , _rod(other._rod)
+        , _rod(other._rod)
     {
     }
 
@@ -27,7 +28,7 @@ public:
                 int texW,
                 int texH)
         : NonKeyParams(1,bitDepth != 0 ? texW * texH * 16 : texW * texH * 4)
-          , _rod(rod)
+        , _rod(rod)
     {
     }
 
@@ -49,6 +50,7 @@ private:
 
     RectI _rod;
 };
+
 }
 
 #endif // FRAMEPARAMS_H

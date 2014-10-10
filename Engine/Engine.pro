@@ -55,10 +55,12 @@ SOURCES += \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FrameEntry.cpp \
+    FrameKey.cpp \
     FrameParamsSerialization.cpp \
     Hash64.cpp \
     HistogramCPU.cpp \
     Image.cpp \
+    ImageKey.cpp \
     ImageParamsSerialization.cpp \
     Interpolation.cpp \
     Knob.cpp \
@@ -115,6 +117,7 @@ HEADERS += \
     FileSystemModel.h \
     Format.h \
     FrameEntry.h \
+    FrameKey.h \
     FrameEntrySerialization.h \
     FrameParams.h \
     FrameParamsSerialization.h \
@@ -122,11 +125,13 @@ HEADERS += \
     HistogramCPU.h \
     ImageInfo.h \
     Image.h \
+    ImageKey.h \
     ImageLocker.h \
     ImageSerialization.h \
     ImageParams.h \
     ImageParamsSerialization.h \
     Interpolation.h \
+    KeyHelper.h \
     Knob.h \
     KnobGuiI.h \
     KnobImpl.h \

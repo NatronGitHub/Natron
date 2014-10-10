@@ -18,92 +18,6 @@
 #include "Engine/NonKeyParams.h"
 
 namespace Natron {
-/** @brief Helper class that represents a Key in the cache. A key is a set
- * of 1 or more parameters that represent a "unique" element in the cache.
- * To create your own key you must derive this class and provide a HashType.
- * The HashType is a value that will serve as a hash key and it will be computed
- * the first time the getHash() function is called.
- * If you need to notify the cache that the key have changed, call resetHash()
- * and the next call to the getHash() function will compute the hash for you.
- *
- * Thread safety: This function is not thread-safe itself but it is used only
- * by the CacheEntryHelper class which itself is used only by the cache which
- * is thread-safe.
- *
- * Important: In order to compile this class must be boost::serializable, see
- * FrameEntry.h or Image.h for an example on how to serialize a KeyHelper instance.
- *
- * Maybe should we move this class as an internal class of CacheEntryHelper to prevent elsewhere
- * usages.
- **/
-template<typename HashType>
-class KeyHelper
-{
-public:
-    typedef HashType hash_type;
-
-    /**
-     * @brief Constructs an empty key. This constructor is used by boost::serialization.
-     **/
-    KeyHelper()
-        : _hashComputed(false), _hash()
-    {
-    }
-
-    /**
-     * @brief Constructs a key from an already existing hash key.
-     **/
-    // KeyHelper(hash_type hashValue):  _hashComputed(true), _hash(hashValue){}
-
-    /**
-     * @brief Constructs a key from an already existing hash key. This is similar than the
-     * constructor above but takes in parameter another key.
-     **/
-    KeyHelper(const KeyHelper & other)
-        : _hashComputed(true), _hash( other.getHash() )
-    {
-    }
-
-    virtual ~KeyHelper()
-    {
-    }
-
-    hash_type getHash() const
-    {
-        if (!_hashComputed) {
-            computeHashKey();
-            _hashComputed = true;
-        }
-
-        return _hash;
-    }
-
-    void resetHash() const
-    {
-        _hashComputed = false;
-    }
-
-protected:
-
-    /*for now HashType can only be 64 bits...the implementation should
-       fill the Hash64 using the append function with the values contained in the
-       derived class.*/
-    virtual void fillHash(Hash64* hash) const = 0;
-
-private:
-    void computeHashKey() const
-    {
-        Hash64 hash;
-
-        fillHash(&hash);
-        hash.computeHash();
-        _hash = hash.value();
-    }
-
-    mutable bool _hashComputed;
-    mutable hash_type _hash;
-};
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////BUFFER////////////////////////////////////////////////////
 
@@ -376,24 +290,26 @@ public:
  *
  **/
 
-template <typename DataType, typename KeyType>
+template <typename DataType, typename KeyType, typename ParamsType>
 class CacheEntryHelper
     : public AbstractCacheEntry<KeyType>
 {
 public:
+    
     typedef DataType data_t;
     typedef KeyType key_t;
-
+    typedef ParamsType param_t;
+    
     /**
      * @brief Ctor
      * the cache entry needs to be set afterwards using setCacheEntry()
      **/
     CacheEntryHelper()
-        : _key()
-          , _params()
-          , _data()
-          , _cache()
-          , _removeBackingFileBeforeDestruction(false)
+    : _key()
+    , _params()
+    , _data()
+    , _cache()
+    , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -404,7 +320,7 @@ public:
      * @param cache The cache managing this entry. Can be NULL when the entry has been allocated outside the cache
      **/
     CacheEntryHelper(const KeyType & key,
-                     const boost::shared_ptr<NonKeyParams> & params,
+                     const boost::shared_ptr<ParamsType> & params,
                      const CacheAPI* cache,
                      Natron::StorageMode storage,
                      const std::string & path)
@@ -427,7 +343,7 @@ public:
     }
 
     void setCacheEntry(const KeyType & key,
-                       const boost::shared_ptr<NonKeyParams> & params,
+                       const boost::shared_ptr<ParamsType> & params,
                        const CacheAPI* cache,
                        Natron::StorageMode storage,
                        const std::string & path)
@@ -614,6 +530,11 @@ public:
         return _key.getTime();
     }
 
+    boost::shared_ptr<ParamsType> getParams() const WARN_UNUSED_RETURN
+    {
+        return _params;
+    }
+
 protected:
 
 
@@ -673,7 +594,7 @@ private:
 protected:
 
     KeyType _key;
-    boost::shared_ptr<NonKeyParams> _params;
+    boost::shared_ptr<ParamsType> _params;
     Buffer<DataType> _data;
     const CacheAPI* _cache;
     bool _removeBackingFileBeforeDestruction;

@@ -14,55 +14,11 @@
 #include <QDebug>
 
 #include "Engine/AppManager.h"
-#include "Engine/ImageParams.h"
 #include "Engine/Lut.h"
 
 using namespace Natron;
 
 
-ImageKey::ImageKey()
-    : KeyHelper<U64>()
-      , _nodeHashKey(0)
-      , _time(0)
-      , _mipMapLevel(0)
-      , _view(0)
-      , _pixelAspect(1)
-{
-}
-
-ImageKey::ImageKey(U64 nodeHashKey,
-                   SequenceTime time,
-                   unsigned int mipMapLevel,
-                   int view,
-                   double pixelAspect)
-    : KeyHelper<U64>()
-      , _nodeHashKey(nodeHashKey)
-      , _time(time)
-      , _mipMapLevel(mipMapLevel)
-      , _view(view)
-      , _pixelAspect(pixelAspect)
-{
-}
-
-void
-ImageKey::fillHash(Hash64* hash) const
-{
-    hash->append(_nodeHashKey);
-    hash->append(_mipMapLevel);
-    hash->append(_time);
-    hash->append(_view);
-    hash->append(_pixelAspect);
-}
-
-bool
-ImageKey::operator==(const ImageKey & other) const
-{
-    return _nodeHashKey == other._nodeHashKey &&
-           _mipMapLevel == other._mipMapLevel &&
-           _time == other._time &&
-           _view == other._view &&
-           _pixelAspect == other._pixelAspect;
-}
 
 RectI
 Bitmap::minimalNonMarkedBbox(const RectI & roi) const
@@ -321,19 +277,17 @@ Natron::Bitmap::getBitmapAt(int x,
 }
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<NonKeyParams> & params,
+             const boost::shared_ptr<Natron::ImageParams>& params,
              const Natron::CacheAPI* cache,
              Natron::StorageMode storage,
              const std::string & path)
-    : CacheEntryHelper<unsigned char, ImageKey>(key, params, cache,storage,path)
+    : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)
 {
-     ImageParams* p = dynamic_cast<ImageParams*>( params.get() );
-
-    _components = p->getComponents();
-    _bitDepth = p->getBitDepth();
-    _rod = p->getRoD();
-    _bounds = p->getBounds();
-    _par = p->getPixelAspectRatio();
+    _components = params->getComponents();
+    _bitDepth = params->getBitDepth();
+    _rod = params->getRoD();
+    _bounds = params->getBounds();
+    _par = params->getPixelAspectRatio();
 }
 
 
@@ -345,12 +299,13 @@ Image::Image(ImageComponents components,
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
              Natron::ImageBitDepth bitdepth)
-    : CacheEntryHelper<unsigned char,ImageKey>()
+    : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
 {
-    setCacheEntry(makeKey(0,0,mipMapLevel,0),
-                  boost::shared_ptr<NonKeyParams>( new ImageParams( 0,
+    setCacheEntry(makeKey(0,0,0),
+                  boost::shared_ptr<ImageParams>( new ImageParams( 0,
                                                                    regionOfDefinition,
                                                                    1.,
+                                                                   mipMapLevel,
                                                                    bounds,
                                                                    bitdepth,
                                                                    false,
@@ -363,11 +318,10 @@ Image::Image(ImageComponents components,
                   std::string()
                   );
 
-    ImageParams* p = dynamic_cast<ImageParams*>( _params.get() );
     _components = components;
     _bitDepth = bitdepth;
     _rod = regionOfDefinition;
-    _bounds = p->getBounds();
+    _bounds = _params->getBounds();
     _par = 1.;
     allocateMemory();
 }
@@ -386,19 +340,13 @@ Image::onMemoryAllocated()
     
 }
 
-boost::shared_ptr<ImageParams>
-Image::getParams() const
-{
-    return boost::dynamic_pointer_cast<ImageParams>(_params);
-}
 
 ImageKey  
 Image::makeKey(U64 nodeHashKey,
                SequenceTime time,
-               unsigned int mipMapLevel,
                int view)
 {
-    return ImageKey(nodeHashKey,time,mipMapLevel,view);
+    return ImageKey(nodeHashKey,time,view);
 }
 
 boost::shared_ptr<ImageParams>
@@ -420,6 +368,7 @@ Image::makeParams(int cost,
     return boost::shared_ptr<ImageParams>( new ImageParams(cost,
                                                            rod,
                                                            par,
+                                                           mipMapLevel,
                                                            bounds,
                                                            bitdepth,
                                                            isRoDProjectFormat,
@@ -428,6 +377,12 @@ Image::makeParams(int cost,
                                                            inputTimeIdentity,
                                                            framesNeeded) );
 }
+
+//boost::shared_ptr<ImageParams>
+//Image::getParams() const WARN_UNUSED_RETURN
+//{
+//    return boost::dynamic_pointer_cast<ImageParams>(_params);
+//}
 
 // code proofread and fixed by @devernay on 8/8/2014
 template<typename PIX>
@@ -719,9 +674,12 @@ Image::getRowElements() const
 template <typename PIX, int maxValue>
 void
 Image::halveRoIForDepth(const RectI & roi,
+                        bool copyBitMap,
                         Natron::Image* output) const
 {
-    assert( (getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4) );
+    assert( (getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) ||
+           (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) ||
+           (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4) );
 
     ///handle case where there is only 1 column/row
     if ( (roi.width() == 1) || (roi.height() == 1) ) {
@@ -789,6 +747,13 @@ Image::halveRoIForDepth(const RectI & roi,
     int srcRowSize = srcBounds.width() * components;
     int dstRowSize = dstBounds.width() * components;
 
+    
+    const char* srcBm;
+    char* dstBm;
+    
+    srcBm = _bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1);
+    dstBm = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
+    
     // Loop with sliding pointers:
     // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
     // This is the *good* way to code it, let the optimizer do the rest!
@@ -796,11 +761,16 @@ Image::halveRoIForDepth(const RectI & roi,
     for (int y = 0; y < dstRoIHeight;
          ++y,
          src += (srcRowSize + srcRowSize) - dstRoIWidth * 2 * components, // two rows minus what was done on previous iteration
-         dst += (dstRowSize) - dstRoIWidth * components) { // one row minus what was done on previous iteration
+         dst += (dstRowSize) - dstRoIWidth * components, // one row minus what was done on previous iteration
+         srcBm += (srcBounds.width() + srcBounds.width()) - dstRoIWidth * 2,
+         dstBm += (dstBounds.width()) - dstRoIWidth) {
+        
         for (int x = 0; x < dstRoIWidth;
              ++x,
              src += (components + components) - components, // two pixels minus what was done on previous iteration
-             dst += (components) - components) { // one pixel minus what was done on previous iteration
+             dst += (components) - components, // one pixel minus what was done on previous iteration
+             srcBm += (1 + 1) - 1,
+             dstBm += (1) - 1) {
 #if 0
             assert(dstBounds.x1 <= dstRoI.x1 + x && dstRoI.x1 + x < dstBounds.x2);
             assert(dstBounds.y1 <= dstRoI.y1 + y && dstRoI.y1 + y < dstBounds.y2);
@@ -820,10 +790,29 @@ Image::halveRoIForDepth(const RectI & roi,
                                         *(src + srcRowSize) +
                                         *(src + srcRowSize  + components) ) / 4. );
                 }
-            } else {
+                if (copyBitMap) {
+                    if (*srcBm != 0 && *(srcBm + 1) != 0 && *(srcBm + srcBounds.width()) != 0 && *(srcBm + srcBounds.width() + 1) != 0) {
+                        *dstBm = 1;
+                    } else {
+                        *dstBm = 0;
+                    }
+                    ++srcBm;
+                    ++dstBm;
+                }
+            } else if (y == srcRoI.height() - 1) {
                 for (int k = 0; k < components; ++k, ++dst, ++src) {
                     *dst = PIX( (float)( *src +
                                         *(src + components) ) / 2. );
+                    
+                }
+                if (copyBitMap) {
+                    if (*srcBm != 0 && *(srcBm + 1) != 0) {
+                        *dstBm = 1;
+                    } else {
+                        *dstBm = 0;
+                    }
+                    ++srcBm;
+                    ++dstBm;
                 }
             }
         }
@@ -833,17 +822,18 @@ Image::halveRoIForDepth(const RectI & roi,
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::halveRoI(const RectI & roi,
+                bool copyBitMap,
                 Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
     case IMAGE_BYTE:
-        halveRoIForDepth<unsigned char,255>(roi, output);
+        halveRoIForDepth<unsigned char,255>(roi, copyBitMap, output);
         break;
     case IMAGE_SHORT:
-        halveRoIForDepth<unsigned short,65535>(roi, output);
+        halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, output);
         break;
     case IMAGE_FLOAT:
-        halveRoIForDepth<float,1>(roi, output);
+        halveRoIForDepth<float,1>(roi,copyBitMap, output);
         break;
     case IMAGE_NONE:
         break;
@@ -926,6 +916,7 @@ void
 Image::downscaleMipMap(const RectI & roi,
                        unsigned int fromLevel,
                        unsigned int toLevel,
+                       bool copyBitMap,
                        Natron::Image* output) const
 {
     ///You should not call this function with a level equal to 0.
@@ -937,11 +928,13 @@ Image::downscaleMipMap(const RectI & roi,
 //    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
 //    RectI dstRoI;
 //    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
-    RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(toLevel);
+    unsigned int downscaleLvls = toLevel - fromLevel;
     
-    std::auto_ptr<Natron::Image> tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getBitDepth() ) );
+    RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
+    
+    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getBitDepth() ) );
 
-    buildMipMapLevel( roi, toLevel - fromLevel, tmpImg.get() );
+    buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
     // check that the downscaled mipmap is inside the output image (it may not be equal to it)
     assert(dstRoI.x1 >= output->getBounds().x1);
@@ -950,7 +943,7 @@ Image::downscaleMipMap(const RectI & roi,
     assert(dstRoI.y2 <= output->getBounds().y2);
 
     ///Now copy the result of tmpImg into the output image
-    output->pasteFrom(*tmpImg, dstRoI, false);
+    output->pasteFrom(*tmpImg, dstRoI, copyBitMap);
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -1071,7 +1064,7 @@ Image::scaleBoxForDepth(const RectI & roi,
          ( srcRoi.x2 == 2 * dstBounds.x2) &&
          ( srcRoi.y1 == 2 * dstBounds.y1) &&
          ( srcRoi.y2 == 2 * dstBounds.y2) ) {
-        halveRoI(srcRoi, output);
+        halveRoI(srcRoi, false, output);
 
         return;
     }
@@ -1298,6 +1291,7 @@ Image::scaleBox(const RectI & roi,
 void
 Image::buildMipMapLevel(const RectI & roi,
                         unsigned int level,
+                        bool copyBitMap,
                         Natron::Image* output) const
 {
     ///The last mip map level we will make with closestPo2
@@ -1310,7 +1304,7 @@ Image::buildMipMapLevel(const RectI & roi,
 
     if (level == 0) {
         ///Just copy the roi and return
-        output->pasteFrom(*this, roi);
+        output->pasteFrom(*this, roi, copyBitMap);
 
         return;
     }
@@ -1330,7 +1324,7 @@ Image::buildMipMapLevel(const RectI & roi,
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
         ///If the source image'sroi was originally a po2.
-        srcImg->halveRoI(previousRoI, dstImg);
+        srcImg->halveRoI(previousRoI, copyBitMap, dstImg);
 
         ///Clean-up, we should use shared_ptrs for safety
         if (mustFreeSrc) {
@@ -1341,12 +1335,13 @@ Image::buildMipMapLevel(const RectI & roi,
         previousRoI = halvedRoI;
         srcImg = dstImg;
         mustFreeSrc = true;
+
     }
 
     assert(srcImg->getBounds() == lastLevelRoI);
 
     ///Finally copy the last mipmap level into output.
-    output->pasteFrom( *srcImg, srcImg->getBounds() );
+    output->pasteFrom( *srcImg, srcImg->getBounds() , copyBitMap);
 
     ///Clean-up, we should use shared_ptrs for safety
     if (mustFreeSrc) {

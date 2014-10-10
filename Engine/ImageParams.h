@@ -8,8 +8,9 @@
 
 
 namespace Natron {
+    
 inline int
-getElementsCountForComponents(ImageComponents comp)
+        getElementsCountForComponents(ImageComponents comp)
 {
     switch (comp) {
     case ImageComponentNone:
@@ -31,7 +32,7 @@ getElementsCountForComponents(ImageComponents comp)
 }
 
 inline int
-getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
+        getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
 {
     switch (bitdepth) {
     case Natron::IMAGE_BYTE:
@@ -50,39 +51,44 @@ getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
 }
 
 class ImageParams
-    : public NonKeyParams
+        : public NonKeyParams
 {
 public:
 
     ImageParams()
         : NonKeyParams()
-          , _rod()
-          , _bounds()
-          , _isRoDProjectFormat(false)
-          , _inputNbIdentity(-1)
-          , _inputTimeIdentity(0)
-          , _framesNeeded()
-          , _components(Natron::ImageComponentRGBA)
-          , _par(1.)
+        , _rod()
+        , _bounds()
+        , _isRoDProjectFormat(false)
+        , _inputNbIdentity(-1)
+        , _inputTimeIdentity(0)
+        , _framesNeeded()
+        , _components(Natron::ImageComponentRGBA)
+        , _bitdepth(Natron::IMAGE_FLOAT)
+        , _mipMapLevel(0)
+        , _par(1.)
     {
     }
 
     ImageParams(const ImageParams & other)
         : NonKeyParams(other)
-          , _rod(other._rod)
-          , _bounds(other._bounds)
-          , _isRoDProjectFormat(other._isRoDProjectFormat)
-          , _inputNbIdentity(other._inputNbIdentity)
-          , _inputTimeIdentity(other._inputTimeIdentity)
-          , _framesNeeded(other._framesNeeded)
-          , _components(other._components)
-          , _par(other._par)
+        , _rod(other._rod)
+        , _bounds(other._bounds)
+        , _isRoDProjectFormat(other._isRoDProjectFormat)
+        , _inputNbIdentity(other._inputNbIdentity)
+        , _inputTimeIdentity(other._inputTimeIdentity)
+        , _framesNeeded(other._framesNeeded)
+        , _components(other._components)
+        , _bitdepth(other._bitdepth)
+        , _mipMapLevel(other._mipMapLevel)
+        , _par(other._par)
     {
     }
 
     ImageParams(int cost,
                 const RectD & rod,
                 const double par,
+                const unsigned int mipMapLevel,
                 const RectI & bounds,
                 Natron::ImageBitDepth bitdepth,
                 bool isRoDProjectFormat,
@@ -91,15 +97,16 @@ public:
                 int inputTimeIdentity,
                 const std::map<int, std::vector<RangeD> > & framesNeeded)
         : NonKeyParams( cost,bounds.area() * getElementsCountForComponents(components) * getSizeOfForBitDepth(bitdepth) )
-          , _rod(rod)
-          , _bounds(bounds)
-          , _isRoDProjectFormat(isRoDProjectFormat)
-          , _inputNbIdentity(inputNbIdentity)
-          , _inputTimeIdentity(inputTimeIdentity)
-          , _framesNeeded(framesNeeded)
-          , _components(components)
-          , _bitdepth(bitdepth)
-          , _par(par)
+        , _rod(rod)
+        , _bounds(bounds)
+        , _isRoDProjectFormat(isRoDProjectFormat)
+        , _inputNbIdentity(inputNbIdentity)
+        , _inputTimeIdentity(inputTimeIdentity)
+        , _framesNeeded(framesNeeded)
+        , _components(components)
+        , _bitdepth(bitdepth)
+        , _mipMapLevel(mipMapLevel)
+        , _par(par)
     {
     }
 
@@ -137,7 +144,12 @@ public:
     {
         return _bitdepth;
     }
-
+    
+    void setBitDepth(ImageBitDepth bitdepth)
+    {
+        _bitdepth = bitdepth;
+    }
+    
     const std::map<int, std::vector<RangeD> > & getFramesNeeded() const
     {
         return _framesNeeded;
@@ -147,11 +159,25 @@ public:
     {
         return _components;
     }
+
+    void setComponents(ImageComponents comps)
+    {
+        _components = comps;
+    }
     
     double getPixelAspectRatio() const  {
         return _par;
     }
 
+    unsigned int getMipMapLevel() const {
+        return _mipMapLevel;
+    }
+
+    void setMipMapLevel(unsigned int mmlvl)
+    {
+        _mipMapLevel = mmlvl;
+    }
+    
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
@@ -179,10 +205,11 @@ private:
         }
 
         return _rod == imgParams._rod
-               && _inputNbIdentity == imgParams._inputNbIdentity
-               && _inputTimeIdentity == imgParams._inputTimeIdentity
-               && _components == imgParams._components
-               && _bitdepth == imgParams._bitdepth;
+                && _inputNbIdentity == imgParams._inputNbIdentity
+                && _inputTimeIdentity == imgParams._inputTimeIdentity
+                && _components == imgParams._components
+                && _bitdepth == imgParams._bitdepth
+                && _mipMapLevel == imgParams._mipMapLevel;
     }
 
     RectD _rod;
@@ -198,7 +225,7 @@ private:
     std::map<int, std::vector<RangeD> > _framesNeeded;
     Natron::ImageComponents _components;
     Natron::ImageBitDepth _bitdepth;
-    
+    unsigned int _mipMapLevel;
     double _par;
 };
 }

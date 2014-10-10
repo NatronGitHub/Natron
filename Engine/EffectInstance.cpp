@@ -1197,6 +1197,167 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
     }
 }
 
+void
+EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
+                                                    unsigned int mipMapLevel,
+                                                    Natron::ImageBitDepth bitdepth,
+                                                    Natron::ImageComponents components,
+                                                    int channelForAlpha,
+                                                    boost::shared_ptr<Natron::Image>* image)
+{
+    ImageList cachedImages;
+    bool isCached = Natron::getImageFromCache(key,&cachedImages);
+    
+    if (isCached) {
+        
+        ///A ptr to a higher resolution of the image
+        ImagePtr imageWithInferiorMMLevelFound;
+        
+        bool imageConversionNeeded = false;
+        
+        for (ImageList::iterator it = cachedImages.begin(); it!=cachedImages.end(); ++it) {
+            unsigned int imgMMlevel = (*it)->getMipMapLevel();
+            ImageComponents imgComps = (*it)->getComponents();
+            ImageBitDepth imgDepth = (*it)->getBitDepth();
+            
+            if ( (*it)->getParams()->isRodProjectFormat() ) {
+                ////If the image was cached with a RoD dependent on the project format, but the project format changed,
+                ////just discard this entry
+                Format projectFormat;
+                getRenderFormat(&projectFormat);
+                if ( static_cast<RectD &>(projectFormat) != (*it)->getRoD() ) {
+                    appPTR->removeFromNodeCache(*it);
+                    continue;
+                }
+            } else if ((*it)->getParams()->getInputNbIdentity() != -1) {
+                ///Image is identity, nothing to do
+                continue;
+            }
+
+            
+            if (imgMMlevel == mipMapLevel && imgComps == components && imgDepth == bitdepth) {
+                
+                ///We found exactly a matching image
+                
+                *image = *it;
+                break;
+            } else {
+                
+                
+                if (imgMMlevel > mipMapLevel || !Image::hasEnoughDataToConvert(imgComps,components) ||
+                    getSizeOfForBitDepth(imgDepth) < getSizeOfForBitDepth(bitdepth)) {
+                    ///Either smaller resolution or not enough components or bit-depth is not as deep, don't use the image
+                    continue;
+                }
+                
+                
+                ///Same resolution but different comps/bitdepth
+                if (imgMMlevel == mipMapLevel) {
+                    imageConversionNeeded = true;
+                    *image = *it;
+                    break;
+                }
+                
+                assert(imgMMlevel < mipMapLevel);
+                
+                if (!imageWithInferiorMMLevelFound) {
+                    imageWithInferiorMMLevelFound = *it;
+                    imageConversionNeeded = imgComps != components || imgDepth != bitdepth;
+
+                } else {
+                    if (imgMMlevel < imageWithInferiorMMLevelFound->getMipMapLevel()) {
+                        imageWithInferiorMMLevelFound = *it;
+                        imageConversionNeeded = imgComps != components || imgDepth != bitdepth;
+
+                    }
+                }
+                
+                
+            }
+        }
+        
+        if (!imageWithInferiorMMLevelFound && !*image) {
+            ///We only found an image with a mipmap level > to the one requested or unconvertable comps/bitdepth
+            isCached = false;
+            
+        } else if (imageWithInferiorMMLevelFound && !*image) {
+            
+            if (imageConversionNeeded) {
+                
+                boost::shared_ptr<ImageParams> imageParams(new ImageParams(*imageWithInferiorMMLevelFound->getParams()));
+                imageParams->setComponents(components);
+                imageParams->setBitDepth(bitdepth);
+                
+                
+                ///Allocate the image in the cache, it may be useful later
+                ImageLocker imageLock(this);
+                
+                boost::shared_ptr<Image> img;
+                Natron::createImageInCache(key, imageParams, &imageLock, &img);
+                assert(img);
+                
+                img->allocateMemory();
+                
+                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+                
+                imageWithInferiorMMLevelFound->convertToFormat(imageWithInferiorMMLevelFound->getBounds(),
+                                                               getApp()->getDefaultColorSpaceForBitDepth( imageWithInferiorMMLevelFound->getBitDepth() ),
+                                                               getApp()->getDefaultColorSpaceForBitDepth(bitdepth), channelForAlpha, false, true, unPremultIfNeeded, img.get());
+                
+                imageWithInferiorMMLevelFound = img;
+                
+            }
+            
+            if (imageWithInferiorMMLevelFound->getMipMapLevel() != mipMapLevel) {
+                boost::shared_ptr<ImageParams> oldParams = imageWithInferiorMMLevelFound->getParams();
+                
+                boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
+                                                                               oldParams->getRoD(),
+                                                                               oldParams->getPixelAspectRatio(),
+                                                                               mipMapLevel,
+                                                                               oldParams->isRodProjectFormat(),
+                                                                               oldParams->getComponents(),
+                                                                               oldParams->getBitDepth(),
+                                                                               oldParams->getInputNbIdentity(),
+                                                                               oldParams->getInputTimeIdentity(),
+                                                                               oldParams->getFramesNeeded());
+                
+                imageParams->setMipMapLevel(mipMapLevel);
+                
+                
+                ///Allocate the image in the cache, it may be useful later
+                ImageLocker imageLock(this);
+                
+                boost::shared_ptr<Image> img;
+                Natron::createImageInCache(key, imageParams, &imageLock, &img);
+                assert(img);
+                
+                img->allocateMemory();
+                
+                imageWithInferiorMMLevelFound->downscaleMipMap(imageWithInferiorMMLevelFound->getBounds(),
+                                                               imageWithInferiorMMLevelFound->getMipMapLevel(), img->getMipMapLevel() , true, img.get());
+                
+                imageWithInferiorMMLevelFound = img;
+                
+            }
+            
+            *image = imageWithInferiorMMLevelFound;
+            
+        } else if (*image) {
+            
+            //Take the lock after getting the image from the cache
+            ///to make sure a thread will not attempt to write to the image while its being allocated.
+            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
+            ///so taking this lock now ensures the image will be allocated completetly
+
+            ImageLocker locker(this,*image);
+            assert(*image);
+        }
+        
+    }
+
+}
+
 boost::shared_ptr<Natron::Image>
 EffectInstance::renderRoI(const RenderRoIArgs & args)
 {
@@ -1230,7 +1391,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
  
     const double par = getPreferredAspectRatio();
 
-    boost::shared_ptr<ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
     RectD rod; //!< rod is in canonical coordinates
     bool isProjectFormat = false;
@@ -1274,7 +1434,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
     }
 
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time, args.mipMapLevel, args.view);
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time, args.view);
     {
         ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
@@ -1288,8 +1448,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             lastRenderedImage = _imp->lastImage;
             lastRenderHash = _imp->lastRenderHash;
         }
-        if ( lastRenderedImage &&
-             (lastRenderHash != nodeHash) ) {
+        if ( lastRenderedImage && lastRenderHash != nodeHash ) {
             ///once we got it remove it from the cache
             appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
             {
@@ -1299,80 +1458,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
     }
 
-    /// First-off look-up the cache and see if we can find the cached actions results and cached image.
-    bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
-
-
-    if (isCached) {
-        
-        //Take the lock after getting the image from the cache
-        ///to make sure a thread will not attempt to write to the image while its being allocated.
-        ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-        ///so taking this lock now ensures the image will be allocated completetly
-        {
-            ImageLocker imageLock(this, image);
-        }
-        
-        assert(cachedImgParams && image);
-
-        if ( cachedImgParams->isRodProjectFormat() ) {
-            ////If the image was cached with a RoD dependent on the project format, but the project format changed,
-            ////just discard this entry
-            Format projectFormat;
-            getRenderFormat(&projectFormat);
-            if ( static_cast<RectD &>(projectFormat) != cachedImgParams->getRoD() ) {
-                isCached = false;
-                appPTR->removeFromNodeCache(image);
-                cachedImgParams.reset();
-                image.reset();
-            }
-        }
-
-        //Do the following only if we're not an identity
-        if ( image && (cachedImgParams->getInputNbIdentity() == -1) ) {
-            ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
-            ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
-            if ( ( (image->getComponents() != args.components) && Image::hasEnoughDataToConvert(image->getComponents(),args.components) ) ||
-                 ( image->getBitDepth() != args.bitdepth) ) {
-                ///Convert the image to the requested components
-                assert( !rod.isNull() );
-                RectI bounds;
-                rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                boost::shared_ptr<Image> remappedImage( new Image(args.components, rod, bounds, args.mipMapLevel, args.bitdepth) );
-                if (!byPassCache) {
-                    
-                    bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
-                    
-                    image->convertToFormat( args.roi,
-                                            getApp()->getDefaultColorSpaceForBitDepth( image->getBitDepth() ),
-                                            getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                            args.channelForAlpha, false, true,unPremultIfNeeded,
-                                            remappedImage.get() );
-                }
-                ///switch the pointer
-                image = remappedImage;
-            } else if (image->getComponents() != args.components) {
-                assert( !Image::hasEnoughDataToConvert(image->getComponents(),args.components) );
-                ///we cannot convert without loosing data of some channels, we better off render everything again
-                isCached = false;
-                appPTR->removeFromNodeCache(image);
-                cachedImgParams.reset();
-                image.reset();
-            }
-
-            if (isCached && byPassCache) {
-                ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
-                ///we're sure renderRoIInternal will compute the whole image again.
-                ///We must use the cache facility anyway because we rely on it for caching the results
-                ///of actions which is necessary to avoid recursive actions.
-                image->clearBitmap();
-            }
+    boost::shared_ptr<ImageParams> cachedImgParams;
+    if (!args.byPassCache) {
+        getImageFromCacheAndConvertIfNeeded(key, args.mipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
+        if (image) {
+            cachedImgParams = image->getParams();
         }
     }
 
     boost::shared_ptr<Natron::Image> downscaledImage = image;
 
-    if (!isCached) {
+    if (!image) {
+        ///The image is not cached
+        
         ///first-off check whether the effect is identity, in which case we don't want
         /// to cache anything or render anything for this effect.
         SequenceTime inputTimeIdentity = 0.;
@@ -1504,8 +1602,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ///make any assumption on the return value of this function call.
         ///
         ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
-        boost::shared_ptr<Image> newImage;
-        bool cached = appPTR->getImageOrCreate(key, cachedImgParams, &imageLock, &newImage);
+        
+        ImagePtr newImage;
+    
+        appPTR->createImageInCache(key, cachedImgParams, &imageLock, &newImage);
+        
         if (!newImage) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
@@ -1514,23 +1615,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
             return newImage;
         }
+        
         assert(newImage);
         assert(newImage->getRoD() == rod);
         
-        ///If !cached the lock has already been taken, we just have to allocate memory for the image
-        if (!cached) {
-            newImage->allocateMemory();
-        } else {
-            imageLock.lock(newImage);
-        }
-
-        if (cached && byPassCache) {
-            ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
-            ///we're sure renderRoIInternal will compute the whole image again.
-            ///We must use the cache facility anyway because we rely on it for caching the results
-            ///of actions which is necessary to avoid recursive actions.
-            newImage->clearBitmap();
-        }
+        newImage->allocateMemory();
 
         ///if the plugin is an identity we just inserted in the cache the identity params, we can now return.
         if (identity) {
@@ -1550,85 +1639,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
 
         assert(cachedImgParams);
-    } else {
-
-        assert(cachedImgParams);
-        assert(image);
-
-
-        ///if it was cached, first thing to check is to see if it is an identity
-        int inputNbIdentity = cachedImgParams->getInputNbIdentity();
-        if (inputNbIdentity != -1) {
-            SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
-            RectD canonicalRoI;
-            
-            
-            int firstFrame,lastFrame;
-            getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
-            
-            assert( !rod.isNull() );
-            ///WRONG! We can't clip against the RoD of *this* effect. We should clip against the RoD of the input effect, but this is done
-            ///later on for us already.
-            //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
-            args.roi.toCanonical_noClipping(args.mipMapLevel, par, &canonicalRoI);
-            RoIMap inputsRoI;
-            inputsRoI.insert( std::make_pair(getInput(inputNbIdentity), canonicalRoI) );
-            Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
-                                                        inputsRoI,
-                                                        rod,
-                                                        args.roi,
-                                                        args.time,
-                                                        args.view,
-                                                        args.channelForAlpha,
-                                                        true,
-                                                        inputTimeIdentity,
-                                                        inputNbIdentity,
-                                                        boost::shared_ptr<Image>(),
-                                                        firstFrame,
-                                                        lastFrame);
-            Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
-            if (inputEffectIdentity) {
-                boost::shared_ptr<Image> ret =  getImage(inputNbIdentity, inputTimeIdentity,
-                                                         args.scale, args.view, NULL, args.components, args.bitdepth, true,NULL);
-                ///Clear input images pointer because getImage has stored ret .
-                _imp->clearInputImagePointers();
-
-                return ret;
-            } else {
-                return boost::shared_ptr<Image>();
-            }
-        }
-
-#     ifdef DEBUG
-        ///If the precomputed rod parameter was set, assert that it is the same than the image in cache.
-        if ( (inputNbIdentity != -1) && !args.preComputedRoD.isNull() ) {
-            assert( args.preComputedRoD == cachedImgParams->getRoD() );
-        }
-#     endif // DEBUG
-
-        ///For effects that don't support the render scale we have to upscale this cached image,
-        ///render the parts we are interested in and then downscale again
-        ///Before doing that we verify if everything we want is already rendered in which case we
-        ///dont degrade the image
-        if (renderFullScaleThenDownscale) {
-            RectI intersection;
-            args.roi.intersect(image->getBounds(), &intersection);
-            std::list<RectI> rectsRendered = image->getRestToRender(intersection);
-            if ( rectsRendered.empty() ) {
-                return image;
-            }
-
-            downscaledImage = image;
-
-            assert(renderMappedMipMapLevel == 0);
-            RectD rod = cachedImgParams->getRoD();
-            RectI bounds;
-            rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
-            ///Allocate the upscaled image
-            boost::shared_ptr<Natron::Image> upscaledImage( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, args.bitdepth) );
-            downscaledImage->scaleBox( downscaledImage->getBounds(),upscaledImage.get() );
-            image = upscaledImage;
-        }
     }
 
 
@@ -1855,7 +1865,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 RectD rod = downscaledImage->getRoD();
                 RectI bounds;
                 rod.toPixelEnclosing(mipMapLevel, par, &bounds);
-                downscaledMappedImage.reset( new Image(outputComponents, rod, bounds, mipMapLevel, outputDepth) );
+                downscaledMappedImage.reset( new Image(outputComponents, rod, image->getBounds(), mipMapLevel, outputDepth) );
                 fullScaleMappedImage = image;
                 assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
                 assert( fullScaleMappedImage->getBounds() == image->getBounds() );
@@ -2411,7 +2421,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         }
         if (mipMapLevel != 0) {
             assert(fullScaleImage != downscaledImage);
-            fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, downscaledImage.get() );
+            fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false, downscaledImage.get() );
         }
     } else {
         assert(renderMappedImage == downscaledMappedImage);

@@ -19,7 +19,6 @@ serialize(Archive & ar,
           const unsigned int /*version*/ )
 {
     ar & boost::serialization::make_nvp("NodeHashKey",k._nodeHashKey);
-    ar & boost::serialization::make_nvp("MipMapLevel",k._mipMapLevel);
     ar & boost::serialization::make_nvp("Time",k._time);
     ar & boost::serialization::make_nvp("View",k._view);
     ar & boost::serialization::make_nvp("PixelAspect",k._pixelAspect);

@@ -145,18 +145,18 @@ class Cache
 {
 public:
 
-
-    typedef boost::shared_ptr<NonKeyParams> NonKeyParamsPtr;
-    typedef boost::shared_ptr<EntryType> EntryTypePtr;
     typedef typename EntryType::hash_type hash_type;
     typedef typename EntryType::data_t data_t;
     typedef typename EntryType::key_t key_t;
-
+    typedef typename EntryType::param_t param_t;
+    typedef boost::shared_ptr<param_t> ParamsTypePtr;
+    typedef boost::shared_ptr<EntryType> EntryTypePtr;
+ 
     struct SerializedEntry
     {
         hash_type hash;
         typename EntryType::key_type key;
-        NonKeyParamsPtr params;
+        ParamsTypePtr params;
 
 
         template<class Archive>
@@ -171,15 +171,6 @@ public:
 
     typedef std::list< SerializedEntry > CacheTOC;
 
-private:
-
-
-    struct CachedValue
-    {
-        EntryTypePtr entry;
-        NonKeyParamsPtr params;
-    };
-
 public:
 
 
@@ -187,9 +178,9 @@ public:
 
 #ifdef NATRON_CACHE_USE_BOOST
 #ifdef NATRON_CACHE_USE_HASH
-    typedef BoostLRUHashTable<hash_type, CachedValue>, boost::bimaps::unordered_set_of > CacheContainer;
+    typedef BoostLRUHashTable<hash_type, EntryTypePtr>, boost::bimaps::unordered_set_of > CacheContainer;
 #else
-    typedef BoostLRUHashTable<hash_type, CachedValue >, boost::bimaps::set_of > CacheContainer;
+    typedef BoostLRUHashTable<hash_type, EntryTypePtr >, boost::bimaps::set_of > CacheContainer;
 #endif
     typedef typename CacheContainer::container_type::left_iterator CacheIterator;
     typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
@@ -201,13 +192,13 @@ public:
 #else // cache use STL
 
 #ifdef NATRON_CACHE_USE_HASH
-    typedef StlLRUHashTable<hash_type,CachedValue >, std::unordered_map > CacheContainer;
+    typedef StlLRUHashTable<hash_type,EntryTypePtr >, std::unordered_map > CacheContainer;
 #else
-    typedef StlLRUHashTable<hash_type,CachedValue >, std::map > CacheContainer;
+    typedef StlLRUHashTable<hash_type,EntryTypePtr >, std::map > CacheContainer;
 #endif
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-    static std::list<CachedValue> &  getValueFromIterator(CacheIterator it)
+    static std::list<EntryTypePtr> &  getValueFromIterator(CacheIterator it)
     {
         return it->second;
     }
@@ -218,23 +209,23 @@ public:
 
 #ifdef NATRON_CACHE_USE_BOOST
 #ifdef NATRON_CACHE_USE_HASH
-    typedef BoostLRUHashTable<hash_type,CachedValue> CacheContainer;
+    typedef BoostLRUHashTable<hash_type,EntryTypePtr> CacheContainer;
 #else
-    typedef BoostLRUHashTable<hash_type, CachedValue > CacheContainer;
+    typedef BoostLRUHashTable<hash_type, EntryTypePtr > CacheContainer;
 #endif
     typedef typename CacheContainer::container_type::left_iterator CacheIterator;
     typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-    static std::list<CachedValue> &  getValueFromIterator(CacheIterator it)
+    static std::list<EntryTypePtr> &  getValueFromIterator(CacheIterator it)
     {
         return it->second;
     }
 
 #else // cache use STL and tree (std map)
 
-    typedef StlLRUHashTable<hash_type, CachedValue > CacheContainer;
+    typedef StlLRUHashTable<hash_type, EntryTypePtr > CacheContainer;
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-    static std::list<CachedValue> &   getValueFromIterator(CacheIterator it)
+    static std::list<EntryTypePtr> &   getValueFromIterator(CacheIterator it)
     {
         return it->second.first;
     }
@@ -322,8 +313,7 @@ public:
      * False otherwise.
      **/
     bool get(const typename EntryType::key_type & key,
-             NonKeyParamsPtr* params,
-             EntryTypePtr* returnValue) const
+             std::list<EntryTypePtr>* returnValue) const
     {
 
         ///Be atomic, so it cannot be created by another thread in the meantime
@@ -331,11 +321,63 @@ public:
 
         ///lock the cache before reading it.
         QMutexLocker locker(&_lock);
-        return getInternal(key,params,returnValue);
+        return getInternal(key,returnValue);
         
     } // get
 
+private:
     
+    void createInternal(const typename EntryType::key_type & key,
+                const ParamsTypePtr& params,
+                ImageLockerHelper<EntryType>* imageLocker,
+                std::list<EntryTypePtr>& entriesToBeDeleted,
+                EntryTypePtr* returnValue) const
+    {
+        ///Before allocating the memory check that there's enough space to fit in memory
+        appPTR->checkCacheFreeMemoryIsGoodEnough();
+        
+        
+        ///Just in case, we don't allow more than X files to be removed at once.
+        int safeCounter = 0;
+        ///If too many files are opened, fall-back on RAM storage.
+        while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
+#ifdef NATRON_DEBUG_CACHE
+            qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
+#endif
+            if ( !evictLRUDiskEntry() ) {
+                break;
+            }
+            ++safeCounter;
+        }
+        
+        QMutexLocker locker(&_lock);
+        *returnValue =  newEntry(key,params,entriesToBeDeleted,imageLocker);
+    }
+    
+public:
+    
+    /**
+     * @brief Creates an entry in the cache regardless whether an entry with the same key already exists.
+     **/
+    void create(const typename EntryType::key_type & key,
+                const ParamsTypePtr& params,
+                ImageLockerHelper<EntryType>* imageLocker,
+                EntryTypePtr* returnValue) const
+    {
+        std::list<EntryTypePtr> entriesToBeDeleted;
+        
+        createInternal(key, params, imageLocker, entriesToBeDeleted, returnValue);
+        
+        if (!entriesToBeDeleted.empty()) {
+            ///Launch a separate thread whose function will be to delete all the entries to be deleted
+            DeleterThread<EntryType>* dThread = new DeleterThread<EntryType>(entriesToBeDeleted);
+            QThreadPool::globalInstance()->start(dThread);
+            
+            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+            ///that the separate thread will delete
+            entriesToBeDeleted.clear();
+        }
+    }
     
     /**
      * @brief Look-up the cache for an entry whose key matches the params.
@@ -365,9 +407,9 @@ public:
      * False otherwise.
      **/
     bool getOrCreate(const typename EntryType::key_type & key,
-                     NonKeyParamsPtr params,
+                     const ParamsTypePtr& params,
                      ImageLockerHelper<EntryType>* imageLocker,
-                     EntryTypePtr* returnValue) const
+                     std::list<EntryTypePtr>* returnValue) const
     {
         
         ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
@@ -375,8 +417,7 @@ public:
         std::list<EntryTypePtr> entriesToBeDeleted;
 
         
-        NonKeyParamsPtr cachedParams;
-        bool ret = true;
+        bool ret;
         {
             ///Be atomic, so it cannot be created by another thread in the meantime
             QMutexLocker getlocker(&_getLock);
@@ -384,38 +425,19 @@ public:
             bool didGetSucceed;
             {
                 QMutexLocker locker(&_lock);
-                didGetSucceed = getInternal(key,&cachedParams,returnValue);
+                didGetSucceed = getInternal(key,returnValue);
             }
+            
+            ret = didGetSucceed;
+            
             if (!didGetSucceed) {
                 
-                ///Before allocating the memory check that there's enough space to fit in memory
-                appPTR->checkCacheFreeMemoryIsGoodEnough();
-                
-                
-                ///Just in case, we don't allow more than X files to be removed at once.
-                int safeCounter = 0;
-                ///If too many files are opened, fall-back on RAM storage.
-                while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
-#ifdef NATRON_DEBUG_CACHE
-                    qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
-#endif
-                    if ( !evictLRUDiskEntry() ) {
-                        break;
-                    }
-                    ++safeCounter;
+                EntryTypePtr entry;
+                createInternal(key,params,imageLocker,entriesToBeDeleted,&entry);
+                if (entry) {
+                    returnValue->push_back(entry);
                 }
-                
-                QMutexLocker locker(&_lock);
-                *returnValue = newEntry(key,params,entriesToBeDeleted,imageLocker);
-                
                 ret =  false;
-            } else {
-#ifdef DEBUG
-                if (*cachedParams != *params) {
-                    qDebug() << "WARNING: A cache entry was found in the cache for the given key, but the cached parameters that "
-                    " go along the entry do not match what's expected. This is a bug.";
-                }
-#endif
             }
         } // getlocker
         
@@ -444,10 +466,10 @@ public:
             _signalEmitter->blockSignals(true);
         }
         QMutexLocker locker(&_lock);
-        std::pair<hash_type,CachedValue> evictedFromMemory = _memoryCache.evict();
-        while (evictedFromMemory.second.entry) {
-            if ( evictedFromMemory.second.entry->isStoredOnDisk() ) {
-                evictedFromMemory.second.entry->removeAnyBackingFile();
+        std::pair<hash_type,EntryTypePtr> evictedFromMemory = _memoryCache.evict();
+        while (evictedFromMemory.second) {
+            if ( evictedFromMemory.second->isStoredOnDisk() ) {
+                evictedFromMemory.second->removeAnyBackingFile();
             }
             evictedFromMemory = _memoryCache.evict();
         }
@@ -473,11 +495,11 @@ public:
         /// An entry which has a use_count greater than 1 is not removable:
         /// The backing file must not be removed because it might be read/written to
         /// at the same time. The best we can do is just let it here in the cache.
-        std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
+        std::pair<hash_type,EntryTypePtr> evictedFromDisk = _diskCache.evict();
         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
         //we'll let the user of these entries purge the extra entries left in the cache later on
-        while (evictedFromDisk.second.entry) {
-            evictedFromDisk.second.entry->removeAnyBackingFile();
+        while (evictedFromDisk.second) {
+            evictedFromDisk.second->removeAnyBackingFile();
             evictedFromDisk = _diskCache.evict();
         }
 
@@ -496,11 +518,11 @@ public:
             _signalEmitter->blockSignals(true);
         }
         QMutexLocker locker(&_lock);
-        std::pair<hash_type,CachedValue> evictedFromMemory = _memoryCache.evict();
-        while (evictedFromMemory.second.entry) {
+        std::pair<hash_type,EntryTypePtr> evictedFromMemory = _memoryCache.evict();
+        while (evictedFromMemory.second) {
             ///move back the entry on disk if it can be store on disk
-            if ( evictedFromMemory.second.entry->isStoredOnDisk() ) {
-                evictedFromMemory.second.entry->deallocate();
+            if ( evictedFromMemory.second->isStoredOnDisk() ) {
+                evictedFromMemory.second->deallocate();
                 /*insert it back into the disk portion */
 
                 U64 diskCacheSize,maximumCacheSize;
@@ -511,17 +533,17 @@ public:
                 }
                 
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                while (diskCacheSize + evictedFromMemory.second.entry->size() >= maximumCacheSize) {
+                while (diskCacheSize + evictedFromMemory.second->size() >= maximumCacheSize) {
                     
                     {
-                        std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
+                        std::pair<hash_type,EntryTypePtr> evictedFromDisk = _diskCache.evict();
                         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                         //we'll let the user of these entries purge the extra entries left in the cache later on
-                        if (!evictedFromDisk.second.entry) {
+                        if (!evictedFromDisk.second) {
                             break;
                         }
                         ///Erase the file from the disk if we reach the limit.
-                        evictedFromDisk.second.entry->removeAnyBackingFile();
+                        evictedFromDisk.second->removeAnyBackingFile();
                     }
                     {
                         QMutexLocker k(&_sizeLock);
@@ -531,10 +553,10 @@ public:
                 }
 
                 /*update the disk cache size*/
-                CacheIterator existingDiskCacheEntry = _diskCache( evictedFromMemory.second.entry->getHashKey() );
+                CacheIterator existingDiskCacheEntry = _diskCache( evictedFromMemory.second->getHashKey() );
                 /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
                 if ( existingDiskCacheEntry == _diskCache.end() ) {
-                    _diskCache.insert(evictedFromMemory.second.entry->getHashKey(),evictedFromMemory.second);
+                    _diskCache.insert(evictedFromMemory.second->getHashKey(),evictedFromMemory.second);
                 }
             }
 
@@ -586,16 +608,12 @@ public:
         QMutexLocker locker(&_lock);
 
         for (CacheIterator it = _memoryCache.begin(); it != _memoryCache.end(); ++it) {
-            const std::list<CachedValue> & entries = getValueFromIterator(it);
-            for (typename std::list<CachedValue>::const_iterator it2 = entries.begin(); it2 != entries.end(); ++it2) {
-                copy->push_back(it2->entry);
-            }
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(it);
+            copy->insert(copy->end(),entries.begin(),entries.end());
         }
         for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
-            const std::list<CachedValue> & entries = getValueFromIterator(it);
-            for (typename std::list<CachedValue>::const_iterator it2 = entries.begin(); it2 != entries.end(); ++it2) {
-                copy->push_back(it2->entry);
-            }
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(it);
+            copy->insert(copy->end(),entries.begin(),entries.end());
         }
     }
     
@@ -626,16 +644,16 @@ public:
     bool evictLRUDiskEntry() const {
         QMutexLocker locker(&_lock);
         
-        std::pair<hash_type,CachedValue> evicted = _diskCache.evict();
+        std::pair<hash_type,EntryTypePtr> evicted = _diskCache.evict();
         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
         //we'll let the user of these entries purge the extra entries left in the cache later on
-        if (!evicted.second.entry) {
+        if (!evicted.second) {
             return false;
         }
         /*if it is stored on disk, remove it from memory*/
         
-        assert( evicted.second.entry.unique() );
-        evicted.second.entry->removeAnyBackingFile();
+        assert( evicted.second.unique() );
+        evicted.second->removeAnyBackingFile();
         
         return true;
     }
@@ -841,10 +859,10 @@ public:
         QMutexLocker l(&_lock);
         CacheIterator existingEntry = _memoryCache( entry->getHashKey() );
         if ( existingEntry != _memoryCache.end() ) {
-            std::list<CachedValue> & ret = getValueFromIterator(existingEntry);
-            for (typename std::list<CachedValue>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                if ( it->entry->getKey() == entry->getKey() ) {
-                    it->entry->scheduleForDestruction();
+            std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+            for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                if ( (*it)->getKey() == entry->getKey() ) {
+                    (*it)->scheduleForDestruction();
                     ret.erase(it);
                     break;
                 }
@@ -855,10 +873,10 @@ public:
         } else {
             existingEntry = _diskCache( entry->getHashKey() );
             if ( existingEntry != _diskCache.end() ) {
-                std::list<CachedValue> & ret = getValueFromIterator(existingEntry);
-                for (typename std::list<CachedValue>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    if ( it->entry->getKey() == entry->getKey() ) {
-                        it->entry->scheduleForDestruction();
+                std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+                for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                    if ( (*it)->getKey() == entry->getKey() ) {
+                        (*it)->scheduleForDestruction();
                         ret.erase(it);
                         break;
                     }
@@ -878,13 +896,13 @@ public:
         QMutexLocker l(&_lock);     // must be locked
 
         for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
-            std::list<CachedValue> & listOfValues  = getValueFromIterator(it);
-            for (typename std::list<CachedValue>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
-                if ( it2->entry->isStoredOnDisk() ) {
+            std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
+            for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
+                if ( (*it2)->isStoredOnDisk() ) {
                     SerializedEntry serialization;
-                    serialization.hash = it2->entry->getHashKey();
-                    serialization.params = it2->params;
-                    serialization.key = it2->entry->getKey();
+                    serialization.hash = (*it2)->getHashKey();
+                    serialization.params = (*it2)->getParams();
+                    serialization.key = (*it2)->getKey();
                     tableOfContents->push_back(serialization);
                 }
             }
@@ -974,15 +992,10 @@ public:
                 qDebug() << e.what();
                 continue;
             }
-            
-            
-            
-            CachedValue cachedValue;
-            cachedValue.entry = EntryTypePtr(value);
-            cachedValue.params = it->params;
+
             {
                 QMutexLocker locker(&_lock);
-                sealEntry(cachedValue);
+                sealEntry(EntryTypePtr(value));
             }
         }
     }
@@ -991,8 +1004,7 @@ private:
 
     
     bool getInternal(const typename EntryType::key_type & key,
-             NonKeyParamsPtr* params,
-             EntryTypePtr* returnValue) const
+             std::list<EntryTypePtr>* returnValue) const
     {
         ///Private should be locked
         assert(!_lock.tryLock());
@@ -1003,11 +1015,10 @@ private:
         if ( memoryCached != _memoryCache.end() ) {
             ///we found something with a matching hash key. There may be several entries linked to
              ///this key, we need to find one with matching params
-            std::list<CachedValue> & ret = getValueFromIterator(memoryCached);
-            for (typename std::list<CachedValue>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
-                if (it->entry->getKey() == key) {
-                    *returnValue = it->entry;
-                    *params = it->params;
+            std::list<EntryTypePtr> & ret = getValueFromIterator(memoryCached);
+            for (typename std::list<EntryTypePtr>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
+                if ((*it)->getKey() == key) {
+                    returnValue->push_back(*it);
                     
                     ///emit te added signal otherwise when first reading something that's already cached
                     ///the timeline wouldn't update
@@ -1015,11 +1026,10 @@ private:
                         _signalEmitter->emitAddedEntry( key.getTime() );
                     }
                     
-                    return true;
                 }
             }
             
-            return false;
+            return returnValue->size() > 0;
         } else {
             ///fallback on the disk cache internal container
             CacheIterator diskCached = _diskCache( key.getHash() );
@@ -1030,11 +1040,11 @@ private:
             } else {
                 /*we found something with a matching hash key. There may be several entries linked to
                  this key, we need to find one with matching values(operator ==)*/
-                std::list<CachedValue> & ret = getValueFromIterator(diskCached);
+                std::list<EntryTypePtr> & ret = getValueFromIterator(diskCached);
                 
-                for (typename std::list<CachedValue>::iterator it = ret.begin();
+                for (typename std::list<EntryTypePtr>::iterator it = ret.begin();
                      it != ret.end(); ++it) {
-                    if (it->entry->getKey() == key) {
+                    if ((*it)->getKey() == key) {
                         /*If we found 1 entry in the list that has exactly the same key params,
                          we re-open the mapping to the RAM put the entry
                          back into the memoryCache.*/
@@ -1044,7 +1054,7 @@ private:
                         }
                         
                         try {
-                            it->entry->reOpenFileMapping();
+                            (*it)->reOpenFileMapping();
                         } catch (const std::exception & e) {
                             qDebug() << "Error while reopening cache file: " << e.what();
                             ret.erase(it);
@@ -1058,7 +1068,7 @@ private:
                         }
                         
                         //put it back into the RAM
-                        _memoryCache.insert(it->entry->getHashKey(),*it);
+                        _memoryCache.insert((*it)->getHashKey(),*it);
                         
                         U64 memoryCacheSize,maximumInMemorySize;
                         {
@@ -1085,8 +1095,7 @@ private:
 
                         }
                         
-                        *returnValue = it->entry;
-                        *params = it->params;
+                        returnValue->push_back(*it);
                         ret.erase(it);
                         ///emit te added signal otherwise when first reading something that's already cached
                         ///the timeline wouldn't update
@@ -1109,7 +1118,7 @@ private:
      * The storage is then handled by the cache solely.
      **/
     EntryTypePtr newEntry(const typename EntryType::key_type & key,
-                          const NonKeyParamsPtr & params,
+                          const ParamsTypePtr & params,
                           std::list<EntryTypePtr> &entriesToBeDeleted,
                           ImageLockerHelper<EntryType>* imageLocker) const
     {
@@ -1166,11 +1175,8 @@ private:
         ///Take the lock before sealing the entry into the cache, making sure no-one will be able to get the image before it's allocated
         assert(imageLocker);
         imageLocker->lock(entryptr);
-        
-        CachedValue cachedValue;
-        cachedValue.entry = entryptr;
-        cachedValue.params = params;
-        sealEntry(cachedValue);
+       
+        sealEntry(entryptr);
 
         return entryptr;
     }
@@ -1178,10 +1184,10 @@ private:
     /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
      * function. This is called directly by newEntry() if the allocation was successful
      **/
-    void sealEntry(const CachedValue & entry) const
+    void sealEntry(const EntryTypePtr & entry) const
     {
         assert( !_lock.tryLock() );   // must be locked
-        typename EntryType::hash_type hash = entry.entry->getHashKey();
+        typename EntryType::hash_type hash = entry->getHashKey();
         /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
         CacheIterator existingEntry = _memoryCache(hash);
         if ( existingEntry == _memoryCache.end() ) {
@@ -1195,19 +1201,19 @@ private:
     bool tryEvictEntry(std::list<EntryTypePtr>& entriesToBeDeleted) const
     {
         assert( !_lock.tryLock() );
-        std::pair<hash_type,CachedValue> evicted = _memoryCache.evict();
+        std::pair<hash_type,EntryTypePtr> evicted = _memoryCache.evict();
         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
         //we'll let the user of these entries purge the extra entries left in the cache later on
-        if (!evicted.second.entry) {
+        if (!evicted.second) {
             return false;
         }
         /*if it is stored on disk, remove it from memory*/
 
-        if ( evicted.second.entry->isStoredOnDisk() ) {
-            assert( evicted.second.entry.unique() );
+        if ( evicted.second->isStoredOnDisk() ) {
+            assert( evicted.second.unique() );
             
             ///This is EXPENSIVE! it calls msync
-            evicted.second.entry->deallocate();
+            evicted.second->deallocate();
             
             /*insert it back into the disk portion */
             
@@ -1220,20 +1226,20 @@ private:
             }
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-            while ( ( diskCacheSize  + evicted.second.entry->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
+            while ( ( diskCacheSize  + evicted.second->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
                 {
-                    std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
+                    std::pair<hash_type,EntryTypePtr> evictedFromDisk = _diskCache.evict();
                     //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                     //we'll let the user of these entries purge the extra entries left in the cache later on
-                    if (!evictedFromDisk.second.entry) {
+                    if (!evictedFromDisk.second) {
                         break;
                     }
                     
                     ///Erase the file from the disk if we reach the limit.
-                    evictedFromDisk.second.entry->scheduleForDestruction();
+                    evictedFromDisk.second->scheduleForDestruction();
                     
                     
-                    entriesToBeDeleted.push_back(evictedFromDisk.second.entry);
+                    entriesToBeDeleted.push_back(evictedFromDisk.second);
                 }
                 {
                     QMutexLocker k(&_sizeLock);
@@ -1251,7 +1257,7 @@ private:
                 getValueFromIterator(existingDiskCacheEntry).push_back(evicted.second);
             }
         } else {
-            entriesToBeDeleted.push_back(evicted.second.entry);
+            entriesToBeDeleted.push_back(evicted.second);
         }
 
         return true;

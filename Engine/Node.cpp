@@ -1488,6 +1488,21 @@ Node::disconnectInput(boost::shared_ptr<Node> input)
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
             if (_imp->inputs[i] == input) {
+                
+                ///If the node is currently rendering, queue the action instead of executing it
+                {
+                    QMutexLocker k(&_imp->nodeIsRenderingMutex);
+                    if (_imp->nodeIsRendering > 0) {
+                        ConnectAction action;
+                        action.inputNode = _imp->inputs[i];
+                        action.inputNb = i;
+                        action.isConnect = false;
+                        QMutexLocker cql(&_imp->connectionQueueMutex);
+                        _imp->connectionQueue.push_back(action);
+                        return i;
+                    }
+                }
+                
                 _imp->inputs[i].reset();
                 l.unlock();
                 emit inputChanged(i);
@@ -2576,7 +2591,7 @@ Node::getImageBeingRendered(int time,
     for (std::list<boost::shared_ptr<Natron::Image> >::iterator it = _imp->imagesBeingRendered.begin();
          it != _imp->imagesBeingRendered.end(); ++it) {
         const Natron::ImageKey &key = (*it)->getKey();
-        if ( (key._view == view) && (key._mipMapLevel == mipMapLevel) && (key._time == time) ) {
+        if ( (key._view == view) && ((*it)->getMipMapLevel() == mipMapLevel) && (key._time == time) ) {
             return *it;
         }
     }
@@ -2898,13 +2913,17 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     
     bool mustDequeue ;
     {
-        ///Decrement the node is rendering counter
-        QMutexLocker k(&_imp->nodeIsRenderingMutex);
-        --_imp->nodeIsRendering;
-        assert(_imp->nodeIsRendering >= 0);
+        int nodeIsRendering;
+        {
+            ///Decrement the node is rendering counter
+            QMutexLocker k(&_imp->nodeIsRenderingMutex);
+            --_imp->nodeIsRendering;
+            assert(_imp->nodeIsRendering >= 0);
+            nodeIsRendering = _imp->nodeIsRendering;
+        }
         
         QMutexLocker cql(&_imp->connectionQueueMutex);
-        mustDequeue = _imp->nodeIsRendering == 0 && _imp->connectionQueue.size() > 0;
+        mustDequeue = nodeIsRendering == 0 && _imp->connectionQueue.size() > 0;
     }
 
     if (mustDequeue) {
@@ -2993,17 +3012,22 @@ void
 Node::dequeueConnectActions()
 {
     assert(QThread::currentThread() == qApp->thread());
+    std::list<ConnectAction> queue;
+    {
+        QMutexLocker k(&_imp->connectionQueueMutex);
+        queue = _imp->connectionQueue;
+        _imp->connectionQueue.clear();
+    }
     
     
-    for (std::list<ConnectAction>::iterator it = _imp->connectionQueue.begin(); it!= _imp->connectionQueue.end(); ++it) {
+    for (std::list<ConnectAction>::iterator it = queue.begin(); it!= queue.end(); ++it) {
         if (it->isConnect) {
             connectInput(it->inputNode, it->inputNb);
         } else {
             disconnectInput(it->inputNb);
         }
     }
-    _imp->connectionQueue.clear();
-    
+
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
     _imp->nodeIsDequeuing = false;
     _imp->nodeIsDequeuingCond.wakeAll();

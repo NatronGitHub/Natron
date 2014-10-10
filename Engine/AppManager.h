@@ -165,19 +165,23 @@ public:
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
      **/
-    bool getImage(const Natron::ImageKey & key,boost::shared_ptr<Natron::ImageParams>* params,boost::shared_ptr<Natron::Image>* returnValue) const;
+    bool getImage(const Natron::ImageKey & key,std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
 
     /**
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
-    bool getImageOrCreate(const Natron::ImageKey & key,boost::shared_ptr<Natron::ImageParams> params,
+    bool getImageOrCreate(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
+                          ImageLocker* imageLocker,
+                          std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
+    
+    void createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
                           ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
 
-    bool getTexture(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams>* params,
+    bool getTexture(const Natron::FrameKey & key,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
-    bool getTextureOrCreate(const Natron::FrameKey & key,boost::shared_ptr<Natron::FrameParams> params,
+    bool getTextureOrCreate(const Natron::FrameKey & key,const boost::shared_ptr<Natron::FrameParams>& params,
                             FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
@@ -423,32 +427,37 @@ boost::shared_ptr<K> createKnob(KnobHolder*  holder,
 
 inline bool
 getImageFromCache(const Natron::ImageKey & key,
-                  boost::shared_ptr<Natron::ImageParams>* params,
-                  boost::shared_ptr<Natron::Image> *returnValue)
+                  std::list<boost::shared_ptr<Natron::Image> >* returnValue)
 {
-    return appPTR->getImage(key,params, returnValue);
+    return appPTR->getImage(key, returnValue);
 }
 
 inline bool
 getImageFromCacheOrCreate(const Natron::ImageKey & key,
-                          boost::shared_ptr<Natron::ImageParams> params,
+                          const boost::shared_ptr<Natron::ImageParams>& params,
                           ImageLocker* imageLocker,
-                          boost::shared_ptr<Natron::Image> *returnValue)
+                          std::list<boost::shared_ptr<Natron::Image> >* returnValue)
 {
     return appPTR->getImageOrCreate(key,params, imageLocker, returnValue);
+}
+    
+inline void createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
+                                  ImageLocker* imageLocker,
+                                  boost::shared_ptr<Natron::Image>* returnValue) 
+{
+    appPTR->createImageInCache(key, params, imageLocker, returnValue);
 }
 
 inline bool
 getTextureFromCache(const Natron::FrameKey & key,
-                    boost::shared_ptr<Natron::FrameParams>* params,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue)
 {
-    return appPTR->getTexture(key,params,returnValue);
+    return appPTR->getTexture(key,returnValue);
 }
 
 inline bool
 getTextureFromCacheOrCreate(const Natron::FrameKey & key,
-                            boost::shared_ptr<Natron::FrameParams> params,
+                            const boost::shared_ptr<Natron::FrameParams> &params,
                             FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue)
 {

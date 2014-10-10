@@ -75,6 +75,7 @@ struct ParallelRenderArgs
 
 namespace Natron {
 class Node;
+class ImageKey;
 class Image;
 class ImageParams;
 /**
@@ -431,6 +432,13 @@ public:
                    const boost::shared_ptr<Image> & image,
                    const boost::shared_ptr<Image> & downscaledImage);
 
+
+    void getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
+                                             unsigned int mipMapLevel,
+                                             Natron::ImageBitDepth bitdepth,
+                                             Natron::ImageComponents components,
+                                             int channelForAlpha,
+                                             boost::shared_ptr<Natron::Image>* image);
 
 
     class NotifyRenderingStarted_RAII

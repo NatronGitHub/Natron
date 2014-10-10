@@ -1112,51 +1112,66 @@ AppManager::setNumberOfThreads(int threadsNb)
 
 bool
 AppManager::getImage(const Natron::ImageKey & key,
-                     boost::shared_ptr<Natron::ImageParams>* params,
-                     boost::shared_ptr<Natron::Image>* returnValue) const
+                     std::list<boost::shared_ptr<Natron::Image> >* returnValue) const
 {
-    boost::shared_ptr<NonKeyParams> paramsBase;
-
-    bool ret = _imp->_nodeCache->get(key,&paramsBase, returnValue);
-    if (ret) {
-        *params = boost::dynamic_pointer_cast<Natron::ImageParams>(paramsBase);
-    }
-
-    return ret;
+    return _imp->_nodeCache->get(key,returnValue);
 }
 
 bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
-                             boost::shared_ptr<Natron::ImageParams> params,
+                             const boost::shared_ptr<Natron::ImageParams>& params,
                              ImageLocker* imageLocker,
-                             boost::shared_ptr<Natron::Image>* returnValue) const
+                             std::list<boost::shared_ptr<Natron::Image> >* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
 }
 
+void
+AppManager::createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
+                        ImageLocker* imageLocker,
+                        boost::shared_ptr<Natron::Image>* returnValue) const
+{
+    _imp->_nodeCache->create(key, params, imageLocker, returnValue);
+}
+
 bool
 AppManager::getTexture(const Natron::FrameKey & key,
-                       boost::shared_ptr<Natron::FrameParams>* params,
                        boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
-    boost::shared_ptr<NonKeyParams> paramsBase;
-
-    bool ret =  _imp->_viewerCache->get(key, &paramsBase,returnValue);
-    if (ret && params) {
-        *params = boost::dynamic_pointer_cast<Natron::FrameParams>(paramsBase);
+    std::list<boost::shared_ptr<Natron::FrameEntry> > retList;
+    
+    bool ret =  _imp->_viewerCache->get(key, &retList);
+    
+    if (!retList.empty()) {
+        if (retList.size() > 1) {
+            qDebug() << "WARNING: Several FrameEntry's were found in the cache for with the same key, this is a bug since they are unique.";
+        }
+        
+        *returnValue = retList.front();
     }
-
+    
     return ret;
 
 }
 
 bool
 AppManager::getTextureOrCreate(const Natron::FrameKey & key,
-                               boost::shared_ptr<Natron::FrameParams> params,
+                               const boost::shared_ptr<Natron::FrameParams>& params,
                                FrameEntryLocker* entryLocker,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
-    return _imp->_viewerCache->getOrCreate(key, params,entryLocker,returnValue);
+    std::list<boost::shared_ptr<Natron::FrameEntry> > retList;
+    
+    bool ret =  _imp->_viewerCache->getOrCreate(key, params,entryLocker,&retList);
+    
+    if (!retList.empty()) {
+        if (retList.size() > 1) {
+            qDebug() << "WARNING: Several FrameEntry's were found in the cache for with the same key, this is a bug since they are unique.";
+        }
+        
+        *returnValue = retList.front();
+    }
+    return ret;
 }
 
 U64

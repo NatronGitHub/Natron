@@ -427,120 +427,30 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
         
     U64 inputNodeHash = activeInputToRender->getHash();
-    Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
+    Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time,view);
     RectD rod;
     RectI bounds;
     bool isRodProjectFormat = false;
-    int inputIdentityNumber = -1;
-    SequenceTime inputIdentityTime = time;
     
     bool isInputImgCached = false;
     
     if (!forceRender) {
-        isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
-    }
-
-
-    if (isInputImgCached) {
-        assert(inputImage);
-        
-        {
-            ///Take the lock after getting the image from the cache 
-            ///to make sure a thread will not attempt to write to the image while its being allocated.
-            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-            ///so taking this lock now ensures the image will be allocated completetly
-            
-            ImageLocker locker(activeInputToRender,inputImage);
-        }
-
-        inputIdentityNumber = cachedImgParams->getInputNbIdentity();
-        inputIdentityTime = cachedImgParams->getInputTimeIdentity();
-        if (forceRender) {
-            ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
-            ///we're sure renderRoIInternal will compute the whole image again.
-            ///We must use the cache facility anyway because we rely on it for caching the results
-            ///of actions which is necessary to avoid recursive actions.
-            inputImage->clearBitmap();
-        }
-
-        if (inputIdentityNumber == -1) {
-            ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
-            ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
-            if ( ( (inputImage->getComponents() != components) &&
-                  Image::hasEnoughDataToConvert(inputImage->getComponents(),components) ) ||
-                ( inputImage->getBitDepth() != imageDepth) ) {
-                ///Convert the image to the requested components
-                boost::shared_ptr<Image> remappedImage( new Image(components,
-                                                                  inputImage->getRoD(),
-                                                                  inputImage->getBounds(),
-                                                                  mipMapLevel,
-                                                                  imageDepth) );
-                bool unPremultIfNeeded = activeInputToRender->getOutputPremultiplication() == ImagePremultiplied;
-                inputImage->convertToFormat( inputImage->getBounds(),
-                                            getApp()->getDefaultColorSpaceForBitDepth( inputImage->getBitDepth() ),
-                                            getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
-                                            3, false, true,unPremultIfNeeded,
-                                            remappedImage.get() );
-                
-                ///switch the pointer
-                inputImage = remappedImage;
-            } else if (inputImage->getComponents() != components) {
-                assert( !Image::hasEnoughDataToConvert(inputImage->getComponents(),components) );
-                ///we cannot convert without loosing data of some channels, we better off render everything again
-                isInputImgCached = false;
-                appPTR->removeFromNodeCache(inputImage);
-                cachedImgParams.reset();
-                inputImage.reset();
-            }
-
+        activeInputToRender->getImageFromCacheAndConvertIfNeeded(inputImageKey, mipMapLevel, imageDepth, components, 3, &inputImage);
+        if (inputImage) {
+            isInputImgCached = true;
+            cachedImgParams = inputImage->getParams();
         }
     }
 
 
-    ////While the inputs are identity get the RoD of the first non identity input
-    while (inputIdentityNumber != -1 && isInputImgCached) {
-        EffectInstance* recursiveInput = activeInputToRender->getInput(inputIdentityNumber);
-        if (recursiveInput) {
-            inputImageKey = Natron::Image::makeKey(recursiveInput->getHash(), inputIdentityTime, mipMapLevel,view);
-            isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
-            if (isInputImgCached) {
-                inputIdentityNumber = cachedImgParams->getInputNbIdentity();
-                inputIdentityTime = cachedImgParams->getInputTimeIdentity();
-                if (forceRender) {
-                    ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
-                    ///we're sure renderRoIInternal will compute the whole image again.
-                    ///We must use the cache facility anyway because we rely on it for caching the results
-                    ///of actions which is necessary to avoid recursive actions.
-                    inputImage->clearBitmap();
-                }
-            }
-            activeInputToRender = recursiveInput;
-            inputNodeHash = activeInputToRender->getHash();
-        } else {
-            isInputImgCached = false;
-        }
-    }
-    
     const double par = activeInputToRender->getPreferredAspectRatio();
 
     if (isInputImgCached) {
-        ////If the image was cached with a RoD dependent on the project format, but the project format changed,
-        ////just discard this entry.
-        //// We do this ONLY if the effect is not an identity, because otherwise the isRoDProjectFormat is meaningless
-        //// because we fetched an image upstream anyway.
-        if ( (inputIdentityNumber == -1) && cachedImgParams->isRodProjectFormat() ) {
-            if ( static_cast<RectD &>(dispW) != cachedImgParams->getRoD() ) {
-                isInputImgCached = false;
-                appPTR->removeFromNodeCache(inputImage);
-                inputImage.reset();
-                cachedImgParams.reset();
-            }
-        }
+
 
         rod = inputImage->getRoD();
         bounds = inputImage->getBounds();
         isRodProjectFormat = cachedImgParams->isRodProjectFormat();
-
       
     }  else {
         Status stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time,
@@ -669,10 +579,15 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///we never use the texture cache when the user RoI is enabled, otherwise we would have
         ///zillions of textures in the cache, each a few pixels different.
         assert(_imp->uiContext);
+        boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
+
         if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
-            boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
-            isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
-            assert(!isCached || cachedFrameParams);
+            isCached = Natron::getTextureFromCache(key, &params->cachedFrame);
+            
+            if (isCached) {
+                assert(params->cachedFrame);
+                cachedFrameParams = params->cachedFrame->getParams();
+            }
 
             ///The user changed a parameter or the tree, just clear the cache
             ///it has no point keeping the cache because we will never find these entries again.
