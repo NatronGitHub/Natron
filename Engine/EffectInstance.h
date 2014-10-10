@@ -65,6 +65,9 @@ struct ParallelRenderArgs
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
     bool isSequentialRender;
     
+    /// True if this frame is being rendered for preview
+    bool isPreview;
+    
     ParallelRenderArgs()
     : validArgs(false)
     {
@@ -461,6 +464,7 @@ public:
                                int view,
                                bool isRenderUserInteraction,
                                bool isSequential,
+                               bool isPreview,
                                U64 nodeHash,
                                U64 rotoAge);
 

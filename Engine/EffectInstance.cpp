@@ -551,11 +551,12 @@ EffectInstance::clearPluginMemoryChunks()
 
 void
 EffectInstance::setParallelRenderArgs(int time,
-                           int view,
-                           bool isRenderUserInteraction,
-                           bool isSequential,
-                           U64 nodeHash,
-                           U64 rotoAge)
+                                      int view,
+                                      bool isRenderUserInteraction,
+                                      bool isSequential,
+                                      bool isPreview,
+                                      U64 nodeHash,
+                                      U64 rotoAge)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     
@@ -566,6 +567,8 @@ EffectInstance::setParallelRenderArgs(int time,
     
     args.nodeHash = nodeHash;
     args.rotoAge = rotoAge;
+    
+    args.isPreview = isPreview;
     
     ++args.validArgs;
     
@@ -637,7 +640,7 @@ EffectInstance::aborted() const
             ///No valid args, probably not rendering
             return false;
         } else {
-            if (args.isRenderResponseToUserInteraction) {
+            if (args.isRenderResponseToUserInteraction && !args.isPreview) {
                 ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                 return args.nodeHash != getHash() ||
                 args.time != getApp()->getTimeLine()->currentFrame();
@@ -2381,11 +2384,12 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,args) );
         scopedFrameArgs.reset( new Node::ParallelRenderArgsSetter(_node.get(),
-                                                           frameArgs.time,
-                                                           frameArgs.view,
-                                                           frameArgs.isRenderResponseToUserInteraction,
-                                                           frameArgs.isSequentialRender,
-                                                                frameArgs.nodeHash) );
+                                                                  frameArgs.time,
+                                                                  frameArgs.view,
+                                                                  frameArgs.isRenderResponseToUserInteraction,
+                                                                  frameArgs.isSequentialRender,
+                                                                  frameArgs.isPreview,
+                                                                  frameArgs.nodeHash) );
         
     } else {
         renderRectToRender = args._renderWindowPixel;
@@ -3263,6 +3267,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                        time,
                                                        0, /*view*/
                                                        true,
+                                                       false,
                                                        false,
                                                        getHash());
 

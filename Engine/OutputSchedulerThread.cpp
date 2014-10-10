@@ -1691,11 +1691,12 @@ private:
                     rod.toPixelEnclosing(scale, par, &renderWindow);
                     
                     Node::ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
-                                                             time,
-                                                             i,
-                                                             false,  // is this render due to user interaction ?
-                                                             canOnlyHandleOneView, // is this sequential ?
-                                                             activeInputToRenderHash);
+                                                                   time,
+                                                                   i,
+                                                                   false,  // is this render due to user interaction ?
+                                                                   canOnlyHandleOneView, // is this sequential ?
+                                                                   false,
+                                                                   activeInputToRenderHash);
                     
                     boost::shared_ptr<Natron::Image> img =
                     activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
@@ -1768,12 +1769,13 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
     bool canOnlyHandleOneView = sequentiallity == Natron::EFFECT_ONLY_SEQUENTIAL || sequentiallity == Natron::EFFECT_PREFER_SEQUENTIAL;
     
     Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
-                                                             time,
-                                                             view,
-                                                             false,  // is this render due to user interaction ?
-                                                             canOnlyHandleOneView, // is this sequential ?
-                                                             hash);
-
+                                                   time,
+                                                   view,
+                                                   false,  // is this render due to user interaction ?
+                                                   canOnlyHandleOneView, // is this sequential ?
+                                                   false,
+                                                   hash);
+    
     
     Natron::EffectInstance::RenderRoIArgs args(time,
                                                scale,0,

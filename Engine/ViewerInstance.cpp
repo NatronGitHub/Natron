@@ -753,11 +753,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
         
         Node::ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getNode().get(),
-                                                                 time,
-                                                                 view,
-                                                                 !isSequentialRender,  // is this render due to user interaction ?
-                                                                 isSequentialRender, // is this sequential ?
-                                                                 inputNodeHash);
+                                                       time,
+                                                       view,
+                                                       !isSequentialRender,  // is this render due to user interaction ?
+                                                       isSequentialRender, // is this sequential ?
+                                                       false,
+                                                       inputNodeHash);
         
 
 

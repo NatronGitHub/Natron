@@ -1914,6 +1914,7 @@ Node::makePreviewImage(SequenceTime time,
                                              0, //< preview only renders view 0 (left)
                                              true,
                                              false,
+                                             true,
                                              getHashValue());
     
     // Exceptions are caught because the program can run without a preview,
@@ -2885,13 +2886,14 @@ Node::canOthersConnectToThisNode() const
 
 void
 Node::setParallelRenderArgs(int time,
-                           int view,
-                           bool isRenderUserInteraction,
-                           bool isSequential,
-                        U64 nodeHash)
+                            int view,
+                            bool isRenderUserInteraction,
+                            bool isSequential,
+                            bool isPreview,
+                            U64 nodeHash)
 {
     std::list<Natron::Node*> marked;
-    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential,nodeHash,marked);
+    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,isPreview, marked);
 }
 
 void
@@ -2958,6 +2960,7 @@ Node::setParallelRenderArgsInternal(int time,
                                     bool isRenderUserInteraction,
                                     bool isSequential,
                                     U64 nodeHash,
+                                    bool isPreview,
                                     std::list<Natron::Node*>& markedNodes)
 {
     ///If marked, we alredy set render args
@@ -2973,7 +2976,7 @@ Node::setParallelRenderArgsInternal(int time,
         rotoAge = 0;
     }
     
-    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, nodeHash, rotoAge);
+    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, isPreview, nodeHash, rotoAge);
     
     
     ///Wait for the main-thread to be done dequeuing the connect actions queue
@@ -3000,7 +3003,7 @@ Node::setParallelRenderArgsInternal(int time,
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
-            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),
+            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),isPreview,
                                                  markedNodes);
             
         }
