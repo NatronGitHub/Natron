@@ -2340,12 +2340,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if (!overlaysCaught) {
         bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
 
-        if ( (_imp->pickerState != PICKER_INACTIVE) && buttonDownIsLeft(e) && displayingImage() ) {
-            // disable picker if picker is set when clicking
-            _imp->pickerState = PICKER_INACTIVE;
-            mustRedraw = true;
-            overlaysCaught = true;
-        } else if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) && displayingImage() ) {
+        if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) && displayingImage() ) {
             // picker with single-point selection
             _imp->pickerState = PICKER_POINT;
             if ( pickColor( e->x(),e->y() ) ) {
@@ -2353,6 +2348,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
                 mustRedraw = true;
                 overlaysCaught = true;
             }
+        } else if ( (_imp->pickerState != PICKER_INACTIVE) && buttonDownIsLeft(e) && displayingImage() ) {
+            // disable picker if picker is set when clicking
+            _imp->pickerState = PICKER_INACTIVE;
+            mustRedraw = true;
+            overlaysCaught = true;
         } else if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) && displayingImage() ) {
             // start picker with rectangle selection (picked color is the average over the rectangle)
             _imp->pickerState = PICKER_RECTANGLE;
