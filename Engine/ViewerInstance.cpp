@@ -841,12 +841,13 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                       imageDepth) );
 
                     if (!params->image) {
+                        params->cachedFrame->setAborted(true);
                         appPTR->removeFromViewerCache(params->cachedFrame);
                         if (didEmitInputNRenderingSignal) {
                             _node->notifyInputNIsFinishedRendering(activeInputIndex);
                         }
 
-                        return StatFailed;
+                        return StatOK;
                     }
 
                 }
