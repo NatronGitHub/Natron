@@ -124,6 +124,7 @@ struct Node::Implementation
           , lastRenderStartedSlotCallTime()
           , lastInputNRenderStartedSlotCallTime()
           , connectionQueue()
+          , connectionQueueMutex()
           , nodeIsDequeuing(false)
           , nodeIsDequeuingMutex()
           , nodeIsDequeuingCond()
@@ -221,8 +222,8 @@ struct Node::Implementation
     timeval lastInputNRenderStartedSlotCallTime;
     
     ///Used when the node is rendering and dequeued when it is done rendering
-    ///Only read/written by the main-thread
     std::list<ConnectAction> connectionQueue;
+    QMutex connectionQueueMutex;
     
     ///True when the node is dequeuing the connectionQueue and no render should be started 'til it is empty
     bool nodeIsDequeuing;
@@ -1270,6 +1271,7 @@ Node::connectInput(boost::shared_ptr<Node> input,
                 action.inputNode = input;
                 action.inputNb = inputNumber;
                 action.isConnect = true;
+                QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return true;
             }
@@ -1346,7 +1348,7 @@ Node::switchInput0And1()
     {
         QMutexLocker k(&_imp->nodeIsRenderingMutex);
         if (_imp->nodeIsRendering > 0) {
-            
+            QMutexLocker cql(&_imp->connectionQueueMutex);
             ///Disonnect input A
             {
                 ConnectAction action;
@@ -1460,6 +1462,7 @@ Node::disconnectInput(int inputNumber)
                 action.inputNode = _imp->inputs[inputNumber];
                 action.inputNb = inputNumber;
                 action.isConnect = false;
+                QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return true;
             }
@@ -2893,16 +2896,18 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     }
     _imp->liveInstance->invalidateParallelRenderArgs();
     
-    bool isZero ;
+    bool mustDequeue ;
     {
         ///Decrement the node is rendering counter
         QMutexLocker k(&_imp->nodeIsRenderingMutex);
         --_imp->nodeIsRendering;
         assert(_imp->nodeIsRendering >= 0);
-        isZero = _imp->nodeIsRendering == 0;
+        
+        QMutexLocker cql(&_imp->connectionQueueMutex);
+        mustDequeue = _imp->nodeIsRendering == 0 && _imp->connectionQueue.size() > 0;
     }
 
-    if (isZero) {
+    if (mustDequeue) {
         
         ///Flag that the node is dequeuing.
         ///We don't wait here but in the setParallelRenderArgsInternal instead
@@ -2997,6 +3002,7 @@ Node::dequeueConnectActions()
             disconnectInput(it->inputNb);
         }
     }
+    _imp->connectionQueue.clear();
     
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
     _imp->nodeIsDequeuing = false;

@@ -1213,7 +1213,7 @@ AppManager::registerEngineMetaTypes() const
 void
 AppManagerPrivate::saveCaches()
 {
-    {
+    if (!appPTR->isBackground()) {
         std::ofstream ofile;
         ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
@@ -1318,7 +1318,7 @@ AppManagerPrivate::restoreCaches()
             _nodeCache->restore(tableOfContents);
         }
     }
-    {
+    if (!appPTR->isBackground()) {
         if ( checkForCacheDiskStructure( _viewerCache->getCachePath() ) ) {
             std::ifstream ifile;
             std::string settingsFilePath = _viewerCache->getRestoreFilePath();
