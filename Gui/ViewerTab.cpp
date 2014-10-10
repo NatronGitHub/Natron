@@ -810,7 +810,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );
     QObject::connect( wrapperNode.get(),SIGNAL( inputNameChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
     QObject::connect( _imp->_viewerNode,SIGNAL( activeInputsChanged() ),this,SLOT( onActiveInputsChanged() ) );
-    QObject::connect( _imp->_viewerNode,SIGNAL( imageFormatChanged(int,int,int) ),this,SLOT( onImageFormatChanged(int,int,int) ) );
     QObject::connect( _imp->_viewerColorSpace, SIGNAL( currentIndexChanged(int) ), this,
                       SLOT( onColorSpaceComboBoxChanged(int) ) );
     QObject::connect( _imp->_zoomCombobox, SIGNAL( currentIndexChanged(QString) ),_imp->viewer, SLOT( zoomSlot(QString) ) );
@@ -2543,11 +2542,9 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 }
 
 void
-ViewerTab::onImageFormatChanged(int texIndex,
-                                int components,
-                                int bitdepth)
+ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponents components,Natron::ImageBitDepth depth)
 {
-    _imp->_infosWidget[texIndex]->setImageFormat( (ImageComponents)components, (ImageBitDepth)bitdepth );
+    _imp->_infosWidget[textureIndex]->setImageFormat(components,depth);
 }
 
 void

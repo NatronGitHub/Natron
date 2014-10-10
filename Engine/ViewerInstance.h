@@ -160,9 +160,6 @@ public slots:
 signals:
 
     void s_callRedrawOnMainThread();
-    
-    ///Emitted when the image bit depth and components changes
-    void imageFormatChanged(int,int,int);
 
     void viewerDisconnected();
 

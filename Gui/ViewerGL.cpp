@@ -2227,6 +2227,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 
     
     if (image) {
+        _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
         _imp->currentViewerInfos[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
         _imp->lastRenderedImage[textureIndex] = image;
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();

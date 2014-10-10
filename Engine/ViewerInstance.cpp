@@ -396,9 +396,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     ImagePremultiplication srcPremult = activeInputToRender->getOutputPremultiplication();
 
-    
-    emit imageFormatChanged(textureIndex,components, imageDepth);
-    
+        
     U64 inputNodeHash = activeInputToRender->getHash();
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
     RectD rod;

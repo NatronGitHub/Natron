@@ -189,6 +189,10 @@ public:
     
     double getDesiredFps() const;
     void setDesiredFps(double fps);
+
+    ///Called by ViewerGL when the image changes to refresh the info bar
+    void setImageFormat(int textureIndex,Natron::ImageComponents components,Natron::ImageBitDepth depth);
+
     
 public slots:
 
@@ -248,8 +252,6 @@ public slots:
     void onInputNameChanged(int inputNb,const QString & name);
 
     void onInputChanged(int inputNb);
-
-    void onImageFormatChanged(int,int,int);
 
     void onFrameRangeEditingFinished();
 
