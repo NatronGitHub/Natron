@@ -265,6 +265,8 @@ private:
     ///Store the system physical total RAM in a member
     std::size_t _maxPhysicalRAM;
 
+    bool _tearingDown;
+    
 public:
 
 
@@ -289,13 +291,14 @@ public:
           ,_version(version)
           ,_signalEmitter(new CacheSignalEmitter)
           ,_maxPhysicalRAM( getSystemTotalRAM() )
+          ,_tearingDown(false)
     {
     }
 
     virtual ~Cache()
     {
         QMutexLocker locker(&_lock);
-
+        _tearingDown = true;
         _memoryCache.clear();
         _diskCache.clear();
         delete _signalEmitter;
@@ -739,6 +742,9 @@ public:
                                            int time,
                                            std::size_t size) const OVERRIDE FINAL
     {
+        if (_tearingDown) {
+            return;
+        }
         QMutexLocker k(&_sizeLock);
         
         assert(oldStorage != newStorage);
