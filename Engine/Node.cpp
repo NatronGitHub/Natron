@@ -59,7 +59,17 @@ namespace { // protect local classes in anonymous namespace
 typedef std::map<boost::shared_ptr<Node>,int > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<boost::shared_ptr<Node> > InputsV;
+    
+struct ConnectAction
+{
+    boost::shared_ptr<Natron::Node> inputNode;
+    bool isConnect;
+    int inputNb;
+};
+
 }
+
+
 
 struct Node::Implementation
 {
@@ -113,6 +123,12 @@ struct Node::Implementation
           , timersMutex()
           , lastRenderStartedSlotCallTime()
           , lastInputNRenderStartedSlotCallTime()
+          , connectionQueue()
+          , nodeIsDequeuing(false)
+          , nodeIsDequeuingMutex()
+          , nodeIsDequeuingCond()
+          , nodeIsRendering(0)
+          , nodeIsRenderingMutex()
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -203,6 +219,21 @@ struct Node::Implementation
     QMutex timersMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
     timeval lastRenderStartedSlotCallTime;
     timeval lastInputNRenderStartedSlotCallTime;
+    
+    ///Used when the node is rendering and dequeued when it is done rendering
+    ///Only read/written by the main-thread
+    std::list<ConnectAction> connectionQueue;
+    
+    ///True when the node is dequeuing the connectionQueue and no render should be started 'til it is empty
+    bool nodeIsDequeuing;
+    QMutex nodeIsDequeuingMutex;
+    QWaitCondition nodeIsDequeuingCond;
+    
+    ///Counter counting how many parallel renders are active on the node
+    int nodeIsRendering;
+    mutable QMutex nodeIsRenderingMutex;
+    
+    
 };
 
 /**
@@ -225,7 +256,7 @@ Node::Node(AppInstance* app,
       , _imp( new Implementation(app,plugin) )
 {
     QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
-
+    QObject::connect(this, SIGNAL(mustDequeueConnectActions()), this, SLOT(dequeueConnectActions()));
 }
 
 void
@@ -1077,7 +1108,19 @@ Node::getInputs_mt_safe() const
         return _imp->multiInstanceParent->getInputs_mt_safe();
     }
 
-    ///No need to lock because guiInputs is only written to by the main-thread.
+    return _imp->inputs;
+}
+
+std::vector<boost::shared_ptr<Natron::Node> >
+Node::getInputs_copy() const
+{
+    assert(_imp->inputsInitialized);
+    
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->getInputs_mt_safe();
+    }
+    
+    QMutexLocker l(&_imp->inputsMutex);
     return _imp->inputs;
 }
 
@@ -1118,6 +1161,19 @@ Node::hasInputConnected() const
     }
     
     
+    return false;
+}
+
+bool
+Node::hasMandatoryInputDisconnected() const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (!_imp->inputs[i] && !_imp->liveInstance->isInputOptional(i)) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -1193,20 +1249,46 @@ Node::connectInput(boost::shared_ptr<Node> input,
     assert(_imp->inputsInitialized);
     assert(input);
 
+    ///Check for cycles: they are forbidden in the graph
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
         return false;
     }
 
+    
     {
+        ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] != NULL) ) {
             return false;
         }
+        
+        ///If the node is currently rendering, queue the action instead of executing it
+        {
+            QMutexLocker k(&_imp->nodeIsRenderingMutex);
+            if (_imp->nodeIsRendering > 0) {
+                ConnectAction action;
+                action.inputNode = input;
+                action.inputNb = inputNumber;
+                action.isConnect = true;
+                _imp->connectionQueue.push_back(action);
+                return true;
+            }
+        }
+        
+        ///Set the input
         _imp->inputs[inputNumber] = input;
     }
+    
+    ///Get notified when the input name has changed
     QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+    
+    ///Notify the GUI
     emit inputChanged(inputNumber);
+    
+    ///Call the instance changed action with a reason clip changed
     onInputChanged(inputNumber);
+    
+    ///Recompute the hash
     computeHash();
 
     return true;
@@ -1260,6 +1342,50 @@ Node::switchInput0And1()
         }
     }
 
+    ///If the node is currently rendering, queue the action instead of executing it
+    {
+        QMutexLocker k(&_imp->nodeIsRenderingMutex);
+        if (_imp->nodeIsRendering > 0) {
+            
+            ///Disonnect input A
+            {
+                ConnectAction action;
+                action.inputNode = _imp->inputs[inputAIndex];
+                action.inputNb = inputAIndex;
+                action.isConnect = false;
+                _imp->connectionQueue.push_back(action);
+            }
+            
+            ///Disconnect input B
+            {
+                ConnectAction action;
+                action.inputNode = _imp->inputs[inputBIndex];
+                action.inputNb = inputBIndex;
+                action.isConnect = false;
+                _imp->connectionQueue.push_back(action);
+            }
+            
+            ///Connect input A
+            {
+                ConnectAction action;
+                action.inputNode = _imp->inputs[inputBIndex];
+                action.inputNb = inputAIndex;
+                action.isConnect = true;
+                _imp->connectionQueue.push_back(action);
+            }
+            
+            ///Connect input B
+            {
+                ConnectAction action;
+                action.inputNode = _imp->inputs[inputAIndex];
+                action.inputNb = inputBIndex;
+                action.isConnect = true;
+                _imp->connectionQueue.push_back(action);
+            }
+
+            return;
+        }
+    }
     {
         QMutexLocker l(&_imp->inputsMutex);
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
@@ -1305,6 +1431,7 @@ Node::connectOutput(boost::shared_ptr<Node> output)
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(output);
+    
     {
         QMutexLocker l(&_imp->outputsMutex);
         _imp->outputs.push_back(output);
@@ -1324,6 +1451,20 @@ Node::disconnectInput(int inputNumber)
         if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] == NULL) ) {
             return -1;
         }
+        
+        ///If the node is currently rendering, queue the action instead of executing it
+        {
+            QMutexLocker k(&_imp->nodeIsRenderingMutex);
+            if (_imp->nodeIsRendering > 0) {
+                ConnectAction action;
+                action.inputNode = _imp->inputs[inputNumber];
+                action.inputNb = inputNumber;
+                action.isConnect = false;
+                _imp->connectionQueue.push_back(action);
+                return true;
+            }
+        }
+        
         QObject::disconnect( _imp->inputs[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
         _imp->inputs[inputNumber].reset();
     }
@@ -2752,6 +2893,26 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     }
     _imp->liveInstance->invalidateParallelRenderArgs();
     
+    bool isZero ;
+    {
+        ///Decrement the node is rendering counter
+        QMutexLocker k(&_imp->nodeIsRenderingMutex);
+        --_imp->nodeIsRendering;
+        assert(_imp->nodeIsRendering >= 0);
+        isZero = _imp->nodeIsRendering == 0;
+    }
+
+    if (isZero) {
+        
+        ///Flag that the node is dequeuing.
+        ///We don't wait here but in the setParallelRenderArgsInternal instead
+        {
+            QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+            _imp->nodeIsDequeuing = true;
+        }
+        emit mustDequeueConnectActions();
+    }
+    
     ///mark this
     markedNodes.push_back(this);
     
@@ -2790,6 +2951,21 @@ Node::setParallelRenderArgsInternal(int time,
     
     _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, nodeHash, rotoAge);
     
+    
+    ///Wait for the main-thread to be done dequeuing the connect actions queue
+    if (QThread::currentThread() != qApp->thread()) {
+        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+        while (_imp->nodeIsDequeuing) {
+            _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
+        }
+    }
+    
+    {
+        ///Increment the node is rendering counter
+        QMutexLocker k(&_imp->nodeIsRenderingMutex);
+        ++_imp->nodeIsRendering;
+    }
+    
     ///mark this
     markedNodes.push_back(this);
     
@@ -2806,6 +2982,25 @@ Node::setParallelRenderArgsInternal(int time,
         }
     }
     
+}
+
+void
+Node::dequeueConnectActions()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    
+    for (std::list<ConnectAction>::iterator it = _imp->connectionQueue.begin(); it!= _imp->connectionQueue.end(); ++it) {
+        if (it->isConnect) {
+            connectInput(it->inputNode, it->inputNb);
+        } else {
+            disconnectInput(it->inputNb);
+        }
+    }
+    
+    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+    _imp->nodeIsDequeuing = false;
+    _imp->nodeIsDequeuingCond.wakeAll();
 }
 
 //////////////////////////////////

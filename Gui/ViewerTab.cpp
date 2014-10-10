@@ -838,6 +838,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_viewerNode,SIGNAL( viewerDisconnected() ),this,SLOT( disconnectViewer() ) );
     QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinboxFpsChanged(double) ) );
 
+    QObject::connect( _imp->_viewerNode->getRenderEngine(),SIGNAL( renderFinished(int) ),this,SLOT( onEngineStopped() ) );
     manageSlotsForInfoWidget(0,true);
 
     QObject::connect( _imp->_clipToProjectFormatButton,SIGNAL( clicked(bool) ),this,SLOT( onClipToProjectButtonToggle(bool) ) );
@@ -1006,6 +1007,16 @@ ViewerTab::abortRendering()
             isViewer->getRenderEngine()->abortRendering(false);
         }
     }
+}
+
+void
+ViewerTab::onEngineStopped()
+{
+    _imp->play_Forward_Button->setDown(false);
+    _imp->play_Backward_Button->setDown(false);
+    _imp->play_Forward_Button->setChecked(false);
+    _imp->play_Backward_Button->setChecked(false);
+
 }
 
 void

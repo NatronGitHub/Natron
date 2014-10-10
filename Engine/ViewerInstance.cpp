@@ -306,6 +306,35 @@ ViewerInstance::renderViewer(SequenceTime time,
     return StatOK;
 }
 
+static void checkTreeCanRender_internal(Node* node,bool* ret)
+{
+    const std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if (!inputs[i]) {
+            if (!node->getLiveInstance()->isInputOptional(i)) {
+                *ret = false;
+                return;
+            }
+            
+        } else {
+            checkTreeCanRender_internal(inputs[i].get(), ret);
+            if (!ret) {
+                return;
+            }
+        }
+    }
+}
+
+/**
+ * @brief Returns false if the tree has unconnected mandatory inputs
+ **/
+static bool checkTreeCanRender(Node* node)
+{
+    bool ret = true;
+    checkTreeCanRender_internal(node,&ret);
+    return ret;
+}
+
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
 #define abortCheck(input) if ( (!isSequentialRender && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time) ) ||  \
@@ -347,7 +376,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         activeInputToRender = activeInputToRender->getNearestNonDisabled();
     }
 
-    if (!activeInputToRender) {
+    if (!activeInputToRender || !checkTreeCanRender(activeInputToRender->getNode().get())) {
         return StatFailed;
     }
 

@@ -987,7 +987,7 @@ OutputSchedulerThread::run()
                         QMutexLocker locker(&_imp->abortedRequestedMutex);
                         if (_imp->abortRequested > 0) {
                             
-                            ///Do not wait in the buf wait condition and go directly into the stopEngine()
+                            ///Do not wait in the buf wait condition and go directly into the stopRender()
                             renderFinished = true;
                             
                             break;

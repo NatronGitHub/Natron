@@ -283,6 +283,9 @@ public slots:
     void onCheckerboardButtonClicked();
     
     void onSpinboxFpsChanged(double fps);
+    
+    void onEngineStopped();
+    
 private:
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);

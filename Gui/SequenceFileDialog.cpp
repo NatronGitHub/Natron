@@ -978,6 +978,7 @@ SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd)
     setTextElideMode(Qt::ElideMiddle);
     setEditTriggers(QAbstractItemView::EditKeyPressed);
     setContextMenuPolicy(Qt::CustomContextMenu);
+    setDragEnabled(true);
     setDragDropMode(QAbstractItemView::InternalMove);
     //setAttribute(Qt::WA_MacShowFocusRect,0);
     setAcceptDrops(true);

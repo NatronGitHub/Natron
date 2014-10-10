@@ -278,7 +278,7 @@ public:
      * This can only be called by the main thread.
      **/
     const std::vector<boost::shared_ptr<Natron::Node> > & getInputs_mt_safe() const WARN_UNUSED_RETURN;
-
+    std::vector<boost::shared_ptr<Natron::Node> > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the input index of the node n if it exists,
@@ -294,6 +294,9 @@ public:
     bool hasOutputConnected() const;
 
     bool hasInputConnected() const;
+    
+    bool hasMandatoryInputDisconnected() const;
+    
     /**
      * @brief This is used by the auto-connection algorithm.
      * When connecting nodes together this function helps determine
@@ -721,6 +724,8 @@ public slots:
     {
         emit settingsPanelClosed(closed);
     }
+    
+    void dequeueConnectActions();
 
 
 signals:
@@ -786,6 +791,9 @@ signals:
     void bitDepthWarningToggled(bool,QString);
     void nodeExtraLabelChanged(QString);
 
+    
+    void mustDequeueConnectActions();
+    
 protected:
 
     /**

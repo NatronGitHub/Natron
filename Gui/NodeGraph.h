@@ -142,7 +142,7 @@ public:
     bool areKnobLinksVisible() const;
     
     void refreshNodesKnobsAtTime(SequenceTime time);
-        
+    
 public slots:
 
     void deleteSelection();

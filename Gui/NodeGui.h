@@ -293,11 +293,6 @@ public:
     void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const;
     void restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
-
-    /**
-     * @brief Returns true while the node is rendering
-     **/
-    bool areEdgesFrozen() const;
     
 public slots:
 
@@ -423,6 +418,8 @@ private:
     void populateMenu();
 
     void refreshCurrentBrush();
+    
+
 
     /*pointer to the dag*/
     NodeGraph* _graph;
@@ -491,9 +488,7 @@ private:
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
     boost::shared_ptr<NodeGui> _parentMultiInstance;
-    
-    ///True when the node is rendering to forbid the user from changing the links
-    bool _edgesFrozen;
+      
 };
 
 

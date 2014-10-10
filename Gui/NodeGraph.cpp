@@ -362,6 +362,9 @@ struct NodeGraphPrivate
     void rearrangeSelectedNodes();
 
     void toggleSelectedNodesEnabled();
+    
+    void pushUndoCommand(QUndoCommand* command);
+    
 };
 
 NodeGraph::NodeGraph(Gui* gui,
@@ -622,8 +625,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     }
 
     if (pushUndoRedoCommand) {
-        _imp->_undoStack->setActive();
-        _imp->_undoStack->push( new AddMultipleNodesCommand(this,node_ui) );
+        _imp->pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
     }
     _imp->_evtState = DEFAULT;
 
@@ -800,21 +802,20 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///try to find a selected edge
             for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
                 boost::shared_ptr<NodeGui> & n = *it;
-                if (!n->areEdgesFrozen()) {
-                    Edge* bendPointEdge = n->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
-                    if (bendPointEdge) {
-                        selectedBendPoint = bendPointEdge;
-                        break;
-                    }
-                    Edge* edge = n->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
-                    if (edge) {
-                        selectedEdge = edge;
-                    }
+                Edge* bendPointEdge = n->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
+                if (bendPointEdge) {
+                    selectedBendPoint = bendPointEdge;
+                    break;
                 }
+                Edge* edge = n->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
+                if (edge) {
+                    selectedEdge = edge;
+                }
+                
             }
         }
     }
-
+    
     if (selected) {
         didSomething = true;
         if ( buttonDownIsLeft(e) ) {
@@ -881,7 +882,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         if ( !dotNodeGui->getIsSelected() ) {
             selectNode( dotNodeGui, modCASIsShift(e) );
         }
-        _imp->_undoStack->push( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
+        _imp->pushUndoCommand( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
 
         
         _imp->_evtState = NODE_DRAGGING;
@@ -1028,6 +1029,13 @@ NodeGraph::isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const
 }
 
 void
+NodeGraphPrivate::pushUndoCommand(QUndoCommand* command)
+{
+    _undoStack->setActive();
+    _undoStack->push(command);
+}
+
+void
 NodeGraph::deselect()
 {
     {
@@ -1066,50 +1074,45 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
         QPointF ep = mapToScene( e->pos() );
         
-        if (!nodeHoldingEdge->areEdgesFrozen()) {
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-                boost::shared_ptr<NodeGui> & n = *it;
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+            boost::shared_ptr<NodeGui> & n = *it;
+            
+            if (n->isActive() && n->isVisible() && n->isNearby(ep) &&
+                n->getNode()->getName() != nodeHoldingEdge->getNode()->getName()) {
                 
-                if (n->isActive() && n->isVisible() && n->isNearby(ep) &&
-                    n->getNode()->getName() != nodeHoldingEdge->getNode()->getName() &&
-                    !n->areEdgesFrozen()) {
-                    
-                    if ( !_imp->_arrowSelected->isOutputEdge() ) {
-                        if ( !n->getNode()->canOthersConnectToThisNode() ) {
-                            break;
-                        }
-                        
-                        _imp->_arrowSelected->stackBefore( n.get() );
-                        _imp->_undoStack->setActive();
-                        _imp->_undoStack->push( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
-                    } else {
-                        ///Find the input edge of the node we just released the mouse over,
-                        ///and use that edge to connect to the source of the selected edge.
-                        int preferredInput = n->getNode()->getPreferredInputForConnection();
-                        if (preferredInput != -1) {
-                            const std::map<int,Edge*> & inputEdges = n->getInputsArrows();
-                            std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
-                            assert( foundInput != inputEdges.end() );
-                            _imp->_undoStack->setActive();
-                            _imp->_undoStack->push( new ConnectCommand( this,foundInput->second,
-                                                                       foundInput->second->getSource(),_imp->_arrowSelected->getSource() ) );
-                        }
+                if ( !_imp->_arrowSelected->isOutputEdge() ) {
+                    if ( !n->getNode()->canOthersConnectToThisNode() ) {
+                        break;
                     }
-                    foundSrc = true;
                     
-                    break;
+                    _imp->_arrowSelected->stackBefore( n.get() );
+                    _imp->pushUndoCommand( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
+                } else {
+                    ///Find the input edge of the node we just released the mouse over,
+                    ///and use that edge to connect to the source of the selected edge.
+                    int preferredInput = n->getNode()->getPreferredInputForConnection();
+                    if (preferredInput != -1) {
+                        const std::map<int,Edge*> & inputEdges = n->getInputsArrows();
+                        std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
+                        assert( foundInput != inputEdges.end() );
+                        _imp->pushUndoCommand( new ConnectCommand( this,foundInput->second,
+                                                                  foundInput->second->getSource(),_imp->_arrowSelected->getSource() ) );
+                    }
                 }
+                foundSrc = true;
+                
+                break;
             }
-            ///if we disconnected the input edge, use the undo/redo stack.
-            ///Output edges can never be really connected, they're just there
-            ///So the user understands some nodes can have output
-            if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
-                _imp->_undoStack->setActive();
-                _imp->_undoStack->push( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
-                                                           boost::shared_ptr<NodeGui>() ) );
-            }
-
         }
+        ///if we disconnected the input edge, use the undo/redo stack.
+        ///Output edges can never be really connected, they're just there
+        ///So the user understands some nodes can have output
+        if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
+            _imp->pushUndoCommand( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
+                                                      boost::shared_ptr<NodeGui>() ) );
+        }
+        
+        
         
         nodeHoldingEdge->refreshEdges();
         scene()->update();
@@ -1124,12 +1127,12 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     if (prefInput != -1) {
                         Edge* inputEdge = selectedNode->getInputArrow(prefInput);
                         assert(inputEdge);
-                        _imp->_undoStack->push( new ConnectCommand( this,inputEdge,inputEdge->getSource(),
+                        _imp->pushUndoCommand( new ConnectCommand( this,inputEdge,inputEdge->getSource(),
                                                                     _imp->_highLightedEdge->getSource() ) );
                     }
                 } else {
                     boost::shared_ptr<NodeGui> src = _imp->_highLightedEdge->getSource();
-                    _imp->_undoStack->push( new ConnectCommand(this,_imp->_highLightedEdge,_imp->_highLightedEdge->getSource(),
+                    _imp->pushUndoCommand( new ConnectCommand(this,_imp->_highLightedEdge,_imp->_highLightedEdge->getSource(),
                                                                selectedNode) );
 
                     ///find out if the node is already connected to what the edge is connected
@@ -1150,7 +1153,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         if (prefInput != -1) {
                             Edge* inputEdge = selectedNode->getInputArrow(prefInput);
                             assert(inputEdge);
-                            _imp->_undoStack->push( new ConnectCommand(this,inputEdge,inputEdge->getSource(),src) );
+                            _imp->pushUndoCommand( new ConnectCommand(this,inputEdge,inputEdge->getSource(),src) );
                         }
                     }
                 }
@@ -1221,7 +1224,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case NODE_DRAGGING:
     case BACKDROP_DRAGGING: {
         if ( !_imp->_selection.nodes.empty() || !_imp->_selection.bds.empty() ) {
-            _imp->_undoStack->setActive();
             std::list<MoveMultipleNodesCommand::NodeToMove> nodesToMove;
             for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
                  it != _imp->_selection.nodes.end(); ++it) {
@@ -1257,7 +1259,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 }
             }
             mustUpdateNavigator = true;
-            _imp->_undoStack->push( new MoveMultipleNodesCommand(nodesToMove,
+            _imp->pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
                                                                  _imp->_selection.bds,
                                                                  newPos.x() - _imp->_lastScenePosClick.x(),
                                                                  newPos.y() - _imp->_lastScenePosClick.y(),newPos) );
@@ -1397,11 +1399,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case BACKDROP_RESIZING: {
         mustUpdateNavigator = true;
         assert(_imp->_backdropResized);
-        _imp->_undoStack->setActive();
         QPointF p = _imp->_backdropResized->scenePos();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
-        _imp->_undoStack->push( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
+        _imp->pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
     case SELECTION_RECT: {
@@ -1733,7 +1734,7 @@ void
 NodeGraphPrivate::rearrangeSelectedNodes()
 {
     if ( !_selection.nodes.empty() ) {
-        _undoStack->push( new RearrangeNodesCommand(_selection.nodes) );
+        pushUndoCommand( new RearrangeNodesCommand(_selection.nodes) );
     }
 }
 
@@ -1851,11 +1852,8 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
         it = gui->getInputsArrows().find(inputNB);
     }
 
-    ///set the undostack the active one before connecting
-    _imp->_undoStack->setActive();
-
     ///and push a connect command to the selected node.
-    _imp->_undoStack->push( new ConnectCommand(this,it->second,it->second->getSource(),selected) );
+    _imp->pushUndoCommand( new ConnectCommand(this,it->second,it->second->getSource(),selected) );
 
     ///Set the viewer as the selected node (also wipe the current selection)
     selectNode(gui,false);
@@ -1984,8 +1982,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
     std::list<boost::shared_ptr<NodeGui> > nodesToRemove;
     std::list<NodeBackDrop*> bds;
     nodesToRemove.push_back(node);
-    _imp->_undoStack->setActive();
-    _imp->_undoStack->push( new RemoveMultipleNodesCommand(this,nodesToRemove,bds) );
+    _imp->pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,bds) );
 }
 
 void
@@ -2053,8 +2050,7 @@ NodeGraph::deleteSelection()
         }
 
 
-        _imp->_undoStack->setActive();
-        _imp->_undoStack->push( new RemoveMultipleNodesCommand(this,nodesToRemove,_imp->_selection.bds) );
+        _imp->pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,_imp->_selection.bds) );
         _imp->_selection.nodes.clear();
         _imp->_selection.bds.clear();
     }
@@ -2777,8 +2773,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard)
         restoreConnections(clipboard.nodes, newNodes);
 
 
-        _undoStack->setActive();
-        _undoStack->push( new AddMultipleNodesCommand(_publicInterface,newNodes,newBds) );
+        pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodes,newBds) );
     }
 } // pasteNodesInternal
 
@@ -3001,8 +2996,7 @@ NodeGraph::cloneSelectedNodes()
     _imp->restoreConnections(serializations, newNodes);
 
 
-    _imp->_undoStack->setActive();
-    _imp->_undoStack->push( new AddMultipleNodesCommand(this,newNodes,newBackdrops) );
+    _imp->pushUndoCommand( new AddMultipleNodesCommand(this,newNodes,newBackdrops) );
 } // cloneSelectedNodes
 
 void
@@ -3034,8 +3028,7 @@ NodeGraph::decloneSelectedNodes()
             }
         }
     }
-    _imp->_undoStack->setActive();
-    _imp->_undoStack->push( new DecloneMultipleNodesCommand(this,nodesToDeclone,_imp->_selection.bds) );
+    _imp->pushUndoCommand( new DecloneMultipleNodesCommand(this,nodesToDeclone,_imp->_selection.bds) );
 }
 
 boost::shared_ptr<NodeGui>
@@ -3225,9 +3218,8 @@ NodeGraph::createBackDrop(QVBoxLayout *dockContainer,
     NodeBackDrop* bd = new NodeBackDrop(this,_imp->_root);
     bd->initialize(name, requestedByLoad,serialization, dockContainer);
     _imp->_backdrops.push_back(bd);
-    _imp->_undoStack->setActive();
     if (!requestedByLoad) {
-        _imp->_undoStack->push( new AddMultipleNodesCommand(this,bd) );
+        _imp->pushUndoCommand( new AddMultipleNodesCommand(this,bd) );
         if ( !_imp->_selection.nodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
@@ -3410,11 +3402,11 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
     ///if some nodes are disabled , enable them before
 
     if ( toProcess.size() == _selection.nodes.size() ) {
-        _undoStack->push( new EnableNodesCommand(_selection.nodes) );
+        pushUndoCommand( new EnableNodesCommand(_selection.nodes) );
     } else if (toProcess.size() > 0) {
-        _undoStack->push( new EnableNodesCommand(toProcess) );
+        pushUndoCommand( new EnableNodesCommand(toProcess) );
     } else {
-        _undoStack->push( new DisableNodesCommand(_selection.nodes) );
+        pushUndoCommand( new DisableNodesCommand(_selection.nodes) );
     }
 }
 
@@ -3423,4 +3415,5 @@ NodeGraph::areKnobLinksVisible() const
 {
     return _imp->_knobLinksVisible;
 }
+
 
