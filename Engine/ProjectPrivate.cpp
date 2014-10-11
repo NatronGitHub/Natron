@@ -145,7 +145,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 2) restore the timeline
     timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
-    timeline->seekFrame(obj.getCurrentTime(),NULL);
+    timeline->seekFrame(obj.getCurrentTime(),NULL,Natron::PLAYBACK_SEEK);
 
     /// 3) Restore the nodes
     const std::list< NodeSerialization > & serializedNodes = obj.getNodesSerialization();

@@ -576,7 +576,7 @@ void
 OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     _ofxEffectInstance->updateThreadLocalRenderTime( (int)t );
-    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t,NULL );
+    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t,NULL, Natron::PLAYBACK_SEEK);
 }
 
 /// get the first and last times available on the effect's timeline

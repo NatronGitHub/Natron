@@ -838,6 +838,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glEnd();
         
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
+    glCheckError();
 }
 
 void
@@ -965,6 +966,7 @@ CurveWidgetPrivate::drawScale()
             }
         }
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    glCheckError();
 } // drawScale
 
 void
@@ -2367,7 +2369,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         break;
 
     case DRAGGING_TIMELINE:
-        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(),NULL );
+        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(),NULL, Natron::CURVE_EDITOR_SEEK );
         break;
 
     case NONE:

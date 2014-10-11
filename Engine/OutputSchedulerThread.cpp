@@ -1925,7 +1925,7 @@ void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
     assert(_viewer);
-    _viewer->getTimeline()->seekFrame(time, _viewer);
+    _viewer->getTimeline()->seekFrame(time, _viewer, Natron::PLAYBACK_SEEK);
 }
 
 int

@@ -33,7 +33,7 @@ enum TIMELINE_STATE
 
 enum TIMELINE_CHANGE_REASON
 {
-    USER_SEEK = 0, PLAYBACK_SEEK = 1
+    USER_SEEK = 0, PLAYBACK_SEEK = 1, CURVE_EDITOR_SEEK = 2,
 };
 
 // when adding more standard channels,

@@ -4479,7 +4479,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL);
+        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::PLAYBACK_SEEK);
     }
 }
 
@@ -4508,7 +4508,7 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL);
+        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::PLAYBACK_SEEK);
     }
 }
 

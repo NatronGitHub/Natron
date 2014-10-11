@@ -3358,7 +3358,7 @@ NodeGraph::onTimeChanged(SequenceTime time,
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {
         if ( (viewers[i] != lastTimelineSeekCaller) || (reason == USER_SEEK) ) {
-            viewers[i]->renderCurrentFrame(reason == USER_SEEK); 
+            viewers[i]->renderCurrentFrame(reason != PLAYBACK_SEEK);
         }
     }
 }

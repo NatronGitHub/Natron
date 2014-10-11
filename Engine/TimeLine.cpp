@@ -90,7 +90,8 @@ TimeLine::setFrameRange(SequenceTime first,
 
 void
 TimeLine::seekFrame(SequenceTime frame,
-                    Natron::OutputEffectInstance* caller)
+                    Natron::OutputEffectInstance* caller,
+                    Natron::TIMELINE_CHANGE_REASON reason)
 {
     bool changed = false;
     {
@@ -105,7 +106,7 @@ TimeLine::seekFrame(SequenceTime frame,
         if (_project) {
             _project->setLastTimelineSeekCaller(caller);
         }
-        emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
+        emit frameChanged(frame, (int)reason);
     }
 }
 
@@ -327,7 +328,7 @@ TimeLine::goToPreviousKeyframe()
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if ( lowerBound != _keyframes.begin() ) {
         --lowerBound;
-        seekFrame(*lowerBound,NULL);
+        seekFrame(*lowerBound,NULL,Natron::PLAYBACK_SEEK);
     }
 }
 
@@ -340,7 +341,7 @@ TimeLine::goToNextKeyframe()
     _keyframes.sort();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if ( upperBound != _keyframes.end() ) {
-        seekFrame(*upperBound,NULL);
+        seekFrame(*upperBound,NULL,Natron::PLAYBACK_SEEK);
     }
 }
 
