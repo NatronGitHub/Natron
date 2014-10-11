@@ -1213,8 +1213,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
     
     if (isCached) {
         
-        ///A ptr to a higher resolution of the image
-        ImagePtr imageWithInferiorMMLevelFound;
+        ///A ptr to a higher resolution of the image or an image with different comps/bitdepth
+        ImagePtr imageToConvert;
         
         bool imageConversionNeeded = false;
         
@@ -1257,19 +1257,19 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 ///Same resolution but different comps/bitdepth
                 if (imgMMlevel == mipMapLevel) {
                     imageConversionNeeded = true;
-                    *image = *it;
+                    imageToConvert = *it;
                     break;
                 }
                 
                 assert(imgMMlevel < mipMapLevel);
                 
-                if (!imageWithInferiorMMLevelFound) {
-                    imageWithInferiorMMLevelFound = *it;
+                if (!imageToConvert) {
+                    imageToConvert = *it;
                     imageConversionNeeded = imgComps != components || imgDepth != bitdepth;
 
                 } else {
-                    if (imgMMlevel < imageWithInferiorMMLevelFound->getMipMapLevel()) {
-                        imageWithInferiorMMLevelFound = *it;
+                    if (imgMMlevel < imageToConvert->getMipMapLevel()) {
+                        imageToConvert = *it;
                         imageConversionNeeded = imgComps != components || imgDepth != bitdepth;
 
                     }
@@ -1279,15 +1279,15 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
             }
         }
         
-        if (!imageWithInferiorMMLevelFound && !*image) {
+        if (!imageToConvert && !*image) {
             ///We only found an image with a mipmap level > to the one requested or unconvertable comps/bitdepth
             isCached = false;
             
-        } else if (imageWithInferiorMMLevelFound && !*image) {
+        } else if (imageToConvert && !*image) {
             
             if (imageConversionNeeded) {
                 
-                boost::shared_ptr<ImageParams> imageParams(new ImageParams(*imageWithInferiorMMLevelFound->getParams()));
+                boost::shared_ptr<ImageParams> imageParams(new ImageParams(*imageToConvert->getParams()));
                 imageParams->setComponents(components);
                 imageParams->setBitDepth(bitdepth);
                 
@@ -1303,16 +1303,16 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 
                 bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
                 
-                imageWithInferiorMMLevelFound->convertToFormat(imageWithInferiorMMLevelFound->getBounds(),
-                                                               getApp()->getDefaultColorSpaceForBitDepth( imageWithInferiorMMLevelFound->getBitDepth() ),
+                imageToConvert->convertToFormat(imageToConvert->getBounds(),
+                                                               getApp()->getDefaultColorSpaceForBitDepth( imageToConvert->getBitDepth() ),
                                                                getApp()->getDefaultColorSpaceForBitDepth(bitdepth), channelForAlpha, false, true, unPremultIfNeeded, img.get());
                 
-                imageWithInferiorMMLevelFound = img;
+                imageToConvert = img;
                 
             }
             
-            if (imageWithInferiorMMLevelFound->getMipMapLevel() != mipMapLevel) {
-                boost::shared_ptr<ImageParams> oldParams = imageWithInferiorMMLevelFound->getParams();
+            if (imageToConvert->getMipMapLevel() != mipMapLevel) {
+                boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
                 
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
                                                                                oldParams->getRoD(),
@@ -1337,14 +1337,14 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 
                 img->allocateMemory();
                 
-                imageWithInferiorMMLevelFound->downscaleMipMap(imageWithInferiorMMLevelFound->getBounds(),
-                                                               imageWithInferiorMMLevelFound->getMipMapLevel(), img->getMipMapLevel() , true, img.get());
+                imageToConvert->downscaleMipMap(imageToConvert->getBounds(),
+                                                               imageToConvert->getMipMapLevel(), img->getMipMapLevel() , true, img.get());
                 
-                imageWithInferiorMMLevelFound = img;
+                imageToConvert = img;
                 
             }
             
-            *image = imageWithInferiorMMLevelFound;
+            *image = imageToConvert;
             
         } else if (*image) {
             
