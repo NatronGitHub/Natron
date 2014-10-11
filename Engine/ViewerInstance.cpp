@@ -340,8 +340,10 @@ static bool checkTreeCanRender(Node* node)
 //if render was aborted, remove the frame from the cache as it contains only garbage
 #define abortCheck(input) if ( (!isSequentialRender && canAbort && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time) ) ||  \
                             (isSequentialRender && input->isAbortedFromPlayback()) )  {\
-                                params->cachedFrame->setAborted(true); \
-                                appPTR->removeFromViewerCache(params->cachedFrame); \
+                                if (params->cachedFrame) { \
+                                    params->cachedFrame->setAborted(true); \
+                                    appPTR->removeFromViewerCache(params->cachedFrame); \
+                                } \
                                 return StatOK; \
                           }
 
@@ -788,8 +790,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                       imageDepth) );
 
                     if (!params->image) {
-                        params->cachedFrame->setAborted(true);
-                        appPTR->removeFromViewerCache(params->cachedFrame);
+                        if (params->cachedFrame) {
+                            params->cachedFrame->setAborted(true);
+                            appPTR->removeFromViewerCache(params->cachedFrame);
+                        }
                         if (didEmitInputNRenderingSignal) {
                             _node->notifyInputNIsFinishedRendering(activeInputIndex);
                         }
@@ -818,7 +822,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         if (!params->image) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
             params->cachedFrame->setAborted(true);
-            appPTR->removeFromViewerCache(params->cachedFrame);
+            if (params->cachedFrame) {
+                appPTR->removeFromViewerCache(params->cachedFrame);
+            }
         
             return StatFailed;
         }
