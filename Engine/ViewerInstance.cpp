@@ -757,7 +757,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                        view,
                                                        !isSequentialRender,  // is this render due to user interaction ?
                                                        isSequentialRender, // is this sequential ?
-                                                       false,
+                                                       true,
                                                        inputNodeHash);
         
 

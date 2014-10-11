@@ -1695,7 +1695,7 @@ private:
                                                                    i,
                                                                    false,  // is this render due to user interaction ?
                                                                    canOnlyHandleOneView, // is this sequential ?
-                                                                   false,
+                                                                   true,
                                                                    activeInputToRenderHash);
                     
                     boost::shared_ptr<Natron::Image> img =
@@ -1773,7 +1773,7 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
                                                    view,
                                                    false,  // is this render due to user interaction ?
                                                    canOnlyHandleOneView, // is this sequential ?
-                                                   false,
+                                                   true,
                                                    hash);
     
     

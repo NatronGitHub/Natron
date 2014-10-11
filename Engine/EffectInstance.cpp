@@ -554,7 +554,7 @@ EffectInstance::setParallelRenderArgs(int time,
                                       int view,
                                       bool isRenderUserInteraction,
                                       bool isSequential,
-                                      bool isPreview,
+                                      bool canAbort,
                                       U64 nodeHash,
                                       U64 rotoAge)
 {
@@ -568,7 +568,7 @@ EffectInstance::setParallelRenderArgs(int time,
     args.nodeHash = nodeHash;
     args.rotoAge = rotoAge;
     
-    args.isPreview = isPreview;
+    args.canAbort = canAbort;
     
     ++args.validArgs;
     
@@ -640,7 +640,7 @@ EffectInstance::aborted() const
             ///No valid args, probably not rendering
             return false;
         } else {
-            if (args.isRenderResponseToUserInteraction && !args.isPreview) {
+            if (args.isRenderResponseToUserInteraction && args.canAbort) {
                 ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                 return args.nodeHash != getHash() ||
                 args.time != getApp()->getTimeLine()->currentFrame();
@@ -2388,7 +2388,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                                   frameArgs.view,
                                                                   frameArgs.isRenderResponseToUserInteraction,
                                                                   frameArgs.isSequentialRender,
-                                                                  frameArgs.isPreview,
+                                                                  frameArgs.canAbort,
                                                                   frameArgs.nodeHash) );
         
     } else {
