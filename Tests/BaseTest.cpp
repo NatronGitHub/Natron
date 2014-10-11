@@ -23,7 +23,6 @@ using namespace Natron;
 
 BaseTest::BaseTest()
     : testing::Test()
-      , _genericTestPluginID()
       , _gainPluginID()
       , _dotGeneratorPluginID()
       , _readOIIOPluginID()
@@ -40,9 +39,6 @@ void
 BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
-
-    _genericTestPluginID = QString("GenericTest  [OFX]");
-    _allTestPluginIDs.push_back(_genericTestPluginID);
 
     _gainPluginID =  QString("Gain  [OFX]");
     _allTestPluginIDs.push_back(_gainPluginID);
@@ -76,9 +72,7 @@ BaseTest::SetUp()
     int argc = 0;
 
     manager->load(argc,NULL,QString(),QStringList(),std::list<std::pair<int,int> >(),QString());
-    //////WARNING: This test disables multi-threading! if it fails it will never re-enable it
-    ////// hence the next time you launch the application multi-threading will be DISABLED.
-    manager->setNumberOfThreads(-1);
+
     _app = manager->getTopLevelInstance();
 
     registerTestPlugins();

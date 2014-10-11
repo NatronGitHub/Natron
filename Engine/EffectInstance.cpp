@@ -510,9 +510,6 @@ EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
 
 EffectInstance::~EffectInstance()
 {
-    if (_node) {
-        appPTR->removeAllImagesFromCacheWithMatchingKey( getHash() );
-    }
     clearPluginMemoryChunks();
 }
 

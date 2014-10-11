@@ -690,9 +690,7 @@ Node::quitAnyProcessing()
 
 Node::~Node()
 {
-    if (_imp->liveInstance) {
-        delete _imp->liveInstance;
-    }
+    delete _imp->liveInstance;
 }
 
 void
@@ -703,6 +701,7 @@ Node::removeReferences()
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine();
     }
+    appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
     delete _imp->liveInstance;
     _imp->liveInstance = 0;
 }
