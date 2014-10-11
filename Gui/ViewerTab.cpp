@@ -1085,7 +1085,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     _imp->_currentFrameBox->setValue(time);
     
     if (_imp->_timeLineGui->getTimeline() != _imp->_gui->getApp()->getTimeLine()) {
-        _imp->_viewerNode->renderCurrentFrame(true);
+        _imp->_viewerNode->renderCurrentFrame(false);
     }
 }
 
