@@ -1273,7 +1273,7 @@ public:
 
     void notifyRenderFinished();
 
-    void renderCurrentFrame();
+    void renderCurrentFrame(bool canAbort);
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 

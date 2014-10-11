@@ -968,7 +968,7 @@ ViewerGL::resizeGL(int width,
     if ( viewer->getUiContext() && _imp->viewerTab->getGui() &&
          !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
          ( ( oldWidth != width) || ( oldHeight != height) ) ) {
-        viewer->renderCurrentFrame();
+        viewer->renderCurrentFrame(true);
         updateGL();
     }
 }
@@ -2598,7 +2598,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         _imp->oldClick = newClick;
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
         }
         //  else {
         mustRedraw = true;
@@ -2612,7 +2612,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.y1 -= dySinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
             }
             mustRedraw = true;
         }
@@ -2624,7 +2624,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.x1 -= dxSinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
             }
             mustRedraw = true;
         }
@@ -2636,7 +2636,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.x2 -= dxSinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
             }
             mustRedraw = true;
         }
@@ -2648,7 +2648,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.y2 -= dySinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
             }
             mustRedraw = true;
         }
@@ -2660,7 +2660,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.translate(-dxSinceLastMove,-dySinceLastMove);
         }
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
         }
         mustRedraw = true;
         break;
@@ -2675,7 +2675,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         l.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
         }
         mustRedraw = true;
         break;
@@ -2690,7 +2690,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         l.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
         }
         mustRedraw = true;
         break;
@@ -2705,7 +2705,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         l.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
         }
         mustRedraw = true;
         break;
@@ -2719,7 +2719,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         _imp->userRoIMutex.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
         }
         mustRedraw = true;
         break;
@@ -2930,7 +2930,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
 
     if ( displayingImage() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
@@ -2964,7 +2964,7 @@ ViewerGL::zoomSlot(int v)
     _imp->viewerTab->clearTimelineCacheLine();
     if ( displayingImage() ) {
         // appPTR->clearPlaybackCache();
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     } else {
         updateGL();
     }
@@ -3137,7 +3137,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     }
 
     if ( displayingImage() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
 
     if (!_imp->isUserRoISet) {
@@ -3161,7 +3161,7 @@ ViewerGL::setClipToDisplayWindow(bool b)
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if ( viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
 }
 
@@ -3512,7 +3512,7 @@ ViewerGL::setUserRoIEnabled(bool b)
         _imp->userRoIEnabled = b;
     }
     if ( displayingImage() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame();
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
     update();
 }

@@ -196,7 +196,7 @@ AddMultipleNodesCommand::undo()
     _graph->getGui()->getApp()->triggerAutoSave();
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame();
+        (*it)->renderCurrentFrame(true);
     }
 
 
@@ -233,7 +233,7 @@ AddMultipleNodesCommand::redo()
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame();
+        (*it)->renderCurrentFrame(true);
     }
 
 
@@ -322,7 +322,7 @@ RemoveMultipleNodesCommand::undo()
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame();
+        (*it)->renderCurrentFrame(true);
     }
     _graph->getGui()->getApp()->triggerAutoSave();
     _graph->getGui()->getApp()->redrawAllViewers();
@@ -405,7 +405,7 @@ RemoveMultipleNodesCommand::redo()
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame();
+        (*it)->renderCurrentFrame(true);
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -480,7 +480,7 @@ ConnectCommand::undo()
     std::list<ViewerInstance* > viewers;
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame();
+        (*it)->renderCurrentFrame(true);
     }
    
 } // undo
@@ -555,7 +555,7 @@ ConnectCommand::redo()
     std::list<ViewerInstance* > viewers;
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame();
+        (*it)->renderCurrentFrame(true);
     }
 
     ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>( _edge->getDest()->getNode()->getLiveInstance() );

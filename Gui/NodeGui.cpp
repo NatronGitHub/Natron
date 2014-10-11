@@ -1193,7 +1193,7 @@ NodeGui::activate(bool triggerRender)
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->renderCurrentFrame();
+            (*it)->renderCurrentFrame(true);
         }
     }
 }
@@ -1304,7 +1304,7 @@ NodeGui::deactivate(bool triggerRender)
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->renderCurrentFrame();
+            (*it)->renderCurrentFrame(true);
         }
     }
 }
@@ -2052,7 +2052,7 @@ NodeGui::onSwitchInputActionTriggered()
         std::list<ViewerInstance* > viewers;
         _internalNode->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->renderCurrentFrame();
+            (*it)->renderCurrentFrame(true);
         }
         _internalNode->getApp()->triggerAutoSave();
     }

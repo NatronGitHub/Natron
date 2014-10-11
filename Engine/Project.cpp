@@ -231,7 +231,7 @@ Project::refreshViewersAndPreviews()
             _imp->currentNodes[i]->computePreviewImage(time);
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance());
             if (n) {
-                n->getRenderEngine()->renderCurrentFrame();
+                n->getRenderEngine()->renderCurrentFrame(true);
             }
         }
     }
@@ -832,7 +832,7 @@ Project::evaluate(KnobI* /*knob*/,
             
             ViewerInstance* n = dynamic_cast<ViewerInstance*>( _imp->currentNodes[i]->getLiveInstance() );
             if (n) {
-                n->renderCurrentFrame();
+                n->renderCurrentFrame(true);
             }
         }
     }
@@ -1554,7 +1554,7 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
     std::list<ViewerInstance* > viewers;
     created->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame();
+        (*it)->renderCurrentFrame(true);
     }
 
     return ret;

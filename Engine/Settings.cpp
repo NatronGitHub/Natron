@@ -975,7 +975,7 @@ Settings::onKnobValueChanged(KnobI* k,
                             return;
                         }
                     }
-                    n->renderCurrentFrame();
+                    n->renderCurrentFrame(true);
                 }
             }
         }

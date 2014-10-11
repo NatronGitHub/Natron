@@ -2547,7 +2547,7 @@ EffectInstance::evaluate(KnobI* knob,
          it != viewers.end();
          ++it) {
         if (isSignificant) {
-            (*it)->renderCurrentFrame();
+            (*it)->renderCurrentFrame(true);
         } else {
             (*it)->redrawViewer();
         }
@@ -3420,9 +3420,9 @@ OutputEffectInstance::~OutputEffectInstance()
 }
 
 void
-OutputEffectInstance::renderCurrentFrame()
+OutputEffectInstance::renderCurrentFrame(bool canAbort)
 {
-    _engine->renderCurrentFrame();
+    _engine->renderCurrentFrame(canAbort);
 }
 
 bool

@@ -274,6 +274,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                              bool singleThreaded,
                              bool isSequentialRender,
                              U64 viewerHash,
+                             bool canAbort,
                              std::list<boost::shared_ptr<BufferableObject> >& outputFrames)
 {
     if (!_imp->uiContext) {
@@ -288,7 +289,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         
         boost::shared_ptr<BufferableObject> output;
-        ret[i] = renderViewer_internal(time,view, singleThreaded, isSequentialRender, i,viewerHash,&output);
+        ret[i] = renderViewer_internal(time,view, singleThreaded, isSequentialRender, i, viewerHash, canAbort, &output);
         if (output) {
             outputFrames.push_back(output);
         }
@@ -337,7 +338,7 @@ static bool checkTreeCanRender(Node* node)
 
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
-#define abortCheck(input) if ( (!isSequentialRender && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time) ) ||  \
+#define abortCheck(input) if ( (!isSequentialRender && canAbort && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time) ) ||  \
                             (isSequentialRender && input->isAbortedFromPlayback()) )  {\
                                 params->cachedFrame->setAborted(true); \
                                 appPTR->removeFromViewerCache(params->cachedFrame); \
@@ -351,6 +352,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                       bool isSequentialRender,
                                       int textureIndex,
                                       U64 viewerHash,
+                                      bool canAbort,
                                       boost::shared_ptr<BufferableObject>* outputObject)
 {
     // always running in the render thread
@@ -757,7 +759,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                        view,
                                                        !isSequentialRender,  // is this render due to user interaction ?
                                                        isSequentialRender, // is this sequential ?
-                                                       true,
+                                                       canAbort,
                                                        inputNodeHash);
         
 
@@ -1652,7 +1654,7 @@ ViewerInstance::onGainChanged(double exp)
     assert(_imp->uiContext);
     if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
          && ( getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame();
+        renderCurrentFrame(true);
     } else {
         _imp->uiContext->redraw();
     }
@@ -1671,7 +1673,7 @@ ViewerInstance::onMipMapLevelChanged(int level)
         _imp->viewerMipMapLevel = level;
     }
     if ( (getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame();
+        renderCurrentFrame(true);
     }
 }
 
@@ -1687,7 +1689,7 @@ ViewerInstance::onAutoContrastChanged(bool autoContrast,
         _imp->viewerParamsAutoContrast = autoContrast;
     }
     if ( refresh && (getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame();
+        renderCurrentFrame(true);
     }
 }
 
@@ -1713,7 +1715,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
     assert(_imp->uiContext);
     if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
          && ( getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame();
+        renderCurrentFrame(true);
     } else {
         _imp->uiContext->redraw();
     }
@@ -1730,7 +1732,7 @@ ViewerInstance::setDisplayChannels(DisplayChannels channels)
         _imp->viewerParamsChannels = channels;
     }
     if ( !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame();
+        renderCurrentFrame(true);
     }
 }
 

@@ -1976,7 +1976,7 @@ private:
 
         std::list<boost::shared_ptr<BufferableObject> > frames;
         try {
-            stat = _viewer->renderViewer(time,view,false,true,_viewer->getHash(),frames);
+            stat = _viewer->renderViewer(time,view,false,true,_viewer->getHash(),true,frames);
         } catch (...) {
             stat = StatFailed;
         }
@@ -2031,7 +2031,7 @@ ViewerDisplayScheduler::timelineSetBounds(int left, int right)
 
 typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
 
-BufferableObjectList renderCurrentFrameFunctor(ViewerInstance* viewer,int frame,U64 viewerHash)
+BufferableObjectList renderCurrentFrameFunctor(ViewerInstance* viewer,bool canAbort,int frame,U64 viewerHash)
 {
     ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
     ///it calls appendToBuffer by itself
@@ -2042,7 +2042,7 @@ BufferableObjectList renderCurrentFrameFunctor(ViewerInstance* viewer,int frame,
     
     BufferableObjectList ret;
     try {
-        stat = viewer->renderViewer(frame,view,QThread::currentThread() == qApp->thread(),false,viewerHash,ret);
+        stat = viewer->renderViewer(frame,view,QThread::currentThread() == qApp->thread(),false,viewerHash,canAbort,ret);
     } catch (...) {
         stat = StatFailed;
     }
@@ -2132,7 +2132,7 @@ RenderEngine::renderFromCurrentFrame(OutputSchedulerThread::RenderDirection forw
 }
 
 void
-RenderEngine::renderCurrentFrame()
+RenderEngine::renderCurrentFrame(bool canAbort)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2168,7 +2168,7 @@ RenderEngine::renderCurrentFrame()
     
     ///If the user doesn't want to use any thread, run it into the main thread
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
-        renderCurrentFrameFunctor(isViewer, isViewer->getTimeline()->currentFrame(),isViewer->getHash());
+        renderCurrentFrameFunctor(isViewer, canAbort, isViewer->getTimeline()->currentFrame(),isViewer->getHash());
     } else {
         
         ///Run in a separate thread, we don't need to abort the other threads (and we can't since the abort flag
@@ -2181,7 +2181,7 @@ RenderEngine::renderCurrentFrame()
             _imp->futures.push_back(watcher); 
         }
         
-        QFuture<BufferableObjectList> future = QtConcurrent::run(renderCurrentFrameFunctor,isViewer,isViewer->getTimeline()->currentFrame(),
+        QFuture<BufferableObjectList> future = QtConcurrent::run(renderCurrentFrameFunctor,isViewer, canAbort, isViewer->getTimeline()->currentFrame(),
                                                                  isViewer->getHash());
         watcher->setFuture(future);
     }

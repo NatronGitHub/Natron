@@ -387,7 +387,7 @@ AppInstance::checkViewersConnection()
         assert(nodes[i]);
         ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
         if (n) {
-            n->renderCurrentFrame();
+            n->renderCurrentFrame(true);
         }
     }
 }

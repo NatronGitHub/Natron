@@ -1085,7 +1085,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     _imp->_currentFrameBox->setValue(time);
     
     if (_imp->_timeLineGui->getTimeline() != _imp->_gui->getApp()->getTimeLine()) {
-        _imp->_viewerNode->renderCurrentFrame();
+        _imp->_viewerNode->renderCurrentFrame(true);
     }
 }
 
@@ -1100,7 +1100,7 @@ ViewerTab::centerViewer()
 {
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
-        _imp->_viewerNode->renderCurrentFrame();
+        _imp->_viewerNode->renderCurrentFrame(true);
     } else {
         _imp->viewer->updateGL();
     }
@@ -1110,7 +1110,7 @@ void
 ViewerTab::refresh()
 {
     _imp->_viewerNode->forceFullComputationOnNextFrame();
-    _imp->_viewerNode->renderCurrentFrame();
+    _imp->_viewerNode->renderCurrentFrame(true);
 }
 
 ViewerTab::~ViewerTab()
@@ -1311,7 +1311,7 @@ ViewerTab::showView(int view)
 
     _imp->_currentViewIndex = view;
     abortRendering();
-    _imp->_viewerNode->renderCurrentFrame();
+    _imp->_viewerNode->renderCurrentFrame(true);
 }
 
 void
@@ -2396,7 +2396,7 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
         }
     }
     _imp->_viewerNode->setInputA(inputIndex);
-    _imp->_viewerNode->renderCurrentFrame();
+    _imp->_viewerNode->renderCurrentFrame(true);
 }
 
 ///Called when the user change the combobox choice
@@ -2427,7 +2427,7 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             }
         }
     }
-    _imp->_viewerNode->renderCurrentFrame();
+    _imp->_viewerNode->renderCurrentFrame(true);
 }
 
 ///This function is called only when the user changed inputs on the node graph

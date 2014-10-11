@@ -3204,7 +3204,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     computeHash();
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
-        dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame();
+        dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame(true);
     }
 }
 
