@@ -118,7 +118,8 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
-
+    virtual void setRange() OVERRIDE FINAL;
+    
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
@@ -160,6 +161,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
+    virtual void setRange() OVERRIDE FINAL;
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
@@ -378,6 +380,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
+    virtual void setRange() OVERRIDE FINAL;
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
@@ -425,6 +428,9 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
+    virtual void setRange() OVERRIDE FINAL;
+    virtual void setDisplayRange() OVERRIDE FINAL;
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -467,6 +473,9 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
+    virtual void setDisplayRange() OVERRIDE FINAL;
+    virtual void setRange() OVERRIDE FINAL;
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -510,6 +519,9 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
+    virtual void setRange() OVERRIDE FINAL;
+    virtual void setDisplayRange() OVERRIDE FINAL;
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;

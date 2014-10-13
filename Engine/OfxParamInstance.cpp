@@ -378,6 +378,16 @@ OfxIntegerInstance::setDisplayRange()
     _knob->setDisplayMaximum(displayMax);
 }
 
+void
+OfxIntegerInstance::setRange()
+{
+    int mini = getProperties().getIntProperty(kOfxParamPropMin);
+    int maxi = getProperties().getIntProperty(kOfxParamPropMax);
+    
+    _knob->setMinimum(mini);
+    _knob->setMaximum(maxi);
+}
+
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
 
@@ -515,6 +525,16 @@ OfxDoubleInstance::setDisplayRange()
 
     _knob->setDisplayMinimum(displayMin);
     _knob->setDisplayMaximum(displayMax);
+}
+
+void
+OfxDoubleInstance::setRange()
+{
+    double mini = getProperties().getDoubleProperty(kOfxParamPropMin);
+    double maxi = getProperties().getDoubleProperty(kOfxParamPropMax);
+    
+    _knob->setMinimum(mini);
+    _knob->setMaximum(maxi);
 }
 
 boost::shared_ptr<KnobI>
@@ -1479,6 +1499,21 @@ OfxDouble2DInstance::setDisplayRange()
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
+void
+OfxDouble2DInstance::setRange()
+{
+    std::vector<double> displayMins(2);
+    std::vector<double> displayMaxs(2);
+    
+    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropMin,0);
+    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropMin,1);
+    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropMax,0);
+    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropMax,1);
+    _knob->setMinimumsAndMaximums(displayMins, displayMaxs);
+
+}
+
+
 boost::shared_ptr<KnobI>
 OfxDouble2DInstance::getKnob() const
 {
@@ -1669,6 +1704,34 @@ void
 OfxInteger2DInstance::setSecret()
 {
     _knob->setSecret( getSecret() );
+}
+
+void
+OfxInteger2DInstance::setDisplayRange()
+{
+    std::vector<int> displayMins(2);
+    std::vector<int> displayMaxs(2);
+    
+    displayMins[0] = getProperties().getIntProperty(kOfxParamPropDisplayMin,0);
+    displayMins[1] = getProperties().getIntProperty(kOfxParamPropDisplayMin,1);
+    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropDisplayMax,0);
+    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropDisplayMax,1);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    
+}
+
+void
+OfxInteger2DInstance::setRange()
+{
+    std::vector<int> displayMins(2);
+    std::vector<int> displayMaxs(2);
+    
+    displayMins[0] = getProperties().getIntProperty(kOfxParamPropMin,0);
+    displayMins[1] = getProperties().getIntProperty(kOfxParamPropMin,1);
+    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropMax,0);
+    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropMax,1);
+    _knob->setMinimumsAndMaximums(displayMins, displayMaxs);
+    
 }
 
 void
@@ -1899,6 +1962,38 @@ OfxDouble3DInstance::setSecret()
 }
 
 void
+OfxDouble3DInstance::setDisplayRange()
+{
+    std::vector<double> displayMins(3);
+    std::vector<double> displayMaxs(3);
+    
+    
+    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0);
+    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1);
+    displayMins[2] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,2);
+    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0);
+    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1);
+    displayMaxs[2] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,2);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+}
+
+void
+OfxDouble3DInstance::setRange()
+{
+    std::vector<double> displayMins(3);
+    std::vector<double> displayMaxs(3);
+    
+    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropMin,0);
+    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropMin,1);
+    displayMins[2] = getProperties().getDoubleProperty(kOfxParamPropMin,2);
+    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropMax,0);
+    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropMax,1);
+    displayMaxs[2] = getProperties().getDoubleProperty(kOfxParamPropMax,2);
+    _knob->setMinimumsAndMaximums(displayMins, displayMaxs);
+    
+}
+
+void
 OfxDouble3DInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -2102,6 +2197,38 @@ void
 OfxInteger3DInstance::setSecret()
 {
     _knob->setSecret( getSecret() );
+}
+
+void
+OfxInteger3DInstance::setDisplayRange()
+{
+    std::vector<int> displayMins(3);
+    std::vector<int> displayMaxs(3);
+    
+    displayMins[0] = getProperties().getIntProperty(kOfxParamPropDisplayMin,0);
+    displayMins[1] = getProperties().getIntProperty(kOfxParamPropDisplayMin,1);
+    displayMins[2] = getProperties().getIntProperty(kOfxParamPropDisplayMin,2);
+    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropDisplayMax,0);
+    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropDisplayMax,1);
+    displayMaxs[2] = getProperties().getIntProperty(kOfxParamPropDisplayMax,2);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    
+}
+
+void
+OfxInteger3DInstance::setRange()
+{
+    std::vector<int> displayMins(3);
+    std::vector<int> displayMaxs(3);
+    
+    displayMins[0] = getProperties().getIntProperty(kOfxParamPropMin,0);
+    displayMins[1] = getProperties().getIntProperty(kOfxParamPropMin,1);
+    displayMins[2] = getProperties().getIntProperty(kOfxParamPropMin,2);
+    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropMax,0);
+    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropMax,1);
+    displayMaxs[2] = getProperties().getIntProperty(kOfxParamPropMax,2);
+    _knob->setMinimumsAndMaximums(displayMins, displayMaxs);
+    
 }
 
 void
