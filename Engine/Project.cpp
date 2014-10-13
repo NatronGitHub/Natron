@@ -1963,23 +1963,26 @@ Project::canonicalizePath(std::string& str)
     
     expandVariable(envvar, str);
     
-    ///Now check if the string is relative
-    if ( !str.empty() && isRelative(str) ) {
+    if ( !str.empty() ) {
         
-        ///If it doesn't start with an env var but is relative, prepend the project env var
-        std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
-        if (foundProject != envvar.end()) {
-			if (foundProject->second.empty()) {
-				return;
-			}
-            const char& c = foundProject->second[foundProject->second.size() - 1];
-            bool addTrailingSlash = c != '/' && c != '\\';
-            std::string copy = foundProject->second;
-            if (addTrailingSlash) {
-                copy += '/';
+        ///Now check if the string is relative
+        
+        if (isRelative(str)) {
+            ///If it doesn't start with an env var but is relative, prepend the project env var
+            std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+            if (foundProject != envvar.end()) {
+                if (foundProject->second.empty()) {
+                    return;
+                }
+                const char& c = foundProject->second[foundProject->second.size() - 1];
+                bool addTrailingSlash = c != '/' && c != '\\';
+                std::string copy = foundProject->second;
+                if (addTrailingSlash) {
+                    copy += '/';
+                }
+                copy += str;
+                str = copy;
             }
-            copy += str;
-            str = copy;
         }
         
         ///Canonicalize
@@ -1990,6 +1993,7 @@ Project::canonicalizePath(std::string& str)
         } else {
             str = canonical.toStdString();
         }
+        
     }
 
 }

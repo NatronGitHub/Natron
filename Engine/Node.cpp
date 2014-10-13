@@ -3021,7 +3021,9 @@ Node::dequeueActions()
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    _imp->liveInstance->dequeueValuesSet();
+    if (_imp->liveInstance) {
+        _imp->liveInstance->dequeueValuesSet();
+    }
     
     std::list<ConnectAction> queue;
     {
