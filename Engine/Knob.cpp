@@ -1675,6 +1675,12 @@ KnobHolder::getCurrentTime() const
     return getApp()->getTimeLine()->currentFrame();
 }
 
+void
+KnobHolder::discardAppPointer()
+{
+    _imp->app = 0;
+}
+
 /***************************STRING ANIMATION******************************************/
 void
 AnimatingString_KnobHelper::cloneExtraData(KnobI* other)

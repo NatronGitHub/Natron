@@ -102,6 +102,7 @@ Project::~Project()
     //removeAutoSaves();
 }
 
+  
 bool
 Project::loadProject(const QString & path,
                      const QString & name)
@@ -481,6 +482,10 @@ Project::onAutoSaveTimerTriggered()
 {
     assert( !appPTR->isBackground() );
 
+    if (!getApp()) {
+        return;
+    }
+    
     ///check that all schedulers are not working.
     ///If so launch an auto-save, otherwise, restart the timer.
     bool canAutoSave = true;

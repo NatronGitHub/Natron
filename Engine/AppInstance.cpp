@@ -68,6 +68,7 @@ AppInstance::~AppInstance()
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
     _imp->_currentProject->clearNodes(false);
+    _imp->_currentProject->discardAppPointer();
 }
 
 void

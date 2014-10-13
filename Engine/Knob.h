@@ -1322,6 +1322,8 @@ public:
      **/
     void dequeueValuesSet();
     
+    void discardAppPointer();
+    
 protected:
 
     bool isEvaluationBlocked() const;

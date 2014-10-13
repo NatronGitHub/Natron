@@ -104,11 +104,10 @@ GuiAppInstance::aboutToQuit()
 
 GuiAppInstance::~GuiAppInstance()
 {
-    ///Disconnect so that if playback is on it doesn't attempt to call anything
-    ///clear nodes prematurely so that any thread running is stopped
     ///process events before closing gui
     QCoreApplication::processEvents();
 
+    ///clear nodes prematurely so that any thread running is stopped
     getProject()->clearNodes(false);
 
     _imp->_nodeMapping.clear();
