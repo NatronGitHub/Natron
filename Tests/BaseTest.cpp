@@ -23,10 +23,6 @@ using namespace Natron;
 
 BaseTest::BaseTest()
     : testing::Test()
-      , _gainPluginID()
-      , _dotGeneratorPluginID()
-      , _readOIIOPluginID()
-      , _writeOIIOPluginID()
       , _app(0)
 {
 }
@@ -39,9 +35,6 @@ void
 BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
-
-    _gainPluginID =  QString("Gain  [OFX]");
-    _allTestPluginIDs.push_back(_gainPluginID);
 
     _dotGeneratorPluginID = QString("Dot Generator  [OFX]");
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
