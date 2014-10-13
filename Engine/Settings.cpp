@@ -663,7 +663,7 @@ Settings::setDefaultValues()
     _renderInSeparateProcess->setDefaultValue(false,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
-    _fixPathsOnProjectPathChanged->setDefaultValue(false);
+    _fixPathsOnProjectPathChanged->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10,0);
     _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);

@@ -1839,9 +1839,39 @@ Project::makeRelativeToVariable(const std::string& varName,const std::string& va
     
 }
     
+bool
+Project::fixFilePath(const std::string& projectPathName,const std::string& newProjectPath,
+                    std::string& filePath)
+{
+    if (filePath.size() < (projectPathName.size() + 2) //< filepath doesn't have enough space to  contain the variable
+        || filePath[0] != '['
+        || filePath[projectPathName.size() + 1] != ']'
+        || filePath.substr(1,projectPathName.size()) != projectPathName) {
+        return false;
+    }
+    
+    canonicalizePath(filePath);
+    
+    if (newProjectPath.empty()) {
+        return true; //keep it absolute if the variables points to nothing
+    } else {
+        QDir dir(newProjectPath.c_str());
+        if (!dir.exists()) {
+            return false;
+        }
+        
+        filePath = dir.relativeFilePath(filePath.c_str()).toStdString();
+        if (newProjectPath[newProjectPath.size() - 1] == '/') {
+            filePath = '[' + projectPathName + ']' + filePath;
+        } else {
+            filePath = '[' + projectPathName + "]/" + filePath;
+        }
+        return true;
+    }
+}
+    
 void
-Project::fixRelativeFilePaths(const std::map<std::string,std::string>& envVars,
-                            const std::string& projectPathName,const std::string& newProjectPath)
+Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath)
 {
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     {
@@ -1863,7 +1893,7 @@ Project::fixRelativeFilePaths(const std::map<std::string,std::string>& envVars,
                 std::string filepath = isString->getValue();
                 
                 if (!filepath.empty()) {
-                    if (ProjectPrivate::fixFilePath(envVars, projectPathName, newProjectPath, filepath)) {
+                    if (fixFilePath(projectPathName, newProjectPath, filepath)) {
                         isString->setValue(filepath, 0);
                     }
                 }
@@ -1911,14 +1941,6 @@ Project::fixPathName(const std::string& oldName,const std::string& newName)
 
 }
     
-void
-Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath)
-{
-    
-    std::map<std::string,std::string> env;
-    getEnvironmentVariables(env);
-    fixRelativeFilePaths(env,projectPathName, newProjectPath);
-}
     
 bool
 Project::isRelative(const std::string& str)
@@ -2025,7 +2047,7 @@ Project::onOCIOConfigPathChanged(const std::string& path)
     }
     if (env != newEnv) {
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(envMap, NATRON_OCIO_ENV_VAR_NAME, path);
+            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path);
         }
         _imp->envVars->setValue(newEnv, 0);
     }

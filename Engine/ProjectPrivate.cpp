@@ -388,39 +388,12 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     }
     if (env != newEnv) {
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            _publicInterface->fixRelativeFilePaths(envMap, NATRON_PROJECT_ENV_VAR_NAME, pathCpy);
+            _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy);
         }
         envVars->setValue(newEnv, 0);
     }
 }
     
-bool
-ProjectPrivate::fixFilePath(const std::map<std::string,std::string>& env,
-                            const std::string& projectPathName,const std::string& newProjectPath,
-                     std::string& filePath)
-{
-    if (filePath.size() < (projectPathName.size() + 2) //< filepath doesn't have enough space to  contain the variable
-        || filePath[0] != '['
-        || filePath[projectPathName.size() + 1] != ']'
-        || filePath.substr(1,projectPathName.size()) != projectPathName) {
-        return false;
-    }
-    
-    ///Expand the old variable
-    Project::expandVariable(env, filePath);
-    
-    if (newProjectPath.empty()) {
-        return true; //keep it absolute if the variables points to nothing
-    } else {
-        QDir dir(newProjectPath.c_str());
-        if (!dir.exists()) {
-            return false;
-        }
-        
-        filePath = dir.relativeFilePath(filePath.c_str()).toStdString();
-        filePath = '[' + projectPathName + ']' + filePath;
-        return true;
-    }
-}
+
     
 } // namespace Natron

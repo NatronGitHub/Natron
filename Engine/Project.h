@@ -263,8 +263,7 @@ public:
      * change the file-path to be relative to the newProjectPath.
      **/
     void fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath);
-    void fixRelativeFilePaths(const std::map<std::string,std::string>& envVars,
-                              const std::string& projectPathName,const std::string& newProjectPath);
+
     
     /**
      * @brief For all active nodes, if it has a file-path parameter using the oldName of a variable, it will turn it into the
@@ -332,6 +331,10 @@ private:
     bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,const QString& realFilePath);
 
     QString saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
+
+    
+    bool fixFilePath(const std::string& projectPathName,const std::string& newProjectPath,
+                        std::string& filePath);
 
 
     /**

@@ -889,7 +889,9 @@ FileSystemModel::onDirectoryLoadedByGatherer(const QString& directory)
         return;
     }
     
-    assert(directory == _imp->currentRootPath);
+    if (directory != _imp->currentRootPath) {
+        return;
+    }
     
     if (!_imp->rootPathWatched) {
         assert(_imp->watcher);

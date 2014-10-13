@@ -109,10 +109,6 @@ struct ProjectPrivate
      * @brief Auto fills the project directory parameter given the project file path
      **/
     void autoSetProjectDirectory(const QString& path);
-    
-    static bool fixFilePath(const std::map<std::string,std::string>& env,
-                            const std::string& projectPathName,const std::string& newProjectPath,
-                     std::string& filePath);
 };
 }
 
