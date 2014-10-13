@@ -8,9 +8,9 @@ Alexandre Gauthier-Foichat <MrKepzie@github>
 
 #Artists:
 
-Laurence Boissieux (icons + splashscreen)
-Bianca Ilaria Coniglione (icons + logo)
-Jean-Christophe Levet (icons)
+Laurence Boissieux (old icons + old splashscreen)
+Bianca Ilaria Coniglione (icons + old logo)
+Jean-Christophe Levet (icons + logo + splashscreen)
 
 #Packaging:
 
