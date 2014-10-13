@@ -2923,7 +2923,7 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
             nodeIsRendering = _imp->nodeIsRendering;
         }
         
-        mustDequeue = nodeIsRendering == 0;
+        mustDequeue = nodeIsRendering == 0 && !appPTR->isBackground();
     }
 
     if (mustDequeue) {
