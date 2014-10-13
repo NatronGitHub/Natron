@@ -98,12 +98,6 @@ public:
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) = 0;
 
     /**
-     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
-     * evaluate any change (i.e: force a new render)
-     **/
-    virtual void evaluateAnimationChange() = 0;
-
-    /**
      * @brief Copies all the values, animations and extra data the other knob might have
      * to this knob. This function calls cloneExtraData.
      * The evaluateValueChange function will not be called as a result of the clone.
@@ -163,6 +157,16 @@ public:
      * @brief Calls deleteValueAtTime with a reason of Natron::PLUGIN_EDITED.
      **/
     void deleteValueAtTime(int time,int dimension);
+    
+    /**
+     * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
+     **/
+    virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    
+    /**
+     * @brief Changes the interpolation type for the given keyframe
+     **/
+    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeType interpolation,KeyFrame* newKey) = 0;
 
     /**
      * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
@@ -472,6 +476,16 @@ public:
      **/
     virtual void copyAnimationToClipboard() const = 0;
 
+    /**
+     * @brief Dequeues any setValue/setValueAtTime calls that were queued in the queue.
+     **/
+    virtual void dequeueValuesSet(bool disableEvaluation) = 0;
+    
+    /**
+     * @brief Returns the current time if attached to a timeline
+     **/
+    virtual SequenceTime getCurrentTime() const = 0;
+    
 protected:
 
     /**
@@ -663,6 +677,11 @@ public:
     {
         emit frozenChanged(f);
     }
+    
+    void s_keyFrameMoved(int dimension,int oldTime,int newTime)
+    {
+        emit keyFrameMoved(dimension, oldTime, newTime);
+    }
 
 public slots:
 
@@ -729,6 +748,8 @@ signals:
 
     ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
     void keyFrameRemoved(SequenceTime,int);
+    
+    void keyFrameMoved(int dimension,int oldTime,int newTime);
 
     ///Emitted whenever all keyframes of a dimension are about removed with a reason different of USER_EDITED
     void animationAboutToBeRemoved(int);
@@ -821,6 +842,8 @@ private:
 
 public:
 
+    virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeType interpolation,KeyFrame* newKey) OVERRIDE FINAL;
     virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
     virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
@@ -876,7 +899,7 @@ public:
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
-
+    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 private:
 
     virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReason reason
@@ -979,9 +1002,7 @@ public:
          int dimension = 1,
          bool declaredByPlugin = true);
 
-    virtual ~Knob()
-    {
-    }
+    virtual ~Knob();
 
 public:
 
@@ -1096,9 +1117,6 @@ public:
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void onTimeChanged(SequenceTime time) OVERRIDE FINAL;
 
-    ///Cannot be overloaded by KnobHelper as it requires setValue
-    virtual void evaluateAnimationChange() OVERRIDE FINAL;
-
     ///Cannot be overloaded by KnobHelper as it requires the value member
     virtual double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -1108,6 +1126,8 @@ public:
     virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(KnobI* other) OVERRIDE FINAL;
     virtual void deepClone(KnobI* other)  OVERRIDE FINAL;
+    
+    virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
 private:
 
     void cloneValues(KnobI* other);
@@ -1122,11 +1142,44 @@ private:
 
         return _setValueRecursionLevel;
     }
+    
+    void makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key);
+    
+    void queueSetValue(const T& v,int dimension);
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
     //////////////////////////////////////////////////////////////////////
-
+    struct QueuedSetValuePrivate;
+    struct QueuedSetValue
+    {
+        
+        boost::scoped_ptr<QueuedSetValuePrivate> _imp;
+  
+        
+        QueuedSetValue(int dimension,const T& value,const KeyFrame& key,bool useKey);
+        
+        virtual bool isSetValueAtTime() const { return false; }
+        
+        virtual ~QueuedSetValue();
+    };
+    
+    struct QueuedSetValueAtTime : public QueuedSetValue
+    {
+        double time;
+        
+        QueuedSetValueAtTime(double time,int dimension,const T& value,const KeyFrame& key)
+        : QueuedSetValue(dimension,value,key,true)
+        , time(time)
+        {
+            
+        }
+        
+        virtual bool isSetValueAtTime() const { return true; }
+        
+        virtual ~QueuedSetValueAtTime() {}
+    };
+    
 
     ///Here is all the stuff we couldn't get rid of the template parameter
 
@@ -1137,6 +1190,9 @@ private:
     ///this flag is to avoid recursive setValue calls
     int _setValueRecursionLevel;
     mutable QMutex _setValueRecursionLevelMutex;
+    
+    mutable QMutex _setValuesQueueMutex;
+    std::list< boost::shared_ptr<QueuedSetValue> > _setValuesQueue;
 };
 
 
@@ -1254,6 +1310,18 @@ public:
      **/
     void setKnobsFrozen(bool frozen);
 
+    /**
+     * @brief Can be overriden to prevent values to be set directly.
+     * Instead the setValue/setValueAtTime actions are queued up
+     * They will be dequeued when dequeueValuesSet will be called.
+     **/
+    virtual bool canSetValue() const { return true; }
+    
+    /**
+     * @brief Dequeues all values set in the queues for all knobs
+     **/
+    void dequeueValuesSet();
+    
 protected:
 
     bool isEvaluationBlocked() const;
@@ -1378,6 +1446,11 @@ public:
     void slaveAllKnobs(KnobHolder* other);
 
     void unslaveAllKnobs();
+    
+    /**
+     * @brief Returns the local current time of the timeline
+     **/
+    virtual SequenceTime getCurrentTime() const;
 
 protected:
 

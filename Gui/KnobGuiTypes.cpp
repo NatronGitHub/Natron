@@ -256,7 +256,7 @@ Int_KnobGui::onSliderValueChanged(double d)
 
     assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(),(int)d) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(),(int)d,0, false ));
 }
 
 void
@@ -716,7 +716,7 @@ Double_KnobGui::onSliderValueChanged(double d)
     assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
     valueAccordingToType(true, 0, &d);
-    pushUndoCommand( new KnobUndoCommand<double>(this,_knob->getValue(),d) );
+    pushUndoCommand( new KnobUndoCommand<double>(this,_knob->getValue(),d,0,false) );
 }
 
 void

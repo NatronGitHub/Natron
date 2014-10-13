@@ -325,7 +325,7 @@ KnobHelper::getDerivativeAtTime(double time,
                                 int dimension) const
 {
     if ( dimension > (int)_imp->curves.size() ) {
-        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
+        throw std::invalid_argument("KnobHelper::getDerivativeAtTime(): Dimension out of range");
     }
 
     ///if the knob is slaved to another knob, returns the other knob value
@@ -348,8 +348,9 @@ KnobHelper::deleteValueAtTime(int time,
                               int dimension,
                               Natron::ValueChangedReason reason)
 {
-    if ( dimension > (int)_imp->curves.size() ) {
-        throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
+#pragma message WARN("Use the queue if the attached node is rendering")
+    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
+        throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
     ///if the knob is slaved to another knob,return, because we don't want the
@@ -374,13 +375,89 @@ KnobHelper::deleteValueAtTime(int time,
     checkAnimationLevel(dimension);
 }
 
+bool
+KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey)
+{
+#pragma message WARN("Use the queue if the attached node is rendering")
+    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
+        throw std::invalid_argument("KnobHelper::moveValueAtTime(): Dimension out of range");
+    }
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    
+    std::pair<double,double> curveYRange = curve->getCurveYRange();
+    
+    KeyFrame k;
+    int keyindex = curve->keyFrameIndex(time);
+    if (keyindex == -1) {
+        return false;
+    }
+    
+    bool gotKey = curve->getKeyFrameWithIndex(keyindex, &k);
+    if (!gotKey) {
+        return false;
+    }
+    
+    double newX = k.getTime() + dt;
+    double newY = k.getValue() + dv;
+    
+    if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+        newY = std::floor(newY + 0.5);
+    } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+        newY = newY < 0.5 ? 0 : 1;
+    }
+    
+    if (newY > curveYRange.second) {
+        newY = k.getValue();
+    } else if (newY < curveYRange.first) {
+        newY = k.getValue();
+    }
+    
+    try {
+        *newKey = curve->setKeyFrameValueAndTime(newX,newY, keyindex, NULL);
+    } catch (...) {
+        return false;
+    }
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_keyFrameMoved(dimension,time,newX);
+    }
+    
+    evaluateValueChange(dimension, Natron::PLUGIN_EDITED);
+    return true;
+    
+}
+
+bool
+KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeType interpolation,KeyFrame* newKey)
+{
+#pragma message WARN("Use the queue if the attached node is rendering")
+    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
+        throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
+    }
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    
+    int keyIndex = curve->keyFrameIndex(time);
+    if (keyIndex == -1) {
+        return false;
+    }
+    
+    *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
+    
+    evaluateValueChange(dimension, Natron::PLUGIN_EDITED);
+    
+    return true;
+}
+
 void
 KnobHelper::removeAnimation(int dimension,
                             Natron::ValueChangedReason reason)
 {
+#pragma message WARN("Use the queue if the attached node is rendering")
     assert(0 <= dimension);
     if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
-        throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
+        throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
     }
 
     ///if the knob is slaved to another knob,return, because we don't want the
@@ -1110,6 +1187,13 @@ KnobHelper::getListeners(std::list<KnobI*> & listeners) const
     listeners = _imp->listeners;
 }
 
+SequenceTime
+KnobHelper::getCurrentTime() const
+{
+    KnobHolder* holder = getHolder();
+    return holder && holder->getApp() ? holder->getCurrentTime() : 0;
+}
+
 /***************************KNOB HOLDER******************************************/
 
 struct KnobHolder::KnobHolderPrivate
@@ -1573,6 +1657,22 @@ KnobHolder::setKnobsFrozen(bool frozen)
     for (U32 i = 0; i < knobs.size(); ++i) {
         knobs[i]->setIsFrozen(frozen);
     }
+}
+
+void
+KnobHolder::dequeueValuesSet()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+        _imp->knobs[i]->dequeueValuesSet(false);
+    }
+}
+
+SequenceTime
+KnobHolder::getCurrentTime() const
+{
+    return getApp()->getTimeLine()->currentFrame();
 }
 
 /***************************STRING ANIMATION******************************************/

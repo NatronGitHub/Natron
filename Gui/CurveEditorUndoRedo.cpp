@@ -217,29 +217,35 @@ moveKey(KeyPtr &k,
         double dt,
         double dv)
 {
-    std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
-    double newX = k->key.getTime() + dt;
-    double newY = k->key.getValue() + dv;
-    boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
-
-    if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-        newY = std::floor(newY + 0.5);
-    } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-        newY = newY < 0.5 ? 0 : 1;
+    boost::shared_ptr<KnobI> knob = k->curve->getKnob()->getKnob();
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+    
+    if (isParametric) {
+        std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
+        double newX = k->key.getTime() + dt;
+        double newY = k->key.getValue() + dv;
+        boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
+        
+        if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+            newY = std::floor(newY + 0.5);
+        } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+            newY = newY < 0.5 ? 0 : 1;
+        }
+        
+        if (newY > curveYRange.second) {
+            newY = k->key.getValue();
+        } else if (newY < curveYRange.first) {
+            newY = k->key.getValue();
+        }
+        
+        double oldTime = k->key.getTime();
+        int keyframeIndex = curve->keyFrameIndex(oldTime);
+        int newIndex;
+        
+        k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
+    } else {
+        k->curve->getKnob()->getKnob()->moveValueAtTime(k->key.getTime(), k->curve->getDimension(), dt, dv,&k->key);
     }
-
-    if (newY > curveYRange.second) {
-        newY = k->key.getValue();
-    } else if (newY < curveYRange.first) {
-        newY = k->key.getValue();
-    }
-
-    double oldTime = k->key.getTime();
-    int keyframeIndex = curve->keyFrameIndex(oldTime);
-    int newIndex;
-
-    k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
-    k->curve->getKnob()->onKeyFrameMoved( oldTime, k->key.getTime() );
 }
 
 void
@@ -255,23 +261,19 @@ MoveKeysCommand::move(double dt,
             k->blockEvaluation();
         }
     }
-
+    
     SelectedKeys newSelectedKeys;
-    try {
-        if (dt <= 0) {
-            for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-                moveKey(*it, dt, dv);
-            }
-        } else {
-            for (SelectedKeys::reverse_iterator it = _keys.rbegin(); it != _keys.rend(); ++it) {
-                moveKey(*it, dt, dv);
-            }
+    
+    if (dt <= 0) {
+        for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+            moveKey(*it, dt, dv);
         }
-    } catch (const std::exception & e) {
-        qDebug() << "The keyframe set has changed since this action. This is probably because another user interaction is not "
-            "linked to undo/redo stack.";
+    } else {
+        for (SelectedKeys::reverse_iterator it = _keys.rbegin(); it != _keys.rend(); ++it) {
+            moveKey(*it, dt, dv);
+        }
     }
-
+    
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->unblockEvaluation();
         if (_firstRedoCalled || _updateOnFirstRedo) {
@@ -353,12 +355,23 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
     }
 
     for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        int keyframeIndex = it->key->curve->getInternalCurve()->keyFrameIndex( it->key->key.getTime() );
-        if (undo) {
-            it->key->key =  it->key->curve->getInternalCurve()->setKeyFrameInterpolation(it->oldInterp, keyframeIndex);
+        
+        Natron::KeyframeType interp = undo ? it->oldInterp : it->newInterp;
+        
+        boost::shared_ptr<KnobI> knob = it->key->curve->getKnob()->getKnob();
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+        
+        if (isParametric) {
+            
+            int keyframeIndex = it->key->curve->getInternalCurve()->keyFrameIndex( it->key->key.getTime() );
+            if (keyframeIndex != -1) {
+                it->key->key =  it->key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndex);
+            }
+            
         } else {
-            it->key->key = it->key->curve->getInternalCurve()->setKeyFrameInterpolation(it->newInterp, keyframeIndex);
+            it->key->curve->getKnob()->getKnob()->setInterpolationAtTime(it->key->curve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
         }
+
     }
 
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {

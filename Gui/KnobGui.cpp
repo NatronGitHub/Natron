@@ -130,6 +130,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( this,SIGNAL( keyFrameSetByUser(SequenceTime,int) ),handler,SLOT( onKeyFrameSet(SequenceTime,int) ) );
     QObject::connect( handler,SIGNAL( keyFrameRemoved(SequenceTime,int) ),this,SLOT( onInternalKeyRemoved(SequenceTime,int) ) );
     QObject::connect( this,SIGNAL( keyFrameRemovedByUser(SequenceTime,int) ),handler,SLOT( onKeyFrameRemoved(SequenceTime,int) ) );
+    QObject::connect( handler,SIGNAL( keyFrameMoved(int,int,int)), this, SLOT( onKeyFrameMoved(int,int,int)));
     QObject::connect( handler,SIGNAL( secretChanged() ),this,SLOT( setSecret() ) );
     QObject::connect( handler,SIGNAL( enabledChanged() ),this,SLOT( setEnabledSlot() ) );
     QObject::connect( handler,SIGNAL( knobSlaved(int,bool) ),this,SLOT( onKnobSlavedChanged(int,bool) ) );
@@ -907,9 +908,9 @@ KnobGui::getFieldContainer() const
 
 void
 KnobGui::onInternalValueChanged(int dimension,
-                                int /*reason*/)
+                                int reason)
 {
-    if (_imp->widgetCreated) {
+    if (_imp->widgetCreated && (Natron::ValueChangedReason)reason != Natron::USER_EDITED) {
         updateGuiInternal(dimension);
     }
 }
@@ -1557,7 +1558,8 @@ KnobGui::setKeyframeMarkerOnTimeline(int time)
 }
 
 void
-KnobGui::onKeyFrameMoved(int oldTime,
+KnobGui::onKeyFrameMoved(int /*dimension*/,
+                         int oldTime,
                          int newTime)
 {
     boost::shared_ptr<KnobI> knob = getKnob();

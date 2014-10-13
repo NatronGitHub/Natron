@@ -341,10 +341,6 @@ Curve::addKeyFrame(KeyFrame key)
 
     it.first = evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
     l.unlock();
-    ///This call must not be locked!
-    if (_imp->owner) {
-        _imp->owner->evaluateAnimationChange();
-    }
 
     return it.second;
 }
@@ -997,11 +993,6 @@ Curve::setKeyFrameValueAndTime(double time,
         }
         ret = *it;
     }
-
-    if (evaluateAnimation && _imp->owner) {
-        _imp->owner->evaluateAnimationChange();
-    }
-
     return ret;
 }
 
@@ -1029,11 +1020,6 @@ Curve::setKeyFrameLeftDerivative(double value,
         }
         ret = *it;
     }
-
-    if (evaluateAnimation && _imp->owner) {
-        _imp->owner->evaluateAnimationChange();
-    }
-
     return ret;
 }
 
@@ -1061,11 +1047,6 @@ Curve::setKeyFrameRightDerivative(double value,
         }
         ret = *it;
     }
-
-    if (evaluateAnimation && _imp->owner) {
-        _imp->owner->evaluateAnimationChange();
-    }
-
     return ret;
 }
 
@@ -1096,10 +1077,6 @@ Curve::setKeyFrameDerivatives(double left,
         ret = *it;
     }
 
-    if (evaluateAnimation && _imp->owner) {
-        _imp->owner->evaluateAnimationChange();
-    }
-
     return ret;
 }
 
@@ -1108,7 +1085,6 @@ Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,
                                 int index,
                                 int* newIndex)
 {
-    bool evaluateAnimation = false;
     KeyFrame ret;
     {
         QWriteLocker l(&_imp->_lock);
@@ -1131,9 +1107,6 @@ Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,
         ret = *it;
     }
 
-    if (evaluateAnimation && _imp->owner) {
-        _imp->owner->evaluateAnimationChange();
-    }
 
     return ret;
 }
@@ -1160,9 +1133,6 @@ Curve::setCurveInterpolation(Natron::KeyframeType interp)
         }
     }
 
-    if (evaluateAnimation && _imp->owner) {
-        _imp->owner->evaluateAnimationChange();
-    }
 }
 
 KeyFrameSet::iterator

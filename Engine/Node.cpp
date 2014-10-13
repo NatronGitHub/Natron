@@ -257,7 +257,7 @@ Node::Node(AppInstance* app,
       , _imp( new Implementation(app,plugin) )
 {
     QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
-    QObject::connect(this, SIGNAL(mustDequeueConnectActions()), this, SLOT(dequeueConnectActions()));
+    QObject::connect(this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()));
 }
 
 void
@@ -2923,8 +2923,7 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
             nodeIsRendering = _imp->nodeIsRendering;
         }
         
-        QMutexLocker cql(&_imp->connectionQueueMutex);
-        mustDequeue = nodeIsRendering == 0 && _imp->connectionQueue.size() > 0;
+        mustDequeue = nodeIsRendering == 0;
     }
 
     if (mustDequeue) {
@@ -2935,7 +2934,7 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
             QMutexLocker k(&_imp->nodeIsDequeuingMutex);
             _imp->nodeIsDequeuing = true;
         }
-        emit mustDequeueConnectActions();
+        emit mustDequeueActions();
     }
     
     ///mark this
@@ -3010,10 +3009,20 @@ Node::setParallelRenderArgsInternal(int time,
     
 }
 
+bool
+Node::isNodeRendering() const
+{
+    QMutexLocker k(&_imp->nodeIsRenderingMutex);
+    return _imp->nodeIsRendering > 0;
+}
+
 void
-Node::dequeueConnectActions()
+Node::dequeueActions()
 {
     assert(QThread::currentThread() == qApp->thread());
+    
+    _imp->liveInstance->dequeueValuesSet();
+    
     std::list<ConnectAction> queue;
     {
         QMutexLocker k(&_imp->connectionQueueMutex);

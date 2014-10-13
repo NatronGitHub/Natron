@@ -688,6 +688,11 @@ public:
             node->invalidateParallelRenderArgs();
         }
     };
+    
+    /**
+     * @brief Returns true if the parallel render args thread-storage is set
+     **/
+    bool isNodeRendering() const;
 
 public slots:
 
@@ -727,7 +732,7 @@ public slots:
         emit settingsPanelClosed(closed);
     }
     
-    void dequeueConnectActions();
+    void dequeueActions();
 
 
 signals:
@@ -794,7 +799,7 @@ signals:
     void nodeExtraLabelChanged(QString);
 
     
-    void mustDequeueConnectActions();
+    void mustDequeueActions();
     
 protected:
 

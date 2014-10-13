@@ -107,7 +107,8 @@ public:
         Natron::ImageComponents components; //< the requested image components
         Natron::ImageBitDepth bitdepth; //< the requested bit depth
         int channelForAlpha; //< if this is a mask this is from this channel that we will fetch the mask
-
+        bool calledFromGetImage;
+        
         RenderRoIArgs()
         {
         }
@@ -121,7 +122,8 @@ public:
                       const RectD & preComputedRoD_,
                       Natron::ImageComponents components_,
                       Natron::ImageBitDepth bitdepth_,
-                      int channelForAlpha_ = 3)
+                      int channelForAlpha_ = 3,
+                      bool calledFromGetImage = false)
             : time(time_)
               , scale(scale_)
               , mipMapLevel(mipMapLevel_)
@@ -132,6 +134,7 @@ public:
               , components(components_)
               , bitdepth(bitdepth_)
               , channelForAlpha(channelForAlpha_)
+              , calledFromGetImage(calledFromGetImage)
         {
         }
     };
@@ -504,6 +507,10 @@ public:
 
     virtual void lock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL;
     virtual void unlock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL ;
+
+    virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
     /**

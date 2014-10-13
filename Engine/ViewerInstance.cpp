@@ -632,6 +632,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             ///is invalid.
             isCached = false;
         }
+        
+        params->image = inputImage;
     }
     
     if (isCached) {

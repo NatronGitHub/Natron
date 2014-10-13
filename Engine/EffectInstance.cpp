@@ -946,7 +946,8 @@ EffectInstance::getImage(int inputNb,
                                                                     RectD(),
                                                                     comp,
                                                                     depth,
-                                                                    channelForAlpha) );
+                                                                    channelForAlpha,
+                                                                     true) );
 
     if (!inputImg) {
         return inputImg;
@@ -1665,7 +1666,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     if ( aborted() && renderRetCode != eImageAlreadyRendered) {
         //if render was aborted, remove the frame from the cache as it contains only garbage
         appPTR->removeFromNodeCache(image);
-        return boost::shared_ptr<Image>();
+        
+        ///Return a NULL image if the render call was not issues by the result of a call of a plug-in to clipGetImage
+        if (!args.calledFromGetImage) {
+            return boost::shared_ptr<Image>();
+        }
         
     } else if (renderRetCode == eImageRenderFailed) {
         throw std::runtime_error("Rendering Failed");
@@ -3393,6 +3398,18 @@ EffectInstance::onNodeHashChanged(U64 hash)
     
     ///Invalidate actions cache
     _imp->actionsCache.invalidateAll(hash);
+}
+
+bool
+EffectInstance::canSetValue() const
+{
+    return !_node->isNodeRendering();
+}
+
+SequenceTime
+EffectInstance::getCurrentTime() const
+{
+    return getThreadLocalRenderTime();
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)

@@ -175,9 +175,6 @@ public:
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
 
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
-    
-    ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(int oldTime,int newTime);
 
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
 
@@ -200,6 +197,9 @@ public slots:
     void onInternalAnimationAboutToBeRemoved();
     
     void onInternalAnimationRemoved();
+    
+    ///Handler when a keyframe is moved in the curve editor/dope sheet
+    void onKeyFrameMoved(int dimension,int oldTime,int newTime);
 
     void setSecret();
 

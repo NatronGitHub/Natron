@@ -302,13 +302,13 @@ CurveGui::drawCurve(int curveIndex,
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
         glLineWidth(1.5);
-
+        glCheckError();
         glBegin(GL_LINE_STRIP);
         for (int i = 0; i < (int)vertices.size(); i += 2) {
             glVertex2f(vertices[i],vertices[i + 1]);
         }
         glEnd();
-
+        glCheckError();
 
         //render the name of the curve
         glColor4f(1.f, 1.f, 1.f, 1.f);
@@ -954,6 +954,7 @@ CurveWidgetPrivate::drawScale()
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
+                        glCheckError();
                         QColor c = _scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
