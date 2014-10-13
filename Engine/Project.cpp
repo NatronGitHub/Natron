@@ -822,12 +822,12 @@ Project::initializeKnobs()
 } // initializeKnobs
 
 void
-Project::evaluate(KnobI* /*knob*/,
+Project::evaluate(KnobI* knob,
                   bool isSignificant,
                   Natron::ValueChangedReason /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (isSignificant) {
+    if (isSignificant && knob != _imp->formatKnob.get()) {
         getCurrentNodes();
         
         for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
