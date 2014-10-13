@@ -38,6 +38,7 @@ struct CurvePrivate
 
     KeyFrameSet keyFrames;
     KnobI* owner;
+    int dimensionInOwner;
     bool isParametric;
     CurveType type;
     double xMin, xMax;
@@ -49,6 +50,7 @@ struct CurvePrivate
     CurvePrivate()
         : keyFrames()
           , owner(NULL)
+          , dimensionInOwner(-1)
           , isParametric(false)
           , type(DOUBLE_CURVE)
           , xMin(INT_MIN)
@@ -70,6 +72,7 @@ struct CurvePrivate
     {
         keyFrames = other.keyFrames;
         owner = other.owner;
+        dimensionInOwner = other.dimensionInOwner;
         isParametric = other.isParametric;
         type = other.type;
         xMin = other.xMin;

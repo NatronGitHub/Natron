@@ -179,11 +179,12 @@ Curve::Curve()
 {
 }
 
-Curve::Curve(KnobI *owner)
+Curve::Curve(KnobI *owner,int dimensionInOwner)
     : _imp(new CurvePrivate)
 {
     assert(owner);
     _imp->owner = owner;
+    _imp->dimensionInOwner = dimensionInOwner;
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
     _imp->type = CurvePrivate::DOUBLE_CURVE;
     // use RTTI to guess curve type
@@ -878,9 +879,9 @@ std::pair<double,double>  Curve::getCurveYRange() const
         Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_imp->owner);
         Int_Knob* isInt = dynamic_cast<Int_Knob*>(_imp->owner);
         if (isDouble) {
-            return isDouble->getMinMaxForCurve(this);
+            return isDouble->getMinMaxForCurve(_imp->dimensionInOwner);
         } else if (isInt) {
-            return isInt->getMinMaxForCurve(this);
+            return isInt->getMinMaxForCurve(_imp->dimensionInOwner);
         } else {
             return std::make_pair( (double)INT_MIN, (double)INT_MAX );
         }

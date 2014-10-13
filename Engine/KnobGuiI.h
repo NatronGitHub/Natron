@@ -12,8 +12,10 @@
 #ifndef KNOBGUII_H
 #define KNOBGUII_H
 
+#include <boost/shared_ptr.hpp>
 #include "Engine/OverlaySupport.h"
 
+class Curve;
 class KnobGuiI
     : public OverlaySupport
 {
@@ -32,6 +34,7 @@ public:
     virtual bool isGuiFrozenForPlayback() const = 0;
     virtual void saveOpenGLContext() = 0;
     virtual void restoreOpenGLContext() = 0;
+    virtual boost::shared_ptr<Curve> getCurve(int dimension) const = 0;
     
 protected:
 

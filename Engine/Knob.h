@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <string>
+#include <set>
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 
@@ -33,6 +34,211 @@ class StringAnimationManager;
 namespace Natron {
 class OfxParamOverlayInteract;
 }
+
+
+class KnobI;
+class KnobSignalSlotHandler
+: public QObject
+{
+    Q_OBJECT
+    
+    boost::shared_ptr<KnobI> k;
+    
+public:
+    
+    KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob);
+    
+    boost::shared_ptr<KnobI> getKnob() const
+    {
+        return k;
+    }
+    
+    void s_evaluateValueChangedInMainThread(int dimension,
+                                            int reason)
+    {
+        emit evaluateValueChangedInMainThread(dimension,reason);
+    }
+    
+    void s_animationLevelChanged(int dim,int level)
+    {
+        emit animationLevelChanged(dim,level);
+    }
+    
+    void s_deleted()
+    {
+        emit deleted();
+    }
+    
+    void s_valueChanged(int dimension,
+                        int reason)
+    {
+        emit valueChanged(dimension,reason);
+    }
+    
+    void s_secretChanged()
+    {
+        emit secretChanged();
+    }
+    
+    void s_enabledChanged()
+    {
+        emit enabledChanged();
+    }
+    
+    void s_keyFrameSet(SequenceTime time,
+                       int dimension,
+                       bool added)
+    {
+        emit keyFrameSet(time,dimension,added);
+    }
+    
+    void s_keyFrameRemoved(SequenceTime time,
+                           int dimension)
+    {
+        emit keyFrameRemoved(time,dimension);
+    }
+    
+    void s_animationAboutToBeRemoved(int dimension)
+    {
+        emit animationAboutToBeRemoved(dimension);
+    }
+    
+    void s_animationRemoved(int dimension)
+    {
+        emit animationRemoved(dimension);
+    }
+    
+    void s_updateSlaves(int dimension)
+    {
+        emit updateSlaves(dimension);
+    }
+    
+    void s_knobSlaved(int dim,
+                      bool slaved)
+    {
+        emit knobSlaved(dim,slaved);
+    }
+    
+    void s_setValueWithUndoStack(Variant v,
+                                 int dim)
+    {
+        emit setValueWithUndoStack(v, dim);
+    }
+    
+    void s_appendParamEditChange(Variant v,
+                                 int dim,
+                                 int time,
+                                 bool createNewCommand,
+                                 bool setKeyFrame)
+    {
+        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
+    }
+    
+    void s_setDirty(bool b)
+    {
+        emit dirty(b);
+    }
+    
+    void s_setFrozen(bool f)
+    {
+        emit frozenChanged(f);
+    }
+    
+    void s_keyFrameMoved(int dimension,int oldTime,int newTime)
+    {
+        emit keyFrameMoved(dimension, oldTime, newTime);
+    }
+    
+    void s_refreshGuiCurve(int dimension)
+    {
+        emit refreshGuiCurve(dimension);
+    }
+    
+    public slots:
+
+    /**
+     * @brief Calls KnobI::onTimeChanged
+     **/
+    void onTimeChanged(SequenceTime);
+    
+    /**
+     * @brief Calls KnobI::onAnimationRemoved
+     **/
+    void onAnimationRemoved(int dimension);
+    
+    /**
+     * @brief Calls KnobI::evaluateValueChange with a reason of Natron::PLUGIN_EDITED
+     **/
+    void onMasterChanged(int);
+    
+    /**
+     * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
+     **/
+    void onEvaluateValueChangedInOtherThread(int dimension, int reason);
+    
+signals:
+    
+    ///emitted whenever evaluateValueChanged is called in another thread than the main thread
+    void evaluateValueChangedInMainThread(int dimension,int reason);
+    
+    ///emitted whenever setAnimationLevel is called. It is meant to notify
+    ///openfx params whether it is auto-keying or not.
+    void animationLevelChanged(int,int);
+    
+    ///emitted when the destructor is entered
+    void deleted();
+    
+    ///Emitted when the value is changed with a reason different than USER_EDITED
+    ///This can happen as the result of a setValue() call from the plug-in or by
+    ///a slaved knob whose master's value changed. The reason is passed in parameter.
+    void valueChanged(int dimension,int reason);
+    
+    ///Emitted when the secret state of the knob changed
+    void secretChanged();
+    
+    ///Emitted when a dimension enabled state changed
+    void enabledChanged();
+    
+    ///This is called to notify the gui that the knob shouldn't be editable.
+    ///Basically this is used when rendering with a Writer or for Trackers while tracking is active.
+    void frozenChanged(bool frozen);
+    
+    ///Emitted whenever a keyframe is set with a reason different of USER_EDITED
+    ///@param added True if this is the first time that the keyframe was set
+    void keyFrameSet(SequenceTime time,int dimension,bool added);
+    
+    void refreshGuiCurve(int dimension);
+
+    
+    ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
+    void keyFrameRemoved(SequenceTime,int);
+    
+    void keyFrameMoved(int dimension,int oldTime,int newTime);
+    
+    ///Emitted whenever all keyframes of a dimension are about removed with a reason different of USER_EDITED
+    void animationAboutToBeRemoved(int);
+    
+    ///Emitted whenever all keyframes of a dimension are effectively removed
+    void animationRemoved(int);
+    
+    ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
+    ///of the changes that occured in this knob, letting them a chance to update their interface.
+    void updateSlaves(int dimension);
+    
+    ///Emitted whenever a knob is slaved via the slaveTo function with a reason of PLUGIN_EDITED.
+    void knobSlaved(int,bool);
+    
+    ///Emitted whenever the GUI should set the value using the undo stack. This is
+    ///only to address the problem of interacts that should use the undo/redo stack.
+    void setValueWithUndoStack(Variant v,int dim);
+    
+    ///Same as setValueWithUndoStack except that the value change will be compressed
+    ///in a multiple edit undo/redo action
+    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    
+    ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
+    void dirty(bool);
+};
 
 class KnobI
     : public OverlaySupport
@@ -167,6 +373,12 @@ public:
      * @brief Changes the interpolation type for the given keyframe
      **/
     virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeType interpolation,KeyFrame* newKey) = 0;
+    
+    /**
+     * @brief Set the left/right derivatives of the control point at the given time.
+     **/
+    virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right) = 0;
+    virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) = 0;
 
     /**
      * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
@@ -188,7 +400,7 @@ public:
     /**
      * @brief Calls deleteValueAtTime with a reason of Natron::USER_EDITED
      **/
-    void onKeyFrameRemoved(SequenceTime time,int dimension);
+    virtual void onKeyFrameRemoved(SequenceTime time,int dimension) = 0;
 
     /**
      * @brief Calls removeAnimation with a reason of Natron::USER_EDITED
@@ -205,6 +417,7 @@ public:
      * @brief Calls setValueAtTime with a reason of Natron::USER_EDITED.
      **/
     virtual void onKeyFrameSet(SequenceTime time,int dimension) = 0;
+    virtual void onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
@@ -486,6 +699,9 @@ public:
      **/
     virtual SequenceTime getCurrentTime() const = 0;
     
+    
+    virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
+
 protected:
 
     /**
@@ -571,210 +787,6 @@ public:
 };
 
 
-class KnobSignalSlotHandler
-    : public QObject
-{
-    Q_OBJECT
-
-    boost::shared_ptr<KnobI> k;
-
-public:
-
-    KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob);
-
-    boost::shared_ptr<KnobI> getKnob() const
-    {
-        return k;
-    }
-
-    void s_evaluateValueChangedInMainThread(int dimension,
-                                            int reason)
-    {
-        emit evaluateValueChangedInMainThread(dimension,reason);
-    }
-
-    void s_animationLevelChanged(int dim,int level)
-    {
-        emit animationLevelChanged(dim,level);
-    }
-
-    void s_deleted()
-    {
-        emit deleted();
-    }
-
-    void s_valueChanged(int dimension,
-                        int reason)
-    {
-        emit valueChanged(dimension,reason);
-    }
-
-    void s_secretChanged()
-    {
-        emit secretChanged();
-    }
-
-    void s_enabledChanged()
-    {
-        emit enabledChanged();
-    }
-
-    void s_keyFrameSet(SequenceTime time,
-                       int dimension,
-                       bool added)
-    {
-        emit keyFrameSet(time,dimension,added);
-    }
-
-    void s_keyFrameRemoved(SequenceTime time,
-                           int dimension)
-    {
-        emit keyFrameRemoved(time,dimension);
-    }
-
-    void s_animationAboutToBeRemoved(int dimension)
-    {
-        emit animationAboutToBeRemoved(dimension);
-    }
-    
-    void s_animationRemoved(int dimension)
-    {
-        emit animationRemoved(dimension);
-    }
-
-    void s_updateSlaves(int dimension)
-    {
-        emit updateSlaves(dimension);
-    }
-
-    void s_knobSlaved(int dim,
-                      bool slaved)
-    {
-        emit knobSlaved(dim,slaved);
-    }
-
-    void s_setValueWithUndoStack(Variant v,
-                                 int dim)
-    {
-        emit setValueWithUndoStack(v, dim);
-    }
-
-    void s_appendParamEditChange(Variant v,
-                                 int dim,
-                                 int time,
-                                 bool createNewCommand,
-                                 bool setKeyFrame)
-    {
-        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
-    }
-
-    void s_setDirty(bool b)
-    {
-        emit dirty(b);
-    }
-
-    void s_setFrozen(bool f)
-    {
-        emit frozenChanged(f);
-    }
-    
-    void s_keyFrameMoved(int dimension,int oldTime,int newTime)
-    {
-        emit keyFrameMoved(dimension, oldTime, newTime);
-    }
-
-public slots:
-
-    /**
-     * @brief Calls KnobI::onKeyFrameSet
-     **/
-    void onKeyFrameSet(SequenceTime time,int dimension);
-
-    /**
-     * @brief Calls KnobI::onKeyFrameRemoved
-     **/
-    void onKeyFrameRemoved(SequenceTime time,int dimension);
-
-    /**
-     * @brief Calls KnobI::onTimeChanged
-     **/
-    void onTimeChanged(SequenceTime);
-
-    /**
-     * @brief Calls KnobI::onAnimationRemoved
-     **/
-    void onAnimationRemoved(int dimension);
-
-    /**
-     * @brief Calls KnobI::evaluateValueChange with a reason of Natron::PLUGIN_EDITED
-     **/
-    void onMasterChanged(int);
-
-    /**
-     * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
-     **/
-    void onEvaluateValueChangedInOtherThread(int dimension, int reason);
-
-signals:
-
-    ///emitted whenever evaluateValueChanged is called in another thread than the main thread
-    void evaluateValueChangedInMainThread(int dimension,int reason);
-
-    ///emitted whenever setAnimationLevel is called. It is meant to notify
-    ///openfx params whether it is auto-keying or not.
-    void animationLevelChanged(int,int);
-
-    ///emitted when the destructor is entered
-    void deleted();
-
-    ///Emitted when the value is changed with a reason different than USER_EDITED
-    ///This can happen as the result of a setValue() call from the plug-in or by
-    ///a slaved knob whose master's value changed. The reason is passed in parameter.
-    void valueChanged(int dimension,int reason);
-
-    ///Emitted when the secret state of the knob changed
-    void secretChanged();
-
-    ///Emitted when a dimension enabled state changed
-    void enabledChanged();
-
-    ///This is called to notify the gui that the knob shouldn't be editable.
-    ///Basically this is used when rendering with a Writer or for Trackers while tracking is active.
-    void frozenChanged(bool frozen);
-
-    ///Emitted whenever a keyframe is set with a reason different of USER_EDITED
-    ///@param added True if this is the first time that the keyframe was set
-    void keyFrameSet(SequenceTime time,int dimension,bool added);
-
-    ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
-    void keyFrameRemoved(SequenceTime,int);
-    
-    void keyFrameMoved(int dimension,int oldTime,int newTime);
-
-    ///Emitted whenever all keyframes of a dimension are about removed with a reason different of USER_EDITED
-    void animationAboutToBeRemoved(int);
-    
-    ///Emitted whenever all keyframes of a dimension are effectively removed
-    void animationRemoved(int);
-
-    ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
-    ///of the changes that occured in this knob, letting them a chance to update their interface.
-    void updateSlaves(int dimension);
-
-    ///Emitted whenever a knob is slaved via the slaveTo function with a reason of PLUGIN_EDITED.
-    void knobSlaved(int,bool);
-
-    ///Emitted whenever the GUI should set the value using the undo stack. This is
-    ///only to address the problem of interacts that should use the undo/redo stack.
-    void setValueWithUndoStack(Variant v,int dim);
-
-    ///Same as setValueWithUndoStack except that the value change will be compressed
-    ///in a multiple edit undo/redo action
-    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
-
-    ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
-    void dirty(bool);
-};
 
 ///Skins the API of KnobI by implementing most of the functions in a non templated manner.
 class KnobHelper
@@ -819,7 +831,7 @@ public:
      **/
     void setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> & handler);
 
-    boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const
+    virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return _signalSlotHandler;
     }
@@ -837,13 +849,18 @@ public:
 
 private:
 
+    
+    
     virtual void removeAnimation(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
 public:
 
+    virtual void onKeyFrameRemoved(SequenceTime time,int dimension) OVERRIDE FINAL;
     virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeType interpolation,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
     virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
@@ -969,6 +986,14 @@ protected:
     virtual void animationRemoved_virtual(int /*dimension*/)
     {
     }
+    
+    void cloneGuiCurvesIfNeeded(std::set<int>& modifiedDimensions);
+    
+    void guiCurveCloneInternalCurve(int dimension);
+    
+    boost::shared_ptr<Curve> getGuiCurve(int dimension) const;
+    
+    void setGuiCurveHasChanged(int dimension,bool changed);
 
     void checkAnimationLevel(int dimension);
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
@@ -1113,6 +1138,7 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
     virtual void onKeyFrameSet(SequenceTime time,int dimension) OVERRIDE FINAL;
+    virtual void onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void onTimeChanged(SequenceTime time) OVERRIDE FINAL;

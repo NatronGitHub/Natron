@@ -94,7 +94,7 @@ public:
 
 
     void setKeyframe(double time,int dimension);
-
+    void setKeyframe(double time,const KeyFrame& key,int dimension);
     void removeKeyFrame(double time,int dimension);
 
     QString getScriptNameHtml() const;
@@ -181,10 +181,13 @@ public:
     void copyValuesToCliboard();
 
     void pasteValuesFromClipboard();
+    
+    virtual boost::shared_ptr<Curve> getCurve(int dimension) const OVERRIDE FINAL;
 
 public slots:
 
-
+    void onRefreshGuiCurve(int dimension);
+    
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
@@ -276,9 +279,8 @@ signals:
 
     void knobRedoneChange();
 
-    void keyFrameSetByUser(SequenceTime,int);
-    void keyFrameRemovedByUser(SequenceTime,int);
-
+    void refreshCurveEditor();
+    
     /**
      *@brief Emitted whenever a keyframe is set by the user or by the plugin.
      **/

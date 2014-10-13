@@ -27,11 +27,13 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QApplication>
 
 #include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Rect.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Variant.h"
 #include "Engine/Curve.h"
 #include "Engine/Settings.h"
+
 
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
@@ -941,6 +943,7 @@ CurveWidgetPrivate::drawScale()
                     glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
                 }
                 glEnd();
+                glCheckError();
 
                 if (tickSize > minTickSizeText) {
                     const int tickSizePixel = rangePixel * tickSize / range;
@@ -954,7 +957,6 @@ CurveWidgetPrivate::drawScale()
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
-                        glCheckError();
                         QColor c = _scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
@@ -1291,7 +1293,6 @@ CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
                                             interp == KEYFRAME_CUBIC ||
                                             interp == KEYFRAME_FREE);
     bool setBothDerivative = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
-    int keyframeIndexInCurve = key->curve->getInternalCurve()->keyFrameIndex( key->key.getTime() );
 
     ///If the knob is evaluating on change and _updateOnPenUpOnly is true, set it to false prior
     ///to modifying the keyframe, and set it back to its original value afterwards.
@@ -1303,12 +1304,12 @@ CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
         attachedKnob->setEvaluateOnChange(false);
     }
 
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(attachedKnob.get());
     // For other keyframes:
     // - if they KEYFRAME_BROKEN, move only one derivative
     // - else change to KEYFRAME_FREE and move both derivatives
     if (setBothDerivative) {
-        key->key = key->curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, keyframeIndexInCurve);
-
+        
         //if dx is not of the good sign it would make the curve uncontrollable
         if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
             if (dx < 0) {
@@ -1319,27 +1320,47 @@ CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
                 dx = -1e-8;
             }
         }
-
+        
         double derivative = dy / dx;
-        key->key = key->curve->getInternalCurve()->setKeyFrameDerivatives(derivative, derivative,keyframeIndexInCurve);
+        
+        if (!isParametric) {
+            key->curve->getKnob()->getKnob()->moveDerivativesAtTime(key->curve->getDimension(), key->key.getTime(), derivative, derivative);
+        } else {
+            int keyframeIndexInCurve = key->curve->getInternalCurve()->keyFrameIndex( key->key.getTime() );
+            key->key = key->curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, keyframeIndexInCurve);
+            key->key = key->curve->getInternalCurve()->setKeyFrameDerivatives(derivative, derivative,keyframeIndexInCurve);
+        }
+        
     } else {
-        key->key = key->curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, keyframeIndexInCurve);
+        
+        bool isLeft;
         if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
             //if dx is not of the good sign it would make the curve uncontrollable
             if (dx < 0) {
                 dx = 0.0001;
             }
-
-            double derivative = dy / dx;
-            key->key = key->curve->getInternalCurve()->setKeyFrameLeftDerivative(derivative, keyframeIndexInCurve);
+            isLeft = true;
         } else {
             //if dx is not of the good sign it would make the curve uncontrollable
             if (dx > 0) {
                 dx = -0.0001;
             }
+            isLeft = false;
+        }
+        double derivative = dy / dx;
+        
+        if (!isParametric) {
+            key->curve->getKnob()->getKnob()->moveDerivativeAtTime(key->curve->getDimension(), key->key.getTime(), derivative, isLeft);
+        } else {
+            int keyframeIndexInCurve = key->curve->getInternalCurve()->keyFrameIndex( key->key.getTime() );
 
-            double derivative = dy / dx;
-            key->key = key->curve->getInternalCurve()->setKeyFrameRightDerivative(derivative,keyframeIndexInCurve);
+            key->key = key->curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, keyframeIndexInCurve);
+
+            if (isLeft) {
+                key->key = key->curve->getInternalCurve()->setKeyFrameLeftDerivative(derivative, keyframeIndexInCurve);
+            } else {
+                key->key = key->curve->getInternalCurve()->setKeyFrameRightDerivative(derivative,keyframeIndexInCurve);
+            }
         }
     }
 
@@ -1820,9 +1841,8 @@ CurveWidget::onCurveChanged()
         KeyFrame kf;
         bool found = (*it)->curve->getInternalCurve()->getKeyFrameWithTime( (*it)->key.getTime(), &kf );
         if (found) {
-            if ( kf.getValue() != (*it)->key.getValue() ) {
-                (*it)->key = kf;
-            }
+            
+            (*it)->key = kf;
             _imp->refreshKeyTangents(*it);
             copy.push_back(*it);
         }

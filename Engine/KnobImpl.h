@@ -24,6 +24,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 
+
 ///template specializations
 
 template <typename T>
@@ -828,33 +829,66 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
                        int dimension)
 {
     KeyFrame k;
+    boost::shared_ptr<Curve> curve;
+    KnobHolder* holder = getHolder();
+    bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
+    
+    if (!useGuiCurve) {
+        curve = getCurve(dimension);
+    } else {
+        curve = getGuiCurve(dimension);
+        setGuiCurveHasChanged(dimension,true);
+    }
 
-    (void)setValueAtTime(time,getValueAtTime(time,dimension),dimension,Natron::USER_EDITED,&k);
+    makeKeyFrame(curve.get(), time, getValueAtTime(time,dimension), &k);
+
+    curve->addKeyFrame(k);
+    
+    if (!useGuiCurve) {
+        guiCurveCloneInternalCurve(dimension);
+        evaluateValueChange(dimension, Natron::USER_EDITED);
+    }
+}
+
+template<typename T>
+void
+Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
+{
+    boost::shared_ptr<Curve> curve;
+    KnobHolder* holder = getHolder();
+    bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
+    
+    if (!useGuiCurve) {
+        curve = getCurve(dimension);
+    } else {
+        curve = getGuiCurve(dimension);
+        setGuiCurveHasChanged(dimension,true);
+    }
+    
+    curve->addKeyFrame(key);
+    
+    if (!useGuiCurve) {
+        guiCurveCloneInternalCurve(dimension);
+        evaluateValueChange(dimension, Natron::USER_EDITED);
+    }
 }
 
 template<typename T>
 void
 Knob<T>::onTimeChanged(SequenceTime /*time*/)
 {
-    //setValue's calls compression is taken care of above.
     int dims = getDimension();
     if (getIsSecret()) {
         return;
     }
-  //  blockEvaluation();
     for (int i = 0; i < dims; ++i) {
-//        boost::shared_ptr<Curve> c = getCurve(i);
-//        if ( (c->getKeyFramesCount() > 0) ) {
-//            T v = getValueAtTime(time,i);
-//            (void)setValue(v,i,Natron::TIME_CHANGED,NULL);
-//        }
+
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(i, Natron::TIME_CHANGED);
             _signalSlotHandler->s_updateSlaves(i);
         }
         checkAnimationLevel(i);
     }
-  //  unblockEvaluation();
 }
 
 
@@ -1190,6 +1224,8 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 {
     
     std::set<int> dimensionChanged;
+    
+    cloneGuiCurvesIfNeeded(dimensionChanged);
     {
         QMutexLocker kql(&_setValuesQueueMutex);
         if (_setValuesQueue.empty()) {

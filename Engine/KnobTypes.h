@@ -86,7 +86,7 @@ public:
     const std::vector<int> &getIncrements() const;
     const std::vector<int> &getDisplayMinimums() const;
     const std::vector<int> &getDisplayMaximums() const;
-    std::pair<int,int> getMinMaxForCurve(const Curve* curve) const;
+    std::pair<int,int> getMinMaxForCurve(int dimension) const;
 
     void setDimensionName(int dim,const std::string & name);
 
@@ -207,7 +207,7 @@ public:
 
     void setDecimals(int decis, int index = 0);
 
-    std::pair<double,double> getMinMaxForCurve(const Curve* curve) const;
+    std::pair<double,double> getMinMaxForCurve(int dimension) const;
 
 
     /*minis & maxis must have the same size*/
@@ -554,7 +554,7 @@ public:
 
     void setDisplayMaximum(double maxi, int index);
 
-    std::pair<double,double> getMinMaxForCurve(const Curve* curve) const;
+    std::pair<double,double> getMinMaxForCurve(int dimension) const;
 
     /*minis & maxis must have the same size*/
     void setMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);

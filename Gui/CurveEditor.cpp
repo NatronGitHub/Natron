@@ -185,6 +185,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
         QObject::connect( kgui,SIGNAL( keyFrameSet() ),curveWidget,SLOT( onCurveChanged() ) );
         QObject::connect( kgui,SIGNAL( keyFrameRemoved() ),curveWidget,SLOT( onCurveChanged() ) );
         QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
+        QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
+        QObject::connect( kgui, SIGNAL( refreshCurveEditor() ),curveWidget, SLOT( onCurveChanged() ) );
 
         hasAtLeast1KnobWithACurve = true;
 
@@ -194,7 +196,9 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
         CurveGui* knobCurve = NULL;
         bool hideKnob = true;
         if (k->getDimension() == 1) {
-            knobCurve = curveWidget->createCurve( k->getCurve(0),kgui,0,k->getDescription().c_str() );
+            
+            knobCurve = curveWidget->createCurve(kgui->getCurve(0),kgui,0,k->getDescription().c_str() );
+            
             if ( !k->getCurve(0)->isAnimated() ) {
                 knobItem->setHidden(true);
             } else {
@@ -207,7 +211,9 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText( 0,k->getDimensionName(j).c_str() );
                 QString curveName = QString( k->getDescription().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
-                CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),kgui,j,curveName);
+                
+                CurveGui* dimCurve = curveWidget->createCurve(kgui->getCurve(j),kgui,j,curveName);
+                
                 NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
                 _nodeElements.push_back(elem);
                 if ( !dimCurve->getInternalCurve()->isAnimated() ) {

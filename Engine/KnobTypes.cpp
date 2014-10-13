@@ -215,20 +215,14 @@ Int_Knob::getDisplayMaximums() const
     return _displayMaxs;
 }
 
-std::pair<int,int> Int_Knob::getMinMaxForCurve(const Curve* curve) const
+std::pair<int,int> Int_Knob::getMinMaxForCurve(int dimension) const
 {
-    const std::vector< boost::shared_ptr<Curve> > & curves = getCurves();
-
-    for (U32 i = 0; i < curves.size(); ++i) {
-        if (curves[i].get() == curve) {
-            const std::vector<int> & mins = getMinimums();
-            const std::vector<int> & maxs = getMaximums();
-
-            assert(mins.size() > i);
-            assert(maxs.size() > i);
-
-            return std::make_pair(mins[i], maxs[i]);
-        }
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    if (curve) {
+        const std::vector<int> & mins = getMinimums();
+        const std::vector<int> & maxs = getMaximums();
+        
+        return std::make_pair(mins[dimension], maxs[dimension]);
     }
     throw std::logic_error("Int_Knob::getMinMaxForCurve(): curve not found");
 }
@@ -504,20 +498,14 @@ Double_Knob::setDecimals(int decis,
     emit decimalsChanged(_decimals[index], index);
 }
 
-std::pair<double,double> Double_Knob::getMinMaxForCurve(const Curve* curve) const
+std::pair<double,double> Double_Knob::getMinMaxForCurve(int dimension) const
 {
-    const std::vector< boost::shared_ptr<Curve> > & curves = getCurves();
-
-    for (U32 i = 0; i < curves.size(); ++i) {
-        if (curves[i].get() == curve) {
-            const std::vector<double> & mins = getMinimums();
-            const std::vector<double> & maxs = getMaximums();
-
-            assert(mins.size() > i);
-            assert(maxs.size() > i);
-
-            return std::make_pair(mins[i],maxs[i]);
-        }
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    if (curve) {
+        const std::vector<double> & mins = getMinimums();
+        const std::vector<double> & maxs = getMaximums();
+        
+        return std::make_pair(mins[dimension], maxs[dimension]);
     }
     throw std::logic_error("Double_Knob::getMinMaxForCurve(): curve not found");
 }
@@ -1163,20 +1151,14 @@ Color_Knob::setDisplayMaximum(double maxi,
 }
 
 std::pair<double,double>
-Color_Knob::getMinMaxForCurve(const Curve* curve) const
+Color_Knob::getMinMaxForCurve(int dimension) const
 {
-    const std::vector< boost::shared_ptr<Curve> > & curves = getCurves();
-
-    for (U32 i = 0; i < curves.size(); ++i) {
-        if (curves[i].get() == curve) {
-            const std::vector<double> & mins = getMinimums();
-            const std::vector<double> & maxs = getMaximums();
-
-            assert(mins.size() > i);
-            assert(maxs.size() > i);
-
-            return std::make_pair(mins[i],maxs[i]);
-        }
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    if (curve) {
+        const std::vector<double> & mins = getMinimums();
+        const std::vector<double> & maxs = getMaximums();
+        
+        return std::make_pair(mins[dimension], maxs[dimension]);
     }
     throw std::logic_error("Color_Knob::getMinMaxForCurve(): curve not found");
 }
@@ -1392,7 +1374,7 @@ Parametric_Knob::Parametric_Knob(KnobHolder* holder,
         RGBAColourF color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::shared_ptr<Curve>( new Curve(this) );
+        _curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
     }
 }
 

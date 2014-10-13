@@ -143,13 +143,8 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 (void) st;
             } else {
                 KnobGui* guiKnob = _keys[i].first->getKnob();
-                boost::shared_ptr<KnobI> knob = guiKnob->getKnob();
-                guiKnob->setKeyframe( _keys[i].second.getTime(), _keys[i].first->getDimension() );
-                
-                ///Move the keyframe to its old position
-                int newKeyIndex = knob->getKeyFrameIndex(_keys[i].first->getDimension(), _keys[i].second.getTime());
-                knob->getCurve(_keys[i].first->getDimension())->setKeyFrameValueAndTime(_keys[i].second.getTime(), _keys[i].second.getValue(), newKeyIndex);
-                
+                guiKnob->setKeyframe( _keys[i].second.getTime(),_keys[i].second, _keys[i].first->getDimension() );
+
             }
         } else {
             if ( _keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic() ) {

@@ -96,6 +96,8 @@ struct KnobGui::KnobGuiPrivate
     bool isOnNewLine;
     CustomParamInteract* customInteract;
 
+    std::vector< boost::shared_ptr<Curve> > guiCurves;
+    
     KnobGuiPrivate(DockablePanel* container)
         : triggerNewLine(true)
           , spacingBetweenItems(0)
@@ -112,6 +114,7 @@ struct KnobGui::KnobGuiPrivate
           , descriptionLabel(NULL)
           , isOnNewLine(false)
           , customInteract(NULL)
+          , guiCurves()
     {
         copyRightClickMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
     }
@@ -125,11 +128,10 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     knob->setKnobGuiPointer(this);
     KnobHelper* helper = dynamic_cast<KnobHelper*>( knob.get() );
     KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
+    QObject::connect( handler,SIGNAL( refreshGuiCurve(int)),this,SLOT( onRefreshGuiCurve(int) ) );
     QObject::connect( handler,SIGNAL( valueChanged(int,int) ),this,SLOT( onInternalValueChanged(int,int) ) );
     QObject::connect( handler,SIGNAL( keyFrameSet(SequenceTime,int,bool) ),this,SLOT( onInternalKeySet(SequenceTime,int,bool) ) );
-    QObject::connect( this,SIGNAL( keyFrameSetByUser(SequenceTime,int) ),handler,SLOT( onKeyFrameSet(SequenceTime,int) ) );
     QObject::connect( handler,SIGNAL( keyFrameRemoved(SequenceTime,int) ),this,SLOT( onInternalKeyRemoved(SequenceTime,int) ) );
-    QObject::connect( this,SIGNAL( keyFrameRemovedByUser(SequenceTime,int) ),handler,SLOT( onKeyFrameRemoved(SequenceTime,int) ) );
     QObject::connect( handler,SIGNAL( keyFrameMoved(int,int,int)), this, SLOT( onKeyFrameMoved(int,int,int)));
     QObject::connect( handler,SIGNAL( secretChanged() ),this,SLOT( setSecret() ) );
     QObject::connect( handler,SIGNAL( enabledChanged() ),this,SLOT( setEnabledSlot() ) );
@@ -142,6 +144,11 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( handler,SIGNAL( appendParamEditChange(Variant,int,int,bool,bool) ),this,
                       SLOT( onAppendParamEditChanged(Variant,int,int,bool,bool) ) );
     QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
+    
+    _imp->guiCurves.resize(knob->getDimension());
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        _imp->guiCurves[i].reset(new Curve(*(knob->getCurve(i))));
+    }
 }
 
 KnobGui::~KnobGui()
@@ -663,7 +670,24 @@ KnobGui::setKeyframe(double time,
     boost::shared_ptr<KnobI> knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
-    emit keyFrameSetByUser(time,dimension);
+    
+    knob->onKeyFrameSet(time, dimension);
+    
+    emit keyFrameSet();
+    if ( !knob->getIsSecret() ) {
+        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    }
+}
+
+void
+KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    
+    assert( knob->getHolder()->getApp() );
+    
+    knob->onKeyFrameSet(time, key, dimension);
+    
     emit keyFrameSet();
     if ( !knob->getIsSecret() ) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
@@ -715,9 +739,10 @@ void
 KnobGui::removeKeyFrame(double time,
                         int dimension)
 {
-    emit keyFrameRemovedByUser(time,dimension);
-    emit keyFrameRemoved();
     boost::shared_ptr<KnobI> knob = getKnob();
+    knob->onKeyFrameRemoved(time, dimension);
+    emit keyFrameRemoved();
+    
 
     assert( knob->getHolder()->getApp() );
     if ( !knob->getIsSecret() ) {
@@ -1609,5 +1634,17 @@ bool
 KnobGui::isGuiFrozenForPlayback() const
 {
     return getGui() ? getGui()->isGUIFrozen() : false;
+}
+
+boost::shared_ptr<Curve>
+KnobGui::getCurve(int dimension) const
+{
+    return _imp->guiCurves[dimension];
+}
+
+void
+KnobGui::onRefreshGuiCurve(int /*dimension*/)
+{
+    emit refreshCurveEditor();
 }
 
