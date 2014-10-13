@@ -3403,7 +3403,7 @@ EffectInstance::onNodeHashChanged(U64 hash)
 bool
 EffectInstance::canSetValue() const
 {
-    return !_node->isNodeRendering();
+    return !_node->isNodeRendering() || appPTR->isBackground();
 }
 
 SequenceTime
