@@ -2915,7 +2915,7 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     bool mustDequeue ;
     {
         int nodeIsRendering;
-        {
+        if (QThread::currentThread() != qApp->thread()) {
             ///Decrement the node is rendering counter
             QMutexLocker k(&_imp->nodeIsRenderingMutex);
             --_imp->nodeIsRendering;
@@ -2983,11 +2983,8 @@ Node::setParallelRenderArgsInternal(int time,
         while (_imp->nodeIsDequeuing) {
             _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
         }
-    }
-    
-    {
         ///Increment the node is rendering counter
-        QMutexLocker k(&_imp->nodeIsRenderingMutex);
+        QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
         ++_imp->nodeIsRendering;
     }
     
