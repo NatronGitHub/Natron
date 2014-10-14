@@ -3507,7 +3507,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->label = new QLabel(tr("Select all nodes containing this text:)"),this);
+    _imp->label = new QLabel(tr("Select all nodes containing this text:"),this);
     _imp->label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
     _imp->mainLayout->addWidget(_imp->label);
 
