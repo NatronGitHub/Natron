@@ -1295,6 +1295,14 @@ OutputSchedulerThread::quitThread()
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
     }
+    
+    ///Wake-up all threads and tell them that they must quit
+    stopRenderThreads(0);
+    
+    QMutexLocker l(&_imp->renderThreadsMutex);
+    
+    ///Make sure they are all gone, there will be a deadlock here if that's not the case.
+    _imp->waitForRenderThreadsToQuit();
 }
 
 bool
