@@ -929,6 +929,8 @@ Image::downscaleMipMap(const RectI & roi,
 //    RectI dstRoI;
 //    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
     unsigned int downscaleLvls = toLevel - fromLevel;
+
+    assert(!copyBitMap || _bitmap.getBitmap());
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     

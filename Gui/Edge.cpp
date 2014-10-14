@@ -10,6 +10,7 @@
 
 #include "Edge.h"
 
+#include <algorithm>
 #include <cmath>
 #include <QPainter>
 #include <QGraphicsScene>
@@ -26,6 +27,8 @@
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
+#define EDGE_LENGTH_MIN 0.1
+
 #define kGraphicalContainerOffset 10 \
     //!< number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
@@ -35,12 +38,12 @@ Edge::Edge(int inputNb_,
            QGraphicsItem *parent)
     : QGraphicsLineItem(parent)
       , _isOutputEdge(false)
-      , inputNb(inputNb_)
-      , angle(angle_)
-      , label(NULL)
-      , arrowHead()
-      , dest(dest_)
-      , source()
+      , _inputNb(inputNb_)
+      , _angle(angle_)
+      , _label(NULL)
+      , _arrowHead()
+      , _dest(dest_)
+      , _source()
       , _defaultColor(Qt::black)
       , _renderingColor(243,149,0)
       , _useRenderingColor(false)
@@ -51,15 +54,15 @@ Edge::Edge(int inputNb_,
       , _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
-    if ( (inputNb != -1) && dest ) {
-        label = new QGraphicsTextItem(QString( dest->getNode()->getInputLabel(inputNb).c_str() ),this);
-        label->setDefaultTextColor( QColor(200,200,200) );
+    if ( (_inputNb != -1) && _dest ) {
+        _label = new QGraphicsTextItem(QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ),this);
+        _label->setDefaultTextColor( QColor(200,200,200) );
     }
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(4);
-    if ( dest && dest->getNode()->getLiveInstance() && dest->getNode()->getLiveInstance()->isInputOptional(inputNb) ) {
+    if ( _dest && _dest->getNode()->getLiveInstance() && _dest->getNode()->getLiveInstance()->isInputOptional(_inputNb) ) {
         _paintWithDash = true;
     }
 }
@@ -68,12 +71,12 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
            QGraphicsItem *parent)
     : QGraphicsLineItem(parent)
       , _isOutputEdge(true)
-      , inputNb(-1)
-      , angle(M_PI_2)
-      , label(NULL)
-      , arrowHead()
-      , dest()
-      , source(src)
+      , _inputNb(-1)
+      , _angle(M_PI_2)
+      , _label(NULL)
+      , _arrowHead()
+      , _dest()
+      , _source(src)
       , _defaultColor(Qt::black)
       , _renderingColor(243,149,0)
       , _useRenderingColor(false)
@@ -90,15 +93,15 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
 
 Edge::~Edge()
 {
-    if (dest) {
-        dest->markInputNull(this);
+    if (_dest) {
+        _dest->markInputNull(this);
     }
 }
 
 void
 Edge::setSource(const boost::shared_ptr<NodeGui> & src)
 {
-    this->source = src;
+    _source = src;
     initLine();
 }
 
@@ -106,15 +109,15 @@ void
 Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
                               const boost::shared_ptr<NodeGui> & dst)
 {
-    this->source = src;
-    this->dest = dst;
-    if (!label) {
-        label = new QGraphicsTextItem(QString( dest->getNode()->getInputLabel(inputNb).c_str() ),this);
-        label->setDefaultTextColor( QColor(200,200,200) );
+    _source = src;
+    _dest = dst;
+    if (!_label) {
+        _label = new QGraphicsTextItem(QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ),this);
+        _label->setDefaultTextColor( QColor(200,200,200) );
     } else {
-        label->setPlainText( QString( dest->getNode()->getInputLabel(inputNb).c_str() ) );
+        _label->setPlainText( QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ) );
     }
-    if ( dest && dest->getNode()->getLiveInstance() && dest->getNode()->getLiveInstance()->isInputOptional(inputNb) ) {
+    if ( _dest && _dest->getNode()->getLiveInstance() && _dest->getNode()->getLiveInstance()->isInputOptional(_inputNb) ) {
         _paintWithDash = true;
     }
     initLine();
@@ -157,41 +160,41 @@ makeEdges(const QRectF & bbox,
 void
 Edge::initLine()
 {
-    if (!source && !dest) {
+    if (!_source && !_dest) {
         return;
     }
 
     double sc = scale();
-    QRectF sourceBBOX = source ? mapFromItem( source.get(),source->boundingRect() ).boundingRect() : QRectF(0,0,1,1);
-    QRectF destBBOX = dest ? mapFromItem( dest.get(),dest->boundingRect() ).boundingRect()  : QRectF(0,0,1,1);
+    QRectF sourceBBOX = _source ? mapFromItem( _source.get(), _source->boundingRect() ).boundingRect() : QRectF(0,0,1,1);
+    QRectF destBBOX = _dest ? mapFromItem( _dest.get(), _dest->boundingRect() ).boundingRect()  : QRectF(0,0,1,1);
     QSize dstNodeSize;
     QSize srcNodeSize;
-    if (dest) {
+    if (_dest) {
         dstNodeSize = QSize( destBBOX.width(),destBBOX.height() );
     }
-    if (source) {
+    if (_source) {
         srcNodeSize = QSize( sourceBBOX.width(),sourceBBOX.height() );
     }
 
     QPointF dst;
 
-    if (dest) {
+    if (_dest) {
         dst = destBBOX.center();
-    } else if (source && !dest) {
+    } else if (_source && !_dest) {
         dst = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
 
     std::vector<QLineF> dstEdges;
     std::vector<QLineF> srcEdges;
-    if (dest) {
+    if (_dest) {
         makeEdges(destBBOX, dstEdges);
     }
-    if (source) {
+    if (_source) {
         makeEdges(sourceBBOX, srcEdges);
     }
 
     QPointF srcpt;
-    if (source && dest) {
+    if (_source && _dest) {
         /////// This is a connected edge, either input or output
         srcpt = sourceBBOX.center();
 
@@ -233,22 +236,22 @@ Edge::initLine()
             }
 
 
-            if ( label && isActive() ) {
-                label->setPos( _middlePoint + QPointF(-5,-10) );
-                QFontMetrics fm( label->font() );
+            if ( _label && isActive() ) {
+                _label->setPos( _middlePoint + QPointF(-5,-10) );
+                QFontMetrics fm( _label->font() );
                 int fontHeight = fm.height();
-                double txtWidth = fm.width( label->toPlainText() );
+                double txtWidth = fm.width( _label->toPlainText() );
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
-                    label->hide();
+                    _label->hide();
                 } else {
-                    label->show();
+                    _label->show();
                 }
             }
         }
-    } else if (!source && dest) {
+    } else if (!_source && _dest) {
         ///// The edge is an input edge which is unconnected
-        srcpt = QPointF( dst.x() + (std::cos(angle) * 100000 * sc),
-                         dst.y() - (std::sin(angle) * 100000 * sc) );
+        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
+                         dst.y() - (std::sin(_angle) * 100000 * sc) );
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
         ///ok now that we have the direction between dst and srcPt we can get the distance between the center of the node
@@ -269,12 +272,12 @@ Edge::initLine()
                                          ( intersection.y() - dst.y() ) * ( intersection.y() - dst.y() ) );
         distToCenter += appPTR->getCurrentSettings()->getDisconnectedArrowLength();
 
-        srcpt = QPointF( dst.x() + (std::cos(angle) * distToCenter * sc),
-                         dst.y() - (std::sin(angle) * distToCenter * sc) );
+        srcpt = QPointF( dst.x() + (std::cos(_angle) * distToCenter * sc),
+                         dst.y() - (std::sin(_angle) * distToCenter * sc) );
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
-        if (label) {
-            double cosinus = std::cos(angle);
+        if (_label) {
+            double cosinus = std::cos(_angle);
             int yOffset = 0;
             if (cosinus < 0) {
                 yOffset = -40;
@@ -288,9 +291,9 @@ Edge::initLine()
 
             QPointF labelDst = QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
 
-            label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
+            _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
         }
-    } else if (source && !dest) {
+    } else if (_source && !_dest) {
         ///// The edge is an output edge which is unconnected
         srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
@@ -299,7 +302,7 @@ Edge::initLine()
     }
 
 
-    double length = line().length();
+    double length = std::max(EDGE_LENGTH_MIN, line().length());
 
 
     ///This is the angle the edge forms with the X axis
@@ -315,8 +318,8 @@ Edge::initLine()
     QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
                                             std::cos(a + M_PI - M_PI / 3) * arrowSize);
 
-    arrowHead.clear();
-    arrowHead << dst << arrowP1 << arrowP2;
+    _arrowHead.clear();
+    _arrowHead << dst << arrowP1 << arrowP2;
 } // initLine
 
 QPainterPath
@@ -324,7 +327,7 @@ Edge::shape() const
 {
     QPainterPath path = QGraphicsLineItem::shape();
 
-    path.addPolygon(arrowHead);
+    path.addPolygon(_arrowHead);
 
 
     return path;
@@ -347,17 +350,17 @@ static double
 dist2ToSegment(const QLineF & line,
                const QPointF & p)
 {
-    double length = pow(line.length(),2);
+    double length2 = line.length() * line.length();
     const QPointF & p1 = line.p1();
     const QPointF &p2 = line.p2();
 
-    if (length == 0.) {
+    if (length2 == 0.) {
         return dist2(p, p1);
     }
     // Consider the line extending the segment, parameterized as p1 + t (p2 - p1).
     // We find projection of point p onto the line.
     // It falls where t = [(p-p1) . (p2-p1)] / |p2-p1|^2
-    double t = ( ( p.x() - p1.x() ) * ( p2.x() - p1.x() ) + ( p.y() - p1.y() ) * ( p2.y() - p1.y() ) ) / length;
+    double t = ( ( p.x() - p1.x() ) * ( p2.x() - p1.x() ) + ( p.y() - p1.y() ) * ( p2.y() - p1.y() ) ) / length2;
     if (t < 0) {
         return dist2(p, p1);
     }
@@ -382,7 +385,7 @@ Edge::dragSource(const QPointF & src)
 {
     setLine( QLineF(line().p1(),src) );
 
-    double a = std::acos( line().dx() / line().length() );
+    double a = std::acos( line().dx() / std::max(EDGE_LENGTH_MIN, line().length()) );
     if (line().dy() >= 0) {
         a = 2 * M_PI - a;
     }
@@ -392,12 +395,12 @@ Edge::dragSource(const QPointF & src)
                                             std::cos(a + M_PI / 3) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
                                             std::cos(a + M_PI - M_PI / 3) * arrowSize);
-    arrowHead.clear();
-    arrowHead << line().p1() << arrowP1 << arrowP2;
+    _arrowHead.clear();
+    _arrowHead << line().p1() << arrowP1 << arrowP2;
 
 
-    if (label) {
-        label->setPos( QPointF( ( ( line().p1().x() + src.x() ) / 2. ) - 5,( ( line().p1().y() + src.y() ) / 2. ) - 5 ) );
+    if (_label) {
+        _label->setPos( QPointF( ( ( line().p1().x() + src.x() ) / 2. ) - 5,( ( line().p1().y() + src.y() ) / 2. ) - 5 ) );
     }
 }
 
@@ -406,7 +409,7 @@ Edge::dragDest(const QPointF & dst)
 {
     setLine( QLineF( dst,line().p2() ) );
 
-    double a = std::acos( line().dx() / line().length() );
+    double a = std::acos( line().dx() / std::max(EDGE_LENGTH_MIN, line().length()) );
     if (line().dy() >= 0) {
         a = 2 * M_PI - a;
     }
@@ -416,8 +419,8 @@ Edge::dragDest(const QPointF & dst)
                                             std::cos(a + M_PI / 3) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
                                             std::cos(a + M_PI - M_PI / 3) * arrowSize);
-    arrowHead.clear();
-    arrowHead << line().p1() << arrowP1 << arrowP2;
+    _arrowHead.clear();
+    _arrowHead << line().p1() << arrowP1 << arrowP2;
 }
 
 void
@@ -433,7 +436,7 @@ Edge::setBendPointVisible(bool visible)
 bool
 Edge::isNearbyBendPoint(const QPointF & scenePoint)
 {
-    assert(source && dest);
+    assert(_source && _dest);
     QPointF pos = mapFromScene(scenePoint);
     if ( ( pos.x() >= (_middlePoint.x() - 10) ) && ( pos.x() <= (_middlePoint.x() + 10) ) &&
          ( pos.y() >= (_middlePoint.y() - 10) ) && ( pos.y() <= (_middlePoint.y() + 10) ) ) {
@@ -476,7 +479,7 @@ Edge::paint(QPainter *painter,
     painter->setPen(myPen);
 
     QPainterPath headPath;
-    headPath.addPolygon(arrowHead);
+    headPath.addPolygon(_arrowHead);
     headPath.closeSubpath();
     painter->fillPath(headPath, color);
 
@@ -583,7 +586,7 @@ LinkArrow::refreshPosition()
 
     ///Now get the middle of the visible portion of the link
     QPointF middle = (masterIntersect + slaveIntersect) / 2.;
-    double length = line().length();
+    double length = std::max(EDGE_LENGTH_MIN, line().length());
     ///This is the angle the edge forms with the X axis
     qreal a = std::acos(line().dx() / length);
 

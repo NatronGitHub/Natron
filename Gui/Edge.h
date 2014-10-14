@@ -59,27 +59,27 @@ public:
 
     int getInputNumber() const
     {
-        return inputNb;
+        return _inputNb;
     }
 
     void setInputNumber(int i)
     {
-        inputNb = i;
+        _inputNb = i;
     }
 
     boost::shared_ptr<NodeGui> getDest() const
     {
-        return dest;
+        return _dest;
     }
 
     boost::shared_ptr<NodeGui> getSource() const
     {
-        return source;
+        return _source;
     }
 
     bool hasSource() const
     {
-        return this->source != NULL;
+        return _source != NULL;
     }
 
     void dragSource(const QPointF & src);
@@ -90,17 +90,19 @@ public:
 
     void setAngle(double a)
     {
-        angle = a;
+        _angle = a;
     }
 
     void turnOnRenderingColor()
     {
-        _useRenderingColor = true; update();
+        _useRenderingColor = true;
+        update();
     }
 
     void turnOffRenderingColor()
     {
-        _useRenderingColor = false; update();
+        _useRenderingColor = false;
+        update();
     }
 
     void setUseHighlight(bool highlight);
@@ -128,12 +130,12 @@ private:
 
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
     bool _isOutputEdge;
-    int inputNb;
-    double angle;
-    QGraphicsTextItem* label;
-    QPolygonF arrowHead;
-    boost::shared_ptr<NodeGui> dest;
-    boost::shared_ptr<NodeGui> source;
+    int _inputNb;
+    double _angle;
+    QGraphicsTextItem* _label;
+    QPolygonF _arrowHead;
+    boost::shared_ptr<NodeGui> _dest;
+    boost::shared_ptr<NodeGui> _source;
     QColor _defaultColor;
     QColor _renderingColor;
     bool _useRenderingColor;

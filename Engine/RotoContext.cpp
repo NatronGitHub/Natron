@@ -4775,6 +4775,7 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
             if (comps == 1) {
                 dstPix[x] = PIX( (float)srcPix[x] / 255.f ) * maxValue;;
             } else {
+#pragma message WARN("warning: variable ‘offset’ set but not used")
                 int offset = 0;
                 if (comps == 4) {
                     offset = 1; //< cairo's format is ARGB (that is BGRA when interpreted as bytes)

@@ -624,11 +624,11 @@ OfxBooleanInstance::get(bool & b)
 }
 
 OfxStatus
-OfxBooleanInstance::get(OfxTime /*time*/,
+OfxBooleanInstance::get(OfxTime time,
                         bool & b)
 {
     assert( Bool_Knob::canAnimateStatic() );
-    b = _knob->getValue();
+    b = _knob->getValueAtTime(time);
 
     return kOfxStatOK;
 }
@@ -642,11 +642,11 @@ OfxBooleanInstance::set(bool b)
 }
 
 OfxStatus
-OfxBooleanInstance::set(OfxTime /*time*/,
+OfxBooleanInstance::set(OfxTime time,
                         bool b)
 {
     assert( Bool_Knob::canAnimateStatic() );
-    _knob->setValue(b,0);
+    _knob->setValueAtTime(time, b, 0);
 
     return kOfxStatOK;
 }
@@ -755,11 +755,11 @@ OfxChoiceInstance::get(int & v)
 }
 
 OfxStatus
-OfxChoiceInstance::get(OfxTime /*time*/,
+OfxChoiceInstance::get(OfxTime time,
                        int & v)
 {
     assert( Choice_Knob::canAnimateStatic() );
-    v = _knob->getValue();
+    v = _knob->getValueAtTime(time);
 
     return kOfxStatOK;
 }
@@ -781,7 +781,7 @@ OfxChoiceInstance::set(OfxTime time,
                        int v)
 {
     if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
-        _knob->setValueAtTime(time,v,0);
+        _knob->setValueAtTime(time, v, 0);
 
         return kOfxStatOK;
     } else {

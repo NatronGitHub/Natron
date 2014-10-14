@@ -971,6 +971,7 @@ Curve::setKeyFrameValueAndTime(double time,
                                int index,
                                int* newIndex)
 {
+#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
     bool evaluateAnimation = false;
     KeyFrame ret;
     {
@@ -1002,6 +1003,7 @@ Curve::setKeyFrameLeftDerivative(double value,
                                  int index,
                                  int* newIndex)
 {
+#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
     bool evaluateAnimation = false;
     KeyFrame ret;
     {
@@ -1029,6 +1031,7 @@ Curve::setKeyFrameRightDerivative(double value,
                                   int index,
                                   int* newIndex)
 {
+#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
     bool evaluateAnimation = false;
     KeyFrame ret;
     {
@@ -1057,6 +1060,7 @@ Curve::setKeyFrameDerivatives(double left,
                               int index,
                               int* newIndex)
 {
+#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
     bool evaluateAnimation = false;
     KeyFrame ret;
     {
@@ -1115,6 +1119,7 @@ Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,
 void
 Curve::setCurveInterpolation(Natron::KeyframeType interp)
 {
+#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
     bool evaluateAnimation = false;
 
     {
