@@ -2912,6 +2912,9 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     }
     _imp->liveInstance->invalidateParallelRenderArgs();
     
+    ///We're no longer rendering, set the abort flag to false to make sure it is not still on
+    _imp->liveInstance->setAborted(false);
+    
     bool mustDequeue ;
     {
         int nodeIsRendering;
@@ -2921,6 +2924,8 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
             --_imp->nodeIsRendering;
             assert(_imp->nodeIsRendering >= 0);
             nodeIsRendering = _imp->nodeIsRendering;
+        } else {
+            nodeIsRendering = 0;
         }
         
         mustDequeue = nodeIsRendering == 0 && !appPTR->isBackground();
