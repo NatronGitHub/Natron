@@ -379,8 +379,8 @@ CurveGui::drawCurve(int curveIndex,
                     
                     double rounding = std::pow(10,DERIVATIVE_ROUND_PRECISION);
                     
-                    QString leftDerivStr = QString("l: %1").arg(std::roundf(key.getLeftDerivative() * rounding) / rounding);
-                    QString rightDerivStr = QString("r: %1").arg(std::roundf(key.getRightDerivative() * rounding) / rounding);
+                    QString leftDerivStr = QString("l: %1").arg(std::floor((key.getLeftDerivative() * rounding) + 0.5) / rounding);
+                    QString rightDerivStr = QString("r: %1").arg(std::floor((key.getRightDerivative() * rounding) + 0.5) / rounding);
                     
                     double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->leftTan.second).y();
                     yLeftWidgetCoord += (m.height() + 4);
@@ -1165,8 +1165,8 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
         topLeft_LeftTanWidget.ry() += yOffset;
         topLeft_RightTanWidget.ry() += yOffset;
         
-        QString leftCoordStr =  QString(QObject::tr("l: %1")).arg(std::roundf((*it)->key.getLeftDerivative() * rounding) / rounding);
-        QString rightCoordStr =  QString(QObject::tr("r: %1")).arg(std::roundf((*it)->key.getRightDerivative() * rounding) / rounding);
+        QString leftCoordStr =  QString(QObject::tr("l: %1")).arg(std::floor(((*it)->key.getLeftDerivative() * rounding) + 0.5) / rounding);
+        QString rightCoordStr =  QString(QObject::tr("r: %1")).arg(std::floor(((*it)->key.getRightDerivative() * rounding) + 0.5) / rounding);
         
         QPointF btmRight_LeftTanWidget(topLeft_LeftTanWidget.x() + fm.width(leftCoordStr),topLeft_LeftTanWidget.y() + fm.height());
         QPointF btmRight_RightTanWidget(topLeft_RightTanWidget.x() + fm.width(rightCoordStr),topLeft_RightTanWidget.y() + fm.height());
