@@ -25,6 +25,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QThread>
 #include <QUndoStack>
 #include <QApplication>
+#include <QDesktopWidget>
 
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
@@ -2149,7 +2150,17 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     KeyPtr selectedText = _imp->isNearbyKeyFrameText(e->pos());
     if (selectedText) {
         EditKeyFrameDialog* dialog = new EditKeyFrameDialog(this,selectedText,this);
-        dialog->move(e->globalPos());
+        int  dialogW = dialog->sizeHint().width();
+        
+        QDesktopWidget* desktop = QApplication::desktop();
+        QRect screen = desktop->screenGeometry();
+        
+        QPoint gP = e->globalPos();
+        if (gP.x() > (screen.width() - dialogW)) {
+            gP.rx() -= dialogW;
+        }
+        
+        dialog->move(gP);
         
         ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
         ///it closes it.
