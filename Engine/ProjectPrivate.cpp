@@ -209,8 +209,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                                                                       ,it->getPluginMajorVersion()
                                                                                       ,it->getPluginMinorVersion(),&(*it),false) );
         if (!n) {
-            project->clearNodes();
-            QString text( QObject::tr("Failed to restore the graph! \n The node ") );
+            QString text( QObject::tr("The node ") );
             text.append( it->getPluginID().c_str() );
             text.append( QObject::tr(" was found in the script but doesn't seem \n"
                                      "to exist in the currently loaded plug-ins.") );
