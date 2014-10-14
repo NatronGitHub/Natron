@@ -1228,9 +1228,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     cloneGuiCurvesIfNeeded(dimensionChanged);
     {
         QMutexLocker kql(&_setValuesQueueMutex);
-        if (_setValuesQueue.empty()) {
-            return;
-        }
+   
         
         QWriteLocker k(&_valueMutex);
         for (typename std::list<boost::shared_ptr<QueuedSetValue> >::iterator it = _setValuesQueue.begin(); it!=_setValuesQueue.end(); ++it) {
@@ -1255,7 +1253,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
         _setValuesQueue.clear();
     }
     
-    if (!disableEvaluation) {
+    if (!disableEvaluation && !dimensionChanged.empty()) {
         
         blockEvaluation();
         std::set<int>::iterator next = dimensionChanged.begin();

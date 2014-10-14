@@ -66,6 +66,8 @@ using namespace Natron;
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
 
+#define DERIVATIVE_ROUND_PRECISION 3
+
 static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
 
@@ -351,6 +353,10 @@ CurveGui::drawCurve(int curveIndex,
             glVertex2f(x,y);
             glEnd();
             if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != KEYFRAME_CONSTANT) ) {
+                
+                QFontMetrics m( _curveWidget->getFont() );
+
+                
                 //draw the derivatives lines
                 if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
                     glLineStipple(2, 0xAAAA);
@@ -365,13 +371,35 @@ CurveGui::drawCurve(int curveIndex,
                 glEnd();
                 if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
                     glDisable(GL_LINE_STIPPLE);
+                    
+                } else {
+                    if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                        
+                        double rounding = std::pow(10,DERIVATIVE_ROUND_PRECISION);
+                        
+                        QString leftDerivStr = QString("l: %1").arg(std::roundf(key.getLeftDerivative() * rounding) / rounding);
+                        QString rightDerivStr = QString("r: %1").arg(std::roundf(key.getRightDerivative() * rounding) / rounding);
+                        
+                        double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->leftTan.second).y();
+                        yLeftWidgetCoord += (m.height() + 4);
+                        
+                        double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->rightTan.second).y();
+                        yRightWidgetCoord += (m.height() + 4);
+                        
+                        glColor4f(1., 1., 1., 1.);
+                        glCheckFramebufferError();
+                        _curveWidget->renderText( (*isSelected)->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
+                                                 leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                        _curveWidget->renderText( (*isSelected)->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
+                                                 rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                    }
+
                 }
 
                 if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
                     QString coordStr("x: %1, y: %2");
                     coordStr = coordStr.arg(x).arg(y);
                     double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
-                    QFontMetrics m( _curveWidget->getFont() );
                     yWidgetCoord += (m.height() + 4);
                     glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError();
@@ -459,7 +487,7 @@ public:
      **/
     Curves::const_iterator isNearbyCurve(const QPoint &pt,double* x = NULL,double *y = NULL) const;
     std::pair<CurveGui*,KeyFrame> isNearbyKeyFrame(const QPoint & pt) const;
-    std::pair<CurveGui::SelectedDerivative, KeyPtr> isNearbyTangent(const QPoint & pt) const;
+    std::pair<MoveTangentCommand::SelectedDerivative, KeyPtr> isNearbyTangent(const QPoint & pt) const;
 
     bool isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) const;
 
@@ -522,7 +550,7 @@ public:
     QLineF _selectedKeyFramesCrossHorizLine;
     boost::shared_ptr<TimeLine> _timeline;
     bool _timelineEnabled;
-    std::pair<CurveGui::SelectedDerivative,KeyPtr> _selectedDerivative;
+    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
     boost::scoped_ptr<QUndoStack> _undoStack;
@@ -1086,7 +1114,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     return KeyPtr();
 }
 
-std::pair<CurveGui::SelectedDerivative,KeyPtr > CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
+std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1098,16 +1126,16 @@ std::pair<CurveGui::SelectedDerivative,KeyPtr > CurveWidgetPrivate::isNearbyTang
              ( pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
              ( pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
              ( pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
-            return std::make_pair(CurveGui::LEFT_TANGENT,*it);
+            return std::make_pair(MoveTangentCommand::LEFT_TANGENT,*it);
         } else if ( ( pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                     ( pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                     ( pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                     ( pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
-            return std::make_pair(CurveGui::RIGHT_TANGENT,*it);
+            return std::make_pair(MoveTangentCommand::RIGHT_TANGENT,*it);
         }
     }
 
-    return std::make_pair( CurveGui::LEFT_TANGENT,KeyPtr() );
+    return std::make_pair( MoveTangentCommand::LEFT_TANGENT,KeyPtr() );
 }
 
 bool
@@ -1293,101 +1321,22 @@ CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
     assert( std::find(_selectedKeyFrames.begin(),_selectedKeyFrames.end(),_selectedDerivative.second) != _selectedKeyFrames.end() );
 
     KeyPtr & key = _selectedDerivative.second;
-    KeyFrameSet keys = key->curve->getInternalCurve()->getKeyFrames_mt_safe();
-    KeyFrameSet::const_iterator cur = keys.find(key->key);
-    assert( cur != keys.end() );
+    
     double dy = key->key.getValue() - pos.y();
     double dx = key->key.getTime() - pos.x();
 
-    //find next and previous keyframes
-    KeyFrameSet::const_iterator prev = cur;
-    if ( cur != keys.begin() ) {
-        --prev;
-    } else {
-        prev = keys.end();
-    }
-    KeyFrameSet::const_iterator next = cur;
-    ++next;
-
-    // handle first and last keyframe correctly:
-    // - if their interpolation was KEYFRAME_CATMULL_ROM or KEYFRAME_CUBIC, then it becomes KEYFRAME_FREE
-    // - in all other cases it becomes KEYFRAME_BROKEN
-    KeyframeType interp = key->key.getInterpolation();
-    bool keyframeIsFirstOrLast = ( prev == keys.end() || next == keys.end() );
-    bool interpIsNotBroken = (interp != KEYFRAME_BROKEN);
-    bool interpIsCatmullRomOrCubicOrFree = (interp == KEYFRAME_CATMULL_ROM ||
-                                            interp == KEYFRAME_CUBIC ||
-                                            interp == KEYFRAME_FREE);
-    bool setBothDerivative = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
+   
+   
+    boost::shared_ptr<KnobI> attachedKnob = key->curve->getKnob()->getKnob();
+    assert(attachedKnob);
 
     ///If the knob is evaluating on change and _updateOnPenUpOnly is true, set it to false prior
     ///to modifying the keyframe, and set it back to its original value afterwards.
-    boost::shared_ptr<KnobI> attachedKnob = key->curve->getKnob()->getKnob();
-    assert(attachedKnob);
+    
     bool isAttachedKnobEvaluatingOnChange = attachedKnob->getEvaluateOnChange();
     bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     if (updateOnPenUpOnly && isAttachedKnobEvaluatingOnChange) {
         attachedKnob->setEvaluateOnChange(false);
-    }
-
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(attachedKnob.get());
-    // For other keyframes:
-    // - if they KEYFRAME_BROKEN, move only one derivative
-    // - else change to KEYFRAME_FREE and move both derivatives
-    if (setBothDerivative) {
-        
-        //if dx is not of the good sign it would make the curve uncontrollable
-        if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
-            if (dx < 0) {
-                dx = 1e-8;
-            }
-        } else {
-            if (dx > 0) {
-                dx = -1e-8;
-            }
-        }
-        
-        double derivative = dy / dx;
-        
-        if (!isParametric) {
-            key->curve->getKnob()->getKnob()->moveDerivativesAtTime(key->curve->getDimension(), key->key.getTime(), derivative, derivative);
-        } else {
-            int keyframeIndexInCurve = key->curve->getInternalCurve()->keyFrameIndex( key->key.getTime() );
-            key->key = key->curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, keyframeIndexInCurve);
-            key->key = key->curve->getInternalCurve()->setKeyFrameDerivatives(derivative, derivative,keyframeIndexInCurve);
-        }
-        
-    } else {
-        
-        bool isLeft;
-        if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
-            //if dx is not of the good sign it would make the curve uncontrollable
-            if (dx < 0) {
-                dx = 0.0001;
-            }
-            isLeft = true;
-        } else {
-            //if dx is not of the good sign it would make the curve uncontrollable
-            if (dx > 0) {
-                dx = -0.0001;
-            }
-            isLeft = false;
-        }
-        double derivative = dy / dx;
-        
-        if (!isParametric) {
-            key->curve->getKnob()->getKnob()->moveDerivativeAtTime(key->curve->getDimension(), key->key.getTime(), derivative, isLeft);
-        } else {
-            int keyframeIndexInCurve = key->curve->getInternalCurve()->keyFrameIndex( key->key.getTime() );
-
-            key->key = key->curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, keyframeIndexInCurve);
-
-            if (isLeft) {
-                key->key = key->curve->getInternalCurve()->setKeyFrameLeftDerivative(derivative, keyframeIndexInCurve);
-            } else {
-                key->key = key->curve->getInternalCurve()->setKeyFrameRightDerivative(derivative,keyframeIndexInCurve);
-            }
-        }
     }
 
     ///set back its original value
@@ -1395,20 +1344,9 @@ CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
         attachedKnob->setEvaluateOnChange(isAttachedKnobEvaluatingOnChange);
         _evaluateOnPenUp = true;
     }
+    
+    _widget->pushUndoCommand(new MoveTangentCommand(_widget,_selectedDerivative.first,key,dx,dy,!updateOnPenUpOnly));
 
-    refreshKeyTangents(key);
-
-    //also refresh prev/next derivatives gui if there're selected
-    if ( ( prev != keys.begin() ) || ( next != keys.end() ) ) {
-        for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            if ( (*it)->curve == key->curve ) {
-                if ( ( ( prev != keys.begin() ) && ( (*it)->key.getTime() == prev->getTime() ) ) ||
-                     ( ( next != keys.end() ) && ( (*it)->key.getTime() == next->getTime() ) ) ) {
-                    refreshKeyTangents(*it);
-                }
-            }
-        }
-    }
 } // moveSelectedTangent
 
 void
@@ -2140,7 +2078,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     
     
     std::pair<CurveGui*,KeyFrame > selectedKey = _imp->isNearbyKeyFrame( e->pos() );
-    std::pair<CurveGui::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
     if (selectedKey.first || selectedTan.second) {
         return;
     }
@@ -2149,7 +2087,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     ///We're nearby a selected keyframe's text
     KeyPtr selectedText = _imp->isNearbyKeyFrameText(e->pos());
     if (selectedText) {
-        EditKeyFrameDialog* dialog = new EditKeyFrameDialog(this,selectedText,this);
+        EditKeyFrameDialog* dialog = new EditKeyFrameDialog(EditKeyFrameDialog::EDIT_KEYFRAME_POSITION,this,selectedText,this);
         int  dialogW = dialog->sizeHint().width();
         
         QDesktopWidget* desktop = QApplication::desktop();
@@ -2277,7 +2215,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     
     ////
     // is the click near a derivative manipulator?
-    std::pair<CurveGui::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //select the derivative only if it is not a constant keyframe
     if ( selectedTan.second && (selectedTan.second->key.getInterpolation() != KEYFRAME_CONSTANT) ) {
@@ -2385,7 +2323,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     //set cursor depending on the situation
 
     //find out if there is a nearby  derivative handle
-    std::pair<CurveGui::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //if the selected keyframes rectangle is drawn and we're nearby the cross
     if ( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
@@ -3539,7 +3477,9 @@ struct EditKeyFrameDialogPrivate
     
     bool wasAccepted;
     
-    EditKeyFrameDialogPrivate(CurveWidget* curveWidget,const KeyPtr& key)
+    EditKeyFrameDialog::EditMode mode;
+    
+    EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditMode mode,CurveWidget* curveWidget,const KeyPtr& key)
     : curveWidget(curveWidget)
     , key(key)
     , originalX(key->key.getTime())
@@ -3552,14 +3492,15 @@ struct EditKeyFrameDialogPrivate
     , yLabel(0)
     , ySpinbox(0)
     , wasAccepted(false)
+    , mode(mode)
     {
         
     }
 };
 
-EditKeyFrameDialog::EditKeyFrameDialog(CurveWidget* curveWidget,const KeyPtr& key,QWidget* parent)
+EditKeyFrameDialog::EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget,const KeyPtr& key,QWidget* parent)
 : QDialog(parent)
-, _imp(new EditKeyFrameDialogPrivate(curveWidget,key))
+, _imp(new EditKeyFrameDialogPrivate(mode,curveWidget,key))
 {
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     
@@ -3570,7 +3511,19 @@ EditKeyFrameDialog::EditKeyFrameDialog(CurveWidget* curveWidget,const KeyPtr& ke
     _imp->boxLayout = new QHBoxLayout(_imp->boxContainer);
     _imp->boxLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->xLabel = new QLabel("x: ",_imp->boxContainer);
+    QString xLabel;
+    switch (mode) {
+        case EDIT_KEYFRAME_POSITION:
+            xLabel = QString("x: ");
+            break;
+        case EDIT_LEFT_DERIVATIVE:
+            xLabel = QString(tr("Left slope: "));
+            break;
+        case EDIT_RIGHT_DERIVATIVE:
+            xLabel = QString(tr("Right slope: "));
+            break;
+    }
+    _imp->xLabel = new QLabel(xLabel,_imp->boxContainer);
     _imp->boxLayout->addWidget(_imp->xLabel);
     
     SpinBox::SPINBOX_TYPE xType = key->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers() ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
@@ -3580,27 +3533,29 @@ EditKeyFrameDialog::EditKeyFrameDialog(CurveWidget* curveWidget,const KeyPtr& ke
     QObject::connect(_imp->xSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onXSpinBoxValueChanged(double)));
     _imp->boxLayout->addWidget(_imp->xSpinbox);
     
-    _imp->yLabel = new QLabel("y: ",_imp->boxContainer);
-    _imp->boxLayout->addWidget(_imp->yLabel);
-    
-    bool clampedToInt = key->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers() ;
-    bool clampedToBool = key->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans();
-    SpinBox::SPINBOX_TYPE yType = (clampedToBool || clampedToInt) ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
-
-    _imp->ySpinbox = new SpinBox(_imp->boxContainer,yType);
-    
-    if (clampedToBool) {
-        _imp->ySpinbox->setMinimum(0);
-        _imp->ySpinbox->setMaximum(1);
-    } else {
-        std::pair<double,double> range = key->curve->getInternalCurve()->getCurveYRange();
-        _imp->ySpinbox->setMinimum(range.first);
-        _imp->ySpinbox->setMaximum(range.second);
+    if (mode == EDIT_KEYFRAME_POSITION) {
+        _imp->yLabel = new QLabel("y: ",_imp->boxContainer);
+        _imp->boxLayout->addWidget(_imp->yLabel);
+        
+        bool clampedToInt = key->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers() ;
+        bool clampedToBool = key->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans();
+        SpinBox::SPINBOX_TYPE yType = (clampedToBool || clampedToInt) ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
+        
+        _imp->ySpinbox = new SpinBox(_imp->boxContainer,yType);
+        
+        if (clampedToBool) {
+            _imp->ySpinbox->setMinimum(0);
+            _imp->ySpinbox->setMaximum(1);
+        } else {
+            std::pair<double,double> range = key->curve->getInternalCurve()->getCurveYRange();
+            _imp->ySpinbox->setMinimum(range.first);
+            _imp->ySpinbox->setMaximum(range.second);
+        }
+        
+        _imp->ySpinbox->setValue(_imp->originalY);
+        QObject::connect(_imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)));
+        _imp->boxLayout->addWidget(_imp->ySpinbox);
     }
-    
-    _imp->ySpinbox->setValue(_imp->originalY);
-    QObject::connect(_imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)));
-    _imp->boxLayout->addWidget(_imp->ySpinbox);
     
     _imp->mainLayout->addWidget(_imp->boxContainer);
 
@@ -3627,7 +3582,11 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
 void
 EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 {
-    moveKeyTo(d, _imp->key->key.getValue());
+    if (_imp->mode == EDIT_KEYFRAME_POSITION) {
+        moveKeyTo(d, _imp->key->key.getValue());
+    } else {
+        
+    }
 }
 
 void

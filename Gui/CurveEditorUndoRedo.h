@@ -214,4 +214,46 @@ private:
     CurveWidget* _widget;
 };
 
+class MoveTangentCommand
+: public QUndoCommand
+{
+public:
+    
+    enum SelectedDerivative
+    {
+        LEFT_TANGENT = 0,RIGHT_TANGENT = 1
+    };
+
+    
+    MoveTangentCommand(CurveWidget* widget,
+                       SelectedDerivative deriv,
+                       const KeyPtr& key,
+                       double dx,double dy,
+                       bool updateOnFirstRedo,
+                       QUndoCommand *parent = 0);
+    virtual ~MoveTangentCommand() OVERRIDE
+    {
+    }
+    
+private:
+    
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    virtual int id() const OVERRIDE FINAL;
+    virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
+    
+    void setNewDerivatives(bool undo);
+    
+private:
+    
+    CurveWidget* _widget;
+    KeyPtr _key;
+    SelectedDerivative _deriv;
+    Natron::KeyframeType _oldInterp,_newInterp;
+    double _oldLeft,_oldRight,_newLeft,_newRight;
+    bool _setBoth;
+    bool _updateOnFirstRedo;
+    bool _firstRedoCalled;
+};
+
 #endif // CURVEEDITORUNDOREDO_H

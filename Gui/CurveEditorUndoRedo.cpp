@@ -390,3 +390,160 @@ SetKeysInterpolationCommand::redo()
     setNewInterpolation(false);
 }
 
+/////////////////////////// MoveTangentCommand
+
+MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
+                                       SelectedDerivative deriv,
+                                       const KeyPtr& key,
+                                       double dx,double dy, //< dx dy relative to the center of the keyframe
+                                       bool updateOnFirstRedo,
+                                       QUndoCommand *parent)
+: QUndoCommand(parent)
+, _widget(widget)
+, _key(key)
+, _deriv(deriv)
+, _oldInterp(key->key.getInterpolation())
+, _oldLeft(key->key.getLeftDerivative())
+, _oldRight(key->key.getRightDerivative())
+, _setBoth(false)
+, _updateOnFirstRedo(updateOnFirstRedo)
+, _firstRedoCalled(false)
+{
+    KeyFrameSet keys = key->curve->getInternalCurve()->getKeyFrames_mt_safe();
+    KeyFrameSet::const_iterator cur = keys.find(key->key);
+    assert( cur != keys.end() );
+
+    //find next and previous keyframes
+    KeyFrameSet::const_iterator prev = cur;
+    if ( cur != keys.begin() ) {
+        --prev;
+    } else {
+        prev = keys.end();
+    }
+    KeyFrameSet::const_iterator next = cur;
+    ++next;
+    
+    // handle first and last keyframe correctly:
+    // - if their interpolation was KEYFRAME_CATMULL_ROM or KEYFRAME_CUBIC, then it becomes KEYFRAME_FREE
+    // - in all other cases it becomes KEYFRAME_BROKEN
+    Natron::KeyframeType interp = key->key.getInterpolation();
+    bool keyframeIsFirstOrLast = ( prev == keys.end() || next == keys.end() );
+    bool interpIsNotBroken = (interp != Natron::KEYFRAME_BROKEN);
+    bool interpIsCatmullRomOrCubicOrFree = (interp == Natron::KEYFRAME_CATMULL_ROM ||
+                                            interp == Natron::KEYFRAME_CUBIC ||
+                                            interp == Natron::KEYFRAME_FREE);
+    _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
+
+    bool isLeft;
+    if (deriv == LEFT_TANGENT) {
+        //if dx is not of the good sign it would make the curve uncontrollable
+        if (dx < 0) {
+            dx = 0.0001;
+        }
+        isLeft = true;
+    } else {
+        //if dx is not of the good sign it would make the curve uncontrollable
+        if (dx > 0) {
+            dx = -0.0001;
+        }
+        isLeft = false;
+    }
+    double derivative = dy / dx;
+    
+    if (_setBoth) {
+        _newInterp = Natron::KEYFRAME_FREE;
+        _newLeft = derivative;
+        _newRight = derivative;
+    } else {
+        if (isLeft) {
+            _newLeft = derivative;
+            _newRight = _oldRight;
+        } else {
+            _newLeft = _oldLeft;
+            _newRight = derivative;
+        }
+        _newInterp = Natron::KEYFRAME_BROKEN;
+    }
+}
+
+
+void
+MoveTangentCommand::setNewDerivatives(bool undo)
+{
+    boost::shared_ptr<KnobI> attachedKnob = _key->curve->getKnob()->getKnob();
+    assert(attachedKnob);
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(attachedKnob.get());
+    
+    
+    double left = undo ? _oldLeft : _newLeft;
+    double right = undo ? _oldRight : _newRight;
+    Natron::KeyframeType interp = undo ? _oldInterp : _newInterp;
+    
+    if (!isParametric) {
+        attachedKnob->blockEvaluation();
+        if (_setBoth) {
+            attachedKnob->moveDerivativesAtTime(_key->curve->getDimension(), _key->key.getTime(), left, right);
+        } else {
+            attachedKnob->moveDerivativeAtTime(_key->curve->getDimension(), _key->key.getTime(),
+                                                                        _deriv == LEFT_TANGENT ? left : right,
+                                                                        _deriv == LEFT_TANGENT);
+            
+        }
+        attachedKnob->setInterpolationAtTime(_key->curve->getDimension(), _key->key.getTime(), interp, &_key->key);
+        attachedKnob->unblockEvaluation();
+    } else {
+        int keyframeIndexInCurve = _key->curve->getInternalCurve()->keyFrameIndex( _key->key.getTime() );
+        _key->key = _key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndexInCurve);
+        _key->key = _key->curve->getInternalCurve()->setKeyFrameDerivatives(left, right,keyframeIndexInCurve);
+    }
+    
+    if (_firstRedoCalled || _updateOnFirstRedo) {
+        attachedKnob->evaluateValueChange(_key->curve->getDimension(), Natron::USER_EDITED);
+    }
+    _widget->refreshDisplayedTangents();
+    
+}
+
+
+void
+MoveTangentCommand::undo()
+{
+    setNewDerivatives(true);
+    setText( QObject::tr("Move keyframe slope") );
+}
+
+
+void
+MoveTangentCommand::redo()
+{
+    setNewDerivatives(false);
+    _firstRedoCalled = true;
+    setText( QObject::tr("Move keyframe slope") );
+}
+
+int
+MoveTangentCommand::id() const
+{
+    return kCurveEditorMoveTangentsCommandCompressionID;
+}
+
+bool
+MoveTangentCommand::mergeWith(const QUndoCommand * command)
+{
+    const MoveTangentCommand* cmd = dynamic_cast<const MoveTangentCommand*>(command);
+    
+    if ( cmd && ( cmd->id() == id() ) ) {
+        if ( cmd->_key != _key ) {
+            return false;
+        }
+        
+        
+        _newInterp = cmd->_newInterp;
+        _newLeft = cmd->_newLeft;
+        _newRight = cmd->_newRight;
+        
+        return true;
+    } else {
+        return false;
+    }
+}

@@ -50,11 +50,7 @@ class CurveGui
 
 public:
 
-    enum SelectedDerivative
-    {
-        LEFT_TANGENT = 0,RIGHT_TANGENT = 1
-    };
-
+  
     CurveGui(const CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
              KnobGui* knob,
@@ -411,7 +407,13 @@ class EditKeyFrameDialog : public QDialog
     
 public:
     
-    EditKeyFrameDialog(CurveWidget* curveWidget, const KeyPtr& key,QWidget* parent);
+    enum EditMode {
+        EDIT_KEYFRAME_POSITION,
+        EDIT_LEFT_DERIVATIVE,
+        EDIT_RIGHT_DERIVATIVE
+    };
+    
+    EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget, const KeyPtr& key,QWidget* parent);
     
     virtual ~EditKeyFrameDialog();
     

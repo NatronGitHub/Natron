@@ -971,8 +971,6 @@ Curve::setKeyFrameValueAndTime(double time,
                                int index,
                                int* newIndex)
 {
-#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
-    bool evaluateAnimation = false;
     KeyFrame ret;
     {
         QWriteLocker l(&_imp->_lock);
@@ -988,7 +986,6 @@ Curve::setKeyFrameValueAndTime(double time,
         if (setTime || setValue) {
             it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
             it = evaluateCurveChanged(KEYFRAME_CHANGED,it);
-            evaluateAnimation = true;
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1003,8 +1000,6 @@ Curve::setKeyFrameLeftDerivative(double value,
                                  int index,
                                  int* newIndex)
 {
-#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
-    bool evaluateAnimation = false;
     KeyFrame ret;
     {
         QWriteLocker l(&_imp->_lock);
@@ -1016,7 +1011,6 @@ Curve::setKeyFrameLeftDerivative(double value,
             newKey.setLeftDerivative(value);
             it = addKeyFrameNoUpdate(newKey).first;
             it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
-            evaluateAnimation = true;
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1031,8 +1025,6 @@ Curve::setKeyFrameRightDerivative(double value,
                                   int index,
                                   int* newIndex)
 {
-#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
-    bool evaluateAnimation = false;
     KeyFrame ret;
     {
         QWriteLocker l(&_imp->_lock);
@@ -1044,7 +1036,6 @@ Curve::setKeyFrameRightDerivative(double value,
             newKey.setRightDerivative(value);
             it = addKeyFrameNoUpdate(newKey).first;
             it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
-            evaluateAnimation = true;
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1060,8 +1051,6 @@ Curve::setKeyFrameDerivatives(double left,
                               int index,
                               int* newIndex)
 {
-#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
-    bool evaluateAnimation = false;
     KeyFrame ret;
     {
         QWriteLocker l(&_imp->_lock);
@@ -1074,7 +1063,6 @@ Curve::setKeyFrameDerivatives(double left,
             newKey.setRightDerivative(right);
             it = addKeyFrameNoUpdate(newKey).first;
             it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
-            evaluateAnimation = true;
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1119,8 +1107,6 @@ Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,
 void
 Curve::setCurveInterpolation(Natron::KeyframeType interp)
 {
-#pragma message WARN("warning: variable ‘evaluateAnimation’ set but not used")
-    bool evaluateAnimation = false;
 
     {
         QWriteLocker l(&_imp->_lock);
@@ -1134,7 +1120,6 @@ Curve::setCurveInterpolation(Natron::KeyframeType interp)
             std::advance(it, i);
             if ( interp != it->getInterpolation() ) {
                 it = setKeyframeInterpolation_internal(it, interp);
-                evaluateAnimation = true;
             }
         }
     }

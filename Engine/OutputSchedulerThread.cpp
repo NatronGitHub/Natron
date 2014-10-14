@@ -2237,6 +2237,9 @@ RenderEngine::onFutureFinished()
             assert(*it2);
             isViewer->updateViewer(*it2);
         }
+        if (!ret.empty()) {
+            isViewer->redrawViewer();
+        }
     } else {
         ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
         isViewer->callRedrawOnMainThread();
