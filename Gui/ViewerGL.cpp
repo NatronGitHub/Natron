@@ -1252,9 +1252,14 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
-
+        int activeInputs[2];
+        getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
         for (int i = 0; i < 2; ++i) {
-            if (!_imp->activeTextures[i]) {
+            
+            if (!_imp->activeTextures[i] || activeInputs[i] == -1) {
+                continue;
+            }
+            if (i == 1 && (_imp->viewerTab->getCompositingOperator() == OPERATOR_NONE)) {
                 break;
             }
             RectD dataW = getRoD(i);

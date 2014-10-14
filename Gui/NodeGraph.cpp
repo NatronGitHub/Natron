@@ -26,15 +26,18 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QVBoxLayout>
 #include <QGraphicsLineItem>
 #include <QGraphicsPixmapItem>
+#include <QDialogButtonBox>
 #include <QUndoStack>
 #include <QMenu>
 #include <QThread>
 #include <QDropEvent>
 #include <QApplication>
+#include <QCheckBox>
 #include <QMimeData>
 #include <QLineEdit>
 #include <QDebug>
 #include <QtCore/QRectF>
+#include <QRegExp>
 #include <QtCore/QTimer>
 #include <QLabel>
 #include <QAction>
@@ -1700,6 +1703,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         _imp->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions, modifiers, key) ) {
         toggleKnobLinksVisible();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+        popFindDialog(QCursor::pos());
     } else {
         /// Search for a node which has a shortcut bound
         const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
@@ -2060,7 +2065,7 @@ void
 NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
                       bool addToSelection)
 {
-    if ( !n->isActive() || !n->isVisible() ) {
+    if ( !n->isVisible() ) {
         return;
     }
     bool alreadyInSelection = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),n) != _imp->_selection.nodes.end();
@@ -2376,7 +2381,12 @@ NodeGraph::populateMenu()
 {
     _imp->_menu->clear();
 
-
+    QAction* findAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphFindNode,
+                                                 kShortcutDescActionGraphFindNode,_imp->_menu);
+    QObject::connect( findAction,SIGNAL( triggered() ),this,SLOT( popFindDialog() ) );
+    _imp->_menu->addAction(findAction);
+    _imp->_menu->addSeparator();
+    
     QMenu* editMenu = new QMenu(tr("Edit"),_imp->_menu);
     editMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
     _imp->_menu->addAction( editMenu->menuAction() );
@@ -3416,4 +3426,270 @@ NodeGraph::areKnobLinksVisible() const
     return _imp->_knobLinksVisible;
 }
 
+void
+NodeGraph::popFindDialog(const QPoint& p)
+{
+    QPoint realPos = p;
+    if (realPos.x() == 0 && realPos.y() == 0) {
+        QPoint global = QCursor::pos();
+        QSize sizeH = sizeHint();
+        global.rx() -= sizeH.width() / 2;
+        global.ry() -= sizeH.height() / 2;
+        realPos = global;
+        
+    }
+    
+    
+    
+    FindNodeDialog* dialog = new FindNodeDialog(this,this);
+    QObject::connect(dialog ,SIGNAL(rejected()), this, SLOT(onFindNodeDialogFinished()));
+    QObject::connect(dialog ,SIGNAL(accepted()), this, SLOT(onFindNodeDialogFinished()));
+    dialog->move( realPos.x(), realPos.y() );
+    dialog->show();
+    
+}
 
+void
+NodeGraph::onFindNodeDialogFinished()
+{
+    FindNodeDialog* dialog = qobject_cast<FindNodeDialog*>( sender() );
+    
+    if (dialog) {
+        dialog->deleteLater();
+    }
+}
+
+struct FindNodeDialogPrivate
+{
+    NodeGraph* graph;
+    
+    QString currentFilter;
+    std::list<boost::shared_ptr<NodeGui> > nodeResults;
+    std::list<NodeBackDrop*> bdResults;
+    int currentFindIndex;
+    
+    QVBoxLayout* mainLayout;
+    QLabel* label;
+    
+
+    QCheckBox* unixWildcards;
+    QCheckBox* caseSensitivity;
+
+    QLabel* resultLabel;
+    LineEdit* filter;
+    QDialogButtonBox* buttons;
+    
+    
+    FindNodeDialogPrivate(NodeGraph* graph)
+    : graph(graph)
+    , currentFilter()
+    , nodeResults()
+    , bdResults()
+    , currentFindIndex(-1)
+    , mainLayout(0)
+    , label(0)
+    , unixWildcards(0)
+    , caseSensitivity(0)
+    , resultLabel(0)
+    , filter(0)
+    , buttons(0)
+    {
+        
+    }
+};
+
+FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
+: QDialog(parent)
+, _imp(new FindNodeDialogPrivate(graph))
+{
+    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    
+    _imp->mainLayout = new QVBoxLayout(this);
+    _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _imp->label = new QLabel(tr("Select all nodes containing this text:)"),this);
+    _imp->label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    _imp->mainLayout->addWidget(_imp->label);
+
+    _imp->filter = new LineEdit(this);
+    QObject::connect(_imp->filter, SIGNAL(editingFinished()), this, SLOT(updateFindResultsWithCurrentFilter()));
+    QObject::connect(_imp->filter, SIGNAL(textEdited(QString)), this, SLOT(updateFindResults(QString)));
+    
+    _imp->mainLayout->addWidget(_imp->filter);
+    
+    
+    _imp->unixWildcards = new QCheckBox(tr("Use Unix wildcards (*, ?, etc..)"),this);
+    _imp->unixWildcards->setChecked(false);
+    QObject::connect(_imp->unixWildcards, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()));
+    _imp->mainLayout->addWidget(_imp->unixWildcards);
+    
+    _imp->caseSensitivity = new QCheckBox(tr("Case sensitive"),this);
+    _imp->caseSensitivity->setChecked(false);
+    QObject::connect(_imp->caseSensitivity, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()));
+    _imp->mainLayout->addWidget(_imp->caseSensitivity);
+    
+    
+    _imp->resultLabel = new QLabel(this);
+    _imp->mainLayout->addWidget(_imp->resultLabel);
+    _imp->resultLabel->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
+    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));
+    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(onCancelClicked()));
+    
+    _imp->mainLayout->addWidget(_imp->buttons);
+    _imp->filter->setFocus();
+}
+
+FindNodeDialog::~FindNodeDialog()
+{
+    
+}
+
+void
+FindNodeDialog::updateFindResults(const QString& filter)
+{
+    if (filter == _imp->currentFilter) {
+        return;
+    }
+
+    _imp->currentFilter = filter;
+    _imp->currentFindIndex = 0;
+    _imp->nodeResults.clear();
+    _imp->bdResults.clear();
+    
+    _imp->graph->deselect();
+    
+    if (_imp->currentFilter.isEmpty()) {
+        _imp->resultLabel->setText("");
+        return;
+    }
+    Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
+    
+    const std::list<boost::shared_ptr<NodeGui> >& activeNodes = _imp->graph->getAllActiveNodes();
+    std::list<NodeBackDrop*> activeBds = _imp->graph->getActiveBackDrops();
+    
+    if (_imp->unixWildcards->isChecked()) {
+        QRegExp exp(filter,sensitivity,QRegExp::Wildcard);
+        if (!exp.isValid()) {
+            return;
+        }
+        
+        
+        
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
+            if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getName().c_str())) {
+                _imp->nodeResults.push_back(*it);
+            }
+        }
+        
+        for (std::list<NodeBackDrop*>::const_iterator it = activeBds.begin(); it!=activeBds.end(); ++it) {
+            if (exp.exactMatch((*it)->getName())) {
+                _imp->bdResults.push_back(*it);
+            }
+        }
+    } else {
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
+            if ((*it)->isVisible() && QString((*it)->getNode()->getName().c_str()).contains(filter,sensitivity)) {
+                _imp->nodeResults.push_back(*it);
+            }
+        }
+        
+        for (std::list<NodeBackDrop*>::const_iterator it = activeBds.begin(); it!=activeBds.end(); ++it) {
+            if ((*it)->getName().contains(filter,sensitivity)) {
+                _imp->bdResults.push_back(*it);
+            }
+        }
+
+    }
+    
+    if ((_imp->nodeResults.size() + _imp->bdResults.size()) == 0) {
+        _imp->resultLabel->setText("");
+    }
+
+    
+    selectNextResult();
+}
+
+void
+FindNodeDialog::selectNextResult()
+{
+    if (_imp->currentFindIndex >= (int)(_imp->bdResults.size() + _imp->nodeResults.size())) {
+        _imp->currentFindIndex = 0;
+    }
+    
+    if (_imp->bdResults.empty() && _imp->nodeResults.empty()) {
+        return;
+    }
+    
+    if (_imp->currentFindIndex >= (int)_imp->nodeResults.size()) {
+        std::list<NodeBackDrop*>::iterator it = _imp->bdResults.begin();
+        int index = _imp->currentFindIndex - _imp->nodeResults.size();
+        assert(index >= 0);
+        std::advance(it,index);
+        
+        _imp->graph->selectBackDrop(*it, false);
+        _imp->graph->centerOnItem(*it);
+    } else {
+        
+        std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->nodeResults.begin();
+        std::advance(it,_imp->currentFindIndex);
+        
+        _imp->graph->selectNode(*it, false);
+        _imp->graph->centerOnItem(it->get());
+    }
+    
+    QString text = QString("Selecting result %1 of %2 matche(s)").arg(_imp->currentFindIndex + 1).arg(_imp->nodeResults.size() + _imp->bdResults.size());
+    _imp->resultLabel->setText(text);
+
+    
+    ++_imp->currentFindIndex;
+    
+}
+
+
+
+void
+FindNodeDialog::updateFindResultsWithCurrentFilter()
+{
+    updateFindResults(_imp->filter->text());
+    
+}
+
+void
+FindNodeDialog::forceUpdateFindResults()
+{
+    _imp->currentFilter.clear();
+    updateFindResultsWithCurrentFilter();
+}
+
+
+void
+FindNodeDialog::onOkClicked()
+{
+    QString filterText = _imp->filter->text();
+    if (_imp->currentFilter != filterText) {
+        updateFindResults(filterText);
+    } else {
+        selectNextResult();
+    }
+}
+
+void
+FindNodeDialog::onCancelClicked()
+{
+    reject();
+}
+
+void
+FindNodeDialog::keyPressEvent(QKeyEvent* e)
+{
+    if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
+        selectNextResult();
+        _imp->filter->setFocus();
+    } else if (e->key() == Qt::Key_Escape) {
+        reject();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+}

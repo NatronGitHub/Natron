@@ -385,6 +385,8 @@
 #define kShortcutIDActionGraphFrameNodes "frameNodes"
 #define kShortcutDescActionGraphFrameNodes "Center on all nodes"
 
+#define kShortcutIDActionGraphFindNode "findNode"
+#define kShortcutDescActionGraphFindNode "Find"
 
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"

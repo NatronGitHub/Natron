@@ -16,6 +16,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
+#include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -194,6 +195,10 @@ public slots:
 
     void onNodeCreationDialogFinished();
 
+    void popFindDialog(const QPoint& pos = QPoint(0,0));
+    
+    void onFindNodeDialogFinished();
+    
 private:
 
 
@@ -232,5 +237,35 @@ private:
     boost::scoped_ptr<NodeGraphPrivate> _imp;
 };
 
+
+struct FindNodeDialogPrivate;
+class FindNodeDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    FindNodeDialog(NodeGraph* graph,QWidget* parent);
+    
+    virtual ~FindNodeDialog();
+    
+public slots:
+    
+    void onOkClicked();
+    void onCancelClicked();
+    
+    void updateFindResults(const QString& filter);
+    
+    void updateFindResultsWithCurrentFilter();
+    void forceUpdateFindResults();
+private:
+    
+    
+    void selectNextResult();
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    boost::scoped_ptr<FindNodeDialogPrivate> _imp;
+};
 
 #endif // NATRON_GUI_NODEGRAPH_H_

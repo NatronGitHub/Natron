@@ -67,7 +67,7 @@ using namespace Natron;
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
 
-#define DERIVATIVE_ROUND_PRECISION 3
+#define DERIVATIVE_ROUND_PRECISION 3.
 
 static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
@@ -377,7 +377,7 @@ CurveGui::drawCurve(int curveIndex,
                 
                 if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
                     
-                    double rounding = std::pow(10,DERIVATIVE_ROUND_PRECISION);
+                    double rounding = std::pow(10.,DERIVATIVE_ROUND_PRECISION);
                     
                     QString leftDerivStr = QString("l: %1").arg(std::floor((key.getLeftDerivative() * rounding) + 0.5) / rounding);
                     QString rightDerivStr = QString("r: %1").arg(std::floor((key.getRightDerivative() * rounding) + 0.5) / rounding);
@@ -1158,7 +1158,7 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
     int yOffset = 4;
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         
-        double rounding = std::pow(10, DERIVATIVE_ROUND_PRECISION);
+        double rounding = std::pow(10., DERIVATIVE_ROUND_PRECISION);
         
         QPointF topLeft_LeftTanWidget = zoomCtx.toWidgetCoordinates( (*it)->leftTan.first, (*it)->leftTan.second);
         QPointF topLeft_RightTanWidget = zoomCtx.toWidgetCoordinates( (*it)->rightTan.first, (*it)->rightTan.second);
