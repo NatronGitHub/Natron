@@ -1282,7 +1282,14 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
             isCached = false;
             
         } else if (imageToConvert && !*image) {
-            
+
+            //Take the lock after getting the image from the cache
+            ///to make sure a thread will not attempt to write to the image while its being allocated.
+            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
+            ///so taking this lock now ensures the image will be allocated completetly
+
+            ImageLocker locker(this, imageToConvert);
+
             if (imageConversionNeeded) {
                 
                 boost::shared_ptr<ImageParams> imageParams(new ImageParams(*imageToConvert->getParams()));
