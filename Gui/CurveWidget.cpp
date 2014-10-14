@@ -466,6 +466,8 @@ public:
 
     bool isNearbyTimelineBtmPoly(const QPoint & pt) const;
 
+    KeyPtr isNearbyKeyFrameText(const QPoint& pt) const;
+ 
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
      **/
@@ -487,7 +489,6 @@ public:
 
     void insertSelectedKeyFrameConditionnaly(const KeyPtr & key);
 
-    void pushUndoCommand(QUndoCommand* cmd);
 
 private:
 
@@ -1060,6 +1061,30 @@ std::pair<CurveGui*,KeyFrame> CurveWidgetPrivate::isNearbyKeyFrame(const QPoint 
     return std::make_pair( (CurveGui*)NULL,KeyFrame() );
 }
 
+KeyPtr
+CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    QFontMetrics fm(_widget->font());
+    int yOffset = 4;
+    for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+        
+        QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it)->key.getTime(), (*it)->key.getValue() );
+        topLeftWidget.ry() += yOffset;
+        
+        QString coordStr =  QString("x: %1, y: %2").arg((*it)->key.getTime()).arg((*it)->key.getValue());
+        
+        QPointF btmRightWidget(topLeftWidget.x() + fm.width(coordStr),topLeftWidget.y() + fm.height());
+        
+        if (pt.x() >= topLeftWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRightWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
+            pt.y() >= topLeftWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRightWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
+            return *it;
+        }
+    }
+    return KeyPtr();
+}
+
 std::pair<CurveGui::SelectedDerivative,KeyPtr > CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
 {
     // always running in the main thread
@@ -1244,7 +1269,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
 
         if ( (dt != 0) || (dv != 0) ) {
             bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-            pushUndoCommand( new MoveKeysCommand(_widget,_selectedKeyFrames,dt,dv,!updateOnPenUpOnly) );
+            _widget->pushUndoCommand( new MoveKeysCommand(_widget,_selectedKeyFrames,dt,dv,!updateOnPenUpOnly) );
             _evaluateOnPenUp = true;
         }
     }
@@ -1505,10 +1530,10 @@ CurveWidgetPrivate::refreshSelectionRectangle(double x,
 }
 
 void
-CurveWidgetPrivate::pushUndoCommand(QUndoCommand* cmd)
+CurveWidget::pushUndoCommand(QUndoCommand* cmd)
 {
-    _undoStack->setActive();
-    _undoStack->push(cmd);
+    _imp->_undoStack->setActive();
+    _imp->_undoStack->push(cmd);
 }
 
 void
@@ -1674,7 +1699,7 @@ CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeType type)
         KeyInterpolationChange change( (*it)->key.getInterpolation(),type,(*it) );
         changes.push_back(change);
     }
-    pushUndoCommand( new SetKeysInterpolationCommand(_widget,changes) );
+    _widget->pushUndoCommand( new SetKeysInterpolationCommand(_widget,changes) );
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2119,6 +2144,23 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         return;
     }
     
+    
+    ///We're nearby a selected keyframe's text
+    KeyPtr selectedText = _imp->isNearbyKeyFrameText(e->pos());
+    if (selectedText) {
+        EditKeyFrameDialog* dialog = new EditKeyFrameDialog(this,selectedText,this);
+        dialog->move(e->globalPos());
+        
+        ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
+        ///it closes it.
+        QObject::connect( dialog,SIGNAL( accepted() ),this,SLOT( onEditKeyFrameDialogFinished() ) );
+        QObject::connect( dialog,SIGNAL( rejected() ),this,SLOT( onEditKeyFrameDialogFinished() ) );
+        dialog->show();
+  
+        e->accept();
+        return;
+    }
+    
     ///We're nearby a curve
     double xCurve,yCurve;
     Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
@@ -2127,6 +2169,18 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         keys[0] = KeyFrame(xCurve,yCurve);
         (*foundCurveNearby)->getKnob()->pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
     }
+}
+
+void
+CurveWidget::onEditKeyFrameDialogFinished()
+{
+    EditKeyFrameDialog* dialog = qobject_cast<EditKeyFrameDialog*>( sender() );
+    
+    if (dialog) {
+        //QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
+        dialog->deleteLater();
+    }
+
 }
 
 //
@@ -2204,6 +2258,12 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         update(); // the keyframe changes color and the derivatives must be drawn
         return;
     }
+    
+    KeyPtr nearbyKeyText = _imp->isNearbyKeyFrameText(e->pos());
+    if (nearbyKeyText) {
+        return;
+    }
+    
     ////
     // is the click near a derivative manipulator?
     std::pair<CurveGui::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
@@ -2327,12 +2387,19 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         if (selectedKey.first || selectedTan.second) {
             setCursor( QCursor(Qt::CrossCursor) );
         } else {
-            //if we're nearby a timeline polygon, set cursor to horizontal displacement
-            if ( _imp->isNearbyTimelineBtmPoly( e->pos() ) || _imp->isNearbyTimelineTopPoly( e->pos() ) ) {
-                setCursor( QCursor(Qt::SizeHorCursor) );
+            
+            KeyPtr keyframeText = _imp->isNearbyKeyFrameText(e->pos());
+            if (keyframeText) {
+                setCursor( QCursor(Qt::IBeamCursor));
             } else {
-                //default case
-                setCursor( QCursor(Qt::ArrowCursor) );
+                
+                //if we're nearby a timeline polygon, set cursor to horizontal displacement
+                if ( _imp->isNearbyTimelineBtmPoly( e->pos() ) || _imp->isNearbyTimelineTopPoly( e->pos() ) ) {
+                    setCursor( QCursor(Qt::SizeHorCursor) );
+                } else {
+                    //default case
+                    setCursor( QCursor(Qt::ArrowCursor) );
+                }
             }
         }
     }
@@ -3441,5 +3508,153 @@ ImportExportCurveDialog::getCurveColumns(std::map<int,CurveGui*>* columns) const
     for (U32 i = 0; i < _curveColumns.size(); ++i) {
         columns->insert( std::make_pair( (int)(_curveColumns[i]._curveSpinBox->value() - 1),_curveColumns[i]._curve ) );
     }
+}
+
+struct EditKeyFrameDialogPrivate
+{
+    
+    CurveWidget* curveWidget;
+    KeyPtr key;
+    double originalX,originalY;
+    
+    QVBoxLayout* mainLayout;
+    
+    QWidget* boxContainer;
+    QHBoxLayout* boxLayout;
+    QLabel* xLabel;
+    SpinBox* xSpinbox;
+    QLabel* yLabel;
+    SpinBox* ySpinbox;
+    
+    bool wasAccepted;
+    
+    EditKeyFrameDialogPrivate(CurveWidget* curveWidget,const KeyPtr& key)
+    : curveWidget(curveWidget)
+    , key(key)
+    , originalX(key->key.getTime())
+    , originalY(key->key.getValue())
+    , mainLayout(0)
+    , boxContainer(0)
+    , boxLayout(0)
+    , xLabel(0)
+    , xSpinbox(0)
+    , yLabel(0)
+    , ySpinbox(0)
+    , wasAccepted(false)
+    {
+        
+    }
+};
+
+EditKeyFrameDialog::EditKeyFrameDialog(CurveWidget* curveWidget,const KeyPtr& key,QWidget* parent)
+: QDialog(parent)
+, _imp(new EditKeyFrameDialogPrivate(curveWidget,key))
+{
+    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    
+    _imp->mainLayout = new QVBoxLayout(this);
+    _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _imp->boxContainer = new QWidget(this);
+    _imp->boxLayout = new QHBoxLayout(_imp->boxContainer);
+    _imp->boxLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _imp->xLabel = new QLabel("x: ",_imp->boxContainer);
+    _imp->boxLayout->addWidget(_imp->xLabel);
+    
+    SpinBox::SPINBOX_TYPE xType = key->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers() ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
+    
+    _imp->xSpinbox = new SpinBox(_imp->boxContainer,xType);
+    _imp->xSpinbox->setValue(_imp->originalX);
+    QObject::connect(_imp->xSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onXSpinBoxValueChanged(double)));
+    _imp->boxLayout->addWidget(_imp->xSpinbox);
+    
+    _imp->yLabel = new QLabel("y: ",_imp->boxContainer);
+    _imp->boxLayout->addWidget(_imp->yLabel);
+    
+    bool clampedToInt = key->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers() ;
+    bool clampedToBool = key->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans();
+    SpinBox::SPINBOX_TYPE yType = (clampedToBool || clampedToInt) ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
+
+    _imp->ySpinbox = new SpinBox(_imp->boxContainer,yType);
+    
+    if (clampedToBool) {
+        _imp->ySpinbox->setMinimum(0);
+        _imp->ySpinbox->setMaximum(1);
+    } else {
+        std::pair<double,double> range = key->curve->getInternalCurve()->getCurveYRange();
+        _imp->ySpinbox->setMinimum(range.first);
+        _imp->ySpinbox->setMaximum(range.second);
+    }
+    
+    _imp->ySpinbox->setValue(_imp->originalY);
+    QObject::connect(_imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)));
+    _imp->boxLayout->addWidget(_imp->ySpinbox);
+    
+    _imp->mainLayout->addWidget(_imp->boxContainer);
+
+}
+
+EditKeyFrameDialog::~EditKeyFrameDialog()
+{
+    
+}
+
+void
+EditKeyFrameDialog::moveKeyTo(double newX,double newY)
+{
+    SelectedKeys keys;
+    keys.push_back(_imp->key);
+    
+    double curY = _imp->key->key.getValue();
+    double curX = _imp->key->key.getTime();
+    
+    _imp->curveWidget->pushUndoCommand(new MoveKeysCommand(_imp->curveWidget,keys,newX - curX, newY - curY,true));
+
+}
+
+void
+EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
+{
+    moveKeyTo(d, _imp->key->key.getValue());
+}
+
+void
+EditKeyFrameDialog::onYSpinBoxValueChanged(double d)
+{
+    moveKeyTo(_imp->key->key.getTime(), d);
+
+}
+
+void
+EditKeyFrameDialog::keyPressEvent(QKeyEvent* e)
+{
+    if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
+        _imp->wasAccepted = true;
+        accept();
+    } else if (e->key() == Qt::Key_Escape) {
+        moveKeyTo(_imp->originalX, _imp->originalY);
+        _imp->xSpinbox->blockSignals(true);
+        _imp->ySpinbox->blockSignals(true);
+        reject();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+}
+
+void
+EditKeyFrameDialog::changeEvent(QEvent* e)
+{
+    if (e->type() == QEvent::ActivationChange && !_imp->wasAccepted) {
+        if ( !isActiveWindow() ) {
+            moveKeyTo(_imp->originalX, _imp->originalY);
+            _imp->xSpinbox->blockSignals(true);
+            _imp->ySpinbox->blockSignals(true);
+            reject();
+            
+            return;
+        }
+    }
+    QDialog::changeEvent(e);
 }
 

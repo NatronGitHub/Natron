@@ -234,6 +234,8 @@ public:
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     
+    void pushUndoCommand(QUndoCommand* cmd);
+
 public slots:
 
     void refreshDisplayedTangents();
@@ -276,6 +278,7 @@ public slots:
 
     void onUpdateOnPenUpActionTriggered();
 
+    void onEditKeyFrameDialogFinished();
 private:
 
     virtual void initializeGL() OVERRIDE FINAL;
@@ -397,6 +400,39 @@ private:
     QHBoxLayout* _buttonsLayout;
     Button* _okButton;
     Button* _cancelButton;
+};
+
+
+struct EditKeyFrameDialogPrivate;
+class EditKeyFrameDialog : public QDialog
+{
+    
+    Q_OBJECT
+    
+public:
+    
+    EditKeyFrameDialog(CurveWidget* curveWidget, const KeyPtr& key,QWidget* parent);
+    
+    virtual ~EditKeyFrameDialog();
+    
+signals:
+    
+    void valueChanged(int dimension,double value);
+    
+    
+public slots:
+    
+    void onXSpinBoxValueChanged(double d);
+    void onYSpinBoxValueChanged(double d);
+    
+private:
+    
+    void moveKeyTo(double newX,double newY);
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
+    
+    boost::scoped_ptr<EditKeyFrameDialogPrivate> _imp;
 };
 
 #endif // CURVE_WIDGET_H
