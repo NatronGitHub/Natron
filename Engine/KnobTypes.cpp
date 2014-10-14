@@ -1501,7 +1501,9 @@ Parametric_Knob::addControlPoint(int dimension,
         return StatFailed;
     }
 
-    _curves[dimension]->addKeyFrame( KeyFrame(key,value) );
+    KeyFrame k(key,value);
+    k.setInterpolation(Natron::KEYFRAME_CUBIC);
+    _curves[dimension]->addKeyFrame(k);
     emit curveChanged(dimension);
 
     return StatOK;
