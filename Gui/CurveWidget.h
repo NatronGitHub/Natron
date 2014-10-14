@@ -430,6 +430,7 @@ public slots:
 private:
     
     void moveKeyTo(double newX,double newY);
+    void moveDerivativeTo(double d);
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;

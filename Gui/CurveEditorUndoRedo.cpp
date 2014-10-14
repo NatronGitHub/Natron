@@ -466,6 +466,46 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     }
 }
 
+MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
+                   SelectedDerivative deriv,
+                   const KeyPtr& key,
+                   double derivative,
+                   QUndoCommand *parent)
+: QUndoCommand(parent)
+, _widget(widget)
+, _key(key)
+, _deriv(deriv)
+, _oldInterp(key->key.getInterpolation())
+, _oldLeft(key->key.getLeftDerivative())
+, _oldRight(key->key.getRightDerivative())
+, _setBoth(true)
+, _updateOnFirstRedo(true)
+, _firstRedoCalled(false)
+{
+    _newInterp = _oldInterp == Natron::KEYFRAME_BROKEN ? Natron::KEYFRAME_BROKEN : Natron::KEYFRAME_FREE;
+    _setBoth = _newInterp == Natron::KEYFRAME_FREE;
+    
+    switch (deriv) {
+        case LEFT_TANGENT:
+            _newLeft = derivative;
+            if (_newInterp == Natron::KEYFRAME_BROKEN) {
+                _newRight = _oldRight;
+            } else {
+                _newRight = derivative;
+            }
+            break;
+        case RIGHT_TANGENT:
+            _newRight = derivative;
+            if (_newInterp == Natron::KEYFRAME_BROKEN) {
+                _newLeft = _oldLeft;
+            } else {
+                _newLeft = derivative;
+            }
+        default:
+            break;
+    }
+}
+
 
 void
 MoveTangentCommand::setNewDerivatives(bool undo)

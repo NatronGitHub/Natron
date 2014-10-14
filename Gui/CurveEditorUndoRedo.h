@@ -231,6 +231,13 @@ public:
                        double dx,double dy,
                        bool updateOnFirstRedo,
                        QUndoCommand *parent = 0);
+    
+    MoveTangentCommand(CurveWidget* widget,
+                       SelectedDerivative deriv,
+                       const KeyPtr& key,
+                       double derivative,
+                       QUndoCommand *parent = 0);
+    
     virtual ~MoveTangentCommand() OVERRIDE
     {
     }
