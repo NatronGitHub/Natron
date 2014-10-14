@@ -263,6 +263,7 @@ private:
     
     void selectNextResult();
     
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<FindNodeDialogPrivate> _imp;

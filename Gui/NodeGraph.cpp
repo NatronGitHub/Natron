@@ -3693,3 +3693,17 @@ FindNodeDialog::keyPressEvent(QKeyEvent* e)
         QDialog::keyPressEvent(e);
     }
 }
+
+void
+FindNodeDialog::changeEvent(QEvent* e)
+{
+    if (e->type() == QEvent::ActivationChange) {
+        if ( !isActiveWindow() ) {
+            reject();
+            
+            return;
+        }
+    }
+    QDialog::changeEvent(e);
+}
+
