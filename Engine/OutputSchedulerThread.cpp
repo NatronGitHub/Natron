@@ -256,7 +256,9 @@ struct OutputSchedulerThreadPrivate
                 if (!frame.frame.empty()) {
                     std::size_t size = 0 ;
                     for (std::list<boost::shared_ptr<BufferableObject> >::iterator it2 = frame.frame.begin(); it2 != frame.frame.end(); ++it2) {
-                        size += (*it2)->sizeInRAM();
+                        if (*it2) {
+                            size += (*it2)->sizeInRAM();
+                        }
                     }
                     
                     
