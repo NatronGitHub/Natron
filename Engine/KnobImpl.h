@@ -1004,6 +1004,8 @@ Knob<double>::resetToDefaultValue(int dimension)
         def = _defaultValues[dimension];
     }
 
+    resetExtraToDefaultValue(dimension);
+    
     if ( isDouble && isDouble->areDefaultValuesNormalized() ) {
         assert( getHolder() );
         Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );

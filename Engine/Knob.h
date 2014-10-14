@@ -1154,6 +1154,11 @@ public:
     virtual void deepClone(KnobI* other)  OVERRIDE FINAL;
     
     virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
+    
+protected:
+    
+    virtual void resetExtraToDefaultValue(int /*dimension*/) {}
+
 private:
 
     void cloneValues(KnobI* other);

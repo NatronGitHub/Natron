@@ -1650,3 +1650,11 @@ Parametric_Knob::loadParametricCurves(const std::list< Curve > & curves)
     }
 }
 
+void
+Parametric_Knob::resetExtraToDefaultValue(int dimension)
+{
+    QVector<int> dimensions(1);
+    dimensions[0] = dimension;
+    emit mustResetToDefault(dimensions);
+}
+

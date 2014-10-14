@@ -883,6 +883,8 @@ signals:
 
 private:
 
+    virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
+
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;

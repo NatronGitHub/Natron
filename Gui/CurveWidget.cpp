@@ -2142,7 +2142,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    e->accept();
     ////
     // right button: popup menu
     if ( buttonDownIsRight(e) ) {
