@@ -373,30 +373,31 @@ CurveGui::drawCurve(int curveIndex,
                 if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
                     glDisable(GL_LINE_STIPPLE);
                     
-                } else {
-                    if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
-                        
-                        double rounding = std::pow(10,DERIVATIVE_ROUND_PRECISION);
-                        
-                        QString leftDerivStr = QString("l: %1").arg(std::roundf(key.getLeftDerivative() * rounding) / rounding);
-                        QString rightDerivStr = QString("r: %1").arg(std::roundf(key.getRightDerivative() * rounding) / rounding);
-                        
-                        double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->leftTan.second).y();
-                        yLeftWidgetCoord += (m.height() + 4);
-                        
-                        double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->rightTan.second).y();
-                        yRightWidgetCoord += (m.height() + 4);
-                        
-                        glColor4f(1., 1., 1., 1.);
-                        glCheckFramebufferError();
-                        _curveWidget->renderText( (*isSelected)->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
-                                                 leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
-                        _curveWidget->renderText( (*isSelected)->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
-                                                 rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
-                    }
-
                 }
-
+                
+                if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                    
+                    double rounding = std::pow(10,DERIVATIVE_ROUND_PRECISION);
+                    
+                    QString leftDerivStr = QString("l: %1").arg(std::roundf(key.getLeftDerivative() * rounding) / rounding);
+                    QString rightDerivStr = QString("r: %1").arg(std::roundf(key.getRightDerivative() * rounding) / rounding);
+                    
+                    double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->leftTan.second).y();
+                    yLeftWidgetCoord += (m.height() + 4);
+                    
+                    double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->rightTan.second).y();
+                    yRightWidgetCoord += (m.height() + 4);
+                    
+                    glColor4f(1., 1., 1., 1.);
+                    glCheckFramebufferError();
+                    _curveWidget->renderText( (*isSelected)->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
+                                             leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                    _curveWidget->renderText( (*isSelected)->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
+                                             rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                }
+                
+                
+                
                 if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
                     QString coordStr("x: %1, y: %2");
                     coordStr = coordStr.arg(x).arg(y);
