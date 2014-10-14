@@ -11,6 +11,7 @@
 
 #include "CurveWidget.h"
 
+#include <cmath>
 #include <QMenu>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -2142,7 +2143,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    e->accept();
+
     ////
     // right button: popup menu
     if ( buttonDownIsRight(e) ) {
@@ -2150,7 +2151,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_rightClickMenu->exec( mapToGlobal( e->pos() ) );
         // no need to set _imp->_oldClick
         // no need to set _imp->_dragStartPoint
-
+    
         // no need to updateGL()
         e->accept();
         return;

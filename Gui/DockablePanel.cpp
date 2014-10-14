@@ -67,6 +67,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/GuiMacros.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -917,6 +918,17 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
     return ret;
 } // findKnobGuiOrCreate
 
+void
+RightClickableWidget::mousePressEvent(QMouseEvent* e)
+{
+    if (buttonDownIsRight(e)) {
+        emit rightClicked(e->pos());
+        e->accept();
+    } else {
+        QWidget::mousePressEvent(e);
+    }
+}
+
 PageMap::iterator
 DockablePanelPrivate::addPage(const QString & name)
 {
@@ -935,9 +947,9 @@ DockablePanelPrivate::addPage(const QString & name)
         sa->setWidget(layoutContainer);
         newTab = sa;
     } else {
-        newTab = new QWidget(_tabWidget);
-        newTab->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect( newTab,SIGNAL( customContextMenuRequested(QPoint) ),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
+        RightClickableWidget* clickableWidget = new RightClickableWidget(_tabWidget);
+        QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
+        newTab = clickableWidget;
         layoutContainer = newTab;
     }
     newTab->setObjectName(name);

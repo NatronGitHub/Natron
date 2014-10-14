@@ -54,6 +54,30 @@ public:
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
 };
 
+class RightClickableWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    
+    
+    RightClickableWidget(QWidget* parent)
+    : QWidget(parent)
+    {
+        
+    }
+    
+    virtual ~RightClickableWidget() {}
+    
+signals:
+    
+    void rightClicked(const QPoint& p);
+
+private:
+    
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
+};
+
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
  **/
