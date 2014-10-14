@@ -201,6 +201,10 @@ public:
     
     virtual QModelIndex parent(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    virtual QStringList mimeTypes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual QMimeData* mimeData(const QModelIndexList & indexes) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     /////////////////////////////////////// End overrides ////////////////////////////////////////////////////
     
     QModelIndex index(const QString& path, int column = 0) const WARN_UNUSED_RETURN;
@@ -214,7 +218,7 @@ public:
     
     // absoluteFilePath method of QFileInfo class cause the file system
     // query hence causes slower performance.
-    QString absolutePath(const QModelIndex &index) WARN_UNUSED_RETURN;
+    QString absolutePath(const QModelIndex &index) const WARN_UNUSED_RETURN;
     
     QString rootPath() const WARN_UNUSED_RETURN;
         

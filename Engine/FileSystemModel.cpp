@@ -19,6 +19,8 @@
 #include <QtCore/QDateTime>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
+#include <QtCore/QUrl>
+#include <QtCore/QMimeData>
 
 #include <SequenceParsing.h>
 
@@ -180,6 +182,7 @@ FileSystemItem::parent() const
 {
     return _imp->parent;
 }
+
 
 const QString&
 FileSystemItem::absoluteFilePath() const
@@ -406,7 +409,7 @@ FileSystemModel::flags(const QModelIndex &index) const
         return 0;
     
     // Our model is read only.
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
 }
 
 int
@@ -523,6 +526,27 @@ FileSystemModel::parent(const QModelIndex &index) const
     return createIndex(parentItem->indexInParent(), (int)Name, parentItem);
 }
 
+QStringList
+FileSystemModel::mimeTypes() const
+{
+    return QStringList(QLatin1String("text/uri-list"));
+}
+
+QMimeData*
+FileSystemModel::mimeData(const QModelIndexList & indexes) const
+{
+    QList<QUrl> urls;
+    for (QList<QModelIndex>::const_iterator it = indexes.begin(); it != indexes.end(); ++it) {
+        
+        if ((*it).column() == 0) {
+            urls << QUrl::fromLocalFile(absolutePath(*it));
+        }
+    }
+    QMimeData *data = new QMimeData();
+    data->setUrls(urls);
+    return data;
+}
+
 /////////////////////////////////////// End overrides ////////////////////////////////////////////////////
 
 QModelIndex
@@ -573,7 +597,7 @@ FileSystemModel::isDir(const QModelIndex &index)
 }
 
 QString
-FileSystemModel::absolutePath(const QModelIndex &index)
+FileSystemModel::absolutePath(const QModelIndex &index) const
 {
     if ( !index.isValid() ) {
         return QString();

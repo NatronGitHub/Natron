@@ -979,7 +979,7 @@ SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd)
     setEditTriggers(QAbstractItemView::EditKeyPressed);
     setContextMenuPolicy(Qt::CustomContextMenu);
     setDragEnabled(true);
-    setDragDropMode(QAbstractItemView::InternalMove);
+    setDragDropMode(QAbstractItemView::DragOnly);
     //setAttribute(Qt::WA_MacShowFocusRect,0);
     setAcceptDrops(true);
 }
@@ -989,6 +989,7 @@ SequenceDialogView::paintEvent(QPaintEvent* e)
 {
     QTreeView::paintEvent(e);
 }
+
 
 void
 SequenceDialogView::dropEvent(QDropEvent* e)
@@ -1672,7 +1673,9 @@ std::string
 SequenceFileDialog::selectedFiles()
 {
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
-    assert(indexes.count() <= 1);
+    if (indexes.count() > 1) {
+        return std::string();
+    }
 
     
     std::string selection;
