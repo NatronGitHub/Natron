@@ -45,6 +45,15 @@ public:
     virtual std::size_t sizeInRAM() const = 0;
 };
 
+struct BufferedFrame
+{
+    int view;
+    double time;
+    
+    ///List because there might be several frames for the Viewer when in wipe/over/under/minus modes
+    std::list<boost::shared_ptr<BufferableObject> > frame;
+};
+
 class OutputSchedulerThread;
 
 struct RenderThreadTaskPrivate;
@@ -214,9 +223,12 @@ public:
      **/
     void getPluginFrameRange(int& first,int &last) const;
     
+    
+  
+    
 public slots:
     
-    void doTreatFrameMainThread(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
+    void doTreatFrameMainThread(const BufferedFrame& frame);
     
     /**
      @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
@@ -235,7 +247,7 @@ public slots:
     void abortRendering(bool blocking);
 signals:
     
-    void s_doTreatOnMainThread(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
+    void s_doTreatOnMainThread(const BufferedFrame& frame);
     
     void s_abortRenderingOnMainThread(bool blocking);
     
@@ -250,7 +262,7 @@ protected:
      * According to the Mode given to the scheduler this function will be called either by the scheduler thread (this)
      * or by the application's main-thread (typically to do OpenGL rendering).
      **/
-    virtual void treatFrame(double time,int view,const boost::shared_ptr<BufferableObject>& frame) = 0;
+    virtual void treatFrame(const BufferedFrame& frame) = 0;
     
     /**
      * @brief Must be implemented to increment/decrement the timeline by one frame.
@@ -383,7 +395,7 @@ public:
     
 private:
     
-    virtual void treatFrame(double time,int view,const boost::shared_ptr<BufferableObject>& frame) OVERRIDE FINAL;
+    virtual void treatFrame(const BufferedFrame& frame) OVERRIDE FINAL;
     
     virtual void timelineStepOne(RenderDirection direction) OVERRIDE FINAL;
     
@@ -422,7 +434,7 @@ public:
 
 private:
 
-    virtual void treatFrame(double time,int view,const boost::shared_ptr<BufferableObject>& frame) OVERRIDE FINAL;
+    virtual void treatFrame(const BufferedFrame& frame) OVERRIDE FINAL;
     
     virtual void timelineStepOne(RenderDirection direction) OVERRIDE FINAL;
     

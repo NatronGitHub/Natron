@@ -2233,7 +2233,6 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
     }
-    updateGL();
     emit imageChanged(textureIndex);
 }
 
@@ -3888,7 +3887,7 @@ ViewerGL::resetWipeControls()
     } else if (_imp->activeTextures[0]) {
         rod = getRoD(0);
     } else {
-        rod = getDisplayWindow();
+        rod = _imp->projectFormat;
     }
     {
         QMutexLocker l(&_imp->wipeControlsMutex);

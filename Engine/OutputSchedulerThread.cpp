@@ -44,12 +44,7 @@
 
 using namespace Natron;
 
-struct BufferedFrame
-{
-    int view;
-    double time;
-    boost::shared_ptr<BufferableObject> frame;
-};
+
 
 ///Sort the frames by time and then by view
 struct BufferedFrameCompare_less
@@ -81,7 +76,7 @@ namespace {
     public:
         inline MetaTypesRegistration()
         {
-            qRegisterMetaType<boost::shared_ptr<BufferableObject> >("boost::shared_ptr<BufferableObject>");
+            qRegisterMetaType<BufferedFrame>("BufferedFrame");
         }
     };
 }
@@ -234,11 +229,18 @@ struct OutputSchedulerThreadPrivate
         BufferedFrame k;
         k.time = time;
         k.view = view;
-        k.frame = image;
+        k.frame.push_back(image);
         if (image) {
             bufferRAMOccupation += image->sizeInRAM();
         }
-        buf.insert(k);
+        std::pair<FrameBuffer::iterator,bool> ret = buf.insert(k);
+        if (!ret.second) {
+            k = *ret.first;
+            k.frame.push_back(image);
+            buf.erase(ret.first);
+            ret = buf.insert(k);
+            assert(ret.second);
+        }
     }
     
     void getFromBufferAndErase(double time,BufferedFrame& frame)
@@ -251,8 +253,12 @@ struct OutputSchedulerThreadPrivate
             
             if (it->time == time) {
                 frame = *it;
-                if (frame.frame) {
-                    std::size_t size = frame.frame->sizeInRAM();
+                if (!frame.frame.empty()) {
+                    std::size_t size = 0 ;
+                    for (std::list<boost::shared_ptr<BufferableObject> >::iterator it2 = frame.frame.begin(); it2 != frame.frame.end(); ++it2) {
+                        size += (*it2)->sizeInRAM();
+                    }
+                    
                     
                     ///Avoid overflow: we might not fallback exactly to 0 because images have a dynamic size
                     ///but we don't need to update bufferRAMOccupation dynamically since it holds a global information
@@ -399,8 +405,8 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::Output
 : QThread()
 , _imp(new OutputSchedulerThreadPrivate(engine,effect,mode))
 {
-    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(double,int,boost::shared_ptr<BufferableObject>)), this,
-                     SLOT(doTreatFrameMainThread(double,int,boost::shared_ptr<BufferableObject>)));
+    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrame)), this,
+                     SLOT(doTreatFrameMainThread(BufferedFrame)));
     
     QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)));
     
@@ -910,7 +916,7 @@ OutputSchedulerThread::run()
                 }
                 
                 ///The expected frame is not yet ready, go to sleep again
-                if (!frameToRender.frame) {
+                if (frameToRender.frame.empty()) {
                     break;
                 }
     
@@ -976,7 +982,8 @@ OutputSchedulerThread::run()
                 
                 
                 if (_imp->mode == TREAT_ON_SCHEDULER_THREAD) {
-                    treatFrame(frameToRender.time, frameToRender.view, frameToRender.frame);
+                    treatFrame(frameToRender);
+                    
                 } else {
                     ///Treat on main-thread
                                     
@@ -996,7 +1003,7 @@ OutputSchedulerThread::run()
                     
                     _imp->treatRunning = true;
                     
-                    emit s_doTreatOnMainThread(frameToRender.time, frameToRender.view, frameToRender.frame);
+                    emit s_doTreatOnMainThread(frameToRender);
                                         
                     while (_imp->treatRunning) {
                         _imp->treatCondition.wait(&_imp->treatMutex);
@@ -1149,7 +1156,11 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_p
 {
     if (QThread::currentThread() == qApp->thread()) {
         ///Single-threaded , call directly the function
-        treatFrame(time, view, image);
+        BufferedFrame b;
+        b.time = time;
+        b.view = view;
+        b.frame.push_back(image);
+        treatFrame(b);
     } else {
         
         ///Called by the scheduler thread when an image is rendered
@@ -1164,7 +1175,7 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_p
 
 
 void
-OutputSchedulerThread::doTreatFrameMainThread(double time,int view,const boost::shared_ptr<BufferableObject>& frame)
+OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame)
 {
     assert(QThread::currentThread() == qApp->thread());
     {
@@ -1174,7 +1185,10 @@ OutputSchedulerThread::doTreatFrameMainThread(double time,int view,const boost::
             return;
         }
     }
-    treatFrame(time, view, frame);
+    
+    
+    treatFrame(frame);
+    
     QMutexLocker treatLocker (&_imp->treatMutex);
     _imp->treatRunning = false;
     _imp->treatCondition.wakeOne();
@@ -1743,7 +1757,7 @@ DefaultScheduler::createRunnable()
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<BufferableObject>& /*frame*/)
+DefaultScheduler::treatFrame(const BufferedFrame& frame)
 {
     
     ///Writers render to scale 1 always
@@ -1762,24 +1776,24 @@ DefaultScheduler::treatFrame(double time,int view,const boost::shared_ptr<Buffer
     
     const double par = _effect->getPreferredAspectRatio();
     
-    (void)_effect->getRegionOfDefinition_public(hash,time, scale, view, &rod, &isProjectFormat);
+    (void)_effect->getRegionOfDefinition_public(hash,frame.time, scale, frame.view, &rod, &isProjectFormat);
     rod.toPixelEnclosing(0, par, &roi);
 
     Natron::SequentialPreference sequentiallity = _effect->getSequentialPreference();
     bool canOnlyHandleOneView = sequentiallity == Natron::EFFECT_ONLY_SEQUENTIAL || sequentiallity == Natron::EFFECT_PREFER_SEQUENTIAL;
     
     Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
-                                                   time,
-                                                   view,
+                                                   frame.time,
+                                                   frame.view,
                                                    false,  // is this render due to user interaction ?
                                                    canOnlyHandleOneView, // is this sequential ?
                                                    true,
                                                    hash);
     
     
-    Natron::EffectInstance::RenderRoIArgs args(time,
+    Natron::EffectInstance::RenderRoIArgs args(frame.time,
                                                scale,0,
-                                               view,
+                                               frame.view,
                                                true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
                                                roi,
                                                rod,
@@ -1905,9 +1919,12 @@ ViewerDisplayScheduler::~ViewerDisplayScheduler()
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-ViewerDisplayScheduler::treatFrame(double /*time*/,int /*view*/,const boost::shared_ptr<BufferableObject>& frame)
+ViewerDisplayScheduler::treatFrame(const BufferedFrame& frame)
 {
-    _viewer->updateViewer(frame);
+    for (std::list<boost::shared_ptr<BufferableObject> >::const_iterator it = frame.frame.begin(); it!=frame.frame.end(); ++it) {
+        _viewer->updateViewer(*it);
+    }
+    _viewer->redrawViewer();
 }
 
 void
