@@ -3427,21 +3427,22 @@ void
 NodeGraph::popFindDialog(const QPoint& p)
 {
     QPoint realPos = p;
+
+    FindNodeDialog* dialog = new FindNodeDialog(this,this);
+    
     if (realPos.x() == 0 && realPos.y() == 0) {
         QPoint global = QCursor::pos();
-        QSize sizeH = sizeHint();
+        QSize sizeH = dialog->sizeHint();
         global.rx() -= sizeH.width() / 2;
         global.ry() -= sizeH.height() / 2;
         realPos = global;
         
     }
     
-    
-    
-    FindNodeDialog* dialog = new FindNodeDialog(this,this);
     QObject::connect(dialog ,SIGNAL(rejected()), this, SLOT(onFindNodeDialogFinished()));
     QObject::connect(dialog ,SIGNAL(accepted()), this, SLOT(onFindNodeDialogFinished()));
     dialog->move( realPos.x(), realPos.y() );
+    dialog->raise();
     dialog->show();
     
 }
