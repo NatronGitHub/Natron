@@ -882,8 +882,8 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
         return;
     }
     for (int i = 0; i < dims; ++i) {
-
-        if (_signalSlotHandler) {
+        
+        if (_signalSlotHandler && isAnimated(i)) {
             _signalSlotHandler->s_valueChanged(i, Natron::TIME_CHANGED);
             _signalSlotHandler->s_updateSlaves(i);
         }

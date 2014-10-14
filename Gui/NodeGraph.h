@@ -154,8 +154,6 @@ public slots:
 
     void showMenu(const QPoint & pos);
 
-    void populateMenu();
-
     void toggleCacheInfos();
 
     void togglePreviewsForSelectedNodes();
