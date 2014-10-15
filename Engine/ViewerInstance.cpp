@@ -338,8 +338,12 @@ static bool checkTreeCanRender(Node* node)
 
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
-#define abortCheck(input) if ( (!isSequentialRender && canAbort && (input->getHash() != inputNodeHash || getTimeline()->currentFrame() != time) ) ||  \
-                            (isSequentialRender && input->isAbortedFromPlayback()) )  {\
+#define abortCheck(input) if ( (!isSequentialRender && canAbort && (input->getHash() != inputNodeHash || \
+                                                    getTimeline()->currentFrame() != time || \
+                                                    getMipMapLevelFromZoomFactor() != zoomMipMapLevel) ) \
+||  \
+                            (isSequentialRender && input->isAbortedFromPlayback()) \
+                       )  {\
                                 if (params->cachedFrame) { \
                                     params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(params->cachedFrame); \
@@ -409,9 +413,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     }
 
     assert(_imp->uiContext);
-    double zoomFactor = _imp->uiContext->getZoomFactor();
-    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) );
-    mipMapLevel = std::max( (double)mipMapLevel,std::log(closestPowerOf2) / M_LN2 );
+    int zoomMipMapLevel = getMipMapLevelFromZoomFactor();
+    mipMapLevel = std::max( (double)mipMapLevel, (double)zoomMipMapLevel );
 
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
@@ -421,7 +424,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     
 
-    closestPowerOf2 = 1 << mipMapLevel;
+    int closestPowerOf2 = 1 << mipMapLevel;
 
     ImageComponents components;
     ImageBitDepth imageDepth;
@@ -1909,4 +1912,12 @@ ViewerInstance::getTimeline() const
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
 }
 
+
+int
+ViewerInstance::getMipMapLevelFromZoomFactor() const
+{
+    double zoomFactor = _imp->uiContext->getZoomFactor();
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) );
+    return std::log(closestPowerOf2) / M_LN2;
+}
 

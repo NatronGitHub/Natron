@@ -1672,7 +1672,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
     if ( aborted() && renderRetCode != eImageAlreadyRendered) {
         
-        ///Return a NULL image if the render call was not issues by the result of a call of a plug-in to clipGetImage
+        ///Return a NULL image if the render call was not issued by the result of a call of a plug-in to clipGetImage
         if (!args.calledFromGetImage) {
             return boost::shared_ptr<Image>();
         }

@@ -99,6 +99,7 @@ public:
 
     int getMipMapLevel() const WARN_UNUSED_RETURN;
 
+    int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
