@@ -1593,16 +1593,16 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 
             MaxMovement curveMaxMovement;
             double minimumTimeSpanBetween2Keys = 1.;
-            std::pair<double,double> curveXRange = (*it)->curve->getInternalCurve()->getXRange();
+           // std::pair<double,double> curveXRange = (*it)->curve->getInternalCurve()->getXRange();
             if ( !(*it)->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers() ) {
-                minimumTimeSpanBetween2Keys = NATRON_CURVE_X_SPACING_EPSILON * std::abs(curveXRange.second - curveXRange.first) * 10; //< be safe
+                minimumTimeSpanBetween2Keys = NATRON_CURVE_X_SPACING_EPSILON ;//* std::abs(curveXRange.second - curveXRange.first) * 10; //< be safe
             }
 
 
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {
                 if ( leftMost == ks.begin() ) {
-                    curveMaxMovement.left = curveXRange.first - leftMost->getTime();
+                    curveMaxMovement.left = INT_MIN;//curveXRange.first - leftMost->getTime();
                 } else {
                     KeyFrameSet::const_iterator prev = leftMost;
                     --prev;
@@ -1618,7 +1618,7 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                 KeyFrameSet::const_iterator next = rightMost;
                 ++next;
                 if ( next == ks.end() ) {
-                    curveMaxMovement.right = curveXRange.second - rightMost->getTime();
+                    curveMaxMovement.right = INT_MAX;///curveXRange.second - rightMost->getTime();
                 } else {
                     double rightMaxMovement = std::max( std::max(NATRON_CURVE_X_SPACING_EPSILON - minimumTimeSpanBetween2Keys,0.),
                                                         next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime() );
@@ -2179,9 +2179,8 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
     if ( foundCurveNearby != _imp->_curves.end() ) {
         std::pair<double,double> yRange = (*foundCurveNearby)->getInternalCurve()->getCurveYRange();
-        std::pair<double,double> xRange = (*foundCurveNearby)->getInternalCurve()->getXRange();
-        if (xCurve < xRange.first || xCurve > xRange.second || yCurve < yRange.first || yCurve > yRange.second) {
-            QString err = tr("Out of curve x range ") + QString("[%1 - %2]").arg(xRange.first).arg(xRange.second) + tr(" and curve y range ") +
+        if (yCurve < yRange.first || yCurve > yRange.second) {
+            QString err =  tr(" Out of curve y range ") +
             QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
             Natron::warningDialog("", err.toStdString());
             e->accept();
@@ -3635,9 +3634,9 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget,co
     
     if (mode == EDIT_KEYFRAME_POSITION) {
         
-        std::pair<double,double> xRange = _imp->key->curve->getInternalCurve()->getXRange();
-        _imp->xSpinbox->setMinimum(xRange.first);
-        _imp->xSpinbox->setMaximum(xRange.second);
+//        std::pair<double,double> xRange = _imp->key->curve->getInternalCurve()->getXRange();
+//        _imp->xSpinbox->setMinimum(xRange.first);
+//        _imp->xSpinbox->setMaximum(xRange.second);
         
         _imp->yLabel = new QLabel("y: ",_imp->boxContainer);
         _imp->boxLayout->addWidget(_imp->yLabel);
