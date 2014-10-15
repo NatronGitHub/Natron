@@ -2178,6 +2178,15 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     double xCurve,yCurve;
     Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
     if ( foundCurveNearby != _imp->_curves.end() ) {
+        std::pair<double,double> yRange = (*foundCurveNearby)->getInternalCurve()->getCurveYRange();
+        std::pair<double,double> xRange = (*foundCurveNearby)->getInternalCurve()->getXRange();
+        if (xCurve < xRange.first || xCurve > xRange.second || yCurve < yRange.first || yCurve > yRange.second) {
+            QString err = tr("Out of curve x range ") + QString("[%1 - %2]").arg(xRange.first).arg(xRange.second) + tr(" and curve y range ") +
+            QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
+            Natron::warningDialog("", err.toStdString());
+            e->accept();
+            return;
+        }
         std::vector<KeyFrame> keys(1);
         keys[0] = KeyFrame(xCurve,yCurve);
         (*foundCurveNearby)->getKnob()->pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
