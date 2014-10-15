@@ -2451,6 +2451,9 @@ ViewerCurrentFrameRequestScheduler::run()
             delete found->request;
             found->request = 0;
             
+            if (_imp->checkForExit()) {
+                return;
+            }
             {
                 QMutexLocker treatLocker(&_imp->treatMutex);
                 _imp->treatRunning = true;
@@ -2552,6 +2555,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
         renderCurrentFrameFunctor(_imp->viewer, canAbort, NULL,_imp.get());
     } else {
         RequestedFrame *request = new RequestedFrame;
+        request->id = 0;
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
             _imp->requestsQueue.push_back(request);
