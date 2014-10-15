@@ -1934,7 +1934,9 @@ ViewerDisplayScheduler::treatFrame(const BufferedFrame& frame)
     for (std::list<boost::shared_ptr<BufferableObject> >::const_iterator it = frame.frame.begin(); it!=frame.frame.end(); ++it) {
         _viewer->updateViewer(*it);
     }
-    _viewer->redrawViewer();
+    if (!frame.frame.empty()) {
+        _viewer->redrawViewer();
+    }
 }
 
 void

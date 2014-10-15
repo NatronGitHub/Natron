@@ -577,6 +577,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     boost::shared_ptr<UpdateViewerParams> params(new UpdateViewerParams);
     bool isCached = false;
 
+    if (isInputImgCached) {
+        params->image = inputImage;
+    }
+    
     ///if we want to force a refresh, we by-pass the cache
     bool byPassCache = false;
     if (!forceRender) {
@@ -633,7 +637,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             isCached = false;
         }
         
-        params->image = inputImage;
     }
     
     if (isCached) {

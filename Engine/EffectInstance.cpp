@@ -1671,8 +1671,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
 
     if ( aborted() && renderRetCode != eImageAlreadyRendered) {
-        //if render was aborted, remove the frame from the cache as it contains only garbage
-        appPTR->removeFromNodeCache(image);
         
         ///Return a NULL image if the render call was not issues by the result of a call of a plug-in to clipGetImage
         if (!args.calledFromGetImage) {
