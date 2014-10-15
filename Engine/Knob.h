@@ -989,6 +989,10 @@ protected:
     
     void cloneGuiCurvesIfNeeded(std::set<int>& modifiedDimensions);
     
+    void cloneInternalCurvesIfNeeded(std::set<int>& modifiedDimensions);
+    
+    void setInternalCurveHasChanged(int dimension, bool changed);
+    
     void guiCurveCloneInternalCurve(int dimension);
     
     boost::shared_ptr<Curve> getGuiCurve(int dimension) const;

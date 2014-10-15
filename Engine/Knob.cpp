@@ -179,6 +179,7 @@ struct KnobHelper::KnobHelperPrivate
     /// Set to true if gui curves were modified by the user instead of the real internal curves.
     /// If true then when finished rendering, the knob should clone the guiCurves into the internal curves.
     std::vector<bool> mustCloneGuiCurves;
+    std::vector<bool> mustCloneInternalCurves;
     
     ///A blind handle to the ofx param, needed for custom overlay interacts
     void* ofxParamHandle;
@@ -224,8 +225,10 @@ struct KnobHelper::KnobHelperPrivate
           , isInstanceSpecific(false)
     {
         mustCloneGuiCurves.resize(dimension);
+        mustCloneInternalCurves.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
             mustCloneGuiCurves[i] = false;
+            mustCloneInternalCurves[i] = false;
         }
     }
 };
@@ -629,6 +632,26 @@ KnobHelper::removeAnimation(int dimension,
             _signalSlotHandler->s_refreshGuiCurve(dimension);
         }
     }
+}
+
+void
+KnobHelper::cloneInternalCurvesIfNeeded(std::set<int>& modifiedDimensions)
+{
+    QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+    for (int i = 0; i < getDimension(); ++i) {
+        if (_imp->mustCloneInternalCurves[i]) {
+            guiCurveCloneInternalCurve(i);
+            _imp->mustCloneInternalCurves[i] = false;
+            modifiedDimensions.insert(i);
+        }
+    }
+}
+
+void
+KnobHelper::setInternalCurveHasChanged(int dimension, bool changed)
+{
+    QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+    _imp->mustCloneInternalCurves[dimension] = changed;
 }
 
 void

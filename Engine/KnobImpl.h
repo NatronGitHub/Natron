@@ -377,8 +377,10 @@ Knob<T>::setValue(const T & v,
             }
             if (hasAnimation && hasKeyAtTime) {
                 returnValue =  KEYFRAME_MODIFIED;
+                setInternalCurveHasChanged(dimension, true);
             } else if (hasAnimation) {
                 returnValue =  KEYFRAME_ADDED;
+                setInternalCurveHasChanged(dimension, true);
             } else {
                 returnValue =  NO_KEYFRAME_ADDED;
             }
@@ -533,6 +535,8 @@ Knob<T>::setValueAtTime(int time,
         
         assert(curve);
         
+        setInternalCurveHasChanged(dimension, true);
+        
         KeyFrame k;
         bool hasAnimation = curve->isAnimated();
         bool hasKeyAtTime = curve->getKeyFrameWithTime(time, &k);
@@ -541,14 +545,18 @@ Knob<T>::setValueAtTime(int time,
         } else {
             return KEYFRAME_ADDED;
         }
+
     } else {
         ///There might be stuff in the queue that must be processed first
         dequeueValuesSet(true);
     }
     
+    
 
     bool ret = curve->addKeyFrame(*newKey);
-
+    
+    guiCurveCloneInternalCurve(dimension);
+    
     if (_signalSlotHandler && ret) {
         if (reason != Natron::USER_EDITED) {
             _signalSlotHandler->s_keyFrameSet(time,dimension,ret);
@@ -1254,7 +1262,8 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
         }
         _setValuesQueue.clear();
     }
-    
+    cloneInternalCurvesIfNeeded(dimensionChanged);
+
     if (!disableEvaluation && !dimensionChanged.empty()) {
         
         blockEvaluation();
