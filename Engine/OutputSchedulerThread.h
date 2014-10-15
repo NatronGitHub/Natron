@@ -45,6 +45,9 @@ public:
     virtual std::size_t sizeInRAM() const = 0;
 };
 
+typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
+
+
 struct BufferedFrame
 {
     int view;
@@ -52,6 +55,12 @@ struct BufferedFrame
     
     ///List because there might be several frames for the Viewer when in wipe/over/under/minus modes
     std::list<boost::shared_ptr<BufferableObject> > frame;
+    
+    BufferedFrame()
+    : view(0) , time(0), frame()
+    {
+        
+    }
 };
 
 class OutputSchedulerThread;
@@ -195,6 +204,7 @@ public:
      * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
      **/
     int pickFrameToRender(RenderThreadTask* thread);
+    
 
     /**
      * @brief Called by the render-threads when mustQuit() is true on the thread
@@ -224,7 +234,6 @@ public:
     void getPluginFrameRange(int& first,int &last) const;
     
     
-  
     
 public slots:
     
@@ -461,6 +470,49 @@ private:
     ViewerInstance* _viewer;
 };
 
+/**
+ * @brief The OutputSchedulerThread class (and its derivatives) are meant to be used for playback/render on disk and regulates the output ordering.
+ * This class achieves kinda the same goal: it provides the ability to give it a work queue and treat the work queue in the same order.
+ * Typically when zooming, you want to launch as many thread as possible for each zoom increment and update the viewer in the same order that the one
+ * in which you launched the thread in the first place.
+ * Instead of re-using the OutputSchedulerClass and adding extra handling for special cases we separated it in a different class, specialized for this kind
+ * of "current frame re-rendering" which needs much less code to run than all the code in OutputSchedulerThread
+ **/
+struct ViewerCurrentFrameRequestSchedulerPrivate;
+class ViewerCurrentFrameRequestScheduler : public QThread
+{
+
+    Q_OBJECT
+    
+    
+public:
+    
+    ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer);
+    
+    virtual ~ViewerCurrentFrameRequestScheduler();
+    
+    void renderCurrentFrame(bool canAbort);
+    
+    void quitThread();
+    
+    bool hasThreadsWorking() const;
+    
+public slots:
+    
+    void doTreatProducedFrameOnMainThread(const BufferableObjectList& frames);
+    
+signals:
+    
+    void s_treatProducedFrameOnMainThread(const BufferableObjectList& frames);
+    
+private:
+    
+    virtual void run() OVERRIDE FINAL;
+    
+    boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
+    
+};
+
 
 /**
  * @brief This class manages multiple OutputThreadScheduler so that each render request gets treated as soon as possible.
@@ -547,8 +599,6 @@ public slots:
     void abortRendering(bool blocking);
     void abortRendering_Blocking() { abortRendering(true); }
 
-    void onFutureFinished();
-    void onFutureCanceled();
     
 signals:
     

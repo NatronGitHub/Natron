@@ -77,6 +77,7 @@ namespace {
         inline MetaTypesRegistration()
         {
             qRegisterMetaType<BufferedFrame>("BufferedFrame");
+            qRegisterMetaType<BufferableObjectList>("BufferableObjectList");
         }
     };
 }
@@ -99,7 +100,18 @@ struct RenderThread {
 };
 typedef std::list<RenderThread> RenderThreads;
 
+// Struct used in a queue when rendering the current frame with a viewer, the id is meaningless just to have a member
+// in the structure. We then compare the pointer of this struct
+struct RequestedFrame
+{
+    int id;
+};
 
+struct ProducedFrame
+{
+    BufferableObjectList frames;
+    RequestedFrame* request;
+};
 
 struct OutputSchedulerThreadPrivate
 {
@@ -161,8 +173,8 @@ struct OutputSchedulerThreadPrivate
     QWaitCondition allRenderThreadsInactiveCond; // wait condition to make sure all render threads are asleep
     QWaitCondition allRenderThreadsQuitCond; //to make sure all render threads have quit
     
-    ///Work queue filled by the scheduler thread
-    QMutex framesToRenderMutex;
+    ///Work queue filled by the scheduler thread when in playback/render on disk
+    QMutex framesToRenderMutex; // protects framesToRender & currentFrameRequests
     std::list<int> framesToRender;
     
     ///index of the last frame pushed (framesToRender.back())
@@ -683,6 +695,7 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
     }
     return -1;
 }
+
 
 void
 OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
@@ -2056,37 +2069,7 @@ ViewerDisplayScheduler::timelineSetBounds(int left, int right)
 }
 
 
-////////////////////////// CurrentFrameRenderer
 
-typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
-
-BufferableObjectList renderCurrentFrameFunctor(ViewerInstance* viewer,bool canAbort,int frame,U64 viewerHash)
-{
-    ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
-    ///it calls appendToBuffer by itself
-    Status stat;
-    
-    int viewsCount = viewer->getRenderViewsCount();
-    int view = viewsCount > 0 ? viewer->getCurrentView() : 0;
-    
-    BufferableObjectList ret;
-    try {
-        stat = viewer->renderViewer(frame,view,QThread::currentThread() == qApp->thread(),false,viewerHash,canAbort,ret);
-    } catch (...) {
-        stat = StatFailed;
-    }
-    
-    if (stat == StatFailed) {
-        ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
-        ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
-        viewer->disconnectViewer();
-        ret.clear();
-        return ret;
-    } else {
-        return ret;
-    }
-
-}
 
 ////////////////////////// RenderEngine
 
@@ -2100,8 +2083,7 @@ struct RenderEnginePrivate
     mutable QMutex pbModeMutex;
     Natron::PlaybackMode pbMode;
     
-    mutable QMutex futuresMutex;
-    std::list< boost::shared_ptr<QFutureWatcher<BufferableObjectList> > > futures;
+    ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
     
     RenderEnginePrivate(Natron::OutputEffectInstance* output)
     : schedulerCreationLock()
@@ -2109,8 +2091,7 @@ struct RenderEnginePrivate
     , output(output)
     , pbModeMutex()
     , pbMode(PLAYBACK_LOOP)
-    , futuresMutex()
-    , futures()
+    , currentFrameScheduler(0)
     {
         
     }
@@ -2124,6 +2105,7 @@ RenderEngine::RenderEngine(Natron::OutputEffectInstance* output)
 
 RenderEngine::~RenderEngine()
 {
+    delete _imp->currentFrameScheduler;
     delete _imp->scheduler;
 }
 
@@ -2195,97 +2177,14 @@ RenderEngine::renderCurrentFrame(bool canAbort)
         }
     }
     
-    ///If the user doesn't want to use any thread, run it into the main thread
-    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
-        renderCurrentFrameFunctor(isViewer, canAbort, isViewer->getTimeline()->currentFrame(),isViewer->getHash());
-    } else {
-        
-        ///Run in a separate thread, we don't need to abort the other threads (and we can't since the abort flag
-        ///on effects is a member variable protected by a mutex)
-        boost::shared_ptr<QFutureWatcher<BufferableObjectList> > watcher(new QFutureWatcher<BufferableObjectList>);
-        QObject::connect(watcher.get(), SIGNAL(canceled()), this, SLOT(onFutureCanceled()));
-        QObject::connect(watcher.get(), SIGNAL(finished()), this, SLOT(onFutureFinished()));
-        {
-            QMutexLocker k(&_imp->futuresMutex);
-            _imp->futures.push_back(watcher); 
-        }
-        
-        QFuture<BufferableObjectList> future = QtConcurrent::run(renderCurrentFrameFunctor,isViewer, canAbort, isViewer->getTimeline()->currentFrame(),
-                                                                 isViewer->getHash());
-        watcher->setFuture(future);
+    if (!_imp->currentFrameScheduler) {
+        _imp->currentFrameScheduler = new ViewerCurrentFrameRequestScheduler(isViewer);
     }
+    
+    _imp->currentFrameScheduler->renderCurrentFrame(canAbort);
 }
 
 
-void
-RenderEngine::onFutureFinished()
-{
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->output);
-    assert(isViewer);
-    
-    assert(QThread::currentThread() == qApp->thread());
-    
-    QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>(sender());
-    assert(future);
-    
-    boost::shared_ptr<QFutureWatcher<BufferableObjectList> > watcher;
-    {
-        QMutexLocker k(&_imp->futuresMutex);
-        for (std::list< boost::shared_ptr<QFutureWatcher<BufferableObjectList> > >::iterator it = _imp->futures.begin();
-             it != _imp->futures.end(); ++it) {
-            if (it->get() == future) {
-                watcher = *it;
-                break;
-            }
-        }
-    }
-    
-    assert(watcher);
-    
-    BufferableObjectList ret = watcher->result();
-    
-    if (!ret.empty()) {
-        for (BufferableObjectList::iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-            assert(*it2);
-            isViewer->updateViewer(*it2);
-        }
-        if (!ret.empty()) {
-            isViewer->redrawViewer();
-        }
-    } else {
-        ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
-        isViewer->callRedrawOnMainThread();
-    }
-    
-    {
-        QMutexLocker k(&_imp->futuresMutex);
-        for (std::list< boost::shared_ptr<QFutureWatcher<BufferableObjectList> > >::iterator it = _imp->futures.begin();
-             it != _imp->futures.end(); ++it) {
-            if (it->get() == future) {
-                _imp->futures.erase(it);
-                return;
-            }
-        }
-    }
-}
-
-void
-RenderEngine::onFutureCanceled()
-{
-    QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>(sender());
-    assert(future);
-    {
-        QMutexLocker k(&_imp->futuresMutex);
-        for (std::list< boost::shared_ptr<QFutureWatcher<BufferableObjectList> > >::iterator it = _imp->futures.begin();
-             it != _imp->futures.end(); ++it) {
-            if (it->get() == future) {
-                _imp->futures.erase(it);
-                return;
-            }
-        }
-    }
-    assert(false);
-}
 
 void
 RenderEngine::quitEngine()
@@ -2294,44 +2193,42 @@ RenderEngine::quitEngine()
         _imp->scheduler->quitThread();
     }
     
-    QMutexLocker k(&_imp->futuresMutex);
-    for (std::list< boost::shared_ptr<QFutureWatcher<BufferableObjectList> > >::iterator it = _imp->futures.begin();
-         it != _imp->futures.end(); ++it) {
-        (*it)->waitForFinished();
+    if (_imp->currentFrameScheduler) {
+        _imp->currentFrameScheduler->quitThread();
     }
-    _imp->futures.clear();
 }
 
 bool
 RenderEngine::hasThreadsAlive() const
 {
-    int nFutures;
-    {
-        QMutexLocker l(&_imp->futuresMutex);
-        nFutures = (int)_imp->futures.size();
-    }
+
     bool schedulerRunning = false;
     if (_imp->scheduler) {
         schedulerRunning = _imp->scheduler->isRunning();
     }
-
-    return schedulerRunning || nFutures > 0;
+    bool currentFrameSchedulerRunning = false;
+    if (_imp->currentFrameScheduler) {
+        currentFrameSchedulerRunning = _imp->currentFrameScheduler->isRunning();
+    }
+    
+    return schedulerRunning || currentFrameSchedulerRunning;
 }
 
 bool
 RenderEngine::hasThreadsWorking() const
 {
-    int nFutures;
-    {
-        QMutexLocker l(&_imp->futuresMutex);
-        nFutures = (int)_imp->futures.size();
-    }
+ 
     
     bool schedulerWorking = false;
     if (_imp->scheduler) {
         schedulerWorking = _imp->scheduler->isWorking();
     }
-    return schedulerWorking || nFutures > 0;
+    bool currentFrameSchedulerWorking = false;
+    if (_imp->currentFrameScheduler) {
+        currentFrameSchedulerWorking = _imp->currentFrameScheduler->hasThreadsWorking();
+    }
+    
+    return schedulerWorking || currentFrameSchedulerWorking;
 
 }
 
@@ -2381,4 +2278,290 @@ OutputSchedulerThread*
 ViewerRenderEngine::createScheduler(Natron::OutputEffectInstance* effect) 
 {
     return new ViewerDisplayScheduler(this,dynamic_cast<ViewerInstance*>(effect));
+}
+
+////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////
+
+
+
+struct ViewerCurrentFrameRequestSchedulerPrivate
+{
+    
+    ViewerInstance* viewer;
+    
+    QMutex requestsQueueMutex;
+    std::list<RequestedFrame*> requestsQueue;
+    QWaitCondition requestsQueueNotEmpty;
+    
+    QMutex producedQueueMutex;
+    std::list<ProducedFrame> producedQueue;
+    QWaitCondition producedQueueNotEmpty;
+    
+    
+    bool treatRunning;
+    QWaitCondition treatCondition;
+    QMutex treatMutex;
+    
+    bool mustQuit;
+    mutable QMutex mustQuitMutex;
+    QWaitCondition mustQuitCond;
+
+    
+    ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
+    : viewer(viewer)
+    , requestsQueueMutex()
+    , requestsQueue()
+    , requestsQueueNotEmpty()
+    , producedQueueMutex()
+    , producedQueue()
+    , producedQueueNotEmpty()
+    , treatRunning(false)
+    , treatCondition()
+    , treatMutex()
+    , mustQuit(false)
+    , mustQuitMutex()
+    , mustQuitCond()
+    {
+        
+    }
+    
+    bool checkForExit()
+    {
+        QMutexLocker k(&mustQuitMutex);
+        if (mustQuit) {
+            mustQuit = false;
+            mustQuitCond.wakeAll();
+            return true;
+        }
+        return false;
+    }
+    
+    void notifyFrameProduced(const BufferableObjectList& frames,RequestedFrame* request)
+    {
+        QMutexLocker k(&producedQueueMutex);
+        ProducedFrame p;
+        p.frames = frames;
+        p.request = request;
+        producedQueue.push_back(p);
+        producedQueueNotEmpty.wakeOne();
+    }
+    
+    void treatProducedFrame(const BufferableObjectList& frames);
+
+};
+
+
+
+static void renderCurrentFrameFunctor(ViewerInstance* viewer,bool canAbort,RequestedFrame* request, ViewerCurrentFrameRequestSchedulerPrivate* scheduler)
+{
+    
+    ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
+    ///it calls appendToBuffer by itself
+    Status stat;
+    
+    U64 viewerHash = viewer->getHash();
+    int frame = viewer->getTimeline()->currentFrame();
+    
+    int viewsCount = viewer->getRenderViewsCount();
+    int view = viewsCount > 0 ? viewer->getCurrentView() : 0;
+    
+    BufferableObjectList ret;
+    try {
+        stat = viewer->renderViewer(frame,view,QThread::currentThread() == qApp->thread(),false,viewerHash,canAbort,ret);
+    } catch (...) {
+        stat = StatFailed;
+    }
+    
+    if (stat == StatFailed) {
+        ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
+        ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
+        viewer->disconnectViewer();
+        ret.clear();
+    }
+    
+    if (request) {
+        scheduler->notifyFrameProduced(ret, request);
+    } else {
+        
+        assert(QThread::currentThread() == qApp->thread());
+        scheduler->treatProducedFrame(ret);
+    }
+    
+}
+
+ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
+: QThread()
+, _imp(new ViewerCurrentFrameRequestSchedulerPrivate(viewer))
+{
+    setObjectName("ViewerCurrentFrameRequestScheduler");
+    QObject::connect(this, SIGNAL(s_treatProducedFrameOnMainThread(BufferableObjectList)), this, SLOT(doTreatProducedFrameOnMainThread(BufferableObjectList)));
+}
+
+ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
+{
+    
+}
+
+
+void
+ViewerCurrentFrameRequestScheduler::run()
+{
+    for (;;) {
+        
+        if (_imp->checkForExit()) {
+            return;
+        }
+        
+        
+        RequestedFrame* firstRequest = 0;
+        {
+            QMutexLocker k(&_imp->requestsQueueMutex);
+            if (!_imp->requestsQueue.empty()) {
+                firstRequest = _imp->requestsQueue.front();
+                _imp->requestsQueue.pop_front();
+            }
+        }
+        
+        if (firstRequest) {
+            
+            ///Wait for the work to be done
+            QMutexLocker k(&_imp->producedQueueMutex);
+            
+            std::list<ProducedFrame>::iterator found = _imp->producedQueue.end();
+            for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
+                if (it->request == firstRequest) {
+                    found = it;
+                    break;
+                }
+            }
+            
+            while (found == _imp->producedQueue.end()) {
+                _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
+                
+                for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
+                    if (it->request == firstRequest) {
+                        found = it;
+                        break;
+                    }
+                }
+            }
+            
+            assert(found != _imp->producedQueue.end());
+            
+            delete found->request;
+            found->request = 0;
+            
+            {
+                QMutexLocker treatLocker(&_imp->treatMutex);
+                _imp->treatRunning = true;
+                emit s_treatProducedFrameOnMainThread(found->frames);
+                
+                while (_imp->treatRunning) {
+                    _imp->treatCondition.wait(&_imp->treatMutex);
+                }
+            }
+            
+            _imp->producedQueue.erase(found);
+        }
+        
+        
+        {
+            QMutexLocker k(&_imp->requestsQueueMutex);
+            while (_imp->requestsQueue.empty()) {
+                _imp->requestsQueueNotEmpty.wait(&_imp->requestsQueueMutex);
+            }
+        }
+        
+        ///If we reach here, we've been woken up because there's work to do
+        
+    } // for(;;)
+}
+
+void
+ViewerCurrentFrameRequestScheduler::doTreatProducedFrameOnMainThread(const BufferableObjectList& frames)
+{
+    _imp->treatProducedFrame(frames);
+}
+
+void
+ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableObjectList& frames)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (!frames.empty()) {
+        for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
+            assert(*it2);
+            viewer->updateViewer(*it2);
+        }
+        if (!frames.empty()) {
+            viewer->redrawViewer();
+        }
+    } else {
+        ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
+        viewer->callRedrawOnMainThread();
+    }
+    
+    {
+        QMutexLocker k(&treatMutex);
+        treatRunning = false;
+        treatCondition.wakeOne();
+    }
+}
+
+void
+ViewerCurrentFrameRequestScheduler::quitThread()
+{
+    if (!isRunning()) {
+        return;
+    }
+    
+    {
+        QMutexLocker l2(&_imp->treatMutex);
+        _imp->treatRunning = false;
+        _imp->treatCondition.wakeOne();
+    }
+    
+    {
+        QMutexLocker k(&_imp->mustQuitMutex);
+        _imp->mustQuit = true;
+        
+        ///Push a fake request
+        {
+            QMutexLocker k(&_imp->requestsQueueMutex);
+            _imp->requestsQueue.push_back(NULL);
+            _imp->requestsQueueNotEmpty.wakeOne();
+        }
+        
+        while (_imp->mustQuit) {
+            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+        }
+    }
+}
+
+bool
+ViewerCurrentFrameRequestScheduler::hasThreadsWorking() const
+{
+    QMutexLocker k(&_imp->requestsQueueMutex);
+    return _imp->requestsQueue.size() > 0;
+}
+
+void
+ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
+{
+    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+        renderCurrentFrameFunctor(_imp->viewer, canAbort, NULL,_imp.get());
+    } else {
+        RequestedFrame *request = new RequestedFrame;
+        {
+            QMutexLocker k(&_imp->requestsQueueMutex);
+            _imp->requestsQueue.push_back(request);
+            
+            if (isRunning()) {
+                _imp->requestsQueueNotEmpty.wakeOne();
+            } else {
+                start();
+            }
+        }
+        QtConcurrent::run(renderCurrentFrameFunctor,_imp->viewer, canAbort,request,_imp.get());
+    }
 }

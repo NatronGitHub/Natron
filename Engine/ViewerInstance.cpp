@@ -339,8 +339,7 @@ static bool checkTreeCanRender(Node* node)
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
 #define abortCheck(input) if ( (!isSequentialRender && canAbort && (input->getHash() != inputNodeHash || \
-                                                    getTimeline()->currentFrame() != time || \
-                                                    getMipMapLevelFromZoomFactor() != zoomMipMapLevel) ) \
+                                                    getTimeline()->currentFrame() != time ) ) \
 ||  \
                             (isSequentialRender && input->isAbortedFromPlayback()) \
                        )  {\
