@@ -3587,6 +3587,8 @@ struct EditKeyFrameDialogPrivate
         } else if (mode == EditKeyFrameDialog::EDIT_RIGHT_DERIVATIVE) {
             originalX = key->key.getRightDerivative();
         }
+        
+
     }
 };
 
@@ -3632,6 +3634,11 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget,co
     _imp->boxLayout->addWidget(_imp->xSpinbox);
     
     if (mode == EDIT_KEYFRAME_POSITION) {
+        
+        std::pair<double,double> xRange = _imp->key->curve->getInternalCurve()->getXRange();
+        _imp->xSpinbox->setMinimum(xRange.first);
+        _imp->xSpinbox->setMaximum(xRange.second);
+        
         _imp->yLabel = new QLabel("y: ",_imp->boxContainer);
         _imp->boxLayout->addWidget(_imp->yLabel);
         
@@ -3672,6 +3679,19 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
     
     double curY = _imp->key->key.getValue();
     double curX = _imp->key->key.getTime();
+    
+    if (_imp->mode == EDIT_KEYFRAME_POSITION) {
+        ///Check that another keyframe doesn't have this time
+
+        KeyFrameSet set = _imp->key->curve->getInternalCurve()->getKeyFrames_mt_safe();
+        for (KeyFrameSet::iterator it = set.begin(); it!=set.end(); ++it) {
+            
+            if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
+                _imp->xSpinbox->setValue(curX);
+                return;
+            }
+        }
+    }
     
     _imp->curveWidget->pushUndoCommand(new MoveKeysCommand(_imp->curveWidget,keys,newX - curX, newY - curY,true));
 
