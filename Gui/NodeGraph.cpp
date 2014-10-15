@@ -3637,7 +3637,7 @@ FindNodeDialog::selectNextResult()
         _imp->graph->centerOnItem(it->get());
     }
     
-    QString text = QString("Selecting result %1 of %2 matche(s)").arg(_imp->currentFindIndex + 1).arg(_imp->nodeResults.size() + _imp->bdResults.size());
+    QString text = QString("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg(_imp->nodeResults.size() + _imp->bdResults.size());
     _imp->resultLabel->setText(text);
 
     
