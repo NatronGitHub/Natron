@@ -1263,80 +1263,80 @@ AppManagerPrivate::saveCaches()
         ofile.close();
     }
 
-
-    {
-        std::ofstream ofile;
-        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
-        try {
-            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-        } catch (const std::ofstream::failure & e) {
-            qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
-
-            return;
-        }
-
-        if ( !ofile.good() ) {
-            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
-
-            return;
-        }
-
-        Natron::Cache<Image>::CacheTOC toc;
-        _nodeCache->save(&toc);
-
-        try {
-            boost::archive::binary_oarchive oArchive(ofile);
-            oArchive << toc;
-            ofile.close();
-        } catch (const std::exception & e) {
-            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
-        }
-    }
+//
+//    {
+//        std::ofstream ofile;
+//        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+//        std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
+//        try {
+//            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
+//        } catch (const std::ofstream::failure & e) {
+//            qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
+//
+//            return;
+//        }
+//
+//        if ( !ofile.good() ) {
+//            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+//
+//            return;
+//        }
+//
+//        Natron::Cache<Image>::CacheTOC toc;
+//        _nodeCache->save(&toc);
+//
+//        try {
+//            boost::archive::binary_oarchive oArchive(ofile);
+//            oArchive << toc;
+//            ofile.close();
+//        } catch (const std::exception & e) {
+//            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
+//        }
+//    }
 } // saveCaches
 
 void
 AppManagerPrivate::restoreCaches()
 {
-    {
-        if ( checkForCacheDiskStructure( _nodeCache->getCachePath() ) ) {
-            std::ifstream ifile;
-            std::string settingsFilePath = _nodeCache->getRestoreFilePath();
-            try {
-                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-            } catch (const std::ifstream::failure & e) {
-                qDebug() << "Failed to open the cache restoration file: " << e.what();
-
-                return;
-            }
-
-            if ( !ifile.good() ) {
-                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
-                ifile.close();
-
-                return;
-            }
-
-            Natron::Cache<Image>::CacheTOC tableOfContents;
-            try {
-                boost::archive::binary_iarchive iArchive(ifile);
-                iArchive >> tableOfContents;
-            } catch (const std::exception & e) {
-                qDebug() << e.what();
-                ifile.close();
-
-                return;
-            }
-
-            ifile.close();
-
-            QFile restoreFile( settingsFilePath.c_str() );
-            restoreFile.remove();
-
-            _nodeCache->restore(tableOfContents);
-        }
-    }
+//    {
+//        if ( checkForCacheDiskStructure( _nodeCache->getCachePath() ) ) {
+//            std::ifstream ifile;
+//            std::string settingsFilePath = _nodeCache->getRestoreFilePath();
+//            try {
+//                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+//                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
+//            } catch (const std::ifstream::failure & e) {
+//                qDebug() << "Failed to open the cache restoration file: " << e.what();
+//
+//                return;
+//            }
+//
+//            if ( !ifile.good() ) {
+//                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+//                ifile.close();
+//
+//                return;
+//            }
+//
+//            Natron::Cache<Image>::CacheTOC tableOfContents;
+//            try {
+//                boost::archive::binary_iarchive iArchive(ifile);
+//                iArchive >> tableOfContents;
+//            } catch (const std::exception & e) {
+//                qDebug() << e.what();
+//                ifile.close();
+//
+//                return;
+//            }
+//
+//            ifile.close();
+//
+//            QFile restoreFile( settingsFilePath.c_str() );
+//            restoreFile.remove();
+//
+//            _nodeCache->restore(tableOfContents);
+//        }
+//    }
     if (!appPTR->isBackground()) {
         if ( checkForCacheDiskStructure( _viewerCache->getCachePath() ) ) {
             std::ifstream ifile;
