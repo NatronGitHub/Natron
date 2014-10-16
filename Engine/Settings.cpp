@@ -869,10 +869,9 @@ Settings::restoreSettings()
     }
     
 
-    if ( !settings.contains("OCIOConfig") ) {
-        ///Load even though there's no settings!
-        tryLoadOpenColorIOConfig();
-    }
+    ///Load even though there's no settings!
+    tryLoadOpenColorIOConfig();
+    
 
     
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
