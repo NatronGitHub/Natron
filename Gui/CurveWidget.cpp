@@ -295,11 +295,38 @@ CurveGui::drawCurve(int curveIndex,
         vertices.push_back( (float)x );
         vertices.push_back( (float)y );
     }
+    
+    QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
+    QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
 
     const QColor & curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
 
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
+        
+        if (_selected) {
+            ///Draw y min/max axis so the user understands why the curve is clamped
+            std::pair<double,double> curveYRange = _internalCurve->getCurveYRange();
+            if (curveYRange.first != INT_MIN && curveYRange.second != INT_MAX) {
+                QColor minMaxColor;
+                minMaxColor.setRgbF(0.398979,0.398979,0.398979);
+                glColor4d(minMaxColor.redF(),minMaxColor.greenF(),minMaxColor.blueF(),1.);
+                glBegin(GL_LINES);
+                glVertex2d(btmLeft.x(), curveYRange.first);
+                glVertex2d(topRight.x(), curveYRange.first);
+                glVertex2d(btmLeft.x(), curveYRange.second);
+                glVertex2d(topRight.x(), curveYRange.second);
+                glEnd();
+                glColor4d(1., 1., 1., 1.);
+                
+                double xText = _curveWidget->toZoomCoordinates(10, 0).x();
+                
+                _curveWidget->renderText(xText, curveYRange.first, QString("min"), minMaxColor, _curveWidget->font());
+                _curveWidget->renderText(xText, curveYRange.second, QString("max"), minMaxColor, _curveWidget->font());
+            }
+            
+        }
+        
 
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
         glPointSize(_thickness);
@@ -320,8 +347,7 @@ CurveGui::drawCurve(int curveIndex,
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
 
-        QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
-        QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
+        
         double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
         double textX = _curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
         double textY = evaluate(textX);
