@@ -137,6 +137,8 @@ struct Node::Implementation
     }
 
     void abortPreview();
+    
+    bool checkForExitPreview();
 
     void setComputingPreview(bool v) {
         QMutexLocker l(&computingPreviewMutex);
@@ -663,6 +665,21 @@ Node::Implementation::abortPreview()
         while (mustQuitPreview) {
             mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
         }
+    }
+}
+
+bool
+Node::Implementation::checkForExitPreview()
+{
+    {
+        QMutexLocker locker(&mustQuitPreviewMutex);
+        if (mustQuitPreview) {
+            mustQuitPreview = false;
+            mustQuitPreviewCond.wakeOne();
+            
+            return true;
+        }
+        return false;
     }
 }
 
@@ -1857,6 +1874,10 @@ public:
     ~ComputingPreviewSetter_RAII()
     {
         _imp->setComputingPreview(false);
+        
+        if (_imp->checkForExitPreview()) {
+            return;
+        }
     }
 };
 
@@ -1870,14 +1891,9 @@ Node::makePreviewImage(SequenceTime time,
     if (!_imp->liveInstance) {
         return;
     }
-    {
-        QMutexLocker locker(&_imp->mustQuitPreviewMutex);
-        if (_imp->mustQuitPreview) {
-            _imp->mustQuitPreview = false;
-            _imp->mustQuitPreviewCond.wakeOne();
-
-            return;
-        }
+    
+    if (_imp->checkForExitPreview()) {
+        return;
     }
 
      /// prevent 2 previews to occur at the same time since there's only 1 preview instance
