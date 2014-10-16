@@ -586,6 +586,7 @@ public:
     Gui* _gui;
 
     GLuint savedTexture;
+    
 private:
 
     QColor _baseAxisColor;
@@ -1304,8 +1305,11 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
 
     QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates( _dragStartPoint.x(),_dragStartPoint.y() );
     bool clampToIntegers = ( *_selectedKeyFrames.begin() )->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
+    
+    bool useOneDirectionOnly = qApp->keyboardModifiers().testFlag(Qt::ControlModifier) || clampToIntegers;
+
     QPointF totalMovement;
-    if (!clampToIntegers) {
+    if (!useOneDirectionOnly) {
         totalMovement.rx() = newClick_opengl.x() - oldClick_opengl.x();
         totalMovement.ry() = newClick_opengl.y() - oldClick_opengl.y();
     } else {
@@ -1335,10 +1339,10 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
 
     double dt;
 
-    ///Parametric curve editor (the ones of the Parametric_Knob) never clamp keyframes to integer in the X direction
+    
     ///We also want them to allow the user to move freely the keyframes around, hence the !clampToIntegers
-    if ( (_mouseDragOrientation.x() != 0) || !clampToIntegers ) {
-        if (!clampToIntegers) {
+    if ( (_mouseDragOrientation.x() != 0) || !useOneDirectionOnly ) {
+        if (!useOneDirectionOnly) {
             dt =  totalMovement.x();
         } else {
             dt = totalMovement.x() - _keyDragLastMovement.x();
@@ -1349,8 +1353,8 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     double dv;
     ///Parametric curve editor (the ones of the Parametric_Knob) never clamp keyframes to integer in the X direction
     ///We also want them to allow the user to move freely the keyframes around, hence the !clampToIntegers
-    if ( (_mouseDragOrientation.y() != 0) || !clampToIntegers ) {
-        if (!clampToIntegers) {
+    if ( (_mouseDragOrientation.y() != 0) || !useOneDirectionOnly ) {
+        if (!useOneDirectionOnly) {
             dv = totalMovement.y();
         } else {
             dv = totalMovement.y() - _keyDragLastMovement.y();
@@ -1373,10 +1377,10 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         }
     }
     //update last drag movement
-    if ( (_mouseDragOrientation.x() != 0) || !clampToIntegers ) {
+    if ( (_mouseDragOrientation.x() != 0) || !useOneDirectionOnly ) {
         _keyDragLastMovement.rx() = totalMovement.x();
     }
-    if (_mouseDragOrientation.y() != 0) {
+    if (_mouseDragOrientation.y() != 0  || !useOneDirectionOnly ) {
         _keyDragLastMovement.ry() = totalMovement.y();
     }
 } // moveSelectedKeyFrames
