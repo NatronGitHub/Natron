@@ -576,16 +576,21 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
     
     PlaybackMode pMode = _imp->engine->getPlaybackMode();
     
-
-    ///Push 2x the count of threads to be sure no one will be waiting
-    while ((int)_imp->framesToRender.size() < nThreads * 2) {
+    
+    if (firstFrame == lastFrame) {
         _imp->framesToRender.push_back(startingFrame);
-        
         _imp->lastFramePushedIndex = startingFrame;
-        
-        if (!OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, startingFrame,
-                                                                  firstFrame, lastFrame, &startingFrame, &direction)) {
-            break;
+    } else {
+        ///Push 2x the count of threads to be sure no one will be waiting
+        while ((int)_imp->framesToRender.size() < nThreads * 2) {
+            _imp->framesToRender.push_back(startingFrame);
+            
+            _imp->lastFramePushedIndex = startingFrame;
+            
+            if (!OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, startingFrame,
+                                                                      firstFrame, lastFrame, &startingFrame, &direction)) {
+                break;
+            }
         }
     }
   
@@ -635,7 +640,11 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     }
     
     PlaybackMode pMode = _imp->engine->getPlaybackMode();
+    
     int frame = _imp->lastFramePushedIndex;
+    if (firstFrame == lastFrame && frame == firstFrame) {
+        return;
+    }
 
     ///If startingTime is already taken into account in the framesToRender, push new frames from the last one in the stack instead
     bool canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, direction, frame,
@@ -969,9 +978,14 @@ OutputSchedulerThread::run()
                     ///or just loop/bounce
                     Natron::PlaybackMode pMode = _imp->engine->getPlaybackMode();
                     RenderDirection newDirection;
-                    renderFinished = !OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, timelineDirection,
+                    if (firstFrame == lastFrame && pMode == PLAYBACK_ONCE) {
+                        renderFinished = true;
+                        newDirection = RENDER_FORWARD;
+                    } else {
+                        renderFinished = !OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, timelineDirection,
                                                                                           expectedTimeToRender, firstFrame,
                                                                                           lastFrame, &nextFrameToRender, &newDirection);
+                    }
                     if (newDirection != timelineDirection) {
                         QMutexLocker l(&_imp->runArgsMutex);
                         _imp->livingRunArgs.timelineDirection = newDirection;
