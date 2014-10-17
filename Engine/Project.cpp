@@ -850,8 +850,7 @@ Project::getProjectDefaultFormat(Format *f) const
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
     int index = _imp->formatKnob->getValue();
-    bool found = _imp->findFormat(index, f);
-    assert(found);
+    _imp->findFormat(index, f);
 }
 
 ///only called on the main thread

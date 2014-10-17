@@ -402,15 +402,23 @@ struct OutputSchedulerThreadPrivate
     }
     
     void waitForRenderThreadsToQuit() {
-        assert(!renderThreadsMutex.tryLock());
-        while (renderThreads.size() > 0) {
+    
+        RenderThreads threads;
+        {
+            QMutexLocker l(&renderThreadsMutex);
+            threads = renderThreads;
+        }
+        
+        for (RenderThreads::iterator it = threads.begin(); it != threads.end();++it) {
+            it->thread->wait();
+        }
+        {
+            QMutexLocker l(&renderThreadsMutex);
             
             removeQuitRenderThreadsInternal();
-        
-            if (renderThreads.size() > 0) {
-                allRenderThreadsQuitCond.wait(&renderThreadsMutex);
-            }
+            assert(renderThreads.empty());
         }
+        
     }
     
 };
@@ -435,7 +443,6 @@ OutputSchedulerThread::~OutputSchedulerThread()
     ///Wake-up all threads and tell them that they must quit
     stopRenderThreads(0);
     
-    QMutexLocker l(&_imp->renderThreadsMutex);
 
     ///Make sure they are all gone, there will be a deadlock here if that's not the case.
     _imp->waitForRenderThreadsToQuit();
@@ -1335,11 +1342,13 @@ OutputSchedulerThread::quitThread()
     
     ///Wake-up all threads and tell them that they must quit
     stopRenderThreads(0);
-    
-    QMutexLocker l(&_imp->renderThreadsMutex);
-    
+
     ///Make sure they are all gone, there will be a deadlock here if that's not the case.
     _imp->waitForRenderThreadsToQuit();
+        
+    
+    
+    wait();
 }
 
 bool
@@ -2578,6 +2587,7 @@ ViewerCurrentFrameRequestScheduler::quitThread()
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
     }
+    wait();
 }
 
 bool

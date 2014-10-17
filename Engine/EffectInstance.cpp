@@ -618,14 +618,8 @@ EffectInstance::isAbortedFromPlayback() const
 bool
 EffectInstance::aborted() const
 {
-    if ( isAbortedFromPlayback() ) {
-        return true;
-    }
-    
-    ///Now check thread-local storage to find out in the case of renders made upon user interaction
-    ///(i.e: issued by RenderEngine::renderCurrentFrame) whether the hash or time has changed
-    
-    if ( !_imp->frameRenderArgs.hasLocalData() ) {
+   
+     if ( !_imp->frameRenderArgs.hasLocalData() ) {
         
         ///No local data, we're either not rendering or calling this from a thread not controlled by Natron
         return false;
@@ -637,15 +631,21 @@ EffectInstance::aborted() const
             ///No valid args, probably not rendering
             return false;
         } else {
-            if (args.isRenderResponseToUserInteraction && args.canAbort) {
-                ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
-                return args.nodeHash != getHash() ||
-                args.time != getApp()->getTimeLine()->currentFrame();
+            if (args.isRenderResponseToUserInteraction) {
+                
+                if (args.canAbort) {
+                    ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
+                    return args.nodeHash != getHash() ||
+                    args.time != getApp()->getTimeLine()->currentFrame();
+                } else {
+                    return false;
+                }
                 
             } else {
                 ///Rendering is playback or render on disk, we rely on the _imp->renderAborted flag for this.
-                return false;
-                
+
+                return isAbortedFromPlayback();
+          
             }
         }
 
