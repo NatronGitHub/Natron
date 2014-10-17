@@ -141,6 +141,13 @@ public:
     {
         return _key_to_value.begin();
     }
+    
+    void insert(const key_type & k,
+                const value_type& list)
+    {
+        typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
+        _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
+    }
 
     // Record a fresh key-value pair in the cache
     void insert(const key_type & k,
@@ -155,7 +162,7 @@ public:
             // Create the key-value entry,
             // linked to the usage record.
             typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
-            _key_to_value.insert( std::make_pair( k,std::make_pair(v,it) ) );
+            _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
         }
     }
 
@@ -254,6 +261,12 @@ public:
         return _container.left.begin();
     }
 
+    void insert(const key_type & k,
+                const value_type& list)
+    {
+        _container.insert( typename container_type::value_type(k,list) );
+    }
+    
     void insert(const key_type & k,
                 const V & v)
     {
@@ -362,6 +375,13 @@ public:
     {
         return _key_to_value.begin();
     }
+    
+    void insert(const key_type & k,
+                const value_type& list)
+    {
+        typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
+        _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
+    }
 
     // Record a fresh key-value pair in the cache
     void insert(const key_type & k,
@@ -376,7 +396,7 @@ public:
             // Create the key-value entry,
             // linked to the usage record.
             typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
-            _key_to_value.insert( std::make_pair( k,std::make_pair(v,it) ) );
+            _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
         }
     }
 
@@ -472,6 +492,12 @@ public:
     }
 
     void insert(const key_type & k,
+                const value_type& list)
+    {
+        _container.insert(typename container_type::value_type(k,list));
+    }
+    
+    void insert(const key_type & k,
                 const V & v)
     {
         // Create a new record from the key and the value
@@ -566,6 +592,13 @@ public:
     {
         return _container.left.begin();
     }
+    
+    void insert(const key_type & k,
+                const value_type& list)
+    {
+        _container.insert(typename container_type::value_type(k,list));
+    }
+    
 
     void insert(const key_type & k,
                 const V & v)

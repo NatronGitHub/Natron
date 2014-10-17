@@ -1079,27 +1079,13 @@ AppManager::removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry> & 
 void
 AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
 {
-    std::list< boost::shared_ptr<Natron::Image> > cacheContent;
-
-    _imp->_nodeCache->getCopy(&cacheContent);
-    for (std::list< boost::shared_ptr<Natron::Image> >::iterator it = cacheContent.begin(); it != cacheContent.end(); ++it) {
-        if ( (*it)->getKey().getTreeVersion() == treeVersion ) {
-            _imp->_nodeCache->removeEntry(*it);
-        }
-    }
+    _imp->_nodeCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
 }
 
 void
 AppManager::removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion)
 {
-    std::list< boost::shared_ptr<Natron::FrameEntry> > cacheContent;
-
-    _imp->_viewerCache->getCopy(&cacheContent);
-    for (std::list< boost::shared_ptr<Natron::FrameEntry> >::iterator it = cacheContent.begin(); it != cacheContent.end(); ++it) {
-        if ( (*it)->getKey().getTreeVersion() == treeVersion ) {
-            _imp->_viewerCache->removeEntry(*it);
-        }
-    }
+    _imp->_viewerCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
 }
 
 const QString &

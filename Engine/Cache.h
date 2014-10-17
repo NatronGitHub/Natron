@@ -851,6 +851,7 @@ public:
     {
         return _signalEmitter;
     }
+    
 
     /** @brief This function can be called to remove a specific entry from the cache. For example a frame
      * that has had its render aborted but already belong to the cache.
@@ -891,6 +892,71 @@ public:
                     _diskCache.erase(existingEntry);
                 }
             }
+        }
+    }
+    
+    void removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
+    {
+        std::list<EntryTypePtr> toDelete;
+        CacheContainer newMemCache,newDiskCache;
+        {
+            QMutexLocker locker(&_lock);
+            
+            for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
+                
+                std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+                if (!entries.empty()) {
+                    
+                    const EntryTypePtr& front = entries.front();
+                    
+                    if (front->getKey().getTreeVersion() == treeVersion) {
+                        
+                        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                            (*it)->scheduleForDestruction();
+                            toDelete.push_back(*it);
+                        }
+                        
+                    } else {
+                        typename EntryType::hash_type hash = front->getHashKey();
+                        newMemCache.insert(hash,entries);
+                    }
+                }
+            }
+            
+            for (CacheIterator dIt = _diskCache.begin(); dIt != _diskCache.end(); ++dIt) {
+                
+                std::list<EntryTypePtr> & entries = getValueFromIterator(dIt);
+                if (!entries.empty()) {
+                    
+                    const EntryTypePtr& front = entries.front();
+
+                    if (front->getKey().getTreeVersion() == treeVersion) {
+                        
+                        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                            (*it)->scheduleForDestruction();
+                            toDelete.push_back(*it);
+                        }
+                        
+                    } else {
+                        typename EntryType::hash_type hash = front->getHashKey();
+                        newDiskCache.insert(hash,entries);
+                    }
+                }
+            }
+            
+            _memoryCache = newMemCache;
+            _diskCache = newDiskCache;
+            
+            
+        }
+        if (!toDelete.empty()) {
+            ///Launch a separate thread whose function will be to delete all the entries to be deleted
+            DeleterThread<EntryType>* dThread = new DeleterThread<EntryType>(toDelete);
+            QThreadPool::globalInstance()->start(dThread);
+            
+            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+            ///that the separate thread will delete
+            toDelete.clear();
         }
     }
 
