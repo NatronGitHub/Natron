@@ -23,7 +23,7 @@ OFXBRANCH=tags/Natron-1.0.0-RC1
 #OFXBRANCH=master
 
 # required macports ports (some may be for TuttleOFX)
-PORTS="scons boost jpeg openexr ffmpeg openjpeg15 libcaca freetype glew lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv qt4-mac CImg"
+PORTS="scons boost jpeg openexr ffmpeg openjpeg15 libcaca freetype glew lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv qt4-mac"
 
 PORTSOK=yes
 for p in $PORTS; do
