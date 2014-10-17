@@ -33,61 +33,93 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
 {
     this->viewer = v;
     setObjectName( QString::fromUtf8("infoViewer") );
-    setMinimumHeight(20);
-    setMaximumHeight(20);
+    setFixedHeight(20);
     setStyleSheet( QString("background-color:black") );
+    
+    setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
 
     layout = new QHBoxLayout(this);
+    layout->setSpacing(0);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     descriptionLabel = new QLabel(description,this);
-
+    {
+        QFontMetrics fm = descriptionLabel->fontMetrics();
+        int width = fm.width("A:");
+        descriptionLabel->setFixedWidth(width);
+    }
     imageFormat = new QLabel(this);
+    {
+        QFontMetrics fm = imageFormat->fontMetrics();
+        int width = fm.width("Alpha32f");
+        imageFormat->setFixedWidth(width);
+    }
 
     resolution = new QLabel(this);
-    resolution->setContentsMargins(0, 0, 0, 0);
+    {
+        QFontMetrics fm = resolution->fontMetrics();
+        int width = fm.width("00000x00000");
+        resolution->setFixedWidth(width);
+    }
 
 
     _fpsLabel = new QLabel(this);
 
     coordDispWindow = new QLabel(this);
-    coordDispWindow->setContentsMargins(0, 0, 0, 0);
+    {
+        QFontMetrics fm = coordDispWindow->fontMetrics();
+        int width = fm.width("RoD: 000 000 0000 0000");
+        coordDispWindow->setFixedWidth(width);
+    }
+   
 
     coordMouse = new QLabel(this);
-    //coordMouse->setText(coord);
-    coordMouse->setContentsMargins(0, 0, 0, 0);
+    {
+        QFontMetrics fm = coordMouse->fontMetrics();
+        int width = fm.width("x=00000 y=00000");
+        coordMouse->setFixedWidth(width);
+    }
 
     rgbaValues = new QLabel(this);
-    rgbaValues->setContentsMargins(0, 0, 0, 0);
+    {
+        QFontMetrics fm = rgbaValues->fontMetrics();
+        int width = fm.width("0.00000 0.00000 0.00000");
+        rgbaValues->setMinimumWidth(width);
+    }
 
     color = new QLabel(this);
     color->setMaximumSize(20, 20);
-    color->setContentsMargins(0, 0, 0, 0);
-    color->setStyleSheet( QString("background-color:black;") );
-
+    
     hvl_lastOption = new QLabel(this);
-    hvl_lastOption->setContentsMargins(10, 0, 0, 0);
-
+    {
+        QFontMetrics fm = hvl_lastOption->fontMetrics();
+        int width = fm.width("H:000 S:0.00 V:0.00 L:0.00000");
+        hvl_lastOption->setMinimumWidth(width);
+    }
     layout->addWidget(descriptionLabel);
+    layout->addSpacing(2);
     layout->addWidget(imageFormat);
+    layout->addSpacing(2);
     layout->addWidget(resolution);
+    layout->addStretch();
     layout->addWidget(coordDispWindow);
     layout->addWidget(_fpsLabel);
+    layout->addSpacing(2);
     layout->addWidget(coordMouse);
     layout->addWidget(rgbaValues);
+    layout->addSpacing(2);
     layout->addWidget(color);
+    layout->addSpacing(2);
     layout->addWidget(hvl_lastOption);
+    layout->addStretch();
 
-    setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
-    layout->setSpacing(0);
-    layout->setContentsMargins(0, 0, 0, 0);
-
-    setLayout(layout);
 }
 
 QSize
 InfoViewerWidget::sizeHint() const
 {
-    return QSize(0,0);
+    return QWidget::sizeHint();
+    //return QSize(0,0);
 }
 
 void
