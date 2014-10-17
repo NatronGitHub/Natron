@@ -179,7 +179,7 @@ AddMultipleNodesCommand::undo()
     }
 
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        (*it)->getNode()->deactivate(std::list< boost::shared_ptr<Natron::Node> >(), //outputs to disconnect
+        (*it)->getNode()->deactivate(std::list< Natron::Node* >(), //outputs to disconnect
                                      true, //disconnect all nodes, disregarding the first parameter.
                                      true, //reconnect outputs to inputs of this node?
                                      true, //hide nodeGui?
@@ -214,7 +214,7 @@ AddMultipleNodesCommand::redo()
         }
 
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            (*it)->getNode()->activate(std::list< boost::shared_ptr<Natron::Node> >(), //inputs to restore
+            (*it)->getNode()->activate(std::list< Natron::Node* >(), //inputs to restore
                                        true, //restore all inputs ?
                                        false); //triggerRender
         }
@@ -256,11 +256,11 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
         n.node = *it;
 
         ///find all outputs to restore
-        const std::list<boost::shared_ptr<Natron::Node> > & outputs = (*it)->getNode()->getOutputs();
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+        const std::list<Natron::Node*> & outputs = (*it)->getNode()->getOutputs();
+        for (std::list<Natron::Node* >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
             bool restore = true;
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it3 = nodes.begin(); it3 != nodes.end(); ++it3) {
-                if ( (*it3)->getNode() == *it2 ) {
+                if ( (*it3)->getNode().get() == *it2 ) {
                     ///we found the output in the selection, don't restore it
                     restore = false;
                 }
@@ -345,7 +345,7 @@ RemoveMultipleNodesCommand::redo()
     }
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
         ///Make a copy before calling deactivate which will modify the list
-        std::list<boost::shared_ptr<Natron::Node> > outputs = it->node->getNode()->getOutputs();
+        std::list<Natron::Node* > outputs = it->node->getNode()->getOutputs();
 
         it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
 
@@ -361,15 +361,15 @@ RemoveMultipleNodesCommand::redo()
 
         if (_nodes.size() == 1) {
             ///If we're deleting a single node and there's a viewer in output,reconnect the viewer to another connected input it has
-            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+            for (std::list<Natron::Node* >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 assert(*it2);
 
                 ///the output must be in the outputs to restore
-                std::list<boost::shared_ptr<Natron::Node> >::const_iterator found =
+                std::list<Natron::Node* >::const_iterator found =
                     std::find(it->outputsToRestore.begin(),it->outputsToRestore.end(),*it2);
 
                 if ( found != it->outputsToRestore.end() ) {
-                    InspectorNode* inspector = dynamic_cast<InspectorNode*>( it2->get() );
+                    InspectorNode* inspector = dynamic_cast<InspectorNode*>( *it2 );
                     ///if the node is an inspector, when disconnecting the active input just activate another input instead
                     if (inspector) {
                         const std::vector<boost::shared_ptr<Natron::Node> > & inputs = inspector->getInputs_mt_safe();
@@ -449,11 +449,11 @@ ConnectCommand::undo()
     }
 
     if (_oldSrc) {
-        _graph->getGui()->getApp()->getProject()->connectNodes( _edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode() );
+        _graph->getGui()->getApp()->getProject()->connectNodes( _edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode().get() );
         _oldSrc->refreshOutputEdgeVisibility();
     }
     if (_newSrc) {
-        _graph->getGui()->getApp()->getProject()->disconnectNodes( _newSrc->getNode(), _edge->getDest()->getNode() );
+        _graph->getGui()->getApp()->getProject()->disconnectNodes( _newSrc->getNode().get(), _edge->getDest()->getNode().get() );
         _newSrc->refreshOutputEdgeVisibility();
         ///if the node is an inspector, when disconnecting the active input just activate another input instead
         if (inspector) {
@@ -497,17 +497,17 @@ ConnectCommand::redo()
         if (!_newSrc) {
             if (_oldSrc) {
                 ///we want to connect to nothing, hence disconnect
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode().get(),inspector.get());
                 _oldSrc->refreshOutputEdgeVisibility();
             }
         } else {
             ///disconnect any connection already existing with the _oldSrc
             if (_oldSrc) {
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode().get(),inspector.get());
                 _oldSrc->refreshOutputEdgeVisibility();
             }
             ///also disconnect any current connection between the inspector and the _newSrc
-            _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(),inspector);
+            _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode().get(),inspector.get());
 
 
             ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
@@ -519,20 +519,20 @@ ConnectCommand::redo()
             _edge = it->second;
 
             ///and connect the inspector to the _newSrc
-            _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), inspector);
+            _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), inspector.get());
             _newSrc->refreshOutputEdgeVisibility();
         }
     } else {
         _edge->setSource(_newSrc);
         if (_oldSrc) {
-            if ( !_graph->getGui()->getApp()->getProject()->disconnectNodes( _oldSrc->getNode(), _dst->getNode() ) ) {
+            if ( !_graph->getGui()->getApp()->getProject()->disconnectNodes( _oldSrc->getNode().get(), _dst->getNode().get() ) ) {
                 qDebug() << "Failed to disconnect (input) " << _oldSrc->getNode()->getName().c_str()
                          << " to (output) " << _dst->getNode()->getName().c_str();
             }
             _oldSrc->refreshOutputEdgeVisibility();
         }
         if (_newSrc) {
-            if ( !_graph->getGui()->getApp()->getProject()->connectNodes( _inputNb, _newSrc->getNode(), _dst->getNode() ) ) {
+            if ( !_graph->getGui()->getApp()->getProject()->connectNodes( _inputNb, _newSrc->getNode(), _dst->getNode().get() ) ) {
                 qDebug() << "Failed to connect (input) " << _newSrc->getNode()->getName().c_str()
                          << " to (output) " << _dst->getNode()->getName().c_str();
             }
@@ -878,7 +878,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<N
     TreeList trees;
 
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        const std::list<boost::shared_ptr<Natron::Node> > & outputs = (*it)->getNode()->getOutputs();
+        const std::list<Natron::Node*> & outputs = (*it)->getNode()->getOutputs();
         if ( outputs.empty() ) {
             boost::shared_ptr<Tree> newTree(new Tree);
             newTree->buildTree(*it, usedNodes);

@@ -927,7 +927,7 @@ Project::clearNodes(bool emitSignal)
 
     ///Kill effects
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false,true,false);
+        nodesToDelete[i]->deactivate(std::list<Natron::Node* >(),false,false,true,false);
     }
 
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
@@ -1361,7 +1361,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
 bool
 Project::connectNodes(int inputNumber,
                       const std::string & parentName,
-                      boost::shared_ptr<Node> output)
+                      Node* output)
 {
     const std::vector<boost::shared_ptr<Node> > nodes = getCurrentNodes();
 
@@ -1378,7 +1378,7 @@ Project::connectNodes(int inputNumber,
 bool
 Project::connectNodes(int inputNumber,
                       boost::shared_ptr<Node> input,
-                      boost::shared_ptr<Node> output,
+                      Node* output,
                       bool force)
 {
     ////Only called by the main-thread
@@ -1386,32 +1386,33 @@ Project::connectNodes(int inputNumber,
 
     boost::shared_ptr<Node> existingInput = output->getInput(inputNumber);
     if (force && existingInput) {
-        bool ok = disconnectNodes(existingInput, output);
+        bool ok = disconnectNodes(existingInput.get(), output);
         assert(ok);
         if (input->getMaxInputCount() > 0) {
-            ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
+            ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input.get());
             assert(ok);
         }
     }
+    
+    if (!input) {
+        return true;
+    }
+
 
     if ( !output->connectInput(input, inputNumber) ) {
         return false;
     }
-    if (!input) {
-        return true;
-    }
-    input->connectOutput(output);
-
+  
     return true;
 }
 
 bool
-Project::disconnectNodes(boost::shared_ptr<Node> input,
-                         boost::shared_ptr<Node> output,
+Project::disconnectNodes(Node* input,
+                         Node* output,
                          bool autoReconnect)
 {
     boost::shared_ptr<Node> inputToReconnectTo;
-    int indexOfInput = output->inputIndex( input.get() );
+    int indexOfInput = output->inputIndex( input );
 
     if (indexOfInput == -1) {
         return false;
@@ -1422,16 +1423,13 @@ Project::disconnectNodes(boost::shared_ptr<Node> input,
         inputToReconnectTo = input->getInput(0);
     }
 
-    if (input->disconnectOutput(output) < 0) {
-        return false;
-    }
+    
     if (output->disconnectInput(input) < 0) {
         return false;
     }
 
     if (autoReconnect && inputToReconnectTo) {
-        bool ok = connectNodes(indexOfInput, inputToReconnectTo, output);
-        assert(ok);
+        connectNodes(indexOfInput, inputToReconnectTo, output);
     }
 
     return true;
@@ -1513,14 +1511,14 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
         boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>(selected);
         if (inspector) {
             int activeInputIndex = inspector->activeInput();
-            bool ok = connectNodes(activeInputIndex, created, selected,true);
+            bool ok = connectNodes(activeInputIndex, created, selected.get(),true);
             assert(ok);
             ret = true;
         } else {
             ///connect it to the first input
             int selectedInput = selected->getPreferredInputForConnection();
             if (selectedInput != -1) {
-                bool ok = connectNodes(selectedInput, created, selected,true);
+                bool ok = connectNodes(selectedInput, created, selected.get(),true);
                 assert(ok);
                 ret = true;
             } else {
@@ -1531,23 +1529,23 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
         if ( !created->isOutputNode() ) {
             ///we find all the nodes that were previously connected to the selected node,
             ///and connect them to the created node instead.
-            std::map<boost::shared_ptr<Node>,int> outputsConnectedToSelectedNode;
+            std::map<Node*,int> outputsConnectedToSelectedNode;
             selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-            for (std::map<boost::shared_ptr<Node>,int>::iterator it = outputsConnectedToSelectedNode.begin();
+            for (std::map<Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
                  it != outputsConnectedToSelectedNode.end(); ++it) {
                 if (it->first->getParentMultiInstanceName().empty()) {
-                    bool ok = disconnectNodes(selected, it->first);
+                    bool ok = disconnectNodes(selected.get(), it->first);
                     assert(ok);
                     
                     ok = connectNodes(it->second, created, it->first);
-                    assert(ok);
+                    //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                 }
             }
         }
         ///finally we connect the created node to the selected node
         int createdInput = created->getPreferredInputForConnection();
         if (createdInput != -1) {
-            bool ok = connectNodes(createdInput, selected, created);
+            bool ok = connectNodes(createdInput, selected, created.get());
             assert(ok);
             ret = true;
         } else {

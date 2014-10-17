@@ -112,7 +112,7 @@ BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,
     }
 
 
-    bool ret = _app->getProject()->connectNodes(inputNumber,input,output);
+    bool ret = _app->getProject()->connectNodes(inputNumber,input,output.get());
     EXPECT_EQ(expectedReturnValue,ret);
 
     if (expectedReturnValue) {
@@ -132,10 +132,10 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         ///the input must have in its output the node 'output'
         EXPECT_TRUE( input->hasOutputConnected() );
-        const std::list<boost::shared_ptr<Natron::Node> > & outputs = input->getOutputs();
+        const std::list<Natron::Node*> & outputs = input->getOutputs();
         bool foundOutput = false;
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if ( (*it) == output ) {
+        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            if ( *it == output.get() ) {
                 foundOutput = true;
                 break;
             }
@@ -160,16 +160,16 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
     }
 
     ///call disconnect
-    bool ret = _app->getProject()->disconnectNodes(input,output);
+    bool ret = _app->getProject()->disconnectNodes(input.get(),output.get());
     EXPECT_EQ(expectedReturnvalue,ret);
 
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
 
-        const std::list<boost::shared_ptr<Natron::Node> > & outputs = input->getOutputs();
+        const std::list<Natron::Node*> & outputs = input->getOutputs();
         bool foundOutput = false;
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if ( (*it) == output ) {
+        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            if ( (*it) == output.get() ) {
                 foundOutput = true;
                 break;
             }

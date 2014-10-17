@@ -1095,8 +1095,8 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     //////////////// STEP 5: Recursion down-stream
 
     ///Finally call recursively this function on all outputs to propagate it along the tree.
-    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _node->getOutputs();
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+    const std::list<Natron::Node* >& outputs = _node->getOutputs();
+    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
         ///Force a call to getClipPrefs on outputs because they are obviously not dirty
         (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason, true);
     }

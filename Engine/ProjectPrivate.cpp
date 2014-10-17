@@ -276,7 +276,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
         const std::vector<std::string> & inputs = it->getInputs();
         for (U32 j = 0; j < inputs.size(); ++j) {
-            if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode) ) {
+            if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode.get()) ) {
                 std::string message = std::string("Failed to connect node ") + it->getPluginLabel() + " to " + inputs[j];
                 appPTR->writeToOfxLog_mt_safe(message.c_str());
                 mustShowErrorsLog =true;
@@ -289,7 +289,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
          it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
         const std::vector<std::string> & inputs = it->second->getInputs();
         for (U32 j = 0; j < inputs.size(); ++j) {
-            if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],it->first) ) {
+            if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],it->first.get()) ) {
                 std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + inputs[j];
                 appPTR->writeToOfxLog_mt_safe(message.c_str());
                 mustShowErrorsLog =true;

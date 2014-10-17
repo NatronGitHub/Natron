@@ -461,7 +461,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->buttonsLayout->addStretch();
 
     ///Deactivate the main-instance since this is more convenient this way for the user.
-    _imp->getMainInstance()->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,false,false);
+    _imp->getMainInstance()->deactivate(std::list<Natron::Node* >(),false,false,false,false);
     _imp->guiCreated = true;
 } // createMultiInstanceGui
 
@@ -780,7 +780,7 @@ MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Natron::No
         assert(index != -1);
         removeRow(index);
         bool isMainInstance = (*it) == mainInstance;
-        (*it)->deactivate( std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance,next == instances.end() );
+        (*it)->deactivate( std::list<Natron::Node* >(),false,false,!isMainInstance,next == instances.end() );
     }
     
 
@@ -794,7 +794,7 @@ MultiInstancePanel::addInstances(const std::list<boost::shared_ptr<Natron::Node>
     ++next;
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
         addRow(*it);
-        (*it)->activate( std::list<boost::shared_ptr<Natron::Node> >(),false,next == instances.end() );
+        (*it)->activate( std::list<Natron::Node* >(),false,next == instances.end() );
     }
 }
 

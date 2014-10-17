@@ -475,9 +475,9 @@ NodeGui::refreshPositionEnd(double x,
     }
     refreshEdges();
     if (_internalNode) {
-        const std::list<boost::shared_ptr<Natron::Node> > & outputs = _internalNode->getOutputs();
+        const std::list<Natron::Node* > & outputs = _internalNode->getOutputs();
 
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             (*it)->doRefreshEdgesGUI();
         }
@@ -581,8 +581,8 @@ NodeGui::refreshPosition(double x,
 
             if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const std::list<boost::shared_ptr<Natron::Node> > & outputs = _internalNode->getOutputs();
-                for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                const std::list<Natron::Node* > & outputs = _internalNode->getOutputs();
+                for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     boost::shared_ptr<NodeGui> node = _graph->getGui()->getApp()->getNodeGui(*it);
                     assert(node);
                     QSize outputSize = node->getSize();
@@ -1127,8 +1127,8 @@ NodeGui::showGui()
         _outputEdge->setActive(true);
     }
     refreshEdges();
-    const std::list<boost::shared_ptr<Natron::Node> > & outputs = _internalNode->getOutputs();
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Natron::Node* > & outputs = _internalNode->getOutputs();
+    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
@@ -1172,7 +1172,7 @@ NodeGui::activate(bool triggerRender)
             if (it->first == _internalNode) {
                 continue;
             }
-            it->first->activate(std::list< boost::shared_ptr<Natron::Node> >(),false);
+            it->first->activate(std::list< Natron::Node* >(),false);
         }
     }
 
@@ -1281,7 +1281,7 @@ NodeGui::deactivate(bool triggerRender)
             if (it->first == _internalNode) {
                 continue;
             }
-            it->first->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false);
+            it->first->deactivate(std::list< Natron::Node* >(),false,false);
         }
     }
 
@@ -1530,8 +1530,8 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
 
     if ( r.intersects(sceneRect) ) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const std::list<boost::shared_ptr<Natron::Node> > & outputs = getNode()->getOutputs();
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        const std::list<Natron::Node* > & outputs = getNode()->getOutputs();
+        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             boost::shared_ptr<NodeGui> output = _graph->getGui()->getApp()->getNodeGui(*it);
             assert(output);
@@ -1911,8 +1911,8 @@ NodeGui::setScale_natron(double scale)
         _outputEdge->setScale(scale);
     }
     refreshEdges();
-    const std::list<boost::shared_ptr<Natron::Node> > & outputs = _internalNode->getOutputs();
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Natron::Node* > & outputs = _internalNode->getOutputs();
+    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }

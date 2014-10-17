@@ -761,8 +761,8 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node)
         QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
 
         ///and move the selected node below recusively
-        const std::list<boost::shared_ptr<Natron::Node> > & outputs = selected->getNode()->getOutputs();
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        const std::list<Natron::Node* > & outputs = selected->getNode()->getOutputs();
+        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             boost::shared_ptr<NodeGui> output = _imp->_gui->getApp()->getNodeGui(*it);
             assert(output);
@@ -872,13 +872,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         int inputNb = outputNode->inputIndex( inputNode.get() );
         assert(inputNb != -1);
-        bool ok = _imp->_gui->getApp()->getProject()->disconnectNodes(inputNode, outputNode);
+        bool ok = _imp->_gui->getApp()->getProject()->disconnectNodes(inputNode.get(), outputNode.get());
         assert(ok);
 
-        ok = _imp->_gui->getApp()->getProject()->connectNodes(0, inputNode, dotNode);
+        ok = _imp->_gui->getApp()->getProject()->connectNodes(0, inputNode, dotNode.get());
         assert(ok);
 
-        _imp->_gui->getApp()->getProject()->connectNodes(inputNb,dotNode,outputNode);
+        _imp->_gui->getApp()->getProject()->connectNodes(inputNb,dotNode,outputNode.get());
 
         QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(_imp->_lastScenePosClick) );
         dotNodeGui->refreshPosition( pos.x(), pos.y() );
@@ -1653,7 +1653,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///the first valid output node
         if ( !_imp->_selection.nodes.empty() ) {
             boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.nodes.rbegin() );
-            const std::list<boost::shared_ptr<Natron::Node> > & outputs = lastSelected->getNode()->getOutputs();
+            const std::list<Natron::Node* > & outputs = lastSelected->getNode()->getOutputs();
             if ( !outputs.empty() ) {
                 boost::shared_ptr<NodeGui> output = getGui()->getApp()->getNodeGui( outputs.front() );
                 assert(output);
@@ -2857,7 +2857,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
             /// the "-copy" that was added to its name
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = newNodes.begin(); it2 != newNodes.end(); ++it2) {
                 if ( (*it2)->getNode()->getName().find(inputNames[i]) != std::string::npos ) {
-                    _publicInterface->getGui()->getApp()->getProject()->connectNodes( i, (*it2)->getNode(), (*it)->getNode() );
+                    _publicInterface->getGui()->getApp()->getProject()->connectNodes( i, (*it2)->getNode(), (*it)->getNode().get() );
                     break;
                 }
             }
@@ -3070,7 +3070,7 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
 
     assert(internalNode);
-    internalNode->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false,true,false);
+    internalNode->deactivate(std::list< Natron::Node* >(),false,false,true,false);
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
 
     if ( it != _imp->_nodesTrash.end() ) {

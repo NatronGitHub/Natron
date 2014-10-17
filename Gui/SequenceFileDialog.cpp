@@ -2759,7 +2759,6 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
     boost::shared_ptr<Natron::Node> currentInput = _preview->viewerNode->getNode()->getInput(0);
     if (currentInput) {
         _preview->viewerNode->getNode()->disconnectInput(0);
-        currentInput->disconnectOutput(_preview->viewerNode->getNode());
     }
     
     _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(false);
@@ -2774,7 +2773,6 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
             }
         }
         _preview->viewerNode->getNode()->connectInput(reader->getNode(), 0);
-        reader->getNode()->connectOutput(_preview->viewerNode->getNode());
         
         
     }

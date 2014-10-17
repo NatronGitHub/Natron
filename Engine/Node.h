@@ -312,10 +312,10 @@ public:
      * where the value of the map is the input index from which these outputs
      * are connected to this node.
      **/
-    void getOutputsConnectedToThisNode(std::map< boost::shared_ptr<Node>,int>* outputs);
+    void getOutputsConnectedToThisNode(std::map<Node*,int>* outputs);
 
-    const std::list<boost::shared_ptr<Natron::Node> > & getOutputs() const;
-    void getOutputs_mt_safe(std::list<boost::shared_ptr<Natron::Node> >& outputs) const;
+    const std::list<Node* > & getOutputs() const;
+    void getOutputs_mt_safe(std::list<Node*>& outputs) const;
 
     /**
      * @brief Each input name is appended to the vector, in the same order
@@ -341,18 +341,21 @@ public:
     /** @brief Removes the node input of the
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
-    virtual int disconnectInput(boost::shared_ptr<Node> input);
+    virtual int disconnectInput(Node* input);
 
+private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(boost::shared_ptr<Node> output);
+    void connectOutput(Node* output);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(boost::shared_ptr<Node> output);
-
+    int disconnectOutput(Node*output);
+    
+public:
+    
     /**
      * @brief Switches the 2 first inputs that are not a mask, if and only if they have compatible components/bitdepths
      **/
@@ -393,7 +396,7 @@ public:
        @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
        @param hideGui When true, the node gui will be notified so it gets hidden
      */
-    void deactivate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToDisconnect = std::list< boost::shared_ptr<Natron::Node> >()
+    void deactivate(const std::list< Node* > & outputsToDisconnect = std::list< Node* >()
                     , bool disconnectAll = true
                     , bool reconnect = true
                     , bool hideGui = true
@@ -408,7 +411,7 @@ public:
      * deactivate() will be reconnected as output to this node.
      * @param restoreAll If true, the parameter outputsToRestore will be ignored.
      */
-    void activate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToRestore = std::list< boost::shared_ptr<Natron::Node> >(),
+    void activate(const std::list< Node* > & outputsToRestore = std::list< Node* >(),
                   bool restoreAll = true,
                   bool triggerRender = true);
 
@@ -870,7 +873,8 @@ public:
 
     virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber) OVERRIDE;
     virtual int disconnectInput(int inputNumber) OVERRIDE;
-    virtual int disconnectInput(boost::shared_ptr<Node> input) OVERRIDE;
+    virtual int disconnectInput(Node* input) OVERRIDE;
+
 
     bool tryAddEmptyInput();
 

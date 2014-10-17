@@ -60,6 +60,7 @@ public:
 
     //////////
     boost::shared_ptr<NodeGui> getNodeGui(const boost::shared_ptr<Natron::Node> & n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<NodeGui> getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
     boost::shared_ptr<NodeGui> getNodeGui(const std::string & nodeName) const WARN_UNUSED_RETURN;
     boost::shared_ptr<Natron::Node> getNode(const boost::shared_ptr<NodeGui> & n) const WARN_UNUSED_RETURN;
 

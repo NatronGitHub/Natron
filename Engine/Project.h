@@ -101,21 +101,21 @@ public:
 
     bool hasNodes() const;
 
-    bool connectNodes(int inputNumber,const std::string & inputName,boost::shared_ptr<Natron::Node> output);
+    bool connectNodes(int inputNumber,const std::string & inputName,Node* output);
 
     /**
      * @brief Connects the node 'input' to the node 'output' on the input number 'inputNumber'
      * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
      * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
      **/
-    bool connectNodes(int inputNumber,boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,bool force = false);
+    bool connectNodes(int inputNumber,boost::shared_ptr<Natron::Node> input,Node* output,bool force = false);
 
     /**
      * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
      * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
      * 1 input, and it was connected, it will connect output to the input of  'input'.
      **/
-    bool disconnectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,bool autoReconnect = false);
+    bool disconnectNodes(Node* input,Node* output,bool autoReconnect = false);
 
     /**
      * @brief Attempts to add automatically the node 'created' to the node graph.

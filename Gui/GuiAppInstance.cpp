@@ -81,7 +81,7 @@ GuiAppInstance::aboutToQuit()
      **/
     if (_imp->_previewProvider->viewerNode) {
         _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-        _imp->_previewProvider->viewerNode->getNode()->deactivate(std::list< boost::shared_ptr<Natron::Node> > (),false,false,true,false);
+        _imp->_previewProvider->viewerNode->getNode()->deactivate(std::list< Natron::Node* > (),false,false,true,false);
         _imp->_previewProvider->viewerNode->getNode()->removeReferences();
         _imp->_previewProvider->viewerNode->deleteReferences();
     }
@@ -288,15 +288,19 @@ GuiAppInstance::shouldRefreshPreview() const
 
 boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const boost::shared_ptr<Node> & n) const
 {
-    std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.find(n);
+    return getNodeGui(n.get());
+}
 
-    if ( it == _imp->_nodeMapping.end() ) {
-        return boost::shared_ptr<NodeGui>();
-    } else {
-        assert(it->second);
-
-        return it->second;
+boost::shared_ptr<NodeGui>
+GuiAppInstance::getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN
+{
+    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin();
+         it != _imp->_nodeMapping.end(); ++it) {
+        if (it->first.get() == n) {
+            return it->second;
+        }
     }
+    return boost::shared_ptr<NodeGui>();
 }
 
 boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const std::string & nodeName) const
