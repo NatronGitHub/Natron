@@ -356,6 +356,8 @@ protected:
      **/
     virtual void onRenderStopped() {}
     
+    RenderEngine* getEngine() const;
+    
 private:
     
     virtual void run() OVERRIDE FINAL;
@@ -439,6 +441,7 @@ private:
 class ViewerInstance;
 class ViewerDisplayScheduler : public OutputSchedulerThread
 {
+    
 public:
     
     ViewerDisplayScheduler(RenderEngine* engine,ViewerInstance* viewer);
@@ -446,7 +449,8 @@ public:
     virtual ~ViewerDisplayScheduler();
     
     virtual bool isTimelineRangeSetByUser() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    
+    
 private:
 
     virtual void treatFrame(const BufferedFrame& frame) OVERRIDE FINAL;
@@ -533,6 +537,7 @@ class RenderEngine : public QObject
     
     
     friend class OutputSchedulerThread;
+    friend class ViewerDisplayScheduler;
     
 public:
     
@@ -629,6 +634,11 @@ signals:
      **/
     void renderFinished(int retCode);
 
+    /**
+    * @brief Emitted when gui is frozen and rendering is finished to update all knobs
+     **/
+    void refreshAllKnobs();
+
 protected:
     
     
@@ -645,7 +655,7 @@ private:
     void s_fpsChanged(double actual,double desired) { emit fpsChanged(actual, desired); }
     void s_frameRendered(int time) { emit frameRendered(time); }
     void s_renderFinished(int retCode) { emit renderFinished(retCode); }
-    
+    void s_refreshAllKnobs() { emit refreshAllKnobs(); }
     boost::scoped_ptr<RenderEnginePrivate> _imp;
 };
 

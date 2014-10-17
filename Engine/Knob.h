@@ -157,11 +157,6 @@ public:
     public slots:
 
     /**
-     * @brief Calls KnobI::onTimeChanged
-     **/
-    void onTimeChanged(SequenceTime);
-    
-    /**
      * @brief Calls KnobI::onAnimationRemoved
      **/
     void onAnimationRemoved(int dimension);

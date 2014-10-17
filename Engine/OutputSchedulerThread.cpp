@@ -1536,6 +1536,13 @@ OutputSchedulerThread::stopRenderThreads(int nThreadsToStop)
 
 
 }
+
+RenderEngine*
+OutputSchedulerThread::getEngine() const
+{
+    return _imp->engine;
+}
+
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 //////////////////////// RenderThreadTask ////////////
@@ -2078,6 +2085,10 @@ ViewerDisplayScheduler::onRenderStopped()
 {
     ///Refresh all previews in the tree
     _viewer->getNode()->refreshPreviewsRecursivelyUpstream(_viewer->getTimeline()->currentFrame());
+    
+    if (_viewer->getApp()->isGuiFrozen()) {
+        getEngine()->s_refreshAllKnobs();
+    }
 }
 
 bool

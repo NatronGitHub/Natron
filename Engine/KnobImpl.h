@@ -886,6 +886,7 @@ void
 Knob<T>::onTimeChanged(SequenceTime /*time*/)
 {
     int dims = getDimension();
+
     if (getIsSecret()) {
         return;
     }

@@ -3378,6 +3378,26 @@ NodeGraph::onGuiFrozenChanged(bool frozen)
     }
 }
 
+void
+NodeGraph::refreshAllKnobsGui()
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            const std::map<boost::shared_ptr<KnobI>,KnobGui*> & knobs = (*it)->getKnobs();
+            
+            for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
+                if (!it2->first->getIsSecret()) {
+                    for (int i = 0; i < it2->first->getDimension(); ++i) {
+                        if (it2->first->isAnimated(i)) {
+                            it2->second->onInternalValueChanged(i, Natron::PLUGIN_EDITED);
+                            it2->second->onAnimationLevelChanged(i, Natron::PLUGIN_EDITED);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 void
 NodeGraph::focusInEvent(QFocusEvent* e)

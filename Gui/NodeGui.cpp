@@ -173,6 +173,11 @@ NodeGui::initialize(NodeGraph* dag,
 
     setCacheMode(DeviceCoordinateCache);
     setZValue(4);
+    
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(internalNode->getLiveInstance());
+    if (isOutput) {
+        QObject::connect (isOutput->getRenderEngine(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()));
+    }
 
 
     createGui();

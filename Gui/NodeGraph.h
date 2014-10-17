@@ -197,6 +197,8 @@ public slots:
     
     void onFindNodeDialogFinished();
     
+    void refreshAllKnobsGui();
+    
 private:
 
 

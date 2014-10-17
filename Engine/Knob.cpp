@@ -47,12 +47,6 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
 }
 
 void
-KnobSignalSlotHandler::onTimeChanged(SequenceTime t)
-{
-    k->onTimeChanged(t);
-}
-
-void
 KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 {
     k->onAnimationRemoved(dimension);
@@ -1588,6 +1582,9 @@ KnobHolder::onGuiFrozenChange(bool frozen)
 void
 KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
+    if (getApp()->isGuiFrozen()) {
+        return;
+    }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         _imp->knobs[i]->onTimeChanged(time);
     }
