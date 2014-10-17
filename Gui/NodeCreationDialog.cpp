@@ -276,7 +276,7 @@ void
 NodeCreationDialog::changeEvent(QEvent* e)
 {
     if (e->type() == QEvent::ActivationChange) {
-        if ( !isActiveWindow() ) {
+        if ( !isActiveWindow() && qApp->activeWindow() != _imp->textEdit->getView() ) {
             reject();
 
             return;
