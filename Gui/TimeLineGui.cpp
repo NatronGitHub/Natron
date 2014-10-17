@@ -601,7 +601,8 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     double t = toTimeLineCoordinates(e->x(),0).x();
     SequenceTime tseq = std::floor(t + 0.5);
     bool distortViewPort = false;
-    if (_imp->_state == DRAGGING_CURSOR) {
+    bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    if (_imp->_state == DRAGGING_CURSOR && !onEditingFinishedOnly) {
         if ( tseq != _imp->_timeline->currentFrame() ) {
             _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
             emit frameChanged(tseq);
@@ -665,7 +666,18 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
     if (_imp->_state == DRAGGING_CURSOR) {
         _imp->_gui->setUserScrubbingTimeline(false);
         _imp->_gui->refreshAllPreviews();
+        bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        if (onEditingFinishedOnly) {
+            double t = toTimeLineCoordinates(e->x(),0).x();
+            SequenceTime tseq = std::floor(t + 0.5);
+            if ( tseq != _imp->_timeline->currentFrame() ) {
+                _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
+                emit frameChanged(tseq);
+            }
+
+        }
     }
+
     _imp->_state = IDLE;
     QGLWidget::mouseReleaseEvent(e);
 }
