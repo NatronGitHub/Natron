@@ -212,9 +212,8 @@ Settings::initializeKnobs()
 
     _renderOnEditingFinished = Natron::createKnob<Bool_Knob>(this, "Refresh viewer only when editing is finished");
     _renderOnEditingFinished->setName("renderOnEditingFinished");
-    _renderOnEditingFinished->setHintToolTip("When checked, the viewer contents is updated only when parameters or curves editing is finished, "
-                                             "e.g. when releasing the mouse button. "
-                                             "This setting doesn't apply to roto splines editing.");
+    _renderOnEditingFinished->setHintToolTip("When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves "
+                                             " or the timeline. This setting doesn't apply to roto splines editing.");
     _renderOnEditingFinished->setAnimationEnabled(false);
     _generalTab->addKnob(_renderOnEditingFinished);
     
