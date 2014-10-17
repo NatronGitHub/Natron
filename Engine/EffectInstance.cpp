@@ -1467,12 +1467,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
 
     boost::shared_ptr<ImageParams> cachedImgParams;
-    if (!args.byPassCache) {
-        getImageFromCacheAndConvertIfNeeded(key, args.mipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
+    getImageFromCacheAndConvertIfNeeded(key, args.mipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
+    
+    if (args.byPassCache) {
         if (image) {
-            cachedImgParams = image->getParams();
+            appPTR->removeFromNodeCache(key.getHash());
+            image.reset();
         }
     }
+    if (image) {
+        cachedImgParams = image->getParams();
+    }
+    
 
     boost::shared_ptr<Natron::Image> downscaledImage = image;
 
@@ -1668,7 +1674,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                                       nodeHash,
                                                                       args.channelForAlpha,
                                                                       renderFullScaleThenDownscale);
-
+    
+#ifdef DEBUG
+    if (!aborted()) {
+        // Kindly check that everything we asked for is rendered!
+        std::list<RectI> restToRender = image->getRestToRender(args.roi);
+        assert(restToRender.empty());
+    }
+#endif
 
     if ( aborted() && renderRetCode != eImageAlreadyRendered) {
         
@@ -1729,6 +1742,14 @@ EffectInstance::renderRoI(SequenceTime time,
                                                                       3,
                                                                       renderFullScaleThenDownscale);
 
+#ifdef DEBUG
+    if (!aborted()) {
+        // Kindly check that everything we asked for is rendered!
+        std::list<RectI> restToRender = image->getRestToRender(renderWindow);
+        assert(restToRender.empty());
+    }
+#endif
+    
     if ( (renderRetCode == eImageRenderFailed) && !aborted() ) {
         throw std::runtime_error("Rendering Failed");
     }
@@ -2417,35 +2438,38 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     if ( !aborted() ) {
         renderMappedImage->markForRendered(renderRectToRender);
+        
+        
+        ///copy the rectangle rendered in the full scale image to the downscaled output
+        if (renderFullScaleThenDownscale) {
+            ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
+            if ( (renderMappedImage == fullScaleMappedImage) && (fullScaleMappedImage != fullScaleImage) ) {
+                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+                renderMappedImage->convertToFormat( renderRectToRender,
+                                                   getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
+                                                   getApp()->getDefaultColorSpaceForBitDepth( fullScaleMappedImage->getBitDepth() ),
+                                                   channelForAlpha, false, true,unPremultIfNeeded,
+                                                   fullScaleImage.get() );
+            }
+            if (mipMapLevel != 0) {
+                assert(fullScaleImage != downscaledImage);
+                fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false, downscaledImage.get() );
+                downscaledImage->markForRendered(downscaledRectToRender);
+            }
+        } else {
+            assert(renderMappedImage == downscaledMappedImage);
+            if (renderMappedImage != downscaledImage) {
+                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+                renderMappedImage->convertToFormat( renderRectToRender,
+                                                   getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
+                                                   getApp()->getDefaultColorSpaceForBitDepth( downscaledMappedImage->getBitDepth() ),
+                                                   channelForAlpha, false, true,unPremultIfNeeded,
+                                                   downscaledImage.get() );
+            }
+        }
+        
     }
-    
-    ///copy the rectangle rendered in the full scale image to the downscaled output
-    if (renderFullScaleThenDownscale) {
-        ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
-        if ( (renderMappedImage == fullScaleMappedImage) && (fullScaleMappedImage != fullScaleImage) ) {
-            bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
-            renderMappedImage->convertToFormat( renderRectToRender,
-                                               getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
-                                               getApp()->getDefaultColorSpaceForBitDepth( fullScaleMappedImage->getBitDepth() ),
-                                               channelForAlpha, false, true,unPremultIfNeeded,
-                                               fullScaleImage.get() );
-        }
-        if (mipMapLevel != 0) {
-            assert(fullScaleImage != downscaledImage);
-            fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false, downscaledImage.get() );
-        }
-    } else {
-        assert(renderMappedImage == downscaledMappedImage);
-        if (renderMappedImage != downscaledImage) {
-            bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
-            renderMappedImage->convertToFormat( renderRectToRender,
-                                               getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
-                                               getApp()->getDefaultColorSpaceForBitDepth( downscaledMappedImage->getBitDepth() ),
-                                               channelForAlpha, false, true,unPremultIfNeeded,
-                                               downscaledImage.get() );
-        }
-    }
-    
+  
 
     return StatOK;
 } // tiledRenderingFunctor

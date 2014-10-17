@@ -296,6 +296,8 @@ public:
     static std::string unescapeXML(const std::string &input);
     
 
+    void setAllNodesAborted(bool aborted);
+    
 public slots:
 
     void onAutoSaveTimerTriggered();

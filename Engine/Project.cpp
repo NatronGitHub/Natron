@@ -2062,5 +2062,13 @@ Project::onOCIOConfigPathChanged(const std::string& path)
     }
 }
 
+void
+Project::setAllNodesAborted(bool aborted)
+{
+    QMutexLocker k(&_imp->nodesLock);
+    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+        _imp->currentNodes[i]->setAborted(aborted);
+    }
+}
     
 } //namespace Natron

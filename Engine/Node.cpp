@@ -2126,14 +2126,14 @@ Node::setAborted(bool b)
     ///MT-safe from EffectInstance
     assert(_imp->liveInstance);
     _imp->liveInstance->setAborted(b);
-    
-    QMutexLocker l(&_imp->inputsMutex);
-    
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->setAborted(b);
-        }
-    }
+//    
+//    QMutexLocker l(&_imp->inputsMutex);
+//    
+//    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+//        if (_imp->inputs[i]) {
+//            _imp->inputs[i]->setAborted(b);
+//        }
+//    }
     
 }
 
@@ -2927,9 +2927,6 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
         return;
     }
     _imp->liveInstance->invalidateParallelRenderArgs();
-    
-    ///We're no longer rendering, set the abort flag to false to make sure it is not still on
-    _imp->liveInstance->setAborted(false);
     
     bool mustDequeue ;
     {

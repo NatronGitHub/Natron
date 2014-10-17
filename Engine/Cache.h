@@ -895,6 +895,31 @@ public:
         }
     }
     
+    void removeEntry(U64 hash)
+    {
+        QMutexLocker l(&_lock);
+        CacheIterator existingEntry = _memoryCache( hash);
+        if ( existingEntry != _memoryCache.end() ) {
+            std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+            for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                (*it)->scheduleForDestruction();
+            }
+            _memoryCache.erase(existingEntry);
+            
+        } else {
+            existingEntry = _diskCache( hash );
+            if ( existingEntry != _diskCache.end() ) {
+                std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+                for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                    (*it)->scheduleForDestruction();
+                }
+                _diskCache.erase(existingEntry);
+            
+            }
+        }
+
+    }
+    
     void removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
     {
         std::list<EntryTypePtr> toDelete;

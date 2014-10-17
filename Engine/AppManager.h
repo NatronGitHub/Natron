@@ -196,9 +196,10 @@ public:
     void setPlaybackCacheMaximumSize(double p);
 
     void removeFromNodeCache(const boost::shared_ptr<Natron::Image> & image);
-
     void removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry> & texture);
-
+    
+    void removeFromNodeCache(U64 hash);
+    void removeFromViewerCache(U64 hash);
     /**
      * @brief Given the following tree version, removes all images from the node cache with a matching
      * tree version. This is useful to wipe the cache for one particular node.
@@ -357,7 +358,6 @@ public slots:
 
 signals:
 
-    void imageRemovedFromViewerCache(SequenceTime time);
 
     void checkerboardSettingsChanged();
 protected:

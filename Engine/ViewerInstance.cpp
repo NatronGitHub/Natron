@@ -440,14 +440,18 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     
     bool isInputImgCached = false;
     
-    if (!forceRender) {
-        activeInputToRender->getImageFromCacheAndConvertIfNeeded(inputImageKey, mipMapLevel, imageDepth, components, 3, &inputImage);
-        if (inputImage) {
-            isInputImgCached = true;
-            cachedImgParams = inputImage->getParams();
-        }
+    activeInputToRender->getImageFromCacheAndConvertIfNeeded(inputImageKey, mipMapLevel, imageDepth, components, 3, &inputImage);
+    if (forceRender) {
+        appPTR->removeFromNodeCache(inputImage);
+        inputImage.reset();
     }
-
+    
+    if (inputImage) {
+        isInputImgCached = true;
+        cachedImgParams = inputImage->getParams();
+    }
+    
+    
 
     const double par = activeInputToRender->getPreferredAspectRatio();
 
@@ -583,45 +587,44 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         params->image = inputImage;
     }
     
-    ///if we want to force a refresh, we by-pass the cache
-    bool byPassCache = false;
-    if (!forceRender) {
-        ///we never use the texture cache when the user RoI is enabled, otherwise we would have
-        ///zillions of textures in the cache, each a few pixels different.
-        assert(_imp->uiContext);
-        boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
-
-        if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
-            isCached = Natron::getTextureFromCache(key, &params->cachedFrame);
-            
-            if (isCached) {
-                assert(params->cachedFrame);
-                cachedFrameParams = params->cachedFrame->getParams();
-            }
-
-            ///The user changed a parameter or the tree, just clear the cache
-            ///it has no point keeping the cache because we will never find these entries again.
-            U64 lastRenderHash;
-            bool lastRenderedHashValid;
+    ///we never use the texture cache when the user RoI is enabled, otherwise we would have
+    ///zillions of textures in the cache, each a few pixels different.
+    assert(_imp->uiContext);
+    boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
+    
+    if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
+        isCached = Natron::getTextureFromCache(key, &params->cachedFrame);
+        
+        ///if we want to force a refresh, we by-pass the cache
+        if (forceRender && params->cachedFrame) {
+            appPTR->removeFromViewerCache(params->cachedFrame);
+            isCached = false;
+            params->cachedFrame.reset();
+        }
+        
+        if (isCached) {
+            assert(params->cachedFrame);
+            cachedFrameParams = params->cachedFrame->getParams();
+        }
+        
+        ///The user changed a parameter or the tree, just clear the cache
+        ///it has no point keeping the cache because we will never find these entries again.
+        U64 lastRenderHash;
+        bool lastRenderedHashValid;
+        {
+            QMutexLocker l(&_imp->lastRenderedHashMutex);
+            lastRenderHash = _imp->lastRenderedHash;
+            lastRenderedHashValid = _imp->lastRenderedHashValid;
+        }
+        if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
+            appPTR->removeAllTexturesFromCacheWithMatchingKey(lastRenderHash);
             {
                 QMutexLocker l(&_imp->lastRenderedHashMutex);
-                lastRenderHash = _imp->lastRenderedHash;
-                lastRenderedHashValid = _imp->lastRenderedHashValid;
-            }
-            if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
-                appPTR->removeAllTexturesFromCacheWithMatchingKey(lastRenderHash);
-                {
-                    QMutexLocker l(&_imp->lastRenderedHashMutex);
-                    _imp->lastRenderedHashValid = false;
-                }
+                _imp->lastRenderedHashValid = false;
             }
         }
-    } else {
-        byPassCache = true;
-        
-        ///Be sure to remove all textures (at any mipmaplevel) that could be left in the cache
-        appPTR->removeAllTexturesFromCacheWithMatchingKey(viewerHash);
     }
+    
 
     unsigned char* ramBuffer = NULL;
     
@@ -679,7 +682,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
         assert(_imp->uiContext);
-        if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
+        if (forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
             
             assert(!params->cachedFrame);
             params->mustFreeRamBuffer = true;
@@ -790,7 +793,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                       scale,
                                                       mipMapLevel,
                                                       view,
-                                                      byPassCache,
+                                                      forceRender,
                                                       texRectClipped,
                                                       rod,
                                                       components,
@@ -827,9 +830,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
 
         if (!params->image) {
-            //if render was aborted, remove the frame from the cache as it contains only garbage
-            params->cachedFrame->setAborted(true);
+            //if render was aborted, remove the frame from the cache as it contains only garbage)
+            
             if (params->cachedFrame) {
+                params->cachedFrame->setAborted(true);
                 appPTR->removeFromViewerCache(params->cachedFrame);
             }
         
@@ -838,7 +842,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
 
         abortCheck(activeInputToRender);
-        
 
         ViewerColorSpace srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( params->image->getBitDepth() );
         

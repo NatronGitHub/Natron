@@ -849,7 +849,7 @@ OutputSchedulerThread::stopRender()
             
             ///reset back the abort flag
             _imp->abortRequested = 0;
-            _imp->outputEffect->getNode()->setAborted(false);
+            _imp->outputEffect->getApp()->getProject()->setAllNodesAborted(false);
             _imp->abortedRequestedCondition.wakeAll();
         }
         
@@ -1258,7 +1258,7 @@ OutputSchedulerThread::abortRendering(bool blocking)
                 }
                 
                 ///Flag the whole tree recursively that we aborted
-                _imp->outputEffect->getNode()->setAborted(true);
+                _imp->outputEffect->getApp()->getProject()->setAllNodesAborted(true);
                 
                 ++_imp->abortRequested;
             }
@@ -1429,7 +1429,9 @@ OutputSchedulerThread::renderInternal()
         } else {
             ///Wake up the thread with a start request
             QMutexLocker locker(&_imp->startRequestsMutex);
-            ++_imp->startRequests;
+            if (_imp->startRequests <= 0) {
+                ++_imp->startRequests;
+            }
             _imp->startRequestsCond.wakeOne();
         }
     }
