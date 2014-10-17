@@ -1480,7 +1480,7 @@ Node::disconnectInput(int inputNumber)
                 action.isConnect = false;
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
-                return true;
+                return inputNumber;
             }
         }
         
@@ -1905,7 +1905,7 @@ Node::makePreviewImage(SequenceTime time,
     scale.x = scale.y = 1.;
     Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == StatFailed) || rod.isNull() ) {
-        return;
+        return false;
     }
     assert( !rod.isNull() );
     double yZoomFactor = (double)*height / (double)rod.height();
