@@ -1813,8 +1813,7 @@ errorDialog(const std::string & title,
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if ( !appPTR->isBackground() ) {
+    if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title,message);
     } else {
         std::cout << "ERROR: " << title << " :" <<  message << std::endl;
@@ -1827,8 +1826,7 @@ warningDialog(const std::string & title,
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if ( !appPTR->isBackground() ) {
+    if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title,message);
     } else {
         std::cout << "WARNING: " << title << " :" << message << std::endl;
@@ -1841,8 +1839,7 @@ informationDialog(const std::string & title,
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if ( !appPTR->isBackground() ) {
+    if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title,message);
     } else {
         std::cout << "INFO: " << title << " :" << message << std::endl;
@@ -1857,8 +1854,7 @@ questionDialog(const std::string & title,
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if ( !appPTR->isBackground() ) {
+    if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
     } else {
         std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
