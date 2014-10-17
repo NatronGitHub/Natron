@@ -399,8 +399,10 @@ AppManager::~AppManager()
 
     _instance = 0;
 
-
-    ///Kill caches now because decreaseNCacheFilesOpened can be called 
+    ///Caches may have launched some threads to delete images, wait for them to be done
+    QThreadPool::globalInstance()->waitForDone();
+    
+    ///Kill caches now because decreaseNCacheFilesOpened can be called
     _imp->_nodeCache.reset();
     _imp->_viewerCache.reset();
     
