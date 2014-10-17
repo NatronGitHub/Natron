@@ -2119,8 +2119,17 @@ Node::setAborted(bool b)
     ///MT-safe from EffectInstance
     assert(_imp->liveInstance);
     _imp->liveInstance->setAborted(b);
-//    
-//    QMutexLocker l(&_imp->inputsMutex);
+    
+    if (QThread::currentThread() == qApp->thread()) {
+        ///The render thread is waiting for the main-thread to dequeue actions
+        ///but the main-thread is waiting for the render thread to abort
+        ///cancel the dequeuing
+        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+        _imp->nodeIsDequeuing = false;
+        _imp->nodeIsDequeuingCond.wakeOne();
+    }
+    //
+    //    QMutexLocker l(&_imp->inputsMutex);
 //    
 //    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
 //        if (_imp->inputs[i]) {
@@ -2991,7 +3000,7 @@ Node::setParallelRenderArgsInternal(int time,
     ///Wait for the main-thread to be done dequeuing the connect actions queue
     if (QThread::currentThread() != qApp->thread()) {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while (_imp->nodeIsDequeuing) {
+        while (_imp->nodeIsDequeuing && !aborted()) {
             _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
         }
         ///Increment the node is rendering counter
