@@ -3712,12 +3712,21 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
     if (_imp->mode == EDIT_KEYFRAME_POSITION) {
         ///Check that another keyframe doesn't have this time
 
+        int expectedEqualKeys = 0;
+        if (newX == curX) {
+            expectedEqualKeys = 1;
+        }
+        
+        int curEqualKeys = 0;
         KeyFrameSet set = _imp->key->curve->getInternalCurve()->getKeyFrames_mt_safe();
         for (KeyFrameSet::iterator it = set.begin(); it!=set.end(); ++it) {
             
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
                 _imp->xSpinbox->setValue(curX);
-                return;
+                if (curEqualKeys >= expectedEqualKeys) {
+                    return;
+                }
+                ++curEqualKeys;
             }
         }
     }
