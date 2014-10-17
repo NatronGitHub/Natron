@@ -1704,7 +1704,9 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     abortAnyProcessing();
 
     ///Free all memory used by the plug-in.
-    _imp->liveInstance->clearPluginMemoryChunks();
+    
+    ///COMMENTED-OUT: Don't do this, the node may still be rendering here.
+    ///_imp->liveInstance->clearPluginMemoryChunks();
     clearLastRenderedImage();
 
     if (hideGui) {
