@@ -292,7 +292,7 @@ boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const boost::shared_ptr<No
 }
 
 boost::shared_ptr<NodeGui>
-GuiAppInstance::getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN
+GuiAppInstance::getNodeGui(Natron::Node* n) const 
 {
     for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin();
          it != _imp->_nodeMapping.end(); ++it) {
