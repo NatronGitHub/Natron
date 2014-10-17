@@ -1881,7 +1881,7 @@ public:
     }
 };
 
-void
+bool
 Node::makePreviewImage(SequenceTime time,
                        int *width,
                        int *height,
@@ -1889,11 +1889,11 @@ Node::makePreviewImage(SequenceTime time,
 {
     assert(_imp->knobsInitialized);
     if (!_imp->liveInstance) {
-        return;
+        return false;
     }
     
     if (_imp->checkForExitPreview()) {
-        return;
+        return false;
     }
 
      /// prevent 2 previews to occur at the same time since there's only 1 preview instance
@@ -1946,11 +1946,11 @@ Node::makePreviewImage(SequenceTime time,
                                                                             getBitDepth() ) );
     } catch (...) {
         qDebug() << "Error: Cannot render preview";
-        return;
+        return false;
     }
 
     if (!img) {
-        return;
+        return false;
     }
 
     ImageComponents components = img->getComponents();
@@ -1976,7 +1976,7 @@ Node::makePreviewImage(SequenceTime time,
     case Natron::IMAGE_NONE:
         break;
     }
-
+    return true;
 
 } // makePreviewImage
 

@@ -734,8 +734,9 @@ NodeGui::computePreviewImage(int time)
             buf[i] = qRgba(0,0,0,255);
         }
 #endif
-        _internalNode->makePreviewImage(time, &w, &h, buf);
-        {
+        bool success = _internalNode->makePreviewImage(time, &w, &h, buf);
+        
+        if (success) {
             QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
             QPixmap prev_pixmap = QPixmap::fromImage(img);
             _previewPixmap->setPixmap(prev_pixmap);
