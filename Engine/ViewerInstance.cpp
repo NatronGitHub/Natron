@@ -1906,7 +1906,11 @@ ViewerInstance::isFrameRangeLocked() const
     return _imp->uiContext ? _imp->uiContext->isFrameRangeLocked() : true;
 }
 
-
+int
+ViewerInstance::getLastRenderedTime() const
+{
+    return _imp->uiContext ? _imp->uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
+}
 
 boost::shared_ptr<TimeLine>
 ViewerInstance::getTimeline() const

@@ -2234,7 +2234,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     if (image) {
         _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
         _imp->currentViewerInfos[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
-        _imp->lastRenderedImage[textureIndex] = image;
+        {
+            QMutexLocker k(&_imp->lastRenderedImageMutex);
+            _imp->lastRenderedImage[textureIndex] = image;
+        }
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
     }
@@ -4509,3 +4512,15 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     
     return false;
 } // getColorAtRect
+
+
+int
+ViewerGL::getCurrentlyDisplayedTime() const
+{
+    QMutexLocker k(&_imp->lastRenderedImageMutex);
+    if (_imp->lastRenderedImage[0]) {
+        return _imp->lastRenderedImage[0]->getTime();
+    } else {
+        return _imp->viewerTab->getTimeLine()->currentFrame();
+    }
+}

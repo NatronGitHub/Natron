@@ -134,6 +134,7 @@ struct OutputSchedulerThreadPrivate
     QMutex startRequestsMutex;
     
     int abortRequested; // true when the user wants to stop the engine, e.g: the user disconnected the viewer
+    bool isAbortRequestBlocking;
     QWaitCondition abortedRequestedCondition;
     QMutex abortedRequestedMutex; // protects abortRequested
 
@@ -205,6 +206,7 @@ struct OutputSchedulerThreadPrivate
     , startRequestsCond()
     , startRequestsMutex()
     , abortRequested(0)
+    , isAbortRequestBlocking(false)
     , abortedRequestedCondition()
     , abortedRequestedMutex()
     , abortBeingProcessedMutex()
@@ -330,7 +332,6 @@ struct OutputSchedulerThreadPrivate
     static bool getNextFrameInSequence(PlaybackMode pMode,OutputSchedulerThread::RenderDirection direction,int frame,
                                 int firstFrame,int lastFrame,
                                 int* nextFrame,OutputSchedulerThread::RenderDirection* newDirection);
-    
     
     static void getNearestInSequence(OutputSchedulerThread::RenderDirection direction,int frame,
                                      int firstFrame,int lastFrame,
@@ -1069,15 +1070,21 @@ OutputSchedulerThread::run()
             
             if (!renderFinished) {
                 bool isAbortRequested;
+                bool blocking;
                 {
                     QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
                     isAbortRequested = _imp->abortRequested > 0;
+                    blocking = _imp->isAbortRequestBlocking;
                 }
                 if (!isAbortRequested) {
                     QMutexLocker bufLocker (&_imp->bufMutex);
                     ///Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
                     _imp->bufCondition.wait(&_imp->bufMutex);
                 } else {
+                    if (blocking) {
+                        //Move the timeline to the last rendered frame to keep it in sync with what is displayed
+                        timelineGoTo(getLastRenderedTime());
+                    }
                     break;
                 }
             } else {
@@ -1241,6 +1248,7 @@ OutputSchedulerThread::abortRendering(bool blocking)
         ///in stopRender(), we ensure the former by taking the abortBeingProcessedMutex lock
         QMutexLocker l(&_imp->abortedRequestedMutex);
         _imp->abortBeingProcessed = false;
+        _imp->isAbortRequestBlocking = blocking;
         
         ///We make sure the render-thread doesn't wait for the main-thread to treat a frame
         ///This function (abortRendering) was probably called from a user event that was posted earlier in the
@@ -2084,7 +2092,11 @@ ViewerDisplayScheduler::timelineSetBounds(int left, int right)
     _viewer->getTimeline()->setFrameRange(left, right);
 }
 
-
+int
+ViewerDisplayScheduler::getLastRenderedTime() const
+{
+    return _viewer->getLastRenderedTime();
+}
 
 
 ////////////////////////// RenderEngine

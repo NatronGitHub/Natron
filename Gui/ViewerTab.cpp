@@ -1004,7 +1004,7 @@ ViewerTab::abortRendering()
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
         if (isViewer) {
-            isViewer->getRenderEngine()->abortRendering(false);
+            isViewer->getRenderEngine()->abortRendering(true);
         }
     }
 }

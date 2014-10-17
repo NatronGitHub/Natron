@@ -136,6 +136,8 @@ public:
     void getActiveInputs(int & a,int &b) const;
 
     bool isFrameRangeLocked() const;
+    
+    int getLastRenderedTime() const;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     

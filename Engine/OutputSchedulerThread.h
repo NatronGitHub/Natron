@@ -341,6 +341,12 @@ protected:
     virtual Natron::SchedulingPolicy getSchedulingPolicy() const = 0;
     
     /**
+     * @brief Returns the last successful render time.
+     * This makes sense only for Viewers to keep the timeline in sync with what is displayed.
+     **/
+    virtual int getLastRenderedTime() const { return timelineGetTime(); }
+    
+    /**
      * @brief Callback when startRender() is called
      **/
     virtual void aboutToStartRender() {}
@@ -464,6 +470,8 @@ private:
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
     virtual Natron::SchedulingPolicy getSchedulingPolicy() const OVERRIDE FINAL { return Natron::SCHEDULING_ORDERED; }
+    
+    virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void onRenderStopped() OVERRIDE FINAL;
     

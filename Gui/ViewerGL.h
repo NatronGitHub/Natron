@@ -333,6 +333,9 @@ public:
     
     ///same as getMipMapLevel but with the zoomFactor taken into account
     int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
+    
+    virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 signals:
 
     /**
