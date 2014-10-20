@@ -921,9 +921,15 @@ public:
 
     virtual void initializeData() {}
 
+#ifdef DEBUG
+    void checkCanSetValueAndWarn() const;
+#endif
+
 protected:
 
-
+#ifdef DEBUG
+    virtual bool checkCanSetValue() const { return true; }
+#endif
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was

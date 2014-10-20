@@ -3441,6 +3441,16 @@ EffectInstance::getCurrentTime() const
     return getThreadLocalRenderTime();
 }
 
+#ifdef DEBUG
+void
+EffectInstance::checkCanSetValueAndWarn() const
+{
+    if (!checkCanSetValue()) {
+        qDebug() << getName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
+    }
+}
+#endif
+
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)
       , _writerCurrentFrame(0)

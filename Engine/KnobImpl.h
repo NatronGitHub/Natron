@@ -296,6 +296,13 @@ Knob<T>::setValue(const T & v,
 
     KnobHelper::ValueChangedReturnCode ret = NO_KEYFRAME_ADDED;
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
+    
+#ifdef DEBUG
+    if (holder) {
+        holder->checkCanSetValueAndWarn();
+    }
+#endif
+    
     if ( holder && (reason == Natron::PLUGIN_EDITED) && getKnobGuiPointer() ) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
@@ -483,6 +490,13 @@ Knob<T>::setValueAtTime(int time,
     }
 
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
+    
+#ifdef DEBUG
+    if (holder) {
+        holder->checkCanSetValueAndWarn();
+    }
+#endif
+    
     if ( holder && (reason == Natron::PLUGIN_EDITED) && getKnobGuiPointer() ) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {

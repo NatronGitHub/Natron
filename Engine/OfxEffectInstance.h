@@ -27,6 +27,10 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EffectInstance.h"
 
+#ifdef DEBUG
+#include "Engine/ThreadStorage.h"
+#endif
+
 class QReadWriteLock;
 class OfxClipInstance;
 class Button_Knob;
@@ -279,6 +283,72 @@ private:
 
     void initializeContextDependentParams();
 
+#ifdef DEBUG
+/*
+    Debug helper to track plug-in that do setValue calls that are forbidden
+ 
+ http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#SettingParams
+ Officially, setValue calls are allowed during the following actions:
+ 
+ The Create Instance Action
+ The The Begin Instance Changed Action
+ The The Instance Changed Action
+ The The End Instance Changed Action
+ The The Sync Private Data Action
+
+ 
+ */
+
+    void setCanSetValue(bool can)
+    {
+        _canSetValue.localData() = can;
+    }
+
+    void invalidateCanSetValueFlag()
+    {
+        _canSetValue.localData() = true;
+    }
+
+
+    bool isDuringActionThatCanSetValue() const
+    {
+        if (_canSetValue.hasLocalData()) {
+            return _canSetValue.localData();
+        } else {
+            ///Not during an action
+            return true;
+        }
+    }
+
+    class CanSetSetValueFlag_RAII
+    {
+        OfxEffectInstance* effect;
+        
+        public:
+        
+        CanSetSetValueFlag_RAII(OfxEffectInstance* effect,bool canSetValue)
+        : effect(effect)
+        {
+            effect->setCanSetValue(canSetValue);
+        }
+        
+        ~CanSetSetValueFlag_RAII()
+        {
+            effect->invalidateCanSetValueFlag();
+        }
+    };
+
+    virtual bool checkCanSetValue() const { return isDuringActionThatCanSetValue(); }
+
+#define SET_CAN_SET_VALUE(canSetValue) OfxEffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this,canSetValue)
+
+#else
+
+#define SET_CAN_SET_VALUE(canSetValue) (void)0;
+
+#endif
+
+
 private:
     Natron::OfxImageEffectInstance* _effect;
     std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
@@ -293,6 +363,9 @@ private:
     mutable QReadWriteLock* _renderSafetyLock;
     ContextEnum _context;
     mutable QReadWriteLock* _preferencesLock;
+#ifdef DEBUG
+    Natron::ThreadStorage<bool> _canSetValue;
+#endif
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_
