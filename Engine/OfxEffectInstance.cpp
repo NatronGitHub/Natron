@@ -819,6 +819,10 @@ OfxEffectInstance::getRotoBrushInputIndex() const
 void
 OfxEffectInstance::onInputChanged(int inputNo)
 {
+    
+    if (getApp()->getProject()->isLoadingProject()) {
+        return;
+    }
     assert(_context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
     assert(clip);
@@ -1077,7 +1081,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     ////////////////////////////////////////////////////////////////
     ////////////////////////////////
     //////////////// STEP 4: If our proxy remapping changed some clips preferences, notifying the plug-in of the clips which changed
-    {
+    if (!getApp()->getProject()->isLoadingProject()) {
         RECURSIVE_ACTION();
         if (!modifiedClips.empty()) {
             effectInstance()->beginInstanceChangedAction(reason);
