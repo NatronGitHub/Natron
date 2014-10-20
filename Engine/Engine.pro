@@ -190,5 +190,9 @@ HEADERS += \
     ../Global/Macros.h \
     ../Global/MemoryInfo.h \
     ../Global/QtCompat.h \
-    ../libs/SequenceParsing/SequenceParsing.h
+    ../libs/SequenceParsing/SequenceParsing.h \
+    Pyside_Engine_Python.h
+
+OTHER_FILES += \
+    typesystem_engine.xml
 

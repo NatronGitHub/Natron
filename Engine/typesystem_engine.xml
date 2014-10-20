@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<typesystem package="Natron">
+    
+    <!--Load QtCore typesystem-->
+    <load-typesystem name="typesystem_core.xml" generate="no" />
+    
+    <!--std::pair from/to Python pair-->
+    <container-type name="std::pair" type="pair">
+        <include file-name="pair" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                PyObject* %out = PyTuple_New(2);
+                PyTuple_SET_ITEM(%out, 0, %CONVERTTOPYTHON[%INTYPE_0](%in.first));
+                PyTuple_SET_ITEM(%out, 1, %CONVERTTOPYTHON[%INTYPE_1](%in.second));
+                return %out;
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    %out.first = %CONVERTTOCPP[%OUTTYPE_0](PySequence_Fast_GET_ITEM(%in, 0));
+                    %out.second = %CONVERTTOCPP[%OUTTYPE_1](PySequence_Fast_GET_ITEM(%in, 1));
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::list from/to Python list-->
+    <container-type name="std::list" type="list">
+        <include file-name="list" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="cpplist_to_pylist_convertion"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    <insert-template name="pyseq_to_cpplist_convertion"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::set from/to Python map-->
+    <container-type name="set" type="set">
+        <include file-name="set" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="cpplist_to_pylist_conversion"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    <insert-template name="pyseq_to_cpplist_conversion"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+
+    <!--std::map from/to Python map-->
+    <container-type name="std::map" type="map">
+        <include file-name="map" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="cppmap_to_pymap_conversion"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyDict">
+                    <insert-template name="pydict_to_cppmap_conversion"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::multimap from/to Python map-->
+    <container-type name="std::multimap" type="multi-map">
+        <include file-name="map" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="cppmap_to_pymap_conversion"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyDict">
+                    <insert-template name="pydict_to_cppmap_conversion"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+     <!--Natron global enums-->
+    <namespace-type name="Natron">
+    <enum-type name="StandardButton" flags="StandardButtons"/>
+    <enum-type name="KeyframeType"/>
+    <enum-type name="PixmapEnum"/>
+    <enum-type name="ValueChangedReason"/>
+    <enum-type name="AnimationLevel"/>
+    <enum-type name="ImageComponents"/>
+    <enum-type name="ImageBitDepth"/>
+    <enum-type name="ImagePremultiplication"/>
+    <enum-type name="ViewerCompositingOperator"/>
+    <enum-type name="ViewerColorSpace"/>
+    <enum-type name="Orientation"/>
+    <enum-type name="PlaybackMode"/>
+    </namespace-type>
+    
+    <!--Global functions to Natron process-->
+    <function signature="getPluginIDs()">
+    
+</typesystem>
+
+

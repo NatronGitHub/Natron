@@ -11,6 +11,8 @@
 #ifndef NATRON_GLOBAL_APPMANAGER_H_
 #define NATRON_GLOBAL_APPMANAGER_H_
 
+#include <list>
+#include <string>
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
@@ -326,6 +328,12 @@ public:
     
     void setThreadAsActionCaller(bool actionCaller);
 
+    /**
+     * @brief Returns a list of IDs of all the plug-ins currently loaded.
+     * Each ID can be passed to the AppInstance::createNode function to instantiate a node
+     * with a plug-in.
+     **/
+    std::list<std::string> getPluginIDs() const;
     
 public slots:
     
@@ -463,6 +471,17 @@ getTextureFromCacheOrCreate(const Natron::FrameKey & key,
 {
     return appPTR->getTextureOrCreate(key,params,entryLocker, returnValue);
 }
+    
+/**
+* @brief Returns a list of IDs of all the plug-ins currently loaded.
+* Each ID can be passed to the AppInstance::createNode function to instantiate a node
+* with a plug-in.
+**/
+inline std::list<std::string> getPluginIDs()
+{
+    return appPTR->getPluginIDs();
+}
+    
 } // namespace Natron
 
 

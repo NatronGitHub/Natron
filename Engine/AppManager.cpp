@@ -1818,6 +1818,16 @@ AppManager::setThreadAsActionCaller(bool actionCaller)
     _imp->ofxHost->setThreadAsActionCaller(actionCaller);
 }
 
+std::list<std::string>
+AppManager::getPluginIDs() const
+{
+    std::list<std::string> ret;
+    for (std::vector<Natron::Plugin*>::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
+        ret.push_back((*it)->getPluginID().toStdString());
+    }
+    return ret;
+}
+
 namespace Natron {
 void
 errorDialog(const std::string & title,
