@@ -344,7 +344,7 @@ private:
 
 #else
 
-#define SET_CAN_SET_VALUE(canSetValue) (void)0;
+#define SET_CAN_SET_VALUE(canSetValue) ( (void)0 )
 
 #endif
 

@@ -142,7 +142,9 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
       , _renderSafetyLock(new QReadWriteLock)
       , _context(eContextNone)
       , _preferencesLock(new QReadWriteLock(QReadWriteLock::Recursive))
+#ifdef DEBUG
       , _canSetValue()
+#endif
 {
     QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
