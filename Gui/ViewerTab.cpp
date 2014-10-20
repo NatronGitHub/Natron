@@ -2460,7 +2460,7 @@ ViewerTab::onActiveInputsChanged()
         }
     } else {
         _imp->_secondInputImage->setCurrentIndex_no_emit(0);
-        //setCompositingOperator(Natron::OPERATOR_NONE);
+        setCompositingOperator(Natron::OPERATOR_NONE);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
         //_imp->_secondInputImage->setEnabled_natron(false);
