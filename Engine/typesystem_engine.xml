@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<typesystem package="Natron">
+<typesystem package="NatronEngine">
     
     <!--Load QtCore typesystem-->
     <load-typesystem name="typesystem_core.xml" generate="no" />
@@ -100,7 +100,7 @@
     </namespace-type>
     
     <!--Global functions to Natron process-->
-    <function signature="getPluginIDs()">
+    <function signature="getPluginIDs()"/>
     
 </typesystem>
 

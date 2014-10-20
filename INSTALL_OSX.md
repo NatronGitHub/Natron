@@ -99,6 +99,11 @@ cat > config.pri << EOF
 EOF
 ----- end -----
 
+
+###Generate Python bindings
+
+shiboken-2.7 Engine/Pyside_Engine_Python.h --include-paths=Engine:/opt/local/include --typesystem-paths=/opt/local/share/PySide-2.7/typesystems:Engine --output-directory=Engine Engine/typesystem_engine.xml 
+
 ###Build with Makefile
 You can generate a makefile by typing
 
@@ -138,3 +143,4 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 ###Testing
 
 	(cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
+
