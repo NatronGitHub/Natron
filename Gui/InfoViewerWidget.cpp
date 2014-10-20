@@ -51,7 +51,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     imageFormat = new QLabel(this);
     {
         QFontMetrics fm = imageFormat->fontMetrics();
-        int width = fm.width("Alpha32f");
+        int width = fm.width("RGBA32f   ");
         imageFormat->setFixedWidth(width);
     }
 
