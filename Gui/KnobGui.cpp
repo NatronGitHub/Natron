@@ -671,10 +671,10 @@ KnobGui::setKeyframe(double time,
 
     assert( knob->getHolder()->getApp() );
     
-    knob->onKeyFrameSet(time, dimension);
+    bool keyAdded = knob->onKeyFrameSet(time, dimension);
     
     emit keyFrameSet();
-    if ( !knob->getIsSecret() ) {
+    if ( !knob->getIsSecret() && keyAdded ) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
 }
@@ -686,10 +686,10 @@ KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
     
     assert( knob->getHolder()->getApp() );
     
-    knob->onKeyFrameSet(time, key, dimension);
+    bool keyAdded = knob->onKeyFrameSet(time, key, dimension);
     
     emit keyFrameSet();
-    if ( !knob->getIsSecret() ) {
+    if ( !knob->getIsSecret() && keyAdded ) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
 }

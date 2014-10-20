@@ -411,8 +411,8 @@ public:
     /**
      * @brief Calls setValueAtTime with a reason of Natron::USER_EDITED.
      **/
-    virtual void onKeyFrameSet(SequenceTime time,int dimension) = 0;
-    virtual void onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
+    virtual bool onKeyFrameSet(SequenceTime time,int dimension) = 0;
+    virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
@@ -1136,8 +1136,8 @@ public:
     }
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
-    virtual void onKeyFrameSet(SequenceTime time,int dimension) OVERRIDE FINAL;
-    virtual void onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) OVERRIDE FINAL;
+    virtual bool onKeyFrameSet(SequenceTime time,int dimension) OVERRIDE FINAL;
+    virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void onTimeChanged(SequenceTime time) OVERRIDE FINAL;

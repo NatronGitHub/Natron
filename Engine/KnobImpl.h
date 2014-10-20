@@ -832,7 +832,7 @@ Knob<T>::isTypeCompatible(const boost::shared_ptr<KnobI> & other) const
 }
 
 template<typename T>
-void
+bool
 Knob<T>::onKeyFrameSet(SequenceTime time,
                        int dimension)
 {
@@ -850,16 +850,17 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
 
     makeKeyFrame(curve.get(), time, getValueAtTime(time,dimension), &k);
 
-    curve->addKeyFrame(k);
+    bool ret = curve->addKeyFrame(k);
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(dimension);
         evaluateValueChange(dimension, Natron::USER_EDITED);
     }
+    return ret;
 }
 
 template<typename T>
-void
+bool
 Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
 {
     boost::shared_ptr<Curve> curve;
@@ -873,12 +874,13 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
         setGuiCurveHasChanged(dimension,true);
     }
     
-    curve->addKeyFrame(key);
+    bool ret = curve->addKeyFrame(key);
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(dimension);
         evaluateValueChange(dimension, Natron::USER_EDITED);
     }
+    return ret;
 }
 
 template<typename T>
