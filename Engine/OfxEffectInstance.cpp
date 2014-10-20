@@ -2295,29 +2295,30 @@ OfxEffectInstance::knobChanged(KnobI* k,
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1;
     OfxStatus stat = kOfxStatOK;
-    
-    if (getRecursionLevel() == 1) {
-        SET_CAN_SET_VALUE(true);
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            false,
-                                            true, //< setView ?
-                                            view,
-                                            false, //< setmipmaplevel?
-                                            0);
-        
-        ///This action as all the overlay interacts actions can trigger recursive actions, such as
-        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-        ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
-    } else {
-        ///This action as all the overlay interacts actions can trigger recursive actions, such as
-        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-        ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
-    }
 
+    if (reason != Natron::PLUGIN_EDITED) { // OFX::Host::Param::paramSetValue() does it for us when it's edited by the plugin
+        if (getRecursionLevel() == 1) {
+            SET_CAN_SET_VALUE(true);
+            ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                                false,
+                                                true, //< setView ?
+                                                view,
+                                                false, //< setmipmaplevel?
+                                                0);
+
+            ///This action as all the overlay interacts actions can trigger recursive actions, such as
+            ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+            ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+            ///the clip preferences to stay the same throughout the action.
+            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+        } else {
+            ///This action as all the overlay interacts actions can trigger recursive actions, such as
+            ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+            ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+            ///the clip preferences to stay the same throughout the action.
+            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+        }
+    }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         QString err( QString( getNode()->getName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
                      k->getDescription().c_str() );
