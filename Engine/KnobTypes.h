@@ -582,13 +582,13 @@ public:
     /**
      * @brief Convenience function for RGB color params
      **/
-    void setValues(double r,double g,double b);
+    void setValues(double r,double g,double b,Natron::ValueChangedReason reason);
 
 
     /**
      * @brief Convenience function for RGBA color params
      **/
-    void setValues(double r,double g,double b,double a);
+    void setValues(double r,double g,double b,double a,Natron::ValueChangedReason reason);
 
 public slots:
 
