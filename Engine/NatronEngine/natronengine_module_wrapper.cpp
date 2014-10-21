@@ -19,13 +19,56 @@ static PyMethodDef NatronEngine_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_Natron(PyObject* module);
 
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtCoreTypes;
 SbkConverter** SbkPySide_QtCoreTypeConverters;
 
 // Module initialization ------------------------------------------------------------
+
+// Primitive Type converters.
+
+// C++ to Python conversion for type 'std::size_t'.
+static PyObject* std_size_t_CppToPython_std_size_t(const void* cppIn) {
+    ::std::size_t& cppInRef = *((::std::size_t*)cppIn);
+
+                    return PyLong_FromSize_t(cppInRef);
+
+}
+// Python to C++ conversions for type 'std::size_t'.
+static void PyLong_PythonToCpp_std_size_t(PyObject* pyIn, void* cppOut) {
+
+    *((::std::size_t*)cppOut) = std::size_t(PyLong_AsSsize_t(pyIn));
+
+}
+static PythonToCppFunc is_PyLong_PythonToCpp_std_size_t_Convertible(PyObject* pyIn) {
+    if (PyLong_Check(pyIn))
+        return PyLong_PythonToCpp_std_size_t;
+    return 0;
+}
+
+
 // Container Type converters.
+
+// C++ to Python conversion for type 'std::list<std::string >'.
+static PyObject* std_list_std_string__CppToPython_std_list_std_string_(const void* cppIn) {
+    ::std::list<std::string >& cppInRef = *((::std::list<std::string >*)cppIn);
+
+
+
+}
+static void std_list_std_string__PythonToCpp_std_list_std_string_(PyObject* pyIn, void* cppOut) {
+    ::std::list<std::string >& cppOutRef = *((::std::list<std::string >*)cppOut);
+
+
+
+}
+static PythonToCppFunc is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyIn))
+        return std_list_std_string__PythonToCpp_std_list_std_string_;
+    return 0;
+}
 
 // C++ to Python conversion for type 'QList<QVariant >'.
 static PyObject* _QList_QVariant__CppToPython__QList_QVariant_(const void* cppIn) {
@@ -185,6 +228,23 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
+    init_Natron(module);
+
+    // Register converter for type 'NatronEngine.std::size_t'.
+    SbkNatronEngineTypeConverters[SBK_STD_SIZE_T_IDX] = Shiboken::Conversions::createConverter(&PyLong_Type, std_size_t_CppToPython_std_size_t);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_STD_SIZE_T_IDX], "std::size_t");
+    // Add user defined implicit conversions to type converter.
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_STD_SIZE_T_IDX],
+        PyLong_PythonToCpp_std_size_t,
+        is_PyLong_PythonToCpp_std_size_t_Convertible);
+
+
+    // Register converter for type 'std::list<std::string>'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_std_string__CppToPython_std_list_std_string_);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], "std::list<std::string>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX],
+        std_list_std_string__PythonToCpp_std_list_std_string_,
+        is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

@@ -101,7 +101,8 @@ SOURCES += \
     Transform.cpp \
     ViewerInstance.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
-    NatronEngine/natronengine_module_wrapper.cpp
+    NatronEngine/natronengine_module_wrapper.cpp \
+    NatronEngine/natron_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -193,7 +194,8 @@ HEADERS += \
     ../Global/MemoryInfo.h \
     ../Global/QtCompat.h \
     ../libs/SequenceParsing/SequenceParsing.h \
-    NatronEngine/natronengine_python.h
+    NatronEngine/natronengine_python.h \
+    NatronEngine/natron_wrapper.h
 
 OTHER_FILES += \
     typesystem_engine.xml

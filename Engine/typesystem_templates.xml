@@ -10,7 +10,7 @@
  -->
 <typesystem>
     
-    <template name="cpplist_to_pylist_conversion">
+    <template name="stdListToPyList">
         PyObject* %out = PyList_New((int) %in.size());
         %INTYPE::const_iterator it = %in.begin();
         for (int idx = 0; it != %in.end(); ++it, ++idx) {
@@ -19,15 +19,15 @@
         }
         return %out;
     </template>
-    <template name="pyseq_to_cpplist_conversion">
+    <template name="pyListToStdList">
         for (int i = 0; i &lt; PySequence_Size(%in); i++) {
         Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, i));
         %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
-        %out &lt;&lt; cppItem;
+        %out.push_back(cppItem);
         }
     </template>
     
-    <template name="cppvector_to_pylist_conversion">
+    <template name="stdVectorToPyList">
         %INTYPE::size_type vectorSize = %in.size();
         PyObject* %out = PyList_New((int) vectorSize);
         for (%INTYPE::size_type idx = 0; idx &lt; vectorSize; ++idx) {
@@ -36,7 +36,7 @@
         }
         return %out;
     </template>
-    <template name="pyseq_to_cppvector_conversion">
+    <template name="pySeqToStdVector">
         int vectorSize = PySequence_Size(%in);
         %out.reserve(vectorSize);
         for (int idx = 0; idx &lt; vectorSize; ++idx) {
@@ -46,7 +46,7 @@
         }
     </template>
     
-    <template name="cppmap_to_pymap_conversion">
+    <template name="stdMapToPyDict">
         PyObject* %out = PyDict_New();
         %INTYPE::const_iterator it = %in.begin();
         for (; it != %in.end(); ++it) {
@@ -60,7 +60,7 @@
         }
         return %out;
     </template>
-    <template name="pydict_to_cppmap_conversion">
+    <template name="pyDictToStdMap">
         PyObject* key;
         PyObject* value;
         Py_ssize_t pos = 0;

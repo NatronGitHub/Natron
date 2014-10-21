@@ -16,6 +16,39 @@
     <!--Templates for type conversions used many times-->
     <load-typesystem name="typesystem_templates.xml" generate="no"/>
     
+    <!--The custom-type node simply makes the parser aware of the existence of a target language type, thus avoiding errors when trying to find a type used in function signatures and other places. The proper handling of the custom type is meant to be done by a generator using the APIExractor.-->
+    <custom-type name="PyObject"/>
+    
+    <!--Primitives, most of the PoDs are defined in typesystem_core.xml already-->
+    <primitive-type name="std::string">
+        <conversion-rule>
+            <native-to-target>
+                PyObject* %out = PyString_AsStringAndSize(%in.c_str(),%in.size());
+                return %out;
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyObject">
+                    char* cstr = PyString_AsString(%in);
+                    %out = std::string(cstr);
+                    return %out;
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </primitive-type>
+    
+    <primitive-type name="std::size_t" target-lang-api-name="PyLong">
+        <conversion-rule>
+            <native-to-target>
+                return PyLong_FromSize_t(%in);
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyLong">
+                    %out = %OUTTYPE(PyLong_AsSsize_t(%in));
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </primitive-type>
+    
     <!--std::pair from/to Python pair-->
     <container-type name="std::pair" type="pair">
         <include file-name="utility" location="global"/>
@@ -40,26 +73,41 @@
         <include file-name="list" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cpplist_to_pylist_convertion"/>
+                <insert-template name="stdListToPyList"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PySequence">
-                    <insert-template name="pyseq_to_cpplist_convertion"/>
+                    <insert-template name="pyListToStdList"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::vector from/to Python list-->
+    <container-type name="std::vector" type="vector">
+        <include file-name="vector" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="stdVectorToPyList"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    <insert-template name="pySeqToStdVector"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
     </container-type>
     
     <!--std::set from/to Python map-->
-    <container-type name="set" type="set">
+    <container-type name="std::set" type="set">
         <include file-name="set" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cpplist_to_pylist_conversion"/>
+                <insert-template name="stdListToPyList"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PySequence">
-                    <insert-template name="pyseq_to_cpplist_conversion"/>
+                    <insert-template name="pyListToStdList"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
@@ -70,11 +118,11 @@
         <include file-name="map" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cppmap_to_pymap_conversion"/>
+                <insert-template name="stdMapToPyDict"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PyDict">
-                    <insert-template name="pydict_to_cppmap_conversion"/>
+                    <insert-template name="pyDictToStdMap"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
@@ -85,11 +133,11 @@
         <include file-name="map" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cppmap_to_pymap_conversion"/>
+                <insert-template name="stdMapToPyDict"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PyDict">
-                    <insert-template name="pydict_to_cppmap_conversion"/>
+                    <insert-template name="pyDictToStdMap"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
@@ -111,9 +159,11 @@
     <enum-type name="PlaybackMode"/>
     </namespace-type>
     
+
     <!--Global functions to Natron process-->
     <function signature="getPluginIDs()"/>
-    
+    <function signature="informationDialog(const std::string&amp;,const std::string&amp;)"/>
+
 </typesystem>
 
 

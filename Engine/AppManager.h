@@ -20,7 +20,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN) 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -483,7 +483,8 @@ getTextureFromCacheOrCreate(const Natron::FrameKey & key,
 * Each ID can be passed to the AppInstance::createNode function to instantiate a node
 * with a plug-in.
 **/
-inline std::list<std::string> getPluginIDs()
+inline std::list<std::string>
+getPluginIDs()
 {
     return appPTR->getPluginIDs();
 }
