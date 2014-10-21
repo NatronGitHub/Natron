@@ -1590,9 +1590,9 @@ Color_KnobGui::onDimensionSwitchClicked()
         if (_dimension > 1) {
             double value( _rBox->value() );
             if (_dimension == 3) {
-                _knob->setValues(value, value, value,Natron::USER_EDITED);
+                _knob->setValues(value, value, value);
             } else {
-                _knob->setValues(value, value, value,value,Natron::USER_EDITED);
+                _knob->setValues(value, value, value,value);
             }
         }
     }

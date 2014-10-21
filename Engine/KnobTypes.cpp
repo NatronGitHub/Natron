@@ -1191,55 +1191,29 @@ Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis,
 void
 Color_Knob::setValues(double r,
                       double g,
-                      double b,
-                      Natron::ValueChangedReason reason)
+                      double b)
 {
     assert(getDimension() == 3);
     blockEvaluation();
-    if (reason == Natron::USER_EDITED) {
-        KeyFrame k;
-        onValueChanged(0,r,&k);
-        onValueChanged(1,g,&k);
-    } else {
-        setValue(r, 0);
-        setValue(g, 1);
-    }
+    setValue(r,0);
+    setValue(g,1);
     unblockEvaluation();
-    if (reason == Natron::USER_EDITED) {
-        KeyFrame k;
-        onValueChanged(2,b,&k);
-    } else {
-        setValue(b, 2);
-    }
+    setValue(b,2);
 }
 
 void
 Color_Knob::setValues(double r,
                       double g,
                       double b,
-                      double a,
-                      Natron::ValueChangedReason reason)
+                      double a)
 {
     assert(getDimension() == 4);
     blockEvaluation();
-    
-    if (reason == Natron::USER_EDITED) {
-        KeyFrame k;
-        onValueChanged(0,r,&k);
-        onValueChanged(1,g,&k);
-        onValueChanged(2,b,&k);
-    } else {
-        setValue(r,0);
-        setValue(g,1);
-        setValue(b,2);
-    }
+    setValue(r,0);
+    setValue(g,1);
+    setValue(b,2);
     unblockEvaluation();
-    if (reason == Natron::USER_EDITED) {
-        KeyFrame k;
-        onValueChanged(3,a,&k);
-    } else {
-        setValue(a,3);
-    }
+    setValue(a,3);
 }
 
 /******************************STRING_KNOB**************************************/

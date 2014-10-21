@@ -1047,6 +1047,10 @@ public:
 
 private:
 
+   
+    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
+
+    
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
      * @param newKey If not NULL and the animation level of the knob is Natron::INTERPOLATED_VALUE
@@ -1061,12 +1065,13 @@ private:
      **/
     bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
 
-    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
-
 public:
 
+    
+   
+    
     /**
-     * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls setValue with a reason of Natron::NATRON_EDITED.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
@@ -1079,6 +1084,11 @@ public:
      * @see ValueChangedReturnCode
      **/
     ValueChangedReturnCode onValueChanged(int dimension,const T & v,KeyFrame* newKey);
+    
+    /**
+     * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
+     **/
+    ValueChangedReturnCode setValueFromPlugin(const T & value,int dimension);
 
     /**
      * @brief This is called by the plugin when a set value call would happen during  an interact action.
@@ -1086,9 +1096,14 @@ public:
     void requestSetValueOnUndoStack(const T & value,int dimension);
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls setValueAtTime with a reason of Natron::NATRON_EDITED.
      **/
     void setValueAtTime(int time,const T & v,int dimension);
+    
+    /**
+     * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     **/
+    void setValueAtTimeFromPlugin(int time,const T & v,int dimension);
 
     /**
      * @brief Unlike getValueAtTime this function doesn't interpolate the values.

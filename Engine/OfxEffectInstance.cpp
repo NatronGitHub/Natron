@@ -2251,18 +2251,20 @@ static std::string
 natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reason)
 {
     switch (reason) {
-    case Natron::USER_EDITED:
-
-        return kOfxChangeUserEdited;
-    case Natron::PLUGIN_EDITED:
-
-        return kOfxChangePluginEdited;
-    case Natron::TIME_CHANGED:
-
-        return kOfxChangeTime;
-    default:
-        assert(false);     // all Natron reasons should be processed
-        return "";
+        case Natron::USER_EDITED:
+            
+            return kOfxChangeUserEdited;
+        case Natron::PLUGIN_EDITED:
+        case Natron::NATRON_EDITED:
+        case Natron::SLAVE_REFRESH:
+        case Natron::RESTORE_DEFAULT:
+            return kOfxChangePluginEdited;
+        case Natron::TIME_CHANGED:
+            
+            return kOfxChangeTime;
+        default:
+            assert(false);     // all Natron reasons should be processed
+            return "";
     }
 }
 
@@ -2287,16 +2289,17 @@ OfxEffectInstance::knobChanged(KnobI* k,
         return;
     }
 
-    if ( (reason == SLAVE_REFRESH) || (reason == RESTORE_DEFAULT) ) {
-        reason = PLUGIN_EDITED;
-    }
+
+    // OFX::Host::Param::paramSetValue() does it for us when it's edited by the plugin
+    bool canCallInstanceChangedAction = reason != Natron::PLUGIN_EDITED;
+    
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1;
     OfxStatus stat = kOfxStatOK;
 
-    if (reason != Natron::PLUGIN_EDITED) { // OFX::Host::Param::paramSetValue() does it for us when it's edited by the plugin
+    if (canCallInstanceChangedAction) {
         if (getRecursionLevel() == 1) {
             SET_CAN_SET_VALUE(true);
             ClipsThreadStorageSetter clipSetter(effectInstance(),

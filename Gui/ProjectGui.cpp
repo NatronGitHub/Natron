@@ -496,9 +496,9 @@ ProjectGui::setPickersColor(const QColor & color)
             _colorPickersEnabled[i]->activateAllDimensions();
         }
         if (_colorPickersEnabled[i]->getDimension() == 3) {
-            _colorPickersEnabled[i]->setValues(r, g, b,Natron::USER_EDITED);
+            _colorPickersEnabled[i]->setValues(r, g, b);
         } else {
-            _colorPickersEnabled[i]->setValues(r, g, b,a,Natron::USER_EDITED);
+            _colorPickersEnabled[i]->setValues(r, g, b,a);
         }
     }
 }
