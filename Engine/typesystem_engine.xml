@@ -1,12 +1,24 @@
 <?xml version="1.0"?>
+<!--  Natron
+ 
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ contact: immarespond at gmail dot com
+ -->
 <typesystem package="NatronEngine">
     
     <!--Load QtCore typesystem-->
     <load-typesystem name="typesystem_core.xml" generate="no" />
     
+    <!--Templates for type conversions used many times-->
+    <load-typesystem name="typesystem_templates.xml" generate="no"/>
+    
     <!--std::pair from/to Python pair-->
     <container-type name="std::pair" type="pair">
-        <include file-name="pair" location="global"/>
+        <include file-name="utility" location="global"/>
         <conversion-rule>
             <native-to-target>
                 PyObject* %out = PyTuple_New(2);

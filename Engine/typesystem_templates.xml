@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<!--  Natron
+ 
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ contact: immarespond at gmail dot com
+ -->
+<typesystem>
+    
+    <template name="cpplist_to_pylist_conversion">
+        PyObject* %out = PyList_New((int) %in.size());
+        %INTYPE::const_iterator it = %in.begin();
+        for (int idx = 0; it != %in.end(); ++it, ++idx) {
+        %INTYPE_0 cppItem(*it);
+        PyList_SET_ITEM(%out, idx, %CONVERTTOPYTHON[%INTYPE_0](cppItem));
+        }
+        return %out;
+    </template>
+    <template name="pyseq_to_cpplist_conversion">
+        for (int i = 0; i &lt; PySequence_Size(%in); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, i));
+        %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        %out &lt;&lt; cppItem;
+        }
+    </template>
+    
+    <template name="cppvector_to_pylist_conversion">
+        %INTYPE::size_type vectorSize = %in.size();
+        PyObject* %out = PyList_New((int) vectorSize);
+        for (%INTYPE::size_type idx = 0; idx &lt; vectorSize; ++idx) {
+        %INTYPE_0 cppItem(%in[idx]);
+        PyList_SET_ITEM(%out, idx, %CONVERTTOPYTHON[%INTYPE_0](cppItem));
+        }
+        return %out;
+    </template>
+    <template name="pyseq_to_cppvector_conversion">
+        int vectorSize = PySequence_Size(%in);
+        %out.reserve(vectorSize);
+        for (int idx = 0; idx &lt; vectorSize; ++idx) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, idx));
+        %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        %out.push_back(cppItem);
+        }
+    </template>
+    
+    <template name="cppmap_to_pymap_conversion">
+        PyObject* %out = PyDict_New();
+        %INTYPE::const_iterator it = %in.begin();
+        for (; it != %in.end(); ++it) {
+        %INTYPE_0 key = it.key();
+        %INTYPE_1 value = it.value();
+        PyObject* pyKey = %CONVERTTOPYTHON[%INTYPE_0](key);
+        PyObject* pyValue = %CONVERTTOPYTHON[%INTYPE_1](value);
+        PyDict_SetItem(%out, pyKey, pyValue);
+        Py_DECREF(pyKey);
+        Py_DECREF(pyValue);
+        }
+        return %out;
+    </template>
+    <template name="pydict_to_cppmap_conversion">
+        PyObject* key;
+        PyObject* value;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(%in, &amp;pos, &amp;key, &amp;value)) {
+        %OUTTYPE_0 cppKey = %CONVERTTOCPP[%OUTTYPE_0](key);
+        %OUTTYPE_1 cppValue = %CONVERTTOCPP[%OUTTYPE_1](value);
+        %out.insert(cppKey, cppValue);
+        }
+    </template>
+    
+</typesystem>

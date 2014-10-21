@@ -396,6 +396,8 @@ protected:
     }
     
     virtual void clearLastRenderedTextures() {}
+    
+    virtual void initBuiltinPythonModules();
 
 private:
 
@@ -408,6 +410,10 @@ private:
     void registerEngineMetaTypes() const;
 
     void loadAllPlugins();
+    
+    void initPython(int argc,char* argv[]);
+    
+    void tearDownPython();
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;

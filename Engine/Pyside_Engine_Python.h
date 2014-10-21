@@ -16,7 +16,10 @@
 #ifndef PYSIDE_ENGINE_PYTHON_H
 #define PYSIDE_ENGINE_PYTHON_H
 
-#include "Global/GlobalDefines.h"
-#include "Engine/AppManager.h"
+#include <pyside_global.h>
+#include <Global/GlobalDefines.h>
+#include <Global/Macros.h>
+#include <Global/Enums.h>
+#include <Engine/AppManager.h>
 
 #endif // PYSIDE_ENGINE_PYTHON_H
