@@ -286,6 +286,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             range.min = 0;
             OfxStatus tdstat = _effect->getTimeDomainAction(range);
             if ( (tdstat == kOfxStatOK) || (tdstat == kOfxStatReplyDefault) ) {
+                ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                                    false,
+                                                    true, //< setView ?
+                                                    0,
+                                                    true,
+                                                    0);
                 double time = range.min;
                 
                 OfxRectD rod;
