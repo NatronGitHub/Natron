@@ -106,14 +106,14 @@ Knob<T>::signalDisplayMinMaxChanged(const T& mini,const T& maxi,int dimension)
 
 template <>
 void
-Knob<std::string>::signalMinMaxChanged(const std::string& /*mini*/,const std::string& /*maxi*/,int dimension)
+Knob<std::string>::signalMinMaxChanged(const std::string& /*mini*/,const std::string& /*maxi*/,int /*dimension*/)
 {
     
 }
 
 template <>
 void
-Knob<std::string>::signalDisplayMinMaxChanged(const std::string& /*mini*/,const std::string& /*maxi*/,int dimension)
+Knob<std::string>::signalDisplayMinMaxChanged(const std::string& /*mini*/,const std::string& /*maxi*/,int /*dimension*/)
 {
     
 }
@@ -269,6 +269,13 @@ Knob<T>::clampToMinMax(const T& value,int dimension) const
 template <>
 std::string
 Knob<std::string>::clampToMinMax(const std::string& value,int /*dimension*/) const
+{
+    return value;
+}
+
+template <>
+bool
+Knob<bool>::clampToMinMax(const bool& value,int /*dimension*/) const
 {
     return value;
 }
