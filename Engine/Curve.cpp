@@ -641,7 +641,7 @@ interParams(const KeyFrameSet &keyFrames,
 }
 
 double
-Curve::getValueAt(double t) const
+Curve::getValueAt(double t,bool doClamp) const
 {
     QReadLocker l(&_imp->_lock);
 
@@ -681,7 +681,7 @@ Curve::getValueAt(double t) const
                                    interp,
                                    interpNext);
 
-    if ( mustClamp() ) {
+    if ( doClamp && mustClamp() ) {
         v = clampValueToCurveYRange(v);
     }
 

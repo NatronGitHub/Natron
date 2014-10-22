@@ -1053,7 +1053,7 @@ public:
      * @brief Get the current value of the knob for the given dimension.
      * If it is animated, it will return the value at the current time.
      **/
-    T getValue(int dimension = 0) const WARN_UNUSED_RETURN;
+    T getValue(int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the value of the knob at the given time and for the given dimension.
@@ -1062,7 +1062,7 @@ public:
      * This function is overloaded by the String_Knob which can have its custom interpolation
      * but this should be the only knob which should ever need to overload it.
      **/
-    T getValueAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
+    T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
 
 private:
 

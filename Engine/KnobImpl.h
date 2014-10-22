@@ -283,11 +283,11 @@ Knob<bool>::clampToMinMax(const bool& value,int /*dimension*/) const
 //Declare the specialization before defining it to avoid the following
 //error: explicit specialization of 'getValueAtTime' after instantiation
 template<>
-std::string Knob<std::string>::getValueAtTime(double time, int dimension) const;
+std::string Knob<std::string>::getValueAtTime(double time, int dimension,bool clamp) const;
 
 template<>
 std::string
-Knob<std::string>::getValue(int dimension) const
+Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
 {
     if ( isAnimated(dimension) ) {
         SequenceTime time;
@@ -302,7 +302,7 @@ Knob<std::string>::getValue(int dimension) const
             }
         }
 
-        return getValueAtTime(time, dimension);
+        return getValueAtTime(time, dimension,false);
     }
 
     if ( ( dimension > (int)_values.size() ) || (dimension < 0) ) {
@@ -313,7 +313,7 @@ Knob<std::string>::getValue(int dimension) const
     if (master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
         assert(isString); //< other data types aren't supported
-        return isString->getValue(master.first);
+        return isString->getValue(master.first,false);
     }
 
     QReadLocker l(&_valueMutex);
@@ -323,10 +323,10 @@ Knob<std::string>::getValue(int dimension) const
 
 template <typename T>
 T
-Knob<T>::getValue(int dimension) const
+Knob<T>::getValue(int dimension,bool clamp) const
 {
     if ( isAnimated(dimension) ) {
-        return getValueAtTime(getCurrentTime(), dimension);
+        return getValueAtTime(getCurrentTime(), dimension,clamp);
     }
 
     if ( ( dimension > (int)_values.size() ) || (dimension < 0) ) {
@@ -340,22 +340,26 @@ Knob<T>::getValue(int dimension) const
         Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
         assert(isInt || isBool || isDouble); //< other data types aren't supported
         if (isInt) {
-            return isInt->getValue(master.first);
+            return isInt->getValue(master.first,clamp);
         } else if (isBool) {
-            return isBool->getValue(master.first);
+            return isBool->getValue(master.first,clamp);
         } else if (isDouble) {
-            return isDouble->getValue(master.first);
+            return isDouble->getValue(master.first,clamp);
         }
     }
     QReadLocker l(&_valueMutex);
-    T ret = _values[dimension];
-    return clampToMinMax(ret,dimension);
+    if (clamp ) {
+        T ret = _values[dimension];
+        return clampToMinMax(ret,dimension);
+    } else {
+        return _values[dimension];
+    }
 }
 
 template<>
 std::string
 Knob<std::string>::getValueAtTime(double time,
-                                  int dimension) const
+                                  int dimension,bool /*clampToMinMax*/) const
 {
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
@@ -367,7 +371,7 @@ Knob<std::string>::getValueAtTime(double time,
     if (master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
         assert(isString); //< other data types aren't supported
-        return isString->getValueAtTime(time,master.first);
+        return isString->getValueAtTime(time,master.first,false);
     }
     std::string ret;
     const AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<const AnimatingString_KnobHelper* >(this);
@@ -405,7 +409,7 @@ Knob<std::string>::getValueAtTime(double time,
 template<typename T>
 T
 Knob<T>::getValueAtTime(double time,
-                        int dimension ) const
+                        int dimension,bool clamp ) const
 {
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
@@ -430,7 +434,7 @@ Knob<T>::getValueAtTime(double time,
     boost::shared_ptr<Curve> curve  = getCurve(dimension);
     if (curve->getKeyFramesCount() > 0) {
         //getValueAt already clamps to the range for us
-        return curve->getValueAt(time);
+        return curve->getValueAt(time,clamp);
     } else {
         /*if the knob as no keys at this dimension, return the value
            at the requested dimension.*/
@@ -448,8 +452,12 @@ Knob<T>::getValueAtTime(double time,
             }
         }
         QReadLocker l(&_valueMutex);
-        T ret = _values[dimension];
-        return clampToMinMax(ret,dimension);
+        if (clamp) {
+            T ret = _values[dimension];
+            return clampToMinMax(ret,dimension);
+        } else {
+            return _values[dimension];
+        }
     }
 }
 
