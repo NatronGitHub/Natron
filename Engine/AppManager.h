@@ -140,6 +140,8 @@ public:
     void registerAppInstance(AppInstance* app);
 
     AppInstance* getAppInstance(int appID) const WARN_UNUSED_RETURN;
+    
+    int getNumInstances() const WARN_UNUSED_RETURN;
 
     void removeInstance(int appID);
 
@@ -487,6 +489,18 @@ inline std::list<std::string>
 getPluginIDs()
 {
     return appPTR->getPluginIDs();
+}
+    
+inline AppInstance*
+getInstance(int idx)
+{
+    return appPTR->getAppInstance(idx);
+}
+    
+inline int
+getNumInstances()
+{
+    return appPTR->getNumInstances();
 }
     
 } // namespace Natron

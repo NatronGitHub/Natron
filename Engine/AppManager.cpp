@@ -594,6 +594,12 @@ AppManager::getAppInstance(int appID) const
     }
 }
 
+int
+AppManager::getNumInstances() const
+{
+    return (int)_imp->_appInstances.size();
+}
+
 const std::map<int,AppInstanceRef> &
 AppManager::getAppInstances() const
 {
@@ -1842,6 +1848,7 @@ AppManager::initPython(int argc,char* argv[])
     PySys_SetArgv(argc, argv); /// relative module import
     
     initBuiltinPythonModules();
+    PyRun_SimpleString("import NatronEngine as NE; NE.getPluginIDs(); ");
 }
 
 void
