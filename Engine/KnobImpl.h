@@ -1312,7 +1312,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 unblockEvaluation();
             }
             
-            evaluateValueChange(*it, Natron::PLUGIN_EDITED);
+            evaluateValueChange(*it, Natron::NATRON_EDITED);
             
             if (next != dimensionChanged.end()) {
                 ++next;
