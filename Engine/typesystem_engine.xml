@@ -35,8 +35,8 @@
     <primitive-type name="unsigned long"/>
     <primitive-type name="long long"/>
     <primitive-type name="unsigned long long"/>
-    <primitive-type name="std::string">
-        <conversion-rule>
+    <primitive-type name="std::string"/>
+     <!--   <conversion-rule>
             <native-to-target>
                 PyObject* %out = PyString_AsStringAndSize(%in.c_str(),%in.size());
                 return %out;
@@ -49,7 +49,7 @@
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
-    </primitive-type>
+    </primitive-type>-->
     
     <primitive-type name="std::size_t" target-lang-api-name="PyLong">
         <conversion-rule>
@@ -172,12 +172,11 @@
     <enum-type name="ViewerColorSpace"/>
     <enum-type name="Orientation"/>
     <enum-type name="PlaybackMode"/>
+    </namespace-type>
+    
     <!--Global functions to Natron process-->
     <function signature="getPluginIDs()"/>
     <function signature="getNumInstances()"/>
-    </namespace-type>
-    
-
 
 
 </typesystem>

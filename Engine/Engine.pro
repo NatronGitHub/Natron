@@ -123,6 +123,7 @@ HEADERS += \
     FrameEntrySerialization.h \
     FrameParams.h \
     FrameParamsSerialization.h \
+    GlobalFunctionsWrapper.h \
     Hash64.h \
     HistogramCPU.h \
     ImageInfo.h \

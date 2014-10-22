@@ -26,6 +26,6 @@
 #include <Enums.h>
 
 //Engine
-#include <AppManager.h>
+#include <GlobalFunctionsWrapper.h>
 
 #endif // PYSIDE_ENGINE_PYTHON_H

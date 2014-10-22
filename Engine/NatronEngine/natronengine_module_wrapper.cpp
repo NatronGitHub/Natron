@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "natronengine_python.h"
 
+#include <GlobalFunctionsWrapper.h>
 
 
 // Extra includes
@@ -13,8 +14,56 @@ PyTypeObject** SbkNatronEngineTypes;
 // Current module's converter array.
 SbkConverter** SbkNatronEngineTypeConverters;
 // Global functions ------------------------------------------------------------
+static PyObject* SbkNatronEngineModule_getNumInstances(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNumInstances()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = getNumInstances();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_getPluginIDs(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getPluginIDs()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::list<std::string > cppResult = getPluginIDs();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 
 static PyMethodDef NatronEngine_methods[] = {
+    {"getNumInstances", (PyCFunction)SbkNatronEngineModule_getNumInstances, METH_NOARGS},
+    {"getPluginIDs", (PyCFunction)SbkNatronEngineModule_getPluginIDs, METH_NOARGS},
     {0} // Sentinel
 };
 
