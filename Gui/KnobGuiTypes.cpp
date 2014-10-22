@@ -1841,12 +1841,19 @@ Color_KnobGui::showColorDialog()
                      Natron::clamp(Natron::Color::to_func_srgb(curA)));
     dialog.setCurrentColor(curColor);
     QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
-    _knob->blockEvaluation();
     if (!dialog.exec()) {
+        
+        _knob->blockEvaluation();
+
         for (int i = 0; i < _dimension; ++i) {
             _knob->setValue(_lastColor[i],i);
         }
+        _knob->unblockEvaluation();
+
     } else {
+        
+        _knob->blockEvaluation();
+
         ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         for (int i = 0; i < _dimension; ++i) {
             _knob->setValue(_lastColor[i],i);
@@ -1887,8 +1894,10 @@ Color_KnobGui::showColorDialog()
         }
 
         onColorChanged();
+        
+        _knob->unblockEvaluation();
+
     }
-    _knob->unblockEvaluation();
     _knob->evaluateValueChange(0, NATRON_EDITED);
 } // showColorDialog
 
