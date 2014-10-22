@@ -1075,12 +1075,6 @@ KnobGui::pasteClipBoard()
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
 
-    if ( copyAnimation && !curves.empty() && ( (int)curves.size() != knob->getDimension() ) ) {
-        Natron::errorDialog( tr("Paste animation").toStdString(), tr("You cannot copy/paste animation from/to parameters with different dimensions.").toStdString() );
-
-        return;
-    }
-
     int i = 0;
     for (std::list<Variant>::iterator it = values.begin(); it != values.end(); ++it) {
         if (isInt) {
