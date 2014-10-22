@@ -1889,7 +1889,7 @@ Color_KnobGui::showColorDialog()
         onColorChanged();
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, PLUGIN_EDITED);
+    _knob->evaluateValueChange(0, NATRON_EDITED);
 } // showColorDialog
 
 void
@@ -1905,7 +1905,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
         }
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, PLUGIN_EDITED);
+    _knob->evaluateValueChange(0, NATRON_EDITED);
 }
 
 void
