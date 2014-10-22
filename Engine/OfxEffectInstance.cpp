@@ -2258,9 +2258,10 @@ natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reaso
 {
     switch (reason) {
         case Natron::USER_EDITED:
-        case Natron::NATRON_EDITED:
+        case Natron::NATRON_GUI_EDITED:
             return kOfxChangeUserEdited;
         case Natron::PLUGIN_EDITED:
+        case Natron::NATRON_INTERNAL_EDITED:
         case Natron::SLAVE_REFRESH:
         case Natron::RESTORE_DEFAULT:
             return kOfxChangePluginEdited;
@@ -2363,22 +2364,7 @@ OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reason)
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
     ///the clip preferences to stay the same throughout the action.
-    OfxStatus stat = kOfxStatOK;
-    switch (reason) {
-    case Natron::USER_EDITED:
-        stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-        break;
-    case Natron::TIME_CHANGED:
-        stat = effectInstance()->beginInstanceChangedAction(kOfxChangeTime);
-        break;
-    case Natron::PLUGIN_EDITED:
-        stat = effectInstance()->beginInstanceChangedAction(kOfxChangePluginEdited);
-        break;
-    case Natron::PROJECT_LOADING:
-    default:
-        break;
-    }
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    (void)effectInstance()->beginInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason));
 }
 
 void
@@ -2394,22 +2380,8 @@ OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
     ///the clip preferences to stay the same throughout the action.
-    OfxStatus stat = kOfxStatOK;
-    switch (reason) {
-    case Natron::USER_EDITED:
-        stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        break;
-    case Natron::TIME_CHANGED:
-        stat = effectInstance()->endInstanceChangedAction(kOfxChangeTime);
-        break;
-    case Natron::PLUGIN_EDITED:
-        stat = effectInstance()->endInstanceChangedAction(kOfxChangePluginEdited);
-        break;
-    case Natron::PROJECT_LOADING:
-    default:
-        break;
-    }
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    (void)effectInstance()->endInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason));
+
 }
 
 void

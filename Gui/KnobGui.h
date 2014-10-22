@@ -145,7 +145,7 @@ public:
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         KnobHelper::ValueChangedReturnCode ret;
         if (reason == Natron::USER_EDITED) {
-            ret = knob->onValueChanged(dimension, v, newKey);
+            ret = knob->onValueChanged(v, dimension, Natron::USER_EDITED, newKey);
         } else {
             ret = knob->setValue(v,dimension,false);
         }

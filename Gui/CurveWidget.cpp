@@ -1735,8 +1735,8 @@ CurveWidget::CurveWidget(Gui* gui,
     if (timeline) {
         QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),this,SLOT( onTimeLineFrameChanged(SequenceTime,int) ) );
         QObject::connect( timeline.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,SLOT( onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
-        onTimeLineFrameChanged(timeline->currentFrame(), Natron::PROJECT_LOADING);
-        onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::PROJECT_LOADING);
+        onTimeLineFrameChanged(timeline->currentFrame(), Natron::NATRON_GUI_EDITED);
+        onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::NATRON_GUI_EDITED);
     }
 }
 

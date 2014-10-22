@@ -898,21 +898,23 @@ Knob<T>::setValue(const T & value,
                   bool turnOffAutoKeying)
 {
     if (turnOffAutoKeying) {
-        return setValue(value,dimension,Natron::NATRON_EDITED,NULL);
+        return setValue(value,dimension,Natron::NATRON_INTERNAL_EDITED,NULL);
     } else {
         KeyFrame k;
 
-        return setValue(value,dimension,Natron::NATRON_EDITED,&k);
+        return setValue(value,dimension,Natron::NATRON_INTERNAL_EDITED,&k);
     }
 }
 
 template<typename T>
 KnobHelper::ValueChangedReturnCode
-Knob<T>::onValueChanged(int dimension,
-                        const T & v,
+Knob<T>::onValueChanged(const T & value,
+                        int dimension,
+                        Natron::ValueChangedReason reason,
                         KeyFrame* newKey)
 {
-    return setValue(v, dimension,Natron::USER_EDITED,newKey);
+    assert(reason == Natron::NATRON_GUI_EDITED || reason == Natron::USER_EDITED);
+    return setValue(value, dimension,reason,newKey);
 }
 
 template<typename T>
@@ -931,7 +933,7 @@ Knob<T>::setValueAtTime(int time,
 {
     KeyFrame k;
 
-    (void)setValueAtTime(time,v,dimension,Natron::NATRON_EDITED,&k);
+    (void)setValueAtTime(time,v,dimension,Natron::NATRON_INTERNAL_EDITED,&k);
 }
 
 template<typename T>
@@ -1553,7 +1555,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 unblockEvaluation();
             }
             
-            evaluateValueChange(*it, Natron::NATRON_EDITED);
+            evaluateValueChange(*it, Natron::NATRON_INTERNAL_EDITED);
             
             if (next != dimensionChanged.end()) {
                 ++next;

@@ -1090,19 +1090,20 @@ public:
    
     
     /**
-     * @brief Calls setValue with a reason of Natron::NATRON_EDITED.
+     * @brief Calls setValue with a reason of Natron::NATRON_INTERNAL_EDITED.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
     ValueChangedReturnCode setValue(const T & value,int dimension,bool turnOffAutoKeying = false);
 
     /**
-     * @brief Calls setValue with a reason of Natron::USER_EDITED.
+     * @brief Calls setValue 
+     * @param reason Can either be Natron::USER_EDITED or Natron::NATRON_GUI_EDITED
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns A status according to the operation that was made to the keyframe.
      * @see ValueChangedReturnCode
      **/
-    ValueChangedReturnCode onValueChanged(int dimension,const T & v,KeyFrame* newKey);
+    ValueChangedReturnCode onValueChanged(const T & v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
     
     /**
      * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
@@ -1115,7 +1116,7 @@ public:
     void requestSetValueOnUndoStack(const T & value,int dimension);
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::NATRON_EDITED.
+     * @brief Calls setValueAtTime with a reason of Natron::NATRON_INTERNAL_EDITED.
      **/
     void setValueAtTime(int time,const T & v,int dimension);
     

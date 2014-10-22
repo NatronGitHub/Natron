@@ -912,7 +912,7 @@ Button_KnobGui::~Button_KnobGui()
 void
 Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(0,true, NULL);
+    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(true, 0, Natron::USER_EDITED, NULL);
 }
 
 void
@@ -1973,7 +1973,7 @@ Color_KnobGui::showColorDialog()
         _knob->unblockEvaluation();
 
     }
-    _knob->evaluateValueChange(0, NATRON_EDITED);
+    _knob->evaluateValueChange(0, NATRON_GUI_EDITED);
 } // showColorDialog
 
 void
@@ -1989,7 +1989,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
         }
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, NATRON_EDITED);
+    _knob->evaluateValueChange(0, NATRON_GUI_EDITED);
 }
 
 void

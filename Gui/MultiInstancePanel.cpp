@@ -1692,9 +1692,9 @@ TrackerPanel::handleTrackNextAndPrevious(const std::list<Button_Knob*> & selecte
         ///upon the last track if we want to update the viewer
         Natron::ValueChangedReason reason;
         if (_imp->updateViewerOnTrackingEnabled) {
-            reason = next == selectedInstances.end() ? USER_EDITED : PLUGIN_EDITED;
+            reason = next == selectedInstances.end() ? NATRON_GUI_EDITED : NATRON_INTERNAL_EDITED;
         } else {
-            reason = PLUGIN_EDITED;
+            reason = NATRON_INTERNAL_EDITED;
         }
 
         (*it)->getHolder()->onKnobValueChanged_public(*it,reason,currentFrame);

@@ -256,13 +256,26 @@ enum PixmapEnum
 ///This enum is used when dealing with parameters which have their value edited
 enum ValueChangedReason
 {
-    USER_EDITED = 0,     //< a user change triggered the call, gui will not be refreshed but instanceChangedAction called
-    PLUGIN_EDITED ,     //< a plugin change triggered the call, gui will be refreshed but instanceChangedAction not called
-    NATRON_EDITED, //<  Natron called setValue itself, instanceChangedAction will be called AND gui refreshed
-    TIME_CHANGED ,     //< a time-line seek changed the call, called when timeline time changes
-    PROJECT_LOADING ,     //< the project loader triggered the call
-    SLAVE_REFRESH ,     //< a master parameter ordered the slave to refresh its value
-    RESTORE_DEFAULT ,     //< the knob value has been restored to its defaults
+    //A user change to the knob triggered the call, gui will not be refreshed but instanceChangedAction called
+    USER_EDITED = 0,
+    
+    //A plugin change triggered the call, gui will be refreshed but instanceChangedAction not called
+    PLUGIN_EDITED ,
+    
+    // Natron gui called setValue itself, instanceChangedAction will be called (with a reason of User edited) AND knob gui refreshed
+    NATRON_GUI_EDITED,
+    
+    // Natron engine called setValue itself, instanceChangedAction will be called (with a reason of plugin edited) AND knob gui refreshed
+    NATRON_INTERNAL_EDITED,
+    
+    //A time-line seek changed the call, called when timeline time changes
+    TIME_CHANGED ,
+    
+    //A master parameter ordered the slave to refresh its value
+    SLAVE_REFRESH ,
+    
+    //The knob value has been restored to its defaults
+    RESTORE_DEFAULT ,
 };
 
 enum AnimationLevel
