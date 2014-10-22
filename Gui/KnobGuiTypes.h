@@ -32,6 +32,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/KnobGui.h"
 
+//Define this if you want the spinbox to clamp to the plugin defined range
+//#define SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
+
 // Qt
 class QString;
 class QFrame;
@@ -103,9 +106,11 @@ public slots:
     void onSliderValueChanged(double);
     void onSliderEditingFinished();
 
-    void onMinMaxChanged(int mini, int maxi, int index = 0);
-
-    void onDisplayMinMaxChanged(int mini,int maxi,int index = 0);
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
+    void onMinMaxChanged(double mini, double maxi, int index = 0);
+#endif
+    
+    void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
 
     void onIncrementChanged(int incr, int index = 0);
 
@@ -200,8 +205,9 @@ public slots:
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
     void onSliderEditingFinished();
-
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     void onMinMaxChanged(double mini, double maxi, int index = 0);
+#endif
     void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
@@ -234,6 +240,7 @@ private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     ScaleSliderQWidget *_slider;
     boost::shared_ptr<Double_Knob> _knob;
+    int _digits;
 };
 
 //================================

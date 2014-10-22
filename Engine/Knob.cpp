@@ -182,6 +182,8 @@ struct KnobHelper::KnobHelperPrivate
     ///not shared between instances whereas non instance specifics are shared.
     bool isInstanceSpecific;
 
+    std::vector<std::string> dimensionNames;
+
 
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
@@ -217,6 +219,7 @@ struct KnobHelper::KnobHelperPrivate
           , mustCloneGuiCurves()
           , ofxParamHandle(0)
           , isInstanceSpecific(false)
+          , dimensionNames(dimension_)
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
@@ -280,14 +283,69 @@ KnobHelper::isInstanceSpecific() const
 void
 KnobHelper::populate()
 {
+    Color_Knob* isColor = dynamic_cast<Color_Knob*>(this);
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
         _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
         _imp->animationLevel[i] = Natron::NO_ANIMATION;
+        
+        
+        if (!isColor) {
+            switch (i) {
+                case 0:
+                    _imp->dimensionNames[i] = "x";
+                    break;
+                case 1:
+                    _imp->dimensionNames[i] = "y";
+                    break;
+                case 2:
+                    _imp->dimensionNames[i] = "z";
+                    break;
+                case 3:
+                    _imp->dimensionNames[i] = "w";
+                    break;
+                default:
+                    break;
+            }
+            
+        } else {
+            switch (i) {
+                case 0:
+                    _imp->dimensionNames[i] = "r";
+                    break;
+                case 1:
+                    _imp->dimensionNames[i] = "g";
+                    break;
+                case 2:
+                    _imp->dimensionNames[i] = "b";
+                    break;
+                case 3:
+                    _imp->dimensionNames[i] = "a";
+                    break;
+                default:
+                    break;
+            }
+        }
+
     }
+    
 }
 
-/// You must implement it
+std::string
+KnobHelper::getDimensionName(int dimension) const
+{
+    assert( dimension < (int)_imp->dimensionNames.size() && dimension >= 0);
+    return _imp->dimensionNames[dimension];
+
+}
+
+void
+KnobHelper::setDimensionName(int dim,const std::string & name)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->dimensionNames[dim] = name;
+}
+
 template <typename T>
 const std::string &
 Knob<T>::typeName() const {
@@ -295,7 +353,6 @@ Knob<T>::typeName() const {
     return knobNoTypeName;
 }
 
-/// You must implement it
 template <typename T>
 bool
 Knob<T>::canAnimate() const {

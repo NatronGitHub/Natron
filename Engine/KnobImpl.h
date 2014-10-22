@@ -14,6 +14,7 @@
 
 #include "Knob.h"
 
+#include <cfloat>
 #include <stdexcept>
 #include <string>
 #include <QString>
@@ -28,6 +29,37 @@
 ///template specializations
 
 template <typename T>
+void
+Knob<T>::initMinMax()
+{
+    
+}
+
+template <>
+void
+Knob<double>::initMinMax()
+{
+    for (int i = 0; i < getDimension(); ++i) {
+        _minimums[i] = -DBL_MAX;
+        _maximums[i] = DBL_MAX;
+        _displayMins[i] = -DBL_MAX;
+        _displayMaxs[i] = DBL_MAX;
+    }
+}
+
+template <>
+void
+Knob<int>::initMinMax()
+{
+    for (int i = 0; i < getDimension(); ++i) {
+        _minimums[i] = INT_MIN;
+        _maximums[i] = INT_MAX;
+        _displayMins[i] = INT_MIN;
+        _displayMaxs[i] = INT_MAX;
+    }
+}
+
+template <typename T>
 Knob<T>::Knob(KnobHolder*  holder,
               const std::string & description,
               int dimension,
@@ -36,16 +68,209 @@ Knob<T>::Knob(KnobHolder*  holder,
       , _valueMutex(QReadWriteLock::Recursive)
       , _values(dimension)
       , _defaultValues(dimension)
+      , _minMaxMutex(QReadWriteLock::Recursive)
+      , _minimums(dimension)
+      , _maximums(dimension)
+      , _displayMins(dimension)
+      , _displayMaxs(dimension)
       , _setValueRecursionLevel(0)
       , _setValueRecursionLevelMutex(QMutex::Recursive)
       , _setValuesQueueMutex()
       , _setValuesQueue()
 {
+    initMinMax();
 }
 
 template <typename T>
 Knob<T>::~Knob()
 {
+}
+
+template <typename T>
+void
+Knob<T>::signalMinMaxChanged(const T& mini,const T& maxi,int dimension)
+{
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_minMaxChanged(mini,maxi,dimension);
+    }
+}
+
+template <typename T>
+void
+Knob<T>::signalDisplayMinMaxChanged(const T& mini,const T& maxi,int dimension)
+{
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_displayMinMaxChanged(mini,maxi,dimension);
+    }
+}
+
+template <>
+void
+Knob<std::string>::signalMinMaxChanged(const std::string& /*mini*/,const std::string& /*maxi*/,int dimension)
+{
+    
+}
+
+template <>
+void
+Knob<std::string>::signalDisplayMinMaxChanged(const std::string& /*mini*/,const std::string& /*maxi*/,int dimension)
+{
+    
+}
+
+
+template <typename T>
+void
+Knob<T>::setMinimum(const T& mini, int dimension)
+{
+    T maxi;
+    {
+        QWriteLocker k(&_minMaxMutex);
+        _minimums[dimension] = mini;
+        maxi = _maximums[dimension];
+    }
+    signalMinMaxChanged(mini,maxi,dimension);
+}
+
+template <typename T>
+void Knob<T>::setMaximum(const T& maxi, int dimension)
+{
+    T mini;
+    {
+        QWriteLocker k(&_minMaxMutex);
+        _maximums[dimension] = maxi;
+        mini = _minimums[dimension];
+    }
+    signalMinMaxChanged(mini,maxi,dimension);
+}
+
+template <typename T>
+void Knob<T>::setDisplayMinimum(const T& mini, int dimension)
+{
+    T maxi;
+    {
+        QWriteLocker k(&_minMaxMutex);
+        _displayMins[dimension] = mini;
+        maxi = _displayMaxs[dimension];
+    }
+    signalDisplayMinMaxChanged(mini,maxi,dimension);
+}
+
+template <typename T>
+void Knob<T>::setDisplayMaximum(const T& maxi, int dimension)
+{
+    T mini;
+    {
+        QWriteLocker k(&_minMaxMutex);
+        _displayMaxs[dimension] = maxi;
+        mini = _displayMins[dimension];
+    }
+    signalDisplayMinMaxChanged(mini,maxi,dimension);
+}
+
+template <typename T>
+void Knob<T>::setMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis)
+{
+    {
+        QWriteLocker k(&_minMaxMutex);
+        _minimums = minis;
+        _maximums = maxis;
+    }
+    for (unsigned int i = 0; i < minis.size() ; ++i) {
+        signalMinMaxChanged(minis[i],maxis[i],i);
+    }
+    
+}
+
+template <typename T>
+void Knob<T>::setDisplayMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis)
+{
+    {
+        QWriteLocker k(&_minMaxMutex);
+        _displayMins = minis;
+        _displayMaxs = maxis;
+    }
+    for (unsigned int i = 0; i < minis.size() ; ++i) {
+        signalDisplayMinMaxChanged(minis[i],maxis[i],i);
+    }
+    
+}
+
+template <typename T>
+const std::vector<T>&
+Knob<T>::getMinimums() const
+{
+    return _minimums;
+}
+
+template <typename T>
+const std::vector<T>&
+Knob<T>::getMaximums() const
+{
+    return _maximums;
+}
+
+template <typename T>
+const std::vector<T>&
+Knob<T>::getDisplayMinimums() const
+{
+    return _displayMins;
+}
+
+template <typename T>
+const std::vector<T>&
+Knob<T>::getDisplayMaximums() const
+{
+    return _displayMaxs;
+}
+
+
+template <typename T>
+T
+Knob<T>::getMinimum(int dimension) const
+{
+    QReadLocker k(&_minMaxMutex);
+    return _minimums[dimension];
+}
+
+template <typename T>
+T
+Knob<T>::getMaximum(int dimension) const
+{
+    QReadLocker k(&_minMaxMutex);
+    return _maximums[dimension];
+}
+
+template <typename T>
+T
+Knob<T>::getDisplayMinimum(int dimension) const
+{
+    QReadLocker k(&_minMaxMutex);
+    return _displayMins[dimension];
+}
+
+template <typename T>
+T
+Knob<T>::getDisplayMaximum(int dimension) const
+{
+    QReadLocker k(&_minMaxMutex);
+    return _displayMaxs[dimension];
+}
+
+
+template <typename T>
+T
+Knob<T>::clampToMinMax(const T& value,int dimension) const
+{
+    QReadLocker k(&_minMaxMutex);
+    return std::max((double)_minimums[dimension], std::min((double)_maximums[dimension],(double)value));
+}
+
+template <>
+std::string
+Knob<std::string>::clampToMinMax(const std::string& value,int /*dimension*/) const
+{
+    return value;
 }
 
 //Declare the specialization before defining it to avoid the following
@@ -116,8 +341,8 @@ Knob<T>::getValue(int dimension) const
         }
     }
     QReadLocker l(&_valueMutex);
-
-    return _values[dimension];
+    T ret = _values[dimension];
+    return clampToMinMax(ret,dimension);
 }
 
 template<>
@@ -197,6 +422,7 @@ Knob<T>::getValueAtTime(double time,
     }
     boost::shared_ptr<Curve> curve  = getCurve(dimension);
     if (curve->getKeyFramesCount() > 0) {
+        //getValueAt already clamps to the range for us
         return curve->getValueAt(time);
     } else {
         /*if the knob as no keys at this dimension, return the value
@@ -215,8 +441,8 @@ Knob<T>::getValueAtTime(double time,
             }
         }
         QReadLocker l(&_valueMutex);
-        
-        return _values[dimension];
+        T ret = _values[dimension];
+        return clampToMinMax(ret,dimension);
     }
 }
 

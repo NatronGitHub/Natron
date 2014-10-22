@@ -154,7 +154,17 @@ public:
         emit refreshGuiCurve(dimension);
     }
     
-    public slots:
+    void s_minMaxChanged(double mini, double maxi, int index)
+    {
+        emit minMaxChanged(mini,maxi,index);
+    }
+    
+    void s_displayMinMaxChanged(double mini,double maxi,int index)
+    {
+        emit displayMinMaxChanged(mini,maxi,index);
+    }
+    
+public slots:
 
     /**
      * @brief Calls KnobI::onAnimationRemoved
@@ -233,6 +243,10 @@ signals:
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
+    
+    void minMaxChanged(double mini, double maxi, int index);
+    
+    void displayMinMaxChanged(double mini,double maxi,int index);
 };
 
 class KnobI
@@ -280,6 +294,8 @@ public:
      * for a dimension.
      **/
     virtual std::string getDimensionName(int dimension) const = 0;
+    virtual void setDimensionName(int dim,const std::string & name) = 0;
+
 
     /**
      * @brief When set to true the instanceChanged action on the plugin and evaluate (render) will not be called
@@ -912,6 +928,9 @@ public:
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
     virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setDimensionName(int dim,const std::string & name) OVERRIDE FINAL;
+    
 private:
 
     virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReason reason
@@ -1145,10 +1164,6 @@ public:
     /// You must implement it
     virtual bool canAnimate() const OVERRIDE;
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getDimensionName(int /*dimension*/) const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return "";
-    }
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
     virtual bool onKeyFrameSet(SequenceTime time,int dimension) OVERRIDE FINAL;
@@ -1169,11 +1184,39 @@ public:
     
     virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
     
+    ///MT-safe
+    void setMinimum(const T& mini, int dimension = 0);
+    void setMaximum(const T& maxi, int dimension = 0);
+    void setDisplayMinimum(const T& mini, int dimension = 0);
+    void setDisplayMaximum(const T& maxi, int dimension = 0);
+    void setMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis);
+    void setDisplayMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis);
+
+    
+    ///Not MT-SAFE, can only be called from main thread
+    const std::vector<T> &getMinimums() const;
+    const std::vector<T> &getMaximums() const;
+    const std::vector<T> &getDisplayMinimums() const;
+    const std::vector<T> &getDisplayMaximums() const;
+    
+    /// MT-SAFE
+    T getMinimum(int dimension = 0) const;
+    T getMaximum(int dimension = 0) const;
+    T getDisplayMinimum(int dimension = 0) const;
+    T getDisplayMaximum(int dimension = 0) const;
+    
 protected:
     
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
 
 private:
+    
+    void initMinMax();
+    
+    T clampToMinMax(const T& value,int dimension) const;
+    
+    void signalMinMaxChanged(const T& mini,const T& maxi,int dimension);
+    void signalDisplayMinMaxChanged(const T& mini,const T& maxi,int dimension);
 
     void cloneValues(KnobI* other);
 
@@ -1231,7 +1274,11 @@ private:
     mutable QReadWriteLock _valueMutex; //< protects _values
     std::vector<T> _values;
     std::vector<T> _defaultValues;
-
+    
+    //Only for double and int
+    mutable QReadWriteLock _minMaxMutex;
+    std::vector<T>  _minimums,_maximums,_displayMins,_displayMaxs;
+    
     ///this flag is to avoid recursive setValue calls
     int _setValueRecursionLevel;
     mutable QMutex _setValueRecursionLevelMutex;

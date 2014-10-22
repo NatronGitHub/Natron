@@ -38,38 +38,11 @@ Int_Knob::Int_Knob(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
 : Knob<int>(holder, description, dimension,declaredByPlugin)
-, _dimensionNames(dimension)
-, _minimums(dimension)
-, _maximums(dimension)
 , _increments(dimension)
-, _displayMins(dimension)
-, _displayMaxs(dimension)
 , _disableSlider(false)
 {
     for (int i = 0; i < dimension; ++i) {
-        _minimums[i] = INT_MIN;
-        _maximums[i] = INT_MAX;
         _increments[i] = 1;
-        _displayMins[i] = INT_MIN;
-        _displayMaxs[i] = INT_MAX;
-        
-        switch (i) {
-            case 0:
-                _dimensionNames[i] = "x";
-                break;
-            case 1:
-                _dimensionNames[i] = "y";
-                break;
-            case 2:
-                _dimensionNames[i] = "z";
-                break;
-            case 3:
-                _dimensionNames[i] = "w";
-                break;
-            default:
-                assert(false);     //< unsupported dimension
-                break;
-        }
     }
 }
 
@@ -85,49 +58,6 @@ Int_Knob::isSliderDisabled() const
     return _disableSlider;
 }
 
-void
-Int_Knob::setMinimum(int mini,
-                     int index)
-{
-    if ( index >= (int)_minimums.size() ) {
-        throw "Int_Knob::setMinimum , dimension out of range";
-    }
-    _minimums[index] = mini;
-    emit minMaxChanged(mini, _maximums[index], index);
-}
-
-void
-Int_Knob::setMaximum(int maxi,
-                     int index)
-{
-    if ( index >= (int)_maximums.size() ) {
-        throw "Int_Knob::setMaximum , dimension out of range";
-    }
-    _maximums[index] = maxi;
-    emit minMaxChanged(_minimums[index], maxi, index);
-}
-
-void
-Int_Knob::setDisplayMinimum(int mini,
-                            int index)
-{
-    if ( index >= (int)_displayMins.size() ) {
-        throw "Int_Knob::setDisplayMinimum , dimension out of range";
-    }
-    _displayMins[index] = mini;
-    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
-}
-
-void
-Int_Knob::setDisplayMaximum(int maxi,
-                            int index)
-{
-    if ( index >= (int)_displayMaxs.size() ) {
-        throw "Int_Knob::setDisplayMaximum , dimension out of range";
-    }
-    _displayMaxs[index] = maxi;
-    emit displayMinMaxChanged(_displayMins[index],maxi, index);
-}
 
 void
 Int_Knob::setIncrement(int incr,
@@ -160,87 +90,10 @@ Int_Knob::setIncrement(const std::vector<int> &incr)
     }
 }
 
-/*minis & maxis must have the same size*/
-void
-Int_Knob::setMinimumsAndMaximums(const std::vector<int> &minis,
-                                 const std::vector<int> &maxis)
-{
-    assert( (int)minis.size() == getDimension() && (int)maxis.size() == getDimension() );
-    _minimums = minis;
-    _maximums = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit minMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
-
-void
-Int_Knob::setDisplayMinimumsAndMaximums(const std::vector<int> &minis,
-                                        const std::vector<int> &maxis)
-{
-    assert( (int)minis.size() == getDimension() && (int)maxis.size() == getDimension() );
-    _displayMins = minis;
-    _displayMaxs = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit displayMinMaxChanged(_displayMins[i], _displayMaxs[i], i);
-    }
-}
-
-const std::vector<int> &
-Int_Knob::getMinimums() const
-{
-    return _minimums;
-}
-
-const std::vector<int> &
-Int_Knob::getMaximums() const
-{
-    return _maximums;
-}
-
 const std::vector<int> &
 Int_Knob::getIncrements() const
 {
     return _increments;
-}
-
-const std::vector<int> &
-Int_Knob::getDisplayMinimums() const
-{
-    return _displayMins;
-}
-
-const std::vector<int> &
-Int_Knob::getDisplayMaximums() const
-{
-    return _displayMaxs;
-}
-
-std::pair<int,int> Int_Knob::getMinMaxForCurve(int dimension) const
-{
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if (curve) {
-        const std::vector<int> & mins = getMinimums();
-        const std::vector<int> & maxs = getMaximums();
-        
-        return std::make_pair(mins[dimension], maxs[dimension]);
-    }
-    throw std::logic_error("Int_Knob::getMinMaxForCurve(): curve not found");
-}
-
-void
-Int_Knob::setDimensionName(int dim,
-                           const std::string & name)
-{
-    assert( dim < (int)_dimensionNames.size() );
-    _dimensionNames[dim] = name;
-}
-
-std::string
-Int_Knob::getDimensionName(int dimension) const
-{
-    assert( dimension < (int)_dimensionNames.size() );
-    
-    return _dimensionNames[dimension];
 }
 
 bool
@@ -299,12 +152,7 @@ Double_Knob::Double_Knob(KnobHolder* holder,
                          int dimension,
                          bool declaredByPlugin)
 : Knob<double>(holder, description, dimension,declaredByPlugin)
-, _dimensionNames(dimension)
-, _minimums(dimension)
-, _maximums(dimension)
 , _increments(dimension)
-, _displayMins(dimension)
-, _displayMaxs(dimension)
 , _decimals(dimension)
 , _disableSlider(false)
 , _normalizationXY()
@@ -315,47 +163,9 @@ Double_Knob::Double_Knob(KnobHolder* holder,
     _normalizationXY.second = NORMALIZATION_NONE;
     
     for (int i = 0; i < dimension; ++i) {
-        _minimums[i] = -DBL_MAX;
-        _maximums[i] = DBL_MAX;
         _increments[i] = 1.;
-        _displayMins[i] = -DBL_MAX;
-        _displayMaxs[i] = DBL_MAX;
         _decimals[i] = 2;
-        
-        switch (i) {
-            case 0:
-                _dimensionNames[i] = "x";
-                break;
-            case 1:
-                _dimensionNames[i] = "y";
-                break;
-            case 2:
-                _dimensionNames[i] = "z";
-                break;
-            case 3:
-                _dimensionNames[i] = "w";
-                break;
-            default:
-                assert(false);     //< unsupported dimension
-                break;
-        }
     }
-}
-
-void
-Double_Knob::setDimensionName(int dim,
-                              const std::string & name)
-{
-    assert( dim < (int)_dimensionNames.size() );
-    _dimensionNames[dim] = name;
-}
-
-std::string
-Double_Knob::getDimensionName(int dimension) const
-{
-    assert( dimension < (int)_dimensionNames.size() );
-    
-    return _dimensionNames[dimension];
 }
 
 void
@@ -390,18 +200,6 @@ Double_Knob::typeName() const
 }
 
 const std::vector<double> &
-Double_Knob::getMinimums() const
-{
-    return _minimums;
-}
-
-const std::vector<double> &
-Double_Knob::getMaximums() const
-{
-    return _maximums;
-}
-
-const std::vector<double> &
 Double_Knob::getIncrements() const
 {
     return _increments;
@@ -411,62 +209,6 @@ const std::vector<int> &
 Double_Knob::getDecimals() const
 {
     return _decimals;
-}
-
-const std::vector<double> &
-Double_Knob::getDisplayMinimums() const
-{
-    return _displayMins;
-}
-
-const std::vector<double> &
-Double_Knob::getDisplayMaximums() const
-{
-    return _displayMaxs;
-}
-
-void
-Double_Knob::setMinimum(double mini,
-                        int index)
-{
-    if ( index >= (int)_minimums.size() ) {
-        throw "Double_Knob::setMinimum , dimension out of range";
-    }
-    _minimums[index] = mini;
-    emit minMaxChanged(mini, _maximums[index], index);
-}
-
-void
-Double_Knob::setMaximum(double maxi,
-                        int index)
-{
-    if ( index >= (int)_maximums.size() ) {
-        throw "Double_Knob::setMaximum , dimension out of range";
-    }
-    _maximums[index] = maxi;
-    emit minMaxChanged(_minimums[index], maxi, index);
-}
-
-void
-Double_Knob::setDisplayMinimum(double mini,
-                               int index)
-{
-    if ( index >= (int)_displayMins.size() ) {
-        throw "Double_Knob::setDisplayMinimum , dimension out of range";
-    }
-    _displayMins[index] = mini;
-    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
-}
-
-void
-Double_Knob::setDisplayMaximum(double maxi,
-                               int index)
-{
-    if ( index >= (int)_displayMaxs.size() ) {
-        throw "Double_Knob::setDisplayMaximum , dimension out of range";
-    }
-    _displayMaxs[index] = maxi;
-    emit displayMinMaxChanged(_displayMins[index], maxi, index);
 }
 
 void
@@ -498,42 +240,6 @@ Double_Knob::setDecimals(int decis,
     emit decimalsChanged(_decimals[index], index);
 }
 
-std::pair<double,double> Double_Knob::getMinMaxForCurve(int dimension) const
-{
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if (curve) {
-        const std::vector<double> & mins = getMinimums();
-        const std::vector<double> & maxs = getMaximums();
-        
-        return std::make_pair(mins[dimension], maxs[dimension]);
-    }
-    throw std::logic_error("Double_Knob::getMinMaxForCurve(): curve not found");
-}
-
-/*minis & maxis must have the same size*/
-void
-Double_Knob::setMinimumsAndMaximums(const std::vector<double> &minis,
-                                    const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _minimums = minis;
-    _maximums = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit minMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
-
-void
-Double_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis,
-                                           const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _displayMins = minis;
-    _displayMaxs = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit displayMinMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
 
 void
 Double_Knob::setIncrement(const std::vector<double> &incr)
@@ -999,38 +705,9 @@ Color_Knob::Color_Knob(KnobHolder* holder,
                        bool declaredByPlugin)
 : Knob<double>(holder, description, dimension,declaredByPlugin)
 , _allDimensionsEnabled(true)
-, _dimensionNames(dimension)
-, _minimums(dimension)
-, _maximums(dimension)
-, _displayMins(dimension)
-, _displayMaxs(dimension)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
-    for (int i = 0; i < dimension; ++i) {
-        _minimums[i] = -DBL_MAX;
-        _maximums[i] = DBL_MAX;
-        _displayMins[i] = 0.;
-        _displayMaxs[i] = 1.;
-        
-        switch (i) {
-            case 0:
-                _dimensionNames[i] = "r";
-                break;
-            case 1:
-                _dimensionNames[i] = "g";
-                break;
-            case 2:
-                _dimensionNames[i] = "b";
-                break;
-            case 3:
-                _dimensionNames[i] = "a";
-                break;
-            default:
-                assert(false);     //< unsupported dimension
-                break;
-        }
-    }
 }
 
 void
@@ -1045,22 +722,7 @@ Color_Knob::areAllDimensionsEnabled() const
     return _allDimensionsEnabled;
 }
 
-void
-Color_Knob::setDimensionName(int dim,
-                             const std::string & dimension)
-{
-    assert( dim < (int)_dimensionNames.size() );
-    _dimensionNames[dim] = dimension;
-}
 
-// FIXME: the plugin may have set kOfxParamPropDimensionLabel - use this!
-std::string
-Color_Knob::getDimensionName(int dimension) const
-{
-    assert( dimension < (int)_dimensionNames.size() );
-    
-    return _dimensionNames[dimension];
-}
 
 bool
 Color_Knob::canAnimate() const
@@ -1082,111 +744,6 @@ Color_Knob::typeName() const
     return typeNameStatic();
 }
 
-const std::vector<double> &
-Color_Knob::getMinimums() const
-{
-    return _minimums;
-}
-
-const std::vector<double> &
-Color_Knob::getMaximums() const
-{
-    return _maximums;
-}
-
-const std::vector<double> &
-Color_Knob::getDisplayMinimums() const
-{
-    return _displayMins;
-}
-
-const std::vector<double> &
-Color_Knob::getDisplayMaximums() const
-{
-    return _displayMaxs;
-}
-
-void
-Color_Knob::setMinimum(double mini,
-                       int index)
-{
-    if ( index >= (int)_minimums.size() ) {
-        throw "Color_Knob::setMinimum , dimension out of range";
-    }
-    _minimums[index] = mini;
-    emit minMaxChanged(mini, _maximums[index], index);
-}
-
-void
-Color_Knob::setMaximum(double maxi,
-                       int index)
-{
-    if ( index >= (int)_maximums.size() ) {
-        throw "Color_Knob::setMaximum , dimension out of range";
-    }
-    _maximums[index] = maxi;
-    emit minMaxChanged(_minimums[index], maxi, index);
-}
-
-void
-Color_Knob::setDisplayMinimum(double mini,
-                              int index)
-{
-    if ( index >= (int)_displayMins.size() ) {
-        throw "Color_Knob::setDisplayMinimum , dimension out of range";
-    }
-    _displayMins[index] = mini;
-    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
-}
-
-void
-Color_Knob::setDisplayMaximum(double maxi,
-                              int index)
-{
-    if ( index >= (int)_displayMaxs.size() ) {
-        throw "Color_Knob::setDisplayMaximum , dimension out of range";
-    }
-    _displayMaxs[index] = maxi;
-    emit displayMinMaxChanged(_displayMins[index], maxi, index);
-}
-
-std::pair<double,double>
-Color_Knob::getMinMaxForCurve(int dimension) const
-{
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if (curve) {
-        const std::vector<double> & mins = getMinimums();
-        const std::vector<double> & maxs = getMaximums();
-        
-        return std::make_pair(mins[dimension], maxs[dimension]);
-    }
-    throw std::logic_error("Color_Knob::getMinMaxForCurve(): curve not found");
-}
-
-/*minis & maxis must have the same size*/
-void
-Color_Knob::setMinimumsAndMaximums(const std::vector<double> &minis,
-                                   const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _minimums = minis;
-    _maximums = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit minMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
-
-void
-Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis,
-                                          const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _displayMins = minis;
-    _displayMaxs = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit displayMinMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
 
 void
 Color_Knob::setValues(double r,
@@ -1368,7 +925,6 @@ Parametric_Knob::Parametric_Knob(KnobHolder* holder,
 , _curvesMutex()
 , _curves(dimension)
 , _curvesColor(dimension)
-, _curveLabels(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
         RGBAColourF color;
@@ -1427,27 +983,6 @@ Parametric_Knob::getCurveColor(int dimension,
     *b = _curvesColor[dimension].b;
 }
 
-void
-Parametric_Knob::setCurveLabel(int dimension,
-                               const std::string & str)
-{
-    ///only called in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-    ///Mt-safe as it never changes
-    
-    assert( dimension < (int)_curveLabels.size() );
-    _curveLabels[dimension] = str;
-}
-
-const std::string &
-Parametric_Knob::getCurveLabel(int dimension) const
-{
-    ///Mt-safe as it never changes
-    
-    assert( dimension < (int)_curveLabels.size() );
-    
-    return _curveLabels[dimension];
-}
 
 void
 Parametric_Knob::setParametricRange(double min,
@@ -1471,12 +1006,6 @@ std::pair<double,double> Parametric_Knob::getParametricRange() const
     return _curves.front()->getXRange();
 }
 
-std::string
-Parametric_Knob::getDimensionName(int dimension) const
-{
-    ///Mt-safe as it never changes
-    return getCurveLabel(dimension);
-}
 
 boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) const
 {

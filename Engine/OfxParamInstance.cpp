@@ -3056,7 +3056,7 @@ OfxParametricInstance::setLabel()
     _knob->setName( getParamLabel(this) );
     for (int i = 0; i < _knob->getDimension(); ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel,i);
-        _knob->setCurveLabel(i, curveName);
+        _knob->setDimensionName(i, curveName);
     }
 }
 
