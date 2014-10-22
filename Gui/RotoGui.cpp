@@ -1619,6 +1619,7 @@ RotoGui::penDown(double /*scaleX*/,
             if ( buttonDownIsRight(e) ) {
                 showMenuForCurve(nearbyBezier);
             }
+            didSomething = true;
         }
         break;
     case ADD_POINTS:
