@@ -1209,7 +1209,7 @@ KnobHelper::slaveTo(int dimension,
 
 std::pair<int,boost::shared_ptr<KnobI> > KnobHelper::getMaster(int dimension) const
 {
-    assert(dimension >= 0);
+    assert(dimension >= 0 && dimension < (int)_imp->masters.size());
     QReadLocker l(&_imp->mastersMutex);
 
     return _imp->masters[dimension];

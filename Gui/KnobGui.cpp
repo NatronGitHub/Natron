@@ -297,14 +297,20 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
     _imp->copyRightClickMenu->addSeparator();
 
     bool isSlave = knob->isSlave(dimension);
-    QAction* copyValuesAction = new QAction(tr("Copy value"),_imp->copyRightClickMenu);
+    
+    int dim = knob->getDimension();
+    
+    const char* copyValuesStr = dim > 1 ? "Copy Values" : "Copy Value";
+    const char* pasteValuesStr = dim > 1 ? "Paste Values" : "Paste Value";
+    
+    QAction* copyValuesAction = new QAction(tr(copyValuesStr),_imp->copyRightClickMenu);
     copyValuesAction->setData( QVariant(dimension) );
     QObject::connect( copyValuesAction,SIGNAL( triggered() ),this,SLOT( onCopyValuesActionTriggered() ) );
     _imp->copyRightClickMenu->addAction(copyValuesAction);
 
     if (!isSlave) {
         bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
-        QAction* pasteAction = new QAction(tr("Paste value"),_imp->copyRightClickMenu);
+        QAction* pasteAction = new QAction(tr(pasteValuesStr),_imp->copyRightClickMenu);
         pasteAction->setData( QVariant(dimension) );
         QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( onPasteValuesActionTriggered() ) );
         _imp->copyRightClickMenu->addAction(pasteAction);
