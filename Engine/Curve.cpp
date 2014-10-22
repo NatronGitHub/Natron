@@ -882,10 +882,12 @@ std::pair<double,double>  Curve::getCurveYRange() const
             std::pair<double, double> ret;
             ret.first = isDouble->getMinimum(_imp->dimensionInOwner);
             ret.second = isDouble->getMaximum(_imp->dimensionInOwner);
+            return ret;
         } else if (isInt) {
             std::pair<double, double> ret;
             ret.first = isInt->getMinimum(_imp->dimensionInOwner);
             ret.second = isInt->getMaximum(_imp->dimensionInOwner);
+            return ret;
         } else {
             return std::make_pair( (double)INT_MIN, (double)INT_MAX );
         }
