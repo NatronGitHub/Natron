@@ -14,6 +14,7 @@
 #include <fstream>
 #include <QLayout>
 #include <QAction>
+#include <QApplication>
 #include <QTabWidget>
 #include <QStyle>
 #include <QUndoStack>
@@ -922,8 +923,11 @@ void
 RightClickableWidget::mousePressEvent(QMouseEvent* e)
 {
     if (buttonDownIsRight(e)) {
-        emit rightClicked(e->pos());
-        e->accept();
+        QWidget* underMouse = qApp->widgetAt(e->globalPos());
+        if (underMouse == this) {
+            emit rightClicked(e->pos());
+            e->accept();
+        }
     } else {
         QWidget::mousePressEvent(e);
     }
