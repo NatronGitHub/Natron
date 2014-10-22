@@ -308,7 +308,7 @@ public:
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
     QVBoxLayout* getPropertiesLayout() const;
-    QScrollArea* getPropertiesScrollArea() const;
+    QWidget* getPropertiesBin() const;
     const std::map<std::string,QWidget*> & getRegisteredTabs() const;
 
     void updateLastSequenceOpenedPath(const QString & path);

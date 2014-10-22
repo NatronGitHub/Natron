@@ -37,14 +37,14 @@ Int_Knob::Int_Knob(KnobHolder* holder,
                    const std::string &description,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<int>(holder, description, dimension,declaredByPlugin)
-      , _dimensionNames(dimension)
-      , _minimums(dimension)
-      , _maximums(dimension)
-      , _increments(dimension)
-      , _displayMins(dimension)
-      , _displayMaxs(dimension)
-      , _disableSlider(false)
+: Knob<int>(holder, description, dimension,declaredByPlugin)
+, _dimensionNames(dimension)
+, _minimums(dimension)
+, _maximums(dimension)
+, _increments(dimension)
+, _displayMins(dimension)
+, _displayMaxs(dimension)
+, _disableSlider(false)
 {
     for (int i = 0; i < dimension; ++i) {
         _minimums[i] = INT_MIN;
@@ -52,23 +52,23 @@ Int_Knob::Int_Knob(KnobHolder* holder,
         _increments[i] = 1;
         _displayMins[i] = INT_MIN;
         _displayMaxs[i] = INT_MAX;
-
+        
         switch (i) {
-        case 0:
-            _dimensionNames[i] = "x";
-            break;
-        case 1:
-            _dimensionNames[i] = "y";
-            break;
-        case 2:
-            _dimensionNames[i] = "z";
-            break;
-        case 3:
-            _dimensionNames[i] = "w";
-            break;
-        default:
-            assert(false);     //< unsupported dimension
-            break;
+            case 0:
+                _dimensionNames[i] = "x";
+                break;
+            case 1:
+                _dimensionNames[i] = "y";
+                break;
+            case 2:
+                _dimensionNames[i] = "z";
+                break;
+            case 3:
+                _dimensionNames[i] = "w";
+                break;
+            default:
+                assert(false);     //< unsupported dimension
+                break;
         }
     }
 }
@@ -135,10 +135,10 @@ Int_Knob::setIncrement(int incr,
 {
     if (incr <= 0) {
         qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
-
+        
         return;
     }
-
+    
     if ( index >= (int)_increments.size() ) {
         throw "Int_Knob::setIncrement , dimension out of range";
     }
@@ -239,7 +239,7 @@ std::string
 Int_Knob::getDimensionName(int dimension) const
 {
     assert( dimension < (int)_dimensionNames.size() );
-
+    
     return _dimensionNames[dimension];
 }
 
@@ -268,7 +268,7 @@ Bool_Knob::Bool_Knob(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
 }
 
@@ -298,22 +298,22 @@ Double_Knob::Double_Knob(KnobHolder* holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : Knob<double>(holder, description, dimension,declaredByPlugin)
-      , _dimensionNames(dimension)
-      , _minimums(dimension)
-      , _maximums(dimension)
-      , _increments(dimension)
-      , _displayMins(dimension)
-      , _displayMaxs(dimension)
-      , _decimals(dimension)
-      , _disableSlider(false)
-      , _normalizationXY()
-      , _defaultStoredNormalized(false)
+: Knob<double>(holder, description, dimension,declaredByPlugin)
+, _dimensionNames(dimension)
+, _minimums(dimension)
+, _maximums(dimension)
+, _increments(dimension)
+, _displayMins(dimension)
+, _displayMaxs(dimension)
+, _decimals(dimension)
+, _disableSlider(false)
+, _normalizationXY()
+, _defaultStoredNormalized(false)
 
 {
     _normalizationXY.first = NORMALIZATION_NONE;
     _normalizationXY.second = NORMALIZATION_NONE;
-
+    
     for (int i = 0; i < dimension; ++i) {
         _minimums[i] = -DBL_MAX;
         _maximums[i] = DBL_MAX;
@@ -321,23 +321,23 @@ Double_Knob::Double_Knob(KnobHolder* holder,
         _displayMins[i] = -DBL_MAX;
         _displayMaxs[i] = DBL_MAX;
         _decimals[i] = 2;
-
+        
         switch (i) {
-        case 0:
-            _dimensionNames[i] = "x";
-            break;
-        case 1:
-            _dimensionNames[i] = "y";
-            break;
-        case 2:
-            _dimensionNames[i] = "z";
-            break;
-        case 3:
-            _dimensionNames[i] = "w";
-            break;
-        default:
-            assert(false);     //< unsupported dimension
-            break;
+            case 0:
+                _dimensionNames[i] = "x";
+                break;
+            case 1:
+                _dimensionNames[i] = "y";
+                break;
+            case 2:
+                _dimensionNames[i] = "z";
+                break;
+            case 3:
+                _dimensionNames[i] = "w";
+                break;
+            default:
+                assert(false);     //< unsupported dimension
+                break;
         }
     }
 }
@@ -354,7 +354,7 @@ std::string
 Double_Knob::getDimensionName(int dimension) const
 {
     assert( dimension < (int)_dimensionNames.size() );
-
+    
     return _dimensionNames[dimension];
 }
 
@@ -475,13 +475,13 @@ Double_Knob::setIncrement(double incr,
 {
     if (incr <= 0.) {
         qDebug() << "Attempting to set the increment of a double param to a value lesser or equal to 0.";
-
+        
         return;
     }
     if ( index >= (int)_increments.size() ) {
         throw "Double_Knob::setIncrement , dimension out of range";
     }
-
+    
     _increments[index] = incr;
     emit incrementChanged(_increments[index], index);
 }
@@ -493,7 +493,7 @@ Double_Knob::setDecimals(int decis,
     if ( index >= (int)_decimals.size() ) {
         throw "Double_Knob::setDecimals , dimension out of range";
     }
-
+    
     _decimals[index] = decis;
     emit decimalsChanged(_decimals[index], index);
 }
@@ -589,7 +589,7 @@ void
 Double_Knob::removeSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
 {
     std::list< boost::shared_ptr<BezierCP> >::iterator found = std::find(_slavedTracks.begin(),_slavedTracks.end(),cp);
-
+    
     if ( found != _slavedTracks.end() ) {
         _slavedTracks.erase(found);
     }
@@ -624,7 +624,7 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
         }
     }
     assert(thisShared);
-
+    
     std::string lastNodeName;
     RotoContext* lastRoto = 0;
     for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
@@ -652,11 +652,11 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
             }
             Bezier* isBezier = dynamic_cast<Bezier*>( item.get() );
             assert(isBezier);
-
+            
             boost::shared_ptr<BezierCP> point = it->isFeather ?
-                                                isBezier->getFeatherPointAtIndex(it->cpIndex)
-                                                : isBezier->getControlPointAtIndex(it->cpIndex);
-
+            isBezier->getFeatherPointAtIndex(it->cpIndex)
+            : isBezier->getControlPointAtIndex(it->cpIndex);
+            
             if (!point) {
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
                 break;
@@ -713,7 +713,7 @@ Double_Knob::denormalize(int dimension,
                          double* value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
-
+    
     assert(effect);
     if (!effect) {
         return;
@@ -733,7 +733,7 @@ Double_Knob::normalize(int dimension,
                        double* value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
-
+    
     assert(effect);
     if (!effect) {
         return;
@@ -753,8 +753,8 @@ Button_Knob::Button_Knob(KnobHolder*  holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
-      , _renderButton(false)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
+, _renderButton(false)
 {
     setIsPersistant(false);
 }
@@ -784,8 +784,8 @@ Choice_Knob::Choice_Knob(KnobHolder* holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : Knob<int>(holder, description, dimension,declaredByPlugin)
-    , _entriesMutex()
+: Knob<int>(holder, description, dimension,declaredByPlugin)
+, _entriesMutex()
 {
 }
 
@@ -844,10 +844,10 @@ std::string
 Choice_Knob::getActiveEntryText_mt_safe() const
 {
     int activeIndex = getValue();
-
+    
     QMutexLocker l(&_entriesMutex);
     assert( activeIndex < (int)_entries.size() );
-
+    
     return _entries[activeIndex];
 }
 
@@ -858,16 +858,16 @@ trim(std::string const & str)
 {
     const std::string whitespace = " \t\f\v\n\r";
     std::size_t first = str.find_first_not_of(whitespace);
-
+    
     // If there is no non-whitespace character, both first and last will be std::string::npos (-1)
     // There is no point in checking both, since if either doesn't work, the
     // other won't work, either.
     if (first == std::string::npos) {
         return "";
     }
-
+    
     std::size_t last  = str.find_last_not_of(whitespace);
-
+    
     return str.substr(first, last - first + 1);
 }
 
@@ -877,7 +877,7 @@ Choice_Knob::getHintToolTipFull() const
     assert(QThread::currentThread() == qApp->thread());
     
     bool gothelp = false;
-
+    
     if ( !_entriesHelp.empty() ) {
         assert( _entriesHelp.size() == _entries.size() );
         for (U32 i = 0; i < _entries.size(); ++i) {
@@ -886,7 +886,7 @@ Choice_Knob::getHintToolTipFull() const
             }
         }
     }
-
+    
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
         ss << trim( getHintToolTip() );
@@ -908,7 +908,7 @@ Choice_Knob::getHintToolTipFull() const
             }
         }
     }
-
+    
     return ss.str();
 }
 
@@ -951,7 +951,7 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
         std::vector<std::string>::iterator it = std::find(_entries.begin(), _entries.end(), data->_choiceString);
         if ( it != _entries.end() ) {
             setValue(std::distance(_entries.begin(), it), 0);
-        } 
+        }
     }
     
 }
@@ -961,7 +961,7 @@ Separator_Knob::Separator_Knob(KnobHolder* holder,
                                const std::string &description,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
 }
 
@@ -997,13 +997,13 @@ Color_Knob::Color_Knob(KnobHolder* holder,
                        const std::string &description,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<double>(holder, description, dimension,declaredByPlugin)
-      , _allDimensionsEnabled(true)
-      , _dimensionNames(dimension)
-      , _minimums(dimension)
-      , _maximums(dimension)
-      , _displayMins(dimension)
-      , _displayMaxs(dimension)
+: Knob<double>(holder, description, dimension,declaredByPlugin)
+, _allDimensionsEnabled(true)
+, _dimensionNames(dimension)
+, _minimums(dimension)
+, _maximums(dimension)
+, _displayMins(dimension)
+, _displayMaxs(dimension)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
@@ -1012,23 +1012,23 @@ Color_Knob::Color_Knob(KnobHolder* holder,
         _maximums[i] = DBL_MAX;
         _displayMins[i] = 0.;
         _displayMaxs[i] = 1.;
-
+        
         switch (i) {
-        case 0:
-            _dimensionNames[i] = "r";
-            break;
-        case 1:
-            _dimensionNames[i] = "g";
-            break;
-        case 2:
-            _dimensionNames[i] = "b";
-            break;
-        case 3:
-            _dimensionNames[i] = "a";
-            break;
-        default:
-            assert(false);     //< unsupported dimension
-            break;
+            case 0:
+                _dimensionNames[i] = "r";
+                break;
+            case 1:
+                _dimensionNames[i] = "g";
+                break;
+            case 2:
+                _dimensionNames[i] = "b";
+                break;
+            case 3:
+                _dimensionNames[i] = "a";
+                break;
+            default:
+                assert(false);     //< unsupported dimension
+                break;
         }
     }
 }
@@ -1058,7 +1058,7 @@ std::string
 Color_Knob::getDimensionName(int dimension) const
 {
     assert( dimension < (int)_dimensionNames.size() );
-
+    
     return _dimensionNames[dimension];
 }
 
@@ -1195,10 +1195,10 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 3);
     blockEvaluation();
-    setValue(r, 0);
-    setValue(g, 1);
+    setValue(r,0);
+    setValue(g,1);
     unblockEvaluation();
-    setValue(b, 2);
+    setValue(b,2);
 }
 
 void
@@ -1209,11 +1209,11 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 4);
     blockEvaluation();
-    setValue(r, 0);
-    setValue(g, 1);
-    setValue(b, 2);
+    setValue(r,0);
+    setValue(g,1);
+    setValue(b,2);
     unblockEvaluation();
-    setValue(a, 3);
+    setValue(a,3);
 }
 
 /******************************STRING_KNOB**************************************/
@@ -1223,11 +1223,11 @@ String_Knob::String_Knob(KnobHolder* holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
-      , _multiLine(false)
-      , _richText(false)
-      , _isLabel(false)
-      , _isCustom(false)
+: AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
+, _multiLine(false)
+, _richText(false)
+, _isLabel(false)
+, _isCustom(false)
 {
 }
 
@@ -1260,8 +1260,8 @@ Group_Knob::Group_Knob(KnobHolder* holder,
                        const std::string &description,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
-      , _isTab(false)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
+, _isTab(false)
 {
 }
 
@@ -1300,7 +1300,7 @@ void
 Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
 {
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-
+    
     if ( found == _children.end() ) {
         _children.push_back(k);
         boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
@@ -1321,7 +1321,7 @@ Page_Knob::Page_Knob(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
 }
 
@@ -1348,7 +1348,7 @@ void
 Page_Knob::addKnob(boost::shared_ptr<KnobI> k)
 {
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-
+    
     if ( found == _children.end() ) {
         _children.push_back(k);
         if ( !k->getParentKnob() ) {
@@ -1364,11 +1364,11 @@ Parametric_Knob::Parametric_Knob(KnobHolder* holder,
                                  const std::string &description,
                                  int dimension,
                                  bool declaredByPlugin)
-    : Knob<double>(holder,description,dimension,declaredByPlugin)
-      , _curvesMutex()
-      , _curves(dimension)
-      , _curvesColor(dimension)
-      , _curveLabels(dimension)
+: Knob<double>(holder,description,dimension,declaredByPlugin)
+, _curvesMutex()
+, _curves(dimension)
+, _curvesColor(dimension)
+, _curveLabels(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
         RGBAColourF color;
@@ -1406,7 +1406,7 @@ Parametric_Knob::setCurveColor(int dimension,
     ///only called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     ///Mt-safe as it never changes
-
+    
     assert( dimension < (int)_curvesColor.size() );
     _curvesColor[dimension].r = r;
     _curvesColor[dimension].g = g;
@@ -1420,7 +1420,7 @@ Parametric_Knob::getCurveColor(int dimension,
                                double* b)
 {
     ///Mt-safe as it never changes
-
+    
     assert( dimension < (int)_curvesColor.size() );
     *r = _curvesColor[dimension].r;
     *g = _curvesColor[dimension].g;
@@ -1434,7 +1434,7 @@ Parametric_Knob::setCurveLabel(int dimension,
     ///only called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     ///Mt-safe as it never changes
-
+    
     assert( dimension < (int)_curveLabels.size() );
     _curveLabels[dimension] = str;
 }
@@ -1443,9 +1443,9 @@ const std::string &
 Parametric_Knob::getCurveLabel(int dimension) const
 {
     ///Mt-safe as it never changes
-
+    
     assert( dimension < (int)_curveLabels.size() );
-
+    
     return _curveLabels[dimension];
 }
 
@@ -1456,7 +1456,7 @@ Parametric_Knob::setParametricRange(double min,
     ///only called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     ///Mt-safe as it never changes
-
+    
     for (U32 i = 0; i < _curves.size(); ++i) {
         _curves[i]->setXRange(min, max);
     }
@@ -1465,9 +1465,9 @@ Parametric_Knob::setParametricRange(double min,
 std::pair<double,double> Parametric_Knob::getParametricRange() const
 {
     ///Mt-safe as it never changes
-
+    
     assert( !_curves.empty() );
-
+    
     return _curves.front()->getXRange();
 }
 
@@ -1481,9 +1481,9 @@ Parametric_Knob::getDimensionName(int dimension) const
 boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) const
 {
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
-
+    
     assert( dimension < (int)_curves.size() );
-
+    
     return _curves[dimension];
 }
 
@@ -1500,12 +1500,12 @@ Parametric_Knob::addControlPoint(int dimension,
         boost::math::isinf(value)) {
         return StatFailed;
     }
-
+    
     KeyFrame k(key,value);
     k.setInterpolation(Natron::KEYFRAME_CUBIC);
     _curves[dimension]->addKeyFrame(k);
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1523,7 +1523,7 @@ Parametric_Knob::getValue(int dimension,
     }catch (...) {
         return Natron::StatFailed;
     }
-
+    
     return Natron::StatOK;
 }
 
@@ -1536,7 +1536,7 @@ Parametric_Knob::getNControlPoints(int dimension,
         return StatFailed;
     }
     *returnValue =  _curves[dimension]->getKeyFramesCount();
-
+    
     return StatOK;
 }
 
@@ -1557,7 +1557,7 @@ Parametric_Knob::getNthControlPoint(int dimension,
     }
     *key = kf.getTime();
     *value = kf.getValue();
-
+    
     return StatOK;
 }
 
@@ -1573,7 +1573,7 @@ Parametric_Knob::setNthControlPoint(int dimension,
     }
     _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1585,10 +1585,10 @@ Parametric_Knob::deleteControlPoint(int dimension,
     if ( dimension >= (int)_curves.size() ) {
         return StatFailed;
     }
-
+    
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1601,7 +1601,7 @@ Parametric_Knob::deleteAllControlPoints(int dimension)
     }
     _curves[dimension]->clearKeyFrames();
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1610,7 +1610,7 @@ Parametric_Knob::cloneExtraData(KnobI* other)
 {
     ///Mt-safe as Curve is MT-safe
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
-
+    
     if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
         for (int i = 0; i < getDimension(); ++i) {
             _curves[i]->clone( *isParametric->getParametricCurve(i) );
@@ -1624,7 +1624,7 @@ Parametric_Knob::cloneExtraData(KnobI* other,
                                 const RangeD* range)
 {
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
-
+    
     if (isParametric) {
         int dimMin = std::min( getDimension(), isParametric->getDimension() );
         for (int i = 0; i < dimMin; ++i) {

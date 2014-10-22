@@ -657,11 +657,11 @@ Knob<T>::setValue(const T & value,
                   bool turnOffAutoKeying)
 {
     if (turnOffAutoKeying) {
-        return setValue(value,dimension,Natron::PLUGIN_EDITED,NULL);
+        return setValue(value,dimension,Natron::NATRON_EDITED,NULL);
     } else {
         KeyFrame k;
 
-        return setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
+        return setValue(value,dimension,Natron::NATRON_EDITED,&k);
     }
 }
 
@@ -675,6 +675,14 @@ Knob<T>::onValueChanged(int dimension,
 }
 
 template<typename T>
+KnobHelper::ValueChangedReturnCode
+Knob<T>::setValueFromPlugin(const T & value,int dimension)
+{
+    KeyFrame newKey;
+    return setValue(value,dimension,Natron::PLUGIN_EDITED,&newKey);
+}
+
+template<typename T>
 void
 Knob<T>::setValueAtTime(int time,
                         const T & v,
@@ -682,7 +690,17 @@ Knob<T>::setValueAtTime(int time,
 {
     KeyFrame k;
 
+    (void)setValueAtTime(time,v,dimension,Natron::NATRON_EDITED,&k);
+}
+
+template<typename T>
+void
+Knob<T>::setValueAtTimeFromPlugin(int time,const T & v,int dimension)
+{
+    KeyFrame k;
+    
     (void)setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED,&k);
+
 }
 
 template<typename T>

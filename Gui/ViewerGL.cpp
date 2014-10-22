@@ -2355,17 +2355,17 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
                 mustRedraw = true;
                 overlaysCaught = true;
             }
-        } else if ( (_imp->pickerState != PICKER_INACTIVE) && buttonDownIsLeft(e) && displayingImage() ) {
-            // disable picker if picker is set when clicking
-            _imp->pickerState = PICKER_INACTIVE;
-            mustRedraw = true;
-            overlaysCaught = true;
         } else if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) && displayingImage() ) {
             // start picker with rectangle selection (picked color is the average over the rectangle)
             _imp->pickerState = PICKER_RECTANGLE;
             _imp->pickerRect.setTopLeft(zoomPos);
             _imp->pickerRect.setBottomRight(zoomPos);
             _imp->ms = BUILDING_PICKER_RECTANGLE;
+            mustRedraw = true;
+            overlaysCaught = true;
+        } else if ( (_imp->pickerState != PICKER_INACTIVE) && buttonDownIsLeft(e) && displayingImage() ) {
+            // disable picker if picker is set when clicking
+            _imp->pickerState = PICKER_INACTIVE;
             mustRedraw = true;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
