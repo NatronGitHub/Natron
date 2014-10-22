@@ -505,9 +505,7 @@ TabWidget::closeTab(int index)
 void
 TabWidget::movePropertiesBinHere()
 {
-    QWidget* what = dynamic_cast<QWidget*>( _gui->getPropertiesScrollArea() );
-
-    moveTab(what, this);
+    moveTab(_gui->getPropertiesBin(), this);
 }
 
 TabWidget*

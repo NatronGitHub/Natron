@@ -58,8 +58,6 @@ public:
 
     virtual ~NodeGraph() OVERRIDE;
 
-    void setPropertyBinPtr(QScrollArea* propertyBin);
-
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
                                              double xPosHint,double yPosHint,bool pushUndoRedoCommand);

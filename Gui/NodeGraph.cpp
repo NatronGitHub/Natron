@@ -21,7 +21,6 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QGraphicsTextItem>
 #include <QFileSystemModel>
-#include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
 #include <QGraphicsLineItem>
@@ -261,7 +260,6 @@ struct NodeGraphPrivate
     bool _nodeCreationShortcutEnabled;
     QGraphicsItem* _root; ///< this is the parent of all items in the graph
     QGraphicsItem* _nodeRoot; ///< this is the parent of all nodes
-    QScrollArea* _propertyBin;
     QGraphicsTextItem* _cacheSizeText;
     QTimer _refreshCacheTextTimer;
     Navigator* _navigator;
@@ -301,7 +299,6 @@ struct NodeGraphPrivate
           , _nodeCreationShortcutEnabled(false)
           , _root(NULL)
           , _nodeRoot(NULL)
-          , _propertyBin(NULL)
           , _cacheSizeText(NULL)
           , _refreshCacheTextTimer()
           , _navigator(NULL)
@@ -489,11 +486,6 @@ NodeGraph::~NodeGraph()
     //onProjectNodesCleared();
 }
 
-void
-NodeGraph::setPropertyBinPtr(QScrollArea* propertyBin)
-{
-    _imp->_propertyBin = propertyBin;
-}
 
 const std::list< boost::shared_ptr<NodeGui> > &
 NodeGraph::getSelectedNodes() const

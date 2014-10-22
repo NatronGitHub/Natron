@@ -267,11 +267,11 @@ struct GuiPrivate
     ///a vector of all the toolbuttons
     std::vector<ToolButton*> _toolButtons;
 
-    ///the scrollarea holding the properties dock
-    QScrollArea *_propertiesScrollArea;
+    ///holds the properties dock
+    QWidget *_propertiesBin;
+    
+    QScrollArea* _propertiesScrollArea;
 
-    ///the main container of the properties
-    QWidget *_propertiesContainer;
 
     ///the vertical layout for the properties dock container.
     QVBoxLayout *_layoutPropertiesBin;
@@ -395,8 +395,8 @@ struct GuiPrivate
           , _nodeGraphArea(0)
           , _curveEditor(0)
           , _toolBox(0)
+          , _propertiesBin(0)
           , _propertiesScrollArea(0)
-          , _propertiesContainer(0)
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
@@ -938,7 +938,7 @@ Gui::setupUi()
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(_imp->_appInstance->getProject(),
                               _imp->_layoutPropertiesBin,
-                              _imp->_propertiesContainer);
+                              this);
 
     initProjectGuiKnobs();
 
@@ -976,22 +976,26 @@ Gui::setupUi()
 void
 GuiPrivate::createPropertiesBinGui()
 {
-    _propertiesScrollArea = new QScrollArea(_gui);
-    assert(_nodeGraphArea);
-    _nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
-    _propertiesScrollArea->setObjectName(kPropertiesBinName);
+    _propertiesBin = new QWidget(_gui);
+    _propertiesBin->setObjectName(kPropertiesBinName);
 
-    _propertiesContainer = new QWidget(_propertiesScrollArea);
-    _propertiesContainer->setObjectName("_propertiesContainer");
-    _layoutPropertiesBin = new QVBoxLayout(_propertiesContainer);
+    QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
+    mainPropertiesLayout->setContentsMargins(0, 0, 0, 0);
+    mainPropertiesLayout->setSpacing(0);
+    
+    _propertiesScrollArea = new QScrollArea(_propertiesBin);
+    assert(_nodeGraphArea);
+
+    QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
+    propertiesContainer->setObjectName("_propertiesContainer");
+    _layoutPropertiesBin = new QVBoxLayout(propertiesContainer);
     _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
-    _propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
-    _propertiesContainer->setLayout(_layoutPropertiesBin);
-    _propertiesScrollArea->setWidget(_propertiesContainer);
+    propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+    _propertiesScrollArea->setWidget(propertiesContainer);
     _propertiesScrollArea->setWidgetResizable(true);
 
-    QWidget* propertiesAreaButtonsContainer = new QWidget(_propertiesContainer);
+    QWidget* propertiesAreaButtonsContainer = new QWidget(propertiesContainer);
     QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
     propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
     propertiesAreaButtonsLayout->setSpacing(5);
@@ -1034,10 +1038,11 @@ GuiPrivate::createPropertiesBinGui()
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
     propertiesAreaButtonsLayout->addWidget(_freezeUIButton);
     propertiesAreaButtonsLayout->addStretch();
+    
+    mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
+    mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
-    _layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
-
-    _gui->registerTab(_propertiesScrollArea);
+    _gui->registerTab(_propertiesBin);
 } // createPropertiesBinGui
 
 void
@@ -1137,7 +1142,7 @@ Gui::createDefaultLayout1()
 
     TabWidget::moveTab(_imp->_nodeGraphArea, workshopPane);
     TabWidget::moveTab(_imp->_curveEditor,workshopPane);
-    TabWidget::moveTab(_imp->_propertiesScrollArea,propertiesPane);
+    TabWidget::moveTab(_imp->_propertiesBin,propertiesPane);
 
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -3402,8 +3407,8 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
-QScrollArea*
-Gui::getPropertiesScrollArea() const
+QWidget*
+Gui::getPropertiesBin() const
 {
     return _imp->_propertiesScrollArea;
 }
