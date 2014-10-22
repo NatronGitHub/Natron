@@ -276,7 +276,7 @@ OfxIntegerInstance::get(OfxTime time,
 OfxStatus
 OfxIntegerInstance::set(int v)
 {
-    _knob->setValue(v,0);
+    _knob->setValueFromPlugin(v,0);
 
     return kOfxStatOK;
 }
@@ -285,7 +285,7 @@ OfxStatus
 OfxIntegerInstance::set(OfxTime time,
                         int v)
 {
-    _knob->setValueAtTime(time,v,0);
+    _knob->setValueAtTimeFromPlugin(time,v,0);
 
     return kOfxStatOK;
 }
@@ -464,7 +464,7 @@ OfxDoubleInstance::get(OfxTime time,
 OfxStatus
 OfxDoubleInstance::set(double v)
 {
-    _knob->setValue(v,0);
+    _knob->setValueFromPlugin(v,0);
 
     return kOfxStatOK;
 }
@@ -473,7 +473,7 @@ OfxStatus
 OfxDoubleInstance::set(OfxTime time,
                        double v)
 {
-    _knob->setValueAtTime(time,v,0);
+    _knob->setValueAtTimeFromPlugin(time,v,0);
 
     return kOfxStatOK;
 }
@@ -636,7 +636,7 @@ OfxBooleanInstance::get(OfxTime time,
 OfxStatus
 OfxBooleanInstance::set(bool b)
 {
-    _knob->setValue(b,0);
+    _knob->setValueFromPlugin(b,0);
 
     return kOfxStatOK;
 }
@@ -646,7 +646,7 @@ OfxBooleanInstance::set(OfxTime time,
                         bool b)
 {
     assert( Bool_Knob::canAnimateStatic() );
-    _knob->setValueAtTime(time, b, 0);
+    _knob->setValueAtTimeFromPlugin(time, b, 0);
 
     return kOfxStatOK;
 }
@@ -768,7 +768,7 @@ OfxStatus
 OfxChoiceInstance::set(int v)
 {
     if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
-        _knob->setValue(v,0);
+        _knob->setValueFromPlugin(v,0);
 
         return kOfxStatOK;
     } else {
@@ -781,7 +781,7 @@ OfxChoiceInstance::set(OfxTime time,
                        int v)
 {
     if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
-        _knob->setValueAtTime(time, v, 0);
+        _knob->setValueAtTimeFromPlugin(time, v, 0);
 
         return kOfxStatOK;
     } else {
@@ -968,10 +968,10 @@ OfxRGBAInstance::set(double r,
                      double b,
                      double a)
 {
-    _knob->setValue(r,0);
-    _knob->setValue(g,1);
-    _knob->setValue(b,2);
-    _knob->setValue(a,3);
+    _knob->setValueFromPlugin(r,0);
+    _knob->setValueFromPlugin(g,1);
+    _knob->setValueFromPlugin(b,2);
+    _knob->setValueFromPlugin(a,3);
 
     return kOfxStatOK;
 }
@@ -983,10 +983,10 @@ OfxRGBAInstance::set(OfxTime time,
                      double b,
                      double a)
 {
-    _knob->setValueAtTime(time,r,0);
-    _knob->setValueAtTime(time,g,1);
-    _knob->setValueAtTime(time,b,2);
-    _knob->setValueAtTime(time,a,3);
+    _knob->setValueAtTimeFromPlugin(time,r,0);
+    _knob->setValueAtTimeFromPlugin(time,g,1);
+    _knob->setValueAtTimeFromPlugin(time,b,2);
+    _knob->setValueAtTimeFromPlugin(time,a,3);
 
     return kOfxStatOK;
 }
@@ -1183,9 +1183,11 @@ OfxRGBInstance::set(double r,
                     double g,
                     double b)
 {
-    _knob->setValue(r,0);
-    _knob->setValue(g,1);
-    _knob->setValue(b,2);
+    _knob->blockEvaluation();
+    _knob->setValueFromPlugin(r,0);
+    _knob->setValueFromPlugin(g,1);
+    _knob->unblockEvaluation();
+    _knob->setValueFromPlugin(b,2);
 
     return kOfxStatOK;
 }
@@ -1196,9 +1198,11 @@ OfxRGBInstance::set(OfxTime time,
                     double g,
                     double b)
 {
-    _knob->setValueAtTime(time,r,0);
-    _knob->setValueAtTime(time,g,1);
-    _knob->setValueAtTime(time,b,2);
+    _knob->blockEvaluation();
+    _knob->setValueAtTimeFromPlugin(time,r,0);
+    _knob->setValueAtTimeFromPlugin(time,g,1);
+    _knob->unblockEvaluation();
+    _knob->setValueAtTimeFromPlugin(time,b,2);
 
     return kOfxStatOK;
 }
@@ -1411,9 +1415,9 @@ OfxDouble2DInstance::set(double x1,
         doEditEnd = true;
     }
     _knob->blockEvaluation();
-    _knob->setValue(x1,0,false);
+    _knob->setValueFromPlugin(x1,0);
     _knob->unblockEvaluation();
-    _knob->setValue(x2,1,false);
+    _knob->setValueFromPlugin(x2,1);
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1433,9 +1437,9 @@ OfxDouble2DInstance::set(OfxTime time,
         doEditEnd = true;
     }
     _knob->blockEvaluation();
-    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTimeFromPlugin(time,x1,0);
     _knob->unblockEvaluation();
-    _knob->setValueAtTime(time,x2,1);
+    _knob->setValueAtTimeFromPlugin(time,x2,1);
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1658,9 +1662,9 @@ OfxInteger2DInstance::set(int x1,
     }
 
     _knob->blockEvaluation();
-    _knob->setValue(x1,0,false);
+    _knob->setValueFromPlugin(x1,0);
     _knob->unblockEvaluation();
-    _knob->setValue(x2,1,false);
+    _knob->setValueFromPlugin(x2,1);
 
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
@@ -1681,9 +1685,9 @@ OfxInteger2DInstance::set(OfxTime time,
         doEditEnd = true;
     }
     _knob->blockEvaluation();
-    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTimeFromPlugin(time,x1,0);
     _knob->unblockEvaluation();
-    _knob->setValueAtTime(time,x2,1);
+    _knob->setValueAtTimeFromPlugin(time,x2,1);
 
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
@@ -1885,10 +1889,10 @@ OfxDouble3DInstance::set(double x1,
         doEditEnd = true;
     }
     _knob->blockEvaluation();
-    _knob->setValue(x1,0,false);
-    _knob->setValue(x2,1,false);
+    _knob->setValueFromPlugin(x1,0);
+    _knob->setValueFromPlugin(x2,1);
     _knob->unblockEvaluation();
-    _knob->setValue(x3,2,false);
+    _knob->setValueFromPlugin(x3,2);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -1909,10 +1913,10 @@ OfxDouble3DInstance::set(OfxTime time,
         doEditEnd = true;
     }
     _knob->blockEvaluation();
-    _knob->setValueAtTime(time,x1,0);
-    _knob->setValueAtTime(time,x2,1);
+    _knob->setValueAtTimeFromPlugin(time,x1,0);
+    _knob->setValueAtTimeFromPlugin(time,x2,1);
     _knob->unblockEvaluation();
-    _knob->setValueAtTime(time,x3,2);
+    _knob->setValueAtTimeFromPlugin(time,x3,2);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -2150,10 +2154,10 @@ OfxInteger3DInstance::set(int x1,
         doEditEnd = true;
     }
     _knob->blockEvaluation();
-    _knob->setValue(x1,0,false);
-    _knob->setValue(x2,1,false);
+    _knob->setValueFromPlugin(x1,0);
+    _knob->setValueFromPlugin(x2,1);
     _knob->unblockEvaluation();
-    _knob->setValue(x3,2,false);
+    _knob->setValueFromPlugin(x3,2);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -2174,10 +2178,10 @@ OfxInteger3DInstance::set(OfxTime time,
         doEditEnd = true;
     }
     _knob->blockEvaluation();
-    _knob->setValueAtTime(time,x1,0);
-    _knob->setValueAtTime(time,x2,1);
+    _knob->setValueAtTimeFromPlugin(time,x1,0);
+    _knob->setValueAtTimeFromPlugin(time,x2,1);
     _knob->unblockEvaluation();
-    _knob->setValueAtTime(time,x3,2);
+    _knob->setValueAtTimeFromPlugin(time,x3,2);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -2520,20 +2524,20 @@ OfxStringInstance::set(const char* str)
     if (_fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        _fileKnob->setValue(s,0);
+        _fileKnob->setValueFromPlugin(s,0);
     }
     if (_outputFileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        _outputFileKnob->setValue(s,0);
+        _outputFileKnob->setValueFromPlugin(s,0);
     }
     if (_stringKnob) {
-        _stringKnob->setValue(str,0);
+        _stringKnob->setValueFromPlugin(str,0);
     }
     if (_pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        _pathKnob->setValue(s,0);
+        _pathKnob->setValueFromPlugin(s,0);
     }
 
     return kOfxStatOK;
@@ -2547,20 +2551,20 @@ OfxStringInstance::set(OfxTime time,
     if (_fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        _fileKnob->setValueAtTime(time,s,0);
+        _fileKnob->setValueAtTimeFromPlugin(time,s,0);
     }
     if (_outputFileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        _outputFileKnob->setValueAtTime(time,s,0);
+        _outputFileKnob->setValueAtTimeFromPlugin(time,s,0);
     }
     if (_stringKnob) {
-        _stringKnob->setValueAtTime( (int)time,str,0 );
+        _stringKnob->setValueAtTimeFromPlugin( (int)time,str,0 );
     }
     if (_pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        _pathKnob->setValueAtTime(time,s,0);
+        _pathKnob->setValueAtTimeFromPlugin(time,s,0);
     }
 
     return kOfxStatOK;
@@ -2845,7 +2849,7 @@ OfxCustomInstance::get(OfxTime time,
 OfxStatus
 OfxCustomInstance::set(const char* str)
 {
-    _knob->setValue(str,0);
+    _knob->setValueFromPlugin(str,0);
 
     return kOfxStatOK;
 }
@@ -2855,7 +2859,7 @@ OfxCustomInstance::set(OfxTime time,
                        const char* str)
 {
     assert( String_Knob::canAnimateStatic() );
-    _knob->setValueAtTime(time,str,0);
+    _knob->setValueAtTimeFromPlugin(time,str,0);
 
     return kOfxStatOK;
 }
@@ -3052,7 +3056,7 @@ OfxParametricInstance::setLabel()
     _knob->setName( getParamLabel(this) );
     for (int i = 0; i < _knob->getDimension(); ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel,i);
-        _knob->setCurveLabel(i, curveName);
+        _knob->setDimensionName(i, curveName);
     }
 }
 

@@ -37,39 +37,12 @@ Int_Knob::Int_Knob(KnobHolder* holder,
                    const std::string &description,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<int>(holder, description, dimension,declaredByPlugin)
-      , _dimensionNames(dimension)
-      , _minimums(dimension)
-      , _maximums(dimension)
-      , _increments(dimension)
-      , _displayMins(dimension)
-      , _displayMaxs(dimension)
-      , _disableSlider(false)
+: Knob<int>(holder, description, dimension,declaredByPlugin)
+, _increments(dimension)
+, _disableSlider(false)
 {
     for (int i = 0; i < dimension; ++i) {
-        _minimums[i] = INT_MIN;
-        _maximums[i] = INT_MAX;
         _increments[i] = 1;
-        _displayMins[i] = INT_MIN;
-        _displayMaxs[i] = INT_MAX;
-
-        switch (i) {
-        case 0:
-            _dimensionNames[i] = "x";
-            break;
-        case 1:
-            _dimensionNames[i] = "y";
-            break;
-        case 2:
-            _dimensionNames[i] = "z";
-            break;
-        case 3:
-            _dimensionNames[i] = "w";
-            break;
-        default:
-            assert(false);     //< unsupported dimension
-            break;
-        }
     }
 }
 
@@ -85,49 +58,6 @@ Int_Knob::isSliderDisabled() const
     return _disableSlider;
 }
 
-void
-Int_Knob::setMinimum(int mini,
-                     int index)
-{
-    if ( index >= (int)_minimums.size() ) {
-        throw "Int_Knob::setMinimum , dimension out of range";
-    }
-    _minimums[index] = mini;
-    emit minMaxChanged(mini, _maximums[index], index);
-}
-
-void
-Int_Knob::setMaximum(int maxi,
-                     int index)
-{
-    if ( index >= (int)_maximums.size() ) {
-        throw "Int_Knob::setMaximum , dimension out of range";
-    }
-    _maximums[index] = maxi;
-    emit minMaxChanged(_minimums[index], maxi, index);
-}
-
-void
-Int_Knob::setDisplayMinimum(int mini,
-                            int index)
-{
-    if ( index >= (int)_displayMins.size() ) {
-        throw "Int_Knob::setDisplayMinimum , dimension out of range";
-    }
-    _displayMins[index] = mini;
-    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
-}
-
-void
-Int_Knob::setDisplayMaximum(int maxi,
-                            int index)
-{
-    if ( index >= (int)_displayMaxs.size() ) {
-        throw "Int_Knob::setDisplayMaximum , dimension out of range";
-    }
-    _displayMaxs[index] = maxi;
-    emit displayMinMaxChanged(_displayMins[index],maxi, index);
-}
 
 void
 Int_Knob::setIncrement(int incr,
@@ -135,10 +65,10 @@ Int_Knob::setIncrement(int incr,
 {
     if (incr <= 0) {
         qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
-
+        
         return;
     }
-
+    
     if ( index >= (int)_increments.size() ) {
         throw "Int_Knob::setIncrement , dimension out of range";
     }
@@ -160,87 +90,10 @@ Int_Knob::setIncrement(const std::vector<int> &incr)
     }
 }
 
-/*minis & maxis must have the same size*/
-void
-Int_Knob::setMinimumsAndMaximums(const std::vector<int> &minis,
-                                 const std::vector<int> &maxis)
-{
-    assert( (int)minis.size() == getDimension() && (int)maxis.size() == getDimension() );
-    _minimums = minis;
-    _maximums = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit minMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
-
-void
-Int_Knob::setDisplayMinimumsAndMaximums(const std::vector<int> &minis,
-                                        const std::vector<int> &maxis)
-{
-    assert( (int)minis.size() == getDimension() && (int)maxis.size() == getDimension() );
-    _displayMins = minis;
-    _displayMaxs = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit displayMinMaxChanged(_displayMins[i], _displayMaxs[i], i);
-    }
-}
-
-const std::vector<int> &
-Int_Knob::getMinimums() const
-{
-    return _minimums;
-}
-
-const std::vector<int> &
-Int_Knob::getMaximums() const
-{
-    return _maximums;
-}
-
 const std::vector<int> &
 Int_Knob::getIncrements() const
 {
     return _increments;
-}
-
-const std::vector<int> &
-Int_Knob::getDisplayMinimums() const
-{
-    return _displayMins;
-}
-
-const std::vector<int> &
-Int_Knob::getDisplayMaximums() const
-{
-    return _displayMaxs;
-}
-
-std::pair<int,int> Int_Knob::getMinMaxForCurve(int dimension) const
-{
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if (curve) {
-        const std::vector<int> & mins = getMinimums();
-        const std::vector<int> & maxs = getMaximums();
-        
-        return std::make_pair(mins[dimension], maxs[dimension]);
-    }
-    throw std::logic_error("Int_Knob::getMinMaxForCurve(): curve not found");
-}
-
-void
-Int_Knob::setDimensionName(int dim,
-                           const std::string & name)
-{
-    assert( dim < (int)_dimensionNames.size() );
-    _dimensionNames[dim] = name;
-}
-
-std::string
-Int_Knob::getDimensionName(int dimension) const
-{
-    assert( dimension < (int)_dimensionNames.size() );
-
-    return _dimensionNames[dimension];
 }
 
 bool
@@ -268,7 +121,7 @@ Bool_Knob::Bool_Knob(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
 }
 
@@ -298,64 +151,21 @@ Double_Knob::Double_Knob(KnobHolder* holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : Knob<double>(holder, description, dimension,declaredByPlugin)
-      , _dimensionNames(dimension)
-      , _minimums(dimension)
-      , _maximums(dimension)
-      , _increments(dimension)
-      , _displayMins(dimension)
-      , _displayMaxs(dimension)
-      , _decimals(dimension)
-      , _disableSlider(false)
-      , _normalizationXY()
-      , _defaultStoredNormalized(false)
+: Knob<double>(holder, description, dimension,declaredByPlugin)
+, _increments(dimension)
+, _decimals(dimension)
+, _disableSlider(false)
+, _normalizationXY()
+, _defaultStoredNormalized(false)
 
 {
     _normalizationXY.first = NORMALIZATION_NONE;
     _normalizationXY.second = NORMALIZATION_NONE;
-
+    
     for (int i = 0; i < dimension; ++i) {
-        _minimums[i] = -DBL_MAX;
-        _maximums[i] = DBL_MAX;
         _increments[i] = 1.;
-        _displayMins[i] = -DBL_MAX;
-        _displayMaxs[i] = DBL_MAX;
         _decimals[i] = 2;
-
-        switch (i) {
-        case 0:
-            _dimensionNames[i] = "x";
-            break;
-        case 1:
-            _dimensionNames[i] = "y";
-            break;
-        case 2:
-            _dimensionNames[i] = "z";
-            break;
-        case 3:
-            _dimensionNames[i] = "w";
-            break;
-        default:
-            assert(false);     //< unsupported dimension
-            break;
-        }
     }
-}
-
-void
-Double_Knob::setDimensionName(int dim,
-                              const std::string & name)
-{
-    assert( dim < (int)_dimensionNames.size() );
-    _dimensionNames[dim] = name;
-}
-
-std::string
-Double_Knob::getDimensionName(int dimension) const
-{
-    assert( dimension < (int)_dimensionNames.size() );
-
-    return _dimensionNames[dimension];
 }
 
 void
@@ -390,18 +200,6 @@ Double_Knob::typeName() const
 }
 
 const std::vector<double> &
-Double_Knob::getMinimums() const
-{
-    return _minimums;
-}
-
-const std::vector<double> &
-Double_Knob::getMaximums() const
-{
-    return _maximums;
-}
-
-const std::vector<double> &
 Double_Knob::getIncrements() const
 {
     return _increments;
@@ -413,75 +211,19 @@ Double_Knob::getDecimals() const
     return _decimals;
 }
 
-const std::vector<double> &
-Double_Knob::getDisplayMinimums() const
-{
-    return _displayMins;
-}
-
-const std::vector<double> &
-Double_Knob::getDisplayMaximums() const
-{
-    return _displayMaxs;
-}
-
-void
-Double_Knob::setMinimum(double mini,
-                        int index)
-{
-    if ( index >= (int)_minimums.size() ) {
-        throw "Double_Knob::setMinimum , dimension out of range";
-    }
-    _minimums[index] = mini;
-    emit minMaxChanged(mini, _maximums[index], index);
-}
-
-void
-Double_Knob::setMaximum(double maxi,
-                        int index)
-{
-    if ( index >= (int)_maximums.size() ) {
-        throw "Double_Knob::setMaximum , dimension out of range";
-    }
-    _maximums[index] = maxi;
-    emit minMaxChanged(_minimums[index], maxi, index);
-}
-
-void
-Double_Knob::setDisplayMinimum(double mini,
-                               int index)
-{
-    if ( index >= (int)_displayMins.size() ) {
-        throw "Double_Knob::setDisplayMinimum , dimension out of range";
-    }
-    _displayMins[index] = mini;
-    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
-}
-
-void
-Double_Knob::setDisplayMaximum(double maxi,
-                               int index)
-{
-    if ( index >= (int)_displayMaxs.size() ) {
-        throw "Double_Knob::setDisplayMaximum , dimension out of range";
-    }
-    _displayMaxs[index] = maxi;
-    emit displayMinMaxChanged(_displayMins[index], maxi, index);
-}
-
 void
 Double_Knob::setIncrement(double incr,
                           int index)
 {
     if (incr <= 0.) {
         qDebug() << "Attempting to set the increment of a double param to a value lesser or equal to 0.";
-
+        
         return;
     }
     if ( index >= (int)_increments.size() ) {
         throw "Double_Knob::setIncrement , dimension out of range";
     }
-
+    
     _increments[index] = incr;
     emit incrementChanged(_increments[index], index);
 }
@@ -493,47 +235,11 @@ Double_Knob::setDecimals(int decis,
     if ( index >= (int)_decimals.size() ) {
         throw "Double_Knob::setDecimals , dimension out of range";
     }
-
+    
     _decimals[index] = decis;
     emit decimalsChanged(_decimals[index], index);
 }
 
-std::pair<double,double> Double_Knob::getMinMaxForCurve(int dimension) const
-{
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if (curve) {
-        const std::vector<double> & mins = getMinimums();
-        const std::vector<double> & maxs = getMaximums();
-        
-        return std::make_pair(mins[dimension], maxs[dimension]);
-    }
-    throw std::logic_error("Double_Knob::getMinMaxForCurve(): curve not found");
-}
-
-/*minis & maxis must have the same size*/
-void
-Double_Knob::setMinimumsAndMaximums(const std::vector<double> &minis,
-                                    const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _minimums = minis;
-    _maximums = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit minMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
-
-void
-Double_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis,
-                                           const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _displayMins = minis;
-    _displayMaxs = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit displayMinMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
 
 void
 Double_Knob::setIncrement(const std::vector<double> &incr)
@@ -589,7 +295,7 @@ void
 Double_Knob::removeSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
 {
     std::list< boost::shared_ptr<BezierCP> >::iterator found = std::find(_slavedTracks.begin(),_slavedTracks.end(),cp);
-
+    
     if ( found != _slavedTracks.end() ) {
         _slavedTracks.erase(found);
     }
@@ -624,7 +330,7 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
         }
     }
     assert(thisShared);
-
+    
     std::string lastNodeName;
     RotoContext* lastRoto = 0;
     for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
@@ -652,11 +358,11 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
             }
             Bezier* isBezier = dynamic_cast<Bezier*>( item.get() );
             assert(isBezier);
-
+            
             boost::shared_ptr<BezierCP> point = it->isFeather ?
-                                                isBezier->getFeatherPointAtIndex(it->cpIndex)
-                                                : isBezier->getControlPointAtIndex(it->cpIndex);
-
+            isBezier->getFeatherPointAtIndex(it->cpIndex)
+            : isBezier->getControlPointAtIndex(it->cpIndex);
+            
             if (!point) {
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
                 break;
@@ -713,7 +419,7 @@ Double_Knob::denormalize(int dimension,
                          double* value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
-
+    
     assert(effect);
     if (!effect) {
         return;
@@ -733,7 +439,7 @@ Double_Knob::normalize(int dimension,
                        double* value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
-
+    
     assert(effect);
     if (!effect) {
         return;
@@ -753,8 +459,8 @@ Button_Knob::Button_Knob(KnobHolder*  holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
-      , _renderButton(false)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
+, _renderButton(false)
 {
     setIsPersistant(false);
 }
@@ -784,8 +490,8 @@ Choice_Knob::Choice_Knob(KnobHolder* holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : Knob<int>(holder, description, dimension,declaredByPlugin)
-    , _entriesMutex()
+: Knob<int>(holder, description, dimension,declaredByPlugin)
+, _entriesMutex()
 {
 }
 
@@ -844,10 +550,10 @@ std::string
 Choice_Knob::getActiveEntryText_mt_safe() const
 {
     int activeIndex = getValue();
-
+    
     QMutexLocker l(&_entriesMutex);
     assert( activeIndex < (int)_entries.size() );
-
+    
     return _entries[activeIndex];
 }
 
@@ -858,16 +564,16 @@ trim(std::string const & str)
 {
     const std::string whitespace = " \t\f\v\n\r";
     std::size_t first = str.find_first_not_of(whitespace);
-
+    
     // If there is no non-whitespace character, both first and last will be std::string::npos (-1)
     // There is no point in checking both, since if either doesn't work, the
     // other won't work, either.
     if (first == std::string::npos) {
         return "";
     }
-
+    
     std::size_t last  = str.find_last_not_of(whitespace);
-
+    
     return str.substr(first, last - first + 1);
 }
 
@@ -877,7 +583,7 @@ Choice_Knob::getHintToolTipFull() const
     assert(QThread::currentThread() == qApp->thread());
     
     bool gothelp = false;
-
+    
     if ( !_entriesHelp.empty() ) {
         assert( _entriesHelp.size() == _entries.size() );
         for (U32 i = 0; i < _entries.size(); ++i) {
@@ -886,7 +592,7 @@ Choice_Knob::getHintToolTipFull() const
             }
         }
     }
-
+    
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
         ss << trim( getHintToolTip() );
@@ -908,7 +614,7 @@ Choice_Knob::getHintToolTipFull() const
             }
         }
     }
-
+    
     return ss.str();
 }
 
@@ -951,7 +657,7 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
         std::vector<std::string>::iterator it = std::find(_entries.begin(), _entries.end(), data->_choiceString);
         if ( it != _entries.end() ) {
             setValue(std::distance(_entries.begin(), it), 0);
-        } 
+        }
     }
     
 }
@@ -961,7 +667,7 @@ Separator_Knob::Separator_Knob(KnobHolder* holder,
                                const std::string &description,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
 }
 
@@ -997,40 +703,11 @@ Color_Knob::Color_Knob(KnobHolder* holder,
                        const std::string &description,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<double>(holder, description, dimension,declaredByPlugin)
-      , _allDimensionsEnabled(true)
-      , _dimensionNames(dimension)
-      , _minimums(dimension)
-      , _maximums(dimension)
-      , _displayMins(dimension)
-      , _displayMaxs(dimension)
+: Knob<double>(holder, description, dimension,declaredByPlugin)
+, _allDimensionsEnabled(true)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
-    for (int i = 0; i < dimension; ++i) {
-        _minimums[i] = -DBL_MAX;
-        _maximums[i] = DBL_MAX;
-        _displayMins[i] = 0.;
-        _displayMaxs[i] = 1.;
-
-        switch (i) {
-        case 0:
-            _dimensionNames[i] = "r";
-            break;
-        case 1:
-            _dimensionNames[i] = "g";
-            break;
-        case 2:
-            _dimensionNames[i] = "b";
-            break;
-        case 3:
-            _dimensionNames[i] = "a";
-            break;
-        default:
-            assert(false);     //< unsupported dimension
-            break;
-        }
-    }
 }
 
 void
@@ -1045,22 +722,7 @@ Color_Knob::areAllDimensionsEnabled() const
     return _allDimensionsEnabled;
 }
 
-void
-Color_Knob::setDimensionName(int dim,
-                             const std::string & dimension)
-{
-    assert( dim < (int)_dimensionNames.size() );
-    _dimensionNames[dim] = dimension;
-}
 
-// FIXME: the plugin may have set kOfxParamPropDimensionLabel - use this!
-std::string
-Color_Knob::getDimensionName(int dimension) const
-{
-    assert( dimension < (int)_dimensionNames.size() );
-
-    return _dimensionNames[dimension];
-}
 
 bool
 Color_Knob::canAnimate() const
@@ -1082,111 +744,6 @@ Color_Knob::typeName() const
     return typeNameStatic();
 }
 
-const std::vector<double> &
-Color_Knob::getMinimums() const
-{
-    return _minimums;
-}
-
-const std::vector<double> &
-Color_Knob::getMaximums() const
-{
-    return _maximums;
-}
-
-const std::vector<double> &
-Color_Knob::getDisplayMinimums() const
-{
-    return _displayMins;
-}
-
-const std::vector<double> &
-Color_Knob::getDisplayMaximums() const
-{
-    return _displayMaxs;
-}
-
-void
-Color_Knob::setMinimum(double mini,
-                       int index)
-{
-    if ( index >= (int)_minimums.size() ) {
-        throw "Color_Knob::setMinimum , dimension out of range";
-    }
-    _minimums[index] = mini;
-    emit minMaxChanged(mini, _maximums[index], index);
-}
-
-void
-Color_Knob::setMaximum(double maxi,
-                       int index)
-{
-    if ( index >= (int)_maximums.size() ) {
-        throw "Color_Knob::setMaximum , dimension out of range";
-    }
-    _maximums[index] = maxi;
-    emit minMaxChanged(_minimums[index], maxi, index);
-}
-
-void
-Color_Knob::setDisplayMinimum(double mini,
-                              int index)
-{
-    if ( index >= (int)_displayMins.size() ) {
-        throw "Color_Knob::setDisplayMinimum , dimension out of range";
-    }
-    _displayMins[index] = mini;
-    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
-}
-
-void
-Color_Knob::setDisplayMaximum(double maxi,
-                              int index)
-{
-    if ( index >= (int)_displayMaxs.size() ) {
-        throw "Color_Knob::setDisplayMaximum , dimension out of range";
-    }
-    _displayMaxs[index] = maxi;
-    emit displayMinMaxChanged(_displayMins[index], maxi, index);
-}
-
-std::pair<double,double>
-Color_Knob::getMinMaxForCurve(int dimension) const
-{
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if (curve) {
-        const std::vector<double> & mins = getMinimums();
-        const std::vector<double> & maxs = getMaximums();
-        
-        return std::make_pair(mins[dimension], maxs[dimension]);
-    }
-    throw std::logic_error("Color_Knob::getMinMaxForCurve(): curve not found");
-}
-
-/*minis & maxis must have the same size*/
-void
-Color_Knob::setMinimumsAndMaximums(const std::vector<double> &minis,
-                                   const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _minimums = minis;
-    _maximums = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit minMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
-
-void
-Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis,
-                                          const std::vector<double> &maxis)
-{
-    assert( minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension() );
-    _displayMins = minis;
-    _displayMaxs = maxis;
-    for (U32 i = 0; i < maxis.size(); ++i) {
-        emit displayMinMaxChanged(_minimums[i], _maximums[i], i);
-    }
-}
 
 void
 Color_Knob::setValues(double r,
@@ -1195,10 +752,10 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 3);
     blockEvaluation();
-    setValue(r, 0);
-    setValue(g, 1);
+    setValue(r,0);
+    setValue(g,1);
     unblockEvaluation();
-    setValue(b, 2);
+    setValue(b,2);
 }
 
 void
@@ -1209,11 +766,11 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 4);
     blockEvaluation();
-    setValue(r, 0);
-    setValue(g, 1);
-    setValue(b, 2);
+    setValue(r,0);
+    setValue(g,1);
+    setValue(b,2);
     unblockEvaluation();
-    setValue(a, 3);
+    setValue(a,3);
 }
 
 /******************************STRING_KNOB**************************************/
@@ -1223,11 +780,11 @@ String_Knob::String_Knob(KnobHolder* holder,
                          const std::string &description,
                          int dimension,
                          bool declaredByPlugin)
-    : AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
-      , _multiLine(false)
-      , _richText(false)
-      , _isLabel(false)
-      , _isCustom(false)
+: AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
+, _multiLine(false)
+, _richText(false)
+, _isLabel(false)
+, _isCustom(false)
 {
 }
 
@@ -1260,8 +817,8 @@ Group_Knob::Group_Knob(KnobHolder* holder,
                        const std::string &description,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
-      , _isTab(false)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
+, _isTab(false)
 {
 }
 
@@ -1300,7 +857,7 @@ void
 Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
 {
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-
+    
     if ( found == _children.end() ) {
         _children.push_back(k);
         boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
@@ -1321,7 +878,7 @@ Page_Knob::Page_Knob(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
 }
 
@@ -1348,7 +905,7 @@ void
 Page_Knob::addKnob(boost::shared_ptr<KnobI> k)
 {
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-
+    
     if ( found == _children.end() ) {
         _children.push_back(k);
         if ( !k->getParentKnob() ) {
@@ -1364,11 +921,10 @@ Parametric_Knob::Parametric_Knob(KnobHolder* holder,
                                  const std::string &description,
                                  int dimension,
                                  bool declaredByPlugin)
-    : Knob<double>(holder,description,dimension,declaredByPlugin)
-      , _curvesMutex()
-      , _curves(dimension)
-      , _curvesColor(dimension)
-      , _curveLabels(dimension)
+: Knob<double>(holder,description,dimension,declaredByPlugin)
+, _curvesMutex()
+, _curves(dimension)
+, _curvesColor(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
         RGBAColourF color;
@@ -1406,7 +962,7 @@ Parametric_Knob::setCurveColor(int dimension,
     ///only called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     ///Mt-safe as it never changes
-
+    
     assert( dimension < (int)_curvesColor.size() );
     _curvesColor[dimension].r = r;
     _curvesColor[dimension].g = g;
@@ -1420,34 +976,13 @@ Parametric_Knob::getCurveColor(int dimension,
                                double* b)
 {
     ///Mt-safe as it never changes
-
+    
     assert( dimension < (int)_curvesColor.size() );
     *r = _curvesColor[dimension].r;
     *g = _curvesColor[dimension].g;
     *b = _curvesColor[dimension].b;
 }
 
-void
-Parametric_Knob::setCurveLabel(int dimension,
-                               const std::string & str)
-{
-    ///only called in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-    ///Mt-safe as it never changes
-
-    assert( dimension < (int)_curveLabels.size() );
-    _curveLabels[dimension] = str;
-}
-
-const std::string &
-Parametric_Knob::getCurveLabel(int dimension) const
-{
-    ///Mt-safe as it never changes
-
-    assert( dimension < (int)_curveLabels.size() );
-
-    return _curveLabels[dimension];
-}
 
 void
 Parametric_Knob::setParametricRange(double min,
@@ -1456,7 +991,7 @@ Parametric_Knob::setParametricRange(double min,
     ///only called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     ///Mt-safe as it never changes
-
+    
     for (U32 i = 0; i < _curves.size(); ++i) {
         _curves[i]->setXRange(min, max);
     }
@@ -1465,25 +1000,19 @@ Parametric_Knob::setParametricRange(double min,
 std::pair<double,double> Parametric_Knob::getParametricRange() const
 {
     ///Mt-safe as it never changes
-
+    
     assert( !_curves.empty() );
-
+    
     return _curves.front()->getXRange();
 }
 
-std::string
-Parametric_Knob::getDimensionName(int dimension) const
-{
-    ///Mt-safe as it never changes
-    return getCurveLabel(dimension);
-}
 
 boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) const
 {
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
-
+    
     assert( dimension < (int)_curves.size() );
-
+    
     return _curves[dimension];
 }
 
@@ -1500,12 +1029,12 @@ Parametric_Knob::addControlPoint(int dimension,
         boost::math::isinf(value)) {
         return StatFailed;
     }
-
+    
     KeyFrame k(key,value);
     k.setInterpolation(Natron::KEYFRAME_CUBIC);
     _curves[dimension]->addKeyFrame(k);
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1523,7 +1052,7 @@ Parametric_Knob::getValue(int dimension,
     }catch (...) {
         return Natron::StatFailed;
     }
-
+    
     return Natron::StatOK;
 }
 
@@ -1536,7 +1065,7 @@ Parametric_Knob::getNControlPoints(int dimension,
         return StatFailed;
     }
     *returnValue =  _curves[dimension]->getKeyFramesCount();
-
+    
     return StatOK;
 }
 
@@ -1557,7 +1086,7 @@ Parametric_Knob::getNthControlPoint(int dimension,
     }
     *key = kf.getTime();
     *value = kf.getValue();
-
+    
     return StatOK;
 }
 
@@ -1573,7 +1102,7 @@ Parametric_Knob::setNthControlPoint(int dimension,
     }
     _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1585,10 +1114,10 @@ Parametric_Knob::deleteControlPoint(int dimension,
     if ( dimension >= (int)_curves.size() ) {
         return StatFailed;
     }
-
+    
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1601,7 +1130,7 @@ Parametric_Knob::deleteAllControlPoints(int dimension)
     }
     _curves[dimension]->clearKeyFrames();
     emit curveChanged(dimension);
-
+    
     return StatOK;
 }
 
@@ -1610,7 +1139,7 @@ Parametric_Knob::cloneExtraData(KnobI* other)
 {
     ///Mt-safe as Curve is MT-safe
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
-
+    
     if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
         for (int i = 0; i < getDimension(); ++i) {
             _curves[i]->clone( *isParametric->getParametricCurve(i) );
@@ -1624,7 +1153,7 @@ Parametric_Knob::cloneExtraData(KnobI* other,
                                 const RangeD* range)
 {
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
-
+    
     if (isParametric) {
         int dimMin = std::min( getDimension(), isParametric->getDimension() );
         for (int i = 0; i < dimMin; ++i) {

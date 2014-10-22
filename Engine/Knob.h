@@ -154,7 +154,17 @@ public:
         emit refreshGuiCurve(dimension);
     }
     
-    public slots:
+    void s_minMaxChanged(double mini, double maxi, int index)
+    {
+        emit minMaxChanged(mini,maxi,index);
+    }
+    
+    void s_displayMinMaxChanged(double mini,double maxi,int index)
+    {
+        emit displayMinMaxChanged(mini,maxi,index);
+    }
+    
+public slots:
 
     /**
      * @brief Calls KnobI::onAnimationRemoved
@@ -233,6 +243,10 @@ signals:
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
+    
+    void minMaxChanged(double mini, double maxi, int index);
+    
+    void displayMinMaxChanged(double mini,double maxi,int index);
 };
 
 class KnobI
@@ -280,6 +294,8 @@ public:
      * for a dimension.
      **/
     virtual std::string getDimensionName(int dimension) const = 0;
+    virtual void setDimensionName(int dim,const std::string & name) = 0;
+
 
     /**
      * @brief When set to true the instanceChanged action on the plugin and evaluate (render) will not be called
@@ -912,6 +928,9 @@ public:
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
     virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setDimensionName(int dim,const std::string & name) OVERRIDE FINAL;
+    
 private:
 
     virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReason reason
@@ -1034,7 +1053,7 @@ public:
      * @brief Get the current value of the knob for the given dimension.
      * If it is animated, it will return the value at the current time.
      **/
-    T getValue(int dimension = 0) const WARN_UNUSED_RETURN;
+    T getValue(int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the value of the knob at the given time and for the given dimension.
@@ -1043,10 +1062,14 @@ public:
      * This function is overloaded by the String_Knob which can have its custom interpolation
      * but this should be the only knob which should ever need to overload it.
      **/
-    T getValueAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
+    T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
 
 private:
 
+   
+    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
+
+    
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
      * @param newKey If not NULL and the animation level of the knob is Natron::INTERPOLATED_VALUE
@@ -1061,12 +1084,13 @@ private:
      **/
     bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
 
-    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
-
 public:
 
+    
+   
+    
     /**
-     * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls setValue with a reason of Natron::NATRON_EDITED.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
@@ -1079,6 +1103,11 @@ public:
      * @see ValueChangedReturnCode
      **/
     ValueChangedReturnCode onValueChanged(int dimension,const T & v,KeyFrame* newKey);
+    
+    /**
+     * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
+     **/
+    ValueChangedReturnCode setValueFromPlugin(const T & value,int dimension);
 
     /**
      * @brief This is called by the plugin when a set value call would happen during  an interact action.
@@ -1086,9 +1115,14 @@ public:
     void requestSetValueOnUndoStack(const T & value,int dimension);
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls setValueAtTime with a reason of Natron::NATRON_EDITED.
      **/
     void setValueAtTime(int time,const T & v,int dimension);
+    
+    /**
+     * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     **/
+    void setValueAtTimeFromPlugin(int time,const T & v,int dimension);
 
     /**
      * @brief Unlike getValueAtTime this function doesn't interpolate the values.
@@ -1130,10 +1164,6 @@ public:
     /// You must implement it
     virtual bool canAnimate() const OVERRIDE;
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getDimensionName(int /*dimension*/) const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return "";
-    }
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
     virtual bool onKeyFrameSet(SequenceTime time,int dimension) OVERRIDE FINAL;
@@ -1154,11 +1184,39 @@ public:
     
     virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
     
+    ///MT-safe
+    void setMinimum(const T& mini, int dimension = 0);
+    void setMaximum(const T& maxi, int dimension = 0);
+    void setDisplayMinimum(const T& mini, int dimension = 0);
+    void setDisplayMaximum(const T& maxi, int dimension = 0);
+    void setMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis);
+    void setDisplayMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis);
+
+    
+    ///Not MT-SAFE, can only be called from main thread
+    const std::vector<T> &getMinimums() const;
+    const std::vector<T> &getMaximums() const;
+    const std::vector<T> &getDisplayMinimums() const;
+    const std::vector<T> &getDisplayMaximums() const;
+    
+    /// MT-SAFE
+    T getMinimum(int dimension = 0) const;
+    T getMaximum(int dimension = 0) const;
+    T getDisplayMinimum(int dimension = 0) const;
+    T getDisplayMaximum(int dimension = 0) const;
+    
 protected:
     
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
 
 private:
+    
+    void initMinMax();
+    
+    T clampToMinMax(const T& value,int dimension) const;
+    
+    void signalMinMaxChanged(const T& mini,const T& maxi,int dimension);
+    void signalDisplayMinMaxChanged(const T& mini,const T& maxi,int dimension);
 
     void cloneValues(KnobI* other);
 
@@ -1216,7 +1274,11 @@ private:
     mutable QReadWriteLock _valueMutex; //< protects _values
     std::vector<T> _values;
     std::vector<T> _defaultValues;
-
+    
+    //Only for double and int
+    mutable QReadWriteLock _minMaxMutex;
+    std::vector<T>  _minimums,_maximums,_displayMins,_displayMaxs;
+    
     ///this flag is to avoid recursive setValue calls
     int _setValueRecursionLevel;
     mutable QMutex _setValueRecursionLevelMutex;

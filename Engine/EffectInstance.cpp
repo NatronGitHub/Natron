@@ -3068,6 +3068,11 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 // rod is not valid
                 return ret;
             }
+            
+            if (rod->isNull()) {
+                return StatFailed;
+            }
+            
             assert( (ret == StatOK || ret == StatReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
             
         }

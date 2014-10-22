@@ -641,7 +641,7 @@ interParams(const KeyFrameSet &keyFrames,
 }
 
 double
-Curve::getValueAt(double t) const
+Curve::getValueAt(double t,bool doClamp) const
 {
     QReadLocker l(&_imp->_lock);
 
@@ -681,7 +681,7 @@ Curve::getValueAt(double t) const
                                    interp,
                                    interpNext);
 
-    if ( mustClamp() ) {
+    if ( doClamp && mustClamp() ) {
         v = clampValueToCurveYRange(v);
     }
 
@@ -876,12 +876,18 @@ std::pair<double,double>  Curve::getCurveYRange() const
         throw std::logic_error("Curve::getCurveYRange() called for a curve without owner or Y range");
     }
     if (_imp->owner) {
-        Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_imp->owner);
-        Int_Knob* isInt = dynamic_cast<Int_Knob*>(_imp->owner);
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
         if (isDouble) {
-            return isDouble->getMinMaxForCurve(_imp->dimensionInOwner);
+            std::pair<double, double> ret;
+            ret.first = isDouble->getMinimum(_imp->dimensionInOwner);
+            ret.second = isDouble->getMaximum(_imp->dimensionInOwner);
+            return ret;
         } else if (isInt) {
-            return isInt->getMinMaxForCurve(_imp->dimensionInOwner);
+            std::pair<double, double> ret;
+            ret.first = isInt->getMinimum(_imp->dimensionInOwner);
+            ret.second = isInt->getMaximum(_imp->dimensionInOwner);
+            return ret;
         } else {
             return std::make_pair( (double)INT_MIN, (double)INT_MAX );
         }

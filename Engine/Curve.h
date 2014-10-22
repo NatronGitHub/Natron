@@ -214,7 +214,7 @@ public:
 
     double getMaximumTimeCovered() const WARN_UNUSED_RETURN;
 
-    double getValueAt(double t) const WARN_UNUSED_RETURN;
+    double getValueAt(double t,bool clamp = true) const WARN_UNUSED_RETURN;
 
     double getDerivativeAt(double t) const WARN_UNUSED_RETURN;
 

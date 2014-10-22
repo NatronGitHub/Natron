@@ -1327,7 +1327,7 @@ Histogram::enterEvent(QEvent* e) {
     dynamic_cast<CurveWidget*>(currentFocus) ||
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
-    currentFocus->objectName() == "Properties";
+    currentFocus->objectName() == "PropertiesBinScrollArea";
     
     if (canSetFocus) {
         setFocus();

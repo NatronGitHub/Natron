@@ -84,8 +84,14 @@ Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
 {
     _knob = boost::dynamic_pointer_cast<Int_Knob>(knob);
     assert(_knob);
-    QObject::connect( _knob.get(), SIGNAL( minMaxChanged(int, int, int) ), this, SLOT( onMinMaxChanged(int, int, int) ) );
-    QObject::connect( _knob.get(), SIGNAL( displayMinMaxChanged(int, int, int) ), this, SLOT( onDisplayMinMaxChanged(int, int, int) ) );
+    boost::shared_ptr<KnobSignalSlotHandler> handler = _knob->getSignalSlotHandler();
+    if (handler) {
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
+        QObject::connect( handler.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
+#endif
+        
+        QObject::connect( handler.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+    }
     QObject::connect( _knob.get(), SIGNAL( incrementChanged(int, int) ), this, SLOT( onIncrementChanged(int, int) ) );
 }
 
@@ -121,8 +127,12 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<int> &increments = _knob->getIncrements();
     const std::vector<int> &displayMins = _knob->getDisplayMinimums();
     const std::vector<int> &displayMaxs = _knob->getDisplayMaximums();
+    
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     const std::vector<int > &mins = _knob->getMinimums();
     const std::vector<int > &maxs = _knob->getMaximums();
+#endif
+    
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget( layout->parentWidget() );
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -141,11 +151,13 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(box,i);
 
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         int min = mins[i];
         int max = maxs[i];
-
         box->setMaximum(max);
         box->setMinimum(min);
+#endif
+        
         box->setIncrement(increments[i]);
         if ( hasToolTip() ) {
             box->setToolTip( toolTip() );
@@ -154,23 +166,16 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         if ( (getKnob()->getDimension() == 1) && !_knob->isSliderDisabled() && getKnobsCountOnSameLine() == 0 ) {
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
-            double sliderMin = dispmin;
-            double sliderMax = dispmax;
-            if ( (sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
-                // use min max for slider if dispmin/dispmax was not set
-                sliderMin = min;
-                sliderMax = max;
+            
+            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::LINEAR_SCALE, layout->parentWidget() );
+            if ( hasToolTip() ) {
+                _slider->setToolTip( toolTip() );
             }
-            if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
-                _slider = new ScaleSliderQWidget( sliderMin, sliderMax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget() );
-                if ( hasToolTip() ) {
-                    _slider->setToolTip( toolTip() );
-                }
-                QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-                QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
-
-                boxContainerLayout->addWidget(_slider);
-            }
+            QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
+            QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
+            
+            boxContainerLayout->addWidget(_slider);
+            onDisplayMinMaxChanged(dispmin, dispmax);
         }
 
         containerLayout->addWidget(boxContainer);
@@ -180,24 +185,44 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     layout->addWidget(container);
 } // createWidget
 
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 void
-Int_KnobGui::onMinMaxChanged(int mini,
-                             int maxi,
+Int_KnobGui::onMinMaxChanged(double mini,
+                             double maxi,
                              int index)
 {
+    
     assert(_spinBoxes.size() > (U32)index);
     _spinBoxes[index].first->setMinimum(mini);
     _spinBoxes[index].first->setMaximum(maxi);
 }
+#endif
 
 void
-Int_KnobGui::onDisplayMinMaxChanged(int mini,
-                                    int maxi,
+Int_KnobGui::onDisplayMinMaxChanged(double mini,
+                                    double maxi,
                                     int index)
 {
-    _spinBoxes[index].first->setMinimum(mini);
-    _spinBoxes[index].first->setMaximum(maxi);
     if (_slider) {
+        double sliderMin = mini;
+        double sliderMax = maxi;
+        if ( (sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
+            
+            ///use min max for slider if dispmin/dispmax was not set
+            assert(index < (int)_knob->getMinimums().size() && index < (int)_knob->getMaximums().size());
+            int max = _knob->getMaximums()[index];
+            int min = _knob->getMinimums()[index];
+            if ( (max - min) < SLIDER_MAX_RANGE ) {
+                sliderMin = min;
+                sliderMax = max;
+            }
+        }
+        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+            _slider->show();
+        } else {
+            _slider->hide();
+        }
+        
         _slider->setMinimumAndMaximum(mini, maxi);
     }
 }
@@ -213,7 +238,7 @@ Int_KnobGui::onIncrementChanged(int incr,
 void
 Int_KnobGui::updateGUI(int dimension)
 {
-    int v = _knob->getValue(dimension);
+    int v = _knob->getValue(dimension,false);
 
     if (_slider) {
         _slider->seekScalePosition(v);
@@ -256,7 +281,7 @@ Int_KnobGui::onSliderValueChanged(double d)
 
     assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(),(int)d,0, false ));
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),(int)d,0, false ));
 }
 
 void
@@ -270,7 +295,7 @@ Int_KnobGui::onSliderEditingFinished()
     double d = _slider->getPosition();
     assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(),(int)d) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),(int)d) );
 }
 
 void
@@ -394,7 +419,7 @@ Bool_KnobGui::~Bool_KnobGui()
 void
 Bool_KnobGui::updateGUI(int /*dimension*/)
 {
-    _checkBox->setChecked( _knob->getValue() );
+    _checkBox->setChecked( _knob->getValue(0,false) );
 }
 
 void
@@ -424,7 +449,7 @@ Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
 void
 Bool_KnobGui::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(),b) );
+    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(0,false),b) );
 }
 
 void
@@ -515,12 +540,17 @@ Double_KnobGui::valueAccordingToType(bool normalize,
 
 Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
-    : KnobGui(knob, container), _slider(0)
+    : KnobGui(knob, container), _slider(0), _digits(0.)
 {
     _knob = boost::dynamic_pointer_cast<Double_Knob>(knob);
     assert(_knob);
-    QObject::connect( _knob.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
-    QObject::connect( _knob.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+    boost::shared_ptr<KnobSignalSlotHandler> handler = _knob->getSignalSlotHandler();
+    if (handler) {
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
+        QObject::connect( handler.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
+#endif
+        QObject::connect( handler.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+    }
     QObject::connect( _knob.get(), SIGNAL( incrementChanged(double, int) ), this, SLOT( onIncrementChanged(double, int) ) );
     QObject::connect( _knob.get(), SIGNAL( decimalsChanged(int, int) ), this, SLOT( onDecimalsChanged(int, int) ) );
 }
@@ -559,8 +589,10 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<double> &increments = _knob->getIncrements();
     const std::vector<double> &displayMins = _knob->getDisplayMinimums();
     const std::vector<double> &displayMaxs = _knob->getDisplayMaximums();
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     const std::vector<double > & mins = _knob->getMinimums();
     const std::vector<double > & maxs = _knob->getMaximums();
+#endif
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget( layout->parentWidget() );
@@ -580,16 +612,19 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(box,i);
 
-
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         double min = mins[i];
         double max = maxs[i];
-        double incr = increments[i];
         valueAccordingToType(false, i, &min);
         valueAccordingToType(false, i, &max);
-        valueAccordingToType(false, i, &incr);
         box->setMaximum(max);
         box->setMinimum(min);
+#endif
+        double incr = increments[i];
+        valueAccordingToType(false, i, &incr);
+        ///set the number of digits after the decimal point
         box->decimals(decimals[i]);
+        
         box->setIncrement(increments[i]);
         if ( hasToolTip() ) {
             box->setToolTip( toolTip() );
@@ -601,23 +636,17 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             double dispmax = displayMaxs[i];
             valueAccordingToType(false, i, &dispmin);
             valueAccordingToType(false, i, &dispmax);
-            double sliderMin = dispmin,sliderMax = dispmax;
-            if ( (dispmax - dispmin) >= SLIDER_MAX_RANGE ) {
-                ///use min max for slider if dispmin/dispmax was not set
-                if ( (max - min) < SLIDER_MAX_RANGE ) {
-                    sliderMin = min;
-                    sliderMax = max;
-                }
+            
+            
+            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::LINEAR_SCALE, layout->parentWidget() );
+            if ( hasToolTip() ) {
+                _slider->setToolTip( toolTip() );
             }
-            if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX) ) {
-                _slider = new ScaleSliderQWidget( sliderMin, sliderMax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget() );
-                if ( hasToolTip() ) {
-                    _slider->setToolTip( toolTip() );
-                }
-                QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-                QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
-                boxContainerLayout->addWidget(_slider);
-            }
+            QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
+            QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
+            boxContainerLayout->addWidget(_slider);
+            
+            onDisplayMinMaxChanged(dispmin, dispmax);
         }
 
         containerLayout->addWidget(boxContainer);
@@ -626,6 +655,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     layout->addWidget(container);
 } // createWidget
 
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 void
 Double_KnobGui::onMinMaxChanged(double mini,
                                 double maxi,
@@ -637,18 +667,38 @@ Double_KnobGui::onMinMaxChanged(double mini,
     _spinBoxes[index].first->setMinimum(mini);
     _spinBoxes[index].first->setMaximum(maxi);
 }
+#endif
 
 void
 Double_KnobGui::onDisplayMinMaxChanged(double mini,
                                        double maxi,
                                        int index )
 {
-    valueAccordingToType(false, index, &mini);
-    valueAccordingToType(false, index, &maxi);
-    _spinBoxes[index].first->setMinimum(mini);
-    _spinBoxes[index].first->setMaximum(maxi);
     if (_slider) {
-        _slider->setMinimumAndMaximum(mini, maxi);
+        valueAccordingToType(false, index, &mini);
+        valueAccordingToType(false, index, &maxi);
+        
+        double sliderMin = mini,sliderMax = maxi;
+        
+        if ( (maxi - mini) >= SLIDER_MAX_RANGE ) {
+            ///use min max for slider if dispmin/dispmax was not set
+            assert(index < (int)_knob->getMinimums().size() && index < (int)_knob->getMaximums().size());
+            double max = _knob->getMaximums()[index];
+            double min = _knob->getMinimums()[index];
+            if ( (max - min) < SLIDER_MAX_RANGE ) {
+                sliderMin = min;
+                sliderMax = max;
+            }
+        }
+        
+        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX) ) {
+            _digits = std::max(0., std::ceil(-std::log10(sliderMax - sliderMin) + 2.));
+            _slider->show();
+        } else {
+            _slider->hide();
+        }
+        
+        _slider->setMinimumAndMaximum(sliderMin, sliderMax);
     }
 }
 
@@ -672,7 +722,7 @@ Double_KnobGui::onDecimalsChanged(int deci,
 void
 Double_KnobGui::updateGUI(int dimension)
 {
-    double v = _knob->getValue(dimension);
+    double v = _knob->getValue(dimension,false);
 
     valueAccordingToType(false, dimension, &v);
     if (_slider) {
@@ -714,9 +764,12 @@ Double_KnobGui::onSliderValueChanged(double d)
         return;
     }
     assert(_knob->getDimension() == 1);
+    QString str;
+    str.setNum(d, 'f', _digits);
+    d = str.toDouble();
     _spinBoxes[0].first->setValue(d);
     valueAccordingToType(true, 0, &d);
-    pushUndoCommand( new KnobUndoCommand<double>(this,_knob->getValue(),d,0,false) );
+    pushUndoCommand( new KnobUndoCommand<double>(this,_knob->getValue(0,false),d,0,false) );
 }
 
 void
@@ -729,9 +782,12 @@ Double_KnobGui::onSliderEditingFinished()
     }
     double d = _slider->getPosition();
     assert(_knob->getDimension() == 1);
+    QString str;
+    str.setNum(d, 'f', _digits);
+    d = str.toDouble();
     _spinBoxes[0].first->setValue(d);
     valueAccordingToType(true, 0, &d);
-    pushUndoCommand( new KnobUndoCommand<double>(this,_knob->getValue(),d) );
+    pushUndoCommand( new KnobUndoCommand<double>(this,_knob->getValue(0,false),d) );
 }
 
 void
@@ -923,7 +979,7 @@ Choice_KnobGui::createWidget(QHBoxLayout* layout)
 void
 Choice_KnobGui::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(),i) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i) );
 }
 
 void
@@ -961,7 +1017,7 @@ Choice_KnobGui::updateGUI(int /*dimension*/)
     ///change the internal value of the knob again...
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
-    _comboBox->setCurrentIndex_no_emit( _knob->getValue() );
+    _comboBox->setCurrentIndex_no_emit( _knob->getValue(0,false) );
 }
 
 void
@@ -1328,8 +1384,13 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob,
 {
     _knob = boost::dynamic_pointer_cast<Color_Knob>(knob);
     assert(_knob);
-    QObject::connect( _knob.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
-    QObject::connect( _knob.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
+    boost::shared_ptr<KnobSignalSlotHandler> handler = _knob->getSignalSlotHandler();
+    if (handler) {
+        QObject::connect( handler.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
+        QObject::connect( handler.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+    }
+#endif
     QObject::connect( this, SIGNAL( dimensionSwitchToggled(bool) ), _knob.get(), SLOT( onDimensionSwitchToggled(bool) ) );
     QObject::connect( _knob.get(), SIGNAL( mustActivateAllDimensions() ),this, SLOT( onMustShowAllDimension() ) );
     QObject::connect( _knob.get(), SIGNAL( pickingEnabled(bool) ),this, SLOT( setPickingEnabled(bool) ) );
@@ -1354,9 +1415,11 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     boxLayout->setContentsMargins(0, 0, 0, 0);
     boxLayout->setSpacing(1);
 
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     const std::vector<double> & minimums = _knob->getMinimums();
     const std::vector<double> & maximums = _knob->getMaximums();
-
+#endif
+    
     _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
     QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
 
@@ -1371,9 +1434,11 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     }
 
-
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     _rBox->setMaximum(maximums[0]);
     _rBox->setMinimum(minimums[0]);
+#endif
+    
     _rBox->decimals(6);
     _rBox->setIncrement(0.001);
 
@@ -1391,8 +1456,12 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     boxLayout->addWidget(_rBox);
 
     if (_dimension >= 3) {
+        
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         _gBox->setMaximum(maximums[1]);
         _gBox->setMinimum(minimums[1]);
+#endif
+        
         _gBox->decimals(6);
         _gBox->setIncrement(0.001);
 
@@ -1409,8 +1478,11 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         boxLayout->addWidget(_gLabel);
         boxLayout->addWidget(_gBox);
 
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         _bBox->setMaximum(maximums[2]);
         _bBox->setMinimum(minimums[2]);
+#endif
+        
         _bBox->decimals(6);
         _bBox->setIncrement(0.001);
 
@@ -1429,8 +1501,11 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         boxLayout->addWidget(_bBox);
     }
     if (_dimension >= 4) {
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         _aBox->setMaximum(maximums[3]);
         _aBox->setMinimum(minimums[3]);
+#endif
+        
         _aBox->decimals(6);
         _aBox->setIncrement(0.001);
 
@@ -1459,7 +1534,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if ( slidermax >= std::numeric_limits<float>::max() ) {
         slidermax = 1.;
     }
-    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(), Natron::LINEAR_SCALE, boxContainers);
+    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::LINEAR_SCALE, boxContainers);
     boxLayout->addWidget(_slider);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
     _slider->hide();
@@ -1486,17 +1561,17 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     _dimensionSwitchButton->setCheckable(true);
 
     bool enableAllDimensions = false;
-    double firstDimensionValue = _knob->getValue(0);
+    double firstDimensionValue = _knob->getValue(0,false);
     if (_dimension > 1) {
-        if (_knob->getValue(1) != firstDimensionValue) {
+        if (_knob->getValue(1,false) != firstDimensionValue) {
             enableAllDimensions = true;
         }
-        if (_knob->getValue(2) != firstDimensionValue) {
+        if (_knob->getValue(2,false) != firstDimensionValue) {
             enableAllDimensions = true;
         }
     }
     if (_dimension > 3) {
-        if (_knob->getValue(3) != firstDimensionValue) {
+        if (_knob->getValue(3,false) != firstDimensionValue) {
             enableAllDimensions = true;
         }
     }
@@ -1511,7 +1586,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
 
     _dimensionSwitchButton->setChecked(enableAllDimensions);
     if (!enableAllDimensions) {
-        _rBox->setValue( _knob->getValue(0) );
+        _rBox->setValue( _knob->getValue(0,false) );
     }
     onDimensionSwitchClicked();
     QObject::connect( _dimensionSwitchButton, SIGNAL( clicked() ), this, SLOT( onDimensionSwitchClicked() ) );
@@ -1681,7 +1756,7 @@ void
 Color_KnobGui::updateGUI(int dimension)
 {
     assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
-    double value = _knob->getValue(dimension);
+    double value = _knob->getValue(dimension,false);
     switch (dimension) {
     case 0: {
         _rBox->setValue(value);
@@ -1831,7 +1906,7 @@ Color_KnobGui::showColorDialog()
     }
 
     for (int i = 0; i < _dimension; ++i) {
-        _lastColor[i] = _knob->getValue(i);
+        _lastColor[i] = _knob->getValue(i,false);
     }
 
     QColor curColor;
@@ -1841,12 +1916,19 @@ Color_KnobGui::showColorDialog()
                      Natron::clamp(Natron::Color::to_func_srgb(curA)));
     dialog.setCurrentColor(curColor);
     QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
-    _knob->blockEvaluation();
     if (!dialog.exec()) {
+        
+        _knob->blockEvaluation();
+
         for (int i = 0; i < _dimension; ++i) {
             _knob->setValue(_lastColor[i],i);
         }
+        _knob->unblockEvaluation();
+
     } else {
+        
+        _knob->blockEvaluation();
+
         ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         for (int i = 0; i < _dimension; ++i) {
             _knob->setValue(_lastColor[i],i);
@@ -1887,9 +1969,11 @@ Color_KnobGui::showColorDialog()
         }
 
         onColorChanged();
+        
+        _knob->unblockEvaluation();
+
     }
-    _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, PLUGIN_EDITED);
+    _knob->evaluateValueChange(0, NATRON_EDITED);
 } // showColorDialog
 
 void
@@ -1905,7 +1989,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
         }
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, PLUGIN_EDITED);
+    _knob->evaluateValueChange(0, NATRON_EDITED);
 }
 
 void
@@ -2342,7 +2426,7 @@ String_KnobGui::~String_KnobGui()
 void
 String_KnobGui::onLineChanged()
 {
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),_lineEdit->text().toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),_lineEdit->text().toStdString() ) );
 }
 
 QString
@@ -2385,7 +2469,7 @@ String_KnobGui::onTextChanged()
     if ( _knob->usesRichText() ) {
         txt = addHtmlTags(txt);
     }
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),txt.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),txt.toStdString() ) );
 }
 
 QString
@@ -2409,7 +2493,7 @@ String_KnobGui::addHtmlTags(QString text) const
     }
 
     ///if the knob had custom data, set them
-    QString knobOldtext( _knob->getValue().c_str() );
+    QString knobOldtext( _knob->getValue(0,false).c_str() );
     QString startCustomTag(NATRON_CUSTOM_HTML_TAG_START);
     int startCustomData = knobOldtext.indexOf(startCustomTag);
     if (startCustomData != -1) {
@@ -2439,7 +2523,7 @@ String_KnobGui::addHtmlTags(QString text) const
 void
 String_KnobGui::restoreTextInfosFromString()
 {
-    QString text( _knob->getValue().c_str() );
+    QString text( _knob->getValue(0,false).c_str() );
 
     if ( text.isEmpty() ) {
         EffectInstance* effect = dynamic_cast<EffectInstance*>( _knob->getHolder() );
@@ -2449,7 +2533,7 @@ String_KnobGui::restoreTextInfosFromString()
             if (knob) {
                 String_Knob* strKnob = dynamic_cast<String_Knob*>( knob.get() );
                 if (strKnob) {
-                    QString sublabel = strKnob->getValue().c_str();
+                    QString sublabel = strKnob->getValue(0,false).c_str();
                     text.append(NATRON_CUSTOM_HTML_TAG_START);
                     text.append('(' + sublabel + ')');
                     text.append(NATRON_CUSTOM_HTML_TAG_END);
@@ -2601,7 +2685,7 @@ void
 String_KnobGui::onCurrentFontChanged(const QFont & font)
 {
     assert(_textEdit);
-    QString text( _knob->getValue().c_str() );
+    QString text( _knob->getValue(0,false).c_str() );
     //find the first font tag
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
@@ -2628,14 +2712,14 @@ String_KnobGui::onCurrentFontChanged(const QFont & font)
         text.prepend(fontTag);
         text.append(kFontEndTag);
     }
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),text.toStdString() ) );
 }
 
 void
 String_KnobGui::onFontSizeChanged(double size)
 {
     assert(_textEdit);
-    QString text( _knob->getValue().c_str() );
+    QString text( _knob->getValue(0,false).c_str() );
     //find the first font tag
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
@@ -2651,14 +2735,14 @@ String_KnobGui::onFontSizeChanged(double size)
     text.remove( i, currentSize.size() );
     text.insert( i, QString::number(size) );
     _fontSize = size;
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),text.toStdString() ) );
 }
 
 void
 String_KnobGui::boldChanged(bool toggled)
 {
     assert(_textEdit);
-    QString text( _knob->getValue().c_str() );
+    QString text( _knob->getValue(0,false).c_str() );
     QString toFind = QString(kBoldStartTag);
     int i = text.indexOf(toFind);
 
@@ -2684,7 +2768,7 @@ String_KnobGui::boldChanged(bool toggled)
     }
 
     _boldActivated = toggled;
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),text.toStdString() ) );
 }
 
 void
@@ -2709,7 +2793,7 @@ String_KnobGui::colorFontButtonClicked()
     if ( dialog.exec() ) {
         _fontColor = dialog.currentColor();
 
-        QString text( _knob->getValue().c_str() );
+        QString text( _knob->getValue(0,false).c_str() );
         //find the first font tag
         QString toFind = QString(kFontSizeTag);
         int i = text.indexOf(toFind);
@@ -2727,7 +2811,7 @@ String_KnobGui::colorFontButtonClicked()
         text.remove( i,currentColor.size() );
         text.insert( i, _fontColor.name() );
 
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),text.toStdString() ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),text.toStdString() ) );
     }
     updateFontColorIcon(_fontColor);
 }
@@ -2735,7 +2819,7 @@ String_KnobGui::colorFontButtonClicked()
 void
 String_KnobGui::italicChanged(bool toggled)
 {
-    QString text( _knob->getValue().c_str() );
+    QString text( _knob->getValue(0,false).c_str() );
     //find the first font tag
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
@@ -2768,7 +2852,7 @@ String_KnobGui::italicChanged(bool toggled)
         text.append(kItalicEndTag); //< this is always the last tag
     }
     _italicActivated = toggled;
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),text.toStdString() ) );
 }
 
 QString
@@ -2850,7 +2934,7 @@ String_KnobGui::removeAutoAddedHtmlTags(QString text) const
 void
 String_KnobGui::updateGUI(int /*dimension*/)
 {
-    std::string value = _knob->getValue();
+    std::string value = _knob->getValue(0,false);
 
     if ( _knob->isMultiLine() ) {
         assert(_textEdit);
@@ -3124,7 +3208,7 @@ Group_KnobGui::eventFilter(QObject */*target*/,
 void
 Group_KnobGui::updateGUI(int /*dimension*/)
 {
-    bool b = _knob->getValue();
+    bool b = _knob->getValue(0,false);
 
     setChecked(b);
     if (_button) {

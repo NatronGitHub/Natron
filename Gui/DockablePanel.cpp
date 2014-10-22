@@ -14,6 +14,7 @@
 #include <fstream>
 #include <QLayout>
 #include <QAction>
+#include <QApplication>
 #include <QTabWidget>
 #include <QStyle>
 #include <QUndoStack>
@@ -922,8 +923,11 @@ void
 RightClickableWidget::mousePressEvent(QMouseEvent* e)
 {
     if (buttonDownIsRight(e)) {
-        emit rightClicked(e->pos());
-        e->accept();
+        QWidget* underMouse = qApp->widgetAt(e->globalPos());
+        if (underMouse == this) {
+            emit rightClicked(e->pos());
+            e->accept();
+        }
     } else {
         QWidget::mousePressEvent(e);
     }
@@ -1141,7 +1145,7 @@ DockablePanel::floatPanel()
         _imp->_gui->unregisterFloatingWindow(_imp->_floatingWidget);
         _imp->_floatingWidget->removeEmbeddedWidget();
         setParent( _imp->_container->parentWidget() );
-        _imp->_container->insertWidget(1, this);
+        _imp->_container->insertWidget(0, this);
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }

@@ -64,39 +64,16 @@ public:
     static const std::string & typeNameStatic();
 
 public:
-    void setMinimum(int mini, int index = 0);
-
-    void setMaximum(int maxi, int index = 0);
-
-    void setDisplayMinimum(int mini, int index = 0);
-
-    void setDisplayMaximum(int maxi, int index = 0);
 
     void setIncrement(int incr, int index = 0);
 
     void setIncrement(const std::vector<int> &incr);
 
-    /*minis & maxis must have the same size*/
-    void setMinimumsAndMaximums(const std::vector<int> &minis, const std::vector<int> &maxis);
-
-    void setDisplayMinimumsAndMaximums(const std::vector<int> &minis, const std::vector<int> &maxis);
-
-    const std::vector<int> &getMinimums() const;
-    const std::vector<int> &getMaximums() const;
     const std::vector<int> &getIncrements() const;
-    const std::vector<int> &getDisplayMinimums() const;
-    const std::vector<int> &getDisplayMaximums() const;
-    std::pair<int,int> getMinMaxForCurve(int dimension) const;
 
-    void setDimensionName(int dim,const std::string & name);
-
-    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
 
 signals:
 
-    void minMaxChanged(int mini, int maxi, int index = 0);
-
-    void displayMinMaxChanged(int mini,int maxi,int index = 0);
 
     void incrementChanged(int incr, int index = 0);
 
@@ -108,8 +85,7 @@ private:
 
 private:
 
-    std::vector<std::string> _dimensionNames;
-    std::vector<int> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
+    std::vector<int> _increments;
     bool _disableSlider;
     static const std::string _typeNameStr;
 };
@@ -188,42 +164,18 @@ public:
 
     bool isSliderDisabled() const;
 
-    const std::vector<double> &getMinimums() const;
-    const std::vector<double> &getMaximums() const;
     const std::vector<double> &getIncrements() const;
     const std::vector<int> &getDecimals() const;
-    const std::vector<double> &getDisplayMinimums() const;
-    const std::vector<double> &getDisplayMaximums() const;
-
-    void setMinimum(double mini, int index = 0);
-
-    void setMaximum(double maxi, int index = 0);
-
-    void setDisplayMinimum(double mini, int index = 0);
-
-    void setDisplayMaximum(double maxi, int index = 0);
 
     void setIncrement(double incr, int index = 0);
 
     void setDecimals(int decis, int index = 0);
-
-    std::pair<double,double> getMinMaxForCurve(int dimension) const;
-
-
-    /*minis & maxis must have the same size*/
-    void setMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
-
-    void setDisplayMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
 
     void setIncrement(const std::vector<double> &incr);
 
     void setDecimals(const std::vector<int> &decis);
 
     static const std::string & typeNameStatic();
-
-    void setDimensionName(int dim,const std::string & name);
-
-    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
 
     NormalizedState getNormalizedState(int dimension) const
     {
@@ -334,9 +286,6 @@ public slots:
     void onNodeActivated();
 
 signals:
-    void minMaxChanged(double mini, double maxi, int index = 0);
-
-    void displayMinMaxChanged(double mini,double maxi,int index = 0);
 
     void incrementChanged(double incr, int index = 0);
 
@@ -350,8 +299,7 @@ private:
 
 private:
 
-    std::vector<std::string> _dimensionNames;
-    std::vector<double> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
+    std::vector<double>  _increments;
     std::vector<int> _decimals;
     bool _disableSlider;
     std::list< boost::shared_ptr<BezierCP> > _slavedTracks;
@@ -541,31 +489,8 @@ public:
                const std::string &description,
                int dimension,
                bool declaredByPlugin);
-    const std::vector<double> &getMinimums() const;
-    const std::vector<double> &getMaximums() const;
-    const std::vector<double> &getDisplayMinimums() const;
-    const std::vector<double> &getDisplayMaximums() const;
-
-    void setMinimum(double mini, int index);
-
-    void setMaximum(double maxi, int index);
-
-    void setDisplayMinimum(double mini, int index);
-
-    void setDisplayMaximum(double maxi, int index);
-
-    std::pair<double,double> getMinMaxForCurve(int dimension) const;
-
-    /*minis & maxis must have the same size*/
-    void setMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
-
-    void setDisplayMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
-
+    
     static const std::string & typeNameStatic();
-
-    void setDimensionName(int dim,const std::string & dimension);
-
-    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
 
     bool areAllDimensionsEnabled() const;
 
@@ -612,8 +537,6 @@ private:
 
 private:
     bool _allDimensionsEnabled;
-    std::vector<std::string> _dimensionNames;
-    std::vector<double> _minimums, _maximums, _displayMins, _displayMaxs;
     static const std::string _typeNameStr;
 };
 
@@ -802,7 +725,6 @@ class Parametric_Knob
     mutable QMutex _curvesMutex;
     std::vector< boost::shared_ptr<Curve> > _curves;
     std::vector<RGBAColourF> _curvesColor;
-    std::vector<std::string> _curveLabels;
 
 public:
 
@@ -823,14 +745,9 @@ public:
 
     void getCurveColor(int dimension,double* r,double* g,double* b);
 
-    void setCurveLabel(int dimension,const std::string & str);
-
-    const std::string & getCurveLabel(int dimension) const WARN_UNUSED_RETURN;
-
     void setParametricRange(double min,double max);
 
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
-    virtual std::string getDimensionName(int dimension) const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     Natron::Status addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
     Natron::Status getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;

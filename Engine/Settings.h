@@ -183,6 +183,7 @@ public:
     
     bool areRGBPixelComponentsSupported() const;
     
+    bool isMergeAutoConnectingToAInput() const;
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -250,6 +251,7 @@ private:
     boost::shared_ptr<Bool_Knob> _useBWIcons;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
+    boost::shared_ptr<Bool_Knob> _useInputAForMergeAutoConnect;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
     boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;
     boost::shared_ptr<Color_Knob> _defaultBackdropColor;
