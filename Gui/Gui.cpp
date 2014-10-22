@@ -1630,7 +1630,7 @@ void
 Gui::putSettingsPanelFirst(DockablePanel* panel)
 {
     _imp->_layoutPropertiesBin->removeWidget(panel);
-    _imp->_layoutPropertiesBin->insertWidget(1, panel);
+    _imp->_layoutPropertiesBin->insertWidget(0, panel);
     _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
 }
 
