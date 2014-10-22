@@ -44,6 +44,7 @@
 #include "Engine/ThreadStorage.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Timer.h"
+#include "Engine/Settings.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
@@ -828,15 +829,36 @@ Node::getPreferredInputForConnection() const
         return firstNonOptionalEmptyInput;
     }  else {
         if ( !optionalEmptyInputs.empty() ) {
-            std::list<int>::iterator first = optionalEmptyInputs.begin();
-            while ( first != optionalEmptyInputs.end() && _imp->liveInstance->isInputRotoBrush(*first) ) {
+            
+            if (getPluginID().find("Merge") != std::string::npos) {
+                //if it is a merge node, try to follow what the user preferences tell us
+                std::string inputNameToFind;
+                bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+                if (useInputA) {
+                    inputNameToFind = "A";
+                } else {
+                    inputNameToFind = "B";
+                }
+                
+                int maxinputs = getMaxInputCount();
+                for (int i = 0; i < maxinputs ; ++i) {
+                    if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                        return i;
+                    }
+                }
+                
+            }
+            //We return the last optional empty input
+            std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
+            while ( first != optionalEmptyInputs.rend() && _imp->liveInstance->isInputRotoBrush(*first) ) {
                 ++first;
             }
-            if ( first == optionalEmptyInputs.end() ) {
+            if ( first == optionalEmptyInputs.rend() ) {
                 return -1;
             } else {
                 return *first;
             }
+
         } else {
             return -1;
         }

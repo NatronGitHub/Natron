@@ -438,6 +438,13 @@ Settings::initializeKnobs()
     _disconnectedArrowLength->disableSlider();
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
+    
+    _useInputAForMergeAutoConnect = Natron::createKnob<Bool_Knob>(this,"Merge node connect to A input");
+    _useInputAForMergeAutoConnect->setName("mergeConnectToA");
+    _useInputAForMergeAutoConnect->setAnimationEnabled(false);
+    _useInputAForMergeAutoConnect->setHintToolTip("If checked, upon creation of a new Merge node, the input A will be preferred "
+                                                  "for auto-connection with another node instead of the input B.");
+    _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
@@ -697,6 +704,7 @@ Settings::setDefaultValues()
     _defaultBackdropColor->setDefaultValue(0.5,1);
     _defaultBackdropColor->setDefaultValue(0.2,2);
     _disconnectedArrowLength->setDefaultValue(30);
+    _useInputAForMergeAutoConnect->setDefaultValue(true);
 
     _defaultGeneratorColor->setDefaultValue(0.3,0);
     _defaultGeneratorColor->setDefaultValue(0.5,1);
@@ -1566,4 +1574,10 @@ void
 Settings::setUseGlobalThreadPool(bool use)
 {
     _useThreadPool->setValue(use,0);
+}
+
+bool
+Settings::isMergeAutoConnectingToAInput() const
+{
+    return _useInputAForMergeAutoConnect->getValue();
 }
