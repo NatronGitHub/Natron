@@ -984,6 +984,7 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
     
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
+    _propertiesScrollArea->setObjectName("PropertiesBinScrollArea");
     assert(_nodeGraphArea);
 
     QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
