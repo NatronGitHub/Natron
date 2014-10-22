@@ -2252,15 +2252,13 @@ natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reaso
 {
     switch (reason) {
         case Natron::USER_EDITED:
-            
+        case Natron::NATRON_EDITED:
             return kOfxChangeUserEdited;
         case Natron::PLUGIN_EDITED:
-        case Natron::NATRON_EDITED:
         case Natron::SLAVE_REFRESH:
         case Natron::RESTORE_DEFAULT:
             return kOfxChangePluginEdited;
         case Natron::TIME_CHANGED:
-            
             return kOfxChangeTime;
         default:
             assert(false);     // all Natron reasons should be processed
