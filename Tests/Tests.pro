@@ -7,7 +7,7 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc rcc
-CONFIG += boost glew opengl qt expat cairo 
+CONFIG += boost glew opengl qt expat cairo python
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 

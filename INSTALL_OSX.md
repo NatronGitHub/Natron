@@ -102,7 +102,7 @@ EOF
 
 ###Generate Python bindings
 
-shiboken-2.7 Engine/Pyside_Engine_Python.h --include-paths=Engine:/opt/local/include --typesystem-paths=/opt/local/share/PySide-2.7/typesystems:Engine --output-directory=Engine Engine/typesystem_engine.xml 
+shiboken-2.7 Engine/Pyside_Engine_Python.h --include-paths=Engine:../Global:/opt/local/include:/opt/local/include/PySide-2.7 --typesystem-paths=/opt/local/share/PySide-2.7/typesystems:Engine --output-directory=Engine Engine/typesystem_engine.xml
 
 ###Build with Makefile
 You can generate a makefile by typing

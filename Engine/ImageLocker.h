@@ -12,7 +12,10 @@
 #define IMAGELOCKER_H
 
 #include <cassert>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#endif
 
 #include "Global/Macros.h"
 

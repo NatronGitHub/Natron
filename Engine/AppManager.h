@@ -20,7 +20,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN) 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -140,6 +140,8 @@ public:
     void registerAppInstance(AppInstance* app);
 
     AppInstance* getAppInstance(int appID) const WARN_UNUSED_RETURN;
+    
+    int getNumInstances() const WARN_UNUSED_RETURN;
 
     void removeInstance(int appID);
 
@@ -396,6 +398,8 @@ protected:
     }
     
     virtual void clearLastRenderedTextures() {}
+    
+    virtual void initBuiltinPythonModules();
 
 private:
 
@@ -408,6 +412,10 @@ private:
     void registerEngineMetaTypes() const;
 
     void loadAllPlugins();
+    
+    void initPython(int argc,char* argv[]);
+    
+    void tearDownPython();
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
@@ -477,9 +485,22 @@ getTextureFromCacheOrCreate(const Natron::FrameKey & key,
 * Each ID can be passed to the AppInstance::createNode function to instantiate a node
 * with a plug-in.
 **/
-inline std::list<std::string> getPluginIDs()
+inline std::list<std::string>
+getPluginIDs()
 {
     return appPTR->getPluginIDs();
+}
+    
+inline AppInstance*
+getInstance(int idx)
+{
+    return appPTR->getAppInstance(idx);
+}
+    
+inline int
+getNumInstances()
+{
+    return appPTR->getNumInstances();
 }
     
 } // namespace Natron

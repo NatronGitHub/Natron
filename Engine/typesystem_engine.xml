@@ -1,12 +1,55 @@
 <?xml version="1.0"?>
+<!--  Natron
+ 
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ contact: immarespond at gmail dot com
+ -->
 <typesystem package="NatronEngine">
     
     <!--Load QtCore typesystem-->
     <load-typesystem name="typesystem_core.xml" generate="no" />
     
+    <!--The custom-type node simply makes the parser aware of the existence of a target language type, thus avoiding errors when trying to find a type used in function signatures and other places. The proper handling of the custom type is meant to be done by a generator using the APIExractor.-->
+    <custom-type name="PyObject"/>
+    
+    <!--Primitives-->
+    <primitive-type name="bool"/>
+    <primitive-type name="double"/>
+    <primitive-type name="real"/>
+    <primitive-type name="int"/>
+    <primitive-type name="short"/>
+    <primitive-type name="unsigned short"/>
+    <primitive-type name="ushort"/>
+    <primitive-type name="unsigned int" />
+    <primitive-type name="signed int" />
+    <primitive-type name="char"/>
+    <primitive-type name="unsigned char"/>
+    <primitive-type name="long"/>
+    <primitive-type name="unsigned long"/>
+    <primitive-type name="long long"/>
+    <primitive-type name="unsigned long long"/>
+    <primitive-type name="std::string"/>
+    
+    <primitive-type name="std::size_t" target-lang-api-name="PyLong">
+        <conversion-rule>
+            <native-to-target>
+                return PyLong_FromSize_t(%in);
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyLong">
+                    %out = %OUTTYPE(PyLong_AsSsize_t(%in));
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </primitive-type>
+    
     <!--std::pair from/to Python pair-->
     <container-type name="std::pair" type="pair">
-        <include file-name="pair" location="global"/>
+        <include file-name="utility" location="global"/>
         <conversion-rule>
             <native-to-target>
                 PyObject* %out = PyTuple_New(2);
@@ -23,31 +66,108 @@
         </conversion-rule>
     </container-type>
     
+    <!--Templates for type conversions used many times-->
+    <template name="stdListToPyList">
+        PyObject* %out = PyList_New((int) %in.size());
+        %INTYPE::const_iterator it = %in.begin();
+        for (int idx = 0; it != %in.end(); ++it, ++idx) {
+        %INTYPE_0 cppItem(*it);
+        PyList_SET_ITEM(%out, idx, %CONVERTTOPYTHON[%INTYPE_0](cppItem));
+        }
+        return %out;
+    </template>
+    <template name="pyListToStdList">
+        for (int i = 0; i &lt; PySequence_Size(%in); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, i));
+        %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        %out.push_back(cppItem);
+        }
+    </template>
+    
+    <template name="stdVectorToPyList">
+        %INTYPE::size_type vectorSize = %in.size();
+        PyObject* %out = PyList_New((int) vectorSize);
+        for (%INTYPE::size_type idx = 0; idx &lt; vectorSize; ++idx) {
+        %INTYPE_0 cppItem(%in[idx]);
+        PyList_SET_ITEM(%out, idx, %CONVERTTOPYTHON[%INTYPE_0](cppItem));
+        }
+        return %out;
+    </template>
+    <template name="pySeqToStdVector">
+        int vectorSize = PySequence_Size(%in);
+        %out.reserve(vectorSize);
+        for (int idx = 0; idx &lt; vectorSize; ++idx) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, idx));
+        %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        %out.push_back(cppItem);
+        }
+    </template>
+    <template name="stdMapToPyDict">
+        PyObject* %out = PyDict_New();
+        %INTYPE::const_iterator it = %in.begin();
+        for (; it != %in.end(); ++it) {
+        %INTYPE_0 key = it.key();
+        %INTYPE_1 value = it.value();
+        PyObject* pyKey = %CONVERTTOPYTHON[%INTYPE_0](key);
+        PyObject* pyValue = %CONVERTTOPYTHON[%INTYPE_1](value);
+        PyDict_SetItem(%out, pyKey, pyValue);
+        Py_DECREF(pyKey);
+        Py_DECREF(pyValue);
+        }
+        return %out;
+    </template>
+    <template name="pyDictToStdMap">
+        PyObject* key;
+        PyObject* value;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(%in, &amp;pos, &amp;key, &amp;value)) {
+        %OUTTYPE_0 cppKey = %CONVERTTOCPP[%OUTTYPE_0](key);
+        %OUTTYPE_1 cppValue = %CONVERTTOCPP[%OUTTYPE_1](value);
+        %out.insert(cppKey, cppValue);
+        }
+    </template>
+
+    
     <!--std::list from/to Python list-->
     <container-type name="std::list" type="list">
         <include file-name="list" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cpplist_to_pylist_convertion"/>
+                <insert-template name="stdListToPyList"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PySequence">
-                    <insert-template name="pyseq_to_cpplist_convertion"/>
+                    <insert-template name="pyListToStdList"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::vector from/to Python list-->
+    <container-type name="std::vector" type="vector">
+        <include file-name="vector" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="stdVectorToPyList"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    <insert-template name="pySeqToStdVector"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
     </container-type>
     
     <!--std::set from/to Python map-->
-    <container-type name="set" type="set">
+    <container-type name="std::set" type="set">
         <include file-name="set" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cpplist_to_pylist_conversion"/>
+                <insert-template name="stdListToPyList"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PySequence">
-                    <insert-template name="pyseq_to_cpplist_conversion"/>
+                    <insert-template name="pyListToStdList"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
@@ -58,11 +178,11 @@
         <include file-name="map" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cppmap_to_pymap_conversion"/>
+                <insert-template name="stdMapToPyDict"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PyDict">
-                    <insert-template name="pydict_to_cppmap_conversion"/>
+                    <insert-template name="pyDictToStdMap"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
@@ -73,11 +193,11 @@
         <include file-name="map" location="global"/>
         <conversion-rule>
             <native-to-target>
-                <insert-template name="cppmap_to_pymap_conversion"/>
+                <insert-template name="stdMapToPyDict"/>
             </native-to-target>
             <target-to-native>
                 <add-conversion type="PyDict">
-                    <insert-template name="pydict_to_cppmap_conversion"/>
+                    <insert-template name="pyDictToStdMap"/>
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
@@ -101,7 +221,9 @@
     
     <!--Global functions to Natron process-->
     <function signature="getPluginIDs()"/>
-    
+    <function signature="getNumInstances()"/>
+
+
 </typesystem>
 
 

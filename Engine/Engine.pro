@@ -100,7 +100,9 @@ SOURCES += \
     Timer.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
-    ../libs/SequenceParsing/SequenceParsing.cpp
+    ../libs/SequenceParsing/SequenceParsing.cpp \
+    NatronEngine/natronengine_module_wrapper.cpp \
+    NatronEngine/natron_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -121,6 +123,7 @@ HEADERS += \
     FrameEntrySerialization.h \
     FrameParams.h \
     FrameParamsSerialization.h \
+    GlobalFunctionsWrapper.h \
     Hash64.h \
     HistogramCPU.h \
     ImageInfo.h \
@@ -165,6 +168,7 @@ HEADERS += \
     Project.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
+    Pyside_Engine_Python.h \
     Rect.h \
     RotoContext.h \
     RotoContextPrivate.h \
@@ -191,7 +195,8 @@ HEADERS += \
     ../Global/MemoryInfo.h \
     ../Global/QtCompat.h \
     ../libs/SequenceParsing/SequenceParsing.h \
-    Pyside_Engine_Python.h
+    NatronEngine/natronengine_python.h \
+    NatronEngine/natron_wrapper.h
 
 OTHER_FILES += \
     typesystem_engine.xml

@@ -16,7 +16,16 @@
 #ifndef PYSIDE_ENGINE_PYTHON_H
 #define PYSIDE_ENGINE_PYTHON_H
 
-#include "Global/GlobalDefines.h"
-#include "Engine/AppManager.h"
+//Defined to avoid including some headers when running shiboken which may crash shiboken (particularily boost headers)
+#define SBK_RUN
+
+#include <pyside_global.h>
+
+//Global
+#include <GlobalDefines.h>
+#include <Enums.h>
+
+//Engine
+#include <GlobalFunctionsWrapper.h>
 
 #endif // PYSIDE_ENGINE_PYTHON_H
