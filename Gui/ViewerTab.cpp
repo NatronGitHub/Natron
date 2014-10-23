@@ -256,7 +256,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_zoomCombobox->addItem("25%");
     _imp->_zoomCombobox->addItem("50%");
     _imp->_zoomCombobox->addItem("75%");
-    _imp->_zoomCombobox->addItem("100%");
+    ActionWithShortcut* level100Action = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionZoomLevel100,kShortcutDescActionZoomLevel100,this);
+    _imp->_zoomCombobox->addAction(level100Action);
     _imp->_zoomCombobox->addItem("125%");
     _imp->_zoomCombobox->addItem("150%");
     _imp->_zoomCombobox->addItem("200%");
@@ -1225,6 +1226,8 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         _imp->_renderScaleCombo->setCurrentIndex(3);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, modifiers, key) ) {
         _imp->_renderScaleCombo->setCurrentIndex(4);
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
+        _imp->viewer->zoomSlot(100);
     }
 } // keyPressEvent
 

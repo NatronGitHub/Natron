@@ -177,6 +177,9 @@
 #define kShortcutIDActionProxyLevel32 "proxy32"
 #define kShortcutDescActionProxyLevel32 "32"
 
+#define kShortcutIDActionZoomLevel100 "100%"
+#define kShortcutDescActionZoomLevel100 "100%"
+
 #define kShortcutIDActionHideOverlays "hideOverlays"
 #define kShortcutDescActionHideOverlays "Show/Hide overlays"
 
