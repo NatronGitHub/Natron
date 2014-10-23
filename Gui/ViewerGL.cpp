@@ -114,6 +114,7 @@ enum MouseStateEnum
     eMouseStateDraggingWipeCenter,
     eMouseStateDraggingWipeMixHandle,
     eMouseStateRotatingWipeHandle,
+    eMouseStateZoomingImage,
     eMouseStateUndefined
 };
 
@@ -2333,7 +2334,12 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     }
 
     if ( (buttonDownIsMiddle(e) || ( (e)->buttons() == Qt::RightButton   && buttonControlAlt(e) == Qt::AltModifier )) && !modifierHasControl(e) ) {
+        // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
+        overlaysCaught = true;
+    } else if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
+        // Alt + middle = zoom
+        _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     } else if ( (_imp->ms == eMouseStateUndefined) && _imp->overlay ) {
         unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
@@ -2604,6 +2610,42 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->zoomOrPannedSinceLastFit = true;
         }
         _imp->oldClick = newClick;
+        if ( displayingImage() ) {
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        }
+        //  else {
+        mustRedraw = true;
+        // }
+        // no need to update the color picker or mouse posn: they should be unchanged
+        break;
+    }
+    case eMouseStateZoomingImage: {
+        const double zoomFactor_min = 0.01;
+        const double zoomFactor_max = 1024.;
+        double zoomFactor;
+        int delta = 2*((e->x() - _imp->lastMousePosition.x()) - (e->y() - _imp->lastMousePosition.y()));
+        double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+            if (zoomFactor <= zoomFactor_min) {
+                zoomFactor = zoomFactor_min;
+                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+            } else if (zoomFactor > zoomFactor_max) {
+                zoomFactor = zoomFactor_max;
+                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+            }
+            _imp->zoomCtx.zoom(oldClick_opengl.x(), oldClick_opengl.y(), scaleFactor);
+            _imp->zoomOrPannedSinceLastFit = true;
+        }
+        int zoomValue = (int)(100 * zoomFactor);
+        if (zoomValue == 0) {
+            zoomValue = 1; // sometimes, floor(100*0.01) makes 0
+        }
+        assert(zoomValue > 0);
+        emit zoomChanged(zoomValue);
+
+        //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
         if ( displayingImage() ) {
             _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
         }
