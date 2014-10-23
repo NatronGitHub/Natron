@@ -346,9 +346,7 @@ RemoveMultipleNodesCommand::redo()
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
         ///Make a copy before calling deactivate which will modify the list
         std::list<Natron::Node* > outputs = it->node->getNode()->getOutputs();
-
-        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
-
+        
         std::list<ViewerInstance* > viewers;
         it->node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
@@ -357,6 +355,8 @@ RemoveMultipleNodesCommand::redo()
                 viewersToRefresh.push_back(*it2);
             }
         }
+
+        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
 
 
         if (_nodes.size() == 1) {
