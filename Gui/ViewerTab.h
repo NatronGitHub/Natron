@@ -192,7 +192,6 @@ public:
 
     ///Called by ViewerGL when the image changes to refresh the info bar
     void setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth);
-
     
 public slots:
 
