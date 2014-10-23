@@ -400,9 +400,8 @@ AppInstance::redrawAllViewers()
 
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->getPluginID() == "Viewer") {
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-            assert(n);
+        ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
+        if (n) {
             n->redrawViewer();
         }
     }
