@@ -152,7 +152,7 @@ QtReader::initializeKnobs()
 
 void
 QtReader::knobChanged(KnobI* k,
-                      Natron::ValueChangedReason /*reason*/,
+                      Natron::ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       SequenceTime /*time*/)
 {
@@ -323,7 +323,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( Natron::ERROR_MESSAGE,  QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( Natron::eMessageTypeError,  QObject::tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -360,7 +360,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( Natron::ERROR_MESSAGE, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -386,7 +386,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
         if ( filename.empty() ) {
             filename = _fileKnob->getFileName(time, 0);
             if ( filename.empty() ) {
-                setPersistentMessage( Natron::ERROR_MESSAGE, QObject::tr("Nearest frame search went out of range").toStdString() );
+                setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
             }
         }
         break;
@@ -394,7 +394,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
                 /// time, we can safely say this is  a missing frame.
         if ( filename.empty() ) {
-            setPersistentMessage( Natron::ERROR_MESSAGE, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Missing frame").toStdString() );
         }
     case 2:     // Black image
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
@@ -404,7 +404,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
     }
 }
 
-Natron::Status
+Natron::StatusEnum
 QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
                                 const RenderScale & /*scale*/,
                                 int /*view*/,
@@ -416,7 +416,7 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
     try {
         sequenceTime =  getSequenceTime(time);
     } catch (const std::exception & e) {
-        return StatFailed;
+        return eStatusFailed;
     }
 
     std::string filename;
@@ -424,7 +424,7 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
     getFilenameAtSequenceTime(sequenceTime, filename);
 
     if ( filename.empty() ) {
-        return StatFailed;
+        return eStatusFailed;
     }
 
     if (filename != _filename) {
@@ -434,9 +434,9 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
         }
         _img = new QImage( _filename.c_str() );
         if (_img->format() == QImage::Format_Invalid) {
-            setPersistentMessage(Natron::ERROR_MESSAGE, QObject::tr("Failed to load the image ").toStdString() + filename);
+            setPersistentMessage(Natron::eMessageTypeError, QObject::tr("Failed to load the image ").toStdString() + filename);
 
-            return StatFailed;
+            return eStatusFailed;
         }
     }
 
@@ -445,10 +445,10 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
     rod->y1 = 0;
     rod->y2 = _img->height();
 
-    return StatOK;
+    return eStatusOK;
 }
 
-Natron::Status
+Natron::StatusEnum
 QtReader::render(SequenceTime /*time*/,
                  const RenderScale & /*scale*/,
                  const RectI & roi,
@@ -461,10 +461,10 @@ QtReader::render(SequenceTime /*time*/,
 
     if (!_img) {
         if ( !_img && (missingFrameChoice == 2) ) { // black image
-            return StatOK;
+            return eStatusOK;
         }
         assert(missingFrameChoice != 0); // nearest value - should never happen
-        return StatFailed; // error
+        return eStatusFailed; // error
     }
 
     assert(_img);
@@ -507,25 +507,25 @@ QtReader::render(SequenceTime /*time*/,
     case QImage::Format_Invalid:
     default:
         output->fill(roi,0.f,1.f);
-        setPersistentMessage( Natron::ERROR_MESSAGE, QObject::tr("Invalid image format.").toStdString() );
+        setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Invalid image format.").toStdString() );
 
-        return StatFailed;
+        return eStatusFailed;
     }
 
-    return StatOK;
+    return eStatusOK;
 } // render
 
 void
 QtReader::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<Natron::ImageComponentsEnum>* comps)
 {
     ///QtReader only supports RGBA for now.
-    comps->push_back(Natron::ImageComponentRGBA);
+    comps->push_back(Natron::eImageComponentRGBA);
 }
 
 void
-QtReader::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+QtReader::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(IMAGE_FLOAT);
+    depths->push_back(eImageBitDepthFloat);
 }
 

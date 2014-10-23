@@ -171,10 +171,10 @@ public:
     int getInputNb() const WARN_UNUSED_RETURN;
 
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
-    static std::string natronsComponentsToOfxComponents(Natron::ImageComponents comp);
-    static Natron::ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
-    static Natron::ImageBitDepth ofxDepthToNatronDepth(const std::string & depth);
-    static std::string natronsDepthToOfxDepth(Natron::ImageBitDepth depth);
+    static std::string natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp);
+    static Natron::ImageComponentsEnum ofxComponentsToNatronComponents(const std::string & comp);
+    static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
+    static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
 
 private:
 

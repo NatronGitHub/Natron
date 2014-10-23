@@ -173,7 +173,7 @@ struct GuiPrivate
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
     bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
-    Natron::StandardButton _lastQuestionDialogAnswer; //< stores the last question answer
+    Natron::StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
 
     ///ptrs to the undo/redo actions from the active stack.
     QAction* _currentUndoAction;
@@ -338,7 +338,7 @@ struct GuiPrivate
           , _uiUsingMainThreadCond()
           , _uiUsingMainThread(false)
           , _uiUsingMainThreadMutex()
-          , _lastQuestionDialogAnswer(Natron::No)
+          , _lastQuestionDialogAnswer(Natron::eStandardButtonNo)
           , _currentUndoAction(0)
           , _currentRedoAction(0)
           , _undoStacksGroup(0)
@@ -1190,13 +1190,13 @@ restoreSplitterRecursive(Gui* gui,
                          const SplitterSerialization & serialization)
 {
     Qt::Orientation qO;
-    Natron::Orientation nO = (Natron::Orientation)serialization.orientation;
+    Natron::OrientationEnum nO = (Natron::OrientationEnum)serialization.orientation;
 
     switch (nO) {
-    case Natron::Horizontal:
+    case Natron::eOrientationHorizontal:
         qO = Qt::Horizontal;
         break;
-    case Natron::Vertical:
+    case Natron::eOrientationVertical:
         qO = Qt::Vertical;
         break;
     default:
@@ -2608,12 +2608,12 @@ int
 Gui::saveWarning()
 {
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
-        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
+        Natron::StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                                              _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
-                                                             Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);
-        if ( (ret == Natron::Escape) || (ret == Natron::Cancel) ) {
+                                                             Natron::StandardButtons(Natron::eStandardButtonSave | Natron::eStandardButtonDiscard | Natron::eStandardButtonCancel), Natron::eStandardButtonSave);
+        if ( (ret == Natron::eStandardButtonEscape) || (ret == Natron::eStandardButtonCancel) ) {
             return 2;
-        } else if (ret == Natron::Discard) {
+        } else if (ret == Natron::eStandardButtonDiscard) {
             return 1;
         } else {
             return 0;
@@ -2650,18 +2650,18 @@ Gui::errorDialog(const std::string & title,
     }
 
 
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2677,18 +2677,18 @@ Gui::warningDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2704,18 +2704,18 @@ Gui::informationDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2743,7 +2743,7 @@ Gui::onDoDialog(int type,
     } else {
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-        ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButton)defaultB ) );
+        ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButtonEnum)defaultB ) );
         if ( ques.exec() ) {
             _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( ques.standardButton( ques.clickedButton() ) );
         }
@@ -2754,17 +2754,17 @@ Gui::onDoDialog(int type,
     _imp->_uiUsingMainThreadCond.wakeOne();
 }
 
-Natron::StandardButton
+Natron::StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
                     Natron::StandardButtons buttons,
-                    Natron::StandardButton defaultButton)
+                    Natron::StandardButtonEnum defaultButton)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
         QMutexLocker l(&_imp->aboutToCloseMutex);
         if (_imp->_aboutToClose) {
-            return Natron::No;
+            return Natron::eStandardButtonNo;
         }
     }
 
@@ -3460,7 +3460,7 @@ void
 Gui::debugImage(const Natron::Image* image,
                 const QString & filename )
 {
-    if (image->getBitDepth() != Natron::IMAGE_FLOAT) {
+    if (image->getBitDepth() != Natron::eImageBitDepthFloat) {
         qDebug() << "Debug image only works on float images.";
 
         return;

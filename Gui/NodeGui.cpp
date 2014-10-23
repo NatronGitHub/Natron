@@ -1346,7 +1346,7 @@ NodeGui::onPersistentMessageChanged(int type,
                                     const QString & message)
 {
     //keep type in synch with this enum:
-    //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
+    //enum MessageTypeEnum{eMessageTypeInfo = 0,eMessageTypeError = 1,eMessageTypeWarning = 2,eMessageTypeQuestion = 3};
 
     ///don't do anything if the last persistent message is the same
     if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui() ) {

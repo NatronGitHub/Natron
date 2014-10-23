@@ -359,7 +359,7 @@ NodeBackDrop::getSize(int & w,
 
 void
 NodeBackDrop::onKnobValueChanged(KnobI* k,
-                                 Natron::ValueChangedReason /*reason*/,
+                                 Natron::ValueChangedReasonEnum /*reason*/,
                                  SequenceTime /*time*/)
 {
     if ( k == _imp->knobLabel.get() ) {

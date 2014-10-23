@@ -765,8 +765,8 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
         *rotoAge_p = 0;
     }
     
-    Natron::Status stat = getRegionOfDefinition(nodeHash, time, scale, view, rod_p);
-    if (stat == StatFailed) {
+    Natron::StatusEnum stat = getRegionOfDefinition(nodeHash, time, scale, view, rod_p);
+    if (stat == eStatusFailed) {
         return false;
     }
     const RectD& rod = *rod_p;
@@ -808,8 +808,8 @@ EffectInstance::getImage(int inputNb,
                          const RenderScale & scale,
                          const int view,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
-                         const Natron::ImageComponents comp,
-                         const Natron::ImageBitDepth depth,
+                         const Natron::ImageComponentsEnum comp,
+                         const Natron::ImageBitDepthEnum depth,
                          const bool dontUpscale,
                          RectI* roiPixel)
 {
@@ -918,8 +918,8 @@ EffectInstance::getImage(int inputNb,
 
     if (useRotoInput) {
         
-        Natron::ImageComponents outputComps;
-        Natron::ImageBitDepth outputDepth;
+        Natron::ImageComponentsEnum outputComps;
+        Natron::ImageBitDepthEnum outputDepth;
         getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
         boost::shared_ptr<Natron::Image> mask =  roto->renderMask(pixelRoI, outputComps, nodeHash,rotoAge,
                                                                   RectD(), time, depth, view, mipMapLevel, byPassCache);
@@ -960,7 +960,7 @@ EffectInstance::getImage(int inputNb,
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
     ///Note that we do NOT cache it
     if ( !dontUpscale && (inputImgMipMapLevel != 0) && !supportsRenderScale() ) {
-        Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
+        Natron::ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
         int mipMapLevel = 0;
         RectI bounds;
         inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
@@ -989,7 +989,7 @@ EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,SequenceTime /*time*/
     *rod = RectD( projectDefault.left(), projectDefault.bottom(), projectDefault.right(), projectDefault.top() );
 }
 
-Natron::Status
+Natron::StatusEnum
 EffectInstance::getRegionOfDefinition(U64 hash,SequenceTime time,
                                       const RenderScale & scale,
                                       int view,
@@ -1005,9 +1005,9 @@ EffectInstance::getRegionOfDefinition(U64 hash,SequenceTime time,
         if (input) {
             RectD inputRod;
             bool isProjectFormat;
-            Status st = input->getRegionOfDefinition_public(hash,time, renderMappedScale, view, &inputRod, &isProjectFormat);
+            StatusEnum st = input->getRegionOfDefinition_public(hash,time, renderMappedScale, view, &inputRod, &isProjectFormat);
             assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
-            if (st == StatFailed) {
+            if (st == eStatusFailed) {
                 return st;
             }
 
@@ -1021,7 +1021,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,SequenceTime time,
         }
     }
 
-    return StatReplyDefault;
+    return eStatusReplyDefault;
 }
 
 bool
@@ -1063,8 +1063,8 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                 if (input->supportsRenderScaleMaybe() == eSupportsNo) {
                     inputScale.x = inputScale.y = 1.;
                 }
-                Status st = input->getRegionOfDefinition_public(hash,time, inputScale, view, &inputRod, &isProjectFormat);
-                if (st != StatFailed) {
+                StatusEnum st = input->getRegionOfDefinition_public(hash,time, inputScale, view, &inputRod, &isProjectFormat);
+                if (st != eStatusFailed) {
                     if (firstInput) {
                         inputsUnion = inputRod;
                         firstInput = false;
@@ -1201,8 +1201,8 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                                                     unsigned int mipMapLevel,
-                                                    Natron::ImageBitDepth bitdepth,
-                                                    Natron::ImageComponents components,
+                                                    Natron::ImageBitDepthEnum bitdepth,
+                                                    Natron::ImageComponentsEnum components,
                                                     int channelForAlpha,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
@@ -1218,8 +1218,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
         
         for (ImageList::iterator it = cachedImages.begin(); it!=cachedImages.end(); ++it) {
             unsigned int imgMMlevel = (*it)->getMipMapLevel();
-            ImageComponents imgComps = (*it)->getComponents();
-            ImageBitDepth imgDepth = (*it)->getBitDepth();
+            ImageComponentsEnum imgComps = (*it)->getComponents();
+            ImageBitDepthEnum imgDepth = (*it)->getBitDepth();
             
             if ( (*it)->getParams()->isRodProjectFormat() ) {
                 ////If the image was cached with a RoD dependent on the project format, but the project format changed,
@@ -1306,7 +1306,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 
                 img->allocateMemory();
                 
-                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+                bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
                 
                 imageToConvert->convertToFormat(imageToConvert->getBounds(),
                                                                getApp()->getDefaultColorSpaceForBitDepth( imageToConvert->getBitDepth() ),
@@ -1424,10 +1424,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     } else {
         ///before allocating it we must fill the RoD of the image we want to render
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
-        Status stat = getRegionOfDefinition_public(nodeHash,args.time, renderMappedScale, args.view, &rod, &isProjectFormat);
+        StatusEnum stat = getRegionOfDefinition_public(nodeHash,args.time, renderMappedScale, args.view, &rod, &isProjectFormat);
 
         ///The rod might be NULL for a roto that has no beziers and no input
-        if ( (stat == StatFailed) || rod.isNull() ) {
+        if ( (stat == eStatusFailed) || rod.isNull() ) {
             ///if getRoD fails, just return a NULL ptr
             return boost::shared_ptr<Natron::Image>();
         }
@@ -1658,7 +1658,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
-    EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(args.time,
+    EffectInstance::RenderRoIStatusEnum renderRetCode = renderRoIInternal(args.time,
                                                                       args.scale,
                                                                       args.mipMapLevel,
                                                                       args.view,
@@ -1683,14 +1683,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
 #endif
 
-    if ( aborted() && renderRetCode != eImageAlreadyRendered) {
+    if ( aborted() && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
         
         ///Return a NULL image if the render call was not issued by the result of a call of a plug-in to clipGetImage
         if (!args.calledFromGetImage) {
             return boost::shared_ptr<Image>();
         }
         
-    } else if (renderRetCode == eImageRenderFailed) {
+    } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
         throw std::runtime_error("Rendering Failed");
     }
 
@@ -1725,7 +1725,7 @@ EffectInstance::renderRoI(SequenceTime time,
     ///wether the plug-in should render in the full scale image, and then we downscale afterwards or
     ///if the plug-in can just use the downscaled image to render.
     bool renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
-    EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(time,
+    EffectInstance::RenderRoIStatusEnum renderRetCode = renderRoIInternal(time,
                                                                       scale,
                                                                       mipMapLevel,
                                                                       view,
@@ -1750,13 +1750,13 @@ EffectInstance::renderRoI(SequenceTime time,
     }
 #endif
     
-    if ( (renderRetCode == eImageRenderFailed) && !aborted() ) {
+    if ( (renderRetCode == eRenderRoIStatusRenderFailed) && !aborted() ) {
         throw std::runtime_error("Rendering Failed");
     }
 }
 
 
-EffectInstance::RenderRoIStatus
+EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(SequenceTime time,
                                   const RenderScale & scale,
                                   unsigned int mipMapLevel,
@@ -1774,7 +1774,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   int channelForAlpha,
                                   bool renderFullScaleThenDownscale)
 {
-    EffectInstance::RenderRoIStatus retCode;
+    EffectInstance::RenderRoIStatusEnum retCode;
     
     //For writers, we always want to call the render action, but we still want to use the cache for nodes upstream
     if (byPassCache && isWriter()) {
@@ -1782,8 +1782,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     }
 
     ///First off check if the requested components and bitdepth are supported by the output clip
-    Natron::ImageBitDepth outputDepth;
-    Natron::ImageComponents outputComponents;
+    Natron::ImageBitDepthEnum outputDepth;
+    Natron::ImageComponentsEnum outputComponents;
 
     getPreferredDepthAndComponents(-1, &outputComponents, &outputDepth);
     bool imageConversionNeeded = outputComponents != image->getComponents() || outputDepth != image->getBitDepth();
@@ -1849,12 +1849,12 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///the tree and remember it when the plugin calls getImage() afterwards
     boost::shared_ptr<RotoContext> rotoContext = _node->getRotoContext();
     U64 rotoAge = rotoContext ? rotoContext->getAge() : 0;
-    Natron::Status renderStatus = StatOK;
+    Natron::StatusEnum renderStatus = eStatusOK;
 
     if ( rectsToRender.empty() ) {
-        retCode = EffectInstance::eImageAlreadyRendered;
+        retCode = EffectInstance::eRenderRoIStatusImageAlreadyRendered;
     } else {
-        retCode = EffectInstance::eImageRendered;
+        retCode = EffectInstance::eRenderRoIStatusImageRendered;
     }
 
 
@@ -2025,8 +2025,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 ///For all frames requested for this node, render the RoI requested.
                 for (U32 range = 0; range < it2->second.size(); ++range) {
                     for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
-                        Natron::ImageComponents inputPrefComps;
-                        Natron::ImageBitDepth inputPrefDepth;
+                        Natron::ImageComponentsEnum inputPrefComps;
+                        Natron::ImageBitDepthEnum inputPrefDepth;
                         getPreferredDepthAndComponents(it2->first, &inputPrefComps, &inputPrefDepth);
 
                         int channelForAlphaInput = inputIsMask ? getMaskChannel(it2->first) : 3;
@@ -2056,7 +2056,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                     //if render was aborted, remove the frame from the cache as it contains only garbage
                     appPTR->removeFromNodeCache(image);
 
-                    return eImageRendered;
+                    return eRenderRoIStatusImageRendered;
                 }
             }
         }
@@ -2064,8 +2064,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///if the node has a roto context, pre-render the roto mask too
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
-            Natron::ImageComponents inputPrefComps;
-            Natron::ImageBitDepth inputPrefDepth;
+            Natron::ImageComponentsEnum inputPrefComps;
+            Natron::ImageBitDepthEnum inputPrefDepth;
             int rotoIndex = getRotoBrushInputIndex();
             assert(rotoIndex != -1);
             getPreferredDepthAndComponents(rotoIndex, &inputPrefComps, &inputPrefDepth);
@@ -2162,39 +2162,39 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
         ///neer call beginsequenceRender here if the render is sequential
         
-        Natron::SequentialPreference pref = getSequentialPreference();
-        if (!isWriter() || pref == EFFECT_NOT_SEQUENTIAL) {
+        Natron::SequentialPreferenceEnum pref = getSequentialPreference();
+        if (!isWriter() || pref == eSequentialPreferenceNotSequential) {
             callBegin = true;
         }
 
         if (callBegin) {
             assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
             if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
-                                           isRenderMadeInResponseToUserInteraction, view) == StatFailed) {
-                renderStatus = StatFailed;
+                                           isRenderMadeInResponseToUserInteraction, view) == eStatusFailed) {
+                renderStatus = eStatusFailed;
                 break;
             }
         }
 
         /*depending on the thread-safety of the plug-in we render with a different
            amount of threads*/
-        EffectInstance::RenderSafety safety = renderThreadSafety();
+        EffectInstance::RenderSafetyEnum safety = renderThreadSafety();
 
         ///if the project lock is already locked at this point, don't start any other thread
         ///as it would lead to a deadlock when the project is loading.
         ///Just fall back to Fully_safe
         int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-        if (safety == FULLY_SAFE_FRAME) {
-            ///If the plug-in is FULLY_SAFE_FRAME that means it wants the host to perform SMP aka slice up the RoI into chunks
+        if (safety == eRenderSafetyFullySafeFrame) {
+            ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
             ///but if the effect doesn't support tiles it won't work.
             ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
             if ( !tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
                 ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
                  ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ) {
-                safety = FULLY_SAFE;
+                safety = eRenderSafetyFullySafe;
             } else {
                 if ( !getApp()->getProject()->tryLock() ) {
-                    safety = FULLY_SAFE;
+                    safety = eRenderSafetyFullySafe;
                 } else {
                     getApp()->getProject()->unlock();
                 }
@@ -2205,7 +2205,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         const ParallelRenderArgs& frameArgs = _imp->frameRenderArgs.localData();
 
         switch (safety) {
-        case FULLY_SAFE_FRAME: {     // the plugin will not perform any per frame SMP threading
+        case eRenderSafetyFullySafeFrame: {     // the plugin will not perform any per frame SMP threading
             // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
             if (nbThreads == 0) {
                 nbThreads = QThreadPool::globalInstance()->maxThreadCount();
@@ -2225,7 +2225,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
             
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
-            QFuture<Natron::Status> ret = QtConcurrent::mapped( splitRects,
+            QFuture<Natron::StatusEnum> ret = QtConcurrent::mapped( splitRects,
                                                                 boost::bind(&EffectInstance::tiledRenderingFunctor,
                                                                             this,
                                                                             tiledArgs,
@@ -2241,13 +2241,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 if (endSequenceRender_public(time, time, time, false, renderMappedScale,
                                              isSequentialRender,
                                              isRenderMadeInResponseToUserInteraction,
-                                             view) == StatFailed) {
-                    renderStatus = StatFailed;
+                                             view) == eStatusFailed) {
+                    renderStatus = eStatusFailed;
                     break;
                 }
             }
-            for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-                if ( (*it2) == Natron::StatFailed ) {
+            for (QFuture<Natron::StatusEnum>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+                if ( (*it2) == Natron::eStatusFailed ) {
                     renderStatus = *it2;
                     break;
                 }
@@ -2255,26 +2255,26 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             break;
         }
 
-        case INSTANCE_SAFE:     // indicating that any instance can have a single 'render' call at any one time,
-        case FULLY_SAFE:        // indicating that any instance of a plugin can have multiple renders running simultaneously
-        case UNSAFE: {     // indicating that only a single 'render' call can be made at any time amoung all instances
-            // INSTANCE_SAFE means that there is at most one render per instance
+        case eRenderSafetyInstanceSafe:     // indicating that any instance can have a single 'render' call at any one time,
+        case eRenderSafetyFullySafe:        // indicating that any instance of a plugin can have multiple renders running simultaneously
+        case eRenderSafetyUnsafe: {     // indicating that only a single 'render' call can be made at any time amoung all instances
+            // eRenderSafetyInstanceSafe means that there is at most one render per instance
             // NOTE: the per-instance lock should probably be shared between
             // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
             // and read-write on it.
-            // It is probably safer to assume that several clones may write to the same output image only in the FULLY_SAFE case.
+            // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
 
-            // FULLY_SAFE means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
+            // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
             ///locks belongs to an instance)
 
             QMutexLocker *locker = 0;
 
-            if (safety == INSTANCE_SAFE) {
+            if (safety == eRenderSafetyInstanceSafe) {
                  locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
-            } else if (safety == UNSAFE) {
+            } else if (safety == eRenderSafetyUnsafe) {
                 locker = new QMutexLocker( appPTR->getMutexForPlugin( getPluginID().c_str() ) );
             }
-            ///For FULLY_SAFE, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
+            ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
             
             
             renderStatus = tiledRenderingFunctor(args,
@@ -2298,19 +2298,19 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
         
 
-        if (renderStatus != StatOK) {
+        if (renderStatus != eStatusOK) {
             break;
         }
     } // for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
     
-    if (renderStatus != StatOK) {
-        retCode = eImageRenderFailed;
+    if (renderStatus != eStatusOK) {
+        retCode = eRenderRoIStatusRenderFailed;
     }
 
     return retCode;
 } // renderRoIInternal
 
-Natron::Status
+Natron::StatusEnum
 EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                       const ParallelRenderArgs& frameArgs,
                                      bool setThreadLocalStorage,
@@ -2331,7 +2331,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  args.renderMappedImage);
 }
 
-Natron::Status
+Natron::StatusEnum
 EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       const ParallelRenderArgs& frameArgs,
                                       bool setThreadLocalStorage,
@@ -2380,13 +2380,13 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
     
     
-    ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in FULLY_SAFE_FRAME mode
+    ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
     boost::shared_ptr<Node::ParallelRenderArgsSetter> scopedFrameArgs;
     
     if (setThreadLocalStorage) {
         
-        ///At this point if we're in FULLY_SAFE_FRAME mode, we are a thread that might have been launched way after
+        ///At this point if we're in eRenderSafetyFullySafeFrame mode, we are a thread that might have been launched way after
         ///the time renderRectToRender was computed. We recompute it to update the portion to render
         
         // check the bitmap!
@@ -2425,14 +2425,14 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     if ( renderRectToRender.isNull() ) {
         ///We've got nothing to do
-        return StatOK;
+        return eStatusOK;
     }
     
-    Natron::Status st = render_public(time, renderMappedScale, renderRectToRender, view,
+    Natron::StatusEnum st = render_public(time, renderMappedScale, renderRectToRender, view,
                                       isSequentialRender,
                                       isRenderResponseToUserInteraction,
                                       renderMappedImage);
-    if (st != StatOK) {
+    if (st != eStatusOK) {
         return st;
     }
     
@@ -2444,7 +2444,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         if (renderFullScaleThenDownscale) {
             ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
             if ( (renderMappedImage == fullScaleMappedImage) && (fullScaleMappedImage != fullScaleImage) ) {
-                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+                bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
                 renderMappedImage->convertToFormat( renderRectToRender,
                                                    getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
                                                    getApp()->getDefaultColorSpaceForBitDepth( fullScaleMappedImage->getBitDepth() ),
@@ -2459,7 +2459,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         } else {
             assert(renderMappedImage == downscaledMappedImage);
             if (renderMappedImage != downscaledImage) {
-                bool unPremultIfNeeded = getOutputPremultiplication() == ImagePremultiplied;
+                bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
                 renderMappedImage->convertToFormat( renderRectToRender,
                                                    getApp()->getDefaultColorSpaceForBitDepth( renderMappedImage->getBitDepth() ),
                                                    getApp()->getDefaultColorSpaceForBitDepth( downscaledMappedImage->getBitDepth() ),
@@ -2471,7 +2471,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     }
   
 
-    return StatOK;
+    return eStatusOK;
 } // tiledRenderingFunctor
 
 void
@@ -2513,7 +2513,7 @@ EffectInstance::createKnobDynamically()
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
-                         Natron::ValueChangedReason /*reason*/)
+                         Natron::ValueChangedReasonEnum /*reason*/)
 {
     assert(_node);
 
@@ -2539,7 +2539,7 @@ EffectInstance::evaluate(KnobI* knob,
                 std::string sequentialNode;
                 if ( _node->hasSequentialOnlyNodeUpstream(sequentialNode) ) {
                     if (_node->getApp()->getProject()->getProjectViewsCount() > 1) {
-                        Natron::StandardButton answer =
+                        Natron::StandardButtonEnum answer =
                         Natron::questionDialog( QObject::tr("Render").toStdString(),
                                                sequentialNode + QObject::tr(" can only "
                                                                             "render in sequential mode. Due to limitations in the "
@@ -2549,7 +2549,7 @@ EffectInstance::evaluate(KnobI* knob,
                                                                             "Only the main view of the project will be rendered, you can "
                                                                             "change the main view in the project settings. Would you like "
                                                                             "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString() );
-                        if (answer != Natron::Yes) {
+                        if (answer != Natron::eStandardButtonYes) {
                             return;
                         }
                     }
@@ -2588,14 +2588,14 @@ EffectInstance::evaluate(KnobI* knob,
 } // evaluate
 
 bool
-EffectInstance::message(Natron::MessageType type,
+EffectInstance::message(Natron::MessageTypeEnum type,
                         const std::string & content) const
 {
     return _node->message(type,content);
 }
 
 void
-EffectInstance::setPersistentMessage(Natron::MessageType type,
+EffectInstance::setPersistentMessage(Natron::MessageTypeEnum type,
                                      const std::string & content)
 {
     _node->setPersistentMessage(type, content);
@@ -2925,7 +2925,7 @@ EffectInstance::isDoingInteractAction() const
     return _imp->duringInteractAction;
 }
 
-Natron::Status
+Natron::StatusEnum
 EffectInstance::render_public(SequenceTime time,
                               const RenderScale & scale,
                               const RectI & roi,
@@ -2939,7 +2939,7 @@ EffectInstance::render_public(SequenceTime time,
     ///Clear any previous input image which may be left
     _imp->clearInputImagePointers();
 
-    Natron::Status stat;
+    Natron::StatusEnum stat;
 
     try {
         stat = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
@@ -3010,7 +3010,7 @@ EffectInstance::isIdentity_public(U64 hash,
             }
         } else {
             /// Don't call isIdentity if plugin is sequential only.
-            if (getSequentialPreference() != Natron::EFFECT_ONLY_SEQUENTIAL) {
+            if (getSequentialPreference() != Natron::eSequentialPreferenceOnlySequential) {
                 try {
                     ret = isIdentity(time, scale,rod, par, view, inputTime, inputNb);
                 } catch (...) {
@@ -3027,7 +3027,7 @@ EffectInstance::isIdentity_public(U64 hash,
     }
 }
 
-Natron::Status
+Natron::StatusEnum
 EffectInstance::getRegionOfDefinition_public(U64 hash,
                                              SequenceTime time,
                                              const RenderScale & scale,
@@ -3036,14 +3036,14 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                                              bool* isProjectFormat)
 {
     if (!isEffectCreated()) {
-        return StatFailed;
+        return eStatusFailed;
     }
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, mipMapLevel, rod);
     if (foundInCache) {
         *isProjectFormat = false;
-        return Natron::StatOK;
+        return Natron::eStatusOK;
     } else {
         
         
@@ -3053,27 +3053,27 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             if (args._validArgs) {
                 *rod = args._rod;
                 *isProjectFormat = false;
-                return Natron::StatOK;
+                return Natron::eStatusOK;
             }
         }
         
-        Natron::Status ret;
+        Natron::StatusEnum ret;
         RenderScale scaleOne;
         scaleOne.x = scaleOne.y = 1.;
         {
             NON_RECURSIVE_ACTION();
             ret = getRegionOfDefinition(hash,time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
             
-            if ( (ret != StatOK) && (ret != StatReplyDefault) ) {
+            if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 return ret;
             }
             
             if (rod->isNull()) {
-                return StatFailed;
+                return eStatusFailed;
             }
             
-            assert( (ret == StatOK || ret == StatReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
+            assert( (ret == eStatusOK || ret == eStatusReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
             
         }
         *isProjectFormat = ifInfiniteApplyHeuristic(hash,time, scale, view, rod);
@@ -3140,7 +3140,7 @@ EffectInstance::getFrameRange_public(U64 hash,
     }
 }
 
-Natron::Status
+Natron::StatusEnum
 EffectInstance::beginSequenceRender_public(SequenceTime first,
                                            SequenceTime last,
                                            SequenceTime step,
@@ -3163,7 +3163,7 @@ EffectInstance::beginSequenceRender_public(SequenceTime first,
                                isSequentialRender, isRenderResponseToUserInteraction, view);
 }
 
-Natron::Status
+Natron::StatusEnum
 EffectInstance::endSequenceRender_public(SequenceTime first,
                                          SequenceTime last,
                                          SequenceTime step,
@@ -3185,37 +3185,37 @@ EffectInstance::endSequenceRender_public(SequenceTime first,
 
 bool
 EffectInstance::isSupportedComponent(int inputNb,
-                                     Natron::ImageComponents comp) const
+                                     Natron::ImageComponentsEnum comp) const
 {
     return _node->isSupportedComponent(inputNb, comp);
 }
 
-Natron::ImageBitDepth
+Natron::ImageBitDepthEnum
 EffectInstance::getBitDepth() const
 {
     return _node->getBitDepth();
 }
 
 bool
-EffectInstance::isSupportedBitDepth(Natron::ImageBitDepth depth) const
+EffectInstance::isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const
 {
     return _node->isSupportedBitDepth(depth);
 }
 
-Natron::ImageComponents
+Natron::ImageComponentsEnum
 EffectInstance::findClosestSupportedComponents(int inputNb,
-                                               Natron::ImageComponents comp) const
+                                               Natron::ImageComponentsEnum comp) const
 {
     return _node->findClosestSupportedComponents(inputNb,comp);
 }
 
 void
 EffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                               Natron::ImageComponents* comp,
-                                               Natron::ImageBitDepth* depth) const
+                                               Natron::ImageComponentsEnum* comp,
+                                               Natron::ImageBitDepthEnum* depth) const
 {
     ///find closest to RGBA
-    *comp = findClosestSupportedComponents(inputNb, Natron::ImageComponentRGBA);
+    *comp = findClosestSupportedComponents(inputNb, Natron::eImageComponentRGBA);
 
     ///find deepest bitdepth
     *depth = getBitDepth();
@@ -3235,7 +3235,7 @@ EffectInstance::isMaskEnabled(int inputNb) const
 
 void
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
-                                   Natron::ValueChangedReason /*reason*/,
+                                   Natron::ValueChangedReasonEnum /*reason*/,
                                    SequenceTime /*time*/)
 {
 }
@@ -3281,7 +3281,7 @@ EffectInstance::updateThreadLocalRenderTime(int time)
 
 void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
-                                          Natron::ValueChangedReason reason,
+                                          Natron::ValueChangedReasonEnum reason,
                                           SequenceTime time)
 {
     ///cannot run in another thread.
@@ -3400,7 +3400,7 @@ EffectInstance::getNearestNonIdentity(int time)
     
     RectD rod;
     bool isProjectFormat;
-    Natron::Status stat = getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProjectFormat);
+    Natron::StatusEnum stat = getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProjectFormat);
     
     double par = getPreferredAspectRatio();
     

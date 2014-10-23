@@ -653,7 +653,7 @@ Settings::setCachingLabels()
 void
 Settings::setDefaultValues()
 {
-    beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
@@ -759,7 +759,7 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
 
 
-    endKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
 } // setDefaultValues
 
 void
@@ -957,7 +957,7 @@ Settings::tryLoadOpenColorIOConfig()
 
 void
 Settings::onKnobValueChanged(KnobI* k,
-                             Natron::ValueChangedReason /*reason*/,
+                             Natron::ValueChangedReasonEnum /*reason*/,
                              SequenceTime /*time*/)
 {
     _wereChangesMadeSinceLastSave = true;
@@ -1230,7 +1230,7 @@ Settings::restoreDefault()
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
 
-    beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1238,7 +1238,7 @@ Settings::restoreDefault()
         }
     }
     setCachingLabels();
-    endKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
 }
 
 bool

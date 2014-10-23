@@ -115,12 +115,12 @@ BezierCP::setPositionAtTime(int time,
 
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
         _imp->curveX.addKeyFrame(k);
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
         _imp->curveY.addKeyFrame(k);
     }
 }
@@ -269,12 +269,12 @@ BezierCP::setLeftBezierPointAtTime(int time,
 
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
         _imp->curveLeftBezierX.addKeyFrame(k);
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
         _imp->curveLeftBezierY.addKeyFrame(k);
     }
 }
@@ -289,12 +289,12 @@ BezierCP::setRightBezierPointAtTime(int time,
 
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
         _imp->curveRightBezierX.addKeyFrame(k);
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
         _imp->curveRightBezierY.addKeyFrame(k);
     }
 }
@@ -4456,7 +4456,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::PLAYBACK_SEEK);
+        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4485,7 +4485,7 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::PLAYBACK_SEEK);
+        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4645,7 +4645,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    _imp->node->getLiveInstance()->evaluate_public(NULL, true,Natron::USER_EDITED);
+    _imp->node->getLiveInstance()->evaluate_public(NULL, true,Natron::eValueChangedReasonUserEdited);
 }
 
 U64
@@ -4768,12 +4768,12 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMask(const RectI & roi,
-                        Natron::ImageComponents components,
+                        Natron::ImageComponentsEnum components,
                         U64 nodeHash,
                         U64 ageToRender,
                         const RectD & nodeRoD, //!< rod in canonical coordinates
                         SequenceTime time,
-                        Natron::ImageBitDepth depth,
+                        Natron::ImageBitDepthEnum depth,
                         int view,
                         unsigned int mipmapLevel,
                         bool byPassCache)
@@ -4859,13 +4859,13 @@ RotoContext::renderMask(const RectI & roi,
 
     cairo_format_t cairoImgFormat;
     switch (components) {
-    case Natron::ImageComponentAlpha:
+    case Natron::eImageComponentAlpha:
         cairoImgFormat = CAIRO_FORMAT_A8;
         break;
-    case Natron::ImageComponentRGB:
+    case Natron::eImageComponentRGB:
         cairoImgFormat = CAIRO_FORMAT_RGB24;
         break;
-    case Natron::ImageComponentRGBA:
+    case Natron::eImageComponentRGBA:
         cairoImgFormat = CAIRO_FORMAT_ARGB32;
         break;
     default:
@@ -4889,16 +4889,16 @@ RotoContext::renderMask(const RectI & roi,
     _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
 
     switch (depth) {
-    case Natron::IMAGE_FLOAT:
+    case Natron::eImageBitDepthFloat:
         convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod);
         break;
-    case Natron::IMAGE_BYTE:
+    case Natron::eImageBitDepthByte:
         convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod);
         break;
-    case Natron::IMAGE_SHORT:
+    case Natron::eImageBitDepthShort:
         convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod);
         break;
-    case Natron::IMAGE_NONE:
+    case Natron::eImageBitDepthNone:
         assert(false);
         break;
     }

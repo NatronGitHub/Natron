@@ -572,11 +572,11 @@ ShortCutEditor::onResetButtonClicked()
 void
 ShortCutEditor::onRestoreDefaultsButtonClicked()
 {
-    Natron::StandardButton reply = Natron::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
+    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
                                                                                                     "will wipe all the current configuration "
                                                                                                     "are you sure you want to do this?").toStdString() );
 
-    if (reply == Natron::Yes) {
+    if (reply == Natron::eStandardButtonYes) {
         appPTR->restoreDefaultShortcuts();
         for (GuiAppShorcuts::const_iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
             for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {

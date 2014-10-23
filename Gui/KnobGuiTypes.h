@@ -128,7 +128,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -171,7 +171,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
 private:
 
@@ -234,7 +234,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -328,7 +328,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
     boost::shared_ptr<Choice_Knob> _knob;
@@ -546,7 +546,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
     void updateLabel(double r, double g, double b, double a);
 
@@ -687,7 +687,7 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     void mergeFormat(const QTextCharFormat & fmt);

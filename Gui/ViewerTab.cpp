@@ -150,7 +150,7 @@ struct ViewerTabPrivate
     std::pair<NodeGui*,TrackerGui*> _currentTracker;
     InputNamesMap _inputNamesMap;
     mutable QMutex compOperatorMutex;
-    ViewerCompositingOperator _compOperator;
+    ViewerCompositingOperatorEnum _compOperator;
     Gui* _gui;
     ViewerInstance* _viewerNode; // < pointer to the internal node
     
@@ -178,7 +178,7 @@ struct ViewerTabPrivate
           , _playerButtonsContainer(0)
           , frameRangeLocked(true)
           , _timeLineGui(NULL)
-          , _compOperator(OPERATOR_NONE)
+          , _compOperator(eViewerCompositingOperatorNone)
           , _gui(gui)
           , _viewerNode(node)
           , _infobarVisible(true)
@@ -382,7 +382,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_secondRowLayout->addWidget(_imp->_gainBox);
 
 
-    _imp->_gainSlider = new ScaleSliderQWidget(0, 64,1.0,Natron::LINEAR_SCALE,_imp->_secondSettingsRow);
+    _imp->_gainSlider = new ScaleSliderQWidget(0, 64,1.0,Natron::eScaleTypeLinear,_imp->_secondSettingsRow);
     _imp->_gainSlider->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
                                        "Multiplies the image by \nthis amount before display.") );
     _imp->_secondRowLayout->addWidget(_imp->_gainSlider);
@@ -873,14 +873,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 void
 ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
-    Natron::ViewerColorSpace colorspace;
+    Natron::ViewerColorSpaceEnum colorspace;
 
     if (v == 0) {
-        colorspace = Natron::Linear;
+        colorspace = Natron::eViewerColorSpaceLinear;
     } else if (1) {
-        colorspace = Natron::sRGB;
+        colorspace = Natron::eViewerColorSpaceSRGB;
     } else if (2) {
-        colorspace = Natron::Rec709;
+        colorspace = Natron::eViewerColorSpaceRec709;
     } else {
         assert(false);
     }
@@ -939,17 +939,17 @@ ViewerTab::getCurrentView() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    Natron::PlaybackMode mode = _imp->_viewerNode->getRenderEngine()->getPlaybackMode();
-    mode = (Natron::PlaybackMode)(((int)mode + 1) % 3);
+    Natron::PlaybackModeEnum mode = _imp->_viewerNode->getRenderEngine()->getPlaybackMode();
+    mode = (Natron::PlaybackModeEnum)(((int)mode + 1) % 3);
     QPixmap pix;
     switch (mode) {
-        case Natron::PLAYBACK_LOOP:
+        case Natron::ePlaybackModeLoop:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
             break;
-        case Natron::PLAYBACK_BOUNCE:
+        case Natron::ePlaybackModeBounce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
             break;
-        case Natron::PLAYBACK_ONCE:
+        case Natron::ePlaybackModeOnce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
             break;
         default:
@@ -1724,18 +1724,18 @@ ViewerTab::isClippedToProject() const
 std::string
 ViewerTab::getColorSpace() const
 {
-    Natron::ViewerColorSpace lut = (Natron::ViewerColorSpace)_imp->_viewerNode->getLutType();
+    Natron::ViewerColorSpaceEnum lut = (Natron::ViewerColorSpaceEnum)_imp->_viewerNode->getLutType();
 
     switch (lut) {
-    case Natron::Linear:
+    case Natron::eViewerColorSpaceLinear:
 
         return "Linear(None)";
         break;
-    case Natron::sRGB:
+    case Natron::eViewerColorSpaceSRGB:
 
         return "sRGB";
         break;
-    case Natron::Rec709:
+    case Natron::eViewerColorSpaceRec709:
 
         return "Rec.709";
         break;
@@ -2297,28 +2297,28 @@ ViewerTab::notifyAppClosing()
 void
 ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
-    ViewerCompositingOperator newOp,oldOp;
+    ViewerCompositingOperatorEnum newOp,oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
         oldOp = _imp->_compOperator;
         switch (index) {
         case 0:
-            _imp->_compOperator = OPERATOR_NONE;
+            _imp->_compOperator = eViewerCompositingOperatorNone;
             _imp->_secondInputImage->setEnabled_natron(false);
             manageSlotsForInfoWidget(1, false);
             _imp->_infosWidget[1]->hide();
             break;
         case 1:
-            _imp->_compOperator = OPERATOR_OVER;
+            _imp->_compOperator = eViewerCompositingOperatorOver;
             break;
         case 2:
-            _imp->_compOperator = OPERATOR_UNDER;
+            _imp->_compOperator = eViewerCompositingOperatorUnder;
             break;
         case 3:
-            _imp->_compOperator = OPERATOR_MINUS;
+            _imp->_compOperator = eViewerCompositingOperatorMinus;
             break;
         case 4:
-            _imp->_compOperator = OPERATOR_WIPE;
+            _imp->_compOperator = eViewerCompositingOperatorWipe;
             break;
         default:
             break;
@@ -2326,15 +2326,15 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
         newOp = _imp->_compOperator;
     }
 
-    if ( (oldOp == OPERATOR_NONE) && (newOp != OPERATOR_NONE) ) {
+    if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
     }
 
-    if ( (_imp->_compOperator != OPERATOR_NONE) && !_imp->_secondInputImage->isEnabled() ) {
+    if ( (_imp->_compOperator != eViewerCompositingOperatorNone) && !_imp->_secondInputImage->isEnabled() ) {
         _imp->_secondInputImage->setEnabled_natron(true);
         manageSlotsForInfoWidget(1, true);
         _imp->_infosWidget[1]->show();
-    } else if (_imp->_compOperator == OPERATOR_NONE) {
+    } else if (_imp->_compOperator == eViewerCompositingOperatorNone) {
         _imp->_secondInputImage->setEnabled_natron(false);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
@@ -2345,24 +2345,24 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
 }
 
 void
-ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
+ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
 {
     int comboIndex;
 
     switch (op) {
-    case Natron::OPERATOR_NONE:
+    case Natron::eViewerCompositingOperatorNone:
         comboIndex = 0;
         break;
-    case Natron::OPERATOR_OVER:
+    case Natron::eViewerCompositingOperatorOver:
         comboIndex = 1;
         break;
-    case Natron::OPERATOR_UNDER:
+    case Natron::eViewerCompositingOperatorUnder:
         comboIndex = 2;
         break;
-    case Natron::OPERATOR_MINUS:
+    case Natron::eViewerCompositingOperatorMinus:
         comboIndex = 3;
         break;
-    case Natron::OPERATOR_WIPE:
+    case Natron::eViewerCompositingOperatorWipe:
         comboIndex = 4;
         break;
     default:
@@ -2376,7 +2376,7 @@ ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
     _imp->viewer->updateGL();
 }
 
-ViewerCompositingOperator
+ViewerCompositingOperatorEnum
 ViewerTab::getCompositingOperator() const
 {
     QMutexLocker l(&_imp->compOperatorMutex);
@@ -2415,16 +2415,16 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
     _imp->_viewerNode->setInputB(inputIndex);
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
-        //setCompositingOperator(Natron::OPERATOR_NONE);
+        //setCompositingOperator(Natron::eViewerCompositingOperatorNone);
         _imp->_infosWidget[1]->hide();
     } else {
         if ( !_imp->_infosWidget[1]->isVisible() ) {
             _imp->_infosWidget[1]->show();
             manageSlotsForInfoWidget(1, true);
             _imp->_secondInputImage->setEnabled_natron(true);
-            if (_imp->_compOperator == Natron::OPERATOR_NONE) {
+            if (_imp->_compOperator == Natron::eViewerCompositingOperatorNone) {
                 _imp->viewer->resetWipeControls();
-                setCompositingOperator(Natron::OPERATOR_WIPE);
+                setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
             }
         }
     }
@@ -2460,22 +2460,22 @@ ViewerTab::onActiveInputsChanged()
         }
     } else {
         _imp->_secondInputImage->setCurrentIndex_no_emit(0);
-        setCompositingOperator(Natron::OPERATOR_NONE);
+        setCompositingOperator(Natron::eViewerCompositingOperatorNone);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
         //_imp->_secondInputImage->setEnabled_natron(false);
     }
 
     if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
-         && ( getCompositingOperator() != OPERATOR_NONE) ) {
-        //setCompositingOperator(OPERATOR_NONE);
+         && ( getCompositingOperator() != eViewerCompositingOperatorNone) ) {
+        //setCompositingOperator(eViewerCompositingOperatorNone);
         _imp->_infosWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->_secondInputImage->setEnabled_natron(false);
     } else if ( (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
-                && ( getCompositingOperator() == OPERATOR_NONE) ) {
+                && ( getCompositingOperator() == eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
-        setCompositingOperator(Natron::OPERATOR_WIPE);
+        setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
     }
 }
 
@@ -2554,7 +2554,7 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 }
 
 void
-ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponents components,Natron::ImageBitDepth depth)
+ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth)
 {
     _imp->_infosWidget[textureIndex]->setImageFormat(components,depth);
 }
@@ -2796,7 +2796,7 @@ ViewerTab::setInfobarVisible(bool visible)
                     break;
                 }
             }
-            if (getCompositingOperator() == OPERATOR_NONE || inputIndex == -1) {
+            if (getCompositingOperator() == eViewerCompositingOperatorNone || inputIndex == -1) {
                 continue;
             }
         }

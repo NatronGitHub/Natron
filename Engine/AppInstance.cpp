@@ -140,9 +140,9 @@ AppInstance::load(const QString & projectName,
         settings.beginGroup("General");
         bool checkUpdates = true;
         if ( !settings.contains("checkForUpdates") ) {
-            Natron::StandardButton reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
+            Natron::StandardButtonEnum reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                   "on launch of the application ?");
-            if (reply == Natron::No) {
+            if (reply == Natron::eStandardButtonNo) {
                 checkUpdates = false;
             }
             appPTR->getCurrentSettings()->setCheckUpdatesEnabled(checkUpdates);
@@ -153,13 +153,13 @@ AppInstance::load(const QString & projectName,
     }
 
     ///if the app is a background project autorun and the project name is empty just throw an exception.
-    if ( (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN ||
-          appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) && projectName.isEmpty() ) {
+    if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
+          appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) && projectName.isEmpty() ) {
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
-    if (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN ||
-        appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) {
+    if (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
+        appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
         QString realProjectName = projectName;
         int lastSep = realProjectName.lastIndexOf( QDir::separator() );
         if (lastSep == -1) {
@@ -218,12 +218,12 @@ AppInstance::createNodeInternal(const QString & pluginID,
     {
         ///Furnace plug-ins don't handle using the thread pool
         if (pluginID.contains("Furnace") && appPTR->getUseThreadPool()) {
-            Natron::StandardButton reply = Natron::questionDialog(tr("Warning").toStdString(),
+            Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
                                                                      "is known not to work well when this setting is checked. "
                                                                      "Would you like to turn it off ? ").toStdString());
-            if (reply == Natron::Yes) {
+            if (reply == Natron::eStandardButtonYes) {
                 appPTR->getCurrentSettings()->setUseGlobalThreadPool(false);
             }
         }
@@ -365,18 +365,18 @@ AppInstance::informationDialog(const std::string & title,
     std::cout << "INFO: " << title + ": " << message << std::endl;
 }
 
-Natron::StandardButton
+Natron::StandardButtonEnum
 AppInstance::questionDialog(const std::string & title,
                             const std::string & message,
                             Natron::StandardButtons /*buttons*/,
-                            Natron::StandardButton /*defaultButton*/) const
+                            Natron::StandardButtonEnum /*defaultButton*/) const
 {
     std::cout << "QUESTION: " << title + ": " << message << std::endl;
 
     ///FIXME: maybe we could use scanf here... but we have to translat all the standard buttons to strings...i'm lazy
 
     ///to do this now.
-    return Natron::Yes;
+    return Natron::eStandardButtonYes;
 }
 
 void
@@ -542,8 +542,8 @@ AppInstance::quit()
     appPTR->quit(this);
 }
 
-Natron::ViewerColorSpace
-AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
+Natron::ViewerColorSpaceEnum
+AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
 {
     return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
 }

@@ -395,11 +395,11 @@ GuiAppInstance::informationDialog(const std::string & title,
     }
 }
 
-Natron::StandardButton
+Natron::StandardButtonEnum
 GuiAppInstance::questionDialog(const std::string & title,
                                const std::string & message,
                                Natron::StandardButtons buttons,
-                               Natron::StandardButton defaultButton) const
+                               Natron::StandardButtonEnum defaultButton) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -408,7 +408,7 @@ GuiAppInstance::questionDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    Natron::StandardButton ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton);
+    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;

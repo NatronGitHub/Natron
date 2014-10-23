@@ -160,11 +160,11 @@ public:
     
     /**
      * @brief Called when a frame has been rendered completetly
-     * @param policy If SCHEDULING_FFA the render thread is not using the appendToBuffer API
+     * @param policy If eSchedulingPolicyFFA the render thread is not using the appendToBuffer API
      * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
      * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
-    void notifyFrameRendered(int frame,Natron::SchedulingPolicy policy);
+    void notifyFrameRendered(int frame,Natron::SchedulingPolicyEnum policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
@@ -338,7 +338,7 @@ protected:
     /**
      * @brief Must return the scheduling policy that the output device will have
      **/
-    virtual Natron::SchedulingPolicy getSchedulingPolicy() const = 0;
+    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const = 0;
     
     /**
      * @brief Returns the last successful render time.
@@ -428,7 +428,7 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicy getSchedulingPolicy() const OVERRIDE FINAL;
+    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
@@ -473,7 +473,7 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicy getSchedulingPolicy() const OVERRIDE FINAL { return Natron::SCHEDULING_ORDERED; }
+    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return Natron::eSchedulingPolicyOrdered; }
     
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -568,7 +568,7 @@ public:
     /**
      * @brief Returns the playback mode of the internal scheduler
      **/
-    Natron::PlaybackMode getPlaybackMode() const;
+    Natron::PlaybackModeEnum getPlaybackMode() const;
     
     /**
      * @brief Returns the desired user FPS that the internal scheduler should stick to
@@ -595,7 +595,7 @@ public slots:
     
     /**
      * @brief Set the playback mode
-     * @param mode Corresponds to the Natron::PlaybackMode enum
+     * @param mode Corresponds to the Natron::PlaybackModeEnum enum
      **/
     void setPlaybackMode(int mode);
     

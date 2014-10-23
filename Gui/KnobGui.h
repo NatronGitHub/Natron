@@ -140,12 +140,12 @@ public:
                  const T & v,
                  KeyFrame* newKey,
                  bool refreshGui,
-                 Natron::ValueChangedReason reason)
+                 Natron::ValueChangedReasonEnum reason)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         KnobHelper::ValueChangedReturnCode ret;
-        if (reason == Natron::USER_EDITED) {
-            ret = knob->onValueChanged(v, dimension, Natron::USER_EDITED, newKey);
+        if (reason == Natron::eValueChangedReasonUserEdited) {
+            ret = knob->onValueChanged(v, dimension, Natron::eValueChangedReasonUserEdited, newKey);
         } else {
             ret = knob->setValue(v,dimension,false);
         }
@@ -335,7 +335,7 @@ private:
        the widget for the knob could display its gui a bit differently.
      */
     virtual void reflectAnimationLevel(int /*dimension*/,
-                                       Natron::AnimationLevel /*level*/)
+                                       Natron::AnimationLevelEnum /*level*/)
     {
     }
 
@@ -344,7 +344,7 @@ private:
     void createAnimationButton(QHBoxLayout* layout);
 
 
-    void setInterpolationForDimensions(const std::vector<int> & dimensions,Natron::KeyframeType interp);
+    void setInterpolationForDimensions(const std::vector<int> & dimensions,Natron::KeyframeTypeEnum interp);
 
 private:
 

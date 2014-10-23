@@ -762,178 +762,178 @@ QtEnumConvert::fromQtModifiers(Qt::KeyboardModifiers m)
     return ret;
 }
 
-Natron::StandardButton
+Natron::StandardButtonEnum
 QtEnumConvert::fromQtStandardButton(QMessageBox::StandardButton b)
 {
     switch (b) {
     case QMessageBox::NoButton:
 
-        return Natron::NoButton;
+        return Natron::eStandardButtonNoButton;
         break;
     case QMessageBox::Escape:
 
-        return Natron::Escape;
+        return Natron::eStandardButtonEscape;
         break;
     case QMessageBox::Ok:
 
-        return Natron::Ok;
+        return Natron::eStandardButtonOk;
         break;
     case QMessageBox::Save:
 
-        return Natron::Save;
+        return Natron::eStandardButtonSave;
         break;
     case QMessageBox::SaveAll:
 
-        return Natron::SaveAll;
+        return Natron::eStandardButtonSaveAll;
         break;
     case QMessageBox::Open:
 
-        return Natron::Open;
+        return Natron::eStandardButtonOpen;
         break;
     case QMessageBox::Yes:
 
-        return Natron::Yes;
+        return Natron::eStandardButtonYes;
         break;
     case QMessageBox::YesToAll:
 
-        return Natron::YesToAll;
+        return Natron::eStandardButtonYesToAll;
         break;
     case QMessageBox::No:
 
-        return Natron::No;
+        return Natron::eStandardButtonNo;
         break;
     case QMessageBox::NoToAll:
 
-        return Natron::NoToAll;
+        return Natron::eStandardButtonNoToAll;
         break;
     case QMessageBox::Abort:
 
-        return Natron::Abort;
+        return Natron::eStandardButtonAbort;
         break;
     case QMessageBox::Retry:
 
-        return Natron::Retry;
+        return Natron::eStandardButtonRetry;
         break;
     case QMessageBox::Ignore:
 
-        return Natron::Ignore;
+        return Natron::eStandardButtonIgnore;
         break;
     case QMessageBox::Close:
 
-        return Natron::Close;
+        return Natron::eStandardButtonClose;
         break;
     case QMessageBox::Cancel:
 
-        return Natron::Cancel;
+        return Natron::eStandardButtonCancel;
         break;
     case QMessageBox::Discard:
 
-        return Natron::Discard;
+        return Natron::eStandardButtonDiscard;
         break;
     case QMessageBox::Help:
 
-        return Natron::Help;
+        return Natron::eStandardButtonHelp;
         break;
     case QMessageBox::Apply:
 
-        return Natron::Apply;
+        return Natron::eStandardButtonApply;
         break;
     case QMessageBox::Reset:
 
-        return Natron::Reset;
+        return Natron::eStandardButtonReset;
         break;
     case QMessageBox::RestoreDefaults:
 
-        return Natron::RestoreDefaults;
+        return Natron::eStandardButtonRestoreDefaults;
         break;
     default:
 
-        return Natron::NoButton;
+        return Natron::eStandardButtonNoButton;
         break;
     } // switch
 } // fromQtStandardButton
 
 QMessageBox::StandardButton
-QtEnumConvert::toQtStandardButton(Natron::StandardButton b)
+QtEnumConvert::toQtStandardButton(Natron::StandardButtonEnum b)
 {
     switch (b) {
-    case Natron::NoButton:
+    case Natron::eStandardButtonNoButton:
 
         return QMessageBox::NoButton;
         break;
-    case Natron::Escape:
+    case Natron::eStandardButtonEscape:
 
         return QMessageBox::Escape;
         break;
-    case Natron::Ok:
+    case Natron::eStandardButtonOk:
 
         return QMessageBox::Ok;
         break;
-    case Natron::Save:
+    case Natron::eStandardButtonSave:
 
         return QMessageBox::Save;
         break;
-    case Natron::SaveAll:
+    case Natron::eStandardButtonSaveAll:
 
         return QMessageBox::SaveAll;
         break;
-    case Natron::Open:
+    case Natron::eStandardButtonOpen:
 
         return QMessageBox::Open;
         break;
-    case Natron::Yes:
+    case Natron::eStandardButtonYes:
 
         return QMessageBox::Yes;
         break;
-    case Natron::YesToAll:
+    case Natron::eStandardButtonYesToAll:
 
         return QMessageBox::YesToAll;
         break;
-    case Natron::No:
+    case Natron::eStandardButtonNo:
 
         return QMessageBox::No;
         break;
-    case Natron::NoToAll:
+    case Natron::eStandardButtonNoToAll:
 
         return QMessageBox::NoToAll;
         break;
-    case Natron::Abort:
+    case Natron::eStandardButtonAbort:
 
         return QMessageBox::Abort;
         break;
-    case Natron::Retry:
+    case Natron::eStandardButtonRetry:
 
         return QMessageBox::Retry;
         break;
-    case Natron::Ignore:
+    case Natron::eStandardButtonIgnore:
 
         return QMessageBox::Ignore;
         break;
-    case Natron::Close:
+    case Natron::eStandardButtonClose:
 
         return QMessageBox::Close;
         break;
-    case Natron::Cancel:
+    case Natron::eStandardButtonCancel:
 
         return QMessageBox::Cancel;
         break;
-    case Natron::Discard:
+    case Natron::eStandardButtonDiscard:
 
         return QMessageBox::Discard;
         break;
-    case Natron::Help:
+    case Natron::eStandardButtonHelp:
 
         return QMessageBox::Help;
         break;
-    case Natron::Apply:
+    case Natron::eStandardButtonApply:
 
         return QMessageBox::Apply;
         break;
-    case Natron::Reset:
+    case Natron::eStandardButtonReset:
 
         return QMessageBox::Reset;
         break;
-    case Natron::RestoreDefaults:
+    case Natron::eStandardButtonRestoreDefaults:
 
         return QMessageBox::RestoreDefaults;
         break;
@@ -949,64 +949,64 @@ QtEnumConvert::toQtStandarButtons(Natron::StandardButtons buttons)
 {
     QMessageBox::StandardButtons ret;
 
-    if ( buttons.testFlag(Natron::NoButton) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonNoButton) ) {
         ret |= QMessageBox::NoButton;
     }
-    if ( buttons.testFlag(Natron::Escape) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonEscape) ) {
         ret |= QMessageBox::Escape;
     }
-    if ( buttons.testFlag(Natron::Ok) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonOk) ) {
         ret |= QMessageBox::Ok;
     }
-    if ( buttons.testFlag(Natron::Save) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonSave) ) {
         ret |= QMessageBox::Save;
     }
-    if ( buttons.testFlag(Natron::SaveAll) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonSaveAll) ) {
         ret |= QMessageBox::SaveAll;
     }
-    if ( buttons.testFlag(Natron::Open) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonOpen) ) {
         ret |= QMessageBox::Open;
     }
-    if ( buttons.testFlag(Natron::Yes) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonYes) ) {
         ret |= QMessageBox::Yes;
     }
-    if ( buttons.testFlag(Natron::YesToAll) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonYesToAll) ) {
         ret |= QMessageBox::YesToAll;
     }
-    if ( buttons.testFlag(Natron::No) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonNo) ) {
         ret |= QMessageBox::No;
     }
-    if ( buttons.testFlag(Natron::NoToAll) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonNoToAll) ) {
         ret |= QMessageBox::NoToAll;
     }
-    if ( buttons.testFlag(Natron::Abort) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonAbort) ) {
         ret |= QMessageBox::Abort;
     }
-    if ( buttons.testFlag(Natron::Ignore) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonIgnore) ) {
         ret |= QMessageBox::Ignore;
     }
-    if ( buttons.testFlag(Natron::Retry) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonRetry) ) {
         ret |= QMessageBox::Retry;
     }
-    if ( buttons.testFlag(Natron::Close) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonClose) ) {
         ret |= QMessageBox::Close;
     }
-    if ( buttons.testFlag(Natron::Cancel) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonCancel) ) {
         ret |= QMessageBox::Cancel;
     }
-    if ( buttons.testFlag(Natron::Discard) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonDiscard) ) {
         ret |= QMessageBox::Discard;
     }
-    if ( buttons.testFlag(Natron::Help) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonHelp) ) {
         ret |= QMessageBox::Help;
     }
-    if ( buttons.testFlag(Natron::Apply) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonApply) ) {
         ret |= QMessageBox::Apply;
     }
-    if ( buttons.testFlag(Natron::Reset) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonReset) ) {
         ret |= QMessageBox::Reset;
     }
-    if ( buttons.testFlag(Natron::RestoreDefaults) ) {
+    if ( buttons.testFlag(Natron::eStandardButtonRestoreDefaults) ) {
         ret |= QMessageBox::RestoreDefaults;
     }
 

@@ -60,21 +60,21 @@ OfxClipInstance::getUnmappedBitDepth() const
     }
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
-        Natron::ImageComponents comp;
-        Natron::ImageBitDepth depth;
+        Natron::ImageComponentsEnum comp;
+        Natron::ImageBitDepthEnum depth;
         inputNode->getPreferredDepthAndComponents(-1, &comp, &depth);
         
         
         
         
         switch (depth) {
-            case Natron::IMAGE_BYTE:
+            case Natron::eImageBitDepthByte:
                 return byteStr;
                 break;
-            case Natron::IMAGE_SHORT:
+            case Natron::eImageBitDepthShort:
                 return shortStr;
                 break;
-            case Natron::IMAGE_FLOAT:
+            case Natron::eImageBitDepthFloat:
                 return floatStr;
                 break;
             default:
@@ -112,18 +112,18 @@ OfxClipInstance::getUnmappedComponents() const
     }
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
-        Natron::ImageComponents comp;
-        Natron::ImageBitDepth depth;
+        Natron::ImageComponentsEnum comp;
+        Natron::ImageBitDepthEnum depth;
         inputNode->getPreferredDepthAndComponents(-1, &comp, &depth);
         
         switch (comp) {
-            case Natron::ImageComponentRGBA:
+            case Natron::eImageComponentRGBA:
                 return rgbaStr;
                 break;
-            case Natron::ImageComponentRGB:
+            case Natron::eImageComponentRGB:
                 return rgbStr;
                 break;
-            case Natron::ImageComponentAlpha:
+            case Natron::eImageComponentAlpha:
                 return alphaStr;
                 break;
             default:
@@ -169,27 +169,27 @@ OfxClipInstance::getPremult() const
     if (effect) {
         
         ///Get the input node's output preferred bit depth and componentns
-        Natron::ImageComponents comp;
-        Natron::ImageBitDepth depth;
+        Natron::ImageComponentsEnum comp;
+        Natron::ImageBitDepthEnum depth;
         effect->getPreferredDepthAndComponents(-1, &comp, &depth);
         
         switch (comp) {
-            case Natron::ImageComponentRGB:
+            case Natron::eImageComponentRGB:
                 return opaqueStr;
-            //case Natron::ImageComponentRGBA: // RGBA can be Opaque, PreMult or UnPreMult
-            case Natron::ImageComponentAlpha:
+            //case Natron::eImageComponentRGBA: // RGBA can be Opaque, PreMult or UnPreMult
+            case Natron::eImageComponentAlpha:
                 return premultStr;
             default:
                 break;
         }
-        Natron::ImagePremultiplication premult = effect->getOutputPremultiplication();
+        Natron::ImagePremultiplicationEnum premult = effect->getOutputPremultiplication();
         
         switch (premult) {
-            case Natron::ImageOpaque:
+            case Natron::eImagePremultiplicationOpaque:
                 return opaqueStr;
-            case Natron::ImagePremultiplied:
+            case Natron::eImagePremultiplicationPremultiplied:
                 return premultStr;
-            case Natron::ImageUnPremultiplied:
+            case Natron::eImagePremultiplicationUnPremultiplied:
                 return unPremultStr;
             default:
                 return opaqueStr;
@@ -385,8 +385,8 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         
         RenderScale scale;
         scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
-        Natron::Status st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
-        if (st == StatFailed) {
+        Natron::StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
+        if (st == eStatusFailed) {
             ret.x1 = 0.;
             ret.x2 = 0.;
             ret.y1 = 0.;
@@ -450,22 +450,22 @@ OfxClipInstance::getImageInternal(OfxTime time,
 }
 
 std::string
-OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponents comp)
+OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp)
 {
     switch (comp) {
-    case Natron::ImageComponentNone:
+    case Natron::eImageComponentNone:
 
         return kOfxImageComponentNone;
         break;
-    case Natron::ImageComponentAlpha:
+    case Natron::eImageComponentAlpha:
 
         return kOfxImageComponentAlpha;
         break;
-    case Natron::ImageComponentRGB:
+    case Natron::eImageComponentRGB:
 
         return kOfxImageComponentRGB;
         break;
-    case Natron::ImageComponentRGBA:
+    case Natron::eImageComponentRGBA:
 
         return kOfxImageComponentRGBA;
         break;
@@ -475,52 +475,52 @@ OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponents comp)
     }
 }
 
-Natron::ImageComponents
+Natron::ImageComponentsEnum
 OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
 {
     if (comp ==  kOfxImageComponentRGBA) {
-        return Natron::ImageComponentRGBA;
+        return Natron::eImageComponentRGBA;
     } else if (comp == kOfxImageComponentAlpha) {
-        return Natron::ImageComponentAlpha;
+        return Natron::eImageComponentAlpha;
     } else if (comp == kOfxImageComponentRGB) {
-        return Natron::ImageComponentRGB;
+        return Natron::eImageComponentRGB;
     } else if (comp == kOfxImageComponentNone) {
-        return Natron::ImageComponentNone;
+        return Natron::eImageComponentNone;
     } else {
         throw std::runtime_error(comp + ": unsupported component "); //< comp unsupported
     }
 }
 
-Natron::ImageBitDepth
+Natron::ImageBitDepthEnum
 OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth)
 {
     if (depth == kOfxBitDepthByte) {
-        return Natron::IMAGE_BYTE;
+        return Natron::eImageBitDepthByte;
     } else if (depth == kOfxBitDepthShort) {
-        return Natron::IMAGE_SHORT;
+        return Natron::eImageBitDepthShort;
     } else if (depth == kOfxBitDepthFloat) {
-        return Natron::IMAGE_FLOAT;
+        return Natron::eImageBitDepthFloat;
     } else if (depth == kOfxBitDepthNone) {
-        return Natron::IMAGE_NONE;
+        return Natron::eImageBitDepthNone;
     } else {
         throw std::runtime_error(depth + ": unsupported bitdepth"); //< comp unsupported
     }
 }
 
 std::string
-OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
+OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
 {
     switch (depth) {
-    case Natron::IMAGE_BYTE:
+    case Natron::eImageBitDepthByte:
 
         return kOfxBitDepthByte;
-    case Natron::IMAGE_SHORT:
+    case Natron::eImageBitDepthShort:
 
         return kOfxBitDepthShort;
-    case Natron::IMAGE_FLOAT:
+    case Natron::eImageBitDepthFloat:
 
         return kOfxBitDepthFloat;
-    case Natron::IMAGE_NONE:
+    case Natron::eImageBitDepthNone:
 
         return kOfxBitDepthNone;
     default:

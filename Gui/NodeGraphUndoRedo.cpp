@@ -1027,7 +1027,7 @@ LoadNodePresetsCommand::undo()
         panel->removeInstances(_newChildren);
         panel->addInstances(_oldChildren);
     }
-    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     setText(QObject::tr("Load presets"));
 }
@@ -1076,7 +1076,7 @@ LoadNodePresetsCommand::redo()
             panel->addInstances(_newChildren);
         }
     }
-    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
 

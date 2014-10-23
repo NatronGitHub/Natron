@@ -10,19 +10,19 @@
 namespace Natron {
     
 inline int
-        getElementsCountForComponents(ImageComponents comp)
+        getElementsCountForComponents(ImageComponentsEnum comp)
 {
     switch (comp) {
-    case ImageComponentNone:
+    case eImageComponentNone:
 
         return 0;
-    case ImageComponentAlpha:
+    case eImageComponentAlpha:
 
         return 1;
-    case ImageComponentRGB:
+    case eImageComponentRGB:
 
         return 3;
-    case ImageComponentRGBA:
+    case eImageComponentRGBA:
 
         return 4;
     }
@@ -32,19 +32,19 @@ inline int
 }
 
 inline int
-        getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
+        getSizeOfForBitDepth(Natron::ImageBitDepthEnum bitdepth)
 {
     switch (bitdepth) {
-    case Natron::IMAGE_BYTE:
+    case Natron::eImageBitDepthByte:
 
         return sizeof(unsigned char);
-    case Natron::IMAGE_SHORT:
+    case Natron::eImageBitDepthShort:
 
         return sizeof(unsigned short);
-    case Natron::IMAGE_FLOAT:
+    case Natron::eImageBitDepthFloat:
 
         return sizeof(float);
-    case Natron::IMAGE_NONE:
+    case Natron::eImageBitDepthNone:
         break;
     }
     return 0;
@@ -63,8 +63,8 @@ public:
         , _inputNbIdentity(-1)
         , _inputTimeIdentity(0)
         , _framesNeeded()
-        , _components(Natron::ImageComponentRGBA)
-        , _bitdepth(Natron::IMAGE_FLOAT)
+        , _components(Natron::eImageComponentRGBA)
+        , _bitdepth(Natron::eImageBitDepthFloat)
         , _mipMapLevel(0)
         , _par(1.)
     {
@@ -90,9 +90,9 @@ public:
                 const double par,
                 const unsigned int mipMapLevel,
                 const RectI & bounds,
-                Natron::ImageBitDepth bitdepth,
+                Natron::ImageBitDepthEnum bitdepth,
                 bool isRoDProjectFormat,
-                ImageComponents components,
+                ImageComponentsEnum components,
                 int inputNbIdentity,
                 int inputTimeIdentity,
                 const std::map<int, std::vector<RangeD> > & framesNeeded)
@@ -140,12 +140,12 @@ public:
         return _isRoDProjectFormat;
     }
 
-    Natron::ImageBitDepth getBitDepth() const
+    Natron::ImageBitDepthEnum getBitDepth() const
     {
         return _bitdepth;
     }
     
-    void setBitDepth(ImageBitDepth bitdepth)
+    void setBitDepth(ImageBitDepthEnum bitdepth)
     {
         _bitdepth = bitdepth;
     }
@@ -155,12 +155,12 @@ public:
         return _framesNeeded;
     }
 
-    ImageComponents getComponents() const
+    ImageComponentsEnum getComponents() const
     {
         return _components;
     }
 
-    void setComponents(ImageComponents comps)
+    void setComponents(ImageComponentsEnum comps)
     {
         _components = comps;
     }
@@ -223,8 +223,8 @@ private:
     int _inputNbIdentity; // -1 if not an identity
     double _inputTimeIdentity;
     std::map<int, std::vector<RangeD> > _framesNeeded;
-    Natron::ImageComponents _components;
-    Natron::ImageBitDepth _bitdepth;
+    Natron::ImageComponentsEnum _components;
+    Natron::ImageBitDepthEnum _bitdepth;
     unsigned int _mipMapLevel;
     double _par;
 };

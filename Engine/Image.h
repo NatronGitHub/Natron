@@ -105,18 +105,18 @@ namespace Natron {
         Image(const ImageKey & key,
               const boost::shared_ptr<ImageParams> &  params,
               const Natron::CacheAPI* cache,
-              Natron::StorageMode storage,
+              Natron::StorageModeEnum storage,
               const std::string & path);
 
 
         /*This constructor can be used to allocate a local Image. The deallocation should
        then be handled by the user. Note that no view number is passed in parameter
        as it is not needed.*/
-        Image(ImageComponents components,
+        Image(ImageComponentsEnum components,
               const RectD & regionOfDefinition,    //!< rod in canonical coordinates
               const RectI & bounds,    //!< bounds in pixel coordinates
               unsigned int mipMapLevel,
-              Natron::ImageBitDepth bitdepth);
+              Natron::ImageBitDepthEnum bitdepth);
 
         virtual ~Image()
         {
@@ -133,8 +133,8 @@ namespace Natron {
                                                          const double par,
                                                          unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,
-                                                         ImageComponents components,
-                                                         Natron::ImageBitDepth bitdepth,
+                                                         ImageComponentsEnum components,
+                                                         Natron::ImageBitDepthEnum bitdepth,
                                                          int inputNbIdentity,
                                                          int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> > & framesNeeded);
@@ -182,7 +182,7 @@ namespace Natron {
 
         unsigned int getComponentsCount() const;
 
-        ImageComponents getComponents() const
+        ImageComponentsEnum getComponents() const
         {
             return this->_components;
         }
@@ -192,11 +192,11 @@ namespace Natron {
      * convert to the 'to' components.
      * e.g: RGBA to RGB would return true , the opposite would return false.
      **/
-        static bool hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageComponents to);
-        static std::string getFormatString(Natron::ImageComponents comps,Natron::ImageBitDepth depth);
-        static std::string getDepthString(Natron::ImageBitDepth depth);
-        static bool isBitDepthConversionLossy(Natron::ImageBitDepth from,Natron::ImageBitDepth to);
-        Natron::ImageBitDepth getBitDepth() const
+        static bool hasEnoughDataToConvert(Natron::ImageComponentsEnum from, Natron::ImageComponentsEnum to);
+        static std::string getFormatString(Natron::ImageComponentsEnum comps, Natron::ImageBitDepthEnum depth);
+        static std::string getDepthString(Natron::ImageBitDepthEnum depth);
+        static bool isBitDepthConversionLossy(Natron::ImageBitDepthEnum from, Natron::ImageBitDepthEnum to);
+        Natron::ImageBitDepthEnum getBitDepth() const
         {
             return this->_bitDepth;
         }
@@ -265,7 +265,7 @@ namespace Natron {
         /**
      * @brief Fills the image with the given colour. If the image components
      * are not RGBA it will ignore the unsupported components.
-     * For example if the image comps is ImageComponentAlpha, then only the alpha value 'a' will
+     * For example if the image comps is eImageComponentAlpha, then only the alpha value 'a' will
      * be used.
      **/
         void fill(const RectI & roi,float r,float g,float b,float a);
@@ -357,8 +357,8 @@ namespace Natron {
      * Implementation should tend to optimize these cases.
      **/
         void convertToFormat(const RectI & renderWindow,
-                             Natron::ViewerColorSpace srcColorSpace,
-                             Natron::ViewerColorSpace dstColorSpace,
+                             Natron::ViewerColorSpaceEnum srcColorSpace,
+                             Natron::ViewerColorSpaceEnum dstColorSpace,
                              int channelForAlpha,
                              bool invert,
                              bool copyBitMap,
@@ -405,8 +405,8 @@ namespace Natron {
         void scaleBoxForDepth(const RectI & roi, Natron::Image* output) const;
 
     private:
-        Natron::ImageBitDepth _bitDepth;
-        ImageComponents _components;
+        Natron::ImageBitDepthEnum _bitDepth;
+        ImageComponentsEnum _components;
         mutable QReadWriteLock _lock;
         Bitmap _bitmap;
         RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)

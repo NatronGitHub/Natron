@@ -46,7 +46,7 @@ public:
              double initialValue,
              double leftDerivative = 0.,
              double rightDerivative = 0.,
-             Natron::KeyframeType interpolation = Natron::KEYFRAME_SMOOTH);
+             Natron::KeyframeTypeEnum interpolation = Natron::eKeyframeTypeSmooth);
 
     KeyFrame(const KeyFrame & other);
 
@@ -84,9 +84,9 @@ public:
 
     void setTime(double time);
 
-    void setInterpolation(Natron::KeyframeType interp);
+    void setInterpolation(Natron::KeyframeTypeEnum interp);
 
-    Natron::KeyframeType getInterpolation() const;
+    Natron::KeyframeTypeEnum getInterpolation() const;
 
 private:
 
@@ -94,7 +94,7 @@ private:
     double _value;
     double _leftDerivative;
     double _rightDerivative;
-    Natron::KeyframeType _interpolation;
+    Natron::KeyframeTypeEnum _interpolation;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -129,10 +129,10 @@ class Curve
 {
     friend class boost::serialization::access;
 
-    enum CurveChangedReason
+    enum CurveChangedReasonEnum
     {
-        DERIVATIVES_CHANGED = 0,
-        KEYFRAME_CHANGED = 1
+        eCurveChangedReasonDerivativesChanged = 0,
+        eCurveChangedReasonKeyframeChanged = 1
     };
 
 public:
@@ -252,9 +252,9 @@ public:
      * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    KeyFrame setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
+    KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index,int* newIndex = NULL);
 
-    void setCurveInterpolation(Natron::KeyframeType interp);
+    void setCurveInterpolation(Natron::KeyframeTypeEnum interp);
 
     std::pair<double,double> getCurveYRange() const WARN_UNUSED_RETURN;
 
@@ -291,15 +291,15 @@ private:
      * WARNING: The iterator "key" is invalid after this call.
      * The value pointed to by key before this call is now pointed to by the iterator returned by this function.
      **/
-    KeyFrameSet::iterator evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key) WARN_UNUSED_RETURN;
-    KeyFrameSet::iterator refreshDerivatives(CurveChangedReason reason, KeyFrameSet::iterator key);
+    KeyFrameSet::iterator evaluateCurveChanged(CurveChangedReasonEnum reason,KeyFrameSet::iterator key) WARN_UNUSED_RETURN;
+    KeyFrameSet::iterator refreshDerivatives(CurveChangedReasonEnum reason, KeyFrameSet::iterator key);
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
 
     bool hasYRange() const;
 
     bool mustClamp() const;
 
-    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,Natron::KeyframeType type);
+    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,Natron::KeyframeTypeEnum type);
 
 private:
     boost::scoped_ptr<CurvePrivate> _imp;
