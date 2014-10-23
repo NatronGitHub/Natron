@@ -225,7 +225,7 @@ public slots:
 
     void onShowInCurveEditorActionTriggered();
 
-    void onRemoveAnyAnimationActionTriggered();
+    void onRemoveAnimationActionTriggered();
 
     void onConstantInterpActionTriggered();
 
@@ -339,7 +339,7 @@ private:
     {
     }
 
-    void createAnimationMenu(QMenu* menu);
+    void createAnimationMenu(QMenu* menu,int dimension);
 
     void createAnimationButton(QHBoxLayout* layout);
 
