@@ -340,11 +340,11 @@ Knob<T>::getValue(int dimension,bool clamp) const
         Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
         assert(isInt || isBool || isDouble); //< other data types aren't supported
         if (isInt) {
-            return isInt->getValue(master.first,clamp);
+            return (T)isInt->getValue(master.first,clamp);
         } else if (isBool) {
-            return isBool->getValue(master.first,clamp);
+            return (T)isBool->getValue(master.first,clamp);
         } else if (isDouble) {
-            return isDouble->getValue(master.first,clamp);
+            return (T)isDouble->getValue(master.first,clamp);
         }
     }
     QReadLocker l(&_valueMutex);
@@ -434,7 +434,7 @@ Knob<T>::getValueAtTime(double time,
     boost::shared_ptr<Curve> curve  = getCurve(dimension);
     if (curve->getKeyFramesCount() > 0) {
         //getValueAt already clamps to the range for us
-        return curve->getValueAt(time,clamp);
+        return (T)curve->getValueAt(time,clamp);
     } else {
         /*if the knob as no keys at this dimension, return the value
            at the requested dimension.*/
@@ -665,7 +665,10 @@ Knob<T>::setValue(const T & v,
          holder && //< the knob is part of a KnobHolder
          holder->getApp() && //< the app pointer is not NULL
          !holder->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
-         ( ( reason == Natron::eValueChangedReasonUserEdited) || ( reason == Natron::eValueChangedReasonPluginEdited) ) && //< the change was made by the user or plugin
+         ( reason == Natron::eValueChangedReasonUserEdited ||
+           reason == Natron::eValueChangedReasonPluginEdited ||
+           reason == Natron::eValueChangedReasonNatronGuiEdited ||
+           reason == Natron::eValueChangedReasonNatronInternalEdited ) && //< the change was made by the user or plugin
          ( newKey != NULL) ) { //< the keyframe to set is not null
         
         SequenceTime time = getCurrentTime();
