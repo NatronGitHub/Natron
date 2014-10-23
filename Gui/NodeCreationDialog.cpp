@@ -217,7 +217,7 @@ struct NodeCreationDialogPrivate
     }
 };
 
-NodeCreationDialog::NodeCreationDialog(QWidget* parent)
+NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* parent)
     : QDialog(parent)
       , _imp( new NodeCreationDialogPrivate() )
 {
@@ -231,13 +231,20 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
 
     QStringList ids;
     QStringList names;
+    bool foundInitialFilter = false;
     for (unsigned int i = 0; i < _imp->items.size(); ++i) {
         ids.push_back( _imp->items[i]->getPluginID() );
         names.push_back( _imp->items[i]->getPluginLabel() );
+        if (ids[i] == initialFilter) {
+            foundInitialFilter = true;
+        }
     }
     ids.sort();
     names.sort();
     _imp->textEdit = new CompleterLineEdit(ids,names,true,this);
+    if (foundInitialFilter) {
+        _imp->textEdit->setText(initialFilter);
+    }
 
     QPoint global = QCursor::pos();
     QSize sizeH = sizeHint();
@@ -247,6 +254,7 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
 
     _imp->layout->addWidget(_imp->textEdit);
     _imp->textEdit->setFocus();
+    _imp->textEdit->selectAll();
     QTimer::singleShot( 25, _imp->textEdit, SLOT( showCompleter() ) );
 }
 

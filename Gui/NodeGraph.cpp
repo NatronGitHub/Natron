@@ -258,6 +258,7 @@ struct NodeGraphPrivate
     ///Enables the "Tab" shortcut to popup the node creation dialog.
     ///This is set to true on enterEvent and set back to false on leaveEvent
     bool _nodeCreationShortcutEnabled;
+    QString _lastNodeCreatedName;
     QGraphicsItem* _root; ///< this is the parent of all items in the graph
     QGraphicsItem* _nodeRoot; ///< this is the parent of all nodes
     QGraphicsTextItem* _cacheSizeText;
@@ -297,6 +298,7 @@ struct NodeGraphPrivate
           , _nodes()
           , _nodesTrash()
           , _nodeCreationShortcutEnabled(false)
+          , _lastNodeCreatedName()
           , _root(NULL)
           , _nodeRoot(NULL)
           , _cacheSizeText(NULL)
@@ -1514,7 +1516,7 @@ NodeGraph::event(QEvent* e)
     if (e->type() == QEvent::KeyPress) {
         QKeyEvent* ke = static_cast<QKeyEvent*>(e);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
-            NodeCreationDialog* nodeCreation = new NodeCreationDialog(this);
+            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName,this);
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
@@ -1540,6 +1542,7 @@ NodeGraph::onNodeCreationDialogFinished()
     if (dialog) {
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         QString res = dialog->getNodeName();
+        _imp->_lastNodeCreatedName = res;
         dialog->deleteLater();
 
         switch (ret) {

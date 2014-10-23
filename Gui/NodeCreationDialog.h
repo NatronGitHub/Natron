@@ -65,7 +65,7 @@ class NodeCreationDialog
 
 public:
 
-    explicit NodeCreationDialog(QWidget* parent);
+    explicit NodeCreationDialog(const QString& initialFilter,QWidget* parent);
 
     virtual ~NodeCreationDialog() OVERRIDE;
 
