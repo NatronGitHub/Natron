@@ -219,10 +219,19 @@
     <enum-type name="PlaybackMode"/>
     </namespace-type>
     
+    <rejection class="AppInstance_PythonAPI" field-name="_instance"/>
+    <rejection class="*" field-name="_imp"/>
+
+    <object-type name="AppInstance_PythonAPI">
+    </object-type>
+    
+    
     <!--Global functions to Natron process-->
     <function signature="getPluginIDs()"/>
     <function signature="getNumInstances()"/>
-
+    <function signature="getInstance(int)"/>
+        
+    
 
 </typesystem>
 

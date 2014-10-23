@@ -17,6 +17,23 @@
 
 
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
+
+class AppInstance_PythonAPI
+{
+    AppInstance* _instance;
+    
+public:
+    
+    
+    AppInstance_PythonAPI(AppInstance* instance)
+    : _instance(instance)
+    {
+        
+    }
+    
+    int getAppID() const { return _instance->getAppID(); }
+};
 
 
 inline std::list<std::string>
@@ -25,10 +42,10 @@ getPluginIDs()
     return Natron::getPluginIDs();
 }
 
-inline AppInstance*
+inline AppInstance_PythonAPI
 getInstance(int idx)
 {
-    return Natron::getInstance(idx);
+    return AppInstance_PythonAPI(Natron::getInstance(idx));
 }
 
 inline int
