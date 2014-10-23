@@ -4036,3 +4036,17 @@ FloatingWidget::closeEvent(QCloseEvent* e)
     QWidget::closeEvent(e);
 }
 
+
+void
+Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<NodeGui> >& nodes) const
+{
+    int layoutItemsCount = _imp->_layoutPropertiesBin->count();
+    for (int i = 0; i < layoutItemsCount; ++i) {
+        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
+        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(item->widget());
+        if (panel && panel->getNode() && panel->getNode()->shouldDrawOverlay()) {
+            nodes.push_back(panel->getNode());
+        }
+    }
+}
+

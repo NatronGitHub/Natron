@@ -382,19 +382,26 @@ Double_Knob::~Double_Knob()
 
 static void
 getInputRoD(EffectInstance* effect,
-            double time,
+            double /*time*/,
             RectD & rod)
 {
+#ifdef NATRON_NORMALIZE_SPATIAL_WITH_ROD
     RenderScale scale;
     scale.y = scale.x = 1.;
     bool isProjectFormat;
-    StatusEnum stat = effect->getRegionOfDefinition_public(effect->getHash(),time, scale, /*view*/0, &rod, &isProjectFormat);
-    if ( (stat == eStatusFailed) || ( (rod.x1 == 0) && (rod.y1 == 0) && (rod.x2 == 1) && (rod.y2 == 1) ) ) {
+    Status stat = effect->getRegionOfDefinition_public(effect->getHash(),time, scale, /*view*/0, &rod, &isProjectFormat);
+    if ( (stat == StatFailed) || ( (rod.x1 == 0) && (rod.y1 == 0) && (rod.x2 == 1) && (rod.y2 == 1) ) ) {
         Format f;
         effect->getRenderFormat(&f);
         rod = f;
     }
+#else
+    Format f;
+    effect->getRenderFormat(&f);
+    rod = f;
+#endif
 }
+
 
 void
 Double_Knob::setDefaultValuesNormalized(int dims,
