@@ -3841,6 +3841,7 @@ Gui::clearAllVisiblePanels()
             break;
         }
     }
+	getApp()->redrawAllViewers();
 }
 
 NodeBackDrop*
