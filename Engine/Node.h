@@ -697,6 +697,14 @@ public:
      **/
     bool isNodeRendering() const;
 
+    
+    /**
+     * @brief Attempts to detect cycles considering input being an input of this node.
+     * Returns true if it couldn't detect any cycle, false otherwise.
+     **/
+    bool checkIfConnectingInputIsOk(Natron::Node* input) const;
+
+    
 public slots:
 
     void setKnobsAge(U64 newAge);
@@ -805,12 +813,6 @@ signals:
     void mustDequeueActions();
     
 protected:
-
-    /**
-     * @brief Attempts to detect cycles considering input being an input of this node.
-     * Returns true if it couldn't detect any cycle, false otherwise.
-     **/
-    bool checkIfConnectingInputIsOk(Natron::Node* input) const;
 
     /**
      * @brief Recompute the hash value of this node and notify all the clone effects that the values they store in their

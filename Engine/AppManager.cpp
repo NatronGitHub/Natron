@@ -523,16 +523,26 @@ AppManager::loadInternal(const QString & projectFilename,
 
     AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
 
-    PyRun_SimpleString("import NatronEngine as NE \n"
-                       "list = NE.getPluginIDs() \n"
-                       "for i in list: \n"
-                       "    print i \n"
-                       "numInstances = NE.getNumInstances() \n"
-                       "print (\"Number of instances: %i\" % numInstances) \n"
-                       "mainInstance = NE.getInstance(0) \n"
-                       "print (\"Main instance ID: %i \" % mainInstance.getAppID()) \n"
-                       "effect = mainInstance.createEffect(\"GradeOFX  [Color]\") \n");
-
+//    PyRun_SimpleString("import NatronEngine as NE \n"
+//                       "list = NE.getPluginIDs() \n"
+//                       "for i in list: \n"
+//                       "    print i \n"
+//                       "numInstances = NE.getNumInstances() \n"
+//                       "print (\"Number of instances: %i\" % numInstances) \n"
+//                       "mainInstance = NE.getInstance(0) \n"
+//                       "print (\"Main instance ID: %i \" % mainInstance.getAppID()) \n"
+//                       "grade = mainInstance.createEffect(\"GradeOFX  [Color]\") \n"
+//                       "transform = mainInstance.createEffect(\"TransformOFX  [Transform]\") \n"
+//                       "success = grade.connectInput(1,transform) \n"
+//                       "print success \n"
+//                       "input = grade.getInput(1) \n"
+//                       "print input.getName() \n"
+//                       "grade.disconnectInput(1) \n"
+//                       "input = grade.getInput(1) \n"
+//                       "if input is not None: \n"
+//                       "    print \"Bug!\""
+//                       );
+//
     
     hideSplashScreen();
 
