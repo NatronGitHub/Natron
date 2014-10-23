@@ -819,6 +819,8 @@ protected:
     void computeHash();
 
 private:
+    
+    std::string makeInfoForInput(int inputNumber) const;
 
     void invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes);
     

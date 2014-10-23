@@ -118,6 +118,11 @@ struct Node::Implementation
     , nodeLabelKnob()
     , previewEnabledKnob()
     , disableNodeKnob()
+    , infoPage()
+    , infoDisclaimer()
+    , inputFormats()
+    , outputFormat()
+    , refreshInfosButton()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -211,6 +216,13 @@ struct Node::Implementation
     boost::shared_ptr<String_Knob> nodeLabelKnob;
     boost::shared_ptr<Bool_Knob> previewEnabledKnob;
     boost::shared_ptr<Bool_Knob> disableNodeKnob;
+    
+    boost::shared_ptr<Page_Knob> infoPage;
+    boost::shared_ptr<String_Knob> infoDisclaimer;
+    std::vector< boost::shared_ptr<String_Knob> > inputFormats;
+    boost::shared_ptr<String_Knob> outputFormat;
+    boost::shared_ptr<Button_Knob> refreshInfosButton;
+    
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
     mutable QMutex imagesBeingRenderedMutex;
@@ -923,6 +935,44 @@ Node::isActivated() const
     return _imp->activated;
 }
 
+std::string
+Node::makeInfoForInput(int inputNumber) const
+{
+    boost::shared_ptr<Natron::Node> inputNode = getInput(inputNumber);
+    std::string ret;
+    if (!inputNode) {
+        ret = inputName + ": disconnected";
+        return ret;
+    }
+    
+    Natron::ImageComponentsEnum comps;
+    Natron::ImageBitDepthEnum depth;
+    Natron::ImagePremultiplicationEnum premult;
+    
+    double par = inputNode->getLiveInstance()->getPreferredAspectRatio();
+    premult = inputNode->getLiveInstance()->getOutputPremultiplication();
+    
+    std::string premultStr;
+    switch (premult) {
+        case Natron::eImagePremultiplicationOpaque:
+            premultStr = "opaque";
+            break;
+        case Natron::eImagePremultiplicationPremultiplied:
+            premultStr= "premultiplied";
+            break;
+        case Natron::eImagePremultiplicationUnPremultiplied:
+            premultStr= "unpremultiplied";
+            break;
+    }
+    
+    inputNode->getLiveInstance()->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
+    ret = inputName + ":\n"
+    + "format: " + Natron::Image::getFormatString(comps, depth)
+    + "alpha premultiplication: " + premultStr
+    + "pixel aspect ratio: " + par
+    + "RoD: "
+}
+
 void
 Node::initializeKnobs(const NodeSerialization & serialization)
 {
@@ -1004,6 +1054,23 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
     _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
     loadKnob(_imp->disableNodeKnob, serialization);
+    
+    
+    _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Infos",1,false);
+    _imp->infoPage->setName("infos");
+    
+    _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance, "Input and output informations",1,false);
+    _imp->infoDisclaimer->setName("infoDisclaimer");
+    _imp->infoDisclaimer->setAnimationEnabled(false);
+    _imp->infoDisclaimer->setIsPersistant(false);
+    _imp->infoDisclaimer->setAsLabel();
+    _imp->infoDisclaimer->setEvaluateOnChange(false);
+    _imp->infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
+    _imp->infoPage->addKnob(_imp->infoDisclaimer);
+    
+    for (int i = 0; i < inputsCount; ++i) {
+        
+    }
     
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
