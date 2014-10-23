@@ -501,10 +501,6 @@ AppManager::loadInternal(const QString & projectFilename,
     loadAllPlugins();
     _imp->loadBuiltinFormats();
 
-    PyRun_SimpleString("import NatronEngine as NE \n"
-                       "list = NE.getPluginIDs() \n"
-                       "for i in list: \n"
-                       "    print i");
     if ( isBackground() && !mainProcessServerName.isEmpty() ) {
         _imp->initProcessInputChannel(mainProcessServerName);
         printBackGroundWelcomeMessage();
@@ -527,6 +523,17 @@ AppManager::loadInternal(const QString & projectFilename,
 
     AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
 
+    PyRun_SimpleString("import NatronEngine as NE \n"
+                       "list = NE.getPluginIDs() \n"
+                       "for i in list: \n"
+                       "    print i \n"
+                       "numInstances = NE.getNumInstances() \n"
+                       "print (\"Number of instances: %i\" % numInstances) \n"
+                       "mainInstance = NE.getInstance(0) \n"
+                       "print (\"Main instance ID: %i \" % mainInstance.getAppID()) \n"
+                       "effect = mainInstance.createEffect(\"GradeOFX  [Color]\") \n");
+
+    
     hideSplashScreen();
 
     if (!mainInstance) {

@@ -14,6 +14,48 @@ PyTypeObject** SbkNatronEngineTypes;
 // Current module's converter array.
 SbkConverter** SbkNatronEngineTypeConverters;
 // Global functions ------------------------------------------------------------
+static PyObject* SbkNatronEngineModule_getInstance(PyObject* self, PyObject* pyArg)
+{
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getInstance(int)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // getInstance(int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto SbkNatronEngineModule_getInstance_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getInstance(int)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            App* cppResult = new App(getInstance(cppArg0));
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_APP_IDX], cppResult, true, true);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    SbkNatronEngineModule_getInstance_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "getInstance", overloads);
+        return 0;
+}
+
 static PyObject* SbkNatronEngineModule_getNumInstances(PyObject* self)
 {
     PyObject* pyResult = 0;
@@ -62,12 +104,15 @@ static PyObject* SbkNatronEngineModule_getPluginIDs(PyObject* self)
 
 
 static PyMethodDef NatronEngine_methods[] = {
+    {"getInstance", (PyCFunction)SbkNatronEngineModule_getInstance, METH_O},
     {"getNumInstances", (PyCFunction)SbkNatronEngineModule_getNumInstances, METH_NOARGS},
     {"getPluginIDs", (PyCFunction)SbkNatronEngineModule_getPluginIDs, METH_NOARGS},
     {0} // Sentinel
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_App(PyObject* module);
+void init_Effect(PyObject* module);
 void init_Natron(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -292,6 +337,8 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
+    init_App(module);
+    init_Effect(module);
     init_Natron(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.

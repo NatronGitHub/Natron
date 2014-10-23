@@ -14,9 +14,12 @@
 
 #include <vector>
 #include <list>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#endif
 #include <QStringList>
 
 #include "Global/GlobalDefines.h"

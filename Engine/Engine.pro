@@ -46,6 +46,7 @@ win32-msvc* {
 
 SOURCES += \
     AppInstance.cpp \
+    AppInstanceWrapper.cpp \
     AppManager.cpp \
     BlockingBackgroundRender.cpp \
     ChannelSet.cpp \
@@ -73,6 +74,7 @@ SOURCES += \
     Lut.cpp \
     MemoryFile.cpp \
     Node.cpp \
+    NodeWrapper.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
@@ -102,10 +104,13 @@ SOURCES += \
     ViewerInstance.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
-    NatronEngine/natron_wrapper.cpp
+    NatronEngine/natron_wrapper.cpp \
+    NatronEngine/app_wrapper.cpp \
+    NatronEngine/effect_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
+    AppInstanceWrapper.h \
     AppManager.h \
     BlockingBackgroundRender.h \
     Cache.h \
@@ -148,6 +153,7 @@ HEADERS += \
     Lut.h \
     MemoryFile.h \
     Node.h \
+    NodeWrapper.h \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \
@@ -196,7 +202,9 @@ HEADERS += \
     ../Global/QtCompat.h \
     ../libs/SequenceParsing/SequenceParsing.h \
     NatronEngine/natronengine_python.h \
-    NatronEngine/natron_wrapper.h
+    NatronEngine/natron_wrapper.h \
+    NatronEngine/app_wrapper.h \
+    NatronEngine/effect_wrapper.h
 
 OTHER_FILES += \
     typesystem_engine.xml

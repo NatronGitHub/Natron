@@ -27,7 +27,7 @@
 
 //Engine
 #include <GlobalFunctionsWrapper.h>
-#include <AppInstance.h>
-
+#include <AppInstanceWrapper.h>
+#include <NodeWrapper.h>
 
 #endif // PYSIDE_ENGINE_PYTHON_H

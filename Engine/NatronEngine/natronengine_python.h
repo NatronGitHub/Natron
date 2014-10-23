@@ -18,7 +18,9 @@
 
 // Binded library includes
 #include <Enums.h>
+#include <NodeWrapper.h>
 #include <GlobalDefines.h>
+#include <AppInstanceWrapper.h>
 // Conversion Includes - Primitive Types
 #include <QString>
 #include <signalmanager.h>
@@ -46,21 +48,23 @@
 #include <set>
 
 // Type indices
-#define SBK_NATRON_IDX                                               0
-#define SBK_NATRON_ORIENTATION_IDX                                   6
-#define SBK_NATRON_PLAYBACKMODE_IDX                                  8
-#define SBK_NATRON_VALUECHANGEDREASON_IDX                            10
-#define SBK_NATRON_STANDARDBUTTON_IDX                                9
-#define SBK_QFLAGS_NATRON_STANDARDBUTTON__IDX                        13
-#define SBK_NATRON_IMAGEPREMULTIPLICATION_IDX                        4
-#define SBK_NATRON_ANIMATIONLEVEL_IDX                                1
-#define SBK_NATRON_KEYFRAMETYPE_IDX                                  5
-#define SBK_NATRON_IMAGECOMPONENTS_IDX                               3
-#define SBK_NATRON_VIEWERCOLORSPACE_IDX                              11
-#define SBK_NATRON_IMAGEBITDEPTH_IDX                                 2
-#define SBK_NATRON_VIEWERCOMPOSITINGOPERATOR_IDX                     12
-#define SBK_NATRON_PIXMAPENUM_IDX                                    7
-#define SBK_NatronEngine_IDX_COUNT                                   14
+#define SBK_NATRON_IDX                                               2
+#define SBK_NATRON_ORIENTATION_IDX                                   8
+#define SBK_NATRON_PLAYBACKMODE_IDX                                  10
+#define SBK_NATRON_VALUECHANGEDREASON_IDX                            12
+#define SBK_NATRON_STANDARDBUTTON_IDX                                11
+#define SBK_QFLAGS_NATRON_STANDARDBUTTON__IDX                        15
+#define SBK_NATRON_IMAGEPREMULTIPLICATION_IDX                        6
+#define SBK_NATRON_ANIMATIONLEVEL_IDX                                3
+#define SBK_NATRON_KEYFRAMETYPE_IDX                                  7
+#define SBK_NATRON_IMAGECOMPONENTS_IDX                               5
+#define SBK_NATRON_VIEWERCOLORSPACE_IDX                              13
+#define SBK_NATRON_IMAGEBITDEPTH_IDX                                 4
+#define SBK_NATRON_VIEWERCOMPOSITINGOPERATOR_IDX                     14
+#define SBK_NATRON_PIXMAPENUM_IDX                                    9
+#define SBK_EFFECT_IDX                                               1
+#define SBK_APP_IDX                                                  0
+#define SBK_NatronEngine_IDX_COUNT                                   16
 
 // This variable stores all Python types exported by this module.
 extern PyTypeObject** SbkNatronEngineTypes;
@@ -95,6 +99,8 @@ template<> inline PyTypeObject* SbkType< ::Natron::ViewerColorSpace >() { return
 template<> inline PyTypeObject* SbkType< ::Natron::ImageBitDepth >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGEBITDEPTH_IDX]; }
 template<> inline PyTypeObject* SbkType< ::Natron::ViewerCompositingOperator >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATOR_IDX]; }
 template<> inline PyTypeObject* SbkType< ::Natron::PixmapEnum >() { return SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Effect >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_EFFECT_IDX]); }
+template<> inline PyTypeObject* SbkType< ::App >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_APP_IDX]); }
 
 } // namespace Shiboken
 
