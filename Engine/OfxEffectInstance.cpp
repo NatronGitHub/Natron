@@ -870,6 +870,13 @@ OfxEffectInstance::onInputChanged(int inputNo)
     {
         RECURSIVE_ACTION();
         SET_CAN_SET_VALUE(true);
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                            false,
+                                            true, //< setView ?
+                                            0 /*view*/,
+                                            true, //< setmipmaplevel?
+                                            0);
+
         _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
         _effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
         _effect->endInstanceChangedAction(kOfxChangeUserEdited);
