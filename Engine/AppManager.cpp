@@ -501,7 +501,10 @@ AppManager::loadInternal(const QString & projectFilename,
     loadAllPlugins();
     _imp->loadBuiltinFormats();
 
-
+    PyRun_SimpleString("import NatronEngine as NE \n"
+                       "list = NE.getPluginIDs() \n"
+                       "for i in list: \n"
+                       "    print i");
     if ( isBackground() && !mainProcessServerName.isEmpty() ) {
         _imp->initProcessInputChannel(mainProcessServerName);
         printBackGroundWelcomeMessage();
@@ -1848,7 +1851,7 @@ AppManager::initPython(int argc,char* argv[])
     PySys_SetArgv(argc, argv); /// relative module import
     
     initBuiltinPythonModules();
-    PyRun_SimpleString("import NatronEngine as NE; NE.getPluginIDs(); ");
+
 }
 
 void

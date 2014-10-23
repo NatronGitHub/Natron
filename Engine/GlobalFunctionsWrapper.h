@@ -22,7 +22,7 @@
 inline std::list<std::string>
 getPluginIDs()
 {
-    Natron::getPluginIDs();
+    return Natron::getPluginIDs();
 }
 
 inline AppInstance*
