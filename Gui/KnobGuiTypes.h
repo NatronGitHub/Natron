@@ -676,7 +676,10 @@ public slots:
 
     ///this is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
     ///of the font size.
-    static void parseFont(const QString & s,QFont & f);
+    static void parseFont(const QString & s,QFont & f,QColor& color);
+    static void findReplaceColorName(QString& text,const QColor& color);
+    static QString makeFontTag(const QString& family,int fontSize,const QColor& color);
+    static QString decorateTextWithFontTag(const QString& family,int fontSize,const QColor& color,const QString& text);
     static QString removeNatronHtmlTag(QString text);
 
 private:
