@@ -76,7 +76,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    Natron::Status renderViewer(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
+    Natron::StatusEnum renderViewer(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
                                 U64 viewerHash,
                                 bool canAbort,
                                 std::list<boost::shared_ptr<BufferableObject> >& outputFrames) WARN_UNUSED_RETURN;
@@ -125,7 +125,7 @@ public:
 
     void onGainChanged(double exp);
 
-    void onColorSpaceChanged(Natron::ViewerColorSpace colorspace);
+    void onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace);
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
@@ -141,7 +141,7 @@ public:
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
-    static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpace cs) WARN_UNUSED_RETURN;
+    static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
     void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 
@@ -215,16 +215,16 @@ private:
         return QString::number(inputNb + 1).toStdString();
     }
 
-    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL
+    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
-        return Natron::EffectInstance::FULLY_SAFE;
+        return Natron::EffectInstance::eRenderSafetyFullySafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
     
-    Natron::Status renderViewer_internal(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
+    Natron::StatusEnum renderViewer_internal(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
                                          int textureIndex, U64 viewerHash,
                                          bool canAbort,
                                          boost::shared_ptr<BufferableObject>* outputObject) WARN_UNUSED_RETURN;

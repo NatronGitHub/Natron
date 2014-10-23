@@ -26,13 +26,13 @@ class KnobI;
 
 struct CurvePrivate
 {
-    enum CurveType
+    enum CurveTypeEnum
     {
-        DOUBLE_CURVE = 0, //< the values held by the keyframes can be any real
-        INT_CURVE, //< the values held by the keyframes can only be integers
-        INT_CURVE_CONSTANT_INTERP, //< same as INT_CURVE but interpolation is restricted to KEYFRAME_CONSTANT
-        BOOL_CURVE, //< the values held by the keyframes can be either 0 or 1
-        STRING_CURVE //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
+        eCurveTypeDouble = 0, //< the values held by the keyframes can be any real
+        eCurveTypeInt, //< the values held by the keyframes can only be integers
+        eCurveTypeIntConstantInterp, //< same as eCurveTypeInt but interpolation is restricted to eKeyframeTypeConstant
+        eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1
+        eCurveTypeString //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
                      // and times
     };
 
@@ -40,7 +40,7 @@ struct CurvePrivate
     KnobI* owner;
     int dimensionInOwner;
     bool isParametric;
-    CurveType type;
+    CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
     bool hasYRange;
@@ -52,7 +52,7 @@ struct CurvePrivate
           , owner(NULL)
           , dimensionInOwner(-1)
           , isParametric(false)
-          , type(DOUBLE_CURVE)
+          , type(eCurveTypeDouble)
           , xMin(INT_MIN)
           , xMax(INT_MAX)
           , yMin(INT_MIN)

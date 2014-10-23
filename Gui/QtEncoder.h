@@ -72,24 +72,24 @@ public:
         return 1;
     }
 
-    void knobChanged(KnobI* k, Natron::ValueChangedReason reason, int view, SequenceTime time) OVERRIDE FINAL;
-    virtual Natron::Status render(SequenceTime time,
+    void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE FINAL;
+    virtual Natron::StatusEnum render(SequenceTime time,
                                   const RenderScale & scale,
                                   const RectI & roi,
                                   int view,
                                   bool isSequentialRender,
                                   bool isRenderResponseToUserInteraction,
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 protected:
 
 
     virtual void initializeKnobs() OVERRIDE;
-    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE
+    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::EffectInstance::INSTANCE_SAFE;
+        return Natron::EffectInstance::eRenderSafetyInstanceSafe;
     }
 
 private:

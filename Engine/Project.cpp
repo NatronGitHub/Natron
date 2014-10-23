@@ -560,10 +560,10 @@ Project::findAndTryLoadAutoSave()
 
             appPTR->hideSplashScreen();
 
-            Natron::StandardButton ret = Natron::questionDialog(tr("Auto-save").toStdString(),
-                                                                text.toStdString(),Natron::StandardButtons(Natron::Yes | Natron::No),
-                                                                Natron::Yes);
-            if ( (ret == Natron::No) || (ret == Natron::Escape) ) {
+            Natron::StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
+                                                                text.toStdString(),Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                                Natron::eStandardButtonYes);
+            if ( (ret == Natron::eStandardButtonNo) || (ret == Natron::eStandardButtonEscape) ) {
                 removeAutoSaves();
                 reset();
 
@@ -824,7 +824,7 @@ Project::initializeKnobs()
 void
 Project::evaluate(KnobI* knob,
                   bool isSignificant,
-                  Natron::ValueChangedReason /*reason*/)
+                  Natron::ValueChangedReasonEnum /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (isSignificant && knob != _imp->formatKnob.get()) {
@@ -1181,19 +1181,19 @@ Project::load(const ProjectSerialization & obj,const QString& name,const QString
 }
 
 void
-Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/)
+Project::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
 {
 }
 
 void
-Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/)
+Project::endKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
 {
 }
 
 ///this function is only called on the main thread
 void
 Project::onKnobValueChanged(KnobI* knob,
-                            Natron::ValueChangedReason /*reason*/,
+                            Natron::ValueChangedReasonEnum /*reason*/,
                             SequenceTime /*time*/)
 {
     if ( knob == _imp->viewsCount.get() ) {
@@ -1596,20 +1596,20 @@ boost::shared_ptr<Natron::Node> Project::getNodePointer(Natron::Node* n) const
     return boost::shared_ptr<Natron::Node>();
 }
 
-Natron::ViewerColorSpace
-Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
+Natron::ViewerColorSpaceEnum
+Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
 {
     switch (bitdepth) {
-    case Natron::IMAGE_BYTE:
+    case Natron::eImageBitDepthByte:
 
-        return (Natron::ViewerColorSpace)_imp->colorSpace8bits->getValue();
-    case Natron::IMAGE_SHORT:
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8bits->getValue();
+    case Natron::eImageBitDepthShort:
 
-        return (Natron::ViewerColorSpace)_imp->colorSpace16bits->getValue();
-    case Natron::IMAGE_FLOAT:
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16bits->getValue();
+    case Natron::eImageBitDepthFloat:
 
-        return (Natron::ViewerColorSpace)_imp->colorSpace32bits->getValue();
-    case Natron::IMAGE_NONE:
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32bits->getValue();
+    case Natron::eImageBitDepthNone:
         assert(false);
         break;
     }

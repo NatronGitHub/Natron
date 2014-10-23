@@ -27,8 +27,8 @@ double interpolate(double tcur, const double vcur, //start control point
                    const double vnextDerivLeft, //being the derivative dv/dt at tnext
                    double tnext, const double vnext, //end control point
                    double currentTime,
-                   KeyframeType interp,
-                   KeyframeType interpNext) WARN_UNUSED_RETURN;
+                   KeyframeTypeEnum interp,
+                   KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
 /// derive at currentTime. The derivative is with respect to currentTime
 double derive(double tcur, const double vcur, //start control point
@@ -36,8 +36,8 @@ double derive(double tcur, const double vcur, //start control point
               const double vnextDerivLeft, //being the derivative dv/dt at tnext
               double tnext, const double vnext, //end control point
               double currentTime,
-              KeyframeType interp,
-              KeyframeType interpNext) WARN_UNUSED_RETURN;
+              KeyframeTypeEnum interp,
+              KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
 /// derive at currentTime. The derivative is with respect to currentTime. The function is clamped between vmin an vmax.
 double derive_clamp(double tcur, const double vcur, //start control point
@@ -46,8 +46,8 @@ double derive_clamp(double tcur, const double vcur, //start control point
                     double tnext, const double vnext, //end control point
                     double currentTime,
                     double vmin, double vmax,
-                    KeyframeType interp,
-                    KeyframeType interpNext) WARN_UNUSED_RETURN;
+                    KeyframeTypeEnum interp,
+                    KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
 /// integrate from time1 to time2 - be careful that time1 and time2 have to be in the range [tcur,tnext]
 double integrate(double tcur, const double vcur, //start control point
@@ -55,8 +55,8 @@ double integrate(double tcur, const double vcur, //start control point
                  const double vnextDerivLeft, //being the derivative dv/dt at tnext
                  double tnext, const double vnext, //end control point
                  double time1, double time2,
-                 KeyframeType interp,
-                 KeyframeType interpNext) WARN_UNUSED_RETURN;
+                 KeyframeTypeEnum interp,
+                 KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
 /// integrate from time1 to time2 - be careful that time1 and time2 have to be in the range [tcur,tnext]. The function is clamped between vmin an vmax.
 double integrate_clamp(double tcur, const double vcur, //start control point
@@ -65,8 +65,8 @@ double integrate_clamp(double tcur, const double vcur, //start control point
                        double tnext, const double vnext, //end control point
                        double time1, double time2,
                        double vmin, double vmax,
-                       Natron::KeyframeType interp,
-                       Natron::KeyframeType interpNext) WARN_UNUSED_RETURN;
+                       Natron::KeyframeTypeEnum interp,
+                       Natron::KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
 /**
  * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the
@@ -147,9 +147,9 @@ double integrate_clamp(double tcur, const double vcur, //start control point
    map(C,%):
 
  */
-void autoComputeDerivatives(Natron::KeyframeType interpPrev,
-                            Natron::KeyframeType interp,
-                            Natron::KeyframeType interpNext,
+void autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
+                            Natron::KeyframeTypeEnum interp,
+                            Natron::KeyframeTypeEnum interpNext,
                             double tprev, const double vprev, // vprev = Q0
                             double tcur, const double vcur, // vcur = Q3 = P0
                             double tnext, const double vnext, // vnext = P3

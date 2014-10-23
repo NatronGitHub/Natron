@@ -82,18 +82,18 @@ toBGRA(unsigned char r,
 }
 
 const Natron::Color::Lut*
-ViewerInstance::lutFromColorspace(Natron::ViewerColorSpace cs)
+ViewerInstance::lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
 {
     const Natron::Color::Lut* lut;
 
     switch (cs) {
-    case Natron::sRGB:
+    case Natron::eViewerColorSpaceSRGB:
         lut = Natron::Color::LutManager::sRGBLut();
         break;
-    case Natron::Rec709:
+    case Natron::eViewerColorSpaceRec709:
         lut = Natron::Color::LutManager::Rec709Lut();
         break;
-    case Natron::Linear:
+    case Natron::eViewerColorSpaceLinear:
     default:
         lut = 0;
         break;
@@ -268,7 +268,7 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
     }
 }
 
-Natron::Status
+Natron::StatusEnum
 ViewerInstance::renderViewer(SequenceTime time,
                              int view,
                              bool singleThreaded,
@@ -278,13 +278,13 @@ ViewerInstance::renderViewer(SequenceTime time,
                              std::list<boost::shared_ptr<BufferableObject> >& outputFrames)
 {
     if (!_imp->uiContext) {
-        return StatFailed;
+        return eStatusFailed;
     }
-    Natron::Status ret[2] = {
-        StatFailed,StatFailed
+    Natron::StatusEnum ret[2] = {
+        eStatusFailed, eStatusFailed
     };
     for (int i = 0; i < 2; ++i) {
-        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::OPERATOR_NONE) ) {
+        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::eViewerCompositingOperatorNone) ) {
             break;
         }
         
@@ -294,17 +294,17 @@ ViewerInstance::renderViewer(SequenceTime time,
             outputFrames.push_back(output);
         }
         
-        if (ret[i] == StatFailed) {
+        if (ret[i] == eStatusFailed) {
             emit disconnectTextureRequest(i);
         }
     }
 
 
-    if ( (ret[0] == StatFailed) && (ret[1] == StatFailed) ) {
-        return StatFailed;
+    if ( (ret[0] == eStatusFailed) && (ret[1] == eStatusFailed) ) {
+        return eStatusFailed;
     }
 
-    return StatOK;
+    return eStatusOK;
 }
 
 static void checkTreeCanRender_internal(Node* node,bool* ret)
@@ -347,10 +347,10 @@ static bool checkTreeCanRender(Node* node)
                                     params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(params->cachedFrame); \
                                 } \
-                                return StatOK; \
+                                return eStatusOK; \
                           }
 
-Natron::Status
+Natron::StatusEnum
 ViewerInstance::renderViewer_internal(SequenceTime time,
                                       int view,
                                       bool singleThreaded,
@@ -384,7 +384,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     }
 
     if (!activeInputToRender || !checkTreeCanRender(activeInputToRender->getNode().get())) {
-        return StatFailed;
+        return eStatusFailed;
     }
 
     bool forceRender;
@@ -425,11 +425,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     int closestPowerOf2 = 1 << mipMapLevel;
 
-    ImageComponents components;
-    ImageBitDepth imageDepth;
+    ImageComponentsEnum components;
+    ImageBitDepthEnum imageDepth;
     activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
 
-    ImagePremultiplication srcPremult = activeInputToRender->getOutputPremultiplication();
+    ImagePremultiplicationEnum srcPremult = activeInputToRender->getOutputPremultiplication();
 
         
     U64 inputNodeHash = activeInputToRender->getHash();
@@ -463,10 +463,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         isRodProjectFormat = cachedImgParams->isRodProjectFormat();
       
     }  else {
-        Status stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time,
+        StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time,
                                                                         supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                         view, &rod, &isRodProjectFormat);
-        if (stat == StatFailed) {
+        if (stat == eStatusFailed) {
             return stat;
         }
         // update scale after the first call to getRegionOfDefinition
@@ -515,7 +515,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     texRect.y2 = std::ceil( ( (double)roi.y2 ) / tileSize ) * tileSize;
 
     if ( (texRect.width() == 0) || (texRect.height() == 0) ) {
-        return StatOK;
+        return eStatusOK;
     }
 
     ///TexRectClipped is the same as texRect but without the zoom factor taken into account (in pixel coords)
@@ -540,7 +540,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                             texRectClipped.y2,texRectClipped.width(),texRectClipped.height(),closestPowerOf2);
     size_t bytesCount = textureRect.w * textureRect.h * 4;
     if (bytesCount == 0) {
-        return StatOK;
+        return eStatusOK;
     }
 
     assert(_imp->uiContext);
@@ -555,7 +555,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     double gain;
     double offset = 0.; // 0 except for autoContrast
     bool autoContrast;
-    Natron::ViewerColorSpace lut;
+    Natron::ViewerColorSpaceEnum lut;
     ViewerInstance::DisplayChannels channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
@@ -669,7 +669,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         
         ///Check that we were not aborted already
         if ( !isSequentialRender && (activeInputToRender->getHash() != inputNodeHash || time != getTimeline()->currentFrame()) ) {
-            return StatOK;
+            return eStatusOK;
         }
         
         ///Notify the gui we're rendering.
@@ -702,7 +702,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
                 Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
 
-                return StatFailed;
+                return eStatusFailed;
             }
             
             if (textureIsCached) {
@@ -808,7 +808,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                             _node->notifyInputNIsFinishedRendering(activeInputIndex);
                         }
 
-                        return StatOK;
+                        return eStatusOK;
                     }
 
                 }
@@ -837,13 +837,13 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 appPTR->removeFromViewerCache(params->cachedFrame);
             }
         
-            return StatFailed;
+            return eStatusFailed;
         }
 
 
         abortCheck(activeInputToRender);
 
-        ViewerColorSpace srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( params->image->getBitDepth() );
+        ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( params->image->getBitDepth() );
         
         
         if (singleThreaded) {
@@ -993,7 +993,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     // end of boost::shared_ptr<UpdateUserParams> scope... but it still lives inside updateViewer()
 
     ////////////////////////////////////
-    return StatOK;
+    return eStatusOK;
 } // renderViewer_internal
 
 
@@ -1108,11 +1108,11 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
                          const RectI & rect)
 {
     switch (inputImage->getComponents()) {
-        case Natron::ImageComponentRGBA:
+        case Natron::eImageComponentRGBA:
             return findAutoContrastVminVmax_internal<4>(inputImage, channels, rect);
-        case Natron::ImageComponentRGB:
+        case Natron::eImageComponentRGB:
             return findAutoContrastVminVmax_internal<3>(inputImage, channels, rect);
-        case Natron::ImageComponentAlpha:
+        case Natron::eImageComponentAlpha:
             return findAutoContrastVminVmax_internal<1>(inputImage, channels, rect);
         default:
             return std::make_pair(0,1);
@@ -1267,11 +1267,11 @@ scaleToTexture8bitsForPremult(const std::pair<int,int> & yRange,
                              U32* output)
 {
     switch (args.srcPremult) {
-        case Natron::ImageOpaque:
+        case Natron::eImagePremultiplicationOpaque:
             scaleToTexture8bits_internal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
             break;
-        case Natron::ImagePremultiplied:
-        case Natron::ImageUnPremultiplied:
+        case Natron::eImagePremultiplicationPremultiplied:
+        case Natron::eImagePremultiplicationUnPremultiplied:
         default:
             scaleToTexture8bits_internal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
             break;
@@ -1316,15 +1316,15 @@ scaleToTexture8bitsForDepth(const std::pair<int,int> & yRange,
                             ViewerInstance* viewer,
                             U32* output)
 {
-    Natron::ImageComponents comps = args.inputImage->getComponents();
+    Natron::ImageComponentsEnum comps = args.inputImage->getComponents();
     switch (comps) {
-        case Natron::ImageComponentRGBA:
+        case Natron::eImageComponentRGBA:
             scaleToTexture8bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,viewer,output);
             break;
-        case Natron::ImageComponentRGB:
+        case Natron::eImageComponentRGB:
             scaleToTexture8bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,viewer,output);
             break;
-        case Natron::ImageComponentAlpha:
+        case Natron::eImageComponentAlpha:
             scaleToTexture8bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,viewer,output);
             break;
         default:
@@ -1340,17 +1340,17 @@ scaleToTexture8bits(std::pair<int,int> yRange,
 {
     assert(output);
     switch ( args.inputImage->getBitDepth() ) {
-        case Natron::IMAGE_FLOAT:
+        case Natron::eImageBitDepthFloat:
             scaleToTexture8bitsForDepth<float, 1>(yRange, args,viewer, output);
             break;
-        case Natron::IMAGE_BYTE:
+        case Natron::eImageBitDepthByte:
             scaleToTexture8bitsForDepth<unsigned char, 255>(yRange, args,viewer, output);
             break;
-        case Natron::IMAGE_SHORT:
+        case Natron::eImageBitDepthShort:
             scaleToTexture8bitsForDepth<unsigned short, 65535>(yRange, args,viewer,output);
             break;
             
-        case Natron::IMAGE_NONE:
+        case Natron::eImageBitDepthNone:
             break;
     }
 } // scaleToTexture8bits
@@ -1474,11 +1474,11 @@ scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
                              float *output)
 {
     switch (args.srcPremult) {
-        case Natron::ImageOpaque:
+        case Natron::eImagePremultiplicationOpaque:
             scaleToTexture32bitsInternal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
             break;
-        case Natron::ImagePremultiplied:
-        case Natron::ImageUnPremultiplied:
+        case Natron::eImagePremultiplicationPremultiplied:
+        case Natron::eImagePremultiplicationUnPremultiplied:
         default:
             scaleToTexture32bitsInternal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
             break;
@@ -1562,15 +1562,15 @@ scaleToTexture32bitsForDepth(const std::pair<int,int> & yRange,
                              ViewerInstance* viewer,
                              float *output)
 {
-    Natron::ImageComponents comps = args.inputImage->getComponents();
+    Natron::ImageComponentsEnum comps = args.inputImage->getComponents();
     switch (comps) {
-        case Natron::ImageComponentRGBA:
+        case Natron::eImageComponentRGBA:
             scaleToTexture32bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,viewer,output);
             break;
-        case Natron::ImageComponentRGB:
+        case Natron::eImageComponentRGB:
             scaleToTexture32bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,viewer,output);
             break;
-        case Natron::ImageComponentAlpha:
+        case Natron::eImageComponentAlpha:
             scaleToTexture32bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,viewer,output);
             break;
         default:
@@ -1587,16 +1587,16 @@ scaleToTexture32bits(std::pair<int,int> yRange,
     assert(output);
 
     switch ( args.inputImage->getBitDepth() ) {
-        case Natron::IMAGE_FLOAT:
+        case Natron::eImageBitDepthFloat:
             scaleToTexture32bitsForDepth<float, 1>(yRange, args,viewer, output);
             break;
-        case Natron::IMAGE_BYTE:
+        case Natron::eImageBitDepthByte:
             scaleToTexture32bitsForDepth<unsigned char, 255>(yRange, args,viewer, output);
             break;
-        case Natron::IMAGE_SHORT:
+        case Natron::eImageBitDepthShort:
             scaleToTexture32bitsForDepth<unsigned short, 65535>(yRange, args,viewer, output);
             break;
-        case Natron::IMAGE_NONE:
+        case Natron::eImageBitDepthNone:
             break;
     }
 } // scaleToTexture32bits
@@ -1719,7 +1719,7 @@ ViewerInstance::isAutoContrastEnabled() const
 }
 
 void
-ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
+ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1829,10 +1829,10 @@ ViewerInstance::getChannels() const
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::list<Natron::ImageComponents>* comps)
+                                      std::list<Natron::ImageComponentsEnum>* comps)
 {
     ///Viewer only supports RGBA for now.
-    comps->push_back(Natron::ImageComponentRGBA);
+    comps->push_back(Natron::eImageComponentRGBA);
 }
 
 int
@@ -1867,11 +1867,11 @@ ViewerInstance::onInputChanged(int inputNb)
 }
 
 void
-ViewerInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+ViewerInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(IMAGE_FLOAT);
-    depths->push_back(IMAGE_SHORT);
-    depths->push_back(IMAGE_BYTE);
+    depths->push_back(eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthShort);
+    depths->push_back(eImageBitDepthByte);
 }
 
 void

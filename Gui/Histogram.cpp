@@ -45,7 +45,7 @@ CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
 namespace { // protext local classes in anonymous namespace
-enum EventState
+enum EventStateEnum
 {
     DRAGGING_VIEW = 0,
     NONE = 1
@@ -150,7 +150,7 @@ struct HistogramPrivate
     ZoomContext zoomCtx;
     bool supportsGLSL;
     bool hasOpenGLVAOSupport;
-    EventState state;
+    EventStateEnum state;
     bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
     QColor _baseAxisColor;
     QColor _scaleColor;

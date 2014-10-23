@@ -174,13 +174,13 @@ private:
 
 struct KeyInterpolationChange
 {
-    Natron::KeyframeType oldInterp;
-    Natron::KeyframeType newInterp;
+    Natron::KeyframeTypeEnum oldInterp;
+    Natron::KeyframeTypeEnum newInterp;
     KeyPtr key;
 
 
-    KeyInterpolationChange(Natron::KeyframeType oldType,
-                           Natron::KeyframeType newType,
+    KeyInterpolationChange(Natron::KeyframeTypeEnum oldType,
+                           Natron::KeyframeTypeEnum newType,
                            const KeyPtr & k)
         : oldInterp(oldType)
           , newInterp(newType)
@@ -256,7 +256,7 @@ private:
     CurveWidget* _widget;
     KeyPtr _key;
     SelectedDerivative _deriv;
-    Natron::KeyframeType _oldInterp,_newInterp;
+    Natron::KeyframeTypeEnum _oldInterp,_newInterp;
     double _oldLeft,_oldRight,_newLeft,_newRight;
     bool _setBoth;
     bool _updateOnFirstRedo;

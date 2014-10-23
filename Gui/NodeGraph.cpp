@@ -1963,7 +1963,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
             }
         }
         if (foundEffect) {
-            Natron::StandardButton reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
+            Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
@@ -1971,7 +1971,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString() );
-            if (reply == Natron::No) {
+            if (reply == Natron::eStandardButtonNo) {
                 return;
             }
             break;
@@ -2020,7 +2020,7 @@ NodeGraph::deleteSelection()
                     }
                 }
                 if (foundEffect) {
-                    Natron::StandardButton reply = Natron::questionDialog( tr("Delete").toStdString(),
+                    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(),
                                                                            tr("This node has one or several "
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
@@ -2029,7 +2029,7 @@ NodeGraph::deleteSelection()
                                                                               "and undoing the action will not recover "
                                                                               "them. Do you wish to continue ?")
                                                                            .toStdString() );
-                    if (reply == Natron::No) {
+                    if (reply == Natron::eStandardButtonNo) {
                         return;
                     }
                     mustBreak = true;
@@ -3359,8 +3359,8 @@ NodeGraph::onTimeChanged(SequenceTime time,
 
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {
-        if ( (viewers[i] != lastTimelineSeekCaller) || (reason == USER_SEEK) ) {
-            viewers[i]->renderCurrentFrame(reason != PLAYBACK_SEEK);
+        if ( (viewers[i] != lastTimelineSeekCaller) || (reason == eTimelineChangeReasonUserSeek) ) {
+            viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
         }
     }
 }
@@ -3384,8 +3384,8 @@ NodeGraph::refreshAllKnobsGui()
                 if (!it2->first->getIsSecret()) {
                     for (int i = 0; i < it2->first->getDimension(); ++i) {
                         if (it2->first->isAnimated(i)) {
-                            it2->second->onInternalValueChanged(i, Natron::PLUGIN_EDITED);
-                            it2->second->onAnimationLevelChanged(i, Natron::PLUGIN_EDITED);
+                            it2->second->onInternalValueChanged(i, Natron::eValueChangedReasonPluginEdited);
+                            it2->second->onAnimationLevelChanged(i, Natron::eValueChangedReasonPluginEdited);
                         }
                     }
                 }

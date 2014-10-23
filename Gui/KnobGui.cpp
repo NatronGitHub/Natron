@@ -386,7 +386,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     menu->clear();
     bool isOnKeyFrame = false;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        if (knob->getAnimationLevel(i) == Natron::ON_KEYFRAME) {
+        if (knob->getAnimationLevel(i) == Natron::eAnimationLevelOnKeyframe) {
             isOnKeyFrame = true;
             break;
         }
@@ -632,7 +632,7 @@ KnobGui::onRemoveAnimationActionTriggered()
 
 void
 KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
-                                       Natron::KeyframeType interp)
+                                       Natron::KeyframeTypeEnum interp)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
 
@@ -655,7 +655,7 @@ KnobGui::onConstantInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_CONSTANT);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeConstant);
 }
 
 void
@@ -667,7 +667,7 @@ KnobGui::onLinearInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_LINEAR);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeLinear);
 }
 
 void
@@ -679,7 +679,7 @@ KnobGui::onSmoothInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_SMOOTH);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeSmooth);
 }
 
 void
@@ -691,7 +691,7 @@ KnobGui::onCatmullromInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_CATMULL_ROM);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCatmullRom);
 }
 
 void
@@ -703,7 +703,7 @@ KnobGui::onCubicInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_CUBIC);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCubic);
 }
 
 void
@@ -715,7 +715,7 @@ KnobGui::onHorizontalInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_HORIZONTAL);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeHorizontal);
 }
 
 void
@@ -1005,7 +1005,7 @@ void
 KnobGui::onInternalValueChanged(int dimension,
                                 int reason)
 {
-    if (_imp->widgetCreated && (Natron::ValueChangedReason)reason != Natron::USER_EDITED) {
+    if (_imp->widgetCreated && (Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
         updateGuiInternal(dimension);
     }
 }
@@ -1665,7 +1665,7 @@ void
 KnobGui::onAnimationLevelChanged(int dim,int level)
 {
     if (!_imp->customInteract) {
-        reflectAnimationLevel(dim, (Natron::AnimationLevel)level);
+        reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
     }
 }
 

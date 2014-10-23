@@ -21,19 +21,24 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 namespace Natron {
-enum Scale_Type
+enum ScaleTypeEnum
 {
-    LINEAR_SCALE,LOG_SCALE
+    eScaleTypeLinear,
+    eScaleTypeLog,
 };
 
-enum TIMELINE_STATE
+enum TimelineStateEnum
 {
-    IDLE,DRAGGING_CURSOR,DRAGGING_BOUNDARY
+    eTimelineStateIdle,
+    eTimelineStateDraggingCursor,
+    eTimelineStateDraggingBoundary,
 };
 
-enum TIMELINE_CHANGE_REASON
+enum TimelineChangeReasonEnum
 {
-    USER_SEEK = 0, PLAYBACK_SEEK = 1, CURVE_EDITOR_SEEK = 2,
+    eTimelineChangeReasonUserSeek = 0,
+    eTimelineChangeReasonPlaybackSeek = 1,
+    eTimelineChangeReasonCurveEditorSeek = 2,
 };
 
 // when adding more standard channels,
@@ -64,56 +69,59 @@ enum ChannelMask
         Mask_All   = 0xFFFFFFFF
 };
 
-enum Status
+enum StatusEnum
 {
-    StatOK = 0,
-    StatFailed = 1,
-    StatReplyDefault = 14
+    eStatusOK = 0,
+    eStatusFailed = 1,
+    eStatusReplyDefault = 14
 };
 
 /*Copy of QMessageBox::StandardButton*/
-enum StandardButton
+enum StandardButtonEnum
 {
-    NoButton           = 0x00000000,
-    Escape             = 0x00000200,            // obsolete
-    Ok                 = 0x00000400,
-    Save               = 0x00000800,
-    SaveAll            = 0x00001000,
-    Open               = 0x00002000,
-    Yes                = 0x00004000,
-    YesToAll           = 0x00008000,
-    No                 = 0x00010000,
-    NoToAll            = 0x00020000,
-    Abort              = 0x00040000,
-    Retry              = 0x00080000,
-    Ignore             = 0x00100000,
-    Close              = 0x00200000,
-    Cancel             = 0x00400000,
-    Discard            = 0x00800000,
-    Help               = 0x01000000,
-    Apply              = 0x02000000,
-    Reset              = 0x04000000,
-    RestoreDefaults    = 0x08000000
+    eStandardButtonNoButton           = 0x00000000,
+    eStandardButtonEscape             = 0x00000200,            // obsolete
+    eStandardButtonOk                 = 0x00000400,
+    eStandardButtonSave               = 0x00000800,
+    eStandardButtonSaveAll            = 0x00001000,
+    eStandardButtonOpen               = 0x00002000,
+    eStandardButtonYes                = 0x00004000,
+    eStandardButtonYesToAll           = 0x00008000,
+    eStandardButtonNo                 = 0x00010000,
+    eStandardButtonNoToAll            = 0x00020000,
+    eStandardButtonAbort              = 0x00040000,
+    eStandardButtonRetry              = 0x00080000,
+    eStandardButtonIgnore             = 0x00100000,
+    eStandardButtonClose              = 0x00200000,
+    eStandardButtonCancel             = 0x00400000,
+    eStandardButtonDiscard            = 0x00800000,
+    eStandardButtonHelp               = 0x01000000,
+    eStandardButtonApply              = 0x02000000,
+    eStandardButtonReset              = 0x04000000,
+    eStandardButtonRestoreDefaults    = 0x08000000
 };
 
-typedef QFlags<Natron::StandardButton> StandardButtons;
+typedef QFlags<Natron::StandardButtonEnum> StandardButtons;
 
-enum MessageType
+enum MessageTypeEnum
 {
-    INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3
+    eMessageTypeInfo = 0,
+    eMessageTypeError = 1,
+    eMessageTypeWarning = 2,
+    eMessageTypeQuestion = 3
 };
 
-enum KeyframeType
+enum KeyframeTypeEnum
 {
-    KEYFRAME_CONSTANT = 0,
-    KEYFRAME_LINEAR = 1,
-    KEYFRAME_SMOOTH = 2,
-    KEYFRAME_CATMULL_ROM = 3,
-    KEYFRAME_CUBIC = 4,
-    KEYFRAME_HORIZONTAL = 5,
-    KEYFRAME_FREE = 6,
-    KEYFRAME_BROKEN = 7,
-    KEYFRAME_NONE = 8
+    eKeyframeTypeConstant = 0,
+    eKeyframeTypeLinear = 1,
+    eKeyframeTypeSmooth = 2,
+    eKeyframeTypeCatmullRom = 3,
+    eKeyframeTypeCubic = 4,
+    eKeyframeTypeHorizontal = 5,
+    eKeyframeTypeFree = 6,
+    eKeyframeTypeBroken = 7,
+    eKeyframeTypeNone = 8
 };
 
 enum PixmapEnum
@@ -254,107 +262,107 @@ enum PixmapEnum
 };
 
 ///This enum is used when dealing with parameters which have their value edited
-enum ValueChangedReason
+enum ValueChangedReasonEnum
 {
     //A user change to the knob triggered the call, gui will not be refreshed but instanceChangedAction called
-    USER_EDITED = 0,
+    eValueChangedReasonUserEdited = 0,
     
     //A plugin change triggered the call, gui will be refreshed but instanceChangedAction not called
-    PLUGIN_EDITED ,
+    eValueChangedReasonPluginEdited ,
     
     // Natron gui called setValue itself, instanceChangedAction will be called (with a reason of User edited) AND knob gui refreshed
-    NATRON_GUI_EDITED,
+    eValueChangedReasonNatronGuiEdited,
     
     // Natron engine called setValue itself, instanceChangedAction will be called (with a reason of plugin edited) AND knob gui refreshed
-    NATRON_INTERNAL_EDITED,
+    eValueChangedReasonNatronInternalEdited,
     
     //A time-line seek changed the call, called when timeline time changes
-    TIME_CHANGED ,
+    eValueChangedReasonTimeChanged ,
     
     //A master parameter ordered the slave to refresh its value
-    SLAVE_REFRESH ,
+    eValueChangedReasonSlaveRefresh ,
     
     //The knob value has been restored to its defaults
-    RESTORE_DEFAULT ,
+    eValueChangedReasonRestoreDefault ,
 };
 
-enum AnimationLevel
+enum AnimationLevelEnum
 {
-    NO_ANIMATION = 0,
-    INTERPOLATED_VALUE = 1,
-    ON_KEYFRAME = 2
+    eAnimationLevelNone = 0,
+    eAnimationLevelInterpolatedValue = 1,
+    eAnimationLevelOnKeyframe = 2
 };
 
-enum ImageComponents
+enum ImageComponentsEnum
 {
-    ImageComponentNone = 0,
-    ImageComponentAlpha,
-    ImageComponentRGB,
-    ImageComponentRGBA
+    eImageComponentNone = 0,
+    eImageComponentAlpha,
+    eImageComponentRGB,
+    eImageComponentRGBA
 };
 
-enum ImagePremultiplication
+enum ImagePremultiplicationEnum
 {
-    ImageOpaque = 0,
-    ImagePremultiplied,
-    ImageUnPremultiplied,
+    eImagePremultiplicationOpaque = 0,
+    eImagePremultiplicationPremultiplied,
+    eImagePremultiplicationUnPremultiplied,
 };
 
-enum ViewerCompositingOperator
+enum ViewerCompositingOperatorEnum
 {
-    OPERATOR_NONE,
-    OPERATOR_OVER,
-    OPERATOR_MINUS,
-    OPERATOR_UNDER,
-    OPERATOR_WIPE
+    eViewerCompositingOperatorNone,
+    eViewerCompositingOperatorOver,
+    eViewerCompositingOperatorMinus,
+    eViewerCompositingOperatorUnder,
+    eViewerCompositingOperatorWipe
 };
 
-enum ViewerColorSpace
+enum ViewerColorSpaceEnum
 {
-    sRGB = 0,
-    Linear,
-    Rec709
+    eViewerColorSpaceSRGB = 0,
+    eViewerColorSpaceLinear,
+    eViewerColorSpaceRec709
 };
 
-enum ImageBitDepth
+enum ImageBitDepthEnum
 {
-    IMAGE_NONE = 0,
-    IMAGE_BYTE,
-    IMAGE_SHORT,
-    IMAGE_FLOAT
+    eImageBitDepthNone = 0,
+    eImageBitDepthByte,
+    eImageBitDepthShort,
+    eImageBitDepthFloat
 };
 
-enum SequentialPreference
+enum SequentialPreferenceEnum
 {
-    EFFECT_NOT_SEQUENTIAL = 0,
-    EFFECT_ONLY_SEQUENTIAL,
-    EFFECT_PREFER_SEQUENTIAL
+    eSequentialPreferenceNotSequential = 0,
+    eSequentialPreferenceOnlySequential,
+    eSequentialPreferencePreferSequential
 };
 
-enum StorageMode
+enum StorageModeEnum
 {
-    NO_STORAGE = 0, //< no memory will be allocated
-    RAM, //< will be allocated in RAM using malloc or a malloc based implementation (such as std::vector)
-    DISK //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
+    eStorageModeNone = 0, //< no memory will be allocated
+    eStorageModeRAM, //< will be allocated in RAM using malloc or a malloc based implementation (such as std::vector)
+    eStorageModeDisk //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
 };
 
-enum Orientation
+enum OrientationEnum
 {
-    Horizontal = 0x1,
-    Vertical = 0x2
+    eOrientationHorizontal = 0x1,
+    eOrientationVertical = 0x2
 };
     
-enum PlaybackMode
+enum PlaybackModeEnum
 {
-    PLAYBACK_LOOP = 0,
-    PLAYBACK_BOUNCE,
-    PLAYBACK_ONCE
+    ePlaybackModeLoop = 0,
+    ePlaybackModeBounce,
+    ePlaybackModeOnce
 };
     
-enum SchedulingPolicy
+enum SchedulingPolicyEnum
 {
-    SCHEDULING_FFA = 0, ///frames will be rendered concurrently without ordering (free for all)
-    SCHEDULING_ORDERED ///frames will be rendered in order
+    eSchedulingPolicyFFA = 0, ///frames will be rendered concurrently without ordering (free for all)
+    eSchedulingPolicyOrdered ///frames will be rendered in order
 };
     
 }

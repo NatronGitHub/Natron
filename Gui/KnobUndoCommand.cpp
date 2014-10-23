@@ -314,12 +314,12 @@ MultipleKnobEditsUndoCommand::undo()
     if (holder) {
         int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
         for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
+            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame);
         }
 
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            effect->evaluate_public(NULL, true, Natron::USER_EDITED);
+            effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
 
             holderName = effect->getName().c_str();
         }
@@ -348,7 +348,7 @@ MultipleKnobEditsUndoCommand::redo()
 
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
                 int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
-                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
+                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame);
             }
         }
     } else {
@@ -361,14 +361,14 @@ MultipleKnobEditsUndoCommand::redo()
             Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isInt) {
-                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,Natron::PLUGIN_EDITED);
+                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,Natron::eValueChangedReasonPluginEdited);
             } else if (isBool) {
-                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,Natron::PLUGIN_EDITED);
+                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,Natron::eValueChangedReasonPluginEdited);
             } else if (isDouble) {
-                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,Natron::PLUGIN_EDITED);
+                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,Natron::eValueChangedReasonPluginEdited);
             } else if (isString) {
                 it->first->setValue<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(),
-                                                 &k,true,Natron::PLUGIN_EDITED);
+                                                 &k,true,Natron::eValueChangedReasonPluginEdited);
             } else {
                 assert(false);
             }
@@ -385,7 +385,7 @@ MultipleKnobEditsUndoCommand::redo()
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
             if (firstRedoCalled) {
-                effect->evaluate_public(NULL, true, Natron::USER_EDITED);
+                effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
             }
             holderName = effect->getName().c_str();
         }
@@ -470,8 +470,8 @@ RestoreDefaultsCommand::undo()
     }
     timeline->addMultipleKeyframeIndicatorsAdded(times,true);
 
-    _knobs.front()->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
-    first->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    _knobs.front()->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+    first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
@@ -505,7 +505,7 @@ RestoreDefaultsCommand::redo()
     }
     timeline->removeMultipleKeyframeIndicator(times,true);
 
-    first->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }

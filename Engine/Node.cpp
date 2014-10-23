@@ -178,8 +178,8 @@ struct Node::Implementation
     bool effectCreated;
     
     ///These two are also protected by inputsMutex
-    std::vector< std::list<Natron::ImageComponents> > inputsComponents;
-    std::list<Natron::ImageComponents> outputComponents;
+    std::vector< std::list<Natron::ImageComponentsEnum> > inputsComponents;
+    std::list<Natron::ImageComponentsEnum> outputComponents;
     mutable QMutex nameMutex;
     std::vector<std::string> inputLabels; // inputs name
     std::string name; //node name set by the user
@@ -194,7 +194,7 @@ struct Node::Implementation
     bool mustQuitPreview;
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
-    QMutex renderInstancesSharedMutex; //< see INSTANCE_SAFE in EffectInstance::renderRoI
+    QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the liveInstance has its evaluate() function called.
@@ -217,7 +217,7 @@ struct Node::Implementation
     QWaitCondition imageBeingRenderedCond;
     std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     
-    std::list <Natron::ImageBitDepth> supportedDepths;
+    std::list <Natron::ImageBitDepthEnum> supportedDepths;
     
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
@@ -1938,8 +1938,8 @@ Node::makePreviewImage(SequenceTime time,
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
-    if ( (stat == StatFailed) || rod.isNull() ) {
+    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
+    if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
     assert( !rod.isNull() );
@@ -1977,7 +1977,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                            false,
                                                                            renderWindow,
                                                                            rod,
-                                                                           Natron::ImageComponentRGB, //< preview is always rgb...
+                                                                           Natron::eImageComponentRGB, //< preview is always rgb...
                                                                            getBitDepth() ) );
     } catch (...) {
         qDebug() << "Error: Cannot render preview";
@@ -1988,27 +1988,27 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
     
-    ImageComponents components = img->getComponents();
+    ImageComponentsEnum components = img->getComponents();
     int elemCount = getElementsCountForComponents(components);
     
     ///we convert only when input is Linear.
     //Rec709 and srGB is acceptable for preview
-    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == Natron::Linear;
+    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == Natron::eViewerColorSpaceLinear;
     
     switch ( img->getBitDepth() ) {
-        case Natron::IMAGE_BYTE: {
+        case Natron::eImageBitDepthByte: {
             renderPreview<unsigned char, 255>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
-        case Natron::IMAGE_SHORT: {
+        case Natron::eImageBitDepthShort: {
             renderPreview<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
-        case Natron::IMAGE_FLOAT: {
+        case Natron::eImageBitDepthFloat: {
             renderPreview<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
-        case Natron::IMAGE_NONE:
+        case Natron::eImageBitDepthNone:
             break;
     }
     return true;
@@ -2182,7 +2182,7 @@ Node::setAborted(bool b)
 }
 
 bool
-Node::message(MessageType type,
+Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
@@ -2191,21 +2191,21 @@ Node::message(MessageType type,
     }
     
     switch (type) {
-        case INFO_MESSAGE:
+        case eMessageTypeInfo:
             informationDialog(getName_mt_safe(), content);
             
             return true;
-        case WARNING_MESSAGE:
+        case eMessageTypeWarning:
             warningDialog(getName_mt_safe(), content);
             
             return true;
-        case ERROR_MESSAGE:
+        case eMessageTypeError:
             errorDialog(getName_mt_safe(), content);
             
             return true;
-        case QUESTION_MESSAGE:
+        case eMessageTypeQuestion:
             
-            return questionDialog(getName_mt_safe(), content) == Yes;
+            return questionDialog(getName_mt_safe(), content) == eStandardButtonYes;
         default:
             
             return false;
@@ -2213,21 +2213,21 @@ Node::message(MessageType type,
 }
 
 void
-Node::setPersistentMessage(MessageType type,
+Node::setPersistentMessage(MessageTypeEnum type,
                            const std::string & content)
 {
     if ( !appPTR->isBackground() ) {
         //if the message is just an information, display a popup instead.
-        if (type == INFO_MESSAGE) {
+        if (type == eMessageTypeInfo) {
             message(type,content);
             
             return;
         }
         QString message;
         message.append( getName_mt_safe().c_str() );
-        if (type == ERROR_MESSAGE) {
+        if (type == eMessageTypeError) {
             message.append(" error: ");
-        } else if (type == WARNING_MESSAGE) {
+        } else if (type == eMessageTypeWarning) {
             message.append(" warning: ");
         }
         message.append( content.c_str() );
@@ -2517,28 +2517,28 @@ Node::getMasterNode() const
 
 bool
 Node::isSupportedComponent(int inputNb,
-                           Natron::ImageComponents comp) const
+                           Natron::ImageComponentsEnum comp) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     
     if (inputNb >= 0) {
         assert( inputNb < (int)_imp->inputsComponents.size() );
-        std::list<Natron::ImageComponents>::const_iterator found =
+        std::list<Natron::ImageComponentsEnum>::const_iterator found =
         std::find(_imp->inputsComponents[inputNb].begin(),_imp->inputsComponents[inputNb].end(),comp);
         
         return found != _imp->inputsComponents[inputNb].end();
     } else {
         assert(inputNb == -1);
-        std::list<Natron::ImageComponents>::const_iterator found =
+        std::list<Natron::ImageComponentsEnum>::const_iterator found =
         std::find(_imp->outputComponents.begin(),_imp->outputComponents.end(),comp);
         
         return found != _imp->outputComponents.end();
     }
 }
 
-Natron::ImageComponents
+Natron::ImageComponentsEnum
 Node::findClosestSupportedComponents(int inputNb,
-                                     Natron::ImageComponents comp) const
+                                     Natron::ImageComponentsEnum comp) const
 {
     int compCount = getElementsCountForComponents(comp);
     QMutexLocker l(&_imp->inputsMutex);
@@ -2547,12 +2547,12 @@ Node::findClosestSupportedComponents(int inputNb,
         assert( inputNb < (int)_imp->inputsComponents.size() );
         
         
-        const std::list<Natron::ImageComponents> & comps = _imp->inputsComponents[inputNb];
+        const std::list<Natron::ImageComponentsEnum> & comps = _imp->inputsComponents[inputNb];
         if ( comps.empty() ) {
-            return Natron::ImageComponentNone;
+            return Natron::eImageComponentNone;
         }
-        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+        std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
             if ( closestComp == comps.end() ) {
                 closestComp = it;
             } else {
@@ -2567,12 +2567,12 @@ Node::findClosestSupportedComponents(int inputNb,
         return *closestComp;
     } else {
         assert(inputNb == -1);
-        const std::list<Natron::ImageComponents> & comps = _imp->outputComponents;
+        const std::list<Natron::ImageComponentsEnum> & comps = _imp->outputComponents;
         if ( comps.empty() ) {
-            return Natron::ImageComponentNone;
+            return Natron::eImageComponentNone;
         }
-        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+        std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
             if ( closestComp == comps.end() ) {
                 closestComp = it;
             } else {
@@ -2697,7 +2697,7 @@ Node::duringInputChangedAction() const
 
 void
 Node::onEffectKnobValueChanged(KnobI* what,
-                               Natron::ValueChangedReason reason)
+                               Natron::ValueChangedReasonEnum reason)
 {
     for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it != _imp->maskChannelKnob.end(); ++it) {
         if (it->second.get() == what) {
@@ -2717,7 +2717,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     }
     
     if ( what == _imp->previewEnabledKnob.get() ) {
-        if ( (reason == Natron::USER_EDITED) || (reason == Natron::SLAVE_REFRESH) ) {
+        if ( (reason == Natron::eValueChangedReasonUserEdited) || (reason == Natron::eValueChangedReasonSlaveRefresh) ) {
             emit previewKnobToggled();
         }
     } else if ( ( what == _imp->disableNodeKnob.get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent ) {
@@ -2840,43 +2840,43 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     }
 }
 
-Natron::ImageBitDepth
+Natron::ImageBitDepthEnum
 Node::getBitDepth() const
 {
     bool foundShort = false;
     bool foundByte = false;
     
-    for (std::list<ImageBitDepth>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
+    for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
         switch (*it) {
-            case Natron::IMAGE_FLOAT:
+            case Natron::eImageBitDepthFloat:
                 
-                return Natron::IMAGE_FLOAT;
+                return Natron::eImageBitDepthFloat;
                 break;
-            case Natron::IMAGE_BYTE:
+            case Natron::eImageBitDepthByte:
                 foundByte = true;
                 break;
-            case Natron::IMAGE_SHORT:
+            case Natron::eImageBitDepthShort:
                 foundShort = true;
                 break;
-            case Natron::IMAGE_NONE:
+            case Natron::eImageBitDepthNone:
                 break;
         }
     }
     
     if (foundShort) {
-        return Natron::IMAGE_SHORT;
+        return Natron::eImageBitDepthShort;
     } else if (foundByte) {
-        return Natron::IMAGE_BYTE;
+        return Natron::eImageBitDepthByte;
     } else {
         ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
         assert(false);
         
-        return Natron::IMAGE_NONE;
+        return Natron::eImageBitDepthNone;
     }
 }
 
 bool
-Node::isSupportedBitDepth(Natron::ImageBitDepth depth) const
+Node::isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const
 {
     return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
 }
@@ -2891,7 +2891,7 @@ bool
 Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
     ///Just take into account sequentiallity for writers
-    if ( (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL) && _imp->liveInstance->isWriter() ) {
+    if ( (_imp->liveInstance->getSequentialPreference() == Natron::eSequentialPreferenceOnlySequential) && _imp->liveInstance->isWriter() ) {
         nodeName = getName_mt_safe();
         
         return true;

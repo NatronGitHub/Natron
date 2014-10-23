@@ -24,7 +24,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-using Natron::Scale_Type;
+using Natron::ScaleTypeEnum;
 
 class QFont;
 class ScaleSliderQWidget
@@ -37,19 +37,19 @@ public:
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
-                       Natron::Scale_Type type = Natron::LINEAR_SCALE, // the type of scale
+                       Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
 
     virtual ~ScaleSliderQWidget() OVERRIDE;
 
     void setMinimumAndMaximum(double min,double max);
 
-    void changeScale(Natron::Scale_Type type)
+    void changeScale(Natron::ScaleTypeEnum type)
     {
         _type = type;
     }
 
-    Natron::Scale_Type type() const
+    Natron::ScaleTypeEnum type() const
     {
         return _type;
     }
@@ -126,7 +126,7 @@ private:
 
     ZoomContext _zoomCtx;
     double _minimum,_maximum;
-    Natron::Scale_Type _type;
+    Natron::ScaleTypeEnum _type;
     double _value;
     bool _dragging;
     QFont* _font;

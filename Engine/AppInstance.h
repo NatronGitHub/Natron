@@ -196,9 +196,9 @@ public:
     virtual void errorDialog(const std::string & title,const std::string & message) const;
     virtual void warningDialog(const std::string & title,const std::string & message) const;
     virtual void informationDialog(const std::string & title,const std::string & message) const;
-    virtual Natron::StandardButton questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
-                                                      Natron::StandardButtons(Natron::Yes | Natron::No),
-                                                  Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN;
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
+                                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                  Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const WARN_UNUSED_RETURN;
     virtual void loadProjectGui(boost::archive::xml_iarchive & /*archive*/) const
     {
     }
@@ -248,7 +248,7 @@ public:
     {
     }
 
-    Natron::ViewerColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
+    Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
 
     int getMainView() const;
 

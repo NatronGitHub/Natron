@@ -69,20 +69,20 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
 
             if (add) {
                 if (isParametric) {
-                    Natron::Status st = isParametric->addControlPoint( (*it)->curve->getDimension(),
+                    Natron::StatusEnum st = isParametric->addControlPoint( (*it)->curve->getDimension(),
                                                                        (*it)->keys[i].getTime(),
                                                                        (*it)->keys[i].getValue() );
-                    assert(st == Natron::StatOK);
+                    assert(st == Natron::eStatusOK);
                     (void)st;
                 } else {
                     (*it)->curve->getKnob()->setKeyframe( (*it)->keys[i].getTime(), (*it)->curve->getDimension() );
                 }
             } else {
                 if (isParametric) {
-                    Natron::Status st = isParametric->deleteControlPoint( (*it)->curve->getDimension(),
+                    Natron::StatusEnum st = isParametric->deleteControlPoint( (*it)->curve->getDimension(),
                                                                           (*it)->curve->getInternalCurve()->keyFrameIndex(
                                                                               (*it)->keys[i].getTime() ) );
-                    assert(st == Natron::StatOK);
+                    assert(st == Natron::eStatusOK);
                     (void)st;
                 } else {
                     (*it)->curve->getKnob()->removeKeyFrame( (*it)->keys[i].getTime(), (*it)->curve->getDimension() );
@@ -138,8 +138,8 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         if (add) {
             if ( _keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic() ) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( _keys[i].first->getKnob()->getKnob() );
-                Natron::Status st = knob->addControlPoint( _keys[i].first->getDimension(), _keys[i].second.getTime(),_keys[i].second.getValue() );
-                assert(st == Natron::StatOK);
+                Natron::StatusEnum st = knob->addControlPoint( _keys[i].first->getDimension(), _keys[i].second.getTime(),_keys[i].second.getValue() );
+                assert(st == Natron::eStatusOK);
                 (void) st;
             } else {
                 KnobGui* guiKnob = _keys[i].first->getKnob();
@@ -149,9 +149,9 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         } else {
             if ( _keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic() ) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( _keys[i].first->getKnob()->getKnob() );
-                Natron::Status st = knob->deleteControlPoint( _keys[i].first->getDimension(),
+                Natron::StatusEnum st = knob->deleteControlPoint( _keys[i].first->getDimension(),
                                                               _keys[i].first->getInternalCurve()->keyFrameIndex( _keys[i].second.getTime() ) );
-                assert(st == Natron::StatOK);
+                assert(st == Natron::eStatusOK);
                 (void)st;
             } else {
                 _keys[i].first->getKnob()->removeKeyFrame( _keys[i].second.getTime(), _keys[i].first->getDimension() );
@@ -272,7 +272,7 @@ MoveKeysCommand::move(double dt,
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->unblockEvaluation();
         if (_firstRedoCalled || _updateOnFirstRedo) {
-            (*it)->getHolder()->evaluate_public(*it, true, Natron::USER_EDITED);
+            (*it)->getHolder()->evaluate_public(*it, true, Natron::eValueChangedReasonUserEdited);
         }
     }
 
@@ -351,7 +351,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 
     for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         
-        Natron::KeyframeType interp = undo ? it->oldInterp : it->newInterp;
+        Natron::KeyframeTypeEnum interp = undo ? it->oldInterp : it->newInterp;
         
         boost::shared_ptr<KnobI> knob = it->key->curve->getKnob()->getKnob();
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
@@ -371,7 +371,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->unblockEvaluation();
-        (*it)->getHolder()->evaluate_public(*it, true, Natron::USER_EDITED);
+        (*it)->getHolder()->evaluate_public(*it, true, Natron::eValueChangedReasonUserEdited);
     }
 
     _widget->refreshSelectedKeys();
@@ -424,14 +424,14 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     ++next;
     
     // handle first and last keyframe correctly:
-    // - if their interpolation was KEYFRAME_CATMULL_ROM or KEYFRAME_CUBIC, then it becomes KEYFRAME_FREE
-    // - in all other cases it becomes KEYFRAME_BROKEN
-    Natron::KeyframeType interp = key->key.getInterpolation();
+    // - if their interpolation was eKeyframeTypeCatmullRom or eKeyframeTypeCubic, then it becomes eKeyframeTypeFree
+    // - in all other cases it becomes eKeyframeTypeBroken
+    Natron::KeyframeTypeEnum interp = key->key.getInterpolation();
     bool keyframeIsFirstOrLast = ( prev == keys.end() || next == keys.end() );
-    bool interpIsNotBroken = (interp != Natron::KEYFRAME_BROKEN);
-    bool interpIsCatmullRomOrCubicOrFree = (interp == Natron::KEYFRAME_CATMULL_ROM ||
-                                            interp == Natron::KEYFRAME_CUBIC ||
-                                            interp == Natron::KEYFRAME_FREE);
+    bool interpIsNotBroken = (interp != Natron::eKeyframeTypeBroken);
+    bool interpIsCatmullRomOrCubicOrFree = (interp == Natron::eKeyframeTypeCatmullRom ||
+                                            interp == Natron::eKeyframeTypeCubic ||
+                                            interp == Natron::eKeyframeTypeFree);
     _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
 
     bool isLeft;
@@ -451,7 +451,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     double derivative = dy / dx;
     
     if (_setBoth) {
-        _newInterp = Natron::KEYFRAME_FREE;
+        _newInterp = Natron::eKeyframeTypeFree;
         _newLeft = derivative;
         _newRight = derivative;
     } else {
@@ -462,7 +462,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
             _newLeft = _oldLeft;
             _newRight = derivative;
         }
-        _newInterp = Natron::KEYFRAME_BROKEN;
+        _newInterp = Natron::eKeyframeTypeBroken;
     }
 }
 
@@ -482,13 +482,13 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
 , _updateOnFirstRedo(true)
 , _firstRedoCalled(false)
 {
-    _newInterp = _oldInterp == Natron::KEYFRAME_BROKEN ? Natron::KEYFRAME_BROKEN : Natron::KEYFRAME_FREE;
-    _setBoth = _newInterp == Natron::KEYFRAME_FREE;
+    _newInterp = _oldInterp == Natron::eKeyframeTypeBroken ? Natron::eKeyframeTypeBroken : Natron::eKeyframeTypeFree;
+    _setBoth = _newInterp == Natron::eKeyframeTypeFree;
     
     switch (deriv) {
         case LEFT_TANGENT:
             _newLeft = derivative;
-            if (_newInterp == Natron::KEYFRAME_BROKEN) {
+            if (_newInterp == Natron::eKeyframeTypeBroken) {
                 _newRight = _oldRight;
             } else {
                 _newRight = derivative;
@@ -496,7 +496,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
             break;
         case RIGHT_TANGENT:
             _newRight = derivative;
-            if (_newInterp == Natron::KEYFRAME_BROKEN) {
+            if (_newInterp == Natron::eKeyframeTypeBroken) {
                 _newLeft = _oldLeft;
             } else {
                 _newLeft = derivative;
@@ -517,7 +517,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
     
     double left = undo ? _oldLeft : _newLeft;
     double right = undo ? _oldRight : _newRight;
-    Natron::KeyframeType interp = undo ? _oldInterp : _newInterp;
+    Natron::KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
     
     if (!isParametric) {
         attachedKnob->blockEvaluation();
@@ -538,7 +538,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
     }
     
     if (_firstRedoCalled || _updateOnFirstRedo) {
-        attachedKnob->evaluateValueChange(_key->curve->getDimension(), Natron::USER_EDITED);
+        attachedKnob->evaluateValueChange(_key->curve->getDimension(), Natron::eValueChangedReasonUserEdited);
     }
     _widget->refreshDisplayedTangents();
     

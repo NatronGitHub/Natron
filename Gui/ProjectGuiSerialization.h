@@ -256,7 +256,7 @@ BOOST_CLASS_VERSION(PaneLayout, PANE_SERIALIZATION_VERSION)
 struct SplitterSerialization
 {
     std::string sizes;
-    int orientation; //< corresponds to enum Natron::Orientation
+    int orientation; //< corresponds to enum Natron::OrientationEnum
     struct Child
     {
         //One of the 2 ptrs below is NULL. The child can be either one of these.

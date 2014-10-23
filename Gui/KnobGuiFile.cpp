@@ -215,7 +215,7 @@ File_KnobGui::watchedFileChanged()
         if (effect) {
             effect->purgeCaches();
         }
-        _knob->getHolder()->evaluate_public(_knob.get(), true, Natron::USER_EDITED);
+        _knob->getHolder()->evaluate_public(_knob.get(), true, Natron::eValueChangedReasonUserEdited);
     }
     
     

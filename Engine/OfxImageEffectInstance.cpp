@@ -113,11 +113,11 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     std::string message(buf);
 
     if (strcmp(type, kOfxMessageError) == 0) {
-        _ofxEffectInstance->setPersistentMessage(Natron::ERROR_MESSAGE, message);
+        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeError, message);
     } else if ( strcmp(type, kOfxMessageWarning) ) {
-        _ofxEffectInstance->setPersistentMessage(Natron::WARNING_MESSAGE, message);
+        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, message);
     } else if ( strcmp(type, kOfxMessageMessage) ) {
-        _ofxEffectInstance->setPersistentMessage(Natron::INFO_MESSAGE, message);
+        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeInfo, message);
     }
 
     return kOfxStatOK;
@@ -147,13 +147,13 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     if (type == kOfxMessageLog) {
         appPTR->writeToOfxLog_mt_safe( message.c_str() );
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
-        _ofxEffectInstance->message(Natron::ERROR_MESSAGE, message);
+        _ofxEffectInstance->message(Natron::eMessageTypeError, message);
     } else if (type == kOfxMessageWarning) {
-        _ofxEffectInstance->message(Natron::WARNING_MESSAGE, message);
+        _ofxEffectInstance->message(Natron::eMessageTypeWarning, message);
     } else if (type == kOfxMessageMessage) {
-        _ofxEffectInstance->message(Natron::INFO_MESSAGE, message);
+        _ofxEffectInstance->message(Natron::eMessageTypeInfo, message);
     } else if (type == kOfxMessageQuestion) {
-        if ( _ofxEffectInstance->message(Natron::QUESTION_MESSAGE, message) ) {
+        if ( _ofxEffectInstance->message(Natron::eMessageTypeQuestion, message) ) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;
@@ -576,7 +576,7 @@ void
 OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     _ofxEffectInstance->updateThreadLocalRenderTime( (int)t );
-    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t,NULL, Natron::PLAYBACK_SEEK);
+    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t,NULL, Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 /// get the first and last times available on the effect's timeline

@@ -153,7 +153,7 @@ QtWriter::initializeKnobs()
 
 void
 QtWriter::knobChanged(KnobI* k,
-                      Natron::ValueChangedReason /*reason*/,
+                      Natron::ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       SequenceTime /*time*/)
 {
@@ -232,7 +232,7 @@ filenameFromPattern(const std::string & pattern,
     return ret;
 }
 
-Natron::Status
+Natron::StatusEnum
 QtWriter::render(SequenceTime time,
                  const RenderScale & scale,
                  const RectI & roi,
@@ -267,20 +267,20 @@ QtWriter::render(SequenceTime time,
     img.save( filename.c_str() );
     free(buf);
 
-    return StatOK;
+    return eStatusOK;
 }
 
 void
 QtWriter::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<Natron::ImageComponentsEnum>* comps)
 {
     ///QtWriter only supports RGBA for now.
-    comps->push_back(Natron::ImageComponentRGBA);
+    comps->push_back(Natron::eImageComponentRGBA);
 }
 
 void
-QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(IMAGE_FLOAT);
+    depths->push_back(eImageBitDepthFloat);
 }
 

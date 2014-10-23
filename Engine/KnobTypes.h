@@ -749,19 +749,19 @@ public:
 
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
-    Natron::Status addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::Status getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
-    Natron::Status getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
-    Natron::Status getNthControlPoint(int dimension,
+    Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
+    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
+    Natron::StatusEnum getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
                                       double *value) WARN_UNUSED_RETURN;
-    Natron::Status setNthControlPoint(int dimension,
+    Natron::StatusEnum setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
                                       double value) WARN_UNUSED_RETURN;
-    Natron::Status deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    Natron::Status deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
+    Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
+    Natron::StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::list< Curve >* curves) const;

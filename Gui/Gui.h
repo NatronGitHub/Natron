@@ -166,9 +166,10 @@ public:
 
     void informationDialog(const std::string & title,const std::string & text);
 
-    Natron::StandardButton questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
-                                              Natron::StandardButtons(Natron::Yes | Natron::No),
-                                          Natron::StandardButton defaultButton = Natron::NoButton);
+    Natron::StandardButtonEnum questionDialog(const std::string & title,
+                                              const std::string & message,
+                                              Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                              Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
 
     /**
      * @brief Selects the given node on the node graph, wiping any previous selection.

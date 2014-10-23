@@ -915,12 +915,12 @@ public:
      * The image will use the cache if byPassCache is set to true.
      **/
     boost::shared_ptr<Natron::Image> renderMask(const RectI & roi,
-                                                Natron::ImageComponents components,
+                                                Natron::ImageComponentsEnum components,
                                                 U64 nodeHash,
                                                 U64 ageToRender,
                                                 const RectD & nodeRoD,
                                                 SequenceTime time,
-                                                Natron::ImageBitDepth depth,
+                                                Natron::ImageBitDepthEnum depth,
                                                 int view,
                                                 unsigned int mipmapLevel,
                                                 bool byPassCache);

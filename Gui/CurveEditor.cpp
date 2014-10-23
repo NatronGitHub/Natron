@@ -351,7 +351,7 @@ NodeCurveEditorElement::checkVisibleState()
     }
     // also update the gui of the knob to indicate the animation is gone
     // the reason doesn't matter here
-    //_knob->onInternalValueChanged(_dimension,Natron::PLUGIN_EDITED);
+    //_knob->onInternalValueChanged(_dimension,Natron::eValueChangedReasonPluginEdited);
 } // checkVisibleState
 
 NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,

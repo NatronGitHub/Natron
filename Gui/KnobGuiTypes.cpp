@@ -167,7 +167,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
             
-            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::LINEAR_SCALE, layout->parentWidget() );
+            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
             if ( hasToolTip() ) {
                 _slider->setToolTip( toolTip() );
             }
@@ -248,17 +248,17 @@ Int_KnobGui::updateGUI(int dimension)
 
 void
 Int_KnobGui::reflectAnimationLevel(int dimension,
-                                   Natron::AnimationLevel level)
+                                   Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -429,17 +429,17 @@ Bool_KnobGui::updateGUI(int /*dimension*/)
 
 void
 Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
-                                    Natron::AnimationLevel level)
+                                    Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -643,7 +643,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             valueAccordingToType(false, i, &dispmax);
             
             
-            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::LINEAR_SCALE, layout->parentWidget() );
+            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
             if ( hasToolTip() ) {
                 _slider->setToolTip( toolTip() );
             }
@@ -738,17 +738,17 @@ Double_KnobGui::updateGUI(int dimension)
 
 void
 Double_KnobGui::reflectAnimationLevel(int dimension,
-                                      Natron::AnimationLevel level)
+                                      Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -921,7 +921,7 @@ Button_KnobGui::~Button_KnobGui()
 void
 Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(true, 0, Natron::USER_EDITED, NULL);
+    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(true, 0, Natron::eValueChangedReasonUserEdited, NULL);
 }
 
 void
@@ -1031,17 +1031,17 @@ Choice_KnobGui::updateGUI(int /*dimension*/)
 
 void
 Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,
-                                      Natron::AnimationLevel level)
+                                      Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-    case Natron::NO_ANIMATION:
+    case Natron::eAnimationLevelNone:
             value = 0;
         break;
-    case Natron::INTERPOLATED_VALUE:
+    case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
         break;
-    case Natron::ON_KEYFRAME:
+    case Natron::eAnimationLevelOnKeyframe:
             value = 2;
         break;
     default:
@@ -1543,7 +1543,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if ( slidermax >= std::numeric_limits<float>::max() ) {
         slidermax = 1.;
     }
-    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::LINEAR_SCALE, boxContainers);
+    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::eScaleTypeLinear, boxContainers);
     boxLayout->addWidget(_slider);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
     _slider->hide();
@@ -1822,10 +1822,10 @@ Color_KnobGui::updateGUI(int dimension)
 
 void
 Color_KnobGui::reflectAnimationLevel(int dimension,
-                                     Natron::AnimationLevel level)
+                                     Natron::AnimationLevelEnum level)
 {
     switch (level) {
-        case Natron::NO_ANIMATION: {
+        case Natron::eAnimationLevelNone: {
             if (_rBox->getAnimation() == 0) {
                 return;
             }
@@ -1847,7 +1847,7 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
                     break;
             }
         }  break;
-        case Natron::INTERPOLATED_VALUE: {
+        case Natron::eAnimationLevelInterpolatedValue: {
             switch (dimension) {
                     if (_rBox->getAnimation() == 1) {
                         return;
@@ -1869,7 +1869,7 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
                     break;
             }
         }    break;
-        case Natron::ON_KEYFRAME: {
+        case Natron::eAnimationLevelOnKeyframe: {
             switch (dimension) {
                     if (_rBox->getAnimation() == 2) {
                         return;
@@ -1982,7 +1982,7 @@ Color_KnobGui::showColorDialog()
         _knob->unblockEvaluation();
 
     }
-    _knob->evaluateValueChange(0, NATRON_GUI_EDITED);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
 void
@@ -1998,7 +1998,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
         }
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, NATRON_GUI_EDITED);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
 }
 
 void
@@ -3079,17 +3079,17 @@ String_KnobGui::setEnabled()
 
 void
 String_KnobGui::reflectAnimationLevel(int /*dimension*/,
-                                      Natron::AnimationLevel level)
+                                      Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             
             break;

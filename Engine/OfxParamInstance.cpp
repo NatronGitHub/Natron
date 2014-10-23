@@ -183,7 +183,7 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
             if (i == dims - 1) {
                 to->unblockEvaluation();
             }
-            to->evaluateValueChange(i, Natron::PLUGIN_EDITED);
+            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited);
         }
     }
 
@@ -361,11 +361,11 @@ OfxIntegerInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxIntegerInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 void
@@ -595,11 +595,11 @@ OfxDoubleInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxDoubleInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
@@ -722,11 +722,11 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxBooleanInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
@@ -884,11 +884,11 @@ OfxChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxChoiceInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
@@ -1106,11 +1106,11 @@ OfxRGBAInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxRGBAInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
@@ -1318,11 +1318,11 @@ OfxRGBInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxRGBInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
@@ -1582,11 +1582,11 @@ OfxDouble2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxDouble2DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
@@ -1796,11 +1796,11 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxInteger2DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
@@ -2067,11 +2067,11 @@ OfxDouble3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxDouble3DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
@@ -2293,11 +2293,11 @@ OfxInteger3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxInteger3DInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
@@ -2775,13 +2775,13 @@ OfxStringInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxStringInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
     ///This assert might crash Natron when reading a project made with a version
     ///of Natron prior to 0.96 when file params still had keyframes.
-    //assert(l == Natron::NO_ANIMATION || getCanAnimate());
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    //assert(l == Natron::eAnimationLevelNone || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxCustomInstance /////////////////////////////////////////////////
@@ -2958,11 +2958,11 @@ OfxCustomInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 void
 OfxCustomInstance::onKnobAnimationLevelChanged(int,int lvl)
 {
-    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    Natron::AnimationLevelEnum l = (Natron::AnimationLevelEnum)lvl;
 
-    assert( l == Natron::NO_ANIMATION || getCanAnimate() );
-    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
+    assert( l == Natron::eAnimationLevelNone || getCanAnimate() );
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::eAnimationLevelNone);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::eAnimationLevelInterpolatedValue);
 }
 
 ////////////////////////// OfxParametricInstance /////////////////////////////////////////////////
@@ -2998,8 +2998,8 @@ void
 OfxParametricInstance::onResetToDefault(const QVector<int> & dimensions)
 {
     for (int i = 0; i < dimensions.size(); ++i) {
-        Natron::Status st = _knob->deleteAllControlPoints( dimensions.at(i) );
-        assert(st == Natron::StatOK);
+        Natron::StatusEnum st = _knob->deleteAllControlPoints( dimensions.at(i) );
+        assert(st == Natron::eStatusOK);
         defaultInitializeFromDescriptor(dimensions.at(i),_descriptor);
     }
 }
@@ -3077,9 +3077,9 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    Natron::Status stat = _knob->getValue(curveIndex, parametricPosition, returnValue);
+    Natron::StatusEnum stat = _knob->getValue(curveIndex, parametricPosition, returnValue);
 
-    if (stat == Natron::StatOK) {
+    if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3091,9 +3091,9 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
                                          double /*time*/,
                                          int *returnValue)
 {
-    Natron::Status stat = _knob->getNControlPoints(curveIndex, returnValue);
+    Natron::StatusEnum stat = _knob->getNControlPoints(curveIndex, returnValue);
 
-    if (stat == Natron::StatOK) {
+    if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3107,9 +3107,9 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
                                           double *key,
                                           double *value)
 {
-    Natron::Status stat = _knob->getNthControlPoint(curveIndex, nthCtl, key, value);
+    Natron::StatusEnum stat = _knob->getNthControlPoint(curveIndex, nthCtl, key, value);
 
-    if (stat == Natron::StatOK) {
+    if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3124,9 +3124,9 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double value,
                                           bool /*addAnimationKey*/)
 {
-    Natron::Status stat = _knob->setNthControlPoint(curveIndex, nthCtl, key, value);
+    Natron::StatusEnum stat = _knob->setNthControlPoint(curveIndex, nthCtl, key, value);
 
-    if (stat == Natron::StatOK) {
+    if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3149,9 +3149,9 @@ OfxParametricInstance::addControlPoint(int curveIndex,
         return kOfxStatFailed;
     }
 
-    Natron::Status stat = _knob->addControlPoint(curveIndex, key, value);
+    Natron::StatusEnum stat = _knob->addControlPoint(curveIndex, key, value);
 
-    if (stat == Natron::StatOK) {
+    if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3162,9 +3162,9 @@ OfxStatus
 OfxParametricInstance::deleteControlPoint(int curveIndex,
                                           int nthCtl)
 {
-    Natron::Status stat = _knob->deleteControlPoint(curveIndex, nthCtl);
+    Natron::StatusEnum stat = _knob->deleteControlPoint(curveIndex, nthCtl);
 
-    if (stat == Natron::StatOK) {
+    if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3174,9 +3174,9 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 OfxStatus
 OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
-    Natron::Status stat = _knob->deleteAllControlPoints(curveIndex);
+    Natron::StatusEnum stat = _knob->deleteAllControlPoints(curveIndex);
 
-    if (stat == Natron::StatOK) {
+    if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
