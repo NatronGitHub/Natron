@@ -37,6 +37,7 @@ Settings::Settings(AppInstance* appInstance)
     : KnobHolder(appInstance)
       , _wereChangesMadeSinceLastSave(false)
       , _restoringSettings(false)
+      , _ocioRestored(false)
 {
 }
 
@@ -811,7 +812,7 @@ Settings::restoreSettings()
     _restoringSettings = true;
     _wereChangesMadeSinceLastSave = false;
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-
+    
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
@@ -876,8 +877,10 @@ Settings::restoreSettings()
     }
     
 
-    ///Load even though there's no settings!
-    tryLoadOpenColorIOConfig();
+    if (!_ocioRestored) {
+        ///Load even though there's no settings!
+        tryLoadOpenColorIOConfig();
+    }
     
 
     
@@ -943,6 +946,7 @@ Settings::tryLoadOpenColorIOConfig()
             return false;
         }
     }
+    _ocioRestored = true;
     qDebug() << "setting OCIO=" << configFile;
     qputenv( NATRON_OCIO_ENV_VAR_NAME, configFile.toUtf8() );
 
@@ -1023,7 +1027,9 @@ Settings::onKnobValueChanged(KnobI* k,
         bool useTP = _useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
     } else if ( k == _customOcioConfigFile.get() ) {
-        tryLoadOpenColorIOConfig();
+        if (_customOcioConfigFile->isEnabled(0)) {
+            tryLoadOpenColorIOConfig();
+        }
     } else if ( k == _maxUndoRedoNodeGraph.get() ) {
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
     } else if ( k == _maxPanelsOpened.get() ) {

@@ -274,6 +274,7 @@ private:
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     bool _wereChangesMadeSinceLastSave;
     bool _restoringSettings;
+    bool _ocioRestored;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_
