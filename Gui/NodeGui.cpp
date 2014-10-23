@@ -2006,8 +2006,9 @@ NodeGui::setNameItemHtml(const QString & name,
 
 
     QFont f;
+    QColor color;
     if (hasFontData) {
-        String_KnobGui::parseFont(textLabel, f);
+        String_KnobGui::parseFont(textLabel, f, color);
     }
     _nameItem->setFont(f);
 
