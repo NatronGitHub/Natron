@@ -2311,7 +2311,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                                 false,
                                                 true, //< setView ?
                                                 view,
-                                                false, //< setmipmaplevel?
+                                                true, //< setmipmaplevel?
                                                 0);
 
             ///This action as all the overlay interacts actions can trigger recursive actions, such as
