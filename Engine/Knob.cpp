@@ -815,7 +815,7 @@ KnobHelper::evaluateValueChange(int dimension,
 
     /// For TIME_CHANGED we never call the instanceChangedAction and evaluate otherwise it would just throttle down
     /// the application responsiveness
-    if (reason != Natron::TIME_CHANGED && app) {
+    if (reason != Natron::TIME_CHANGED && _imp->holder) {
         int time;
         if (app) {
             time = app->getTimeLine()->currentFrame();
