@@ -1676,7 +1676,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                                       renderFullScaleThenDownscale);
     
 #ifdef DEBUG
-    if (!aborted()) {
+    if (renderRetCode != eRenderRoIStatusRenderFailed && !aborted()) {
         // Kindly check that everything we asked for is rendered!
         std::list<RectI> restToRender = image->getRestToRender(args.roi);
         assert(restToRender.empty());
@@ -1743,7 +1743,7 @@ EffectInstance::renderRoI(SequenceTime time,
                                                                       renderFullScaleThenDownscale);
 
 #ifdef DEBUG
-    if (!aborted()) {
+    if (renderRetCode != eRenderRoIStatusRenderFailed && !aborted()) {
         // Kindly check that everything we asked for is rendered!
         std::list<RectI> restToRender = image->getRestToRender(renderWindow);
         assert(restToRender.empty());
