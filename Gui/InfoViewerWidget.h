@@ -59,9 +59,13 @@ public slots:
     void hideFps();
 
 private:
+    
     virtual QSize sizeHint() const OVERRIDE FINAL;
-
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    
 private:
+    
 
     QHBoxLayout* layout;
     QLabel* descriptionLabel;

@@ -449,15 +449,17 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_viewerLayout->setSpacing(0);
 
     _imp->_viewerSubContainer = new QWidget(_imp->_viewerContainer);
-    _imp->_viewerSubContainer->setStyleSheet("background-color:black");
+    //_imp->_viewerSubContainer->setStyleSheet("background-color:black");
     _imp->_viewerSubContainerLayout = new QVBoxLayout(_imp->_viewerSubContainer);
     _imp->_viewerSubContainerLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->_viewerSubContainerLayout->setSpacing(0);
+    _imp->_viewerSubContainerLayout->setSpacing(1);
+
 
     _imp->viewer = new ViewerGL(this);
 
     _imp->_viewerSubContainerLayout->addWidget(_imp->viewer);
 
+    
     /*info bbox & color*/
     QString inputNames[2] = {
         "A:", "B:"
