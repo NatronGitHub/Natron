@@ -40,11 +40,11 @@ static PyObject* Sbk_EffectFunc_canSetInput(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: canSetInput(int,Effect)const
+    // 0: canSetInput(int,const Effect*)const
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[1])))) {
-        overloadId = 0; // canSetInput(int,Effect)const
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[1])))) {
+        overloadId = 0; // canSetInput(int,const Effect*)const
     }
 
     // Function signature not found.
@@ -60,9 +60,9 @@ static PyObject* Sbk_EffectFunc_canSetInput(PyObject* self, PyObject* args)
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // canSetInput(int,Effect)const
+            // canSetInput(int,const Effect*)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = const_cast<const ::Effect*>(cppSelf)->canSetInput(cppArg0, *cppArg1);
+            bool cppResult = const_cast<const ::Effect*>(cppSelf)->canSetInput(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -102,11 +102,11 @@ static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: connectInput(int,Effect)
+    // 0: connectInput(int,const Effect*)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[1])))) {
-        overloadId = 0; // connectInput(int,Effect)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[1])))) {
+        overloadId = 0; // connectInput(int,const Effect*)
     }
 
     // Function signature not found.
@@ -122,9 +122,9 @@ static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // connectInput(int,Effect)
+            // connectInput(int,const Effect*)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = cppSelf->connectInput(cppArg0, *cppArg1);
+            bool cppResult = cppSelf->connectInput(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -214,19 +214,13 @@ static PyObject* Sbk_EffectFunc_getInput(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getInput(int)const
-            // Begin code injection
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Effect * cppResult = const_cast<const ::Effect*>(cppSelf)->getInput(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
-            Effect cppResult = cppSelf->getInput(cppArg0);
-            if (cppResult.isNull()) {
-                Py_INCREF(Py_None);
-                pyResult = Py_None;
-            } else {
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], &cppResult);
-            }
-
-            // End of code injection
-
-
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
         }
     }
 

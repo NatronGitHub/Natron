@@ -32,6 +32,8 @@ public:
     
     Effect(const boost::shared_ptr<Natron::Node>& node);
     
+    ~Effect();
+    
     bool isNull() const
     {
         if (_node) {
@@ -49,7 +51,7 @@ public:
     /**
      * @brief Determines whether a connection is possible for the given node at the given input number.
      **/
-    bool canSetInput(int inputNumber,const Effect& node) const;
+    bool canSetInput(int inputNumber,const Effect* node) const;
     
     /**
      * @brief Attempts to connect the Effect 'input' to the given inputNumber.
@@ -57,7 +59,7 @@ public:
      * There's no auto-magic behind this function: you must explicitely disconnect any already connected Effect
      * to the given inputNumber otherwise this function will return false.
      **/
-    bool connectInput(int inputNumber,const Effect& input);
+    bool connectInput(int inputNumber,const Effect* input);
 
     /**
      * @brief Disconnects any Effect connected to the given inputNumber.
@@ -66,8 +68,9 @@ public:
     
     /**
      * @brief Returns the Effect connected to the given inputNumber
+     * @returns Pointer to an Effect, the caller is responsible for freeing it.
      **/
-    Effect getInput(int inputNumber) const;
+    Effect* getInput(int inputNumber) const;
     
     /**
      * @brief Returns the name of the Effect as displayed on the GUI.

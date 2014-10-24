@@ -222,17 +222,8 @@
     <object-type name="Effect">
         <modify-function signature="getInput(int)const">
             <modify-argument index="return">
-                <replace-type modified-type="PyObject" />
+                <define-ownership class="target" owner="target"/>
             </modify-argument>
-            <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
-                if (%0.isNull()) {
-                    Py_INCREF(Py_None);
-                    %PYARG_0 = Py_None;
-                } else {
-                    %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
-                }
-            </inject-code>
         </modify-function>
     </object-type>
     

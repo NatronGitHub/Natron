@@ -18,6 +18,11 @@ Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
 
 }
 
+Effect::~Effect()
+{
+    
+}
+
 int
 Effect::getMaxInputCount() const
 {
@@ -25,7 +30,7 @@ Effect::getMaxInputCount() const
 }
 
 bool
-Effect::canSetInput(int inputNumber,const Effect& node) const
+Effect::canSetInput(int inputNumber,const Effect* node) const
 {
 
     ///Input already connected
@@ -34,12 +39,12 @@ Effect::canSetInput(int inputNumber,const Effect& node) const
     }
     
     ///No-one is allowed to connect to the other node
-    if (!node._node->canOthersConnectToThisNode()) {
+    if (!node->_node->canOthersConnectToThisNode()) {
         return false;
     }
     
     ///Applying this connection would create cycles in the graph
-    if (!_node->checkIfConnectingInputIsOk(node._node.get())) {
+    if (!_node->checkIfConnectingInputIsOk(node->_node.get())) {
         return false;
     }
     
@@ -48,10 +53,10 @@ Effect::canSetInput(int inputNumber,const Effect& node) const
 }
 
 bool
-Effect::connectInput(int inputNumber,const Effect& input)
+Effect::connectInput(int inputNumber,const Effect* input)
 {
     if (canSetInput(inputNumber, input)) {
-        return _node->connectInput(input._node, inputNumber);
+        return _node->connectInput(input->_node, inputNumber);
     } else {
         return false;
     }
@@ -63,11 +68,14 @@ Effect::disconnectInput(int inputNumber)
     _node->disconnectInput(inputNumber);
 }
 
-Effect
+Effect*
 Effect::getInput(int inputNumber) const
 {
     boost::shared_ptr<Natron::Node> node = _node->getInput(inputNumber);
-    return Effect(node);
+    if (node) {
+        return new Effect(node);
+    }
+    return NULL;
 }
 
 std::string
