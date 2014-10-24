@@ -521,6 +521,13 @@ public:
      * This function is MT-safe as the description NEVER changes throughout the program.
      **/
     virtual const std::string & getDescription() const = 0;
+    
+    /**
+     * @brief Hide the description label on the GUI on the left of the knob. This is not dynamic
+     * and must be called upon the knob creation.
+     **/
+    virtual void hideDescription() = 0;
+    virtual bool isDescriptionVisible() const = 0;
 
     /**
      * @brief Returns a pointer to the holder owning the knob.
@@ -889,6 +896,8 @@ public:
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void hideDescription()  OVERRIDE FINAL;
+    virtual bool isDescriptionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void turnOffNewLine() OVERRIDE FINAL;

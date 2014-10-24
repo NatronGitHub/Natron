@@ -1141,7 +1141,7 @@ OfxEffectInstance::onMultipleInputsChanged()
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true);
     }
 }
 

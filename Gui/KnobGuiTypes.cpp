@@ -3018,6 +3018,7 @@ String_KnobGui::updateGUI(int /*dimension*/)
     } else if ( _knob->isLabel() ) {
         assert(_label);
         QString txt = value.c_str();
+        txt.replace("\n", "<br>");
         _label->setText(txt);
     } else {
         assert(_lineEdit);
@@ -3127,16 +3128,7 @@ String_KnobGui::setReadOnly(bool readOnly,
     }
 }
 
-bool
-String_KnobGui::showDescriptionLabel() const
-{
-   /* if ( _knob->isLabel() ) {
-        return false;
-    } else {
-        return true;
-    }*/
-    return !_knob->getDescription().empty();
-}
+
 
 void
 String_KnobGui::setDirty(bool dirty)

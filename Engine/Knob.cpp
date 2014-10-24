@@ -134,6 +134,7 @@ struct KnobHelper::KnobHelperPrivate
     KnobHelper* publicInterface;
     KnobHolder* holder;
     std::string description; //< the text label that will be displayed  on the GUI
+    bool descriptionVisible;
     std::string name; //< the knob can have a name different than the label displayed on GUI.
                       //By default this is the same as _description but can be set by calling setName().
     bool newLine;
@@ -193,6 +194,7 @@ struct KnobHelper::KnobHelperPrivate
         : publicInterface(publicInterface_)
           , holder(holder_)
           , description(description_)
+          , descriptionVisible(true)
           , name( description_.c_str() )
           , newLine(true)
           , itemSpacing(0)
@@ -917,6 +919,18 @@ const std::string &
 KnobHelper::getDescription() const
 {
     return _imp->description;
+}
+
+void
+KnobHelper::hideDescription()
+{
+    _imp->descriptionVisible = false;
+}
+
+bool
+KnobHelper::isDescriptionVisible() const
+{
+    return _imp->descriptionVisible;
 }
 
 bool

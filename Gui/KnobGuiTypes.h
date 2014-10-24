@@ -647,7 +647,6 @@ public:
 
     virtual ~String_KnobGui() OVERRIDE;
 
-    virtual bool showDescriptionLabel() const OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:

@@ -281,6 +281,13 @@ KnobGui::enableRightClickMenu(QWidget* widget,
     QObject::connect( widget,SIGNAL( customContextMenuRequested(QPoint) ),this,SLOT( onRightClickClicked(QPoint) ) );
 }
 
+bool
+KnobGui::showDescriptionLabel() const
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    return !knob->getDescription().empty() && knob->isDescriptionVisible();
+}
+
 void
 KnobGui::showRightClickMenuForDimension(const QPoint &,
                                         int dimension)

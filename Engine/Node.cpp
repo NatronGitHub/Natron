@@ -938,11 +938,18 @@ Node::isActivated() const
 std::string
 Node::makeInfoForInput(int inputNumber) const
 {
-    boost::shared_ptr<Natron::Node> inputNode = getInput(inputNumber);
-    std::string ret;
+    const Natron::Node* inputNode = 0;
+    std::string inputName ;
+    if (inputNumber != -1) {
+        inputNode = getInput(inputNumber).get();
+        inputName = _imp->liveInstance->getInputLabel(inputNumber);
+    } else {
+        inputNode = this;
+        inputName = "Output";
+    }
+
     if (!inputNode) {
-        ret = inputName + ": disconnected";
-        return ret;
+        return inputName + ": disconnected";
     }
     
     Natron::ImageComponentsEnum comps;
@@ -965,12 +972,27 @@ Node::makeInfoForInput(int inputNumber) const
             break;
     }
     
-    inputNode->getLiveInstance()->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
-    ret = inputName + ":\n"
-    + "format: " + Natron::Image::getFormatString(comps, depth)
-    + "alpha premultiplication: " + premultStr
-    + "pixel aspect ratio: " + par
-    + "RoD: "
+    _imp->liveInstance->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
+    
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    RectD rod;
+    bool isProjectFormat;
+    StatusEnum stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(getHashValue(),
+                                                                                 inputNode->getLiveInstance()->getCurrentTime(),
+                                                                                 scale, 0, &rod, &isProjectFormat);
+    
+    
+    std::stringstream ss;
+    ss << "<b><font color=\"orange\">"<< inputName << ":\n" << "</font></b>"
+    << "<b>Image Format:</b> " << Natron::Image::getFormatString(comps, depth)
+    << "\n<b>Alpha premultiplication:</b> " << premultStr
+    << "\n<b>Pixel aspect ratio:</b> " << par;
+    if (stat != Natron::eStatusFailed) {
+        ss << "\n<b>Region of Definition:</b> ";
+        ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << '\n';
+    }
+    return ss.str();
 }
 
 void
@@ -1064,13 +1086,39 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->infoDisclaimer->setAnimationEnabled(false);
     _imp->infoDisclaimer->setIsPersistant(false);
     _imp->infoDisclaimer->setAsLabel();
+    _imp->infoDisclaimer->hideDescription();
     _imp->infoDisclaimer->setEvaluateOnChange(false);
     _imp->infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
     _imp->infoPage->addKnob(_imp->infoDisclaimer);
     
     for (int i = 0; i < inputsCount; ++i) {
-        
+        std::string inputLabel = getInputLabel(i);
+        boost::shared_ptr<String_Knob> inputInfos = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(inputLabel + " Infos"), 1, false);
+        inputInfos->setName(inputLabel + "Infos");
+        inputInfos->setAnimationEnabled(false);
+        inputInfos->setIsPersistant(false);
+        inputInfos->setEvaluateOnChange(false);
+        inputInfos->hideDescription();
+        inputInfos->setAsLabel();
+        _imp->inputFormats.push_back(inputInfos);
+        _imp->infoPage->addKnob(inputInfos);
     }
+    
+    std::string outputLabel("Output");
+    _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(outputLabel + " Infos"), 1, false);
+    _imp->outputFormat->setName(outputLabel + "Infos");
+    _imp->outputFormat->setAnimationEnabled(false);
+    _imp->outputFormat->setIsPersistant(false);
+    _imp->outputFormat->setEvaluateOnChange(false);
+    _imp->outputFormat->hideDescription();
+    _imp->outputFormat->setAsLabel();
+    _imp->infoPage->addKnob(_imp->outputFormat);
+    
+    _imp->refreshInfosButton = Natron::createKnob<Button_Knob>(_imp->liveInstance, "Refresh Infos");
+    _imp->refreshInfosButton->setName("refreshButton");
+    _imp->refreshInfosButton->setEvaluateOnChange(false);
+    _imp->infoPage->addKnob(_imp->refreshInfosButton);
+    
     
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
@@ -2803,6 +2851,14 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+    } else if ( what == _imp->refreshInfosButton.get() ) {
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs; ++i) {
+            std::string inputInfos = makeInfoForInput(i);
+            _imp->inputFormats[i]->setValue(inputInfos, 0);
+        }
+        std::string outputInfos = makeInfoForInput(-1);
+        _imp->outputFormat->setValue(outputInfos, 0);
     }
 }
 

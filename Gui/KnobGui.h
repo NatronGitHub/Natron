@@ -107,10 +107,7 @@ public:
 
     void enableRightClickMenu(QWidget* widget,int dimension);
 
-    virtual bool showDescriptionLabel() const
-    {
-        return true;
-    }
+    virtual bool showDescriptionLabel() const;
 
     QWidget* getFieldContainer() const;
 
