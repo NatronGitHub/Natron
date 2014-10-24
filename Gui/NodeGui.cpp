@@ -902,7 +902,7 @@ NodeGui::onInternalNameChanged(const QString & s)
     setNameItemHtml(s,_nodeLabel);
 
     if (_settingsPanel) {
-        _settingsPanel->onNameChanged(s);
+        _settingsPanel->setName(s);
     }
     scene()->update();
 }
@@ -2282,4 +2282,34 @@ DotGui::shape() const
     return diskShape->shape();
 }
 
+void
+NodeGui::trySetName(const QString& newName)
+{
+    bool mustRestoreOldName = false;
+    QString oldName;
+    
+    if ( newName.isEmpty() ) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
+        mustRestoreOldName = true;
+    } else {
+        if ( _graph->checkIfNodeNameExists( newName.toStdString(), this ) ) {
+            mustRestoreOldName = true;
+            Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString() );
+            oldName = _internalNode->getLiveInstance()->getName().c_str();
+        }
+        
+    }
+    
+    DockablePanel* panel = getSettingPanel();
+    if (mustRestoreOldName) {
+        if (panel) {
+            panel->setName(oldName);
+        }
+    } else {
+        if (panel) {
+            panel->setName(newName);
+        }
+        emit nameChanged(newName);
+    }
 
+}

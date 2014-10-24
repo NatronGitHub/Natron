@@ -278,7 +278,34 @@ NodeBackDrop::setName(const QString & str)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->setNameInternal(str);
-    _imp->settingsPanel->onNameChanged(str);
+    _imp->settingsPanel->setName(str);
+}
+
+void
+NodeBackDrop::trySetName(const QString& newName)
+{
+    bool mustRestoreOldName = false;
+    QString oldName;
+    
+    
+
+    if ( newName.isEmpty() ) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
+        mustRestoreOldName = true;
+    } else {
+        if ( _imp->graph->checkIfBackDropNameExists(newName,this) ) {
+            mustRestoreOldName = true;
+            Natron::errorDialog( tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString() );
+            oldName = getName();
+        }
+    }
+
+    if (mustRestoreOldName) {
+        setName(oldName);
+    } else {
+        setName(newName);
+    }
+
 }
 
 void

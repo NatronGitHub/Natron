@@ -68,6 +68,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/GuiMacros.h"
 
 using std::make_pair;
@@ -523,46 +524,16 @@ DockablePanel::onLineEditNameEditingFinished()
     if ( _imp->_gui->getApp()->isClosing() ) {
         return;
     }
+    
+    NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
+    boost::shared_ptr<NodeGui> node;
+    if (panel) {
+        node = panel->getNode();
+    }
     NodeBackDrop* bd = dynamic_cast<NodeBackDrop*>(_imp->_holder);
-    if (bd) {
-        QString newName = _imp->_nameLineEdit->text();
-        if ( _imp->_gui->getNodeGraph()->checkIfBackDropNameExists(newName,bd) ) {
-            Natron::errorDialog( tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString() );
-            _imp->_nameLineEdit->setText( bd->getName() );
-
-            return;
-        }
-    }
-
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
-    if (effect) {
-        std::string newName = _imp->_nameLineEdit->text().toStdString();
-        if ( newName.empty() ) {
-            _imp->_nameLineEdit->blockSignals(true);
-            Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
-            _imp->_nameLineEdit->setText( effect->getName().c_str() );
-            _imp->_nameLineEdit->blockSignals(false);
-
-            return;
-        }
-
-        ///if the node name hasn't changed return
-        if (effect->getName() == newName) {
-            return;
-        }
-
-        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-        assert(nodePanel);
-        if ( _imp->_gui->getNodeGraph()->checkIfNodeNameExists( newName, nodePanel->getNode().get() ) ) {
-            _imp->_nameLineEdit->blockSignals(true);
-            Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString() );
-            _imp->_nameLineEdit->setText( effect->getName().c_str() );
-            _imp->_nameLineEdit->blockSignals(false);
-
-            return;
-        }
-    }
-    emit nameChanged( _imp->_nameLineEdit->text() );
+    assert(node || bd);
+    pushUndoCommand(new RenameNodeUndoRedoCommand(node,bd,_imp->_nameLineEdit->text()));
+   
 }
 
 void
@@ -1152,7 +1123,7 @@ DockablePanel::floatPanel()
 }
 
 void
-DockablePanel::onNameChanged(const QString & str)
+DockablePanel::setName(const QString & str)
 {
     if (_imp->_nameLabel) {
         _imp->_nameLabel->setText(str);
@@ -1160,6 +1131,7 @@ DockablePanel::onNameChanged(const QString & str)
         _imp->_nameLineEdit->setText(str);
     }
 }
+
 
 Button*
 DockablePanel::insertHeaderButton(int headerPosition)

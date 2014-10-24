@@ -56,6 +56,7 @@ public:
     ///Mt-safe
     QString getName() const;
     void setName(const QString & str);
+    void trySetName(const QString& str);
     virtual std::string getName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Mt-safe

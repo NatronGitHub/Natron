@@ -294,6 +294,8 @@ public:
     void restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
     
+    void trySetName(const QString& newName);
+    
 public slots:
 
     void setDefaultGradientColor(const QColor & color);

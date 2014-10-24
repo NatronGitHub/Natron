@@ -1082,3 +1082,47 @@ LoadNodePresetsCommand::redo()
 
     setText(QObject::tr("Load presets"));
 }
+
+
+
+RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
+                                                     NodeBackDrop* bd,
+                                                     const QString& newName)
+: QUndoCommand()
+, _node(node)
+, _bd(bd)
+, _newName(newName)
+{
+    assert(node || bd);
+    if (node) {
+        _oldName = node->getNode()->getName().c_str();
+    } else if (bd) {
+        _oldName = bd->getName();
+    }
+}
+
+RenameNodeUndoRedoCommand::~RenameNodeUndoRedoCommand()
+{
+    
+}
+
+void
+RenameNodeUndoRedoCommand::undo()
+{
+    if (_node) {
+        _node->trySetName(_oldName);
+    } else if (_bd) {
+        _bd->trySetName(_oldName);
+    }
+    setText(QObject::tr("Rename node"));
+}
+
+void RenameNodeUndoRedoCommand::redo()
+{
+    if (_node) {
+        _node->trySetName(_newName);
+    } else if (_bd) {
+        _bd->trySetName(_newName);
+    }
+    setText(QObject::tr("Rename node"));
+}
