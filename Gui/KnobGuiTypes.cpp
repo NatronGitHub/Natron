@@ -223,7 +223,7 @@ Int_KnobGui::onDisplayMinMaxChanged(double mini,
             _slider->hide();
         }
         
-        _slider->setMinimumAndMaximum(mini, maxi);
+        _slider->setMinimumAndMaximum(sliderMin ,sliderMax);
     }
 }
 
