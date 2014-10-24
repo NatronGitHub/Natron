@@ -710,23 +710,22 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     }
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
-    bool hasShortcut = false;
+    bool hasShortcut = true;
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
     if (pluginID == "TransformOFX  [Transform]") {
         symbol = Qt::Key_T;
-        hasShortcut = true;
     } else if (pluginID == "RotoOFX  [Draw]") {
         symbol = Qt::Key_O;
-        hasShortcut = true;
     } else if (pluginID == "MergeOFX  [Merge]") {
         symbol = Qt::Key_M;
-        hasShortcut = true;
     } else if (pluginID == "GradeOFX  [Color]") {
         symbol = Qt::Key_G;
-        hasShortcut = true;
     } else if (pluginID == "ColorCorrectOFX  [Color]") {
         symbol = Qt::Key_C;
-        hasShortcut = true;
+    } else if (pluginID == "BlurCImg  [Filter]") {
+        symbol = Qt::Key_B;
+    } else {
+        hasShortcut = false;
     }
     plugin->setHasShortcut(hasShortcut);
     _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
@@ -1424,6 +1423,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, kShortcutDescActionGraphFrameNodes, Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowCacheSize, kShortcutDescActionGraphShowCacheSize, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, kShortcutDescActionGraphFindNode, Qt::ControlModifier, Qt::Key_F);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, kShortcutDescActionGraphRenameNode, Qt::NoModifier, Qt::Key_N);
 
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);
