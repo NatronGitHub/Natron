@@ -1095,7 +1095,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
                 localVmax = maxi;
             }
             
-            src_pixels +=  4;
+            src_pixels += nComps;
         }
     }
     
