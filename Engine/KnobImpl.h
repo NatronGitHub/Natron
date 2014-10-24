@@ -17,6 +17,7 @@
 #include <cfloat>
 #include <stdexcept>
 #include <string>
+#include <boost/math/special_functions/fpclassify.hpp>
 #include <QString>
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
@@ -706,7 +707,11 @@ Knob<T>::makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key)
     } else {
         keyFrameValue = (double)v;
     }
-    *key = KeyFrame( (double)time,keyFrameValue );
+    if (boost::math::isnan(keyFrameValue) || boost::math::isinf(keyFrameValue)) {
+        *key = KeyFrame( (double)time,getMaximum(0) );
+    } else {
+        *key = KeyFrame( (double)time,keyFrameValue );
+    }
 }
 
 template <>
