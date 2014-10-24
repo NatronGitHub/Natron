@@ -192,6 +192,11 @@ public:
      **/
     void doOCIOStartupCheckIfNeeded();
     
+    /**
+     * @brief Returns true if the QSettings existed prior to loading the settings
+     **/
+    bool didSettingsExistOnStartup() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -203,6 +208,7 @@ private:
 
 
     boost::shared_ptr<Page_Knob> _generalTab;
+    boost::shared_ptr<Bool_Knob> _natronSettingsExist;
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Bool_Knob> _linearPickers;
@@ -285,6 +291,7 @@ private:
     bool _wereChangesMadeSinceLastSave;
     bool _restoringSettings;
     bool _ocioRestored;
+    bool _settingsExisted;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_

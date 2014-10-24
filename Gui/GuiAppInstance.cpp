@@ -163,6 +163,19 @@ GuiAppInstance::load(const QString & projectName,
 
     if (getAppID() == 0) {
         appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        
+        if (!appPTR->isShorcutVersionUpToDate()) {
+            Natron::StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
+                                                              tr("Default shortcuts for " NATRON_APPLICATION_NAME " have changed, "
+                                                                 "would you like to set them to their defaults ? "
+                                                                 "Clicking no will keep the old shortcuts hence if a new shortcut has been "
+                                                                 "set to something else than an empty shortcut you won't benefit of it.").toStdString(),
+                                                              Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                              Natron::eStandardButtonNo);
+            if (reply == Natron::eStandardButtonYes) {
+                appPTR->restoreDefaultShortcuts();
+            }
+        }
     }
     
     /// If this is the first instance of the software, try to load an autosave

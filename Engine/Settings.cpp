@@ -38,6 +38,7 @@ Settings::Settings(AppInstance* appInstance)
       , _wereChangesMadeSinceLastSave(false)
       , _restoringSettings(false)
       , _ocioRestored(false)
+      , _settingsExisted(false)
 {
 }
 
@@ -75,6 +76,12 @@ Settings::initializeKnobs()
 {
     _generalTab = Natron::createKnob<Page_Knob>(this, "General");
 
+    _natronSettingsExist = Natron::createKnob<Bool_Knob>(this, "Existing settings");
+    _natronSettingsExist->setAnimationEnabled(false);
+    _natronSettingsExist->setName("existingSettings");
+    _natronSettingsExist->setSecret(true);
+    _generalTab->addKnob(_natronSettingsExist);
+    
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setAnimationEnabled(false);
@@ -668,6 +675,7 @@ Settings::setDefaultValues()
 {
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+    _natronSettingsExist->setDefaultValue(false);
     _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
@@ -784,7 +792,6 @@ Settings::saveSettings()
     _wereChangesMadeSinceLastSave = false;
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
@@ -897,7 +904,11 @@ Settings::restoreSettings()
         tryLoadOpenColorIOConfig();
     }
     
-
+    _settingsExisted = _natronSettingsExist->getValue();
+    if (!_settingsExisted) {
+        _natronSettingsExist->setValue(true, 0);
+        saveSettings();
+    }
     
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
     appPTR->setNThreadsToRender(getNumberOfThreads());
@@ -905,7 +916,7 @@ Settings::restoreSettings()
     bool useTP = _useThreadPool->getValue();
     appPTR->setUseThreadPool(useTP);
 
-
+    
     _restoringSettings = false;
 } // restoreSettings
 
@@ -1678,4 +1689,10 @@ Settings::doOCIOStartupCheckIfNeeded()
         }
         
     }
+}
+
+bool
+Settings::didSettingsExistOnStartup() const
+{
+    return _settingsExisted;
 }

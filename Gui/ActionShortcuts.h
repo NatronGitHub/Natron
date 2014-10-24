@@ -391,6 +391,9 @@
 #define kShortcutIDActionGraphFindNode "findNode"
 #define kShortcutDescActionGraphFindNode "Find"
 
+#define kShortcutIDActionGraphRenameNode "renameNode"
+#define kShortcutDescActionGraphRenameNode "Rename node"
+
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
 #define kShortcutDescActionCurveEditorRemoveKeys "Delete keyframes"
