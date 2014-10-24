@@ -313,7 +313,7 @@ Settings::initializeKnobs()
         if ( ocioConfigsDir.exists() ) {
             QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
             for (int j = 0; j < entries.size(); ++j) {
-                if ( entries[j].contains("nuke-default") ) {
+                if ( entries[j].contains(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
                     defaultIndex = j;
                 }
                 configs.push_back( entries[j].toStdString() );
@@ -337,6 +337,7 @@ Settings::initializeKnobs()
     _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setName("ocioCustomConfigFile");
     _customOcioConfigFile->setAllDimensionsEnabled(false);
+    _customOcioConfigFile->setAnimationEnabled(false);
     _customOcioConfigFile->setHintToolTip("OpenColorIO configuration file (*.ocio) to use when \"" NATRON_CUSTOM_OCIO_CONFIG_NAME "\" "
                                           "is selected as the OpenColorIO config.");
     ocioTab->addKnob(_customOcioConfigFile);
