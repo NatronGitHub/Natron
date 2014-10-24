@@ -1213,7 +1213,6 @@ GuiApplicationManager::saveShortcuts() const
 {
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     
-    settings.setValue("NATRON_SHORTCUTS_DEFAULT_VERSION", NATRON_SHORTCUTS_DEFAULT_VERSION);
     for (AppShortcuts::const_iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         settings.beginGroup(it->first);
         for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1246,6 +1245,9 @@ GuiApplicationManager::loadShortcuts()
     if (settingsExistd && settingsVersion != NATRON_SHORTCUTS_DEFAULT_VERSION) {
         _imp->_shortcutsChangedVersion = true;
     }
+    
+    settings.setValue("NATRON_SHORTCUTS_DEFAULT_VERSION", NATRON_SHORTCUTS_DEFAULT_VERSION);
+
     
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         settings.beginGroup(it->first);
