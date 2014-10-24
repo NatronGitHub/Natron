@@ -515,6 +515,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     texRect.y2 = std::ceil( ( (double)roi.y2 ) / tileSize ) * tileSize;
 
     if ( (texRect.width() == 0) || (texRect.height() == 0) ) {
+        emit disconnectTextureRequest(textureIndex);
         return eStatusOK;
     }
 

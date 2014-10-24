@@ -2610,9 +2610,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->zoomOrPannedSinceLastFit = true;
         }
         _imp->oldClick = newClick;
-        if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
-        }
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        
         //  else {
         mustRedraw = true;
         // }
@@ -2646,9 +2645,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         emit zoomChanged(zoomValue);
 
         //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
-        if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
-        }
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        
         //  else {
         mustRedraw = true;
         // }
@@ -2978,9 +2976,8 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     emit zoomChanged(zoomValue);
 
 
-    if ( displayingImage() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
-    }
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+    
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
@@ -3011,12 +3008,9 @@ ViewerGL::zoomSlot(int v)
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
     _imp->viewerTab->clearTimelineCacheLine();
-    if ( displayingImage() ) {
-        // appPTR->clearPlaybackCache();
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
-    } else {
-        updateGL();
-    }
+    
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+   
 }
 
 void

@@ -2548,7 +2548,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableOb
         }
     } else {
         ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
-        viewer->callRedrawOnMainThread();
+        viewer->redrawViewer();
     }
     
     {
