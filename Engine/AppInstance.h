@@ -282,6 +282,18 @@ public:
 
     virtual void clearViewersLastRenderedTexture() {}
 
+    /**
+     * @brief Asks a question to the user and returns the reply. 
+     * @param stopAsking Set to true if the user do not want Natron to ask the question again.
+     **/
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & /*title*/,
+                                              const std::string & /*message*/,
+                                              Natron::StandardButtons /*buttons*/,
+                                              Natron::StandardButtonEnum /*defaultButton*/,
+                                              bool* /*stopAsking*/)
+    {
+        return Natron::eStandardButtonYes;
+    }
     
 public slots:
 

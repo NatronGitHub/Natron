@@ -22,6 +22,7 @@
 #include <QSettings>
 #include <QDebug>
 #include <QThread>
+#include <QCheckBox>
 
 #if QT_VERSION >= 0x050000
 #include <QScreen>
@@ -93,6 +94,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/NodeBackDrop.h"
+#include "Gui/QuestionDialog.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -174,6 +176,7 @@ struct GuiPrivate
     bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
     Natron::StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
+    bool _lastStopAskingAnswer;
 
     ///ptrs to the undo/redo actions from the active stack.
     QAction* _currentUndoAction;
@@ -339,6 +342,7 @@ struct GuiPrivate
           , _uiUsingMainThread(false)
           , _uiUsingMainThreadMutex()
           , _lastQuestionDialogAnswer(Natron::eStandardButtonNo)
+          , _lastStopAskingAnswer(false)
           , _currentUndoAction(0)
           , _currentRedoAction(0)
           , _undoStacksGroup(0)
@@ -474,6 +478,9 @@ Gui::Gui(GuiAppInstance* app,
 {
     QObject::connect( this,SIGNAL( doDialog(int,QString,QString,Natron::StandardButtons,int) ),this,
                       SLOT( onDoDialog(int,QString,QString,Natron::StandardButtons,int) ) );
+    QObject::connect( this,SIGNAL( doQuestionWithStopAskingCheckbox(QString,QString,Natron::StandardButtons,int) ),this,
+                     SLOT( onDoQuestionWithStopAskingCheckbox(QString,QString,Natron::StandardButtons,int) ) );
+
     QObject::connect( app,SIGNAL( pluginsPopulated() ),this,SLOT( addToolButttonsToToolBar() ) );
 }
 
@@ -2782,6 +2789,53 @@ Gui::questionDialog(const std::string & title,
     }
 
     return _imp->_lastQuestionDialogAnswer;
+}
+
+Natron::StandardButtonEnum
+Gui::questionDialog(const std::string & title,
+                    const std::string & message,
+                    Natron::StandardButtons buttons,
+                    Natron::StandardButtonEnum defaultButton,
+                    bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return Natron::eStandardButtonNo;
+        }
+    }
+    
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit onDoQuestionWithStopAskingCheckbox(QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit onDoQuestionWithStopAskingCheckbox(QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+    }
+    
+    *stopAsking = _imp->_lastStopAskingAnswer;
+    return _imp->_lastQuestionDialogAnswer;
+}
+
+
+void
+Gui::onDoQuestionWithStopAskingCheckbox(const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB)
+{
+    
+    QuestionDialog ques(title,content,buttons,(Natron::StandardButtonEnum)defaultB,this);
+    
+    QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&ques);
+    ques.setCheckBox(stopAskingCheckbox);
+    if ( ques.exec() ) {
+        _imp->_lastQuestionDialogAnswer = ques.getReply();
+        _imp->_lastStopAskingAnswer = stopAskingCheckbox->isChecked();
+    }
 }
 
 void

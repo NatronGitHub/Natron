@@ -184,6 +184,14 @@ public:
     bool areRGBPixelComponentsSupported() const;
     
     bool isMergeAutoConnectingToAInput() const;
+    
+    /**
+     * @brief If the OCIO startup check parameter is set to true, warn the user if the OCIO config is different
+     * from the default value held by NATRON_CUSTOM_OCIO_CONFIG_NAME
+     * This can only be called once the 1st AppInstance has been loaded otherwise dialogs could not be created.
+     **/
+    void doOCIOStartupCheckIfNeeded();
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -216,6 +224,8 @@ private:
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     boost::shared_ptr<String_Knob> _hostName;
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
+    boost::shared_ptr<Bool_Knob> _warnOcioConfigKnobChanged;
+    boost::shared_ptr<Bool_Knob> _ocioStartupCheck;
     boost::shared_ptr<File_Knob> _customOcioConfigFile;
     boost::shared_ptr<Page_Knob> _cachingTab;
 

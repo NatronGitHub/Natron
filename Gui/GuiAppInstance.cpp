@@ -161,6 +161,10 @@ GuiAppInstance::load(const QString & projectName,
     dir.mkpath(".");
 
 
+    if (getAppID() == 0) {
+        appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+    }
+    
     /// If this is the first instance of the software, try to load an autosave
     if ( (getAppID() == 0) && projectName.isEmpty() ) {
         if ( getProject()->findAndTryLoadAutoSave() ) {
@@ -168,6 +172,8 @@ GuiAppInstance::load(const QString & projectName,
             return;
         }
     }
+    
+   
 
     if ( projectName.isEmpty() ) {
         ///if the user didn't specify a projects name in the launch args just create a viewer node.
@@ -414,6 +420,29 @@ GuiAppInstance::questionDialog(const std::string & title,
         _imp->_showingDialog = false;
     }
 
+    return ret;
+}
+
+Natron::StandardButtonEnum
+GuiAppInstance::questionDialog(const std::string & title,
+                               const std::string & message,
+                               Natron::StandardButtons buttons,
+                               Natron::StandardButtonEnum defaultButton,
+                               bool* stopAsking)
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton,stopAsking);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+    
     return ret;
 }
 
