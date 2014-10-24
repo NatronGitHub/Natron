@@ -315,7 +315,7 @@ InfoViewerWidget::setDataWindow(const RectD & r)
 {
     QString bbox;
     const QFont& font = coordDispWindow->font();
-    bbox = QString("<font color=\"#DBE0E0\" face=\"%4\" size=%5>RoD: %1 %2 %3 %4</font>")
+    bbox = QString("<font color=\"#DBE0E0\" face=\"%5\" size=%6>RoD: %1 %2 %3 %4</font>")
            .arg( std::ceil( r.left() ) )
            .arg( std::ceil( r.bottom() ) )
            .arg( std::floor( r.right() ) )
