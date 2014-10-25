@@ -32,8 +32,8 @@ public:
     static Natron::Key fromQtKey(Qt::Key k);
     static Natron::KeyboardModifier fromQtModifier(Qt::KeyboardModifier m);
     static Natron::KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
-    static Natron::StandardButton fromQtStandardButton(QMessageBox::StandardButton b);
-    static QMessageBox::StandardButton toQtStandardButton(Natron::StandardButton b);
+    static Natron::StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
+    static QMessageBox::StandardButton toQtStandardButton(Natron::StandardButtonEnum b);
     static QMessageBox::StandardButtons toQtStandarButtons(Natron::StandardButtons buttons);
 };
 

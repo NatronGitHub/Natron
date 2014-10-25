@@ -969,7 +969,7 @@ void
 RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
                                          int reason)
 {
-    if ( (Natron::ValueChangedReason)reason == Natron::SLAVE_REFRESH ) {
+    if ( (Natron::ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
         return;
     }
     RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>( sender() );

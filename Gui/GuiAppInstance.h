@@ -77,9 +77,17 @@ public:
     virtual void errorDialog(const std::string & title,const std::string & message) const OVERRIDE FINAL;
     virtual void warningDialog(const std::string & title,const std::string & message) const OVERRIDE FINAL;
     virtual void informationDialog(const std::string & title,const std::string & message) const OVERRIDE FINAL;
-    virtual Natron::StandardButton questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
-                                                      Natron::StandardButtons(Natron::Yes | Natron::No),
-                                                  Natron::StandardButton defaultButton = Natron::NoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
+                                                      const std::string & message,
+                                                      Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                      Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
+                                                      const std::string & message,
+                                                      Natron::StandardButtons buttons,
+                                                      Natron::StandardButtonEnum defaultButton,
+                                                      bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     virtual void loadProjectGui(boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
     virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
     virtual void notifyRenderProcessHandlerStarted(const QString & sequenceName,

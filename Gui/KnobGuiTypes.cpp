@@ -167,7 +167,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
             
-            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::LINEAR_SCALE, layout->parentWidget() );
+            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
             if ( hasToolTip() ) {
                 _slider->setToolTip( toolTip() );
             }
@@ -223,7 +223,7 @@ Int_KnobGui::onDisplayMinMaxChanged(double mini,
             _slider->hide();
         }
         
-        _slider->setMinimumAndMaximum(mini, maxi);
+        _slider->setMinimumAndMaximum(sliderMin ,sliderMax);
     }
 }
 
@@ -248,17 +248,17 @@ Int_KnobGui::updateGUI(int dimension)
 
 void
 Int_KnobGui::reflectAnimationLevel(int dimension,
-                                   Natron::AnimationLevel level)
+                                   Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -336,7 +336,12 @@ Int_KnobGui::_show()
         }
     }
     if (_slider) {
-        _slider->show();
+        double sliderMax = _slider->maximum();
+        double sliderMin = _slider->minimum();
+        
+        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+            _slider->show();
+        }
     }
 }
 
@@ -402,7 +407,7 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _checkBox->setToolTip( toolTip() );
     }
-    QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
+    QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
 
     ///set the copy/link actions in the right click menu
@@ -419,22 +424,24 @@ Bool_KnobGui::~Bool_KnobGui()
 void
 Bool_KnobGui::updateGUI(int /*dimension*/)
 {
+    _checkBox->blockSignals(true);
     _checkBox->setChecked( _knob->getValue(0,false) );
+    _checkBox->blockSignals(false);
 }
 
 void
 Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
-                                    Natron::AnimationLevel level)
+                                    Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -638,7 +645,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             valueAccordingToType(false, i, &dispmax);
             
             
-            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::LINEAR_SCALE, layout->parentWidget() );
+            _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
             if ( hasToolTip() ) {
                 _slider->setToolTip( toolTip() );
             }
@@ -733,17 +740,17 @@ Double_KnobGui::updateGUI(int dimension)
 
 void
 Double_KnobGui::reflectAnimationLevel(int dimension,
-                                      Natron::AnimationLevel level)
+                                      Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -830,7 +837,11 @@ Double_KnobGui::_show()
         }
     }
     if (_slider) {
-        _slider->show();
+        double sliderMax = _slider->maximum();
+        double sliderMin = _slider->minimum();
+        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+            _slider->show();
+        }
     }
 }
 
@@ -912,7 +923,7 @@ Button_KnobGui::~Button_KnobGui()
 void
 Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(0,true, NULL);
+    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(true, 0, Natron::eValueChangedReasonUserEdited, NULL);
 }
 
 void
@@ -1022,17 +1033,17 @@ Choice_KnobGui::updateGUI(int /*dimension*/)
 
 void
 Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,
-                                      Natron::AnimationLevel level)
+                                      Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-    case Natron::NO_ANIMATION:
+    case Natron::eAnimationLevelNone:
             value = 0;
         break;
-    case Natron::INTERPOLATED_VALUE:
+    case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
         break;
-    case Natron::ON_KEYFRAME:
+    case Natron::eAnimationLevelOnKeyframe:
             value = 2;
         break;
     default:
@@ -1534,7 +1545,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if ( slidermax >= std::numeric_limits<float>::max() ) {
         slidermax = 1.;
     }
-    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::LINEAR_SCALE, boxContainers);
+    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::eScaleTypeLinear, boxContainers);
     boxLayout->addWidget(_slider);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
     _slider->hide();
@@ -1813,10 +1824,10 @@ Color_KnobGui::updateGUI(int dimension)
 
 void
 Color_KnobGui::reflectAnimationLevel(int dimension,
-                                     Natron::AnimationLevel level)
+                                     Natron::AnimationLevelEnum level)
 {
     switch (level) {
-        case Natron::NO_ANIMATION: {
+        case Natron::eAnimationLevelNone: {
             if (_rBox->getAnimation() == 0) {
                 return;
             }
@@ -1838,7 +1849,7 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
                     break;
             }
         }  break;
-        case Natron::INTERPOLATED_VALUE: {
+        case Natron::eAnimationLevelInterpolatedValue: {
             switch (dimension) {
                     if (_rBox->getAnimation() == 1) {
                         return;
@@ -1860,7 +1871,7 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
                     break;
             }
         }    break;
-        case Natron::ON_KEYFRAME: {
+        case Natron::eAnimationLevelOnKeyframe: {
             switch (dimension) {
                     if (_rBox->getAnimation() == 2) {
                         return;
@@ -1973,7 +1984,7 @@ Color_KnobGui::showColorDialog()
         _knob->unblockEvaluation();
 
     }
-    _knob->evaluateValueChange(0, NATRON_EDITED);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
 void
@@ -1989,7 +2000,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
         }
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, NATRON_EDITED);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
 }
 
 void
@@ -2475,10 +2486,7 @@ String_KnobGui::onTextChanged()
 QString
 String_KnobGui::addHtmlTags(QString text) const
 {
-    QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
-                      .arg(_fontSize)
-                      .arg( _fontColor.name() )
-                      .arg(_fontFamily);
+    QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
 
     text.prepend(fontTag);
     text.append(kFontEndTag);
@@ -2547,10 +2555,7 @@ String_KnobGui::restoreTextInfosFromString()
         _fontFamily = _fontCombo->currentFont().family();
         _boldActivated = false;
         _italicActivated = false;
-        QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
-                          .arg(_fontSize)
-                          .arg( _fontColor.name() )
-                          .arg(_fontFamily);
+        QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
         text.prepend(fontTag);
         text.append(kFontEndTag);
 
@@ -2619,10 +2624,7 @@ String_KnobGui::restoreTextInfosFromString()
             _fontFamily = _fontCombo->currentFont().family();
             _boldActivated = false;
             _italicActivated = false;
-            QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
-                              .arg(_fontSize)
-                              .arg( _fontColor.name() )
-                              .arg(_fontFamily);
+            QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
             text.prepend(fontTag);
             text.append(kFontEndTag);
             _knob->setValue(text.toStdString(), 0);
@@ -2643,7 +2645,8 @@ String_KnobGui::restoreTextInfosFromString()
 
 void
 String_KnobGui::parseFont(const QString & label,
-                          QFont & f)
+                          QFont & f,
+                          QColor& color)
 {
     QString toFind = QString(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
@@ -2670,6 +2673,36 @@ String_KnobGui::parseFont(const QString & label,
 
     f.setPointSize( sizeStr.toInt() );
     f.setFamily(faceStr);
+    
+    {
+        toFind = QString(kBoldStartTag);
+        int foundBold = label.indexOf(toFind);
+        if (foundBold != -1) {
+            f.setBold(true);
+        }
+    }
+    
+    {
+        toFind = QString(kItalicStartTag);
+        int foundItalic = label.indexOf(toFind);
+        if (foundItalic != -1) {
+            f.setItalic(true);
+        }
+    }
+    {
+        toFind = QString(kFontColorTag);
+        int foundColor = label.indexOf(toFind);
+        if (foundColor != -1) {
+            foundColor += toFind.size();
+            QString currentColor;
+            int j = foundColor;
+            while ( j < label.size() && label.at(j) != QChar('"') ) {
+                currentColor.push_back( label.at(j) );
+                ++j;
+            }
+            color = QColor(currentColor);
+        }
+    }
 }
 
 void
@@ -2705,14 +2738,26 @@ String_KnobGui::onCurrentFontChanged(const QFont & font)
         text.remove( i, currentFontFace.size() );
         text.insert( i != -1 ? i : 0, font.family() );
     } else {
-        QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
-                          .arg(_fontSize)
-                          .arg( _fontColor.name() )
-                          .arg(_fontFamily);
+        QString fontTag = makeFontTag(_fontFamily,_fontSize,_fontColor);
         text.prepend(fontTag);
         text.append(kFontEndTag);
     }
     pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),text.toStdString() ) );
+}
+
+QString
+String_KnobGui::makeFontTag(const QString& family,int fontSize,const QColor& color)
+{
+    return QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+    .arg(fontSize)
+    .arg( color.name() )
+    .arg(family);
+}
+
+QString
+String_KnobGui::decorateTextWithFontTag(const QString& family,int fontSize,const QColor& color,const QString& text)
+{
+    return makeFontTag(family, fontSize, color) + text + kFontEndTag;
 }
 
 void
@@ -2794,26 +2839,38 @@ String_KnobGui::colorFontButtonClicked()
         _fontColor = dialog.currentColor();
 
         QString text( _knob->getValue(0,false).c_str() );
-        //find the first font tag
-        QString toFind = QString(kFontSizeTag);
-        int i = text.indexOf(toFind);
-        assert(i != -1);
-        toFind = QString(kFontColorTag);
-        i = text.indexOf(toFind,i);
-        assert(i != -1);
-        i += toFind.size();
-        QString currentColor;
-        int j = i;
-        while ( j < text.size() && text.at(j) != QChar('"') ) {
-            currentColor.push_back( text.at(j) );
-            ++j;
-        }
-        text.remove( i,currentColor.size() );
-        text.insert( i, _fontColor.name() );
-
+        findReplaceColorName(text,_fontColor.name());
         pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob->getValue(0,false),text.toStdString() ) );
     }
     updateFontColorIcon(_fontColor);
+}
+
+void
+String_KnobGui::findReplaceColorName(QString& text,const QColor& color)
+{
+    //find the first font tag
+    QString toFind = QString(kFontSizeTag);
+    int i = text.indexOf(toFind);
+    if (i != -1) {
+        toFind = QString(kFontColorTag);
+        int foundColorTag = text.indexOf(toFind,i);
+        if (foundColorTag != -1) {
+            foundColorTag += toFind.size();
+            QString currentColor;
+            int j = foundColorTag;
+            while ( j < text.size() && text.at(j) != QChar('"') ) {
+                currentColor.push_back( text.at(j) );
+                ++j;
+            }
+            text.remove( foundColorTag,currentColor.size() );
+            text.insert( foundColorTag, color.name() );
+        } else {
+            text.insert(i, kFontColorTag);
+            text.insert(i + toFind.size(), color.name() + "\"");
+        }
+    }
+    
+    
 }
 
 void
@@ -2963,6 +3020,7 @@ String_KnobGui::updateGUI(int /*dimension*/)
     } else if ( _knob->isLabel() ) {
         assert(_label);
         QString txt = value.c_str();
+        txt.replace("\n", "<br>");
         _label->setText(txt);
     } else {
         assert(_lineEdit);
@@ -3024,17 +3082,17 @@ String_KnobGui::setEnabled()
 
 void
 String_KnobGui::reflectAnimationLevel(int /*dimension*/,
-                                      Natron::AnimationLevel level)
+                                      Natron::AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::NO_ANIMATION:
+        case Natron::eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::INTERPOLATED_VALUE:
+        case Natron::eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::ON_KEYFRAME:
+        case Natron::eAnimationLevelOnKeyframe:
             value = 2;
             
             break;
@@ -3064,32 +3122,21 @@ String_KnobGui::setReadOnly(bool readOnly,
 {
     if (_textEdit) {
         _textEdit->setReadOnlyNatron(readOnly);
-    } else {
-        assert(_lineEdit);
+    } else if (_lineEdit) {
         if ( !_knob->isCustomKnob() ) {
             _lineEdit->setReadOnly(readOnly);
         }
     }
 }
 
-bool
-String_KnobGui::showDescriptionLabel() const
-{
-   /* if ( _knob->isLabel() ) {
-        return false;
-    } else {
-        return true;
-    }*/
-    return !_knob->getDescription().empty();
-}
+
 
 void
 String_KnobGui::setDirty(bool dirty)
 {
     if (_textEdit) {
         _textEdit->setDirty(dirty);
-    } else {
-        assert(_lineEdit);
+    } else if (_lineEdit) {
         _lineEdit->setDirty(dirty);
     }
 }

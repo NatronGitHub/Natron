@@ -128,7 +128,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -171,7 +171,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
 private:
 
@@ -234,7 +234,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -328,7 +328,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
     boost::shared_ptr<Choice_Knob> _knob;
@@ -546,7 +546,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
 
     void updateLabel(double r, double g, double b, double a);
 
@@ -647,7 +647,6 @@ public:
 
     virtual ~String_KnobGui() OVERRIDE;
 
-    virtual bool showDescriptionLabel() const OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
@@ -676,7 +675,10 @@ public slots:
 
     ///this is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
     ///of the font size.
-    static void parseFont(const QString & s,QFont & f);
+    static void parseFont(const QString & s,QFont & f,QColor& color);
+    static void findReplaceColorName(QString& text,const QColor& color);
+    static QString makeFontTag(const QString& family,int fontSize,const QColor& color);
+    static QString decorateTextWithFontTag(const QString& family,int fontSize,const QColor& color,const QString& text);
     static QString removeNatronHtmlTag(QString text);
 
 private:
@@ -687,7 +689,7 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     void mergeFormat(const QTextCharFormat & fmt);

@@ -56,6 +56,113 @@ public:
      * to find and identify a specific Param.
      **/
     std::string getScriptName() const;
+    
+    /**
+     * @brief Returns the type of the parameter. The list of known type is:
+     * "Int" "Bool" "Double" "Button" "Choice" "Color" "String" "Group" "Page" "Parametric" "InputFile" "OutputFile" "Path"
+     **/
+    std::string getTypeName() const;
+    
+    /**
+     * @brief Returns the help that describes the parameter, its effect, etc...
+     **/
+    std::string getHelp() const;
+    
+    /**
+     * @brief Returns true if this parameter is not visible in the user interface, false if it is visible.
+     **/
+    bool getIsSecret() const;
+    
+    /**
+     * @brief Set the visibility of the parameter
+     **/
+    void setSecret(bool secret);
+    
+    /**
+     * @brief Returns whether the given dimension is enabled, i.e: whether the user can interact with it or not.
+     **/
+    bool getIsEnabled(int dimension = 0) const;
+    
+    /**
+     * @brief Set the given dimension enabledness
+     **/
+    void setEnabled(bool enabled,int dimension = 0);
+    
+    /**
+     * @brief Returns whether this parameter is persistant or not. A persistant parameter will be saved into the project.
+     **/
+    bool getIsPersistant() const;
+    
+    /**
+     * @brief Set the parameter persistancy.
+     **/
+    void setPersistant(bool persistant);
+    
+    /**
+     * @brief Returns whether the parameter forces a new evaluation when its value changes. An evaluation is typically 
+     * a request for a re-render of the current frame.
+     **/
+    bool getEvaluateOnChange() const;
+    
+    /**
+     * @brief Set whether this Param evaluates on change.
+     **/
+    void setEvaluateOnChange(bool eval);
+    
+    /**
+     * @brief Returns whether the parameter type can animate or not. For example a button parameter cannot animate.
+     * This is "static" (per parameter type property) and does not mean the same thing that getIsAnimationEnabled().
+     * A parameter can have the function getCanAnimate() return true but getIsAnimationEnabled() return false.
+     **/
+    bool getCanAnimate() const;
+    
+    /**
+     * @brief Returns whether this parameter can animate.
+     **/
+    bool getIsAnimationEnabled() const;
+    
+    /**
+     * @brief Returns whether the given dimension has animation or not. A dimension is considered to have an animation when it has
+     * at least 1 keyframe.
+     **/
+    bool getIsAnimated(int dimension = 0) const;
+    
+    /**
+     * @brief Returns the number of keyframes for the given dimension.
+     **/
+    int getNumKeys(int dimension = 0) const;
+    
+    /**
+     * @brief Returns the index of the keyframe at the given time for the given dimension.
+     * Returns -1 if no keyframe could be found at the given time.
+     **/
+    int getKeyIndex(int time,int dimension = 0) const;
+    
+    /**
+     * @brief Set in 'time' the time of the keyframe at the given index for the given dimension.
+     * This function returns true if a keyframe was found at the given index, false otherwise.
+     **/
+    bool getKeyTime(int index,int dimension,double* time) const;
+    
+    /**
+     * @brief Removes the keyframe at the given time and dimension if it matches any.
+     **/
+    void deleteValueAtTime(int time,int dimension = 0);
+    
+    /**
+     * @brief Removes all animation for the given dimension.
+     **/
+    void removeAnimation(int dimension = 0);
+    
+    /**
+     * @brief Compute the derivative at time as a double
+     **/
+    double getDerivativeAtTime(double time, int dimension = 0) const;
+    
+    /**
+     * @brief Compute the integral of dimension from time1 to time2 as a double
+     **/
+    double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const;
 };
 
 class IntParam : public Param
@@ -72,6 +179,24 @@ public:
      * will be called instead at the current's timeline position.
      **/
     int getValue(int dimension = 0) const;
+    
+    /**
+     * @brief Set the value held by the parameter. If it is animated 
+     * this function will either add a new keyframe or modify a keyframe already existing at the current time.
+     **/
+    void setValue(int value,int dimension = 0);
+    
+    /**
+     * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the 
+     * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
+     * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
+     **/
+    int getValueAtTime(int time,int dimension = 0) const;
+    
+    /**
+     * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
+     **/
+    void setValueAtTime(int value,int time,int dimension = 0);
 };
 
 #endif // PARAMETERWRAPPER_H

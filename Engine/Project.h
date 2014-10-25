@@ -218,7 +218,7 @@ public:
      * from the "this" pointer.
      **/
     boost::shared_ptr<Natron::Node> getNodePointer(Natron::Node* n) const;
-    Natron::ViewerColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
+    Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
 
 
     /**
@@ -357,28 +357,28 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason)  OVERRIDE FINAL;
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)  OVERRIDE FINAL;
 
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time)  OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;
 

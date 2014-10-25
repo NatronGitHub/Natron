@@ -202,18 +202,18 @@
     
      <!--Natron global enums-->
     <namespace-type name="Natron">
-    <enum-type name="StandardButton" flags="StandardButtons"/>
-    <enum-type name="KeyframeType"/>
+    <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
+    <enum-type name="KeyframeTypeEnum"/>
     <enum-type name="PixmapEnum"/>
-    <enum-type name="ValueChangedReason"/>
-    <enum-type name="AnimationLevel"/>
-    <enum-type name="ImageComponents"/>
-    <enum-type name="ImageBitDepth"/>
-    <enum-type name="ImagePremultiplication"/>
-    <enum-type name="ViewerCompositingOperator"/>
-    <enum-type name="ViewerColorSpace"/>
-    <enum-type name="Orientation"/>
-    <enum-type name="PlaybackMode"/>
+    <enum-type name="ValueChangedReasonEnum"/>
+    <enum-type name="AnimationLevelEnum"/>
+    <enum-type name="ImageComponentsEnum"/>
+    <enum-type name="ImageBitDepthEnum"/>
+    <enum-type name="ImagePremultiplicationEnum"/>
+    <enum-type name="ViewerCompositingOperatorEnum"/>
+    <enum-type name="ViewerColorSpaceEnum"/>
+    <enum-type name="OrientationEnum"/>
+    <enum-type name="PlaybackModeEnum"/>
     </namespace-type>
     
    
@@ -246,8 +246,24 @@
         </modify-function>
 
     </object-type>
-    <interface-type name="Param">
-    </interface-type>
+    <object-type name="Param">
+        <modify-function signature="getKeyTime(int,int,double*)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double time;
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;time);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[bool](%0));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](time));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="IntParam">
     </object-type>
     

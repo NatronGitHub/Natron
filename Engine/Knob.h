@@ -172,7 +172,7 @@ public slots:
     void onAnimationRemoved(int dimension);
     
     /**
-     * @brief Calls KnobI::evaluateValueChange with a reason of Natron::PLUGIN_EDITED
+     * @brief Calls KnobI::evaluateValueChange with a reason of Natron::eValueChangedReasonPluginEdited
      **/
     void onMasterChanged(int);
     
@@ -193,7 +193,7 @@ signals:
     ///emitted when the destructor is entered
     void deleted();
     
-    ///Emitted when the value is changed with a reason different than USER_EDITED
+    ///Emitted when the value is changed with a reason different than eValueChangedReasonUserEdited
     ///This can happen as the result of a setValue() call from the plug-in or by
     ///a slaved knob whose master's value changed. The reason is passed in parameter.
     void valueChanged(int dimension,int reason);
@@ -208,19 +208,19 @@ signals:
     ///Basically this is used when rendering with a Writer or for Trackers while tracking is active.
     void frozenChanged(bool frozen);
     
-    ///Emitted whenever a keyframe is set with a reason different of USER_EDITED
+    ///Emitted whenever a keyframe is set with a reason different of eValueChangedReasonUserEdited
     ///@param added True if this is the first time that the keyframe was set
     void keyFrameSet(SequenceTime time,int dimension,bool added);
     
     void refreshGuiCurve(int dimension);
 
     
-    ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
+    ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
     void keyFrameRemoved(SequenceTime,int);
     
     void keyFrameMoved(int dimension,int oldTime,int newTime);
     
-    ///Emitted whenever all keyframes of a dimension are about removed with a reason different of USER_EDITED
+    ///Emitted whenever all keyframes of a dimension are about removed with a reason different of eValueChangedReasonUserEdited
     void animationAboutToBeRemoved(int);
     
     ///Emitted whenever all keyframes of a dimension are effectively removed
@@ -230,7 +230,7 @@ signals:
     ///of the changes that occured in this knob, letting them a chance to update their interface.
     void updateSlaves(int dimension);
     
-    ///Emitted whenever a knob is slaved via the slaveTo function with a reason of PLUGIN_EDITED.
+    ///Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
     void knobSlaved(int,bool);
     
     ///Emitted whenever the GUI should set the value using the undo stack. This is
@@ -312,7 +312,7 @@ public:
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
      **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) = 0;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -361,17 +361,17 @@ protected:
     /**
      * @brief Removes all the keyframes in the given dimension.
      **/
-    virtual void removeAnimation(int dimension,Natron::ValueChangedReason reason) = 0;
+    virtual void removeAnimation(int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
+    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
 public:
 
     /**
-     * @brief Calls deleteValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls deleteValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
     void deleteValueAtTime(int time,int dimension);
     
@@ -383,7 +383,7 @@ public:
     /**
      * @brief Changes the interpolation type for the given keyframe
      **/
-    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeType interpolation,KeyFrame* newKey) = 0;
+    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
     
     /**
      * @brief Set the left/right derivatives of the control point at the given time.
@@ -392,29 +392,29 @@ public:
     virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) = 0;
 
     /**
-     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
+     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
-    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
+    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
+     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
-    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
+    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
     void removeAnimation(int dimension);
 
     /**
-     * @brief Calls deleteValueAtTime with a reason of Natron::USER_EDITED
+     * @brief Calls deleteValueAtTime with a reason of Natron::eValueChangedReasonUserEdited
      **/
     virtual void onKeyFrameRemoved(SequenceTime time,int dimension) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::USER_EDITED
+     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonUserEdited
      **/
     void onAnimationRemoved(int dimension);
 
@@ -425,7 +425,7 @@ public:
     virtual void onMasterChanged(KnobI* master,int masterDimension) = 0;
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::USER_EDITED.
+     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonUserEdited.
      **/
     virtual bool onKeyFrameSet(SequenceTime time,int dimension) = 0;
     virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
@@ -521,6 +521,13 @@ public:
      * This function is MT-safe as the description NEVER changes throughout the program.
      **/
     virtual const std::string & getDescription() const = 0;
+    
+    /**
+     * @brief Hide the description label on the GUI on the left of the knob. This is not dynamic
+     * and must be called upon the knob creation.
+     **/
+    virtual void hideDescription() = 0;
+    virtual bool isDescriptionVisible() const = 0;
 
     /**
      * @brief Returns a pointer to the holder owning the knob.
@@ -720,32 +727,32 @@ protected:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReason reason,
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReasonEnum reason,
                          bool ignoreMasterPersistence) = 0;
 
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
      * the dimension was really slaved.
      **/
-    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) = 0;
+    virtual void unSlave(int dimension,Natron::ValueChangedReasonEnum reason,bool copyState) = 0;
 
 public:
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::PLUGIN_EDITED.
+     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonPluginEdited.
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::USER_EDITED.
+     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonUserEdited.
      **/
     void onKnobSlavedTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension);
 
 
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::PLUGIN_EDITED.
+     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonPluginEdited.
      **/
     void unSlave(int dimension,bool copyState);
 
@@ -755,7 +762,7 @@ public:
     virtual void getListeners(std::list<KnobI*> & listeners) const = 0;
 
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::USER_EDITED.
+     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonUserEdited.
      **/
     void onKnobUnSlaved(int dimension);
 
@@ -779,12 +786,12 @@ public:
      * @brief Called by the GUI whenever the animation level changes (due to a time change
      * or a value changed).
      **/
-    virtual void setAnimationLevel(int dimension,Natron::AnimationLevel level) = 0;
+    virtual void setAnimationLevel(int dimension,Natron::AnimationLevelEnum level) = 0;
 
     /**
      * @brief Get the current animation level.
      **/
-    virtual Natron::AnimationLevel getAnimationLevel(int dimension) const = 0;
+    virtual Natron::AnimationLevelEnum getAnimationLevel(int dimension) const = 0;
 
     /**
      * @brief Restores the default value
@@ -856,25 +863,25 @@ public:
     virtual void populate() OVERRIDE;
     virtual void blockEvaluation() OVERRIDE FINAL;
     virtual void unblockEvaluation() OVERRIDE FINAL;
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 private:
 
     
     
-    virtual void removeAnimation(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
-    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void removeAnimation(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 public:
 
     virtual void onKeyFrameRemoved(SequenceTime time,int dimension) OVERRIDE FINAL;
     virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeType interpolation,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
-    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
-    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getKeyFrameTime(int index,int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getLastKeyFrameTime(int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -889,6 +896,8 @@ public:
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void hideDescription()  OVERRIDE FINAL;
+    virtual bool isDescriptionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void turnOffNewLine() OVERRIDE FINAL;
@@ -933,7 +942,7 @@ public:
     
 private:
 
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReason reason
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReasonEnum reason
                          ,bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
@@ -948,8 +957,8 @@ public:
     virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSlave(int dimension) const;
     virtual std::vector<std::pair<int,boost::shared_ptr<KnobI> > > getMasters_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
-    virtual Natron::AnimationLevel getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual Natron::AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
 
 
@@ -1067,22 +1076,22 @@ public:
 private:
 
    
-    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
+    virtual void unSlave(int dimension,Natron::ValueChangedReasonEnum reason,bool copyState) OVERRIDE FINAL;
 
     
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param newKey If not NULL and the animation level of the knob is Natron::INTERPOLATED_VALUE
+     * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
      * then a new keyframe will be set at the current time.
      **/
-    ValueChangedReturnCode setValue(const T & v,int dimension,Natron::ValueChangedReason reason,
+    ValueChangedReturnCode setValue(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,
                                     KeyFrame* newKey) WARN_UNUSED_RETURN;
     /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
      **/
-    bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
+    bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
 
 public:
 
@@ -1090,22 +1099,23 @@ public:
    
     
     /**
-     * @brief Calls setValue with a reason of Natron::NATRON_EDITED.
+     * @brief Calls setValue with a reason of Natron::eValueChangedReasonNatronInternalEdited.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
     ValueChangedReturnCode setValue(const T & value,int dimension,bool turnOffAutoKeying = false);
 
     /**
-     * @brief Calls setValue with a reason of Natron::USER_EDITED.
+     * @brief Calls setValue 
+     * @param reason Can either be Natron::eValueChangedReasonUserEdited or Natron::eValueChangedReasonNatronGuiEdited
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns A status according to the operation that was made to the keyframe.
      * @see ValueChangedReturnCode
      **/
-    ValueChangedReturnCode onValueChanged(int dimension,const T & v,KeyFrame* newKey);
+    ValueChangedReturnCode onValueChanged(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey);
     
     /**
-     * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls setValue with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
     ValueChangedReturnCode setValueFromPlugin(const T & value,int dimension);
 
@@ -1115,12 +1125,12 @@ public:
     void requestSetValueOnUndoStack(const T & value,int dimension);
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::NATRON_EDITED.
+     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonNatronInternalEdited.
      **/
     void setValueAtTime(int time,const T & v,int dimension);
     
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
     void setValueAtTimeFromPlugin(int time,const T & v,int dimension);
 
@@ -1489,14 +1499,14 @@ public:
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to prepare yourself to a lot of value changes.
      **/
-    void beginKnobsValuesChanged_public(Natron::ValueChangedReason reason);
+    void beginKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason);
 
     /**
      * @brief The virtual portion of notifyProjectEndKnobsValuesChanged(). This is called by the project
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
      **/
-    void endKnobsValuesChanged_public(Natron::ValueChangedReason reason);
+    void endKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason);
 
 
     /**
@@ -1505,7 +1515,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time);
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time);
 
 
     /**
@@ -1513,7 +1523,7 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason);
+    void evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason);
 
     /**
      * @brief To be called after each function that modifies actionsRecursionLevel that is not
@@ -1554,7 +1564,7 @@ protected:
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to prepare yourself to a lot of value changes.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason)
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
     {
         (void)reason;
     }
@@ -1564,7 +1574,7 @@ protected:
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason)
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
     {
         (void)reason;
     }
@@ -1576,7 +1586,7 @@ protected:
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
     virtual void onKnobValueChanged(KnobI* /*k*/,
-                                    Natron::ValueChangedReason /*reason*/,
+                                    Natron::ValueChangedReasonEnum /*reason*/,
                                     SequenceTime /*time*/)
     {
     }
@@ -1586,7 +1596,7 @@ protected:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) = 0;
+    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Called when the knobHolder is made slave or unslaved.

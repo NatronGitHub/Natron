@@ -164,7 +164,7 @@ public:
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double offset, int lut, int pboIndex,
-                                            unsigned int mipMapLevel,Natron::ImagePremultiplication premult,
+                                            unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
                                             int textureIndex) OVERRIDE FINAL;
     
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
@@ -294,7 +294,7 @@ public:
 
     bool getZoomOrPannedSinceLastFit() const;
 
-    virtual Natron::ViewerCompositingOperator getCompositingOperator() const OVERRIDE FINAL;
+    virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
     virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
 
     ///Not MT-Safe

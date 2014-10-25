@@ -226,7 +226,7 @@ Natron::OfxHost::vmessage(const char* msgtype,
     } else if (type == kOfxMessageMessage) {
         Natron::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
-        if (Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::Yes) {
+        if (Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::eStandardButtonYes) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;

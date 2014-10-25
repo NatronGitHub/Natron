@@ -50,19 +50,19 @@
 
 // Type indices
 #define SBK_NATRON_IDX                                               3
-#define SBK_NATRON_ORIENTATION_IDX                                   9
-#define SBK_NATRON_PLAYBACKMODE_IDX                                  11
-#define SBK_NATRON_VALUECHANGEDREASON_IDX                            13
-#define SBK_NATRON_STANDARDBUTTON_IDX                                12
-#define SBK_QFLAGS_NATRON_STANDARDBUTTON__IDX                        17
-#define SBK_NATRON_IMAGEPREMULTIPLICATION_IDX                        7
-#define SBK_NATRON_ANIMATIONLEVEL_IDX                                4
-#define SBK_NATRON_KEYFRAMETYPE_IDX                                  8
-#define SBK_NATRON_IMAGECOMPONENTS_IDX                               6
-#define SBK_NATRON_VIEWERCOLORSPACE_IDX                              14
-#define SBK_NATRON_IMAGEBITDEPTH_IDX                                 5
-#define SBK_NATRON_VIEWERCOMPOSITINGOPERATOR_IDX                     15
+#define SBK_NATRON_STANDARDBUTTONENUM_IDX                            12
+#define SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX                    17
+#define SBK_NATRON_IMAGECOMPONENTSENUM_IDX                           6
+#define SBK_NATRON_IMAGEBITDEPTHENUM_IDX                             5
+#define SBK_NATRON_KEYFRAMETYPEENUM_IDX                              8
+#define SBK_NATRON_VALUECHANGEDREASONENUM_IDX                        13
+#define SBK_NATRON_ANIMATIONLEVELENUM_IDX                            4
+#define SBK_NATRON_ORIENTATIONENUM_IDX                               9
+#define SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX                    7
+#define SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX                 15
+#define SBK_NATRON_PLAYBACKMODEENUM_IDX                              11
 #define SBK_NATRON_PIXMAPENUM_IDX                                    10
+#define SBK_NATRON_VIEWERCOLORSPACEENUM_IDX                          14
 #define SBK_PARAM_IDX                                                16
 #define SBK_INTPARAM_IDX                                             2
 #define SBK_EFFECT_IDX                                               1
@@ -90,19 +90,19 @@ namespace Shiboken
 {
 
 // PyType functions, to get the PyObjectType for a type T
-template<> inline PyTypeObject* SbkType< ::Natron::Orientation >() { return SbkNatronEngineTypes[SBK_NATRON_ORIENTATION_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::PlaybackMode >() { return SbkNatronEngineTypes[SBK_NATRON_PLAYBACKMODE_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::ValueChangedReason >() { return SbkNatronEngineTypes[SBK_NATRON_VALUECHANGEDREASON_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::StandardButton >() { return SbkNatronEngineTypes[SBK_NATRON_STANDARDBUTTON_IDX]; }
-template<> inline PyTypeObject* SbkType< ::QFlags<Natron::StandardButton> >() { return SbkNatronEngineTypes[SBK_QFLAGS_NATRON_STANDARDBUTTON__IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::ImagePremultiplication >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGEPREMULTIPLICATION_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::AnimationLevel >() { return SbkNatronEngineTypes[SBK_NATRON_ANIMATIONLEVEL_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::KeyframeType >() { return SbkNatronEngineTypes[SBK_NATRON_KEYFRAMETYPE_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::ImageComponents >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTS_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::ViewerColorSpace >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOLORSPACE_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::ImageBitDepth >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGEBITDEPTH_IDX]; }
-template<> inline PyTypeObject* SbkType< ::Natron::ViewerCompositingOperator >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATOR_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::StandardButtonEnum >() { return SbkNatronEngineTypes[SBK_NATRON_STANDARDBUTTONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::QFlags<Natron::StandardButtonEnum> >() { return SbkNatronEngineTypes[SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ImageComponentsEnum >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTSENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ImageBitDepthEnum >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGEBITDEPTHENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::KeyframeTypeEnum >() { return SbkNatronEngineTypes[SBK_NATRON_KEYFRAMETYPEENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ValueChangedReasonEnum >() { return SbkNatronEngineTypes[SBK_NATRON_VALUECHANGEDREASONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::AnimationLevelEnum >() { return SbkNatronEngineTypes[SBK_NATRON_ANIMATIONLEVELENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::OrientationEnum >() { return SbkNatronEngineTypes[SBK_NATRON_ORIENTATIONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ImagePremultiplicationEnum >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ViewerCompositingOperatorEnum >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::PlaybackModeEnum >() { return SbkNatronEngineTypes[SBK_NATRON_PLAYBACKMODEENUM_IDX]; }
 template<> inline PyTypeObject* SbkType< ::Natron::PixmapEnum >() { return SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ViewerColorSpaceEnum >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOLORSPACEENUM_IDX]; }
 template<> inline PyTypeObject* SbkType< ::Param >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::IntParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INTPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Effect >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_EFFECT_IDX]); }

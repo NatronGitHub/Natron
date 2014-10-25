@@ -158,7 +158,7 @@ public:
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputRotoBrush(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getRotoBrushInputIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::Status getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
     virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time,int view, const RenderScale & scale, RectD *rod)  OVERRIDE;
@@ -182,11 +182,11 @@ public:
     virtual bool onOverlayFocusGained(double scaleX, double scaleY) OVERRIDE FINAL;
     virtual bool onOverlayFocusLost(double scaleX, double scaleY) OVERRIDE FINAL;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, int view, SequenceTime time) OVERRIDE;
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
-    virtual Natron::Status render(SequenceTime time,
+    virtual Natron::StatusEnum render(SequenceTime time,
                                   const RenderScale & scale,
                                   const RectI & roi, //!< renderWindow in pixel coordinates
                                   int view,
@@ -200,7 +200,7 @@ public:
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE;
-    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;
 
     /**
@@ -222,7 +222,7 @@ public:
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void onMultipleInputsChanged() OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
-    virtual Natron::Status beginSequenceRender(SequenceTime first,
+    virtual Natron::StatusEnum beginSequenceRender(SequenceTime first,
                                                SequenceTime last,
                                                SequenceTime step,
                                                bool interactive,
@@ -230,7 +230,7 @@ public:
                                                bool isSequentialRender,
                                                bool isRenderResponseToUserInteraction,
                                                int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::Status endSequenceRender(SequenceTime first,
+    virtual Natron::StatusEnum endSequenceRender(SequenceTime first,
                                              SequenceTime last,
                                              SequenceTime step,
                                              bool interactive,
@@ -238,11 +238,11 @@ public:
                                              bool isSequentialRender,
                                              bool isRenderResponseToUserInteraction,
                                              int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
-    virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponents* comp, Natron::ImageBitDepth* depth) const OVERRIDE FINAL;
-    virtual Natron::SequentialPreference getSequentialPreference() const OVERRIDE FINAL;
-    virtual Natron::ImagePremultiplication getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponentsEnum* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
+    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL;
+    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
@@ -358,7 +358,7 @@ private:
     bool _created; // true after the call to createInstance
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
-    mutable EffectInstance::RenderSafety _renderSafety;
+    mutable EffectInstance::RenderSafetyEnum _renderSafety;
     mutable bool _wasRenderSafetySet;
     mutable QReadWriteLock* _renderSafetyLock;
     ContextEnum _context;

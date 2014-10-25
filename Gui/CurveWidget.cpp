@@ -74,14 +74,14 @@ static double AXIS_MIN = -100000.;
 
 
 namespace { // protect local classes in anonymous namespace
-enum EventState
+enum EventStateEnum
 {
-    DRAGGING_VIEW = 0,
-    DRAGGING_KEYS = 1,
-    SELECTING = 2,
-    DRAGGING_TANGENT = 3,
-    DRAGGING_TIMELINE = 4,
-    NONE = 5
+    eEventStateDraggingView = 0,
+    eEventStateDraggingKeys = 1,
+    eEventStateSelecting = 2,
+    eEventStateDraggingTangent = 3,
+    eEventStateDraggingTimeline = 4,
+    eEventStateNone = 5
 };
 
 struct SelectedKey_belongs_to_curve
@@ -379,13 +379,13 @@ CurveGui::drawCurve(int curveIndex,
             glBegin(GL_POINTS);
             glVertex2f(x,y);
             glEnd();
-            if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != KEYFRAME_CONSTANT) ) {
+            if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
                 
                 QFontMetrics m( _curveWidget->getFont() );
 
                 
                 //draw the derivatives lines
-                if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
+                if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
                     glLineStipple(2, 0xAAAA);
                     glEnable(GL_LINE_STIPPLE);
                 }
@@ -396,7 +396,7 @@ CurveGui::drawCurve(int curveIndex,
                 glVertex2f(x, y);
                 glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
                 glEnd();
-                if ( (key.getInterpolation() != KEYFRAME_FREE) && (key.getInterpolation() != KEYFRAME_BROKEN) ) {
+                if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
                     glDisable(GL_LINE_STIPPLE);
                     
                 }
@@ -541,7 +541,7 @@ public:
 
     void updateSelectedKeysMaxMovement();
 
-    void setSelectedKeysInterpolation(Natron::KeyframeType type);
+    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type);
 
     void createMenu();
 
@@ -557,7 +557,7 @@ public:
 
     QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
-    EventState _state;
+    EventStateEnum _state;
     QMenu* _rightClickMenu;
     QColor _clearColor;
     QColor _selectedCurveColor;
@@ -602,7 +602,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
                                        CurveWidget* widget)
     : _oldClick()
       , zoomCtx()
-      , _state(NONE)
+      , _state(eEventStateNone)
       , _rightClickMenu( new QMenu(widget) )
       , _clearColor(0,0,0,255)
       , _selectedCurveColor(255,255,89,255)
@@ -1702,7 +1702,7 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 } // updateSelectedKeysMaxMovement
 
 void
-CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeType type)
+CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1735,8 +1735,8 @@ CurveWidget::CurveWidget(Gui* gui,
     if (timeline) {
         QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),this,SLOT( onTimeLineFrameChanged(SequenceTime,int) ) );
         QObject::connect( timeline.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,SLOT( onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
-        onTimeLineFrameChanged(timeline->currentFrame(), Natron::PROJECT_LOADING);
-        onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::PROJECT_LOADING);
+        onTimeLineFrameChanged(timeline->currentFrame(), Natron::eValueChangedReasonNatronGuiEdited);
+        onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::eValueChangedReasonNatronGuiEdited);
     }
 }
 
@@ -2158,7 +2158,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     }
     
    
-    EditKeyFrameDialog::EditMode mode = EditKeyFrameDialog::EDIT_KEYFRAME_POSITION;
+    EditKeyFrameDialog::EditModeEnum mode = EditKeyFrameDialog::eEditModeKeyframePosition;
     
     KeyPtr selectedText;
     ///We're nearby a selected keyframe's text
@@ -2169,9 +2169,9 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
         if (tangentText.second) {
             if (tangentText.first == MoveTangentCommand::LEFT_TANGENT) {
-                mode = EditKeyFrameDialog::EDIT_LEFT_DERIVATIVE;
+                mode = EditKeyFrameDialog::eEditModeLeftDerivative;
             } else {
-                mode = EditKeyFrameDialog::EDIT_RIGHT_DERIVATIVE;
+                mode = EditKeyFrameDialog::eEditModeRightDerivative;
             }
             selectedText = tangentText.second;
         }
@@ -2260,7 +2260,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     ////
     // middle button: scroll view
     if ( buttonDownIsMiddle(e) ) {
-        _imp->_state = DRAGGING_VIEW;
+        _imp->_state = eEventStateDraggingView;
         _imp->_oldClick = e->pos();
         // no need to set _imp->_dragStartPoint
 
@@ -2272,7 +2272,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     if ( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
         // yes, start dragging
         _imp->_mustSetDragOrientation = true;
-        _imp->_state = DRAGGING_KEYS;
+        _imp->_state = eEventStateDraggingKeys;
         _imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
@@ -2288,7 +2288,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     if (selectedKey.first) {
         _imp->_drawSelectedKeyFramesBbox = false;
         _imp->_mustSetDragOrientation = true;
-        _imp->_state = DRAGGING_KEYS;
+        _imp->_state = eEventStateDraggingKeys;
         setCursor( QCursor(Qt::CrossCursor) );
 
         if ( !modCASIsControl(e) ) {
@@ -2321,9 +2321,9 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //select the derivative only if it is not a constant keyframe
-    if ( selectedTan.second && (selectedTan.second->key.getInterpolation() != KEYFRAME_CONSTANT) ) {
+    if ( selectedTan.second && (selectedTan.second->key.getInterpolation() != eKeyframeTypeConstant) ) {
         _imp->_mustSetDragOrientation = true;
-        _imp->_state = DRAGGING_TANGENT;
+        _imp->_state = eEventStateDraggingTangent;
         _imp->_selectedDerivative = selectedTan;
         _imp->_oldClick = e->pos();
         //no need to set _imp->_dragStartPoint
@@ -2342,7 +2342,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     // is the click near the vertical current time marker?
     if ( _imp->isNearbyTimelineBtmPoly( e->pos() ) || _imp->isNearbyTimelineTopPoly( e->pos() ) ) {
         _imp->_mustSetDragOrientation = true;
-        _imp->_state = DRAGGING_TIMELINE;
+        _imp->_state = eEventStateDraggingTimeline;
         _imp->_oldClick = e->pos();
         // no need to set _imp->_dragStartPoint
 
@@ -2370,7 +2370,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     if ( !modCASIsControl(e) ) {
         _imp->_selectedKeyFrames.clear();
     }
-    _imp->_state = SELECTING;
+    _imp->_state = eEventStateSelecting;
     _imp->_oldClick = e->pos();
     _imp->_dragStartPoint = e->pos();
     update();
@@ -2385,7 +2385,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
     if (_imp->_evaluateOnPenUp) {
         _imp->_evaluateOnPenUp = false;
 
-        if (_imp->_state == DRAGGING_KEYS) {
+        if (_imp->_state == eEventStateDraggingKeys) {
             std::map<KnobHolder*,bool> toEvaluate;
             for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
                 boost::shared_ptr<KnobI> knob = (*it)->curve->getKnob()->getKnob();
@@ -2401,23 +2401,23 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 }
             }
             for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
-                it->first->evaluate_public(NULL, it->second,Natron::USER_EDITED);
+                it->first->evaluate_public(NULL, it->second,Natron::eValueChangedReasonUserEdited);
             }
-        } else if (_imp->_state == DRAGGING_TANGENT) {
+        } else if (_imp->_state == eEventStateDraggingTangent) {
             boost::shared_ptr<KnobI> toEvaluate = _imp->_selectedDerivative.second->curve->getKnob()->getKnob();
             assert(toEvaluate);
-            toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::USER_EDITED);
+            toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::eValueChangedReasonUserEdited);
         }
     }
 
-    EventState prevState = _imp->_state;
-    _imp->_state = NONE;
+    EventStateEnum prevState = _imp->_state;
+    _imp->_state = eEventStateNone;
     _imp->_selectionRectangle.setBottomRight( QPointF(0,0) );
     _imp->_selectionRectangle.setTopLeft( _imp->_selectionRectangle.bottomRight() );
     if (_imp->_selectedKeyFrames.size() > 1) {
         _imp->_drawSelectedKeyFramesBbox = true;
     }
-    if (prevState == SELECTING) { // should other cases be considered?
+    if (prevState == eEventStateSelecting) { // should other cases be considered?
         update();
     }
 }
@@ -2470,13 +2470,13 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         }
     }
 
-    if (_imp->_state == NONE) {
+    if (_imp->_state == eEventStateNone) {
         // nothing else to do
         return;
     }
 
     // after this point , only mouse dragging situations are handled
-    assert(_imp->_state != NONE);
+    assert(_imp->_state != eEventStateNone);
 
     if (_imp->_mustSetDragOrientation) {
         QPointF diff(e->pos() - _imp->_dragStartPoint);
@@ -2498,11 +2498,11 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     double dx = ( oldClick_opengl.x() - newClick_opengl.x() );
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
     switch (_imp->_state) {
-    case DRAGGING_VIEW:
+    case eEventStateDraggingView:
         _imp->zoomCtx.translate(dx, dy);
         break;
 
-    case DRAGGING_KEYS:
+    case eEventStateDraggingKeys:
         if (!_imp->_mustSetDragOrientation) {
             if ( !_imp->_selectedKeyFrames.empty() ) {
                 bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
@@ -2514,19 +2514,19 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         }
         break;
 
-    case SELECTING:
+    case eEventStateSelecting:
         _imp->refreshSelectionRectangle( (double)e->x(),(double)e->y() );
         break;
 
-    case DRAGGING_TANGENT:
+    case eEventStateDraggingTangent:
         _imp->moveSelectedTangent(newClick_opengl);
         break;
 
-    case DRAGGING_TIMELINE:
-        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(),NULL, Natron::CURVE_EDITOR_SEEK );
+    case eEventStateDraggingTimeline:
+        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(),NULL, Natron::eTimelineChangeReasonCurveEditorSeek );
         break;
 
-    case NONE:
+    case eEventStateNone:
         assert(0);
         break;
     }
@@ -2788,7 +2788,8 @@ CurveWidget::enterEvent(QEvent* e)
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
     currentFocus->objectName() == "PropertiesBinScrollArea" ||
-    currentFocus->objectName() == "tree";
+    currentFocus->objectName() == "tree" ||
+    currentFocus->objectName() == "SettingsPanel";
     
     if (canSetFocus) {
         setFocus();
@@ -2847,7 +2848,7 @@ CurveWidget::constantInterpForSelectedKeyFrames()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->setSelectedKeysInterpolation(KEYFRAME_CONSTANT);
+    _imp->setSelectedKeysInterpolation(eKeyframeTypeConstant);
 }
 
 void
@@ -2856,7 +2857,7 @@ CurveWidget::linearInterpForSelectedKeyFrames()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->setSelectedKeysInterpolation(KEYFRAME_LINEAR);
+    _imp->setSelectedKeysInterpolation(eKeyframeTypeLinear);
 }
 
 void
@@ -2865,7 +2866,7 @@ CurveWidget::smoothForSelectedKeyFrames()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->setSelectedKeysInterpolation(KEYFRAME_SMOOTH);
+    _imp->setSelectedKeysInterpolation(eKeyframeTypeSmooth);
 }
 
 void
@@ -2874,7 +2875,7 @@ CurveWidget::catmullromInterpForSelectedKeyFrames()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->setSelectedKeysInterpolation(KEYFRAME_CATMULL_ROM);
+    _imp->setSelectedKeysInterpolation(eKeyframeTypeCatmullRom);
 }
 
 void
@@ -2883,7 +2884,7 @@ CurveWidget::cubicInterpForSelectedKeyFrames()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->setSelectedKeysInterpolation(KEYFRAME_CUBIC);
+    _imp->setSelectedKeysInterpolation(eKeyframeTypeCubic);
 }
 
 void
@@ -2892,7 +2893,7 @@ CurveWidget::horizontalInterpForSelectedKeyFrames()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->setSelectedKeysInterpolation(KEYFRAME_HORIZONTAL);
+    _imp->setSelectedKeysInterpolation(eKeyframeTypeHorizontal);
 }
 
 void
@@ -2901,7 +2902,7 @@ CurveWidget::breakDerivativesForSelectedKeyFrames()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->setSelectedKeysInterpolation(KEYFRAME_BROKEN);
+    _imp->setSelectedKeysInterpolation(eKeyframeTypeBroken);
 }
 
 void
@@ -3594,9 +3595,9 @@ struct EditKeyFrameDialogPrivate
     
     bool wasAccepted;
     
-    EditKeyFrameDialog::EditMode mode;
+    EditKeyFrameDialog::EditModeEnum mode;
     
-    EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditMode mode,CurveWidget* curveWidget,const KeyPtr& key)
+    EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditModeEnum mode,CurveWidget* curveWidget,const KeyPtr& key)
     : curveWidget(curveWidget)
     , key(key)
     , originalX(key->key.getTime())
@@ -3611,9 +3612,9 @@ struct EditKeyFrameDialogPrivate
     , wasAccepted(false)
     , mode(mode)
     {
-        if (mode == EditKeyFrameDialog::EDIT_LEFT_DERIVATIVE) {
+        if (mode == EditKeyFrameDialog::eEditModeLeftDerivative) {
             originalX = key->key.getLeftDerivative();
-        } else if (mode == EditKeyFrameDialog::EDIT_RIGHT_DERIVATIVE) {
+        } else if (mode == EditKeyFrameDialog::eEditModeRightDerivative) {
             originalX = key->key.getRightDerivative();
         }
         
@@ -3621,7 +3622,7 @@ struct EditKeyFrameDialogPrivate
     }
 };
 
-EditKeyFrameDialog::EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget,const KeyPtr& key,QWidget* parent)
+EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidget,const KeyPtr& key,QWidget* parent)
 : QDialog(parent)
 , _imp(new EditKeyFrameDialogPrivate(mode,curveWidget,key))
 {
@@ -3636,13 +3637,13 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget,co
     
     QString xLabel;
     switch (mode) {
-        case EDIT_KEYFRAME_POSITION:
+        case eEditModeKeyframePosition:
             xLabel = QString("x: ");
             break;
-        case EDIT_LEFT_DERIVATIVE:
+        case eEditModeLeftDerivative:
             xLabel = QString(tr("Left slope: "));
             break;
-        case EDIT_RIGHT_DERIVATIVE:
+        case eEditModeRightDerivative:
             xLabel = QString(tr("Right slope: "));
             break;
     }
@@ -3651,7 +3652,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget,co
     
     SpinBox::SPINBOX_TYPE xType;
     
-    if (mode == EDIT_KEYFRAME_POSITION) {
+    if (mode == eEditModeKeyframePosition) {
         xType = key->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers() ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
     } else {
         xType = SpinBox::DOUBLE_SPINBOX;
@@ -3662,7 +3663,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget,co
     QObject::connect(_imp->xSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onXSpinBoxValueChanged(double)));
     _imp->boxLayout->addWidget(_imp->xSpinbox);
     
-    if (mode == EDIT_KEYFRAME_POSITION) {
+    if (mode == eEditModeKeyframePosition) {
         
 //        std::pair<double,double> xRange = _imp->key->curve->getInternalCurve()->getXRange();
 //        _imp->xSpinbox->setMinimum(xRange.first);
@@ -3709,7 +3710,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
     double curY = _imp->key->key.getValue();
     double curX = _imp->key->key.getTime();
     
-    if (_imp->mode == EDIT_KEYFRAME_POSITION) {
+    if (_imp->mode == eEditModeKeyframePosition) {
         ///Check that another keyframe doesn't have this time
 
         int expectedEqualKeys = 0;
@@ -3739,7 +3740,7 @@ void
 EditKeyFrameDialog::moveDerivativeTo(double d)
 {
     MoveTangentCommand::SelectedDerivative deriv;
-    if (_imp->mode == EDIT_LEFT_DERIVATIVE) {
+    if (_imp->mode == eEditModeLeftDerivative) {
         deriv = MoveTangentCommand::LEFT_TANGENT;
     } else {
         deriv = MoveTangentCommand::RIGHT_TANGENT;
@@ -3751,7 +3752,7 @@ EditKeyFrameDialog::moveDerivativeTo(double d)
 void
 EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 {
-    if (_imp->mode == EDIT_KEYFRAME_POSITION) {
+    if (_imp->mode == eEditModeKeyframePosition) {
         moveKeyTo(d, _imp->key->key.getValue());
     } else {
         moveDerivativeTo(d);
@@ -3772,7 +3773,7 @@ EditKeyFrameDialog::keyPressEvent(QKeyEvent* e)
         _imp->wasAccepted = true;
         accept();
     } else if (e->key() == Qt::Key_Escape) {
-        if (_imp->mode == EDIT_KEYFRAME_POSITION) {
+        if (_imp->mode == eEditModeKeyframePosition) {
             moveKeyTo(_imp->originalX, _imp->originalY);
         } else {
             moveDerivativeTo(_imp->originalX);
@@ -3792,7 +3793,7 @@ EditKeyFrameDialog::changeEvent(QEvent* e)
 {
     if (e->type() == QEvent::ActivationChange && !_imp->wasAccepted) {
         if ( !isActiveWindow() ) {
-            if (_imp->mode == EDIT_KEYFRAME_POSITION) {
+            if (_imp->mode == eEditModeKeyframePosition) {
                 moveKeyTo(_imp->originalX, _imp->originalY);
             } else {
                 moveDerivativeTo(_imp->originalX);

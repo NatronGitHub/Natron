@@ -245,7 +245,7 @@ computeHisto(const HistogramRequest & request,
     double binSize = (request.vmax - request.vmin) / histo->size();
 
     ///Images come from the viewer which is in float.
-    assert(request.image->getBitDepth() == Natron::IMAGE_FLOAT);
+    assert(request.image->getBitDepth() == Natron::eImageBitDepthFloat);
 
     for (int y = request.rect.bottom(); y < request.rect.top(); ++y) {
         for (int x = request.rect.left(); x < request.rect.right(); ++x) {

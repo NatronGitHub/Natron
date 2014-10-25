@@ -132,9 +132,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
         if (projectKnobs[i] == envVars) {
             
-            ///For APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI don't change the project path since it is controlled
+            ///For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
             ///by the main GUI process
-            if (appPTR->getAppType() != AppManager::APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) {
+            if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
                 autoSetProjectDirectory(isAutoSave ? realFilePath : path);
             }
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
@@ -145,7 +145,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 2) restore the timeline
     timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
-    timeline->seekFrame(obj.getCurrentTime(),NULL,Natron::PLAYBACK_SEEK);
+    timeline->seekFrame(obj.getCurrentTime(),NULL,Natron::eTimelineChangeReasonPlaybackSeek);
 
     /// 3) Restore the nodes
     const std::list< NodeSerialization > & serializedNodes = obj.getNodesSerialization();

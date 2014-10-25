@@ -52,11 +52,11 @@ public:
 
     virtual void evaluate(KnobI* /*knob*/,
                           bool /*isSignificant*/,
-                          Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL
+                          Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE FINAL;
 
     int getViewersBitDepth() const;
 
@@ -184,6 +184,19 @@ public:
     bool areRGBPixelComponentsSupported() const;
     
     bool isMergeAutoConnectingToAInput() const;
+    
+    /**
+     * @brief If the OCIO startup check parameter is set to true, warn the user if the OCIO config is different
+     * from the default value held by NATRON_CUSTOM_OCIO_CONFIG_NAME
+     * This can only be called once the 1st AppInstance has been loaded otherwise dialogs could not be created.
+     **/
+    void doOCIOStartupCheckIfNeeded();
+    
+    /**
+     * @brief Returns true if the QSettings existed prior to loading the settings
+     **/
+    bool didSettingsExistOnStartup() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -195,6 +208,7 @@ private:
 
 
     boost::shared_ptr<Page_Knob> _generalTab;
+    boost::shared_ptr<Bool_Knob> _natronSettingsExist;
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Bool_Knob> _linearPickers;
@@ -216,6 +230,8 @@ private:
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     boost::shared_ptr<String_Knob> _hostName;
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
+    boost::shared_ptr<Bool_Knob> _warnOcioConfigKnobChanged;
+    boost::shared_ptr<Bool_Knob> _ocioStartupCheck;
     boost::shared_ptr<File_Knob> _customOcioConfigFile;
     boost::shared_ptr<Page_Knob> _cachingTab;
 
@@ -274,6 +290,8 @@ private:
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     bool _wereChangesMadeSinceLastSave;
     bool _restoringSettings;
+    bool _ocioRestored;
+    bool _settingsExisted;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_

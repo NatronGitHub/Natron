@@ -89,7 +89,7 @@ AboutWindow::AboutWindow(Gui* gui,
     QString endAbout =
     QString("<p>This version was generated from the source code branch %3"
             " at commit %4.</p>"
-            "<p>Copyright (C) 2013 the %1 developers.</p>"
+            "<p>Copyright (C) 2014 the %1 developers.</p>"
             "<p>This is free software. You may redistribute copies of it "
             "under the terms of the <a href=\"http://www.mozilla.org/MPL/2.0/\">"
             "<font color=\"orange\">MPL Mozilla Public License</font></a>. "

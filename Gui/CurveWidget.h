@@ -407,13 +407,13 @@ class EditKeyFrameDialog : public QDialog
     
 public:
     
-    enum EditMode {
-        EDIT_KEYFRAME_POSITION,
-        EDIT_LEFT_DERIVATIVE,
-        EDIT_RIGHT_DERIVATIVE
+    enum EditModeEnum {
+        eEditModeKeyframePosition,
+        eEditModeLeftDerivative,
+        eEditModeRightDerivative
     };
     
-    EditKeyFrameDialog(EditMode mode,CurveWidget* curveWidget, const KeyPtr& key,QWidget* parent);
+    EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidget, const KeyPtr& key,QWidget* parent);
     
     virtual ~EditKeyFrameDialog();
     

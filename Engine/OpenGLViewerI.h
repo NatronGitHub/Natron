@@ -95,7 +95,7 @@ public:
                                             double gain, double offset, int lut,
                                             int pboIndex,
                                             unsigned int mipMapLevel,
-                                            Natron::ImagePremultiplication premult,
+                                            Natron::ImagePremultiplicationEnum premult,
                                             int textureIndex) = 0;
 
     /**
@@ -149,7 +149,7 @@ public:
     /**
      * @brief Must return the current compositing operator applied to the viewer input A and B.
      **/
-    virtual Natron::ViewerCompositingOperator getCompositingOperator() const = 0;
+    virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
 
     /**
      * @brief Returns whether the user sould be able to edit the frame range or not.

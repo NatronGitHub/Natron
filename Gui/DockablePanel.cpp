@@ -60,6 +60,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
@@ -68,6 +70,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/GuiMacros.h"
 
 using std::make_pair;
@@ -465,6 +468,7 @@ DockablePanel::getHolder() const
 DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
     : QTabWidget(parent)
 {
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 QSize
@@ -523,46 +527,16 @@ DockablePanel::onLineEditNameEditingFinished()
     if ( _imp->_gui->getApp()->isClosing() ) {
         return;
     }
+    
+    NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
+    boost::shared_ptr<NodeGui> node;
+    if (panel) {
+        node = panel->getNode();
+    }
     NodeBackDrop* bd = dynamic_cast<NodeBackDrop*>(_imp->_holder);
-    if (bd) {
-        QString newName = _imp->_nameLineEdit->text();
-        if ( _imp->_gui->getNodeGraph()->checkIfBackDropNameExists(newName,bd) ) {
-            Natron::errorDialog( tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString() );
-            _imp->_nameLineEdit->setText( bd->getName() );
-
-            return;
-        }
-    }
-
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
-    if (effect) {
-        std::string newName = _imp->_nameLineEdit->text().toStdString();
-        if ( newName.empty() ) {
-            _imp->_nameLineEdit->blockSignals(true);
-            Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
-            _imp->_nameLineEdit->setText( effect->getName().c_str() );
-            _imp->_nameLineEdit->blockSignals(false);
-
-            return;
-        }
-
-        ///if the node name hasn't changed return
-        if (effect->getName() == newName) {
-            return;
-        }
-
-        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-        assert(nodePanel);
-        if ( _imp->_gui->getNodeGraph()->checkIfNodeNameExists( newName, nodePanel->getNode().get() ) ) {
-            _imp->_nameLineEdit->blockSignals(true);
-            Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString() );
-            _imp->_nameLineEdit->setText( effect->getName().c_str() );
-            _imp->_nameLineEdit->blockSignals(false);
-
-            return;
-        }
-    }
-    emit nameChanged( _imp->_nameLineEdit->text() );
+    assert(node || bd);
+    pushUndoCommand(new RenameNodeUndoRedoCommand(node,bd,_imp->_nameLineEdit->text()));
+   
 }
 
 void
@@ -933,6 +907,22 @@ RightClickableWidget::mousePressEvent(QMouseEvent* e)
     }
 }
 
+void
+RightClickableWidget::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Escape) {
+        emit escapePressed();
+    }
+    QWidget::keyPressEvent(e);
+}
+
+void
+RightClickableWidget::enterEvent(QEvent* e)
+{
+    setFocus();
+    QWidget::enterEvent(e);
+}
+
 PageMap::iterator
 DockablePanelPrivate::addPage(const QString & name)
 {
@@ -953,10 +943,10 @@ DockablePanelPrivate::addPage(const QString & name)
     } else {
         RightClickableWidget* clickableWidget = new RightClickableWidget(_tabWidget);
         QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
+        QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT( closePanel() ) );
         newTab = clickableWidget;
         layoutContainer = newTab;
     }
-    newTab->setObjectName(name);
     QFormLayout *tabLayout = new QFormLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
@@ -1102,8 +1092,17 @@ DockablePanel::closePanel()
         }
     }
 
-
-    getGui()->getApp()->redrawAllViewers();
+    ///Closing a panel always gives focus to some line-edit in the application which is quite annoying
+    QWidget* hasFocus = qApp->focusWidget();
+    if (hasFocus) {
+        hasFocus->clearFocus();
+    }
+    
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        (*it)->getViewer()->redraw();
+    }
+    
 }
 
 void
@@ -1152,7 +1151,7 @@ DockablePanel::floatPanel()
 }
 
 void
-DockablePanel::onNameChanged(const QString & str)
+DockablePanel::setName(const QString & str)
 {
     if (_imp->_nameLabel) {
         _imp->_nameLabel->setText(str);
@@ -1160,6 +1159,7 @@ DockablePanel::onNameChanged(const QString & str)
         _imp->_nameLineEdit->setText(str);
     }
 }
+
 
 Button*
 DockablePanel::insertHeaderButton(int headerPosition)

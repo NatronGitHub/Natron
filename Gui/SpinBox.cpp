@@ -408,8 +408,8 @@ SpinBox::increment(int delta,
     qlonglong llval = noDotStr.toLongLong(); // The value, as a long long int
     int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
     assert(llpowerOfTen <= 0);
-    // check that val and llval*10^llPowerOfTen are close enough
-    assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
+    // check that val and llval*10^llPowerOfTen are close enough (relative error should be less than 1e-8)
+    assert(std::abs(val * std::pow(10.,-llpowerOfTen) - llval) / std::max(qlonglong(1),std::abs(llval)) < 1e-8);
     
     
     // If pos is at the end
@@ -469,9 +469,9 @@ SpinBox::increment(int delta,
         llpowerOfTen -= llpowerOfTen - powerOfTen;
         llval += inc_int;
     }
-    // Check that val and llval*10^llPowerOfTen are still close enough
-    assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
-    
+    // check that val and llval*10^llPowerOfTen are still close enough (relative error should be less than 1e-8)
+    assert(std::abs(val * std::pow(10.,-llpowerOfTen) - llval) / std::max(qlonglong(1),std::abs(llval)) < 1e-8);
+
     QString newStr;
     newStr.setNum(llval);
     bool newStrHasSign = newStr[0] == '+' || newStr[0] == '-';

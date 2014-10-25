@@ -281,6 +281,13 @@ KnobGui::enableRightClickMenu(QWidget* widget,
     QObject::connect( widget,SIGNAL( customContextMenuRequested(QPoint) ),this,SLOT( onRightClickClicked(QPoint) ) );
 }
 
+bool
+KnobGui::showDescriptionLabel() const
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    return !knob->getDescription().empty() && knob->isDescriptionVisible();
+}
+
 void
 KnobGui::showRightClickMenuForDimension(const QPoint &,
                                         int dimension)
@@ -292,7 +299,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         return;
     }
 
-    createAnimationMenu(_imp->copyRightClickMenu);
+    createAnimationMenu(_imp->copyRightClickMenu,dimension);
 
     _imp->copyRightClickMenu->addSeparator();
 
@@ -379,14 +386,14 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 } // showRightClickMenuForDimension
 
 void
-KnobGui::createAnimationMenu(QMenu* menu)
+KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
 
     menu->clear();
     bool isOnKeyFrame = false;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        if (knob->getAnimationLevel(i) == Natron::ON_KEYFRAME) {
+        if (knob->getAnimationLevel(i) == Natron::eAnimationLevelOnKeyframe) {
             isOnKeyFrame = true;
             break;
         }
@@ -411,30 +418,69 @@ KnobGui::createAnimationMenu(QMenu* menu)
     }
     if ( knob->isAnimationEnabled() ) {
         if (!isSlave) {
-            if (!isOnKeyFrame) {
-                QAction* setKeyAction = new QAction(tr("Set Key"),menu);
-                QObject::connect( setKeyAction,SIGNAL( triggered() ),this,SLOT( onSetKeyActionTriggered() ) );
-                menu->addAction(setKeyAction);
-                if (!isEnabled) {
-                    setKeyAction->setEnabled(false);
+            if (knob->getDimension() > 1) {
+                ///Multi-dim actions
+                if (!isOnKeyFrame) {
+                    QAction* setKeyAction = new QAction(tr("Set Key (all dimensions)"),menu);
+                    setKeyAction->setData(-1);
+                    QObject::connect( setKeyAction,SIGNAL( triggered() ),this,SLOT( onSetKeyActionTriggered() ) );
+                    menu->addAction(setKeyAction);
+                    if (!isEnabled) {
+                        setKeyAction->setEnabled(false);
+                    }
+                } else {
+                    QAction* removeKeyAction = new QAction(tr("Remove Key (all dimensions)"),menu);
+                    removeKeyAction->setData(-1);
+                    QObject::connect( removeKeyAction,SIGNAL( triggered() ),this,SLOT( onRemoveKeyActionTriggered() ) );
+                    menu->addAction(removeKeyAction);
+                    if (!isEnabled) {
+                        removeKeyAction->setEnabled(false);
+                    }
                 }
-            } else {
-                QAction* removeKeyAction = new QAction(tr("Remove Key"),menu);
-                QObject::connect( removeKeyAction,SIGNAL( triggered() ),this,SLOT( onRemoveKeyActionTriggered() ) );
-                menu->addAction(removeKeyAction);
-                if (!isEnabled) {
-                    removeKeyAction->setEnabled(false);
+                
+                QAction* removeAnyAnimationAction = new QAction(tr("Remove animation (all dimensions)"),menu);
+                removeAnyAnimationAction->setData(-1);
+                QObject::connect( removeAnyAnimationAction,SIGNAL( triggered() ),this,SLOT( onRemoveAnimationActionTriggered() ) );
+                menu->addAction(removeAnyAnimationAction);
+                if (!hasAnimation || !isEnabled) {
+                    removeAnyAnimationAction->setEnabled(false);
                 }
             }
-
-            QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),menu);
-            QObject::connect( removeAnyAnimationAction,SIGNAL( triggered() ),this,SLOT( onRemoveAnyAnimationActionTriggered() ) );
-            menu->addAction(removeAnyAnimationAction);
-            if (!hasAnimation || !isEnabled) {
-                removeAnyAnimationAction->setEnabled(false);
+            if (dimension != -1 || knob->getDimension() == 1) {
+                menu->addSeparator();
+                {
+                    ///Single dim action
+                    if (!isOnKeyFrame) {
+                        QAction* setKeyAction = new QAction(tr("Set Key"),menu);
+                        setKeyAction->setData(dimension);
+                        QObject::connect( setKeyAction,SIGNAL( triggered() ),this,SLOT( onSetKeyActionTriggered() ) );
+                        menu->addAction(setKeyAction);
+                        if (!isEnabled) {
+                            setKeyAction->setEnabled(false);
+                        }
+                    } else {
+                        QAction* removeKeyAction = new QAction(tr("Remove Key"),menu);
+                        removeKeyAction->setData(dimension);
+                        QObject::connect( removeKeyAction,SIGNAL( triggered() ),this,SLOT( onRemoveKeyActionTriggered() ) );
+                        menu->addAction(removeKeyAction);
+                        if (!isEnabled) {
+                            removeKeyAction->setEnabled(false);
+                        }
+                    }
+                    
+                    QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),menu);
+                    removeAnyAnimationAction->setData(dimension);
+                    QObject::connect( removeAnyAnimationAction,SIGNAL( triggered() ),this,SLOT( onRemoveAnimationActionTriggered() ) );
+                    menu->addAction(removeAnyAnimationAction);
+                    if (!hasAnimation || !isEnabled) {
+                        removeAnyAnimationAction->setEnabled(false);
+                    }
+                    
+                }
             }
+            menu->addSeparator();
         }
-
+        
 
         if (!isSlave) {
             QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
@@ -537,7 +583,7 @@ KnobGui::setSecret()
 void
 KnobGui::showAnimationMenu()
 {
-    createAnimationMenu(_imp->animationMenu);
+    createAnimationMenu(_imp->animationMenu,-1);
     _imp->animationMenu->exec( _imp->animationButton->mapToGlobal( QPoint(0,0) ) );
 }
 
@@ -561,29 +607,39 @@ KnobGui::onShowInCurveEditorActionTriggered()
 }
 
 void
-KnobGui::onRemoveAnyAnimationActionTriggered()
+KnobGui::onRemoveAnimationActionTriggered()
 {
+    QAction* action = qobject_cast<QAction*>(sender());
+    assert(action);
+    int dim = action->data().toInt();
+    
     boost::shared_ptr<KnobI> knob = getKnob();
     std::vector<std::pair<CurveGui *, KeyFrame > > toRemove;
-
+    
+    
     for (int i = 0; i < knob->getDimension(); ++i) {
-        CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-        KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
-        for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-            toRemove.push_back( std::make_pair(curve,*it) );
+        
+        if (dim == -1 || dim == i) {
+            CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
+            KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
+            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+                toRemove.push_back( std::make_pair(curve,*it) );
+            }
         }
     }
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
                                            toRemove) );
     //refresh the gui so it doesn't indicate the parameter is animated anymore
     for (int i = 0; i < knob->getDimension(); ++i) {
-        updateGUI(i);
+        if (dim == -1 || dim == i) {
+            updateGUI(i);
+        }
     }
 }
 
 void
 KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
-                                       Natron::KeyframeType interp)
+                                       Natron::KeyframeTypeEnum interp)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
 
@@ -606,7 +662,7 @@ KnobGui::onConstantInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_CONSTANT);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeConstant);
 }
 
 void
@@ -618,7 +674,7 @@ KnobGui::onLinearInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_LINEAR);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeLinear);
 }
 
 void
@@ -630,7 +686,7 @@ KnobGui::onSmoothInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_SMOOTH);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeSmooth);
 }
 
 void
@@ -642,7 +698,7 @@ KnobGui::onCatmullromInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_CATMULL_ROM);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCatmullRom);
 }
 
 void
@@ -654,7 +710,7 @@ KnobGui::onCubicInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_CUBIC);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCubic);
 }
 
 void
@@ -666,7 +722,7 @@ KnobGui::onHorizontalInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims,Natron::KEYFRAME_HORIZONTAL);
+    setInterpolationForDimensions(dims, Natron::eKeyframeTypeHorizontal);
 }
 
 void
@@ -703,6 +759,10 @@ KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
 void
 KnobGui::onSetKeyActionTriggered()
 {
+    QAction* action = qobject_cast<QAction*>(sender());
+    assert(action);
+    int dim = action->data().toInt();
+
     boost::shared_ptr<KnobI> knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
@@ -710,34 +770,38 @@ KnobGui::onSetKeyActionTriggered()
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
 
     for (int i = 0; i < knob->getDimension(); ++i) {
-        CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-        if (!curve) {
-            return;
+        
+        if (dim == -1 || i == dim) {
+            
+            CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
+            if (!curve) {
+                return;
+            }
+            std::vector<KeyFrame> kVec;
+            KeyFrame kf;
+            kf.setTime(time);
+            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+            AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
+            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+            
+            if (isInt) {
+                kf.setValue( isInt->getValue(i) );
+            } else if (isBool) {
+                kf.setValue( isBool->getValue(i) );
+            } else if (isDouble) {
+                kf.setValue( isDouble->getValue(i) );
+            } else if (isString) {
+                std::string v = isString->getValue(i);
+                double dv;
+                isString->stringToKeyFrameValue(time, v, &dv);
+                kf.setValue(dv);
+            }
+            
+            kVec.push_back(kf);
+            pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
+                                                curve,kVec) );
         }
-        std::vector<KeyFrame> kVec;
-        KeyFrame kf;
-        kf.setTime(time);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-        AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-
-        if (isInt) {
-            kf.setValue( isInt->getValue(i) );
-        } else if (isBool) {
-            kf.setValue( isBool->getValue(i) );
-        } else if (isDouble) {
-            kf.setValue( isDouble->getValue(i) );
-        } else if (isString) {
-            std::string v = isString->getValue(i);
-            double dv;
-            isString->stringToKeyFrameValue(time, v, &dv);
-            kf.setValue(dv);
-        }
-
-        kVec.push_back(kf);
-        pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
-                                            curve,kVec) );
     }
 }
 
@@ -787,20 +851,27 @@ KnobGui::hasToolTip() const
 void
 KnobGui::onRemoveKeyActionTriggered()
 {
+    QAction* action = qobject_cast<QAction*>(sender());
+    assert(action);
+    int dim = action->data().toInt();
+    
     boost::shared_ptr<KnobI> knob = getKnob();
-
+    
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     std::vector<std::pair<CurveGui*,KeyFrame> > toRemove;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
         
-        KeyFrame kf;
-        bool foundKey = knob->getCurve(i)->getKeyFrameWithTime(time, &kf);
-        
-        if (foundKey) {
-            toRemove.push_back( std::make_pair(curve,kf) );
+        if (dim == -1 || i == dim) {
+            CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
+            
+            KeyFrame kf;
+            bool foundKey = knob->getCurve(i)->getKeyFrameWithTime(time, &kf);
+            
+            if (foundKey) {
+                toRemove.push_back( std::make_pair(curve,kf) );
+            }
         }
     }
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
@@ -941,7 +1012,7 @@ void
 KnobGui::onInternalValueChanged(int dimension,
                                 int reason)
 {
-    if (_imp->widgetCreated && (Natron::ValueChangedReason)reason != Natron::USER_EDITED) {
+    if (_imp->widgetCreated && (Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
         updateGuiInternal(dimension);
     }
 }
@@ -1601,7 +1672,7 @@ void
 KnobGui::onAnimationLevelChanged(int dim,int level)
 {
     if (!_imp->customInteract) {
-        reflectAnimationLevel(dim, (Natron::AnimationLevel)level);
+        reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
     }
 }
 

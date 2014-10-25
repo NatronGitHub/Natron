@@ -58,7 +58,7 @@ using namespace Natron;
 AppManager* AppManager::_instance = 0;
 struct AppManagerPrivate
 {
-    AppManager::AppType _appType; //< the type of app
+    AppManager::AppTypeEnum _appType; //< the type of app
     std::map<int,AppInstanceRef> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
@@ -106,7 +106,7 @@ struct AppManagerPrivate
     QAtomicInt runningThreadsCount;
     
     AppManagerPrivate()
-        : _appType(AppManager::APP_BACKGROUND)
+        : _appType(AppManager::eAppTypeBackground)
           , _appInstances()
           , _availableID(0)
           , _topLevelInstanceID(0)
@@ -423,7 +423,7 @@ AppManager::quit(AppInstance* instance)
     instance->aboutToQuit();
     std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
     assert( found != _imp->_appInstances.end() );
-    found->second.status = APP_INACTIVE;
+    found->second.status = eAppInstanceStatusInactive;
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.
     if (_imp->_appInstances.size() == 1) {
@@ -510,15 +510,15 @@ AppManager::loadInternal(const QString & projectFilename,
     if ( isBackground() ) {
         if ( !projectFilename.isEmpty() ) {
             if (!mainProcessServerName.isEmpty()) {
-                _imp->_appType = APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI;
+                _imp->_appType = eAppTypeBackgroundAutoRunLaunchedFromGui;
             } else {
-                _imp->_appType = APP_BACKGROUND_AUTO_RUN;
+                _imp->_appType = eAppTypeBackgroundAutoRun;
             }
         } else {
-            _imp->_appType = APP_BACKGROUND;
+            _imp->_appType = eAppTypeBackground;
         }
     } else {
-        _imp->_appType = APP_GUI;
+        _imp->_appType = eAppTypeGui;
     }
 
     AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
@@ -546,8 +546,10 @@ AppManager::loadInternal(const QString & projectFilename,
                        "else: \n"
                        "   print \"BUG!\" \n"
                        "parameters = switch.getParameters() \n"
+                       "print \"Printing parameters of Switch...\" \n"
                        "for param in parameters: \n"
                        "    print param.getScriptName() \n"
+                       "print \"End Switch parameters found\" \n"
                        "whichParam = switch.getParamByName(\"which\") \n"
                        "if whichParam is not None: \n"
                        "    print \"Correctly found which parameter!\"\n"
@@ -564,8 +566,8 @@ AppManager::loadInternal(const QString & projectFilename,
         onLoadCompleted();
 
         ///In background project auto-run the rendering is finished at this point, just exit the instance
-        if ( (_imp->_appType == APP_BACKGROUND_AUTO_RUN ||
-              _imp->_appType == APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) && mainInstance ) {
+        if ( (_imp->_appType == eAppTypeBackgroundAutoRun ||
+              _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui) && mainInstance ) {
             mainInstance->quit();
         }
 
@@ -647,7 +649,7 @@ AppManager::removeInstance(int appID)
     }
 }
 
-AppManager::AppType
+AppManager::AppTypeEnum
 AppManager::getAppType() const
 {
     return _imp->_appType;
@@ -812,7 +814,7 @@ AppManager::registerAppInstance(AppInstance* app)
     AppInstanceRef ref;
 
     ref.app = app;
-    ref.status = Natron::APP_ACTIVE;
+    ref.status = Natron::eAppInstanceStatusActive;
     _imp->_appInstances.insert( std::make_pair(app->getAppID(),ref) );
 }
 
@@ -1941,11 +1943,11 @@ informationDialog(const std::string & title,
     }
 }
 
-Natron::StandardButton
+Natron::StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
                Natron::StandardButtons buttons,
-               Natron::StandardButton defaultButton)
+               Natron::StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
@@ -1955,7 +1957,7 @@ questionDialog(const std::string & title,
         std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
 
-        return Natron::Yes;
+        return Natron::eStandardButtonYes;
     }
 }
 } //Namespace Natron

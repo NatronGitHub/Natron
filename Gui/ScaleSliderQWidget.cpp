@@ -29,7 +29,7 @@ CLANG_DIAG_ON(unused-private-field)
 ScaleSliderQWidget::ScaleSliderQWidget(double bottom,
                                        double top,
                                        double initialPos,
-                                       Natron::Scale_Type type,
+                                       Natron::ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
       , _minimum(bottom)

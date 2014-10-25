@@ -118,6 +118,11 @@ struct Node::Implementation
     , nodeLabelKnob()
     , previewEnabledKnob()
     , disableNodeKnob()
+    , infoPage()
+    , infoDisclaimer()
+    , inputFormats()
+    , outputFormat()
+    , refreshInfosButton()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -178,8 +183,8 @@ struct Node::Implementation
     bool effectCreated;
     
     ///These two are also protected by inputsMutex
-    std::vector< std::list<Natron::ImageComponents> > inputsComponents;
-    std::list<Natron::ImageComponents> outputComponents;
+    std::vector< std::list<Natron::ImageComponentsEnum> > inputsComponents;
+    std::list<Natron::ImageComponentsEnum> outputComponents;
     mutable QMutex nameMutex;
     std::vector<std::string> inputLabels; // inputs name
     std::string name; //node name set by the user
@@ -194,7 +199,7 @@ struct Node::Implementation
     bool mustQuitPreview;
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
-    QMutex renderInstancesSharedMutex; //< see INSTANCE_SAFE in EffectInstance::renderRoI
+    QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the liveInstance has its evaluate() function called.
@@ -211,13 +216,20 @@ struct Node::Implementation
     boost::shared_ptr<String_Knob> nodeLabelKnob;
     boost::shared_ptr<Bool_Knob> previewEnabledKnob;
     boost::shared_ptr<Bool_Knob> disableNodeKnob;
+    
+    boost::shared_ptr<Page_Knob> infoPage;
+    boost::shared_ptr<String_Knob> infoDisclaimer;
+    std::vector< boost::shared_ptr<String_Knob> > inputFormats;
+    boost::shared_ptr<String_Knob> outputFormat;
+    boost::shared_ptr<Button_Knob> refreshInfosButton;
+    
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imageBeingRenderedCond;
     std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     
-    std::list <Natron::ImageBitDepth> supportedDepths;
+    std::list <Natron::ImageBitDepthEnum> supportedDepths;
     
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
@@ -923,6 +935,66 @@ Node::isActivated() const
     return _imp->activated;
 }
 
+std::string
+Node::makeInfoForInput(int inputNumber) const
+{
+    const Natron::Node* inputNode = 0;
+    std::string inputName ;
+    if (inputNumber != -1) {
+        inputNode = getInput(inputNumber).get();
+        inputName = _imp->liveInstance->getInputLabel(inputNumber);
+    } else {
+        inputNode = this;
+        inputName = "Output";
+    }
+
+    if (!inputNode) {
+        return inputName + ": disconnected";
+    }
+    
+    Natron::ImageComponentsEnum comps;
+    Natron::ImageBitDepthEnum depth;
+    Natron::ImagePremultiplicationEnum premult;
+    
+    double par = inputNode->getLiveInstance()->getPreferredAspectRatio();
+    premult = inputNode->getLiveInstance()->getOutputPremultiplication();
+    
+    std::string premultStr;
+    switch (premult) {
+        case Natron::eImagePremultiplicationOpaque:
+            premultStr = "opaque";
+            break;
+        case Natron::eImagePremultiplicationPremultiplied:
+            premultStr= "premultiplied";
+            break;
+        case Natron::eImagePremultiplicationUnPremultiplied:
+            premultStr= "unpremultiplied";
+            break;
+    }
+    
+    _imp->liveInstance->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
+    
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    RectD rod;
+    bool isProjectFormat;
+    StatusEnum stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(getHashValue(),
+                                                                                 inputNode->getLiveInstance()->getCurrentTime(),
+                                                                                 scale, 0, &rod, &isProjectFormat);
+    
+    
+    std::stringstream ss;
+    ss << "<b><font color=\"orange\">"<< inputName << ":\n" << "</font></b>"
+    << "<b>Image Format:</b> " << Natron::Image::getFormatString(comps, depth)
+    << "\n<b>Alpha premultiplication:</b> " << premultStr
+    << "\n<b>Pixel aspect ratio:</b> " << par;
+    if (stat != Natron::eStatusFailed) {
+        ss << "\n<b>Region of Definition:</b> ";
+        ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << '\n';
+    }
+    return ss.str();
+}
+
 void
 Node::initializeKnobs(const NodeSerialization & serialization)
 {
@@ -1004,6 +1076,49 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
     _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
     loadKnob(_imp->disableNodeKnob, serialization);
+    
+    
+    _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Infos",1,false);
+    _imp->infoPage->setName("infos");
+    
+    _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance, "Input and output informations",1,false);
+    _imp->infoDisclaimer->setName("infoDisclaimer");
+    _imp->infoDisclaimer->setAnimationEnabled(false);
+    _imp->infoDisclaimer->setIsPersistant(false);
+    _imp->infoDisclaimer->setAsLabel();
+    _imp->infoDisclaimer->hideDescription();
+    _imp->infoDisclaimer->setEvaluateOnChange(false);
+    _imp->infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
+    _imp->infoPage->addKnob(_imp->infoDisclaimer);
+    
+    for (int i = 0; i < inputsCount; ++i) {
+        std::string inputLabel = getInputLabel(i);
+        boost::shared_ptr<String_Knob> inputInfos = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(inputLabel + " Infos"), 1, false);
+        inputInfos->setName(inputLabel + "Infos");
+        inputInfos->setAnimationEnabled(false);
+        inputInfos->setIsPersistant(false);
+        inputInfos->setEvaluateOnChange(false);
+        inputInfos->hideDescription();
+        inputInfos->setAsLabel();
+        _imp->inputFormats.push_back(inputInfos);
+        _imp->infoPage->addKnob(inputInfos);
+    }
+    
+    std::string outputLabel("Output");
+    _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(outputLabel + " Infos"), 1, false);
+    _imp->outputFormat->setName(outputLabel + "Infos");
+    _imp->outputFormat->setAnimationEnabled(false);
+    _imp->outputFormat->setIsPersistant(false);
+    _imp->outputFormat->setEvaluateOnChange(false);
+    _imp->outputFormat->hideDescription();
+    _imp->outputFormat->setAsLabel();
+    _imp->infoPage->addKnob(_imp->outputFormat);
+    
+    _imp->refreshInfosButton = Natron::createKnob<Button_Knob>(_imp->liveInstance, "Refresh Infos");
+    _imp->refreshInfosButton->setName("refreshButton");
+    _imp->refreshInfosButton->setEvaluateOnChange(false);
+    _imp->infoPage->addKnob(_imp->refreshInfosButton);
+    
     
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
@@ -1938,8 +2053,8 @@ Node::makePreviewImage(SequenceTime time,
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
-    if ( (stat == StatFailed) || rod.isNull() ) {
+    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
+    if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
     assert( !rod.isNull() );
@@ -1977,7 +2092,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                            false,
                                                                            renderWindow,
                                                                            rod,
-                                                                           Natron::ImageComponentRGB, //< preview is always rgb...
+                                                                           Natron::eImageComponentRGB, //< preview is always rgb...
                                                                            getBitDepth() ) );
     } catch (...) {
         qDebug() << "Error: Cannot render preview";
@@ -1988,27 +2103,27 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
     
-    ImageComponents components = img->getComponents();
+    ImageComponentsEnum components = img->getComponents();
     int elemCount = getElementsCountForComponents(components);
     
     ///we convert only when input is Linear.
     //Rec709 and srGB is acceptable for preview
-    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == Natron::Linear;
+    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == Natron::eViewerColorSpaceLinear;
     
     switch ( img->getBitDepth() ) {
-        case Natron::IMAGE_BYTE: {
+        case Natron::eImageBitDepthByte: {
             renderPreview<unsigned char, 255>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
-        case Natron::IMAGE_SHORT: {
+        case Natron::eImageBitDepthShort: {
             renderPreview<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
-        case Natron::IMAGE_FLOAT: {
+        case Natron::eImageBitDepthFloat: {
             renderPreview<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
-        case Natron::IMAGE_NONE:
+        case Natron::eImageBitDepthNone:
             break;
     }
     return true;
@@ -2182,7 +2297,7 @@ Node::setAborted(bool b)
 }
 
 bool
-Node::message(MessageType type,
+Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
@@ -2191,21 +2306,21 @@ Node::message(MessageType type,
     }
     
     switch (type) {
-        case INFO_MESSAGE:
+        case eMessageTypeInfo:
             informationDialog(getName_mt_safe(), content);
             
             return true;
-        case WARNING_MESSAGE:
+        case eMessageTypeWarning:
             warningDialog(getName_mt_safe(), content);
             
             return true;
-        case ERROR_MESSAGE:
+        case eMessageTypeError:
             errorDialog(getName_mt_safe(), content);
             
             return true;
-        case QUESTION_MESSAGE:
+        case eMessageTypeQuestion:
             
-            return questionDialog(getName_mt_safe(), content) == Yes;
+            return questionDialog(getName_mt_safe(), content) == eStandardButtonYes;
         default:
             
             return false;
@@ -2213,21 +2328,21 @@ Node::message(MessageType type,
 }
 
 void
-Node::setPersistentMessage(MessageType type,
+Node::setPersistentMessage(MessageTypeEnum type,
                            const std::string & content)
 {
     if ( !appPTR->isBackground() ) {
         //if the message is just an information, display a popup instead.
-        if (type == INFO_MESSAGE) {
+        if (type == eMessageTypeInfo) {
             message(type,content);
             
             return;
         }
         QString message;
         message.append( getName_mt_safe().c_str() );
-        if (type == ERROR_MESSAGE) {
+        if (type == eMessageTypeError) {
             message.append(" error: ");
-        } else if (type == WARNING_MESSAGE) {
+        } else if (type == eMessageTypeWarning) {
             message.append(" warning: ");
         }
         message.append( content.c_str() );
@@ -2517,28 +2632,28 @@ Node::getMasterNode() const
 
 bool
 Node::isSupportedComponent(int inputNb,
-                           Natron::ImageComponents comp) const
+                           Natron::ImageComponentsEnum comp) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     
     if (inputNb >= 0) {
         assert( inputNb < (int)_imp->inputsComponents.size() );
-        std::list<Natron::ImageComponents>::const_iterator found =
+        std::list<Natron::ImageComponentsEnum>::const_iterator found =
         std::find(_imp->inputsComponents[inputNb].begin(),_imp->inputsComponents[inputNb].end(),comp);
         
         return found != _imp->inputsComponents[inputNb].end();
     } else {
         assert(inputNb == -1);
-        std::list<Natron::ImageComponents>::const_iterator found =
+        std::list<Natron::ImageComponentsEnum>::const_iterator found =
         std::find(_imp->outputComponents.begin(),_imp->outputComponents.end(),comp);
         
         return found != _imp->outputComponents.end();
     }
 }
 
-Natron::ImageComponents
+Natron::ImageComponentsEnum
 Node::findClosestSupportedComponents(int inputNb,
-                                     Natron::ImageComponents comp) const
+                                     Natron::ImageComponentsEnum comp) const
 {
     int compCount = getElementsCountForComponents(comp);
     QMutexLocker l(&_imp->inputsMutex);
@@ -2547,12 +2662,12 @@ Node::findClosestSupportedComponents(int inputNb,
         assert( inputNb < (int)_imp->inputsComponents.size() );
         
         
-        const std::list<Natron::ImageComponents> & comps = _imp->inputsComponents[inputNb];
+        const std::list<Natron::ImageComponentsEnum> & comps = _imp->inputsComponents[inputNb];
         if ( comps.empty() ) {
-            return Natron::ImageComponentNone;
+            return Natron::eImageComponentNone;
         }
-        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+        std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
             if ( closestComp == comps.end() ) {
                 closestComp = it;
             } else {
@@ -2567,12 +2682,12 @@ Node::findClosestSupportedComponents(int inputNb,
         return *closestComp;
     } else {
         assert(inputNb == -1);
-        const std::list<Natron::ImageComponents> & comps = _imp->outputComponents;
+        const std::list<Natron::ImageComponentsEnum> & comps = _imp->outputComponents;
         if ( comps.empty() ) {
-            return Natron::ImageComponentNone;
+            return Natron::eImageComponentNone;
         }
-        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+        std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
             if ( closestComp == comps.end() ) {
                 closestComp = it;
             } else {
@@ -2697,7 +2812,7 @@ Node::duringInputChangedAction() const
 
 void
 Node::onEffectKnobValueChanged(KnobI* what,
-                               Natron::ValueChangedReason reason)
+                               Natron::ValueChangedReasonEnum reason)
 {
     for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it != _imp->maskChannelKnob.end(); ++it) {
         if (it->second.get() == what) {
@@ -2717,7 +2832,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     }
     
     if ( what == _imp->previewEnabledKnob.get() ) {
-        if ( (reason == Natron::USER_EDITED) || (reason == Natron::SLAVE_REFRESH) ) {
+        if ( (reason == Natron::eValueChangedReasonUserEdited) || (reason == Natron::eValueChangedReasonSlaveRefresh) ) {
             emit previewKnobToggled();
         }
     } else if ( ( what == _imp->disableNodeKnob.get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent ) {
@@ -2736,6 +2851,14 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+    } else if ( what == _imp->refreshInfosButton.get() ) {
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs; ++i) {
+            std::string inputInfos = makeInfoForInput(i);
+            _imp->inputFormats[i]->setValue(inputInfos, 0);
+        }
+        std::string outputInfos = makeInfoForInput(-1);
+        _imp->outputFormat->setValue(outputInfos, 0);
     }
 }
 
@@ -2840,43 +2963,43 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     }
 }
 
-Natron::ImageBitDepth
+Natron::ImageBitDepthEnum
 Node::getBitDepth() const
 {
     bool foundShort = false;
     bool foundByte = false;
     
-    for (std::list<ImageBitDepth>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
+    for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
         switch (*it) {
-            case Natron::IMAGE_FLOAT:
+            case Natron::eImageBitDepthFloat:
                 
-                return Natron::IMAGE_FLOAT;
+                return Natron::eImageBitDepthFloat;
                 break;
-            case Natron::IMAGE_BYTE:
+            case Natron::eImageBitDepthByte:
                 foundByte = true;
                 break;
-            case Natron::IMAGE_SHORT:
+            case Natron::eImageBitDepthShort:
                 foundShort = true;
                 break;
-            case Natron::IMAGE_NONE:
+            case Natron::eImageBitDepthNone:
                 break;
         }
     }
     
     if (foundShort) {
-        return Natron::IMAGE_SHORT;
+        return Natron::eImageBitDepthShort;
     } else if (foundByte) {
-        return Natron::IMAGE_BYTE;
+        return Natron::eImageBitDepthByte;
     } else {
         ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
         assert(false);
         
-        return Natron::IMAGE_NONE;
+        return Natron::eImageBitDepthNone;
     }
 }
 
 bool
-Node::isSupportedBitDepth(Natron::ImageBitDepth depth) const
+Node::isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const
 {
     return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
 }
@@ -2891,7 +3014,7 @@ bool
 Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
     ///Just take into account sequentiallity for writers
-    if ( (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL) && _imp->liveInstance->isWriter() ) {
+    if ( (_imp->liveInstance->getSequentialPreference() == Natron::eSequentialPreferenceOnlySequential) && _imp->liveInstance->isWriter() ) {
         nodeName = getName_mt_safe();
         
         return true;

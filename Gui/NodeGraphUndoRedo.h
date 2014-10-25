@@ -303,5 +303,25 @@ private:
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations,_oldSerialization;
 };
 
+class RenameNodeUndoRedoCommand
+: public QUndoCommand
+{
+public:
+    
+    RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
+                              NodeBackDrop* bd,
+                              const QString& newName);
+    
+    virtual ~RenameNodeUndoRedoCommand();
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    boost::shared_ptr<NodeGui> _node;
+    NodeBackDrop* _bd;
+    QString _oldName,_newName;
+};
+
 
 #endif // NODEGRAPHUNDOREDO_H

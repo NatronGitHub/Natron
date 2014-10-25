@@ -35,6 +35,7 @@ class QKeyEvent;
 class Gui;
 class NodeGui;
 class QDropEvent;
+class QUndoCommand;
 class QDragEnterEvent;
 class NodeSerialization;
 class NodeGuiSerialization;
@@ -142,7 +143,9 @@ public:
     
     void refreshNodesKnobsAtTime(SequenceTime time);
     
-public slots:
+    void pushUndoCommand(QUndoCommand* command);
+
+   public slots:
 
     void deleteSelection();
 
@@ -193,9 +196,13 @@ public slots:
 
     void popFindDialog(const QPoint& pos = QPoint(0,0));
     
+    void popRenameDialog(const QPoint& pos = QPoint(0,0));
+    
     void onFindNodeDialogFinished();
     
     void refreshAllKnobsGui();
+        
+    void onNodeNameEditDialogFinished();
     
 private:
 
@@ -265,6 +272,25 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<FindNodeDialogPrivate> _imp;
+};
+
+struct EditNodeNameDialogPrivate;
+class EditNodeNameDialog: public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd,QWidget* parent);
+    
+    virtual ~EditNodeNameDialog();
+    
+private:
+    
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    boost::scoped_ptr<EditNodeNameDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_NODEGRAPH_H_

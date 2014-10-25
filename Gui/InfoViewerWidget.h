@@ -45,7 +45,7 @@ public:
 
     void setDataWindow(const RectD & r); // in canonical coordinates
 
-    void setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth);
+    void setImageFormat(Natron::ImageComponentsEnum comp,Natron::ImageBitDepthEnum depth);
 
     void setColor(float r,float g,float b,float a);
 
@@ -59,9 +59,13 @@ public slots:
     void hideFps();
 
 private:
+    
     virtual QSize sizeHint() const OVERRIDE FINAL;
-
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    
 private:
+    
 
     QHBoxLayout* layout;
     QLabel* descriptionLabel;
@@ -76,7 +80,7 @@ private:
     QLabel* hvl_lastOption;
     QLabel* _fpsLabel;
     ViewerGL* viewer;
-    Natron::ImageComponents _comp;
+    Natron::ImageComponentsEnum _comp;
 };
 
 #endif /* defined(NATRON_GUI_INFOVIEWERWIDGET_H_) */

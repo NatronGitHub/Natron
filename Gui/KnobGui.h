@@ -107,10 +107,7 @@ public:
 
     void enableRightClickMenu(QWidget* widget,int dimension);
 
-    virtual bool showDescriptionLabel() const
-    {
-        return true;
-    }
+    virtual bool showDescriptionLabel() const;
 
     QWidget* getFieldContainer() const;
 
@@ -140,12 +137,12 @@ public:
                  const T & v,
                  KeyFrame* newKey,
                  bool refreshGui,
-                 Natron::ValueChangedReason reason)
+                 Natron::ValueChangedReasonEnum reason)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         KnobHelper::ValueChangedReturnCode ret;
-        if (reason == Natron::USER_EDITED) {
-            ret = knob->onValueChanged(dimension, v, newKey);
+        if (reason == Natron::eValueChangedReasonUserEdited) {
+            ret = knob->onValueChanged(v, dimension, Natron::eValueChangedReasonUserEdited, newKey);
         } else {
             ret = knob->setValue(v,dimension,false);
         }
@@ -225,7 +222,7 @@ public slots:
 
     void onShowInCurveEditorActionTriggered();
 
-    void onRemoveAnyAnimationActionTriggered();
+    void onRemoveAnimationActionTriggered();
 
     void onConstantInterpActionTriggered();
 
@@ -335,16 +332,16 @@ private:
        the widget for the knob could display its gui a bit differently.
      */
     virtual void reflectAnimationLevel(int /*dimension*/,
-                                       Natron::AnimationLevel /*level*/)
+                                       Natron::AnimationLevelEnum /*level*/)
     {
     }
 
-    void createAnimationMenu(QMenu* menu);
+    void createAnimationMenu(QMenu* menu,int dimension);
 
     void createAnimationButton(QHBoxLayout* layout);
 
 
-    void setInterpolationForDimensions(const std::vector<int> & dimensions,Natron::KeyframeType interp);
+    void setInterpolationForDimensions(const std::vector<int> & dimensions,Natron::KeyframeTypeEnum interp);
 
 private:
 

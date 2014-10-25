@@ -691,7 +691,7 @@ public:
      **/
     virtual void notifyEntryAllocated(int time,
                                       std::size_t size,
-                                      Natron::StorageMode storage) const OVERRIDE FINAL
+                                      Natron::StorageModeEnum storage) const OVERRIDE FINAL
     {
         ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
         ///lock should already be taken.
@@ -700,7 +700,7 @@ public:
         _memoryCacheSize += size;
         _signalEmitter->emitAddedEntry(time);
 
-        if (storage == Natron::DISK) {
+        if (storage == Natron::eStorageModeDisk) {
             appPTR->increaseNCacheFilesOpened();
         }
 #ifdef NATRON_DEBUG_CACHE
@@ -713,16 +713,16 @@ public:
      **/
     virtual void notifyEntryDestroyed(int time,
                                       std::size_t size,
-                                      Natron::StorageMode storage) const OVERRIDE FINAL
+                                      Natron::StorageModeEnum storage) const OVERRIDE FINAL
     {
         QMutexLocker k(&_sizeLock);
 
-        if (storage == Natron::RAM) {
+        if (storage == Natron::eStorageModeRAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
 #endif
-        } else if (storage == Natron::DISK) {
+        } else if (storage == Natron::eStorageModeDisk) {
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << cacheName().c_str() << " disk size: " << printAsRAM(_diskCacheSize);
@@ -737,8 +737,8 @@ public:
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
      * it is reallocated in the RAM.
      **/
-    virtual void notifyEntryStorageChanged(Natron::StorageMode oldStorage,
-                                           Natron::StorageMode newStorage,
+    virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,
+                                           Natron::StorageModeEnum newStorage,
                                            int time,
                                            std::size_t size) const OVERRIDE FINAL
     {
@@ -749,7 +749,7 @@ public:
         
         assert(oldStorage != newStorage);
 
-        if (oldStorage == Natron::RAM) {
+        if (oldStorage == Natron::eStorageModeRAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
             _diskCacheSize += size;
 #ifdef NATRON_DEBUG_CACHE
@@ -1064,7 +1064,7 @@ public:
                     }
                 }
             }
-            Natron::StorageMode storage = Natron::DISK;
+            Natron::StorageModeEnum storage = Natron::eStorageModeDisk;
 
             
             ///Just in case, we don't allow more than X files to be removed at once.
@@ -1221,13 +1221,13 @@ private:
     {
         assert( !_lock.tryLock() );   // must be locked
         EntryTypePtr entryptr;
-        Natron::StorageMode storage;
+        Natron::StorageModeEnum storage;
         if (params->getCost() == 0) {
-            storage = Natron::RAM;
+            storage = Natron::eStorageModeRAM;
         } else if (params->getCost() >= 1) {
-            storage = Natron::DISK;
+            storage = Natron::eStorageModeDisk;
         } else {
-            storage = Natron::NO_STORAGE;
+            storage = Natron::eStorageModeNone;
         }
 
     
@@ -1261,7 +1261,7 @@ private:
         // We still allocate the entry because otherwise we would never be able to continue the render.
         try {
             entryptr.reset( new EntryType(key,params,this,storage,
-                                        storage == Natron::DISK ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
+                                        storage == Natron::eStorageModeDisk ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
 
             ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
             

@@ -258,6 +258,7 @@ struct NodeGraphPrivate
     ///Enables the "Tab" shortcut to popup the node creation dialog.
     ///This is set to true on enterEvent and set back to false on leaveEvent
     bool _nodeCreationShortcutEnabled;
+    QString _lastNodeCreatedName;
     QGraphicsItem* _root; ///< this is the parent of all items in the graph
     QGraphicsItem* _nodeRoot; ///< this is the parent of all nodes
     QGraphicsTextItem* _cacheSizeText;
@@ -269,6 +270,7 @@ struct NodeGraphPrivate
     bool _refreshOverlays;
     NodeClipBoard _nodeClipBoard;
     Edge* _highLightedEdge;
+    boost::shared_ptr<NodeGui> _mergeHintNode;
 
     ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
     Edge* _hintInputEdge;
@@ -297,6 +299,7 @@ struct NodeGraphPrivate
           , _nodes()
           , _nodesTrash()
           , _nodeCreationShortcutEnabled(false)
+          , _lastNodeCreatedName()
           , _root(NULL)
           , _nodeRoot(NULL)
           , _cacheSizeText(NULL)
@@ -311,6 +314,7 @@ struct NodeGraphPrivate
           , _refreshOverlays(false)
           , _nodeClipBoard()
           , _highLightedEdge(NULL)
+          , _mergeHintNode()
           , _hintInputEdge(NULL)
           , _hintOutputEdge(NULL)
           , _backdrops()
@@ -363,7 +367,6 @@ struct NodeGraphPrivate
 
     void toggleSelectedNodesEnabled();
     
-    void pushUndoCommand(QUndoCommand* command);
     
 };
 
@@ -620,7 +623,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     }
 
     if (pushUndoRedoCommand) {
-        _imp->pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
+        pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
     }
     _imp->_evtState = DEFAULT;
 
@@ -877,7 +880,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         if ( !dotNodeGui->getIsSelected() ) {
             selectNode( dotNodeGui, modCASIsShift(e) );
         }
-        _imp->pushUndoCommand( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
+        pushUndoCommand( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
 
         
         _imp->_evtState = NODE_DRAGGING;
@@ -1024,10 +1027,10 @@ NodeGraph::isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const
 }
 
 void
-NodeGraphPrivate::pushUndoCommand(QUndoCommand* command)
+NodeGraph::pushUndoCommand(QUndoCommand* command)
 {
-    _undoStack->setActive();
-    _undoStack->push(command);
+    _imp->_undoStack->setActive();
+    _imp->_undoStack->push(command);
 }
 
 void
@@ -1081,7 +1084,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     }
                     
                     _imp->_arrowSelected->stackBefore( n.get() );
-                    _imp->pushUndoCommand( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
+                    pushUndoCommand( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
                 } else {
                     ///Find the input edge of the node we just released the mouse over,
                     ///and use that edge to connect to the source of the selected edge.
@@ -1090,7 +1093,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         const std::map<int,Edge*> & inputEdges = n->getInputsArrows();
                         std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
                         assert( foundInput != inputEdges.end() );
-                        _imp->pushUndoCommand( new ConnectCommand( this,foundInput->second,
+                        pushUndoCommand( new ConnectCommand( this,foundInput->second,
                                                                   foundInput->second->getSource(),_imp->_arrowSelected->getSource() ) );
                     }
                 }
@@ -1103,7 +1106,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         ///Output edges can never be really connected, they're just there
         ///So the user understands some nodes can have output
         if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
-            _imp->pushUndoCommand( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
+            pushUndoCommand( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
                                                       boost::shared_ptr<NodeGui>() ) );
         }
         
@@ -1115,19 +1118,18 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         if ( !_imp->_selection.nodes.empty() ) {
             ///now if there was a hint displayed, use it to actually make connections.
             if (_imp->_highLightedEdge) {
-                assert( !_imp->_selection.nodes.empty() );
                 boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
                 if ( _imp->_highLightedEdge->isOutputEdge() ) {
                     int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
                     if (prefInput != -1) {
                         Edge* inputEdge = selectedNode->getInputArrow(prefInput);
                         assert(inputEdge);
-                        _imp->pushUndoCommand( new ConnectCommand( this,inputEdge,inputEdge->getSource(),
+                        pushUndoCommand( new ConnectCommand( this,inputEdge,inputEdge->getSource(),
                                                                     _imp->_highLightedEdge->getSource() ) );
                     }
                 } else {
                     boost::shared_ptr<NodeGui> src = _imp->_highLightedEdge->getSource();
-                    _imp->pushUndoCommand( new ConnectCommand(this,_imp->_highLightedEdge,_imp->_highLightedEdge->getSource(),
+                    pushUndoCommand( new ConnectCommand(this,_imp->_highLightedEdge,_imp->_highLightedEdge->getSource(),
                                                                selectedNode) );
 
                     ///find out if the node is already connected to what the edge is connected
@@ -1148,7 +1150,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         if (prefInput != -1) {
                             Edge* inputEdge = selectedNode->getInputArrow(prefInput);
                             assert(inputEdge);
-                            _imp->pushUndoCommand( new ConnectCommand(this,inputEdge,inputEdge->getSource(),src) );
+                            pushUndoCommand( new ConnectCommand(this,inputEdge,inputEdge->getSource(),src) );
                         }
                     }
                 }
@@ -1156,6 +1158,30 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
+            } else if (_imp->_mergeHintNode) {
+                _imp->_mergeHintNode->setMergeHintActive(false);
+                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
+                selectedNode->setMergeHintActive(false);
+                
+                if (getGui()) {
+                    
+                    QRectF selectedNodeRect = selectedNode->mapToParent(selectedNode->boundingRect()).boundingRect();
+                    QRectF mergeHintRect = selectedNode->mapToParent(selectedNode->boundingRect()).boundingRect();
+                    QPointF selectedCenter = selectedNodeRect.center();
+                    QPointF mergeHintCenter = mergeHintRect.center();
+                    QPointF newNodePos((selectedCenter.x() + mergeHintCenter.x()) / 2., (selectedCenter.y() + mergeHintCenter.y()) / 2.);
+                    
+                    CreateNodeArgs args("MergeOFX  [Merge]","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
+                                        CreateNodeArgs::DefaultValuesList());
+                    
+                    boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
+                    if (mergeNode) {
+                        mergeNode->connectInput(selectedNode->getNode(), 1);
+                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), 2);
+                    }
+                }
+                
+                _imp->_mergeHintNode.reset();
             }
         }
     } else if (state == SELECTION_RECT) {
@@ -1254,7 +1280,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 }
             }
             mustUpdateNavigator = true;
-            _imp->pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
+            pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
                                                                  _imp->_selection.bds,
                                                                  newPos.x() - _imp->_lastScenePosClick.x(),
                                                                  newPos.y() - _imp->_lastScenePosClick.y(),newPos) );
@@ -1264,68 +1290,90 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             ///try to find a nearby edge
             boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
             boost::shared_ptr<Natron::Node> internalNode = selectedNode->getNode();
+            
+            bool doMergeHints = e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::ShiftModifier);
+            
             bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
-
-            ///for readers already connected don't show hint
-            if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
-                doHints = false;
-            } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasInputConnected() && internalNode->hasOutputConnected() ) {
-                doHints = false;
+            
+            if (!doMergeHints) {
+                ///for readers already connected don't show hint
+                if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
+                    doHints = false;
+                } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasInputConnected() && internalNode->hasOutputConnected() ) {
+                    doHints = false;
+                }
             }
-
+            
             if (doHints) {
                 QRectF rect = selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
                 double tolerance = 20;
                 rect.adjust(-tolerance, -tolerance, tolerance, tolerance);
-
+                
+                boost::shared_ptr<NodeGui> nodeToShowMergeRect;
+                
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
                     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                         boost::shared_ptr<NodeGui> & n = *it;
                         if ( n != selectedNode && n->isVisible() ) {
-                            edge = n->hasEdgeNearbyRect(rect);
-
-                            ///if the edge input is the selected node don't continue
-                            if ( edge && ( edge->getSource() == selectedNode) ) {
-                                edge = 0;
-                            }
-
-                            if ( edge && edge->isOutputEdge() ) {
-                                ///if the edge is an output edge but the node doesn't have any inputs don't continue
-                                if ( selectedNode->getInputsArrows().empty() ) {
+                            
+                            if (doMergeHints) {
+                                
+                                QRectF nodeRect = n->mapToParent(n->boundingRect()).boundingRect();
+                                
+                                if (!n->getNode()->isOutputNode() && nodeRect.intersects(rect)) {
+                                    nodeToShowMergeRect = n;
+                                } else {
+                                    n->setMergeHintActive(false);
+                                }
+                                
+                            } else {
+                                
+                                edge = n->hasEdgeNearbyRect(rect);
+                                
+                                ///if the edge input is the selected node don't continue
+                                if ( edge && ( edge->getSource() == selectedNode) ) {
                                     edge = 0;
                                 }
-                                ///if the source of that edge is already connected also skip
-                                const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes =
-                                    selectedNode->getNode()->getInputs_mt_safe();
-                                for (U32 i = 0; i < inpNodes.size(); ++i) {
-                                    if ( edge && ( inpNodes[i] == edge->getSource()->getNode() ) ) {
+                                
+                                if ( edge && edge->isOutputEdge() ) {
+                                    ///if the edge is an output edge but the node doesn't have any inputs don't continue
+                                    if ( selectedNode->getInputsArrows().empty() ) {
                                         edge = 0;
-                                        break;
+                                    }
+                                    ///if the source of that edge is already connected also skip
+                                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes =
+                                    selectedNode->getNode()->getInputs_mt_safe();
+                                    for (U32 i = 0; i < inpNodes.size(); ++i) {
+                                        if ( edge && ( inpNodes[i] == edge->getSource()->getNode() ) ) {
+                                            edge = 0;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-
-                            if ( edge && !edge->isOutputEdge() ) {
-                                ///if the edge is an input edge but the selected node can't be connected don't continue
-                                if ( !selectedNode->getNode()->canOthersConnectToThisNode() ) {
-                                    edge = 0;
+                                
+                                if ( edge && !edge->isOutputEdge() ) {
+                                    ///if the edge is an input edge but the selected node can't be connected don't continue
+                                    if ( !selectedNode->getNode()->canOthersConnectToThisNode() ) {
+                                        edge = 0;
+                                    }
+                                    
+                                    ///if the selected node doesn't have any input but the edge has an input don't continue
+                                    if ( edge && selectedNode->getInputsArrows().empty() && edge->getSource() ) {
+                                        edge = 0;
+                                    }
                                 }
-
-                                ///if the selected node doesn't have any input but the edge has an input don't continue
-                                if ( edge && selectedNode->getInputsArrows().empty() && edge->getSource() ) {
-                                    edge = 0;
+                                
+                                if (edge) {
+                                    edge->setUseHighlight(true);
+                                    break;
                                 }
-                            }
-
-                            if (edge) {
-                                edge->setUseHighlight(true);
-                                break;
                             }
                         }
                     }
-                }
+                } // QMutexLocker l(&_imp->_nodesMutex);
+                
                 if ( _imp->_highLightedEdge && ( _imp->_highLightedEdge != edge) ) {
                     _imp->_highLightedEdge->setUseHighlight(false);
                     _imp->_hintInputEdge->hide();
@@ -1379,9 +1427,18 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                     } else if ( _imp->_highLightedEdge && _imp->_hintInputEdge->isVisible() ) {
                         _imp->_hintInputEdge->initLine();
                     }
+                } else if (nodeToShowMergeRect) {
+                    nodeToShowMergeRect->setMergeHintActive(true);
+                    selectedNode->setMergeHintActive(true);
+                    _imp->_mergeHintNode = nodeToShowMergeRect;
+                } else {
+                    selectedNode->setMergeHintActive(false);
+                    _imp->_mergeHintNode.reset();
                 }
-            }
-        }
+                
+                
+            } // if (doHints) {
+        } //  if (_imp->_selection.nodes.size() == 1) {
         setCursor( QCursor(Qt::ClosedHandCursor) );
         break;
     }
@@ -1397,7 +1454,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         QPointF p = _imp->_backdropResized->scenePos();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
-        _imp->pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
+        pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
     case SELECTION_RECT: {
@@ -1414,9 +1471,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         QPointF mousePosSceneCoordinates;
         bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
         if (insideNavigator) {
-            updateNavigator();
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
+            _imp->_lastScenePosClick = newPos;
+            return;
         }
     } break;
     default:
@@ -1514,7 +1572,7 @@ NodeGraph::event(QEvent* e)
     if (e->type() == QEvent::KeyPress) {
         QKeyEvent* ke = static_cast<QKeyEvent*>(e);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
-            NodeCreationDialog* nodeCreation = new NodeCreationDialog(this);
+            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName,this);
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
@@ -1540,6 +1598,7 @@ NodeGraph::onNodeCreationDialogFinished()
     if (dialog) {
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         QString res = dialog->getNodeName();
+        _imp->_lastNodeCreatedName = res;
         dialog->deleteLater();
 
         switch (ret) {
@@ -1697,6 +1756,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         toggleKnobLinksVisible();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         popFindDialog(QCursor::pos());
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
+        popRenameDialog(QCursor::pos());
     } else {
         /// Search for a node which has a shortcut bound
         const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
@@ -1731,7 +1792,7 @@ void
 NodeGraphPrivate::rearrangeSelectedNodes()
 {
     if ( !_selection.nodes.empty() ) {
-        pushUndoCommand( new RearrangeNodesCommand(_selection.nodes) );
+        _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_selection.nodes) );
     }
 }
 
@@ -1850,7 +1911,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     }
 
     ///and push a connect command to the selected node.
-    _imp->pushUndoCommand( new ConnectCommand(this,it->second,it->second->getSource(),selected) );
+    pushUndoCommand( new ConnectCommand(this,it->second,it->second->getSource(),selected) );
 
     ///Set the viewer as the selected node (also wipe the current selection)
     selectNode(gui,false);
@@ -1868,7 +1929,8 @@ NodeGraph::enterEvent(QEvent* e)
     dynamic_cast<CurveWidget*>(currentFocus) ||
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
-    currentFocus->objectName() == "PropertiesBinScrollArea";
+    currentFocus->objectName() == "PropertiesBinScrollArea" ||
+    currentFocus->objectName() == "SettingsPanel";
     
     if (canSetFocus) {
         setFocus();
@@ -1960,7 +2022,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
             }
         }
         if (foundEffect) {
-            Natron::StandardButton reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
+            Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
@@ -1968,7 +2030,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString() );
-            if (reply == Natron::No) {
+            if (reply == Natron::eStandardButtonNo) {
                 return;
             }
             break;
@@ -1979,7 +2041,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
     std::list<boost::shared_ptr<NodeGui> > nodesToRemove;
     std::list<NodeBackDrop*> bds;
     nodesToRemove.push_back(node);
-    _imp->pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,bds) );
+    pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,bds) );
 }
 
 void
@@ -2017,7 +2079,7 @@ NodeGraph::deleteSelection()
                     }
                 }
                 if (foundEffect) {
-                    Natron::StandardButton reply = Natron::questionDialog( tr("Delete").toStdString(),
+                    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(),
                                                                            tr("This node has one or several "
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
@@ -2026,7 +2088,7 @@ NodeGraph::deleteSelection()
                                                                               "and undoing the action will not recover "
                                                                               "them. Do you wish to continue ?")
                                                                            .toStdString() );
-                    if (reply == Natron::No) {
+                    if (reply == Natron::eStandardButtonNo) {
                         return;
                     }
                     mustBreak = true;
@@ -2047,7 +2109,7 @@ NodeGraph::deleteSelection()
         }
 
 
-        _imp->pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,_imp->_selection.bds) );
+        pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,_imp->_selection.bds) );
         _imp->_selection.nodes.clear();
         _imp->_selection.bds.clear();
     }
@@ -2772,7 +2834,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard)
         restoreConnections(clipboard.nodes, newNodes);
 
 
-        pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodes,newBds) );
+        _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodes,newBds) );
     }
 } // pasteNodesInternal
 
@@ -2995,7 +3057,7 @@ NodeGraph::cloneSelectedNodes()
     _imp->restoreConnections(serializations, newNodes);
 
 
-    _imp->pushUndoCommand( new AddMultipleNodesCommand(this,newNodes,newBackdrops) );
+    pushUndoCommand( new AddMultipleNodesCommand(this,newNodes,newBackdrops) );
 } // cloneSelectedNodes
 
 void
@@ -3027,7 +3089,7 @@ NodeGraph::decloneSelectedNodes()
             }
         }
     }
-    _imp->pushUndoCommand( new DecloneMultipleNodesCommand(this,nodesToDeclone,_imp->_selection.bds) );
+    pushUndoCommand( new DecloneMultipleNodesCommand(this,nodesToDeclone,_imp->_selection.bds) );
 }
 
 boost::shared_ptr<NodeGui>
@@ -3218,7 +3280,7 @@ NodeGraph::createBackDrop(QVBoxLayout *dockContainer,
     bd->initialize(name, requestedByLoad,serialization, dockContainer);
     _imp->_backdrops.push_back(bd);
     if (!requestedByLoad) {
-        _imp->pushUndoCommand( new AddMultipleNodesCommand(this,bd) );
+        pushUndoCommand( new AddMultipleNodesCommand(this,bd) );
         if ( !_imp->_selection.nodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
@@ -3333,6 +3395,7 @@ NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
     }
 }
 
+
 void
 NodeGraph::onTimeChanged(SequenceTime time,
                          int reason)
@@ -3356,8 +3419,8 @@ NodeGraph::onTimeChanged(SequenceTime time,
 
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {
-        if ( (viewers[i] != lastTimelineSeekCaller) || (reason == USER_SEEK) ) {
-            viewers[i]->renderCurrentFrame(reason != PLAYBACK_SEEK);
+        if ( (viewers[i] != lastTimelineSeekCaller) || (reason == eTimelineChangeReasonUserSeek) ) {
+            viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
         }
     }
 }
@@ -3381,8 +3444,8 @@ NodeGraph::refreshAllKnobsGui()
                 if (!it2->first->getIsSecret()) {
                     for (int i = 0; i < it2->first->getDimension(); ++i) {
                         if (it2->first->isAnimated(i)) {
-                            it2->second->onInternalValueChanged(i, Natron::PLUGIN_EDITED);
-                            it2->second->onAnimationLevelChanged(i, Natron::PLUGIN_EDITED);
+                            it2->second->onInternalValueChanged(i, Natron::eValueChangedReasonPluginEdited);
+                            it2->second->onAnimationLevelChanged(i, Natron::eValueChangedReasonPluginEdited);
                         }
                     }
                 }
@@ -3421,11 +3484,11 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
     ///if some nodes are disabled , enable them before
 
     if ( toProcess.size() == _selection.nodes.size() ) {
-        pushUndoCommand( new EnableNodesCommand(_selection.nodes) );
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(_selection.nodes) );
     } else if (toProcess.size() > 0) {
-        pushUndoCommand( new EnableNodesCommand(toProcess) );
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(toProcess) );
     } else {
-        pushUndoCommand( new DisableNodesCommand(_selection.nodes) );
+        _publicInterface->pushUndoCommand( new DisableNodesCommand(_selection.nodes) );
     }
 }
 
@@ -3457,6 +3520,43 @@ NodeGraph::popFindDialog(const QPoint& p)
     dialog->raise();
     dialog->show();
     
+}
+
+void
+NodeGraph::popRenameDialog(const QPoint& pos)
+{
+    boost::shared_ptr<NodeGui> node;
+    NodeBackDrop* bd = 0;
+    if (_imp->_selection.nodes.size() == 1 && _imp->_selection.bds.empty()) {
+        node = _imp->_selection.nodes.front();
+    } else if (_imp->_selection.nodes.empty() && _imp->_selection.bds.size() == 1) {
+        bd = _imp->_selection.bds.front();
+    } else {
+        return;
+    }
+    
+    assert(node || bd);
+
+    
+    QPoint realPos = pos;
+    
+    EditNodeNameDialog* dialog = new EditNodeNameDialog(this,node,bd,this);
+    
+    if (realPos.x() == 0 && realPos.y() == 0) {
+        QPoint global = QCursor::pos();
+        QSize sizeH = dialog->sizeHint();
+        global.rx() -= sizeH.width() / 2;
+        global.ry() -= sizeH.height() / 2;
+        realPos = global;
+        
+    }
+    
+    QObject::connect(dialog ,SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()));
+    QObject::connect(dialog ,SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()));
+    dialog->move( realPos.x(), realPos.y() );
+    dialog->raise();
+    dialog->show();
+  
 }
 
 void
@@ -3717,3 +3817,74 @@ FindNodeDialog::changeEvent(QEvent* e)
     QDialog::changeEvent(e);
 }
 
+
+struct EditNodeNameDialogPrivate
+{
+    
+    LineEdit* field;
+    boost::shared_ptr<NodeGui> node;
+    NodeBackDrop* bd;
+    NodeGraph* graph;
+    
+    EditNodeNameDialogPrivate(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd)
+    : field(0)
+    , node(node)
+    , bd(bd)
+    , graph(graph)
+    {
+        
+    }
+};
+
+EditNodeNameDialog::EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd,QWidget* parent)
+: QDialog(parent)
+, _imp(new EditNodeNameDialogPrivate(graph,node,bd))
+{
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    _imp->field = new LineEdit(this);
+    _imp->field->setPlaceholderText(tr("Edit node name"));
+    mainLayout->addWidget(_imp->field);
+}
+
+EditNodeNameDialog::~EditNodeNameDialog()
+{
+    
+}
+
+
+void
+EditNodeNameDialog::changeEvent(QEvent* e)
+{
+    if (e->type() == QEvent::ActivationChange) {
+        if ( !isActiveWindow() ) {
+            reject();
+            
+            return;
+        }
+    }
+    QDialog::changeEvent(e);
+}
+
+void
+EditNodeNameDialog::keyPressEvent(QKeyEvent* e)
+{
+    if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
+        _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,_imp->bd,_imp->field->text()));
+        accept();
+    } else if (e->key() == Qt::Key_Escape) {
+        reject();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+}
+
+void
+NodeGraph::onNodeNameEditDialogFinished()
+{
+    EditNodeNameDialog* dialog = qobject_cast<EditNodeNameDialog*>(sender());
+    if (dialog) {
+        dialog->deleteLater();
+    }
+}

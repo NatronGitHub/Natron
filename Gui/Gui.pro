@@ -84,6 +84,7 @@ SOURCES += \
     ProjectGuiSerialization.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \
+    QuestionDialog.cpp \
     RenderingProgressDialog.cpp \
     RotoGui.cpp \
     RotoPanel.cpp \
@@ -149,6 +150,7 @@ HEADERS += \
     ProjectGuiSerialization.h \
     QtDecoder.h \
     QtEncoder.h \
+    QuestionDialog.h \
     RenderingProgressDialog.h \
     RotoGui.h \
     RotoPanel.h \

@@ -279,7 +279,7 @@ Natron::Bitmap::getBitmapAt(int x,
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<Natron::ImageParams>& params,
              const Natron::CacheAPI* cache,
-             Natron::StorageMode storage,
+             Natron::StorageModeEnum storage,
              const std::string & path)
     : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)
 {
@@ -294,11 +294,11 @@ Image::Image(const ImageKey & key,
 /*This constructor can be used to allocate a local Image. The deallocation should
    then be handled by the user. Note that no view number is passed in parameter
    as it is not needed.*/
-Image::Image(ImageComponents components,
+Image::Image(ImageComponentsEnum components,
              const RectD & regionOfDefinition, //!< rod in canonical coordinates
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
-             Natron::ImageBitDepth bitdepth)
+             Natron::ImageBitDepthEnum bitdepth)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
 {
     setCacheEntry(makeKey(0,0,0),
@@ -314,7 +314,7 @@ Image::Image(ImageComponents components,
                                                                    0,
                                                                    std::map<int,std::vector<RangeD> >() ) ),
                   NULL,
-                  Natron::RAM,
+                  Natron::eStorageModeRAM,
                   std::string()
                   );
 
@@ -355,8 +355,8 @@ Image::makeParams(int cost,
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
-                  ImageComponents components,
-                  Natron::ImageBitDepth bitdepth,
+                  ImageComponentsEnum components,
+                  Natron::ImageBitDepthEnum bitdepth,
                   int inputNbIdentity,
                   int inputTimeIdentity,
                   const std::map<int, std::vector<RangeD> > & framesNeeded)
@@ -394,7 +394,7 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     ///Cannot copy images with different bit depth, this is not the purpose of this function.
     ///@see convert
     assert( getBitDepth() == srcImg.getBitDepth() );
-    assert( (getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4) );
+    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
     // NOTE: before removing the following asserts, please explain why an empty image may happen
     const RectI & bounds = getBounds();
     const RectI & srcBounds = srcImg.getBounds();
@@ -438,19 +438,19 @@ Image::pasteFrom(const Natron::Image & src,
                  const RectI & srcRoi,
                  bool copyBitmap)
 {
-    Natron::ImageBitDepth depth = getBitDepth();
+    Natron::ImageBitDepthEnum depth = getBitDepth();
 
     switch (depth) {
-    case IMAGE_BYTE:
+    case eImageBitDepthByte:
         pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap);
         break;
-    case IMAGE_SHORT:
+    case eImageBitDepthShort:
         pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap);
         break;
-    case IMAGE_FLOAT:
+    case eImageBitDepthFloat:
         pasteFromForDepth<float>(src, srcRoi, copyBitmap);
         break;
-    case IMAGE_NONE:
+    case eImageBitDepthNone:
         break;
     }
 }
@@ -464,10 +464,10 @@ Image::fillForDepth(const RectI & roi_,
                     float b,
                     float a)
 {
-    assert( (getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4) );
+    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
-    ImageComponents comps = getComponents();
-    if (comps == ImageComponentNone) {
+    ImageComponentsEnum comps = getComponents();
+    if (comps == eImageComponentNone) {
         return;
     }
 
@@ -480,7 +480,7 @@ Image::fillForDepth(const RectI & roi_,
 
     int rowElems = (int)getRowElements();
     const float fillValue[4] = {
-        comps == Natron::ImageComponentAlpha ? a : r, g, b, a
+        comps == Natron::eImageComponentAlpha ? a : r, g, b, a
     };
     int nComps = getElementsCountForComponents(comps);
 
@@ -504,16 +504,16 @@ Image::fill(const RectI & roi,
             float a)
 {
     switch ( getBitDepth() ) {
-    case IMAGE_BYTE:
+    case eImageBitDepthByte:
         fillForDepth<unsigned char, 255>(roi, r, g, b, a);
         break;
-    case IMAGE_SHORT:
+    case eImageBitDepthShort:
         fillForDepth<unsigned short, 65535>(roi, r, g, b, a);
         break;
-    case IMAGE_FLOAT:
+    case eImageBitDepthFloat:
         fillForDepth<float, 1>(roi, r, g, b, a);
         break;
-    case IMAGE_NONE:
+    case eImageBitDepthNone:
         break;
     }
 }
@@ -559,22 +559,22 @@ Image::getComponentsCount() const
 }
 
 bool
-Image::hasEnoughDataToConvert(Natron::ImageComponents from,
-                              Natron::ImageComponents to)
+Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
+                              Natron::ImageComponentsEnum to)
 {
     switch (from) {
-    case ImageComponentRGBA:
+    case eImageComponentRGBA:
 
         return true;
-    case ImageComponentRGB: {
+    case eImageComponentRGB: {
         switch (to) {
-        case ImageComponentRGBA:
+        case eImageComponentRGBA:
 
             return false;
-        case ImageComponentRGB:
+        case eImageComponentRGB:
 
             return true;
-        case ImageComponentAlpha:
+        case eImageComponentAlpha:
 
             return false;
         default:
@@ -583,15 +583,15 @@ Image::hasEnoughDataToConvert(Natron::ImageComponents from,
         }
         break;
     }
-    case ImageComponentAlpha: {
+    case eImageComponentAlpha: {
         switch (to) {
-        case ImageComponentRGBA:
+        case eImageComponentRGBA:
 
             return false;
-        case ImageComponentRGB:
+        case eImageComponentRGB:
 
             return false;
-        case ImageComponentAlpha:
+        case eImageComponentAlpha:
 
             return true;
         default:
@@ -608,19 +608,19 @@ Image::hasEnoughDataToConvert(Natron::ImageComponents from,
 }
 
 std::string
-Image::getFormatString(Natron::ImageComponents comps,
-                       Natron::ImageBitDepth depth)
+Image::getFormatString(Natron::ImageComponentsEnum comps,
+                       Natron::ImageBitDepthEnum depth)
 {
     std::string s;
 
     switch (comps) {
-    case Natron::ImageComponentRGBA:
+    case Natron::eImageComponentRGBA:
         s += "RGBA";
         break;
-    case Natron::ImageComponentRGB:
+    case Natron::eImageComponentRGB:
         s += "RGB";
         break;
-    case Natron::ImageComponentAlpha:
+    case Natron::eImageComponentAlpha:
         s += "Alpha";
         break;
     default:
@@ -632,21 +632,21 @@ Image::getFormatString(Natron::ImageComponents comps,
 }
 
 std::string
-Image::getDepthString(Natron::ImageBitDepth depth)
+Image::getDepthString(Natron::ImageBitDepthEnum depth)
 {
     std::string s;
 
     switch (depth) {
-    case Natron::IMAGE_BYTE:
+    case Natron::eImageBitDepthByte:
         s += "8u";
         break;
-    case Natron::IMAGE_SHORT:
+    case Natron::eImageBitDepthShort:
         s += "16u";
         break;
-    case Natron::IMAGE_FLOAT:
+    case Natron::eImageBitDepthFloat:
         s += "32f";
         break;
-    case Natron::IMAGE_NONE:
+    case Natron::eImageBitDepthNone:
         break;
     }
 
@@ -655,8 +655,8 @@ Image::getDepthString(Natron::ImageBitDepth depth)
 
 
 bool
-Image::isBitDepthConversionLossy(Natron::ImageBitDepth from,
-                                 Natron::ImageBitDepth to)
+Image::isBitDepthConversionLossy(Natron::ImageBitDepthEnum from,
+                                 Natron::ImageBitDepthEnum to)
 {
     int sizeOfFrom = getSizeOfForBitDepth(from);
     int sizeOfTo = getSizeOfForBitDepth(to);
@@ -677,9 +677,9 @@ Image::halveRoIForDepth(const RectI & roi,
                         bool copyBitMap,
                         Natron::Image* output) const
 {
-    assert( (getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) ||
-           (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) ||
-           (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4) );
+    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
+           (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) ||
+           (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
     ///handle case where there is only 1 column/row
     if ( (roi.width() == 1) || (roi.height() == 1) ) {
@@ -826,16 +826,16 @@ Image::halveRoI(const RectI & roi,
                 Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
-    case IMAGE_BYTE:
+    case eImageBitDepthByte:
         halveRoIForDepth<unsigned char,255>(roi, copyBitMap, output);
         break;
-    case IMAGE_SHORT:
+    case eImageBitDepthShort:
         halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, output);
         break;
-    case IMAGE_FLOAT:
+    case eImageBitDepthFloat:
         halveRoIForDepth<float,1>(roi,copyBitMap, output);
         break;
-    case IMAGE_NONE:
+    case eImageBitDepthNone:
         break;
     }
 }
@@ -897,16 +897,16 @@ Image::halve1DImage(const RectI & roi,
                     Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
-    case IMAGE_BYTE:
+    case eImageBitDepthByte:
         halve1DImageForDepth<unsigned char, 255>(roi, output);
         break;
-    case IMAGE_SHORT:
+    case eImageBitDepthShort:
         halve1DImageForDepth<unsigned short, 65535>(roi, output);
         break;
-    case IMAGE_FLOAT:
+    case eImageBitDepthFloat:
         halve1DImageForDepth<float, 1>(roi, output);
         break;
-    case IMAGE_NONE:
+    case eImageBitDepthNone:
         break;
     }
 }
@@ -957,7 +957,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
                              Natron::Image* output) const
 {
     assert( getBitDepth() == output->getBitDepth() );
-    assert( (getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4) );
+    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
     ///You should not call this function with a level equal to 0.
     assert(fromLevel > toLevel);
@@ -1028,16 +1028,16 @@ Image::upscaleMipMap(const RectI & roi,
                      Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
-    case IMAGE_BYTE:
+    case eImageBitDepthByte:
         upscaleMipMapForDepth<unsigned char, 255>(roi, fromLevel, toLevel, output);
         break;
-    case IMAGE_SHORT:
+    case eImageBitDepthShort:
         upscaleMipMapForDepth<unsigned short, 65535>(roi, fromLevel, toLevel, output);
         break;
-    case IMAGE_FLOAT:
+    case eImageBitDepthFloat:
         upscaleMipMapForDepth<float,1>(roi, fromLevel, toLevel, output);
         break;
-    case IMAGE_NONE:
+    case eImageBitDepthNone:
         break;
     }
 }
@@ -1051,7 +1051,7 @@ Image::scaleBoxForDepth(const RectI & roi,
                         Natron::Image* output) const
 {
     assert( getBitDepth() == output->getBitDepth() );
-    assert( (getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4) );
+    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
     ///The destination rectangle
     const RectI & dstBounds = output->getBounds();
@@ -1275,16 +1275,16 @@ Image::scaleBox(const RectI & roi,
                 Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
-    case IMAGE_BYTE:
+    case eImageBitDepthByte:
         scaleBoxForDepth<unsigned char>(roi, output);
         break;
-    case IMAGE_SHORT:
+    case eImageBitDepthShort:
         scaleBoxForDepth<unsigned short>(roi, output);
         break;
-    case IMAGE_FLOAT:
+    case eImageBitDepthFloat:
         scaleBoxForDepth<float>(roi, output);
         break;
-    case IMAGE_NONE:
+    case eImageBitDepthNone:
         break;
     }
 }
@@ -1447,18 +1447,18 @@ convertPixelDepth(float pix)
 }
 
 static const Natron::Color::Lut*
-lutFromColorspace(Natron::ViewerColorSpace cs)
+lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
 {
     const Natron::Color::Lut* lut;
 
     switch (cs) {
-    case Natron::sRGB:
+    case Natron::eViewerColorSpaceSRGB:
         lut = Natron::Color::LutManager::sRGBLut();
         break;
-    case Natron::Rec709:
+    case Natron::eViewerColorSpaceRec709:
         lut = Natron::Color::LutManager::Rec709Lut();
         break;
-    case Natron::Linear:
+    case Natron::eViewerColorSpaceLinear:
     default:
         lut = 0;
         break;
@@ -1476,8 +1476,8 @@ void
 convertToFormatInternal_sameComps(const RectI & renderWindow,
                                   const Image & srcImg,
                                   Image & dstImg,
-                                  Natron::ViewerColorSpace srcColorSpace,
-                                  Natron::ViewerColorSpace dstColorSpace,
+                                  Natron::ViewerColorSpaceEnum srcColorSpace,
+                                  Natron::ViewerColorSpaceEnum dstColorSpace,
                                   bool invert,
                                   bool copyBitmap)
 {
@@ -1488,8 +1488,8 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
         return;
     }
 
-    Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
-    Natron::ImageBitDepth srcDepth = srcImg.getBitDepth();
+    Natron::ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
+    Natron::ImageBitDepthEnum srcDepth = srcImg.getBitDepth();
     int nComp = (int)srcImg.getComponentsCount();
     const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
     const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
@@ -1519,9 +1519,9 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                         float pixFloat;
 
                         if (srcLut) {
-                            if (srcDepth == IMAGE_BYTE) {
+                            if (srcDepth == eImageBitDepthByte) {
                                 pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
-                            } else if (srcDepth == IMAGE_SHORT) {
+                            } else if (srcDepth == eImageBitDepthShort) {
                                 pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
                             } else {
                                 pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
@@ -1532,12 +1532,12 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
 
                         DSTPIX pix;
-                        if (dstDepth == IMAGE_BYTE) {
+                        if (dstDepth == eImageBitDepthByte) {
                             ///small increase in perf we use Luts. This should be anyway the most used case.
                             error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                              Color::floatToInt<0xff01>(pixFloat) );
                             pix = error[k] >> 8;
-                        } else if (dstDepth == IMAGE_SHORT) {
+                        } else if (dstDepth == eImageBitDepthShort) {
                             pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
                                   convertPixelDepth<float, DSTPIX>(pixFloat);
                         } else {
@@ -1580,8 +1580,8 @@ void
 convertToFormatInternal(const RectI & renderWindow,
                         const Image & srcImg,
                         Image & dstImg,
-                        Natron::ViewerColorSpace srcColorSpace,
-                        Natron::ViewerColorSpace dstColorSpace,
+                        Natron::ViewerColorSpaceEnum srcColorSpace,
+                        Natron::ViewerColorSpaceEnum dstColorSpace,
                         int channelForAlpha,
                         bool invert,
                         bool copyBitmap,
@@ -1607,8 +1607,8 @@ convertToFormatInternal(const RectI & renderWindow,
 
     }
 
-    Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
-    Natron::ImageBitDepth srcDepth = dstDepth;
+    Natron::ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
+    Natron::ImageBitDepthEnum srcDepth = dstDepth;
 
     ///special case comp == alpha && channelForAlpha = -1 clear out the mask
     if ( dstNComps == 1 && (channelForAlpha == -1) ) {
@@ -1690,8 +1690,8 @@ convertToFormatInternal(const RectI & renderWindow,
                         ///In this case we've RGB or RGBA input and outputs
                         assert(srcImg.getComponents() != dstImg.getComponents());
                         
-                        bool unpremultChannel = (srcImg.getComponents() == Natron::ImageComponentRGBA &&
-                                                 dstImg.getComponents() == Natron::ImageComponentRGB &&
+                        bool unpremultChannel = (srcImg.getComponents() == Natron::eImageComponentRGBA &&
+                                                 dstImg.getComponents() == Natron::eImageComponentRGB &&
                                                  requiresUnpremult);
                         
                         ///This is only set if unpremultChannel is true
@@ -1721,9 +1721,9 @@ convertToFormatInternal(const RectI & renderWindow,
                                 } else {
                                     
                                     if (srcLut) {
-                                        if (srcDepth == IMAGE_BYTE) {
+                                        if (srcDepth == eImageBitDepthByte) {
                                             pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
-                                        } else if (srcDepth == IMAGE_SHORT) {
+                                        } else if (srcDepth == eImageBitDepthShort) {
                                             pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
                                         } else {
                                             pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
@@ -1735,11 +1735,11 @@ convertToFormatInternal(const RectI & renderWindow,
                                 
                                 ///Apply dst color-space
                                 DSTPIX pix;
-                                if (dstDepth == IMAGE_BYTE) {
+                                if (dstDepth == eImageBitDepthByte) {
                                     error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                                     Color::floatToInt<0xff01>(pixFloat) );
                                     pix = error[k] >> 8;
-                                } else if (dstDepth == IMAGE_SHORT) {
+                                } else if (dstDepth == eImageBitDepthShort) {
                                     pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
                                     convertPixelDepth<float, DSTPIX>(pixFloat);
                                 } else {
@@ -1783,8 +1783,8 @@ void
 convertToFormatInternalForDepth(const RectI & renderWindow,
                                 const Image & srcImg,
                                 Image & dstImg,
-                                Natron::ViewerColorSpace srcColorSpace,
-                                Natron::ViewerColorSpace dstColorSpace,
+                                Natron::ViewerColorSpaceEnum srcColorSpace,
+                                Natron::ViewerColorSpaceEnum dstColorSpace,
                                 int channelForAlpha,
                                 bool invert,
                                 bool copyBitmap,
@@ -1865,8 +1865,8 @@ convertToFormatInternalForDepth(const RectI & renderWindow,
 
 void
 Image::convertToFormat(const RectI & renderWindow,
-                       Natron::ViewerColorSpace srcColorSpace,
-                       Natron::ViewerColorSpace dstColorSpace,
+                       Natron::ViewerColorSpaceEnum srcColorSpace,
+                       Natron::ViewerColorSpaceEnum dstColorSpace,
                        int channelForAlpha,
                        bool invert,
                        bool copyBitmap,
@@ -1877,101 +1877,101 @@ Image::convertToFormat(const RectI & renderWindow,
 
     if ( dstImg->getComponents() == getComponents() ) {
         switch ( dstImg->getBitDepth() ) {
-        case IMAGE_BYTE: {
+        case eImageBitDepthByte: {
             switch ( getBitDepth() ) {
-            case IMAGE_BYTE:
+            case eImageBitDepthByte:
                 ///Same as a copy
                 convertToFormatInternal_sameComps<unsigned char, unsigned char, 255, 255>(renderWindow,*this, *dstImg,
                                                                                           srcColorSpace,
                                                                                           dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_SHORT:
+            case eImageBitDepthShort:
                 convertToFormatInternal_sameComps<unsigned short, unsigned char, 65535, 255>(renderWindow,*this, *dstImg,
                                                                                              srcColorSpace,
                                                                                              dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_FLOAT:
+            case eImageBitDepthFloat:
                 convertToFormatInternal_sameComps<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
                                                                                 srcColorSpace,
                                                                                 dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_NONE:
+            case eImageBitDepthNone:
                 break;
             }
             break;
         }
 
-        case IMAGE_SHORT: {
+        case eImageBitDepthShort: {
             switch ( getBitDepth() ) {
-            case IMAGE_BYTE:
+            case eImageBitDepthByte:
                 convertToFormatInternal_sameComps<unsigned char, unsigned short, 255, 65535>(renderWindow,*this, *dstImg,
                                                                                              srcColorSpace,
                                                                                              dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_SHORT:
+            case eImageBitDepthShort:
                 ///Same as a copy
                 convertToFormatInternal_sameComps<unsigned short, unsigned short, 65535, 65535>(renderWindow,*this, *dstImg,
                                                                                                 srcColorSpace,
                                                                                                 dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_FLOAT:
+            case eImageBitDepthFloat:
                 convertToFormatInternal_sameComps<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg,
                                                                                    srcColorSpace,
                                                                                    dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_NONE:
+            case eImageBitDepthNone:
                 break;
             }
             break;
         }
 
-        case IMAGE_FLOAT: {
+        case eImageBitDepthFloat: {
             switch ( getBitDepth() ) {
-            case IMAGE_BYTE:
+            case eImageBitDepthByte:
                 convertToFormatInternal_sameComps<unsigned char, float, 255, 1>(renderWindow,*this, *dstImg,
                                                                                 srcColorSpace,
                                                                                 dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_SHORT:
+            case eImageBitDepthShort:
                 convertToFormatInternal_sameComps<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg,
                                                                                    srcColorSpace,
                                                                                    dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_FLOAT:
+            case eImageBitDepthFloat:
                 ///Same as a copy
                 convertToFormatInternal_sameComps<float, float, 1, 1>(renderWindow,*this, *dstImg,
                                                                       srcColorSpace,
                                                                       dstColorSpace,invert,copyBitmap);
                 break;
-            case IMAGE_NONE:
+            case eImageBitDepthNone:
                 break;
             }
             break;
         }
 
-        case IMAGE_NONE:
+        case eImageBitDepthNone:
             break;
         } // switch
     } else {
         
         switch ( dstImg->getBitDepth() ) {
-        case IMAGE_BYTE: {
+        case eImageBitDepthByte: {
             switch ( getBitDepth() ) {
-            case IMAGE_BYTE:
+            case eImageBitDepthByte:
                     convertToFormatInternalForDepth<unsigned char, unsigned char, 255, 255>(renderWindow,*this, *dstImg,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
                                                                                         invert,copyBitmap,requiresUnpremult);
                     break;
-            case IMAGE_SHORT:
+            case eImageBitDepthShort:
                     convertToFormatInternalForDepth<unsigned short, unsigned char, 65535, 255>(renderWindow,*this, *dstImg,
                                                                                            srcColorSpace,
                                                                                            dstColorSpace,
                                                                                            channelForAlpha,
                                                                                            invert,copyBitmap,requiresUnpremult);
                     break;
-            case IMAGE_FLOAT:
+            case eImageBitDepthFloat:
                     convertToFormatInternalForDepth<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
                                                                               srcColorSpace,
                                                                               dstColorSpace,
@@ -1979,14 +1979,14 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                               invert,copyBitmap,requiresUnpremult);
 
                         break;
-            case IMAGE_NONE:
+            case eImageBitDepthNone:
                 break;
             }
             break;
         }
-        case IMAGE_SHORT: {
+        case eImageBitDepthShort: {
             switch ( getBitDepth() ) {
-            case IMAGE_BYTE:
+            case eImageBitDepthByte:
                     convertToFormatInternalForDepth<unsigned char, unsigned short, 255, 65535>(renderWindow,*this, *dstImg,
                                                                                            srcColorSpace,
                                                                                            dstColorSpace,
@@ -1994,7 +1994,7 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                                            invert,copyBitmap,requiresUnpremult);
 
                         break;
-            case IMAGE_SHORT:
+            case eImageBitDepthShort:
                     convertToFormatInternalForDepth<unsigned short, unsigned short, 65535, 65535>(renderWindow,*this, *dstImg,
                                                                                               srcColorSpace,
                                                                                               dstColorSpace,
@@ -2002,28 +2002,28 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                                               invert,copyBitmap,requiresUnpremult);
 
                 break;
-            case IMAGE_FLOAT:
+            case eImageBitDepthFloat:
                     convertToFormatInternalForDepth<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg,
                                                                                  srcColorSpace,
                                                                                  dstColorSpace,
                                                                                  channelForAlpha,
                                                                                  invert,copyBitmap,requiresUnpremult);
                         break;
-            case IMAGE_NONE:
+            case eImageBitDepthNone:
                 break;
             }
             break;
         }
-        case IMAGE_FLOAT: {
+        case eImageBitDepthFloat: {
             switch ( getBitDepth() ) {
-            case IMAGE_BYTE:
+            case eImageBitDepthByte:
                     convertToFormatInternalForDepth<unsigned char, float, 255, 1>(renderWindow,*this, *dstImg,
                                                                               srcColorSpace,
                                                                               dstColorSpace,
                                                                               channelForAlpha,
                                                                               invert,copyBitmap,requiresUnpremult);
                         break;
-            case IMAGE_SHORT:
+            case eImageBitDepthShort:
                     convertToFormatInternalForDepth<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg,
                                                                                  srcColorSpace,
                                                                                  dstColorSpace,
@@ -2031,14 +2031,14 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                                  invert,copyBitmap,requiresUnpremult);
 
                         break;
-            case IMAGE_FLOAT:
+            case eImageBitDepthFloat:
                     convertToFormatInternalForDepth<float, float, 1, 1>(renderWindow,*this, *dstImg,
                                                                     srcColorSpace,
                                                                     dstColorSpace,
                                                                     channelForAlpha,
                                                                     invert,copyBitmap,requiresUnpremult);
                     break;
-            case IMAGE_NONE:
+            case eImageBitDepthNone:
                 break;
             }
             break;

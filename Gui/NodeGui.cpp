@@ -99,6 +99,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _persistentMessage(NULL)
       , _lastPersistentMessageType(0)
       , _stateIndicator(NULL)
+      , _mergeHintActive(false)
       , _bitDepthWarning(NULL)
       , _disabledTopLeftBtmRight(NULL)
       , _disabledBtmLeftTopRight(NULL)
@@ -902,7 +903,7 @@ NodeGui::onInternalNameChanged(const QString & s)
     setNameItemHtml(s,_nodeLabel);
 
     if (_settingsPanel) {
-        _settingsPanel->onNameChanged(s);
+        _settingsPanel->setName(s);
     }
     scene()->update();
 }
@@ -1346,7 +1347,7 @@ NodeGui::onPersistentMessageChanged(int type,
                                     const QString & message)
 {
     //keep type in synch with this enum:
-    //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
+    //enum MessageTypeEnum{eMessageTypeInfo = 0,eMessageTypeError = 1,eMessageTypeWarning = 2,eMessageTypeQuestion = 3};
 
     ///don't do anything if the last persistent message is the same
     if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui() ) {
@@ -1505,6 +1506,26 @@ void
 NodeGui::onRenderingFinished()
 {
     _stateIndicator->hide();
+}
+
+void
+NodeGui::setMergeHintActive(bool active)
+{
+    if (active == _mergeHintActive) {
+        return;
+    }
+    _mergeHintActive = active;
+    if (active) {
+        _stateIndicator->setBrush(Qt::green);
+        if (!_stateIndicator->isVisible()) {
+            _stateIndicator->show();
+        }
+    } else {
+        if (_stateIndicator->isVisible()) {
+            _stateIndicator->hide();
+        }
+    }
+    
 }
 
 void
@@ -2006,8 +2027,9 @@ NodeGui::setNameItemHtml(const QString & name,
 
 
     QFont f;
+    QColor color;
     if (hasFontData) {
-        String_KnobGui::parseFont(textLabel, f);
+        String_KnobGui::parseFont(textLabel, f, color);
     }
     _nameItem->setFont(f);
 
@@ -2281,4 +2303,34 @@ DotGui::shape() const
     return diskShape->shape();
 }
 
+void
+NodeGui::trySetName(const QString& newName)
+{
+    bool mustRestoreOldName = false;
+    QString oldName;
+    
+    if ( newName.isEmpty() ) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
+        mustRestoreOldName = true;
+    } else {
+        if ( _graph->checkIfNodeNameExists( newName.toStdString(), this ) ) {
+            mustRestoreOldName = true;
+            Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString() );
+            oldName = _internalNode->getLiveInstance()->getName().c_str();
+        }
+        
+    }
+    
+    DockablePanel* panel = getSettingPanel();
+    if (mustRestoreOldName) {
+        if (panel) {
+            panel->setName(oldName);
+        }
+    } else {
+        if (panel) {
+            panel->setName(newName);
+        }
+        emit nameChanged(newName);
+    }
 
+}

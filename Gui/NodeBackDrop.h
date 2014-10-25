@@ -56,6 +56,7 @@ public:
     ///Mt-safe
     QString getName() const;
     void setName(const QString & str);
+    void trySetName(const QString& str);
     virtual std::string getName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Mt-safe
@@ -105,10 +106,10 @@ public slots:
 
 private:
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE FINAL;
     virtual void evaluate(KnobI* /*knob*/,
                           bool /*isSignificant*/,
-                          Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL
+                          Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
     {
     }
 

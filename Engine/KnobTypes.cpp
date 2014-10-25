@@ -382,9 +382,10 @@ Double_Knob::~Double_Knob()
 
 static void
 getInputRoD(EffectInstance* effect,
-            double time,
+            double /*time*/,
             RectD & rod)
 {
+#ifdef NATRON_NORMALIZE_SPATIAL_WITH_ROD
     RenderScale scale;
     scale.y = scale.x = 1.;
     bool isProjectFormat;
@@ -394,7 +395,13 @@ getInputRoD(EffectInstance* effect,
         effect->getRenderFormat(&f);
         rod = f;
     }
+#else
+    Format f;
+    effect->getRenderFormat(&f);
+    rod = f;
+#endif
 }
+
 
 void
 Double_Knob::setDefaultValuesNormalized(int dims,
@@ -751,11 +758,12 @@ Color_Knob::setValues(double r,
                       double b)
 {
     assert(getDimension() == 3);
+    KeyFrame k;
     blockEvaluation();
-    setValue(r,0);
-    setValue(g,1);
+    onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
+    onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
     unblockEvaluation();
-    setValue(b,2);
+    onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
 }
 
 void
@@ -765,12 +773,13 @@ Color_Knob::setValues(double r,
                       double a)
 {
     assert(getDimension() == 4);
+    KeyFrame k;
     blockEvaluation();
-    setValue(r,0);
-    setValue(g,1);
-    setValue(b,2);
+    onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
+    onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
+    onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
     unblockEvaluation();
-    setValue(a,3);
+    onValueChanged(a, 3, Natron::eValueChangedReasonNatronGuiEdited, &k);
 }
 
 /******************************STRING_KNOB**************************************/
@@ -1016,7 +1025,7 @@ boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) cons
     return _curves[dimension];
 }
 
-Natron::Status
+Natron::StatusEnum
 Parametric_Knob::addControlPoint(int dimension,
                                  double key,
                                  double value)
@@ -1027,49 +1036,49 @@ Parametric_Knob::addControlPoint(int dimension,
         boost::math::isinf(key) ||
         boost::math::isnan(value) ||
         boost::math::isinf(value)) {
-        return StatFailed;
+        return eStatusFailed;
     }
     
     KeyFrame k(key,value);
-    k.setInterpolation(Natron::KEYFRAME_CUBIC);
+    k.setInterpolation(Natron::eKeyframeTypeCubic);
     _curves[dimension]->addKeyFrame(k);
     emit curveChanged(dimension);
     
-    return StatOK;
+    return eStatusOK;
 }
 
-Natron::Status
+Natron::StatusEnum
 Parametric_Knob::getValue(int dimension,
                           double parametricPosition,
                           double *returnValue)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
-        return StatFailed;
+        return eStatusFailed;
     }
     try {
         *returnValue = _curves[dimension]->getValueAt(parametricPosition);
     }catch (...) {
-        return Natron::StatFailed;
+        return Natron::eStatusFailed;
     }
     
-    return Natron::StatOK;
+    return Natron::eStatusOK;
 }
 
-Natron::Status
+Natron::StatusEnum
 Parametric_Knob::getNControlPoints(int dimension,
                                    int *returnValue)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
-        return StatFailed;
+        return eStatusFailed;
     }
     *returnValue =  _curves[dimension]->getKeyFramesCount();
     
-    return StatOK;
+    return eStatusOK;
 }
 
-Natron::Status
+Natron::StatusEnum
 Parametric_Knob::getNthControlPoint(int dimension,
                                     int nthCtl,
                                     double *key,
@@ -1077,20 +1086,20 @@ Parametric_Knob::getNthControlPoint(int dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
-        return StatFailed;
+        return eStatusFailed;
     }
     KeyFrame kf;
     bool ret = _curves[dimension]->getKeyFrameWithIndex(nthCtl, &kf);
     if (!ret) {
-        return StatFailed;
+        return eStatusFailed;
     }
     *key = kf.getTime();
     *value = kf.getValue();
     
-    return StatOK;
+    return eStatusOK;
 }
 
-Natron::Status
+Natron::StatusEnum
 Parametric_Knob::setNthControlPoint(int dimension,
                                     int nthCtl,
                                     double key,
@@ -1098,40 +1107,40 @@ Parametric_Knob::setNthControlPoint(int dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
-        return StatFailed;
+        return eStatusFailed;
     }
     _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
     emit curveChanged(dimension);
     
-    return StatOK;
+    return eStatusOK;
 }
 
-Natron::Status
+Natron::StatusEnum
 Parametric_Knob::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
-        return StatFailed;
+        return eStatusFailed;
     }
     
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
     emit curveChanged(dimension);
     
-    return StatOK;
+    return eStatusOK;
 }
 
-Natron::Status
+Natron::StatusEnum
 Parametric_Knob::deleteAllControlPoints(int dimension)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
-        return StatFailed;
+        return eStatusFailed;
     }
     _curves[dimension]->clearKeyFrames();
     emit curveChanged(dimension);
     
-    return StatOK;
+    return eStatusOK;
 }
 
 void

@@ -132,9 +132,9 @@ private:
 
     void removeInstancesInternal();
 
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) OVERRIDE;
+    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
 

@@ -346,9 +346,7 @@ RemoveMultipleNodesCommand::redo()
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
         ///Make a copy before calling deactivate which will modify the list
         std::list<Natron::Node* > outputs = it->node->getNode()->getOutputs();
-
-        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
-
+        
         std::list<ViewerInstance* > viewers;
         it->node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
@@ -357,6 +355,8 @@ RemoveMultipleNodesCommand::redo()
                 viewersToRefresh.push_back(*it2);
             }
         }
+
+        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
 
 
         if (_nodes.size() == 1) {
@@ -1027,7 +1027,7 @@ LoadNodePresetsCommand::undo()
         panel->removeInstances(_newChildren);
         panel->addInstances(_oldChildren);
     }
-    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     setText(QObject::tr("Load presets"));
 }
@@ -1076,9 +1076,53 @@ LoadNodePresetsCommand::redo()
             panel->addInstances(_newChildren);
         }
     }
-    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
 
     setText(QObject::tr("Load presets"));
+}
+
+
+
+RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
+                                                     NodeBackDrop* bd,
+                                                     const QString& newName)
+: QUndoCommand()
+, _node(node)
+, _bd(bd)
+, _newName(newName)
+{
+    assert(node || bd);
+    if (node) {
+        _oldName = node->getNode()->getName().c_str();
+    } else if (bd) {
+        _oldName = bd->getName();
+    }
+}
+
+RenameNodeUndoRedoCommand::~RenameNodeUndoRedoCommand()
+{
+    
+}
+
+void
+RenameNodeUndoRedoCommand::undo()
+{
+    if (_node) {
+        _node->trySetName(_oldName);
+    } else if (_bd) {
+        _bd->trySetName(_oldName);
+    }
+    setText(QObject::tr("Rename node"));
+}
+
+void RenameNodeUndoRedoCommand::redo()
+{
+    if (_node) {
+        _node->trySetName(_newName);
+    } else if (_bd) {
+        _bd->trySetName(_newName);
+    }
+    setText(QObject::tr("Rename node"));
 }

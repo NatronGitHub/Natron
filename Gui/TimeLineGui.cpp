@@ -67,10 +67,10 @@ struct ZoomContext
 struct CachedFrame
 {
     SequenceTime time;
-    StorageMode mode;
+    StorageModeEnum mode;
 
     CachedFrame(SequenceTime t,
-                StorageMode m)
+                StorageModeEnum m)
         : time(t)
           , mode(m)
     {
@@ -96,7 +96,7 @@ struct TimelineGuiPrivate
     Gui* _gui; //< ptr to the gui
     bool _alphaCursor; // should cursor be drawn semi-transparant
     QPoint _lastMouseEventWidgetCoord;
-    Natron::TIMELINE_STATE _state; //state machine for mouse events
+    Natron::TimelineStateEnum _state; //state machine for mouse events
     ZoomContext _zoomCtx;
     Natron::TextRenderer _textRenderer;
     QColor _cursorColor;
@@ -119,7 +119,7 @@ struct TimelineGuiPrivate
           , _gui(gui)
           , _alphaCursor(false)
           , _lastMouseEventWidgetCoord()
-          , _state(IDLE)
+          , _state(eTimelineStateIdle)
           , _zoomCtx()
           , _textRenderer()
           , _cursorColor(243,149,0)
@@ -489,10 +489,10 @@ TimeLineGui::paintGL()
         glCheckError();
         glBegin(GL_LINES);
         for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
-            if (i->mode == RAM) {
+            if (i->mode == eStorageModeRAM) {
                 glColor4f( _imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),
                           _imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF() );
-            } else if (i->mode == DISK) {
+            } else if (i->mode == eStorageModeDisk) {
                 glColor4f( _imp->_diskCachedLineColor.redF(),_imp->_diskCachedLineColor.greenF(),
                           _imp->_diskCachedLineColor.blueF(),_imp->_diskCachedLineColor.alphaF() );
             }
@@ -577,7 +577,7 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
     double t = toTimeLineCoordinates(e->x(),0).x();
     SequenceTime tseq = std::floor(t + 0.5);
     if ( modCASIsControl(e) && !_imp->_viewer->isFrameRangeLocked() ) {
-        _imp->_state = DRAGGING_BOUNDARY;
+        _imp->_state = eTimelineStateDraggingBoundary;
         int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound() - 1,0).x();
         int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound() + 1,0).x();
         int distFromFirst = std::abs(e->x() - firstPos);
@@ -588,7 +588,7 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
             setBoundaries( tseq, _imp->_timeline->rightBound() );   // moving first frame anchor
         }
     } else {
-        _imp->_state = DRAGGING_CURSOR;
+        _imp->_state = eTimelineStateDraggingCursor;
         _imp->_gui->setUserScrubbingTimeline(true);
         seek(tseq);
     }
@@ -602,14 +602,14 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     SequenceTime tseq = std::floor(t + 0.5);
     bool distortViewPort = false;
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-    if (_imp->_state == DRAGGING_CURSOR && !onEditingFinishedOnly) {
+    if (_imp->_state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->_timeline->currentFrame() ) {
             _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
             emit frameChanged(tseq);
         }
         distortViewPort = true;
         _imp->_alphaCursor = false;
-    } else if (_imp->_state == DRAGGING_BOUNDARY) {
+    } else if (_imp->_state == eTimelineStateDraggingBoundary) {
         int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound() - 1,0).x();
         int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound() + 1,0).x();
         int distFromFirst = std::abs(e->x() - firstPos);
@@ -663,7 +663,7 @@ TimeLineGui::leaveEvent(QEvent* e)
 void
 TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 {
-    if (_imp->_state == DRAGGING_CURSOR) {
+    if (_imp->_state == eTimelineStateDraggingCursor) {
         _imp->_gui->setUserScrubbingTimeline(false);
         _imp->_gui->refreshAllPreviews();
         bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
@@ -678,7 +678,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
         }
     }
 
-    _imp->_state = IDLE;
+    _imp->_state = eTimelineStateIdle;
     QGLWidget::mouseReleaseEvent(e);
 }
 
@@ -730,7 +730,7 @@ TimeLineGui::onBoundariesChanged(SequenceTime,
                                  SequenceTime,
                                  int reason)
 {
-    if (reason == Natron::PLUGIN_EDITED) {
+    if (reason == Natron::eValueChangedReasonPluginEdited) {
         update();
     }
 }
@@ -845,7 +845,7 @@ TimeLineGui::disconnectSlotsFromViewerCache()
 void
 TimeLineGui::onCachedFrameAdded(SequenceTime time)
 {
-    _imp->cachedFrames.insert( CachedFrame(time,RAM) );
+    _imp->cachedFrames.insert( CachedFrame(time, eStorageModeRAM) );
 }
 
 void
@@ -869,7 +869,7 @@ TimeLineGui::onCachedFrameStorageChanged(SequenceTime time,
     for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
         if (it->time == time) {
             _imp->cachedFrames.erase(it);
-            _imp->cachedFrames.insert( CachedFrame(time,(StorageMode)newStorage) );
+            _imp->cachedFrames.insert( CachedFrame(time,(StorageModeEnum)newStorage) );
             break;
         }
     }
@@ -881,7 +881,7 @@ TimeLineGui::onMemoryCacheCleared()
     CachedFrames copy;
 
     for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->mode == DISK) {
+        if (it->mode == eStorageModeDisk) {
             copy.insert(*it);
         }
     }
@@ -895,7 +895,7 @@ TimeLineGui::onDiskCacheCleared()
     CachedFrames copy;
 
     for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->mode == RAM) {
+        if (it->mode == eStorageModeRAM) {
             copy.insert(*it);
         }
     }
