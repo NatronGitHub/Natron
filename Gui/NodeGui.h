@@ -296,6 +296,8 @@ public:
     
     void trySetName(const QString& newName);
     
+    void setMergeHintActive(bool active);
+    
 public slots:
 
     void setDefaultGradientColor(const QColor & color);
@@ -449,6 +451,7 @@ private:
     QString _lastPersistentMessage;
     int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
+    bool _mergeHintActive;
     NodeGuiIndicator* _bitDepthWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;

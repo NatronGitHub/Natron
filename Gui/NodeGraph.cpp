@@ -270,6 +270,7 @@ struct NodeGraphPrivate
     bool _refreshOverlays;
     NodeClipBoard _nodeClipBoard;
     Edge* _highLightedEdge;
+    boost::shared_ptr<NodeGui> _mergeHintNode;
 
     ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
     Edge* _hintInputEdge;
@@ -313,6 +314,7 @@ struct NodeGraphPrivate
           , _refreshOverlays(false)
           , _nodeClipBoard()
           , _highLightedEdge(NULL)
+          , _mergeHintNode()
           , _hintInputEdge(NULL)
           , _hintOutputEdge(NULL)
           , _backdrops()
@@ -1116,7 +1118,6 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         if ( !_imp->_selection.nodes.empty() ) {
             ///now if there was a hint displayed, use it to actually make connections.
             if (_imp->_highLightedEdge) {
-                assert( !_imp->_selection.nodes.empty() );
                 boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
                 if ( _imp->_highLightedEdge->isOutputEdge() ) {
                     int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
@@ -1157,6 +1158,30 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
+            } else if (_imp->_mergeHintNode) {
+                _imp->_mergeHintNode->setMergeHintActive(false);
+                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
+                selectedNode->setMergeHintActive(false);
+                
+                if (getGui()) {
+                    
+                    QRectF selectedNodeRect = selectedNode->mapToParent(selectedNode->boundingRect()).boundingRect();
+                    QRectF mergeHintRect = selectedNode->mapToParent(selectedNode->boundingRect()).boundingRect();
+                    QPointF selectedCenter = selectedNodeRect.center();
+                    QPointF mergeHintCenter = mergeHintRect.center();
+                    QPointF newNodePos((selectedCenter.x() + mergeHintCenter.x()) / 2., (selectedCenter.y() + mergeHintCenter.y()) / 2.);
+                    
+                    CreateNodeArgs args("MergeOFX  [Merge]","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
+                                        CreateNodeArgs::DefaultValuesList());
+                    
+                    boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
+                    if (mergeNode) {
+                        mergeNode->connectInput(selectedNode->getNode(), 1);
+                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), 2);
+                    }
+                }
+                
+                _imp->_mergeHintNode.reset();
             }
         }
     } else if (state == SELECTION_RECT) {
@@ -1279,54 +1304,71 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 double tolerance = 20;
                 rect.adjust(-tolerance, -tolerance, tolerance, tolerance);
 
+                boost::shared_ptr<NodeGui> nodeToShowMergeRect;
+                
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
                     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                         boost::shared_ptr<NodeGui> & n = *it;
                         if ( n != selectedNode && n->isVisible() ) {
-                            edge = n->hasEdgeNearbyRect(rect);
-
-                            ///if the edge input is the selected node don't continue
-                            if ( edge && ( edge->getSource() == selectedNode) ) {
-                                edge = 0;
-                            }
-
-                            if ( edge && edge->isOutputEdge() ) {
-                                ///if the edge is an output edge but the node doesn't have any inputs don't continue
-                                if ( selectedNode->getInputsArrows().empty() ) {
+                            
+                            if (e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::ShiftModifier)) {
+                                
+                                QRectF nodeRect = n->mapToParent(n->boundingRect()).boundingRect();
+                                
+                                if (nodeRect.intersects(rect)) {
+                                    nodeToShowMergeRect = n;
+                                } else {
+                                    n->setMergeHintActive(false);
+                                }
+                                
+                            } else {
+                                
+                                edge = n->hasEdgeNearbyRect(rect);
+                                
+                                ///if the edge input is the selected node don't continue
+                                if ( edge && ( edge->getSource() == selectedNode) ) {
                                     edge = 0;
                                 }
-                                ///if the source of that edge is already connected also skip
-                                const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes =
-                                    selectedNode->getNode()->getInputs_mt_safe();
-                                for (U32 i = 0; i < inpNodes.size(); ++i) {
-                                    if ( edge && ( inpNodes[i] == edge->getSource()->getNode() ) ) {
+                                
+                                if ( edge && edge->isOutputEdge() ) {
+                                    ///if the edge is an output edge but the node doesn't have any inputs don't continue
+                                    if ( selectedNode->getInputsArrows().empty() ) {
                                         edge = 0;
-                                        break;
+                                    }
+                                    ///if the source of that edge is already connected also skip
+                                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes =
+                                    selectedNode->getNode()->getInputs_mt_safe();
+                                    for (U32 i = 0; i < inpNodes.size(); ++i) {
+                                        if ( edge && ( inpNodes[i] == edge->getSource()->getNode() ) ) {
+                                            edge = 0;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-
-                            if ( edge && !edge->isOutputEdge() ) {
-                                ///if the edge is an input edge but the selected node can't be connected don't continue
-                                if ( !selectedNode->getNode()->canOthersConnectToThisNode() ) {
-                                    edge = 0;
+                                
+                                if ( edge && !edge->isOutputEdge() ) {
+                                    ///if the edge is an input edge but the selected node can't be connected don't continue
+                                    if ( !selectedNode->getNode()->canOthersConnectToThisNode() ) {
+                                        edge = 0;
+                                    }
+                                    
+                                    ///if the selected node doesn't have any input but the edge has an input don't continue
+                                    if ( edge && selectedNode->getInputsArrows().empty() && edge->getSource() ) {
+                                        edge = 0;
+                                    }
                                 }
-
-                                ///if the selected node doesn't have any input but the edge has an input don't continue
-                                if ( edge && selectedNode->getInputsArrows().empty() && edge->getSource() ) {
-                                    edge = 0;
+                                
+                                if (edge) {
+                                    edge->setUseHighlight(true);
+                                    break;
                                 }
-                            }
-
-                            if (edge) {
-                                edge->setUseHighlight(true);
-                                break;
                             }
                         }
                     }
-                }
+                } // QMutexLocker l(&_imp->_nodesMutex);
+                
                 if ( _imp->_highLightedEdge && ( _imp->_highLightedEdge != edge) ) {
                     _imp->_highLightedEdge->setUseHighlight(false);
                     _imp->_hintInputEdge->hide();
@@ -1380,9 +1422,18 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                     } else if ( _imp->_highLightedEdge && _imp->_hintInputEdge->isVisible() ) {
                         _imp->_hintInputEdge->initLine();
                     }
+                } else if (nodeToShowMergeRect) {
+                    nodeToShowMergeRect->setMergeHintActive(true);
+                    selectedNode->setMergeHintActive(true);
+                    _imp->_mergeHintNode = nodeToShowMergeRect;
+                } else {
+                    selectedNode->setMergeHintActive(false);
+                    _imp->_mergeHintNode.reset();
                 }
-            }
-        }
+                
+                
+            } // if (doHints) {
+        } //  if (_imp->_selection.nodes.size() == 1) {
         setCursor( QCursor(Qt::ClosedHandCursor) );
         break;
     }

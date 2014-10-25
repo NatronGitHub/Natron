@@ -99,6 +99,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _persistentMessage(NULL)
       , _lastPersistentMessageType(0)
       , _stateIndicator(NULL)
+      , _mergeHintActive(false)
       , _bitDepthWarning(NULL)
       , _disabledTopLeftBtmRight(NULL)
       , _disabledBtmLeftTopRight(NULL)
@@ -1505,6 +1506,26 @@ void
 NodeGui::onRenderingFinished()
 {
     _stateIndicator->hide();
+}
+
+void
+NodeGui::setMergeHintActive(bool active)
+{
+    if (active == _mergeHintActive) {
+        return;
+    }
+    _mergeHintActive = active;
+    if (active) {
+        _stateIndicator->setBrush(Qt::green);
+        if (!_stateIndicator->isVisible()) {
+            _stateIndicator->show();
+        }
+    } else {
+        if (_stateIndicator->isVisible()) {
+            _stateIndicator->hide();
+        }
+    }
+    
 }
 
 void
