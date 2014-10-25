@@ -3120,8 +3120,7 @@ String_KnobGui::setReadOnly(bool readOnly,
 {
     if (_textEdit) {
         _textEdit->setReadOnlyNatron(readOnly);
-    } else {
-        assert(_lineEdit);
+    } else if (_lineEdit) {
         if ( !_knob->isCustomKnob() ) {
             _lineEdit->setReadOnly(readOnly);
         }
@@ -3135,8 +3134,7 @@ String_KnobGui::setDirty(bool dirty)
 {
     if (_textEdit) {
         _textEdit->setDirty(dirty);
-    } else {
-        assert(_lineEdit);
+    } else if (_lineEdit) {
         _lineEdit->setDirty(dirty);
     }
 }
