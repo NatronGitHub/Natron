@@ -468,6 +468,7 @@ DockablePanel::getHolder() const
 DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
     : QTabWidget(parent)
 {
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 QSize

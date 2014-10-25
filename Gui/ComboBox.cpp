@@ -60,6 +60,7 @@ ComboBox::ComboBox(QWidget* parent)
     _menu = new MenuWithToolTips(this);
 
     setSizePolicy(QSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed,QSizePolicy::Label));
+    setFocusPolicy(Qt::WheelFocus);
     setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
 }
 
@@ -168,6 +169,7 @@ ComboBox::changeEvent(QEvent* e)
     QFrame::changeEvent(e);
 }
 
+
 void
 ComboBox::resizeEvent(QResizeEvent* e)
 {
@@ -234,11 +236,18 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
             }
         }
         
+        double fw = frameWidth();
+
         QPen pen;
-        pen.setColor(Qt::black);
+        if (!hasFocus()) {
+            pen.setColor(Qt::black);
+        } else {
+            pen.setColor(QColor(243,137,0));
+            fw = 2;
+        }
         p.setPen(pen);
         
-        double fw = frameWidth();
+    
         QRectF roundedRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
         bRect.adjust(fw, fw, -fw, -fw);
         p.fillRect(bRect, fillColor);
@@ -308,11 +317,29 @@ ComboBox::mouseReleaseEvent(QMouseEvent* e)
 void
 ComboBox::wheelEvent(QWheelEvent *e)
 {
-    if (e->delta()>0) {
-        this->setCurrentIndex((this->activeIndex()-1 < 0)?this->count()-1:this->activeIndex()-1);
+    if (!hasFocus()) {
+        return;
     }
-    else {
-        this->setCurrentIndex((this->activeIndex()+1)%this->count());
+    if (e->delta()>0) {
+        setCurrentIndex((activeIndex() - 1 < 0) ? count() - 1 : activeIndex() - 1);
+    } else {
+        setCurrentIndex((activeIndex() + 1) % count());
+    }
+}
+
+void
+ComboBox::keyPressEvent(QKeyEvent* e)
+{
+    if (!hasFocus()) {
+        return;
+    } else {
+        if (e->key() == Qt::Key_Up) {
+            setCurrentIndex((activeIndex() - 1 < 0) ? count() - 1 : activeIndex() - 1);
+        } else if (e->key() == Qt::Key_Down) {
+            setCurrentIndex((activeIndex() + 1) % count());
+        } else {
+            QFrame::keyPressEvent(e);
+        }
     }
 }
 

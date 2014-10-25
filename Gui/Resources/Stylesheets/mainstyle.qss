@@ -285,7 +285,13 @@ QCheckBox::indicator:checked {
 QCheckBox::indicator:checked:hover {
     image: url(:/Resources/Images/checkbox_checked_hovered.png);
 }
+QCheckBox::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_checked_hovered.png);
+}
 QCheckBox::indicator:unchecked:hover {
+    image: url(:/Resources/Images/checkbox_hovered.png);
+}
+QCheckBox::indicator:unchecked:focus {
     image: url(:/Resources/Images/checkbox_hovered.png);
 }
 QCheckBox {
@@ -392,11 +398,17 @@ QTabBar::tab:selected {
     background: %2;
     border-bottom-style:none;
 }
+
+QTabBar::tab:selected:focus {
+    border-color: %1;
+}
+
 QTabBar::tab:!selected {
     margin-top: 0px; /* make non-selected tabs look smaller */
     margin-left: 0px;
     margin-right: 0px;
 }
+
 /* make use of negative margins for overlapping tabs */
 QTabBar::tab:selected {
     /* expand/overlap to the left and right by 4px */
@@ -421,6 +433,8 @@ QTabBar::close-button:hover {
     image: url(:/Resources/Images/closeTab_hovered.png);
     subcontrol-position:right;
 }
+
+
 
 QTabWidget::tab-bar {
     alignment: left;
@@ -519,7 +533,13 @@ AnimatedCheckBox[animation="1"]::indicator:checked {
 AnimatedCheckBox[animation="1"]::indicator:checked:hover {
     image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
 }
+AnimatedCheckBox[animation="1"]::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
+}
 AnimatedCheckBox[animation="1"]::indicator:unchecked:hover {
+    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:unchecked:focus {
     image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
 }
 AnimatedCheckBox[animation="2"]::indicator:unchecked {
@@ -531,7 +551,13 @@ AnimatedCheckBox[animation="2"]::indicator:checked {
 AnimatedCheckBox[animation="2"]::indicator:checked:hover {
     image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
 }
+AnimatedCheckBox[animation="2"]::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
+}
 AnimatedCheckBox[animation="2"]::indicator:unchecked:hover{
+    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:unchecked:focus{
     image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
 }
 AnimatedCheckBox[readOnly="true"]::indicator:checked{

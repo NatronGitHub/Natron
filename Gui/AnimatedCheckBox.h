@@ -31,6 +31,7 @@ public:
     AnimatedCheckBox(QWidget *parent = NULL)
         : QCheckBox(parent), animation(0), readOnly(false), dirty(false)
     {
+        setFocusPolicy(Qt::StrongFocus);
     }
 
     virtual ~AnimatedCheckBox() OVERRIDE
@@ -70,6 +71,7 @@ public:
 
 private:
 
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
 };
 

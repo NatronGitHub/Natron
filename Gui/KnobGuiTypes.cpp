@@ -407,7 +407,7 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _checkBox->setToolTip( toolTip() );
     }
-    QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
+    QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
 
     ///set the copy/link actions in the right click menu
@@ -424,7 +424,9 @@ Bool_KnobGui::~Bool_KnobGui()
 void
 Bool_KnobGui::updateGUI(int /*dimension*/)
 {
+    _checkBox->blockSignals(true);
     _checkBox->setChecked( _knob->getValue(0,false) );
+    _checkBox->blockSignals(false);
 }
 
 void
