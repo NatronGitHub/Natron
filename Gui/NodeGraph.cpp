@@ -1290,20 +1290,25 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             ///try to find a nearby edge
             boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
             boost::shared_ptr<Natron::Node> internalNode = selectedNode->getNode();
+            
+            bool doMergeHints = e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::ShiftModifier);
+            
             bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
-
-            ///for readers already connected don't show hint
-            if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
-                doHints = false;
-            } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasInputConnected() && internalNode->hasOutputConnected() ) {
-                doHints = false;
+            
+            if (!doMergeHints) {
+                ///for readers already connected don't show hint
+                if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
+                    doHints = false;
+                } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasInputConnected() && internalNode->hasOutputConnected() ) {
+                    doHints = false;
+                }
             }
-
+            
             if (doHints) {
                 QRectF rect = selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
                 double tolerance = 20;
                 rect.adjust(-tolerance, -tolerance, tolerance, tolerance);
-
+                
                 boost::shared_ptr<NodeGui> nodeToShowMergeRect;
                 
                 Edge* edge = 0;
@@ -1313,11 +1318,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                         boost::shared_ptr<NodeGui> & n = *it;
                         if ( n != selectedNode && n->isVisible() ) {
                             
-                            if (e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::ShiftModifier)) {
+                            if (doMergeHints) {
                                 
                                 QRectF nodeRect = n->mapToParent(n->boundingRect()).boundingRect();
                                 
-                                if (nodeRect.intersects(rect)) {
+                                if (!n->getNode()->isOutputNode() && nodeRect.intersects(rect)) {
                                     nodeToShowMergeRect = n;
                                 } else {
                                     n->setMergeHintActive(false);
