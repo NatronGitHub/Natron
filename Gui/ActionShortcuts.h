@@ -41,6 +41,9 @@
 #define kShortcutIDActionSaveAsProject "saveAsProject"
 #define kShortcutDescActionSaveAsProject "Save as project"
 
+#define kShortcutIDActionSaveAndIncrVersion "saveAndIncr"
+#define kShortcutDescActionSaveAndIncrVersion "Version project"
+
 #define kShortcutIDActionPreferences "preferences"
 #define kShortcutDescActionPreferences "Preferences"
 

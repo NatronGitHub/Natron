@@ -197,6 +197,7 @@ struct GuiPrivate
     ActionWithShortcut *actionClose_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
+    ActionWithShortcut *actionSaveAndIncrementVersion;
     ActionWithShortcut *actionPreferences;
     ActionWithShortcut *actionExit;
     ActionWithShortcut *actionProject_settings;
@@ -353,6 +354,7 @@ struct GuiPrivate
           , actionClose_project(0)
           , actionSave_project(0)
           , actionSaveAs_project(0)
+          , actionSaveAndIncrementVersion(0)
           , actionPreferences(0)
           , actionExit(0)
           , actionProject_settings(0)
@@ -734,6 +736,9 @@ Gui::createMenuActions()
     _imp->actionSaveAs_project->setIcon( get_icon("document-save-as") );
     QObject::connect( _imp->actionSaveAs_project, SIGNAL( triggered() ), this, SLOT( saveProjectAs() ) );
 
+    _imp->actionSaveAndIncrementVersion = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveAndIncrVersion,kShortcutDescActionSaveAndIncrVersion,this);
+    QObject::connect(_imp->actionSaveAndIncrementVersion, SIGNAL( triggered() ), this, SLOT( saveAndIncrVersion() ) );
+    
     _imp->actionPreferences = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionPreferences,kShortcutDescActionPreferences,this);
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
     QObject::connect( _imp->actionPreferences,SIGNAL( triggered() ),this,SLOT( showSettings() ) );
@@ -854,6 +859,7 @@ Gui::createMenuActions()
     _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);
     _imp->menuFile->addAction(_imp->actionSaveAs_project);
+    _imp->menuFile->addAction(_imp->actionSaveAndIncrementVersion);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionExit);
 
@@ -2394,6 +2400,20 @@ Gui::saveFinished()
     }
 }
 
+static void updateRecentFiles(const QString& filename)
+{
+    QSettings settings;
+    QStringList recentFiles = settings.value("recentFileList").toStringList();
+    recentFiles.removeAll(filename);
+    recentFiles.prepend(filename);
+    while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
+        recentFiles.removeLast();
+    }
+    
+    settings.setValue("recentFileList", recentFiles);
+    appPTR->updateAllRecentFileMenus();
+}
+
 bool
 Gui::saveProject()
 {
@@ -2406,16 +2426,7 @@ Gui::saveProject()
 
         ///update the open recents
         QString file = _imp->_appInstance->getProject()->getProjectPath() + _imp->_appInstance->getProject()->getProjectName();
-        QSettings settings;
-        QStringList recentFiles = settings.value("recentFileList").toStringList();
-        recentFiles.removeAll(file);
-        recentFiles.prepend(file);
-        while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
-            recentFiles.removeLast();
-        }
-
-        settings.setValue("recentFileList", recentFiles);
-        appPTR->updateAllRecentFileMenus();
+        updateRecentFiles(file);
 
         return true;
     } else {
@@ -2439,22 +2450,86 @@ Gui::saveProjectAs()
         _imp->_appInstance->getProject()->saveProject(path.c_str(),outFile.c_str(),false);
         saveFinished();
 
-        std::string filePath = path + outFile;
-        QSettings settings;
-        QStringList recentFiles = settings.value("recentFileList").toStringList();
-        recentFiles.removeAll( filePath.c_str() );
-        recentFiles.prepend( filePath.c_str() );
-        while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
-            recentFiles.removeLast();
-        }
-
-        settings.setValue("recentFileList", recentFiles);
-        appPTR->updateAllRecentFileMenus();
-
+        QString filePath = QString(path.c_str()) + QString(outFile.c_str());
+        updateRecentFiles(filePath);
         return true;
     }
 
     return false;
+}
+
+void
+Gui::saveAndIncrVersion()
+{
+    QString path = _imp->_appInstance->getProject()->getProjectPath();
+    QString name = _imp->_appInstance->getProject()->getProjectName();
+    
+    int currentVersion = 0;
+    
+    int positionToInsertVersion;
+    bool mustAppendFileExtension = false;
+    
+    // extension is everything after the last '.'
+    int lastDotPos = name.lastIndexOf('.');
+    if (lastDotPos == - 1) {
+        positionToInsertVersion = name.size();
+        mustAppendFileExtension = true;
+    } else {
+        
+        //Extract the current version number if any
+        QString versionStr;
+        int i = lastDotPos - 1;
+        while (i >= 0 && name.at(i).isDigit()) {
+            versionStr.prepend(name.at(i));
+            --i;
+        }
+        
+        ++i; //move back the head to the first digit
+        
+        if (!versionStr.isEmpty()) {
+            name.remove(i,versionStr.size());
+            --i; //move 1 char backward, if the char is a '_' remove it
+            if (i >= 0 && name.at(i) == QChar('_')) {
+                name.remove(i,1);
+            }
+            currentVersion = versionStr.toInt();
+
+        }
+        
+        positionToInsertVersion = i;
+    }
+    
+    //Incr version
+    ++currentVersion;
+    
+    QString newVersionStr = QString::number(currentVersion);
+    
+    //Add enough 0s in the beginning of the version number to have at least 3 digits
+    int nb0s = 3 - newVersionStr.size();
+    nb0s = std::max(0,nb0s);
+    
+    QString toInsert("_");
+    for (int c = 0; c < nb0s; ++c) {
+        toInsert.append('0');
+    }
+    toInsert.append(newVersionStr);
+    if (mustAppendFileExtension) {
+        toInsert.append("." NATRON_PROJECT_FILE_EXT);
+    }
+    
+    if (positionToInsertVersion >= name.size()) {
+        name.append(toInsert);
+    } else {
+        name.insert(positionToInsertVersion,toInsert);
+    }
+    
+    aboutToSave();
+    _imp->_appInstance->getProject()->saveProject(path,name,false);
+    saveFinished();
+    
+    QString filename = path = name;
+    updateRecentFiles(filename);
+    
 }
 
 void

@@ -436,6 +436,8 @@ public slots:
     void openProject();
     bool saveProject();
     bool saveProjectAs();
+    void saveAndIncrVersion();
+    
     void autoSave();
 
     void createNewViewer();
