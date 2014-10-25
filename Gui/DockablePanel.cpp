@@ -60,6 +60,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
@@ -904,6 +906,22 @@ RightClickableWidget::mousePressEvent(QMouseEvent* e)
     }
 }
 
+void
+RightClickableWidget::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Escape) {
+        emit escapePressed();
+    }
+    QWidget::keyPressEvent(e);
+}
+
+void
+RightClickableWidget::enterEvent(QEvent* e)
+{
+    setFocus();
+    QWidget::enterEvent(e);
+}
+
 PageMap::iterator
 DockablePanelPrivate::addPage(const QString & name)
 {
@@ -924,10 +942,10 @@ DockablePanelPrivate::addPage(const QString & name)
     } else {
         RightClickableWidget* clickableWidget = new RightClickableWidget(_tabWidget);
         QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
+        QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT( closePanel() ) );
         newTab = clickableWidget;
         layoutContainer = newTab;
     }
-    newTab->setObjectName(name);
     QFormLayout *tabLayout = new QFormLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
@@ -1073,8 +1091,17 @@ DockablePanel::closePanel()
         }
     }
 
-
-    getGui()->getApp()->redrawAllViewers();
+    ///Closing a panel always gives focus to some line-edit in the application which is quite annoying
+    QWidget* hasFocus = qApp->focusWidget();
+    if (hasFocus) {
+        hasFocus->clearFocus();
+    }
+    
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        (*it)->getViewer()->redraw();
+    }
+    
 }
 
 void

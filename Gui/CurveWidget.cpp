@@ -2788,7 +2788,8 @@ CurveWidget::enterEvent(QEvent* e)
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
     currentFocus->objectName() == "PropertiesBinScrollArea" ||
-    currentFocus->objectName() == "tree";
+    currentFocus->objectName() == "tree" ||
+    currentFocus->objectName() == "SettingsPanel";
     
     if (canSetFocus) {
         setFocus();

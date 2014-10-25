@@ -63,7 +63,7 @@ public:
     RightClickableWidget(QWidget* parent)
     : QWidget(parent)
     {
-        
+        setObjectName("SettingsPanel");
     }
     
     virtual ~RightClickableWidget() {}
@@ -71,9 +71,12 @@ public:
 signals:
     
     void rightClicked(const QPoint& p);
-
+    void escapePressed();
+    
 private:
     
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
 };
