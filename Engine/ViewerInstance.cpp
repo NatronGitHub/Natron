@@ -763,76 +763,67 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                 params->image = inputImage;
             }
         }
-       
-        bool didEmitInputNRenderingSignal = _node->notifyInputNIsRendering(activeInputIndex);
-
         
-        Node::ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getNode().get(),
-                                                       time,
-                                                       view,
-                                                       !isSequentialRender,  // is this render due to user interaction ?
-                                                       isSequentialRender, // is this sequential ?
-                                                       canAbort,
-                                                       inputNodeHash);
-        
-
-
-        if (!renderedCompletely) {
+        {
             
-            // If an exception occurs here it is probably fatal, since
-            // it comes from Natron itself. All exceptions from plugins are already caught
-            // by the HostSupport library.
-            // We catch it  and rethrow it just to notify the rendering is done.
-            try {
-                if (isInputImgCached) {
-                    ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
-                    ///cache lookup things because we already did it ourselves.
-                    activeInputToRender->renderRoI(time, scale, mipMapLevel, view, texRectClipped, rod, cachedImgParams, inputImage,downscaledImage);
-                } else {
-                    params->image = activeInputToRender->renderRoI(
-                        EffectInstance::RenderRoIArgs(time,
-                                                      scale,
-                                                      mipMapLevel,
-                                                      view,
-                                                      forceRender,
-                                                      texRectClipped,
-                                                      rod,
-                                                      components,
-                                                      imageDepth) );
-
-                    if (!params->image) {
-                        if (params->cachedFrame) {
-                            params->cachedFrame->setAborted(true);
-                            appPTR->removeFromViewerCache(params->cachedFrame);
-                        }
-                        if (didEmitInputNRenderingSignal) {
-                            _node->notifyInputNIsFinishedRendering(activeInputIndex);
-                        }
-
-                        return eStatusOK;
-                    }
-
-                }
-            } catch (...) {
+            EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
+            
+            Node::ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getNode().get(),
+                                                           time,
+                                                           view,
+                                                           !isSequentialRender,  // is this render due to user interaction ?
+                                                           isSequentialRender, // is this sequential ?
+                                                           canAbort,
+                                                           inputNodeHash);
+            
+            
+            
+            if (!renderedCompletely) {
                 
-                if (didEmitInputNRenderingSignal) {
-                    _node->notifyInputNIsFinishedRendering(activeInputIndex);
+                // If an exception occurs here it is probably fatal, since
+                // it comes from Natron itself. All exceptions from plugins are already caught
+                // by the HostSupport library.
+                // We catch it  and rethrow it just to notify the rendering is done.
+                try {
+                    if (isInputImgCached) {
+                        ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
+                        ///cache lookup things because we already did it ourselves.
+                        activeInputToRender->renderRoI(time, scale, mipMapLevel, view, texRectClipped, rod, cachedImgParams, inputImage,downscaledImage);
+                    } else {
+                        params->image = activeInputToRender->renderRoI(
+                                                                       EffectInstance::RenderRoIArgs(time,
+                                                                                                     scale,
+                                                                                                     mipMapLevel,
+                                                                                                     view,
+                                                                                                     forceRender,
+                                                                                                     texRectClipped,
+                                                                                                     rod,
+                                                                                                     components,
+                                                                                                     imageDepth) );
+                        
+                        if (!params->image) {
+                            if (params->cachedFrame) {
+                                params->cachedFrame->setAborted(true);
+                                appPTR->removeFromViewerCache(params->cachedFrame);
+                            }
+                            return eStatusOK;
+                        }
+                        
+                    }
+                } catch (...) {
+                    ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
+                    ///Don't forward the exception in that case.
+                    abortCheck(activeInputToRender);
+                    throw;
                 }
-                ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
-                ///Don't forward the exception in that case.
-                abortCheck(activeInputToRender);
-                throw;
             }
-        }
+            
+            
+        } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
         
-        if (didEmitInputNRenderingSignal) {
-            _node->notifyInputNIsFinishedRendering(activeInputIndex);
-        }
-
-
+        
         if (!params->image) {
             //if render was aborted, remove the frame from the cache as it contains only garbage)
-            
             if (params->cachedFrame) {
                 params->cachedFrame->setAborted(true);
                 appPTR->removeFromViewerCache(params->cachedFrame);

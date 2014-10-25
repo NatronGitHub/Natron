@@ -457,7 +457,19 @@ public:
     
         ~NotifyRenderingStarted_RAII();
     };
-  
+
+    class NotifyInputNRenderingStarted_RAII
+    {
+        Node* _node;
+        bool _didEmit;
+        int _inputNumber;
+    public:
+        
+        NotifyInputNRenderingStarted_RAII(Node* node,int inputNumber);
+        
+        ~NotifyInputNRenderingStarted_RAII();
+    };
+
 
     /**
     * @brief Sets render preferences for the rendering of a frame for the current thread.

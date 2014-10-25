@@ -1198,6 +1198,20 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
     }
 }
 
+EffectInstance::NotifyInputNRenderingStarted_RAII::NotifyInputNRenderingStarted_RAII(Node* node,int inputNumber)
+: _node(node)
+, _inputNumber(inputNumber)
+{
+    _didEmit = node->notifyInputNIsRendering(inputNumber);
+}
+
+EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted_RAII()
+{
+    if (_didEmit) {
+        _node->notifyInputNIsFinishedRendering(_inputNumber);
+    }
+}
+
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                                                     unsigned int mipMapLevel,
@@ -2020,17 +2034,18 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 ///Notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
                 
-                bool didEmitSignalInputNRendering = _node->notifyInputNIsRendering(it2->first);
-
-                ///For all frames requested for this node, render the RoI requested.
-                for (U32 range = 0; range < it2->second.size(); ++range) {
-                    for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
-                        Natron::ImageComponentsEnum inputPrefComps;
-                        Natron::ImageBitDepthEnum inputPrefDepth;
-                        getPreferredDepthAndComponents(it2->first, &inputPrefComps, &inputPrefDepth);
-
-                        int channelForAlphaInput = inputIsMask ? getMaskChannel(it2->first) : 3;
-                        boost::shared_ptr<Natron::Image> inputImg =
+                {
+                    NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),it2->first);
+                    
+                    ///For all frames requested for this node, render the RoI requested.
+                    for (U32 range = 0; range < it2->second.size(); ++range) {
+                        for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
+                            Natron::ImageComponentsEnum inputPrefComps;
+                            Natron::ImageBitDepthEnum inputPrefDepth;
+                            getPreferredDepthAndComponents(it2->first, &inputPrefComps, &inputPrefDepth);
+                            
+                            int channelForAlphaInput = inputIsMask ? getMaskChannel(it2->first) : 3;
+                            boost::shared_ptr<Natron::Image> inputImg =
                             inputEffect->renderRoI( RenderRoIArgs(f, //< time
                                                                   scale, //< scale
                                                                   mipMapLevel, //< mipmapLevel (redundant with the scale)
@@ -2041,16 +2056,14 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                   inputPrefComps, //< requested comps
                                                                   inputPrefDepth,
                                                                   channelForAlphaInput) ); //< requested bitdepth
-
-                        if (inputImg) {
-                            inputImages.push_back(inputImg);
+                            
+                            if (inputImg) {
+                                inputImages.push_back(inputImg);
+                            }
                         }
                     }
-                }
-                
-                if (didEmitSignalInputNRendering) {
-                    _node->notifyInputNIsFinishedRendering(it2->first);
-                }
+                    
+                } // NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),it2->first);
 
                 if ( aborted() ) {
                     //if render was aborted, remove the frame from the cache as it contains only garbage
