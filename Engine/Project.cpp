@@ -1243,7 +1243,13 @@ Project::isGraphWorthLess() const
      */
 
     ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
-    return !hasEverAutoSaved() && !hasProjectBeenSavedByUser();
+    int nbNodes;
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        nbNodes = (int)_imp->currentNodes.size();
+    }
+    
+    return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || nbNodes == 0;
 }
 
 void
