@@ -1415,9 +1415,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         QPointF mousePosSceneCoordinates;
         bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
         if (insideNavigator) {
-            updateNavigator();
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
+            _imp->_lastScenePosClick = newPos;
+            return;
         }
     } break;
     default:
