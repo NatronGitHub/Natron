@@ -23,6 +23,7 @@
 #include <QDebug>
 #include <QThread>
 #include <QCheckBox>
+#include <QTextEdit>
 
 #if QT_VERSION >= 0x050000
 #include <QScreen>
@@ -2819,8 +2820,16 @@ Gui::onDoDialog(int type,
         warning.setTextFormat(Qt::RichText);
         warning.exec();
     } else if (type == 2) {
-        QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
+        if (msg.count() > 1000) {
+            QGridLayout *layout = qobject_cast<QGridLayout *>(info.layout());
+            if (layout) {
+                QTextEdit *edit = new QTextEdit(msg);
+                edit->setReadOnly(true);
+                layout->addWidget(edit, 0, 1);
+            }
+        }
         info.exec();
     } else {
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
