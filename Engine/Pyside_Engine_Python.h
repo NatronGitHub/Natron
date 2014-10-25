@@ -29,5 +29,6 @@
 #include <GlobalFunctionsWrapper.h>
 #include <AppInstanceWrapper.h>
 #include <NodeWrapper.h>
+#include <ParameterWrapper.h>
 
 #endif // PYSIDE_ENGINE_PYTHON_H

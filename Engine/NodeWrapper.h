@@ -16,13 +16,18 @@
 #ifndef NODEWRAPPER_H
 #define NODEWRAPPER_H
 
+#include <list>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Engine/ParameterWrapper.h"
+
 namespace Natron {
 class Node;
 }
+
+class Param;
 
 class Effect
 {
@@ -81,6 +86,17 @@ public:
      * @brief Returns the ID of the plug-in embedded into the Effect
      **/
     std::string getPluginID() const;
+    
+    /**
+     * @brief Returns a list of all parameters for the Effect. These are the parameters located in the settings panel
+     * on the GUI.
+     **/
+    std::list<Param*> getParameters() const;
+    
+    /**
+     * @brief Returns a pointer to the Param named after the given name or NULL if no parameter with the given name could be found.
+     **/
+    Param* getParamByName(const std::string& name) const;
     
 };
 

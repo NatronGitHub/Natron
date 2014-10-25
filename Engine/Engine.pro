@@ -87,6 +87,7 @@ SOURCES += \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
     OutputSchedulerThread.cpp \
+    ParameterWrapper.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
     ProcessHandler.cpp \
@@ -106,7 +107,9 @@ SOURCES += \
     NatronEngine/natronengine_module_wrapper.cpp \
     NatronEngine/natron_wrapper.cpp \
     NatronEngine/app_wrapper.cpp \
-    NatronEngine/effect_wrapper.cpp
+    NatronEngine/effect_wrapper.cpp \
+    NatronEngine/intparam_wrapper.cpp \
+    NatronEngine/param_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -168,6 +171,7 @@ HEADERS += \
     OpenGLViewerI.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
+    ParameterWrapper.h \
     Plugin.h \
     PluginMemory.h \
     ProcessHandler.h \
@@ -204,7 +208,9 @@ HEADERS += \
     NatronEngine/natronengine_python.h \
     NatronEngine/natron_wrapper.h \
     NatronEngine/app_wrapper.h \
-    NatronEngine/effect_wrapper.h
+    NatronEngine/effect_wrapper.h \
+    NatronEngine/intparam_wrapper.h \
+    NatronEngine/param_wrapper.h
 
 OTHER_FILES += \
     typesystem_engine.xml

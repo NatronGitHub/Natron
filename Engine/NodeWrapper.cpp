@@ -11,6 +11,8 @@
 
 #include "NodeWrapper.h"
 #include "Engine/Node.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 
 Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
 : _node(node)
@@ -89,4 +91,38 @@ std::string
 Effect::getPluginID() const
 {
     return _node->getPluginID();
+}
+
+Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
+{
+    boost::shared_ptr<Int_Knob> isInt = boost::dynamic_pointer_cast<Int_Knob>(knob);
+    if (isInt) {
+        return new IntParam(isInt);
+    }
+    return NULL;
+}
+
+std::list<Param*>
+Effect::getParameters() const
+{
+    std::list<Param*> ret;
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _node->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        Param* p = createParamWrapperForKnob(*it);
+        if (p) {
+            ret.push_back(p);
+        }
+    }
+    return ret;
+}
+
+Param*
+Effect::getParamByName(const std::string& name) const
+{
+    boost::shared_ptr<KnobI> knob = _node->getKnobByName(name);
+    if (knob) {
+        return createParamWrapperForKnob(knob);
+    } else {
+        return NULL;
+    }
 }

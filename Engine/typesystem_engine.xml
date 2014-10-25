@@ -219,12 +219,36 @@
    
 
     <object-type name="App"/>
-    <object-type name="Effect">
+    <object-type name="Effect" copyable="false">
         <modify-function signature="getInput(int)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="getParamByName(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParameters()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Param*&gt; params = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) params.size());
+                int idx = 0;
+                for (std::list&lt;Param*&gt;::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+                    PyObject* item = %CONVERTTOPYTHON[Param*](*it);
+                    // Ownership transferences.
+                    Shiboken::Object::getOwnership(item);
+                    PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+
+    </object-type>
+    <interface-type name="Param">
+    </interface-type>
+    <object-type name="IntParam">
     </object-type>
     
     <rejection class="App" field-name="_instance"/>
