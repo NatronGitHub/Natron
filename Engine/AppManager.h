@@ -509,6 +509,13 @@ getNumInstances()
 {
     return appPTR->getNumInstances();
 }
+
+/**
+ * @brief Ensures that the given Python script as imported the Engine module compiled into Natron
+ * and returns the position of the start of the next line after the imports. Note that this position
+ * can be the first character after the last one in the script.
+ **/
+std::size_t ensureScriptHasEngineImport(std::string& script);
     
 } // namespace Natron
 

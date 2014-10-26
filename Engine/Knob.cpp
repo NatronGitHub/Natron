@@ -184,6 +184,10 @@ struct KnobHelper::KnobHelperPrivate
     bool isInstanceSpecific;
 
     std::vector<std::string> dimensionNames;
+    
+    mutable QMutex expressionMutex;
+    std::string expression; //< the one modified by Natron
+    std::string originalExpression; //< the one input by the user
 
 
     KnobHelperPrivate(KnobHelper* publicInterface_,
@@ -222,6 +226,9 @@ struct KnobHelper::KnobHelperPrivate
           , ofxParamHandle(0)
           , isInstanceSpecific(false)
           , dimensionNames(dimension_)
+          , expressionMutex()
+          , expression()
+          , originalExpression()
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
@@ -230,6 +237,8 @@ struct KnobHelper::KnobHelperPrivate
             mustCloneInternalCurves[i] = false;
         }
     }
+    
+    void parseListenersFromExpression();
 };
 
 KnobHelper::KnobHelper(KnobHolder* holder,
@@ -945,6 +954,61 @@ KnobHelper::hasAnimation() const
     return false;
 }
 
+std::size_t
+KnobI::declareCurrentKnobVariable_Python(std::string& script)
+{
+    KnobHolder* holder = getHolder();
+    if (!holder) {
+        return std::string::npos;
+    }
+    
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    if (effect) {
+        std::size_t firstLine = effect->getNode()->declareCurrentNodeVariable_Python(script);
+        ///Now define the app variable
+        std::stringstream ss;
+        ss << "thisParam = thisNode.getParam(" << getName() << ") \n";
+        std::string toInsert = ss.str();
+        script.insert(firstLine, toInsert);
+        return firstLine + toInsert.size();
+
+    } else {
+        return std::string::npos;
+    }
+}
+
+void
+KnobHelper::KnobHelperPrivate::parseListenersFromExpression()
+{
+    assert(!expressionMutex.tryLock());
+    
+    //Extract pointers to knobs referred to by the expression
+    
+}
+
+void
+KnobHelper::setExpression(const std::string& expression)
+{
+    std::string exprCpy = expression;
+    declareCurrentKnobVariable_Python(exprCpy);
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        _imp->expression = exprCpy;
+        _imp->originalExpression = expression;
+    }
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_helpChanged();
+    }
+}
+
+std::string
+KnobHelper::getExpression() const
+{
+    QMutexLocker k(&_imp->expressionMutex);
+    return _imp->originalExpression;
+}
+
 KnobHolder*
 KnobHelper::getHolder() const
 {
@@ -1055,6 +1119,10 @@ void
 KnobHelper::setHintToolTip(const std::string & hint)
 {
     _imp->tooltipHint = hint;
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_helpChanged();
+    }
+
 }
 
 const std::string &

@@ -727,6 +727,34 @@ static PyObject* Sbk_ParamFunc_getKeyTime(PyObject* self, PyObject* args)
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_getLabel(PyObject* self)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getLabel()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::Param*>(cppSelf)->getLabel();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ParamFunc_getNumDimensions(PyObject* self)
 {
     ::Param* cppSelf = 0;
@@ -1177,6 +1205,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getIsVisible", (PyCFunction)Sbk_ParamFunc_getIsVisible, METH_NOARGS},
     {"getKeyIndex", (PyCFunction)Sbk_ParamFunc_getKeyIndex, METH_VARARGS|METH_KEYWORDS},
     {"getKeyTime", (PyCFunction)Sbk_ParamFunc_getKeyTime, METH_VARARGS},
+    {"getLabel", (PyCFunction)Sbk_ParamFunc_getLabel, METH_NOARGS},
     {"getNumDimensions", (PyCFunction)Sbk_ParamFunc_getNumDimensions, METH_NOARGS},
     {"getNumKeys", (PyCFunction)Sbk_ParamFunc_getNumKeys, METH_VARARGS|METH_KEYWORDS},
     {"getScriptName", (PyCFunction)Sbk_ParamFunc_getScriptName, METH_NOARGS},

@@ -31,7 +31,11 @@ public:
     
     int getAppID() const;
     
-    Effect createEffect(const std::string& pluginID,int majorVersion = -1, int minorVersion = -1) const;
+    Effect* createNode(const std::string& pluginID,int majorVersion = -1, int minorVersion = -1) const;
+    
+    Effect* getNode(const std::string& name) const;
+    
+    std::list<Effect*> getNodes() const;
 };
 
 

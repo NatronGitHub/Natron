@@ -91,12 +91,12 @@ public:
      * @brief Returns a list of all parameters for the Effect. These are the parameters located in the settings panel
      * on the GUI.
      **/
-    std::list<Param*> getParameters() const;
+    std::list<Param*> getParams() const;
     
     /**
      * @brief Returns a pointer to the Param named after the given name or NULL if no parameter with the given name could be found.
      **/
-    Param* getParamByName(const std::string& name) const;
+    Param* getParam(const std::string& name) const;
     
 };
 

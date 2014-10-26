@@ -582,3 +582,16 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
     _imp->_currentProject->onOCIOConfigPathChanged(path);
 }
 
+std::size_t
+AppInstance::declareCurrentAppVariable_Python(std::string& script)
+{
+    size_t firstLine = ensureScriptHasEngineImport(script);
+    
+    ///Now define the app variable
+    std::stringstream ss;
+    ss << "app = natron.getInstance(" << getAppID() << ") \n";
+    std::string toInsert = ss.str();
+    script.insert(firstLine, toInsert);
+    
+    return firstLine + toInsert.size();
+}

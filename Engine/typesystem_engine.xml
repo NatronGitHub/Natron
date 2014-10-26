@@ -218,19 +218,46 @@
     
    
 
-    <object-type name="App"/>
+    <object-type name="App">
+        <modify-function signature="createNode(std::string,int, int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getNode(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getNodes()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) effects.size());
+                int idx = 0;
+                for (std::list&lt;Effect*&gt;::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Effect*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+
+        </modify-function>
+    </object-type>
+        
     <object-type name="Effect" copyable="false">
         <modify-function signature="getInput(int)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getParamByName(std::string)const">
+        <modify-function signature="getParam(std::string)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getParameters()const">
+        <modify-function signature="getParams()const">
             <inject-code class="target" position="beginning">
                 std::list&lt;Param*&gt; params = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
                 PyObject* ret = PyList_New((int) params.size());

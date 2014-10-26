@@ -12,13 +12,14 @@
 
 // Extra includes
 #include <NodeWrapper.h>
+#include <list>
 
 
 
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_AppFunc_createEffect(PyObject* self, PyObject* args, PyObject* kwds)
+static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::App* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -35,54 +36,54 @@ static PyObject* Sbk_AppFunc_createEffect(PyObject* self, PyObject* args, PyObje
 
     // invalid argument lengths
     if (numArgs + numNamedArgs > 3) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createEffect(): too many arguments");
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createNode(): too many arguments");
         return 0;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createEffect(): not enough arguments");
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createNode(): not enough arguments");
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OOO:createEffect", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_ParseTuple(args, "|OOO:createNode", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: createEffect(std::string,int,int)const
+    // 0: createNode(std::string,int,int)const
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // createEffect(std::string,int,int)const
+            overloadId = 0; // createNode(std::string,int,int)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
             if (numArgs == 2) {
-                overloadId = 0; // createEffect(std::string,int,int)const
+                overloadId = 0; // createNode(std::string,int,int)const
             } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-                overloadId = 0; // createEffect(std::string,int,int)const
+                overloadId = 0; // createNode(std::string,int,int)const
             }
         }
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_AppFunc_createEffect_TypeError;
+    if (overloadId == -1) goto Sbk_AppFunc_createNode_TypeError;
 
     // Call function/method
     {
         if (kwds) {
             PyObject* value = PyDict_GetItemString(kwds, "majorVersion");
             if (value && pyArgs[1]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createEffect(): got multiple values for keyword argument 'majorVersion'.");
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createNode(): got multiple values for keyword argument 'majorVersion'.");
                 return 0;
             } else if (value) {
                 pyArgs[1] = value;
                 if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
-                    goto Sbk_AppFunc_createEffect_TypeError;
+                    goto Sbk_AppFunc_createNode_TypeError;
             }
             value = PyDict_GetItemString(kwds, "minorVersion");
             if (value && pyArgs[2]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createEffect(): got multiple values for keyword argument 'minorVersion'.");
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createNode(): got multiple values for keyword argument 'minorVersion'.");
                 return 0;
             } else if (value) {
                 pyArgs[2] = value;
                 if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2]))))
-                    goto Sbk_AppFunc_createEffect_TypeError;
+                    goto Sbk_AppFunc_createNode_TypeError;
             }
         }
         ::std::string cppArg0;
@@ -93,11 +94,14 @@ static PyObject* Sbk_AppFunc_createEffect(PyObject* self, PyObject* args, PyObje
         if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // createEffect(std::string,int,int)const
+            // createNode(std::string,int,int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Effect* cppResult = new Effect(const_cast<const ::App*>(cppSelf)->createEffect(cppArg0, cppArg1, cppArg2));
+            Effect * cppResult = const_cast<const ::App*>(cppSelf)->createNode(cppArg0, cppArg1, cppArg2);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult, true, true);
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
         }
     }
 
@@ -107,9 +111,9 @@ static PyObject* Sbk_AppFunc_createEffect(PyObject* self, PyObject* args, PyObje
     }
     return pyResult;
 
-    Sbk_AppFunc_createEffect_TypeError:
+    Sbk_AppFunc_createNode_TypeError:
         const char* overloads[] = {"std::string, int = -1, int = -1", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createEffect", overloads);
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createNode", overloads);
         return 0;
 }
 
@@ -141,9 +145,101 @@ static PyObject* Sbk_AppFunc_getAppID(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_AppFunc_getNode(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getNode(std::string)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // getNode(std::string)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_getNode_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getNode(std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Effect * cppResult = const_cast<const ::App*>(cppSelf)->getNode(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_getNode_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.getNode", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_getNodes(PyObject* self)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNodes()const
+            // Begin code injection
+
+            std::list<Effect*> effects = cppSelf->getNodes();
+            PyObject* ret = PyList_New((int) effects.size());
+            int idx = 0;
+            for (std::list<Effect*>::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], *it);
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(item);
+            PyList_SET_ITEM(ret, idx, item);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyMethodDef Sbk_App_methods[] = {
-    {"createEffect", (PyCFunction)Sbk_AppFunc_createEffect, METH_VARARGS|METH_KEYWORDS},
+    {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
+    {"getNode", (PyCFunction)Sbk_AppFunc_getNode, METH_O},
+    {"getNodes", (PyCFunction)Sbk_AppFunc_getNodes, METH_NOARGS},
 
     {0} // Sentinel
 };

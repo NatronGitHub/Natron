@@ -523,16 +523,16 @@ AppManager::loadInternal(const QString & projectFilename,
 
     AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
 
-    PyRun_SimpleString("import NatronEngine as NE \n"
-                       "list = NE.getPluginIDs() \n"
+    PyRun_SimpleString("import NatronEngine as natron \n"
+                       "list = natron.getPluginIDs() \n"
                        "for i in list: \n"
                        "    print i \n"
-                       "numInstances = NE.getNumInstances() \n"
+                       "numInstances = natron.getNumInstances() \n"
                        "print (\"Number of instances: %i\" % numInstances) \n"
-                       "mainInstance = NE.getInstance(0) \n"
+                       "mainInstance = natron.getInstance(0) \n"
                        "print (\"Main instance ID: %i \" % mainInstance.getAppID()) \n"
-                       "switch = mainInstance.createEffect(\"SwitchOFX  [Merge]\") \n"
-                       "transform = mainInstance.createEffect(\"TransformOFX  [Transform]\") \n"
+                       "switch = mainInstance.createNode(\"SwitchOFX  [Merge]\") \n"
+                       "transform = mainInstance.createNode(\"TransformOFX  [Transform]\") \n"
                        "success = switch.connectInput(0,transform) \n"
                        "print success \n"
                        "input = switch.getInput(0) \n"
@@ -2023,4 +2023,44 @@ questionDialog(const std::string & title,
         return Natron::eStandardButtonYes;
     }
 }
+    
+std::size_t ensureScriptHasEngineImport(std::string& script)
+{
+    ///Find out if the script already imports NATRON_ENGINE_PYTHON_MODULE_NAME
+    size_t foundNatronEngine = script.find(NATRON_ENGINE_PYTHON_MODULE_NAME);
+    if (foundNatronEngine == std::string::npos) {
+        //import NATRON_ENGINE_PYTHON_MODULE_NAME
+        script = "from " NATRON_ENGINE_PYTHON_MODULE_NAME " import *\n" + script;
+    }
+    
+    ///Find position of the last import
+    size_t foundImport = script.find("import ");
+    if (foundImport != std::string::npos) {
+        for (;;) {
+            size_t found = script.find("import ",foundImport + 1);
+            if (found == std::string::npos) {
+                break;
+            } else {
+                foundImport = found;
+            }
+        }
+    }
+    
+    ///The script should have imported at least modules compiled into Natron
+    assert(foundImport != std::string::npos);
+    
+    ///find the next end line aftr the import
+    size_t endLine = script.find('\n',foundImport + 1);
+    
+    
+    if (endLine == std::string::npos) {
+        //no end-line, add one
+        script.append("\n");
+        return script.size();
+    } else {
+        return endLine + 1;
+    }
+
+}
+    
 } //Namespace Natron

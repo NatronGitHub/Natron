@@ -3239,6 +3239,19 @@ Node::dequeueActions()
     _imp->nodeIsDequeuingCond.wakeAll();
 }
 
+std::size_t
+Node::declareCurrentNodeVariable_Python(std::string& script)
+{
+    size_t startLine = getApp()->declareCurrentAppVariable_Python(script);
+    
+    ///Now define the thisNode variable
+    std::stringstream ss;
+    ss << "thisNode = app.getNode(" << getName_mt_safe() << ") \n";
+    std::string toInsert = ss.str();
+    script.insert(startLine, toInsert);
+    return startLine + toInsert.size();
+}
+
 //////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,

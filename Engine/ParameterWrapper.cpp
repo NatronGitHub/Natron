@@ -197,3 +197,70 @@ IntParam::setValueAtTime(int value,int time,int dimension)
 {
     _intKnob->setValueAtTime(time, value, dimension);
 }
+
+void
+IntParam::setDefaultValue(int value,int dimension)
+{
+    _intKnob->setDefaultValue(value,dimension);
+}
+
+int
+IntParam::getDefaultValue(int dimension) const
+{
+    return _intKnob->getDefaultValues_mt_safe()[dimension];
+}
+
+void
+IntParam::restoreDefaultValue(int dimension)
+{
+    _intKnob->resetToDefaultValue(dimension);
+}
+
+void
+IntParam::setMinimum(int minimum,int dimension)
+{
+    _intKnob->setMinimum(minimum,dimension);
+}
+
+int
+IntParam::getMinimum(int dimension) const
+{
+    return _intKnob->getMinimum(dimension);
+}
+
+void
+IntParam::setMaximum(int maximum,int dimension)
+{
+    _intKnob->setMaximum(maximum,dimension);
+}
+
+int
+IntParam::getMaximum(int dimension) const
+{
+    return _intKnob->getMaximum(dimension);
+}
+
+void
+IntParam::setDisplayMinimum(int minimum,int dimension)
+{
+    return _intKnob->setDisplayMinimum(minimum,dimension);
+}
+
+int
+IntParam::getDisplayMinimum(int dimension) const
+{
+    return _intKnob->getDisplayMinimum(dimension);
+}
+
+void
+IntParam::setDisplayMaximum(int maximum,int dimension)
+{
+    _intKnob->setDisplayMaximum(maximum,dimension);
+}
+
+
+int
+IntParam::getDisplayMaximum(int dimension) const
+{
+    return _intKnob->getDisplayMaximum(dimension);
+}

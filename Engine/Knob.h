@@ -164,6 +164,11 @@ public:
         emit displayMinMaxChanged(mini,maxi,index);
     }
     
+    void s_helpChanged()
+    {
+        emit helpChanged();
+    }
+    
 public slots:
 
     /**
@@ -247,6 +252,8 @@ signals:
     void minMaxChanged(double mini, double maxi, int index);
     
     void displayMinMaxChanged(double mini,double maxi,int index);
+    
+    void helpChanged();
 };
 
 class KnobI
@@ -417,6 +424,12 @@ public:
      * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonUserEdited
      **/
     void onAnimationRemoved(int dimension);
+    
+    /**
+     * @brief Set an expression on the knob
+     **/
+    virtual void setExpression(const std::string& expression) = 0;
+    virtual std::string getExpression() const = 0;
 
     /**
      * @brief Called when the master knob has changed its values or keyframes.
@@ -720,6 +733,13 @@ public:
     
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
+    
+    /**
+     * @brief Inserts in the given script after the import lines the declaration of the variable "thisParam" which is in fact a pointer
+     * to this knob.
+     * Returns the index of the start of the next line after the  variable declaration
+     **/
+    std::size_t declareCurrentKnobVariable_Python(std::string& script);
 protected:
 
     /**
@@ -892,6 +912,8 @@ public:
     virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setExpression(const std::string& expression) OVERRIDE FINAL;
+    virtual std::string getExpression() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;

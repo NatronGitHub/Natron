@@ -103,7 +103,7 @@ Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
 }
 
 std::list<Param*>
-Effect::getParameters() const
+Effect::getParams() const
 {
     std::list<Param*> ret;
     const std::vector<boost::shared_ptr<KnobI> >& knobs = _node->getKnobs();
@@ -117,7 +117,7 @@ Effect::getParameters() const
 }
 
 Param*
-Effect::getParamByName(const std::string& name) const
+Effect::getParam(const std::string& name) const
 {
     boost::shared_ptr<KnobI> knob = _node->getKnobByName(name);
     if (knob) {

@@ -705,6 +705,14 @@ public:
     bool checkIfConnectingInputIsOk(Natron::Node* input) const;
 
     
+    /**
+     * @brief Inserts in the given script after the import lines the declaration of the variable "thisNode" which is in fact a pointer
+     * to this node.
+     * Returns the index of the start of the next line after the  variable declaration
+     **/
+    std::size_t declareCurrentNodeVariable_Python(std::string& script);
+
+    
 public slots:
 
     void setKnobsAge(U64 newAge);

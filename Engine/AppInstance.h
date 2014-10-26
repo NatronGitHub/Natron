@@ -304,6 +304,12 @@ public:
 
     virtual void clearViewersLastRenderedTexture() {}
 
+    /**
+     * @brief Inserts in the given script after the import lines the declaration of the variable "app" which is in fact a pointer
+     * to this app.
+     * Returns the index of the start of the next line after the app variable declaration
+     **/
+    std::size_t declareCurrentAppVariable_Python(std::string& script);
     
 public slots:
 

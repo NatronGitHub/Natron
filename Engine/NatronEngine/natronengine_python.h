@@ -79,10 +79,11 @@ extern SbkConverter** SbkNatronEngineTypeConverters;
 #define SBK_STD_SIZE_T_IDX                                           0
 #define SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX                     1 // std::list<std::string >
 #define SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX                       2 // std::list<Param * >
-#define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          3 // QList<QVariant >
-#define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           4 // QList<QString >
-#define SBK_NATRONENGINE_QMAP_QSTRING_QVARIANT_IDX                   5 // QMap<QString, QVariant >
-#define SBK_NatronEngine_CONVERTERS_IDX_COUNT                        6
+#define SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX                      3 // std::list<Effect * >
+#define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          4 // QList<QVariant >
+#define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           5 // QList<QString >
+#define SBK_NATRONENGINE_QMAP_QSTRING_QVARIANT_IDX                   6 // QMap<QString, QVariant >
+#define SBK_NatronEngine_CONVERTERS_IDX_COUNT                        7
 
 // Macros for type check
 
