@@ -94,6 +94,8 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
+    _openFileButton->setToolTip(tr("Browse file..."));
+    _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);

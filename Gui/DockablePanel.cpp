@@ -253,6 +253,7 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
             _imp->_centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_centerNodeButton->setToolTip( tr("Centers the node graph on this item.") );
+            _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
         }
@@ -261,6 +262,7 @@ DockablePanel::DockablePanel(Gui* gui
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
         _imp->_helpButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
         if ( !helpToolTip.isEmpty() ) {
             _imp->_helpButton->setToolTip( Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal) );
         }
@@ -277,15 +279,18 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_minimize = new Button(QIcon(pixM),"",_imp->_headerWidget);
         _imp->_minimize->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_minimize->setCheckable(true);
+        _imp->_minimize->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_minimize,SIGNAL( toggled(bool) ),this,SLOT( minimizeOrMaximize(bool) ) );
 
         _imp->_floatButton = new Button(QIcon(pixF),"",_imp->_headerWidget);
         _imp->_floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_floatButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_floatButton,SIGNAL( clicked() ),this,SLOT( floatPanel() ) );
 
 
         _imp->_cross = new Button(QIcon(pixC),"",_imp->_headerWidget);
         _imp->_cross->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_cross->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_cross,SIGNAL( clicked() ),this,SLOT( closePanel() ) );
 
         if (headerMode != READ_ONLY_NAME) {
@@ -350,6 +355,7 @@ DockablePanel::DockablePanel(Gui* gui
                                                                         "By default the color of the node is the one set in the "
                                                                         "preferences of %1").arg(NATRON_APPLICATION_NAME)
                                                                      ,Qt::WhiteSpaceNormal) );
+            _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton,SIGNAL( clicked() ),this,SLOT( onColorButtonClicked() ) );
 
             if ( iseffect && !iseffect->getNode()->isMultiInstance() ) {
@@ -368,7 +374,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_undoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_undoButton->setToolTip( Qt::convertFromPlainText(tr("Undo the last change made to this operator"), Qt::WhiteSpaceNormal) );
         _imp->_undoButton->setEnabled(false);
-
+        _imp->_undoButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRedo;
         appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
         QPixmap pixRedo_gray;
@@ -380,6 +386,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_redoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_redoButton->setToolTip( Qt::convertFromPlainText(tr("Redo the last change undone to this operator"), Qt::WhiteSpaceNormal) );
         _imp->_redoButton->setEnabled(false);
+        _imp->_redoButton->setFocusPolicy(Qt::NoFocus);
 
         QPixmap pixRestore;
         appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED, &pixRestore);
@@ -389,6 +396,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_restoreDefaultsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_restoreDefaultsButton->setToolTip( Qt::convertFromPlainText(tr("Restore default values for this operator."
                                                                               " This cannot be undone!"),Qt::WhiteSpaceNormal) );
+        _imp->_restoreDefaultsButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_restoreDefaultsButton,SIGNAL( clicked() ),this,SLOT( onRestoreDefaultsButtonClicked() ) );
         QObject::connect( _imp->_undoButton, SIGNAL( clicked() ),this, SLOT( onUndoClicked() ) );
         QObject::connect( _imp->_redoButton, SIGNAL( clicked() ),this, SLOT( onRedoPressed() ) );
@@ -1445,6 +1453,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
     _settingsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _settingsButton->setToolTip( tr("Settings and presets") );
+    _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );
     insertHeaderWidget(1, _settingsButton);
 }

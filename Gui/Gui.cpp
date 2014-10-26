@@ -1020,6 +1020,7 @@ GuiPrivate::createPropertiesBinGui()
     _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _clearAllPanelsButton->setToolTip( Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
+    _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton,SIGNAL( clicked(bool) ),_gui,SLOT( clearAllVisiblePanels() ) );
 
 
@@ -1047,6 +1048,7 @@ GuiPrivate::createPropertiesBinGui()
     _freezeUIButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _freezeUIButton->setToolTip("<p><b>" + _gui->tr("Turbo mode:") + "</p></b><p>" + _gui->tr("When checked, everything besides the viewer will not be refreshed in the user interface "
                                          "for maximum efficiency during playback.") + "</p>");
+    _freezeUIButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _freezeUIButton, SIGNAL (clicked(bool)), _gui, SLOT(onFreezeUIButtonClicked(bool) ) );
     
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
