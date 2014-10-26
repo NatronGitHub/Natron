@@ -32,6 +32,7 @@ public:
     {
         setMouseTracking(true);
         setAcceptDrops(true);
+        setFocusPolicy(Qt::NoFocus);
     }
 
     explicit AnimationButton(KnobGui* knob,
@@ -43,6 +44,7 @@ public:
     {
         setMouseTracking(true);
         setAcceptDrops(true);
+        setFocusPolicy(Qt::NoFocus);
     }
 
     AnimationButton(KnobGui* knob,
