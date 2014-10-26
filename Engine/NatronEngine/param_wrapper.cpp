@@ -551,7 +551,7 @@ static PyObject* Sbk_ParamFunc_getIsPersistant(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_ParamFunc_getIsSecret(PyObject* self)
+static PyObject* Sbk_ParamFunc_getIsVisible(PyObject* self)
 {
     ::Param* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -564,9 +564,9 @@ static PyObject* Sbk_ParamFunc_getIsSecret(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getIsSecret()const
+            // getIsVisible()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = const_cast<const ::Param*>(cppSelf)->getIsSecret();
+            bool cppResult = const_cast<const ::Param*>(cppSelf)->getIsVisible();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -1119,7 +1119,7 @@ static PyObject* Sbk_ParamFunc_setPersistant(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ParamFunc_setSecret(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_ParamFunc_setVisible(PyObject* self, PyObject* pyArg)
 {
     ::Param* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1131,13 +1131,13 @@ static PyObject* Sbk_ParamFunc_setSecret(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setSecret(bool)
+    // 0: setVisible(bool)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
-        overloadId = 0; // setSecret(bool)
+        overloadId = 0; // setVisible(bool)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_ParamFunc_setSecret_TypeError;
+    if (overloadId == -1) goto Sbk_ParamFunc_setVisible_TypeError;
 
     // Call function/method
     {
@@ -1145,9 +1145,9 @@ static PyObject* Sbk_ParamFunc_setSecret(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setSecret(bool)
+            // setVisible(bool)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setSecret(cppArg0);
+            cppSelf->setVisible(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
@@ -1157,9 +1157,9 @@ static PyObject* Sbk_ParamFunc_setSecret(PyObject* self, PyObject* pyArg)
     }
     Py_RETURN_NONE;
 
-    Sbk_ParamFunc_setSecret_TypeError:
+    Sbk_ParamFunc_setVisible_TypeError:
         const char* overloads[] = {"bool", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setSecret", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setVisible", overloads);
         return 0;
 }
 
@@ -1174,7 +1174,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getIsAnimationEnabled", (PyCFunction)Sbk_ParamFunc_getIsAnimationEnabled, METH_NOARGS},
     {"getIsEnabled", (PyCFunction)Sbk_ParamFunc_getIsEnabled, METH_VARARGS|METH_KEYWORDS},
     {"getIsPersistant", (PyCFunction)Sbk_ParamFunc_getIsPersistant, METH_NOARGS},
-    {"getIsSecret", (PyCFunction)Sbk_ParamFunc_getIsSecret, METH_NOARGS},
+    {"getIsVisible", (PyCFunction)Sbk_ParamFunc_getIsVisible, METH_NOARGS},
     {"getKeyIndex", (PyCFunction)Sbk_ParamFunc_getKeyIndex, METH_VARARGS|METH_KEYWORDS},
     {"getKeyTime", (PyCFunction)Sbk_ParamFunc_getKeyTime, METH_VARARGS},
     {"getNumDimensions", (PyCFunction)Sbk_ParamFunc_getNumDimensions, METH_NOARGS},
@@ -1185,7 +1185,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setEnabled", (PyCFunction)Sbk_ParamFunc_setEnabled, METH_VARARGS|METH_KEYWORDS},
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
     {"setPersistant", (PyCFunction)Sbk_ParamFunc_setPersistant, METH_O},
-    {"setSecret", (PyCFunction)Sbk_ParamFunc_setSecret, METH_O},
+    {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
 
     {0} // Sentinel
 };

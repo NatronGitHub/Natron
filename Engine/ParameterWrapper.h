@@ -58,6 +58,11 @@ public:
     std::string getScriptName() const;
     
     /**
+     * @brief Returns the label of the Param as shown on the GUI.
+     **/
+    std::string getLabel() const;
+    
+    /**
      * @brief Returns the type of the parameter. The list of known type is:
      * "Int" "Bool" "Double" "Button" "Choice" "Color" "String" "Group" "Page" "Parametric" "InputFile" "OutputFile" "Path"
      **/
@@ -69,14 +74,14 @@ public:
     std::string getHelp() const;
     
     /**
-     * @brief Returns true if this parameter is not visible in the user interface, false if it is visible.
+     * @brief Returns true if this parameter is visible in the user interface, false if it is hidden.
      **/
-    bool getIsSecret() const;
+    bool getIsVisible() const;
     
     /**
      * @brief Set the visibility of the parameter
      **/
-    void setSecret(bool secret);
+    void setVisible(bool visible);
     
     /**
      * @brief Returns whether the given dimension is enabled, i.e: whether the user can interact with it or not.

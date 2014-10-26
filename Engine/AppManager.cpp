@@ -555,6 +555,7 @@ AppManager::loadInternal(const QString & projectFilename,
                        "    print \"Correctly found which parameter!\"\n"
                        "value = whichParam.getValue() \n"
                        "print \"Which Param Value: \",value \n"
+                       "print \"Which help: \", whichParam.getHelp() \n"
                        );
 
     

@@ -36,6 +36,12 @@ Param::getScriptName() const
 }
 
 std::string
+Param::getLabel() const
+{
+    return _knob->getDescription();
+}
+
+std::string
 Param::getTypeName() const
 {
     return _knob->typeName();
@@ -44,19 +50,19 @@ Param::getTypeName() const
 std::string
 Param::getHelp() const
 {
-    return _knob->getDescription();
+    return _knob->getHintToolTip();
 }
 
 bool
-Param::getIsSecret() const
+Param::getIsVisible() const
 {
-    return _knob->getIsSecret();
+    return !_knob->getIsSecret();
 }
 
 void
-Param::setSecret(bool secret)
+Param::setVisible(bool visible)
 {
-    _knob->setSecret(secret);
+    _knob->setSecret(!visible);
 }
 
 bool
