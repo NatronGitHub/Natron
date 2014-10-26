@@ -1680,6 +1680,10 @@ Settings::doOCIOStartupCheckIfNeeded()
             }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex,0);
+            } else {
+                Natron::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
+                                                                 "This is probably because you're not using the OpenColorIO-Configs folder that should "
+                                                                 "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
             }
         }
         
