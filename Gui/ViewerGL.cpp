@@ -3312,6 +3312,9 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     bool accept = false;
 
+    if (key == Qt::Key_Escape) {
+        QGLWidget::keyPressEvent(e);
+    }
     
     if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
         toggleOverlays();
@@ -3339,6 +3342,8 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, modifiers, key) ) {
         _imp->viewerTab->toggleTopToolbarVisibility();
         accept = true;
+    } else {
+        QGLWidget::keyPressEvent(e);
     }
 
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();

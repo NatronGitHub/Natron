@@ -2731,6 +2731,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
 
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
+    
     if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
         if ( parentWidget() ) {
             if ( parentWidget()->parentWidget() ) {
@@ -2764,14 +2765,8 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         copySelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key) ) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
-    }  else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if (_imp->_timeline) {
-            _imp->_timeline->goToPreviousKeyframe();
-        }
-    }  else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if (_imp->_timeline) {
-            _imp->_timeline->goToNextKeyframe();
-        }
+    } else {
+        QGLWidget::keyPressEvent(e);
     }
 } // keyPressEvent
 

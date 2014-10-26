@@ -927,7 +927,7 @@ RightClickableWidget::keyPressEvent(QKeyEvent* e)
 void
 RightClickableWidget::enterEvent(QEvent* e)
 {
-    setFocus();
+    //setFocus();
     QWidget::enterEvent(e);
 }
 
@@ -949,7 +949,7 @@ DockablePanelPrivate::addPage(const QString & name)
         sa->setWidget(layoutContainer);
         newTab = sa;
     } else {
-        RightClickableWidget* clickableWidget = new RightClickableWidget(_tabWidget);
+        RightClickableWidget* clickableWidget = new RightClickableWidget(_publicInterface,_tabWidget);
         QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
         QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT( closePanel() ) );
         newTab = clickableWidget;

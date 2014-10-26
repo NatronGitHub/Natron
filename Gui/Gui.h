@@ -557,6 +557,8 @@ private:
 
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 

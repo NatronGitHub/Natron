@@ -1315,6 +1315,8 @@ Histogram::keyPressEvent(QKeyEvent* e)
         _imp->hasBeenModifiedSinceResize = false;
         _imp->zoomCtx.fill(0., 1., 0., 10.);
         computeHistogramAndRefresh();
+    } else {
+        QGLWidget::keyPressEvent(e);
     }
 }
 

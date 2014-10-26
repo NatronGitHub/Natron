@@ -1107,7 +1107,7 @@ TabWidget::keyPressEvent (QKeyEvent* e)
         _gui->toggleFullScreen();
         e->accept();
     } else {
-        e->ignore();
+        QFrame::keyPressEvent(e);
     }
 }
 

@@ -4146,6 +4146,52 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize( width(), height() );
 }
 
+void
+Gui::keyPressEvent(QKeyEvent* e)
+{
+    QWidget* w = qApp->widgetAt(QCursor::pos());
+    if (w->objectName() == QString("SettingsPanel") && e->key() == Qt::Key_Escape) {
+        RightClickableWidget* panel = dynamic_cast<RightClickableWidget*>(w);
+        assert(panel);
+        panel->getPanel()->closePanel();
+    }
+    
+    Qt::Key key = (Qt::Key)e->key();
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    
+    if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->firstFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->lastFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousIncrement();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextIncrement();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
+        getApp()->getTimeLine()->goToPreviousKeyframe();
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
+        getApp()->getTimeLine()->goToNextKeyframe();
+    } else {
+        QMainWindow::keyPressEvent(e);
+    }
+}
+
 TabWidget*
 Gui::getAnchor() const
 {

@@ -54,19 +54,26 @@ public:
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
 };
 
+class DockablePanel;
 class RightClickableWidget : public QWidget
 {
     Q_OBJECT
+    
+    DockablePanel* panel;
+    
 public:
     
     
-    RightClickableWidget(QWidget* parent)
+    RightClickableWidget(DockablePanel* panel,QWidget* parent)
     : QWidget(parent)
+    , panel(panel)
     {
         setObjectName("SettingsPanel");
     }
     
     virtual ~RightClickableWidget() {}
+    
+    DockablePanel* getPanel() const { return panel; }
     
 signals:
     

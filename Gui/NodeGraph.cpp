@@ -1638,6 +1638,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 
+    if (key == Qt::Key_Escape) {
+        return QGraphicsView::keyPressEvent(e);
+    }
+    
     if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
         QCoreApplication::postEvent(parentWidget(),ev);
@@ -1761,6 +1765,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
         pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
     } else {
+        bool intercepted = false;
         /// Search for a node which has a shortcut bound
         const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
         for (U32 i = 0; i < allPlugins.size(); ++i) {
@@ -1783,9 +1788,14 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                                                                    true,
                                                                    QString(),
                                                                    CreateNodeArgs::DefaultValuesList()) );
+                    intercepted = true;
                     break;
                 }
             }
+        }
+        
+        if (!intercepted) {
+            QGraphicsView::keyPressEvent(e);
         }
     }
 } // keyPressEvent
