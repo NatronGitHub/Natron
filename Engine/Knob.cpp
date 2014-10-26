@@ -129,7 +129,20 @@ typedef std::vector< std::pair< int,boost::shared_ptr<KnobI> > > MastersMap;
 ///a curve for each dimension
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 
-struct KnobHelper::KnobHelperPrivate
+struct Expr
+{
+    std::string expression; //< the one modified by Natron
+    std::string originalExpression; //< the one input by the user
+    
+    PyCodeObject* code;
+    PyObject* global_dict;
+    PyObject* local_dict;
+    
+    Expr() : expression(), originalExpression(),  code(0), global_dict(0), local_dict(0) {}
+};
+
+
+struct KnobHelperPrivate
 {
     KnobHelper* publicInterface;
     KnobHolder* holder;
@@ -186,9 +199,7 @@ struct KnobHelper::KnobHelperPrivate
     std::vector<std::string> dimensionNames;
     
     mutable QMutex expressionMutex;
-    std::string expression; //< the one modified by Natron
-    std::string originalExpression; //< the one input by the user
-
+    std::vector<Expr> expressions;
 
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
@@ -227,19 +238,21 @@ struct KnobHelper::KnobHelperPrivate
           , isInstanceSpecific(false)
           , dimensionNames(dimension_)
           , expressionMutex()
-          , expression()
-          , originalExpression()
+          , expressions()
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
+        expressions.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
             mustCloneGuiCurves[i] = false;
             mustCloneInternalCurves[i] = false;
         }
     }
     
-    void parseListenersFromExpression();
+    void parseListenersFromExpression(int dimension);
 };
+
+
 
 KnobHelper::KnobHelper(KnobHolder* holder,
                        const std::string & description,
@@ -968,45 +981,243 @@ KnobI::declareCurrentKnobVariable_Python(std::string& script)
         ///Now define the app variable
         std::stringstream ss;
         ss << "thisParam = thisNode.getParam(" << getName() << ") \n";
+        ss << "frame = thisParam.getCurrentTime() \n";
+        ss << "value = thisParam.getValueAtTime(frame) \n";
         std::string toInsert = ss.str();
         script.insert(firstLine, toInsert);
         return firstLine + toInsert.size();
-
     } else {
         return std::string::npos;
     }
 }
 
+static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesisPos,const std::string& str) {
+    assert(openingParenthesisPos < str.size() && str.at(openingParenthesisPos) == '(');
+    
+    int noOpeningParenthesisFound = 0;
+    int i = openingParenthesisPos + 1;
+    
+    while (i < (int)str.size()) {
+        if (str.at(i) == ')') {
+            if (noOpeningParenthesisFound == 0) {
+                break;
+            } else {
+                --noOpeningParenthesisFound;
+            }
+        } else if (str.at(i) == '(') {
+            ++noOpeningParenthesisFound;
+        }
+        ++i;
+    }
+    if (i >= (int)str.size()) {
+        return std::string::npos;
+    }
+    return i;
+}
+
+static bool parseTokenFrom(const std::string& str,const std::string& token,std::size_t inputPos,std::size_t* tokenStart,std::size_t* tokenSize)
+{
+    std::size_t pos = str.find(token,inputPos);
+
+    if (pos == std::string::npos) {
+        return false;
+    }
+    
+    *tokenStart = pos;
+    
+    pos += token.size();
+    
+    ///Find nearest opening parenthesis
+    for (; pos < str.size(); ++pos) {
+        if (str.at(pos) == '(') {
+            break;
+        }
+    }
+    
+    if (pos >= str.size()) {
+        throw std::invalid_argument("Invalid expr");
+    }
+    
+    std::size_t endingParenthesis = getMatchingParenthesisPosition(pos, str);
+    if (endingParenthesis == std::string::npos) {
+        throw std::invalid_argument("Invalid expr");
+    }
+    
+    *tokenSize = endingParenthesis - *tokenStart + 1;
+    assert(*tokenSize > 0);
+    return true;
+}
+
+static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& token)
+{
+    
+    std::size_t tokenStart,tokenSize;
+    bool couldFindToken;
+    try {
+        couldFindToken = parseTokenFrom(str, token, 0, &tokenStart, &tokenSize);
+    } catch (...) {
+        return false;
+    }
+    
+    while (couldFindToken) {
+        str.replace(tokenStart, tokenSize, std::string("addAsDependencyOf(thisParam)"));
+        try {
+            couldFindToken = parseTokenFrom(str, token, tokenStart, &tokenStart, &tokenSize);
+        } catch (...) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void
-KnobHelper::KnobHelperPrivate::parseListenersFromExpression()
+KnobHelperPrivate::parseListenersFromExpression(int dimension)
 {
     assert(!expressionMutex.tryLock());
     
     //Extract pointers to knobs referred to by the expression
+    //Our heuristic is quite simple: we replace in the python code all calls to:
+    // - getValue
+    // - getValueAtTime
+    // - getDerivativeAtTime
+    // - getIntegrateFromTimeToTime
+    // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
+    
+    std::string expressionCopy = expressions[dimension].expression;
+    
+
+    if  (!replaceAllOcurrencesOfToken(expressionCopy, "getValue")) {
+        return ;
+    }
+    
+    if (!replaceAllOcurrencesOfToken(expressionCopy, "getValueAtTime")) {
+        return;
+    }
+    
+    if (!replaceAllOcurrencesOfToken(expressionCopy, "getDerivativeAtTime")) {
+        return;
+    }
+    
+    if (!replaceAllOcurrencesOfToken(expressionCopy, "getIntegrateFromTimeToTime")) {
+        return;
+    }
+    
+    ///This will register the listeners
+    std::string error;
+    bool success = Natron::interpretPythonScript(expressionCopy, &error);
+    if (!error.empty()) {
+        qDebug() << error.c_str();
+    }
+    assert(success);
+    
     
 }
 
 void
-KnobHelper::setExpression(const std::string& expression)
+KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRetVariable)
 {
     std::string exprCpy = expression;
-    declareCurrentKnobVariable_Python(exprCpy);
-    {
-        QMutexLocker k(&_imp->expressionMutex);
-        _imp->expression = exprCpy;
-        _imp->originalExpression = expression;
+
+    //if !hasRetVariable the expression is expected to be single-line
+    if (!hasRetVariable) {
+        std::size_t foundNewLine = expression.find("\n");
+        if (foundNewLine != std::string::npos) {
+            expressionChanged(dimension, true);
+            throw std::invalid_argument("unexpected new line character \'\\n\'");
+        }
+        //preprend the line with "ret = ..."
+        std::string toInsert("ret = ");
+        exprCpy.insert(0, toInsert);
     }
     
+    declareCurrentKnobVariable_Python(exprCpy);
+    
+    ///Try to compile the expression and evaluate it, if it doesn't have a good syntax, throw an exception
+    ///with the error.
+    std::string error;
+    bool success = Natron::interpretPythonScript(exprCpy, &error);
+    if (!success) {
+        expressionChanged(dimension, true);
+        throw std::runtime_error(error);
+    }
+    
+    
+    ///Compile the expression
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        _imp->expressions[dimension].code = (PyCodeObject*)Py_CompileString(expression.c_str(), "pyexpr", Py_eval_input);
+        _imp->expressions[dimension].global_dict = Shiboken::Module::import(NATRON_ENGINE_PYTHON_MODULE_NAME);
+        _imp->expressions[dimension].local_dict = PyDict_New();
+    }
+    
+    PyObject* ret;
+    try {
+        ret = executeExpression(dimension);
+    } catch (const std::runtime_error& e) {
+        expressionChanged(dimension, true);
+        throw e;
+    }
+    
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+
+        ///The expression is good so far, register it and add listeners (dependencies)
+        
+        _imp->expressions[dimension].expression = exprCpy;
+        _imp->expressions[dimension].originalExpression = expression;
+        _imp->parseListenersFromExpression(dimension);
+    }
+    
+    
+    expressionChanged(dimension,false);
+}
+
+void
+KnobHelper::expressionChanged(int dimension,bool reset)
+{
+    assert(!_imp->expressionMutex.tryLock());
+    
+    if (reset) {
+        QMutexLocker k(&_imp->expressionMutex);
+        _imp->expressions[dimension].expression.clear();
+        _imp->expressions[dimension].originalExpression.clear();
+        _imp->expressions[dimension].code = 0;
+        _imp->expressions[dimension].global_dict = 0;
+        _imp->expressions[dimension].local_dict = 0;
+    }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
+
+}
+
+PyObject*
+KnobHelper::executeExpression(int dimension) const
+{
+    QMutexLocker k(&_imp->expressionMutex);
+    assert(!_imp->expressions[dimension].expression.empty());
+    (void)PyEval_EvalCode(_imp->expressions[dimension].code, _imp->expressions[dimension].global_dict, _imp->expressions[dimension].local_dict);
+    
+    if (PyErr_Occurred()) {
+        ///This should never occur since we already interpreted the code above.
+        assert(false);
+        throw std::runtime_error("Failed to execute compiled Python code");
+    }
+    
+    PyObject *ret = PyObject_GetAttrString(_imp->expressions[dimension].global_dict,"ret"); //get our ret variable created above
+    
+    if (!ret || PyErr_Occurred()) {
+        throw std::runtime_error("return value must be assigned to the \"ret\" variable");
+    }
+    return ret;
+
 }
 
 std::string
-KnobHelper::getExpression() const
+KnobHelper::getExpression(int dimension) const
 {
     QMutexLocker k(&_imp->expressionMutex);
-    return _imp->originalExpression;
+    return _imp->expressions[dimension].originalExpression;
 }
 
 KnobHolder*
@@ -1512,9 +1723,11 @@ KnobHelper::onMasterChanged(KnobI* master,
 void
 KnobHelper::addListener(KnobI* knob)
 {
-    QWriteLocker l(&_imp->mastersMutex);
-
-    _imp->listeners.push_back(knob);
+    if (knob != this) {
+        QWriteLocker l(&_imp->mastersMutex);
+        
+        _imp->listeners.push_back(knob);
+    }
 }
 
 void

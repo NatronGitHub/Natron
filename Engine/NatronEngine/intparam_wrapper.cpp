@@ -11,6 +11,7 @@
 #include "intparam_wrapper.h"
 
 // Extra includes
+#include <ParameterWrapper.h>
 
 
 // Native ---------------------------------------------------------

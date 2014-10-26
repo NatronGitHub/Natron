@@ -11,6 +11,7 @@
 #include "param_wrapper.h"
 
 // Extra includes
+#include <ParameterWrapper.h>
 
 
 // Native ---------------------------------------------------------
@@ -24,6 +25,98 @@ ParamWrapper::~ParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_ParamFunc_addAsDependencyOf(PyObject* self, PyObject* pyArg)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: addAsDependencyOf(Param*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArg)))) {
+        overloadId = 0; // addAsDependencyOf(Param*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_addAsDependencyOf_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::Param* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // addAsDependencyOf(Param*)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->addAsDependencyOf(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_addAsDependencyOf_TypeError:
+        const char* overloads[] = {"NatronEngine.Param", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.addAsDependencyOf", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_addDependency(PyObject* self, PyObject* pyArg)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: addDependency(const Param*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArg)))) {
+        overloadId = 0; // addDependency(const Param*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_addDependency_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::Param* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // addDependency(const Param*)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->addDependency(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_addDependency_TypeError:
+        const char* overloads[] = {"NatronEngine.Param", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.addDependency", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParamFunc_deleteValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::Param* cppSelf = 0;
@@ -119,6 +212,34 @@ static PyObject* Sbk_ParamFunc_getCanAnimate(PyObject* self)
             bool cppResult = const_cast<const ::Param*>(cppSelf)->getCanAnimate();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_getCurrentTime(PyObject* self)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getCurrentTime()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = const_cast<const ::Param*>(cppSelf)->getCurrentTime();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
 
@@ -1103,6 +1224,87 @@ static PyObject* Sbk_ParamFunc_setEvaluateOnChange(PyObject* self, PyObject* pyA
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_setExpression(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setExpression(): too many arguments");
+        return 0;
+    } else if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setExpression(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OOO:setExpression", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: setExpression(std::string,bool,int)
+    if (numArgs >= 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
+        if (numArgs == 2) {
+            overloadId = 0; // setExpression(std::string,bool,int)
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+            overloadId = 0; // setExpression(std::string,bool,int)
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setExpression_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "dimension");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setExpression(): got multiple values for keyword argument 'dimension'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2]))))
+                    goto Sbk_ParamFunc_setExpression_TypeError;
+            }
+        }
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        int cppArg2 = 0;
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // setExpression(std::string,bool,int)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setExpression(cppArg0, cppArg1, cppArg2);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setExpression_TypeError:
+        const char* overloads[] = {"std::string, bool, int = 0", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.setExpression", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParamFunc_setPersistant(PyObject* self, PyObject* pyArg)
 {
     ::Param* cppSelf = 0;
@@ -1192,8 +1394,11 @@ static PyObject* Sbk_ParamFunc_setVisible(PyObject* self, PyObject* pyArg)
 }
 
 static PyMethodDef Sbk_Param_methods[] = {
+    {"addAsDependencyOf", (PyCFunction)Sbk_ParamFunc_addAsDependencyOf, METH_O},
+    {"addDependency", (PyCFunction)Sbk_ParamFunc_addDependency, METH_O},
     {"deleteValueAtTime", (PyCFunction)Sbk_ParamFunc_deleteValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"getCanAnimate", (PyCFunction)Sbk_ParamFunc_getCanAnimate, METH_NOARGS},
+    {"getCurrentTime", (PyCFunction)Sbk_ParamFunc_getCurrentTime, METH_NOARGS},
     {"getDerivativeAtTime", (PyCFunction)Sbk_ParamFunc_getDerivativeAtTime, METH_VARARGS|METH_KEYWORDS},
     {"getEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_getEvaluateOnChange, METH_NOARGS},
     {"getHelp", (PyCFunction)Sbk_ParamFunc_getHelp, METH_NOARGS},
@@ -1213,6 +1418,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"removeAnimation", (PyCFunction)Sbk_ParamFunc_removeAnimation, METH_VARARGS|METH_KEYWORDS},
     {"setEnabled", (PyCFunction)Sbk_ParamFunc_setEnabled, METH_VARARGS|METH_KEYWORDS},
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
+    {"setExpression", (PyCFunction)Sbk_ParamFunc_setExpression, METH_VARARGS|METH_KEYWORDS},
     {"setPersistant", (PyCFunction)Sbk_ParamFunc_setPersistant, METH_O},
     {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
 

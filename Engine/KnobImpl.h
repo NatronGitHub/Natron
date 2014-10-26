@@ -14,11 +14,21 @@
 
 #include "Knob.h"
 
+
+
 #include <cfloat>
 #include <stdexcept>
 #include <string>
+
+
+#include <Python.h>
+#include <shiboken.h>
+
 #include <boost/math/special_functions/fpclassify.hpp>
+
 #include <QString>
+#include <QDebug>
+
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
@@ -281,6 +291,51 @@ Knob<bool>::clampToMinMax(const bool& value,int /*dimension*/) const
     return value;
 }
 
+template <>
+int
+Knob<int>::pyObjectToType(PyObject* o) const
+{
+    return (int)PyInt_AsLong(o);
+}
+
+template <>
+bool
+Knob<bool>::pyObjectToType(PyObject* o) const
+{
+    if (PyObject_IsTrue(o) == 1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <>
+double
+Knob<double>::pyObjectToType(PyObject* o) const
+{
+    return (double)PyFloat_AsDouble(o);
+}
+
+template <>
+std::string
+Knob<std::string>::pyObjectToType(PyObject* o) const
+{
+    return std::string(PyString_AsString(o));
+}
+
+template <typename T>
+T Knob<T>::evaluateExpression(int dimension) const
+{
+    PyObject *ret;
+    try {
+        ret = executeExpression(dimension);
+    } catch (...) {
+        qDebug() << "Failure to execute expression, please investigate this bug.";
+        return T();
+    }
+    return pyObjectToType(ret);
+}
+
 //Declare the specialization before defining it to avoid the following
 //error: explicit specialization of 'getValueAtTime' after instantiation
 template<>
@@ -290,6 +345,11 @@ template<>
 std::string
 Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
 {
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        return evaluateExpression(dimension);
+    }
+    
     if ( isAnimated(dimension) ) {
         SequenceTime time;
         if ( !getHolder() || !getHolder()->getApp() ) {
@@ -326,6 +386,16 @@ template <typename T>
 T
 Knob<T>::getValue(int dimension,bool clamp) const
 {
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        if (clamp ) {
+            T ret = evaluateExpression(dimension);
+            return clampToMinMax(ret,dimension);
+        } else {
+            return evaluateExpression(dimension);
+        }
+    }
+    
     if ( isAnimated(dimension) ) {
         return getValueAtTime(getCurrentTime(), dimension,clamp);
     }
@@ -362,11 +432,16 @@ std::string
 Knob<std::string>::getValueAtTime(double time,
                                   int dimension,bool /*clampToMinMax*/) const
 {
+    
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
 
-
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        return evaluateExpression(dimension);
+    }
+    
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (master.second) {
@@ -415,7 +490,16 @@ Knob<T>::getValueAtTime(double time,
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
-
+    
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        if (clamp ) {
+            T ret = evaluateExpression(dimension);
+            return clampToMinMax(ret,dimension);
+        } else {
+            return evaluateExpression(dimension);
+        }
+    }
 
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);

@@ -160,6 +160,30 @@ Param::getIntegrateFromTimeToTime(double time1, double time2, int dimension) con
 {
     return _knob->getIntegrateFromTimeToTime(time1, time2, dimension);
 }
+
+int
+Param::getCurrentTime() const
+{
+    return _knob->getCurrentTime();
+}
+
+void
+Param::addDependency(const Param* param)
+{
+    _knob->addListener(param->_knob.get());
+}
+
+void
+Param::addAsDependencyOf(Param* param)
+{
+    param->addDependency(this);
+}
+
+void
+Param::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
+{
+    _knob->setExpression(dimension,expr,hasRetVariable);
+}
 ///////////// IntParam
 
 IntParam::IntParam(const boost::shared_ptr<Int_Knob>& knob)

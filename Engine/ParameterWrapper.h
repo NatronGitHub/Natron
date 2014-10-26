@@ -168,6 +168,26 @@ public:
      * @brief Compute the integral of dimension from time1 to time2 as a double
      **/
     double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const;
+    
+    /**
+     * @brief Get the current global time in the parameter context. Most generally this is the time on the timeline,
+     * but when multiple frames are being rendered at different times, this is the time of the frame being rendered
+     * by the caller thread.
+     **/
+    int getCurrentTime() const;
+    
+    /**
+     * @brief Adds the given param as a dependency to the current Param. This is used mainly by the GUI to notify the user
+     * when a dependency is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    void addDependency(const Param* param);
+    void addAsDependencyOf(Param* param);
+    
+    /**
+     * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
+     **/
+    void setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
 };
 
 class IntParam : public Param

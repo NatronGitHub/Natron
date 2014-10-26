@@ -23,7 +23,8 @@
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
 
-
+struct _object;
+typedef _object PyObject;
 class Curve;
 class KeyFrame;
 class KnobHolder;
@@ -169,6 +170,11 @@ public:
         emit helpChanged();
     }
     
+    void s_expressionChanged(int dimension)
+    {
+        emit expressionChanged(dimension);
+    }
+    
 public slots:
 
     /**
@@ -254,6 +260,8 @@ signals:
     void displayMinMaxChanged(double mini,double maxi,int index);
     
     void helpChanged();
+    
+    void expressionChanged(int dimension);
 };
 
 class KnobI
@@ -426,10 +434,13 @@ public:
     void onAnimationRemoved(int dimension);
     
     /**
-     * @brief Set an expression on the knob
+     * @brief Set an expression on the knob. If this expression is invalid, this function throws an excecption with the error from the
+     * Python interpreter.
+     * @param hasRetVariable If true the expression is expected to be multi-line and have its return value set to the variable "ret", otherwise
+     * the expression is expected to be single-line.
      **/
-    virtual void setExpression(const std::string& expression) = 0;
-    virtual std::string getExpression() const = 0;
+    virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) = 0;
+    virtual std::string getExpression(int dimension) const = 0;
 
     /**
      * @brief Called when the master knob has changed its values or keyframes.
@@ -736,10 +747,19 @@ public:
     
     /**
      * @brief Inserts in the given script after the import lines the declaration of the variable "thisParam" which is in fact a pointer
-     * to this knob.
-     * Returns the index of the start of the next line after the  variable declaration
+     * to this knob. This function also declares the variable "frame" which holds the current time and "value" which holds the current value
+     * at the current time.
+     * @returns the index of the start of the next line after the  variable declaration
      **/
     std::size_t declareCurrentKnobVariable_Python(std::string& script);
+    
+    /**
+     * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
+     * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
+     **/
+    virtual void addListener(KnobI* knob) = 0;
+    virtual void removeListener(KnobI* knob) = 0;
+
 protected:
 
     /**
@@ -827,6 +847,7 @@ public:
 
 
 ///Skins the API of KnobI by implementing most of the functions in a non templated manner.
+struct KnobHelperPrivate;
 class KnobHelper
     : public KnobI
 {
@@ -912,8 +933,8 @@ public:
     virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setExpression(const std::string& expression) OVERRIDE FINAL;
-    virtual std::string getExpression() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) OVERRIDE FINAL;
+    virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -973,6 +994,8 @@ protected:
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
     void resetMaster(int dimension);
+    
+    PyObject* executeExpression(int dimension) const;
 
 public:
 
@@ -988,8 +1011,8 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    void addListener(KnobI* knob);
-    void removeListener(KnobI* knob);
+    virtual void addListener(KnobI* knob) OVERRIDE FINAL;
+    virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
 
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
 
@@ -1048,8 +1071,9 @@ protected:
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
 
 private:
+    
+    void expressionChanged(int dimension,bool reset);
 
-    struct KnobHelperPrivate;
     boost::scoped_ptr<KnobHelperPrivate> _imp;
 };
 
@@ -1266,6 +1290,9 @@ private:
     void makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key);
     
     void queueSetValue(const T& v,int dimension);
+    
+    T pyObjectToType(PyObject* o) const;
+    T evaluateExpression(int dimension) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI

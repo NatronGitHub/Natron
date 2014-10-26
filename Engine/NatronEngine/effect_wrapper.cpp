@@ -294,7 +294,7 @@ static PyObject* Sbk_EffectFunc_getName(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_EffectFunc_getParamByName(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_EffectFunc_getParam(PyObject* self, PyObject* pyArg)
 {
     ::Effect* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -307,13 +307,13 @@ static PyObject* Sbk_EffectFunc_getParamByName(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getParamByName(std::string)const
+    // 0: getParam(std::string)const
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getParamByName(std::string)const
+        overloadId = 0; // getParam(std::string)const
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_EffectFunc_getParamByName_TypeError;
+    if (overloadId == -1) goto Sbk_EffectFunc_getParam_TypeError;
 
     // Call function/method
     {
@@ -321,9 +321,9 @@ static PyObject* Sbk_EffectFunc_getParamByName(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getParamByName(std::string)const
+            // getParam(std::string)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Param * cppResult = const_cast<const ::Effect*>(cppSelf)->getParamByName(cppArg0);
+            Param * cppResult = const_cast<const ::Effect*>(cppSelf)->getParam(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
@@ -338,13 +338,13 @@ static PyObject* Sbk_EffectFunc_getParamByName(PyObject* self, PyObject* pyArg)
     }
     return pyResult;
 
-    Sbk_EffectFunc_getParamByName_TypeError:
+    Sbk_EffectFunc_getParam_TypeError:
         const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getParamByName", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getParam", overloads);
         return 0;
 }
 
-static PyObject* Sbk_EffectFunc_getParameters(PyObject* self)
+static PyObject* Sbk_EffectFunc_getParams(PyObject* self)
 {
     ::Effect* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -357,10 +357,10 @@ static PyObject* Sbk_EffectFunc_getParameters(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getParameters()const
+            // getParams()const
             // Begin code injection
 
-            std::list<Param*> params = cppSelf->getParameters();
+            std::list<Param*> params = cppSelf->getParams();
             PyObject* ret = PyList_New((int) params.size());
             int idx = 0;
             for (std::list<Param*>::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
@@ -447,8 +447,8 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
     {"getMaxInputCount", (PyCFunction)Sbk_EffectFunc_getMaxInputCount, METH_NOARGS},
     {"getName", (PyCFunction)Sbk_EffectFunc_getName, METH_NOARGS},
-    {"getParamByName", (PyCFunction)Sbk_EffectFunc_getParamByName, METH_O},
-    {"getParameters", (PyCFunction)Sbk_EffectFunc_getParameters, METH_NOARGS},
+    {"getParam", (PyCFunction)Sbk_EffectFunc_getParam, METH_O},
+    {"getParams", (PyCFunction)Sbk_EffectFunc_getParams, METH_NOARGS},
     {"getPluginID", (PyCFunction)Sbk_EffectFunc_getPluginID, METH_NOARGS},
     {"isNull", (PyCFunction)Sbk_EffectFunc_isNull, METH_NOARGS},
 

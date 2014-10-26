@@ -516,6 +516,13 @@ getNumInstances()
  * can be the first character after the last one in the script.
  **/
 std::size_t ensureScriptHasEngineImport(std::string& script);
+
+/**
+ * @brief Evaluates the given python script*
+ * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter.
+ * @returns True on success, false on failure.
+**/
+bool interpretPythonScript(const std::string& script,std::string* error);
     
 } // namespace Natron
 

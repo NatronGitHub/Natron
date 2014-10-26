@@ -545,12 +545,12 @@ AppManager::loadInternal(const QString & projectFilename,
                        "    print \"Correctly disconnected!\"\n"
                        "else: \n"
                        "   print \"BUG!\" \n"
-                       "parameters = switch.getParameters() \n"
+                       "parameters = switch.getParams() \n"
                        "print \"Printing parameters of Switch...\" \n"
                        "for param in parameters: \n"
                        "    print param.getScriptName() \n"
                        "print \"End Switch parameters found\" \n"
-                       "whichParam = switch.getParamByName(\"which\") \n"
+                       "whichParam = switch.getParam(\"which\") \n"
                        "if whichParam is not None: \n"
                        "    print \"Correctly found which parameter!\"\n"
                        "value = whichParam.getValue() \n"
@@ -2061,6 +2061,34 @@ std::size_t ensureScriptHasEngineImport(std::string& script)
         return endLine + 1;
     }
 
+}
+    
+bool interpretPythonScript(const std::string& script,std::string* error)
+{
+    //this is python code to redirect stdout/stderr
+    std::string stdOutErr =
+    "import sys \n"
+    "class CatchOutErr:\n"
+    "def __init__(self):\n"
+    "   self.value = ''\n"
+    "def write(self, txt):\n"
+    "   self.value += txt\n"
+    "catchOutErr = CatchOutErr()\n"
+    "sys.stdout = catchOutErr\n"
+    "sys.stderr = catchOutErr\n";
+    
+    PyObject *pModule = PyImport_AddModule("__main__"); //create main module
+    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
+    PyRun_SimpleString(script.c_str());
+    PyObject *catcher = PyObject_GetAttrString(pModule,"catchOutErr"); //get our catchOutErr created above
+    
+    if (PyErr_Occurred()) {
+        PyErr_Print(); //make python print any errors
+        PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object
+        *error = std::string(PyString_AsString(output));
+        return false;
+    }
+    return true;
 }
     
 } //Namespace Natron
