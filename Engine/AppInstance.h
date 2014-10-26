@@ -194,11 +194,30 @@ public:
     }
 
     virtual void errorDialog(const std::string & title,const std::string & message) const;
+    virtual void errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const;
     virtual void warningDialog(const std::string & title,const std::string & message) const;
+    virtual void warningDialog(const std::string & title,const std::string & message,bool* stopAsking) const;
     virtual void informationDialog(const std::string & title,const std::string & message) const;
+    virtual void informationDialog(const std::string & title,const std::string & message,bool* stopAsking) const;
+    
     virtual Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
                                                       Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                                   Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Asks a question to the user and returns the reply.
+     * @param stopAsking Set to true if the user do not want Natron to ask the question again.
+     **/
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & /*title*/,
+                                                      const std::string & /*message*/,
+                                                      Natron::StandardButtons /*buttons*/,
+                                                      Natron::StandardButtonEnum /*defaultButton*/,
+                                                      bool* /*stopAsking*/)
+    {
+        return Natron::eStandardButtonYes;
+    }
+
+    
     virtual void loadProjectGui(boost::archive::xml_iarchive & /*archive*/) const
     {
     }
@@ -282,18 +301,6 @@ public:
 
     virtual void clearViewersLastRenderedTexture() {}
 
-    /**
-     * @brief Asks a question to the user and returns the reply. 
-     * @param stopAsking Set to true if the user do not want Natron to ask the question again.
-     **/
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & /*title*/,
-                                              const std::string & /*message*/,
-                                              Natron::StandardButtons /*buttons*/,
-                                              Natron::StandardButtonEnum /*defaultButton*/,
-                                              bool* /*stopAsking*/)
-    {
-        return Natron::eStandardButtonYes;
-    }
     
 public slots:
 

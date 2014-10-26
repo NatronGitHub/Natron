@@ -349,13 +349,13 @@ Settings::initializeKnobs()
                                           "is selected as the OpenColorIO config.");
     ocioTab->addKnob(_customOcioConfigFile);
     
-    _warnOcioConfigKnobChanged = Natron::createKnob<Bool_Knob>(this, "Warn OCIO");
-    _warnOcioConfigKnobChanged->setName("warnOCIOChanged");
-    _warnOcioConfigKnobChanged->setSecret(true);
+    _warnOcioConfigKnobChanged = Natron::createKnob<Bool_Knob>(this, "Warn on OpenColorIO config change");
+    _warnOcioConfigKnobChanged->setName("warnOCIOChanged"); 
+    _warnOcioConfigKnobChanged->setHintToolTip("Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.");
     _warnOcioConfigKnobChanged->setAnimationEnabled(false);
     ocioTab->addKnob(_warnOcioConfigKnobChanged);
     
-    _ocioStartupCheck = Natron::createKnob<Bool_Knob>(this, "Warn on startup if OCIO config is not the default");
+    _ocioStartupCheck = Natron::createKnob<Bool_Knob>(this, "Warn on startup if OpenColorIO config is not the default");
     _ocioStartupCheck->setName("startupCheckOCIO");
     _ocioStartupCheck->setAnimationEnabled(false);
     ocioTab->addKnob(_ocioStartupCheck);
@@ -999,9 +999,8 @@ Settings::onKnobValueChanged(KnobI* k,
             const std::vector<boost::shared_ptr<Node> > nodes = it->second.app->getProject()->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
-                if (nodes[i]->getPluginID() == "Viewer") {
-                    ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-                    assert(n);
+                ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
+                if (n) {
                     if (isFirstViewer) {
                         if ( !n->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
                             Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
@@ -1052,13 +1051,11 @@ Settings::onKnobValueChanged(KnobI* k,
         
         bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
         if (warnOcioChanged && appPTR->getTopLevelInstance()) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog(QObject::tr("OCIO config changed").toStdString(),
-                                                                      QObject::tr("The OpenColorIO config change requires a restart of "
-                                                                                  NATRON_APPLICATION_NAME " to be effective. Would you like " NATRON_APPLICATION_NAME
-                                                                                  " to stop showing this dialog again from now on? ").toStdString(),
-                                                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                                      Natron::eStandardButtonYes);
-            if (reply) {
+            bool stopAsking;
+            Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
+                                  QObject::tr("The OpenColorIO config change requires a restart of "
+                                              NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
+            if (stopAsking) {
                 _warnOcioConfigKnobChanged->setValue(false,0);
             }
         }
@@ -1071,13 +1068,11 @@ Settings::onKnobValueChanged(KnobI* k,
             tryLoadOpenColorIOConfig();
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
             if (warnOcioChanged && appPTR->getTopLevelInstance()) {
-                Natron::StandardButtonEnum reply = Natron::questionDialog(QObject::tr("OCIO config changed").toStdString(),
-                                                                          QObject::tr("The OpenColorIO config change requires a restart of "
-                                                                                      NATRON_APPLICATION_NAME " to be effective. Would you like " NATRON_APPLICATION_NAME
-                                                                                      " to stop showing this dialog again from now on? ").toStdString(),
-                                                                          Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                                          Natron::eStandardButtonYes);
-                if (reply) {
+                bool stopAsking;
+                Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
+                                      QObject::tr("The OpenColorIO config change requires a restart of "
+                                                  NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
+                if (stopAsking) {
                     _warnOcioConfigKnobChanged->setValue(false,0);
                 }
             }

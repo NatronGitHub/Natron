@@ -407,14 +407,21 @@ private:
 
 namespace Natron {
 void errorDialog(const std::string & title,const std::string & message);
+void errorDialog(const std::string & title,const std::string & message,bool* stopAsking);
 
 void warningDialog(const std::string & title,const std::string & message);
+void warningDialog(const std::string & title,const std::string & message,bool* stopAsking);
 
 void informationDialog(const std::string & title,const std::string & message);
+void informationDialog(const std::string & title,const std::string & message,bool* stopAsking);
 
 Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
                                           Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                       Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+    
+Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons,
+                                          Natron::StandardButtonEnum defaultButton,
+                                          bool* stopAsking);
 
 template <class K>
 boost::shared_ptr<K> createKnob(KnobHolder*  holder,

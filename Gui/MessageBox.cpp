@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "QuestionDialog.h"
+#include "MessageBox.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -12,14 +12,17 @@
 #include <QStyle>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QTextEdit>
 #include <QApplication>
 #include <QDesktopWidget>
 
 #include "Gui/FromQtEnums.h"
 
 
-struct QuestionDialogPrivate
+struct MessageBoxPrivate
 {
+    MessageBox::MessageBoxTypeEnum type;
+    
     QHBoxLayout* mainLayout;
     QVBoxLayout* vLayout;
     
@@ -27,17 +30,20 @@ struct QuestionDialogPrivate
     
     QWidget* vContainer;
     QLabel* questionLabel;
+    QTextEdit* infoEdit; //< used if the text is too long so the user can scroll
     QCheckBox* checkbox;
     
     QDialogButtonBox* buttons;
     QAbstractButton* clickedButton;
     
-    QuestionDialogPrivate()
-    : mainLayout(0)
+    MessageBoxPrivate(MessageBox::MessageBoxTypeEnum type)
+    : type(type)
+    , mainLayout(0)
     , vLayout(0)
     , infoLabel(0)
     , vContainer(0)
     , questionLabel(0)
+    , infoEdit(0)
     , checkbox(0)
     , buttons(0)
     , clickedButton(0)
@@ -52,39 +58,76 @@ struct QuestionDialogPrivate
     }
 };
 
-QuestionDialog::QuestionDialog(const QString & title,
-               const QString & message,
-               Natron::StandardButtons buttons,
-               Natron::StandardButtonEnum defaultButton,
-               QWidget* parent)
+MessageBox::MessageBox(const QString & title,
+                       const QString & message,
+                       MessageBoxTypeEnum type,
+                       const Natron::StandardButtons& buttons,
+                       Natron::StandardButtonEnum defaultButton,
+                       QWidget* parent)
 : QDialog(parent,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
-, _imp(new QuestionDialogPrivate)
+, _imp(new MessageBoxPrivate(type))
+{
+    init(title, message, buttons, defaultButton);
+}
+
+void
+MessageBox::init(const QString & title,
+                 const QString & message,
+                 const Natron::StandardButtons& buttons,
+                 Natron::StandardButtonEnum defaultButton)
 {
     _imp->mainLayout = new QHBoxLayout(this);
     
     _imp->infoLabel = new QLabel(this);
     _imp->infoLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    QIcon icon = style()->standardIcon(QStyle::SP_MessageBoxQuestion, 0, this);
+    
+    QStyle::StandardPixmap pixType;
+    switch (_imp->type) {
+        case eMessageBoxTypeError:
+            pixType = QStyle::SP_MessageBoxCritical;
+            break;
+        case eMessageBoxTypeWarning:
+            pixType = QStyle::SP_MessageBoxWarning;
+            break;
+        case eMessageBoxTypeInformation:
+            pixType = QStyle::SP_MessageBoxWarning;
+            break;
+        case eMessageBoxTypeQuestion:
+            pixType = QStyle::SP_MessageBoxQuestion;
+            break;
+    }
+    
+    QIcon icon = style()->standardIcon(pixType, 0, this);
     int iconSize = style()->pixelMetric(QStyle::PM_MessageBoxIconSize, 0, this);
     _imp->infoLabel->setPixmap(icon.pixmap(iconSize, iconSize));
     
     _imp->vContainer = new QWidget(this);
     _imp->vLayout = new QVBoxLayout(_imp->vContainer);
     
-    _imp->questionLabel = new QLabel(message,_imp->vContainer);
-    _imp->questionLabel->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
-    _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-    _imp->questionLabel->setOpenExternalLinks(true);
-    _imp->questionLabel->setContentsMargins(16, 0, 0, 0);
-    QFont f(NATRON_FONT,NATRON_FONT_SIZE_11);
-    _imp->questionLabel->setFont(f);
-
-    _imp->vLayout->addWidget(_imp->questionLabel);
+    if (message.size() < 1000) {
+        _imp->questionLabel = new QLabel(message,_imp->vContainer);
+        _imp->questionLabel->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
+        _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+        _imp->questionLabel->setOpenExternalLinks(true);
+        _imp->questionLabel->setContentsMargins(16, 0, 0, 0);
+        QFont f(NATRON_FONT,NATRON_FONT_SIZE_11);
+        _imp->questionLabel->setFont(f);
+        _imp->vLayout->addWidget(_imp->questionLabel);
+    } else {
+        _imp->infoEdit = new QTextEdit(message,_imp->vContainer);
+        _imp->infoEdit->setReadOnly(true);
+        _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
+        _imp->infoEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+        QFont f(NATRON_FONT,NATRON_FONT_SIZE_11);
+        _imp->infoEdit->setFont(f);
+        _imp->vLayout->addWidget(_imp->infoEdit);
+    }
+    
     
     _imp->buttons = new QDialogButtonBox(_imp->vContainer);
     _imp->buttons->setStandardButtons(QDialogButtonBox::StandardButtons(int(QtEnumConvert::toQtStandarButtons(buttons))));
     QPushButton* defaultB = _imp->buttons->button(QDialogButtonBox::StandardButton(
-                                                    (QDialogButtonBox::StandardButton)QtEnumConvert::toQtStandardButton(defaultButton)));
+                                                                                   (QDialogButtonBox::StandardButton)QtEnumConvert::toQtStandardButton(defaultButton)));
     if (_imp->buttons->buttons().contains(defaultB)) {
         defaultB->setDefault(true);
         defaultB->setFocus();
@@ -99,18 +142,23 @@ QuestionDialog::QuestionDialog(const QString & title,
     
     setWindowTitle(title);
     
-    
+
 }
 
 
-QuestionDialog::~QuestionDialog()
+MessageBox::~MessageBox()
 {
     
 }
 
-void QuestionDialog::updateSize()
+void MessageBox::updateSize()
 {
-    _imp->questionLabel->setWordWrap(true);
+    if (_imp->questionLabel) {
+        _imp->questionLabel->setWordWrap(true);
+    } else {
+        _imp->infoEdit->setWordWrapMode(QTextOption::WordWrap);
+    }
+    
     setFixedSize(400,150);
 //    if (!isVisible())
 //        return;
@@ -173,7 +221,7 @@ void QuestionDialog::updateSize()
 }
 
 Natron::StandardButtonEnum
-QuestionDialog::getReply() const
+MessageBox::getReply() const
 {
     return _imp->clickedButton ?
     QtEnumConvert::fromQtStandardButton((QMessageBox::StandardButton)_imp->buttons->standardButton(_imp->clickedButton)) :
@@ -181,14 +229,14 @@ QuestionDialog::getReply() const
 }
 
 void
-QuestionDialog::setCheckBox(QCheckBox* checkbox)
+MessageBox::setCheckBox(QCheckBox* checkbox)
 {
     _imp->checkbox = checkbox;
     _imp->vLayout->insertWidget(1, checkbox);
 }
 
 bool
-QuestionDialog::isCheckBoxChecked() const
+MessageBox::isCheckBoxChecked() const
 {
     if (_imp->checkbox) {
         return _imp->checkbox->isChecked();
@@ -198,14 +246,14 @@ QuestionDialog::isCheckBoxChecked() const
 }
 
 void
-QuestionDialog::onButtonClicked(QAbstractButton* button)
+MessageBox::onButtonClicked(QAbstractButton* button)
 {
     _imp->clickedButton = button;
     accept();
 }
 
 bool
-QuestionDialog::event(QEvent* e)
+MessageBox::event(QEvent* e)
 {
     bool result = QDialog::event(e);
     switch (e->type()) {
