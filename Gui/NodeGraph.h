@@ -168,6 +168,8 @@ public:
     void onProjectNodesCleared();
 
     void switchInputs1and2ForSelectedNodes();
+    
+    void extractSelectedNode();
 
     ///All these actions also work for backdrops
     /////////////////////////////////////////////

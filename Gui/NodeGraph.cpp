@@ -1758,6 +1758,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         popFindDialog(QCursor::pos());
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         popRenameDialog(QCursor::pos());
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
+        pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
     } else {
         /// Search for a node which has a shortcut bound
         const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
@@ -2508,10 +2510,15 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( decloneAction,SIGNAL( triggered() ),this,SLOT( decloneSelectedNodes() ) );
     editMenu->addAction(decloneAction);
     
-    QAction* switchInputs = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphSwitchInputs,
-                                                   kShortcutDescActionGraphSwitchInputs,editMenu);
-    QObject::connect( switchInputs, SIGNAL( triggered() ), this, SLOT( switchInputs1and2ForSelectedNodes() ) );
+    QAction* switchInputs = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphExtractNode,
+                                                   kShortcutDescActionGraphExtractNode,editMenu);
+    QObject::connect( switchInputs, SIGNAL( triggered() ), this, SLOT( extractSelectedNode() ) );
     editMenu->addAction(switchInputs);
+    
+    QAction* extractNode = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphSwitchInputs,
+                                                   kShortcutDescActionGraphSwitchInputs,editMenu);
+    QObject::connect( extractNode, SIGNAL( triggered() ), this, SLOT( switchInputs1and2ForSelectedNodes() ) );
+    editMenu->addAction(extractNode);
     
     QAction* disableNodes = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphDisableNodes,
                                                    kShortcutDescActionGraphDisableNodes,editMenu);
@@ -3887,4 +3894,10 @@ NodeGraph::onNodeNameEditDialogFinished()
     if (dialog) {
         dialog->deleteLater();
     }
+}
+
+void
+NodeGraph::extractSelectedNode()
+{
+    pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
 }
