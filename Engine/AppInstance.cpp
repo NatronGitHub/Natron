@@ -352,6 +352,13 @@ AppInstance::errorDialog(const std::string & title,
 }
 
 void
+AppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+{
+    std::cout << "ERROR: " << title + ": " << message << std::endl;
+    *stopAsking = false;
+}
+
+void
 AppInstance::warningDialog(const std::string & title,
                            const std::string & message) const
 {
@@ -359,11 +366,27 @@ AppInstance::warningDialog(const std::string & title,
 }
 
 void
+AppInstance::warningDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+{
+    std::cout << "WARNING: " << title + ": " << message << std::endl;
+    *stopAsking = false;
+}
+
+
+void
 AppInstance::informationDialog(const std::string & title,
                                const std::string & message) const
 {
     std::cout << "INFO: " << title + ": " << message << std::endl;
 }
+
+void
+AppInstance::informationDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+{
+    std::cout << "INFO: " << title + ": " << message << std::endl;
+    *stopAsking = false;
+}
+
 
 Natron::StandardButtonEnum
 AppInstance::questionDialog(const std::string & title,

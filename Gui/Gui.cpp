@@ -95,7 +95,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/NodeBackDrop.h"
-#include "Gui/QuestionDialog.h"
+#include "Gui/MessageBox.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -481,8 +481,8 @@ Gui::Gui(GuiAppInstance* app,
 {
     QObject::connect( this,SIGNAL( doDialog(int,QString,QString,Natron::StandardButtons,int) ),this,
                       SLOT( onDoDialog(int,QString,QString,Natron::StandardButtons,int) ) );
-    QObject::connect( this,SIGNAL( doQuestionWithStopAskingCheckbox(QString,QString,Natron::StandardButtons,int) ),this,
-                     SLOT( onDoQuestionWithStopAskingCheckbox(QString,QString,Natron::StandardButtons,int) ) );
+    QObject::connect( this,SIGNAL( doDialogWithStopAskingCheckbox(int,QString,QString,Natron::StandardButtons,int) ),this,
+                     SLOT( onDoDialogWithStopAskingCheckbox(int,QString,QString,Natron::StandardButtons,int) ) );
 
     QObject::connect( app,SIGNAL( pluginsPopulated() ),this,SLOT( addToolButttonsToToolBar() ) );
 }
@@ -2749,6 +2749,36 @@ Gui::errorDialog(const std::string & title,
 }
 
 void
+Gui::errorDialog(const std::string & title,
+                 const std::string & text,
+                 bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    
+    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,
+                                            QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+    }
+    *stopAsking = _imp->_lastStopAskingAnswer;
+}
+
+void
 Gui::warningDialog(const std::string & title,
                    const std::string & text)
 {
@@ -2776,6 +2806,36 @@ Gui::warningDialog(const std::string & title,
 }
 
 void
+Gui::warningDialog(const std::string & title,
+                   const std::string & text,
+                   bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    
+    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,
+                                            QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+    }
+    *stopAsking = _imp->_lastStopAskingAnswer;
+}
+
+void
 Gui::informationDialog(const std::string & title,
                        const std::string & text)
 {
@@ -2800,6 +2860,35 @@ Gui::informationDialog(const std::string & title,
     } else {
         emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
     }
+}
+
+void
+Gui::informationDialog(const std::string & title,
+                       const std::string & message,
+                       bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    
+    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+    }
+    *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
 void
@@ -2894,13 +2983,15 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit onDoQuestionWithStopAskingCheckbox(QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+        emit onDoDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeQuestion,
+                                              QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit onDoQuestionWithStopAskingCheckbox(QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+        emit onDoDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeQuestion,
+                                              QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
     }
     
     *stopAsking = _imp->_lastStopAskingAnswer;
@@ -2909,15 +3000,15 @@ Gui::questionDialog(const std::string & title,
 
 
 void
-Gui::onDoQuestionWithStopAskingCheckbox(const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB)
+Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB)
 {
     
-    QuestionDialog ques(title,content,buttons,(Natron::StandardButtonEnum)defaultB,this);
+    MessageBox dialog(title,content,(MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
     
-    QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&ques);
-    ques.setCheckBox(stopAskingCheckbox);
-    if ( ques.exec() ) {
-        _imp->_lastQuestionDialogAnswer = ques.getReply();
+    QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
+    dialog.setCheckBox(stopAskingCheckbox);
+    if ( dialog.exec() ) {
+        _imp->_lastQuestionDialogAnswer = dialog.getReply();
         _imp->_lastStopAskingAnswer = stopAskingCheckbox->isChecked();
     }
 }

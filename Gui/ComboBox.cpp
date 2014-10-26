@@ -60,7 +60,7 @@ ComboBox::ComboBox(QWidget* parent)
     _menu = new MenuWithToolTips(this);
 
     setSizePolicy(QSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed,QSizePolicy::Label));
-    setFocusPolicy(Qt::WheelFocus);
+    setFocusPolicy(Qt::StrongFocus);
     setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
 }
 

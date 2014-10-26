@@ -379,6 +379,23 @@ GuiAppInstance::errorDialog(const std::string & title,
 }
 
 void
+GuiAppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    _imp->_gui->errorDialog(title, message, stopAsking);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+}
+
+void
 GuiAppInstance::warningDialog(const std::string & title,
                               const std::string & message) const
 {
@@ -397,6 +414,25 @@ GuiAppInstance::warningDialog(const std::string & title,
 }
 
 void
+GuiAppInstance::warningDialog(const std::string & title,
+                              const std::string & message,
+                              bool* stopAsking) const
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    _imp->_gui->warningDialog(title, message, stopAsking);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+}
+
+void
 GuiAppInstance::informationDialog(const std::string & title,
                                   const std::string & message) const
 {
@@ -408,6 +444,25 @@ GuiAppInstance::informationDialog(const std::string & title,
         _imp->_showingDialog = true;
     }
     _imp->_gui->informationDialog(title, message);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+}
+
+void
+GuiAppInstance::informationDialog(const std::string & title,
+                                  const std::string & message,
+                                  bool* stopAsking) const
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    _imp->_gui->informationDialog(title, message, stopAsking);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;

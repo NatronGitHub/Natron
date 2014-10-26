@@ -70,6 +70,7 @@ SOURCES += \
     KnobGuiTypes.cpp \
     KnobUndoCommand.cpp \
     LineEdit.cpp \
+    MessageBox.cpp \
     MenuWithToolTips.cpp \
     MultiInstancePanel.cpp \
     NodeBackDrop.cpp \
@@ -84,7 +85,6 @@ SOURCES += \
     ProjectGuiSerialization.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \
-    QuestionDialog.cpp \
     RenderingProgressDialog.cpp \
     RotoGui.cpp \
     RotoPanel.cpp \
@@ -136,6 +136,7 @@ HEADERS += \
     KnobGuiTypes.h \
     KnobUndoCommand.h \
     LineEdit.h \
+    MessageBox.h \
     MenuWithToolTips.h \
     MultiInstancePanel.h \
     NodeBackDrop.h \
@@ -150,7 +151,6 @@ HEADERS += \
     ProjectGuiSerialization.h \
     QtDecoder.h \
     QtEncoder.h \
-    QuestionDialog.h \
     RenderingProgressDialog.h \
     RotoGui.h \
     RotoPanel.h \
