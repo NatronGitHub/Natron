@@ -1249,12 +1249,6 @@ ExtractNodeUndoRedoCommand::undo()
     std::set<ViewerInstance* > viewers;
     
     for (std::list<ExtractedTree>::iterator it = _trees.begin(); it!=_trees.end(); ++it) {
-        std::list<ViewerInstance* > tmp;
-        it->output.node->getNode()->hasViewersConnected(&tmp);
-        
-        for (std::list<ViewerInstance* >::iterator it2 = tmp.begin() ; it2 != tmp.end(); ++it2) {
-            viewers.insert(*it2);
-        }
         
         ///Connect and move output
         for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
@@ -1284,6 +1278,14 @@ ExtractNodeUndoRedoCommand::undo()
             QPointF curPos = (*it2)->getPos_mt_safe();
             (*it2)->refreshPosition(curPos.x() - 200, curPos.y(),true);
         }
+        
+        std::list<ViewerInstance* > tmp;
+        it->output.node->getNode()->hasViewersConnected(&tmp);
+        
+        for (std::list<ViewerInstance* >::iterator it2 = tmp.begin() ; it2 != tmp.end(); ++it2) {
+            viewers.insert(*it2);
+        }
+
     }
     
     for (std::set<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
