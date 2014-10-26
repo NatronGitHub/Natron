@@ -365,6 +365,7 @@ ComboBox::createMenu()
         }
     }
     _clicked = false;
+    setFocus();
     repaint();
 }
 
