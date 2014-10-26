@@ -90,7 +90,8 @@ TabWidget::TabWidget(Gui* gui,
 
     _leftCornerButton = new Button(QIcon(pixL),"",_header);
     _leftCornerButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _leftCornerButton->setToolTip( Qt::convertFromPlainText(tr("Manage the layouts for this pane."), Qt::WhiteSpaceNormal) );
+    _leftCornerButton->setToolTip( Qt::convertFromPlainText(tr("Manage the layouts for this pane"), Qt::WhiteSpaceNormal) );
+    _leftCornerButton->setFocusPolicy(Qt::NoFocus);
     _headerLayout->addWidget(_leftCornerButton);
     _headerLayout->addSpacing(10);
 
@@ -103,15 +104,16 @@ TabWidget::TabWidget(Gui* gui,
     _headerLayout->addStretch();
     _floatButton = new Button(QIcon(pixM),"",_header);
     _floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _floatButton->setToolTip( Qt::convertFromPlainText(tr("Float pane."), Qt::WhiteSpaceNormal) );
+    _floatButton->setToolTip( Qt::convertFromPlainText(tr("Float pane"), Qt::WhiteSpaceNormal) );
     _floatButton->setEnabled(true);
+    _floatButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _floatButton, SIGNAL( clicked() ), this, SLOT( floatCurrentWidget() ) );
     _headerLayout->addWidget(_floatButton);
 
     _closeButton = new Button(QIcon(pixC),"",_header);
     _closeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _closeButton->setToolTip( Qt::convertFromPlainText(tr("Close pane."), Qt::WhiteSpaceNormal) );
-
+    _closeButton->setToolTip( Qt::convertFromPlainText(tr("Close pane"), Qt::WhiteSpaceNormal) );
+    _closeButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _closeButton, SIGNAL( clicked() ), this, SLOT( closePane() ) );
     _headerLayout->addWidget(_closeButton);
 
