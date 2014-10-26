@@ -2241,6 +2241,7 @@ public:
           , _menuOpened(false)
     {
         setMouseTracking(true);
+        setFocusPolicy(Qt::StrongFocus);
     }
 
 private:
@@ -2249,6 +2250,7 @@ private:
     {
         _menuOpened = !_menuOpened;
         if (_menuOpened) {
+            setFocus();
             _gui->setToolButtonMenuOpened(this);
         } else {
             _gui->setToolButtonMenuOpened(NULL);
@@ -2261,6 +2263,29 @@ private:
         _gui->setToolButtonMenuOpened(NULL);
         QToolButton::mouseReleaseEvent(e);
     }
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL
+    {
+        if (e->key() == Qt::Key_Right) {
+            QMenu* m = menu();
+            if (m) {
+                QList<QAction*> actions = m->actions();
+                if (!actions.isEmpty()) {
+                    m->setActiveAction(actions[0]);
+                }
+            }
+            showMenu();
+        } else if (e->key() == Qt::Key_Left) {
+            //This code won't work because the menu is active and modal
+            //But at least it deactivate the focus tabbing when pressing the left key
+            QMenu* m = menu();
+            if (m && m->isVisible()) {
+                m->hide();
+            }
+        } else {
+            QToolButton::keyPressEvent(e);
+        }
+    }
 
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL
     {
@@ -2269,6 +2294,7 @@ private:
         if ( btn && (btn != this) && btn->menu()->isActiveWindow() ) {
             btn->menu()->close();
             btn->_menuOpened = false;
+            setFocus();
             _gui->setToolButtonMenuOpened(this);
             _menuOpened = true;
             showMenu();
