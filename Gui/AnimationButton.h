@@ -57,6 +57,7 @@ public:
     {
         setMouseTracking(true);
         setAcceptDrops(true);
+        setFocusPolicy(Qt::NoFocus);
     }
 
 signals:
