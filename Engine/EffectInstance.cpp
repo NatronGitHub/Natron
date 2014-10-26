@@ -1087,6 +1087,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->x1 = projectDefault.x1;
             isProjectFormat = true;
         }
+        rod->x2 = std::max(rod->x1, rod->x2);
     }
     if (y1Infinite) {
         if ( !inputsUnion.isNull() ) {
@@ -1095,6 +1096,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->y1 = projectDefault.y1;
             isProjectFormat = true;
         }
+        rod->y2 = std::max(rod->y1, rod->y2);
     }
     if (x2Infinite) {
         if ( !inputsUnion.isNull() ) {
@@ -1103,6 +1105,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->x2 = projectDefault.x2;
             isProjectFormat = true;
         }
+        rod->x1 = std::min(rod->x1, rod->x2);
     }
     if (y2Infinite) {
         if ( !inputsUnion.isNull() ) {
@@ -1111,6 +1114,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->y2 = projectDefault.y2;
             isProjectFormat = true;
         }
+        rod->y1 = std::min(rod->y1, rod->y2);
     }
     if ( isProjectFormat && !isGenerator() ) {
         isProjectFormat = false;
