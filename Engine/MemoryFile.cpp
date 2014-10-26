@@ -151,7 +151,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenMode open_mode)
     *********************************************************/
     struct stat sbuf;
     if (::fstat(file_handle, &sbuf) == -1) {
-        std::string str("MemoryFile EXC : Failed to get file infos: ");
+        std::string str("MemoryFile EXC : Failed to get file info: ");
         str.append(path);
         throw std::runtime_error(str);
     }

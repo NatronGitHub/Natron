@@ -213,7 +213,7 @@ public:
 
     ///Make the layout according to the serialization.
     ///@param enableOldProjectCompatibility When true, the default Gui layout will be created
-    ///prior to restoring. This is because older projects didn't have as much infos to recreate the entire layout.
+    ///prior to restoring. This is because older projects didn't have as much info to recreate the entire layout.
     void restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,
                        const GuiLayoutSerialization & layoutSerialization);
 

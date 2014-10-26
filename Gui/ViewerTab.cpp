@@ -114,8 +114,8 @@ struct ViewerTabPrivate
     ComboBox* _viewsComboBox;
     int _currentViewIndex;
     QMutex _currentViewMutex;
-    /*Infos*/
-    InfoViewerWidget* _infosWidget[2];
+    /*Info*/
+    InfoViewerWidget* _infoWidget[2];
 
 
     /*TimeLine buttons*/
@@ -465,11 +465,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         "A:", "B:"
     };
     for (int i = 0; i < 2; ++i) {
-        _imp->_infosWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
-        _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget[i]);
-        _imp->viewer->setInfoViewer(_imp->_infosWidget[i],i);
+        _imp->_infoWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
+        _imp->_viewerSubContainerLayout->addWidget(_imp->_infoWidget[i]);
+        _imp->viewer->setInfoViewer(_imp->_infoWidget[i],i);
         if (i == 1) {
-            _imp->_infosWidget[i]->hide();
+            _imp->_infoWidget[i]->hide();
         }
     }
 
@@ -1945,8 +1945,8 @@ ViewerTab::onRenderScaleButtonClicked(bool checked)
 void
 ViewerTab::setInfoBarResolution(const Format & f)
 {
-    _imp->_infosWidget[0]->setResolution(f);
-    _imp->_infosWidget[1]->setResolution(f);
+    _imp->_infoWidget[0]->setResolution(f);
+    _imp->_infoWidget[1]->setResolution(f);
 }
 
 void
@@ -2310,7 +2310,7 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
             _imp->_compOperator = eViewerCompositingOperatorNone;
             _imp->_secondInputImage->setEnabled_natron(false);
             manageSlotsForInfoWidget(1, false);
-            _imp->_infosWidget[1]->hide();
+            _imp->_infoWidget[1]->hide();
             break;
         case 1:
             _imp->_compOperator = eViewerCompositingOperatorOver;
@@ -2337,11 +2337,11 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
     if ( (_imp->_compOperator != eViewerCompositingOperatorNone) && !_imp->_secondInputImage->isEnabled() ) {
         _imp->_secondInputImage->setEnabled_natron(true);
         manageSlotsForInfoWidget(1, true);
-        _imp->_infosWidget[1]->show();
+        _imp->_infoWidget[1]->show();
     } else if (_imp->_compOperator == eViewerCompositingOperatorNone) {
         _imp->_secondInputImage->setEnabled_natron(false);
         manageSlotsForInfoWidget(1, false);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
     }
 
 
@@ -2420,10 +2420,10 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
         //setCompositingOperator(Natron::eViewerCompositingOperatorNone);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
     } else {
-        if ( !_imp->_infosWidget[1]->isVisible() ) {
-            _imp->_infosWidget[1]->show();
+        if ( !_imp->_infoWidget[1]->isVisible() ) {
+            _imp->_infoWidget[1]->show();
             manageSlotsForInfoWidget(1, true);
             _imp->_secondInputImage->setEnabled_natron(true);
             if (_imp->_compOperator == Natron::eViewerCompositingOperatorNone) {
@@ -2457,8 +2457,8 @@ ViewerTab::onActiveInputsChanged()
 
         assert(indexInB != -1);
         _imp->_secondInputImage->setCurrentIndex_no_emit(indexInB);
-        if ( !_imp->_infosWidget[1]->isVisible() ) {
-            _imp->_infosWidget[1]->show();
+        if ( !_imp->_infoWidget[1]->isVisible() ) {
+            _imp->_infoWidget[1]->show();
             _imp->_secondInputImage->setEnabled_natron(true);
             manageSlotsForInfoWidget(1, true);
         }
@@ -2466,14 +2466,14 @@ ViewerTab::onActiveInputsChanged()
         _imp->_secondInputImage->setCurrentIndex_no_emit(0);
         setCompositingOperator(Natron::eViewerCompositingOperatorNone);
         manageSlotsForInfoWidget(1, false);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
         //_imp->_secondInputImage->setEnabled_natron(false);
     }
 
     if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
          && ( getCompositingOperator() != eViewerCompositingOperatorNone) ) {
         //setCompositingOperator(eViewerCompositingOperatorNone);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->_secondInputImage->setEnabled_natron(false);
     } else if ( (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
@@ -2548,19 +2548,19 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
     RenderEngine* engine = _imp->_viewerNode->getRenderEngine();
     assert(engine);
     if (connect) {
-        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infoWidget[textureIndex], SLOT( setFps(double,double) ) );
+        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->_infoWidget[textureIndex],SLOT( hideFps() ) );
     } else {
-        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex],
+        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infoWidget[textureIndex],
                             SLOT( setFps(double,double) ) );
-        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->_infoWidget[textureIndex],SLOT( hideFps() ) );
     }
 }
 
 void
 ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth)
 {
-    _imp->_infosWidget[textureIndex]->setImageFormat(components,depth);
+    _imp->_infoWidget[textureIndex]->setImageFormat(components,depth);
 }
 
 void
@@ -2805,7 +2805,7 @@ ViewerTab::setInfobarVisible(bool visible)
             }
         }
         
-        _imp->_infosWidget[i]->setVisible(_imp->_infobarVisible);
+        _imp->_infoWidget[i]->setVisible(_imp->_infobarVisible);
     }
 
 }

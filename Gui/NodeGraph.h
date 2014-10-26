@@ -155,7 +155,7 @@ public:
 
     void showMenu(const QPoint & pos);
 
-    void toggleCacheInfos();
+    void toggleCacheInfo();
 
     void togglePreviewsForSelectedNodes();
 

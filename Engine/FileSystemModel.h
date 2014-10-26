@@ -226,7 +226,7 @@ public:
      * @brief Set the root path of the filesystem to the given path. This will force it to load the directory
      * and its content will then be accessible via index(...) and iterating through rowCount().
      * You may only use these methods once the directoryLoaded signal is sent, indicating that the worker thread
-     * has gathered all infos.
+     * has gathered all info.
      **/
     void setRootPath(const QString& path);
     

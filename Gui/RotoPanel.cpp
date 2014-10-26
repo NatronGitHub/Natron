@@ -202,7 +202,7 @@ struct RotoPanelPrivate
         assert(n && context);
     }
 
-    void updateSplinesInfosGUI(int time);
+    void updateSplinesInfoGUI(int time);
 
     void buildTreeFromContext();
 
@@ -511,7 +511,7 @@ RotoPanel::onSelectionChangedInternal()
     int time = _imp->context->getTimelineCurrentTime();
 
     ///update the splines info GUI
-    _imp->updateSplinesInfosGUI(time);
+    _imp->updateSplinesInfoGUI(time);
 }
 
 void
@@ -542,7 +542,7 @@ RotoPanel::onSelectedBezierKeyframeSet(int time)
 {
     Bezier* isBezier = qobject_cast<Bezier*>( sender() );
 
-    _imp->updateSplinesInfosGUI(time);
+    _imp->updateSplinesInfoGUI(time);
     if (isBezier) {
         _imp->setItemKey(isBezier, time);
     }
@@ -553,7 +553,7 @@ RotoPanel::onSelectedBezierKeyframeRemoved(int time)
 {
     Bezier* isBezier = qobject_cast<Bezier*>( sender() );
 
-    _imp->updateSplinesInfosGUI(time);
+    _imp->updateSplinesInfoGUI(time);
     if (isBezier) {
         _imp->removeItemKey(isBezier, time);
     }
@@ -643,7 +643,7 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
 }
 
 void
-RotoPanelPrivate::updateSplinesInfosGUI(int time)
+RotoPanelPrivate::updateSplinesInfoGUI(int time)
 {
     std::set<int> keyframes;
 
@@ -705,13 +705,13 @@ RotoPanelPrivate::updateSplinesInfosGUI(int time)
 //            }
         }
     }
-} // updateSplinesInfosGUI
+} // updateSplinesInfoGUI
 
 void
 RotoPanel::onTimeChanged(SequenceTime time,
                          int /*reason*/)
 {
-    _imp->updateSplinesInfosGUI(time);
+    _imp->updateSplinesInfoGUI(time);
 }
 
 static void
@@ -1348,7 +1348,7 @@ RotoPanel::onItemSelectionChanged()
     int time = _imp->context->getTimelineCurrentTime();
 
     ///update the splines info GUI
-    _imp->updateSplinesInfosGUI(time);
+    _imp->updateSplinesInfoGUI(time);
 } // onItemSelectionChanged
 
 void
