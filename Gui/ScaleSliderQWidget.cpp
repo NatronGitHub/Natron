@@ -126,7 +126,8 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
         _ctrlDown = false;
         _zoomCtx.zoomx(_value, 0, 1. / _currentZoom);
         _currentZoom = 1.;
-        update();
+        centerOn(_minimum, _maximum);
+        return;
     } else if (e->key() == Qt::Key_Shift) {
         _shiftDown = false;
         if (_ctrlDown) {
@@ -134,7 +135,9 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
             _currentZoom = 10.;
         } else {
             _zoomCtx.zoomx(_value, 0, 1. / _currentZoom);
+            centerOn(_minimum, _maximum);
             _currentZoom = 1.;
+            return;
         }
         update();
     }
