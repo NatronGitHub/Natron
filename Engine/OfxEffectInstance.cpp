@@ -77,7 +77,7 @@ namespace  {
  * It is to be instantiated right before calling the action that will need the per thread-storage
  * This way even if exceptions are thrown, clip thread-storage will be purged.
  *
- * All the infos set on clip thread-storage are "cached" data that might be needed by a call of the OpenFX API which would
+ * All the info set on clip thread-storage are "cached" data that might be needed by a call of the OpenFX API which would
  * otherwise require a recursive action call, which is forbidden by the specification.
  * The more you pass parameters, the safer you are that the plug-in will not attempt recursive action calls but the more expensive
  * it is.
@@ -1380,7 +1380,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
     OfxStatus stat;
 
-    ///before calling getRoIaction set the relevant infos on the clips
+    ///before calling getRoIaction set the relevant info on the clips
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {

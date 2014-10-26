@@ -766,7 +766,7 @@ Project::initializeKnobs()
     _imp->colorSpace32bits->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32bits);
     
-    boost::shared_ptr<Page_Knob> infosPage = Natron::createKnob<Page_Knob>(this, "Infos");
+    boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, "Info");
     
     _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
     _imp->natronVersion->setName("softwareVersion");
@@ -775,7 +775,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setAnimationEnabled(false);
     
     _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
-    infosPage->addKnob(_imp->natronVersion);
+    infoPage->addKnob(_imp->natronVersion);
     
     _imp->originalAuthorName = Natron::createKnob<String_Knob>(this, "Original author");
     _imp->originalAuthorName->setName("originalAuthor");
@@ -784,7 +784,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
     _imp->originalAuthorName->setDefaultValue(authorName);
-    infosPage->addKnob(_imp->originalAuthorName);
+    infoPage->addKnob(_imp->originalAuthorName);
     
     _imp->lastAuthorName = Natron::createKnob<String_Knob>(this, "Last author");
     _imp->lastAuthorName->setName("lastAuthor");
@@ -792,7 +792,7 @@ Project::initializeKnobs()
     _imp->lastAuthorName->setAsLabel();
     _imp->lastAuthorName->setAnimationEnabled(false);
     _imp->lastAuthorName->setDefaultValue(authorName);
-    infosPage->addKnob(_imp->lastAuthorName);
+    infoPage->addKnob(_imp->lastAuthorName);
 
 
     _imp->projectCreationDate = Natron::createKnob<String_Knob>(this, "Created on");
@@ -801,14 +801,14 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setAsLabel();
     _imp->projectCreationDate->setAnimationEnabled(false);
     _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
-    infosPage->addKnob(_imp->projectCreationDate);
+    infoPage->addKnob(_imp->projectCreationDate);
     
     _imp->saveDate = Natron::createKnob<String_Knob>(this, "Last saved on");
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip("The date this project was last saved.");
     _imp->saveDate->setAsLabel();
     _imp->saveDate->setAnimationEnabled(false);
-    infosPage->addKnob(_imp->saveDate);
+    infoPage->addKnob(_imp->saveDate);
     
     boost::shared_ptr<String_Knob> comments = Natron::createKnob<String_Knob>(this, "Comments");
     comments->setName("comments");
@@ -816,7 +816,7 @@ Project::initializeKnobs()
                              "and anything worth mentionning about it.");
     comments->setAsMultiLine();
     comments->setAnimationEnabled(false);
-    infosPage->addKnob(comments);
+    infoPage->addKnob(comments);
     
     emit knobsInitialized();
 } // initializeKnobs

@@ -202,9 +202,9 @@ GuiAppInstance::load(const QString & projectName,
                                    CreateNodeArgs::DefaultValuesList()) );
     } else {
         ///Otherwise just load the project specified.
-        QFileInfo infos(projectName);
-        QString name = infos.fileName();
-        QString path = infos.path();
+        QFileInfo info(projectName);
+        QString name = info.fileName();
+        QString path = info.path();
         path += QDir::separator();
         appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
         getProject()->loadProject(path,name);

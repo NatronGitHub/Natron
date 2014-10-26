@@ -150,7 +150,7 @@ struct ViewerGL::Implementation
           , viewerTab(parent)
           , zoomOrPannedSinceLastFit(false)
           , oldClick()
-          , blankViewerInfos()
+          , blankViewerInfo()
           , displayingImageGain()
           , displayingImageOffset()
           , displayingImageMipMapLevel(0)
@@ -174,11 +174,11 @@ struct ViewerGL::Implementation
           , isUserRoISet(false)
           , lastMousePosition()
           , lastDragStartPos()
-          , currentViewerInfos()
+          , currentViewerInfo()
           , projectFormat()
-          , currentViewerInfos_btmLeftBBOXoverlay()
-          , currentViewerInfos_topRightBBOXoverlay()
-          , currentViewerInfos_resolutionOverlay()
+          , currentViewerInfo_btmLeftBBOXoverlay()
+          , currentViewerInfo_topRightBBOXoverlay()
+          , currentViewerInfo_resolutionOverlay()
           , pickerState(ePickerStateInactive)
           , lastPickerPos()
           , userRoIEnabled(false) // protected by mutex
@@ -224,11 +224,11 @@ struct ViewerGL::Implementation
     QGLShaderProgram* shaderRGB; /*!< The shader program used to render RGB data*/
     QGLShaderProgram* shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
-    InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
+    InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
     QPoint oldClick;
-    ImageInfo blankViewerInfos; /*!< Pointer to the infos used when the viewer is disconnected.*/
+    ImageInfo blankViewerInfo; /*!< Pointer to the info used when the viewer is disconnected.*/
     double displayingImageGain[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel;
@@ -255,14 +255,14 @@ struct ViewerGL::Implementation
     QPoint lastMousePosition; //< in widget coordinates
     QPointF lastDragStartPos; //< in zoom coordinates
 
-    /////// currentViewerInfos
-    ImageInfo currentViewerInfos[2]; /*!< Pointer to the ViewerInfos  used for rendering*/
+    /////// currentViewerInfo
+    ImageInfo currentViewerInfo[2]; /*!< Pointer to the ViewerInfo  used for rendering*/
     Format projectFormat;
-    QString currentViewerInfos_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
-    QString currentViewerInfos_topRightBBOXoverlay[2]; /*!< The string holding the top right corner coordinates of the dataWindow*/
-    QString currentViewerInfos_resolutionOverlay; /*!< The string holding the resolution overlay, e.g: "1920x1080"*/
+    QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
+    QString currentViewerInfo_topRightBBOXoverlay[2]; /*!< The string holding the top right corner coordinates of the dataWindow*/
+    QString currentViewerInfo_resolutionOverlay; /*!< The string holding the resolution overlay, e.g: "1920x1080"*/
 
-    ///////Picker infos, used only by the main-thread
+    ///////Picker info, used only by the main-thread
     PickerStateEnum pickerState;
     QPointF lastPickerPos;
     QRectF pickerRect;
@@ -481,7 +481,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         }
     }
    
-    const double par = _imp->currentViewerInfos[textureIndex].getDisplayWindow().getPixelAspectRatio();
+    const double par = _imp->currentViewerInfo[textureIndex].getDisplayWindow().getPixelAspectRatio();
     
     RectD canonicalTexRect;
     texRect.toCanonical(mipMapLevel,par, rod, &canonicalTexRect);
@@ -856,15 +856,15 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 
 
 
-    _imp->blankViewerInfos.setChannels(Natron::Mask_RGBA);
+    _imp->blankViewerInfo.setChannels(Natron::Mask_RGBA);
 
     Format projectFormat;
     parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
 
-    _imp->blankViewerInfos.setRoD(projectFormat);
-    _imp->blankViewerInfos.setDisplayWindow(projectFormat);
-    setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),0);
-    setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),1);
+    _imp->blankViewerInfo.setRoD(projectFormat);
+    _imp->blankViewerInfo.setDisplayWindow(projectFormat);
+    setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),0);
+    setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),1);
     onProjectFormatChanged(projectFormat);
     resetWipeControls();
     populateMenu();
@@ -1219,7 +1219,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
     glCheckError();
 
-    renderText(_imp->projectFormat.right(),_imp->projectFormat.bottom(), _imp->currentViewerInfos_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
+    renderText(_imp->projectFormat.right(),_imp->projectFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
 
 
     QPoint topRight( _imp->projectFormat.right(),_imp->projectFormat.top() );
@@ -1267,9 +1267,9 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
             if (dataW != _imp->projectFormat) {
                 renderText(dataW.right(), dataW.top(),
-                           _imp->currentViewerInfos_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
+                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
-                           _imp->currentViewerInfos_btmLeftBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
+                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
 
 
                 QPoint topRight2( dataW.right(), dataW.top() );
@@ -2234,7 +2234,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     
     if (image) {
         _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
-        _imp->currentViewerInfos[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
+        _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
         {
             QMutexLocker k(&_imp->lastRenderedImageMutex);
             _imp->lastRenderedImage[textureIndex] = image;
@@ -3099,8 +3099,8 @@ ViewerGL::disconnectViewer()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( displayingImage() ) {
-        setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),0);
-        setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),1);
+        setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),0);
+        setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),1);
     }
     resetWipeControls();
     clearViewer();
@@ -3113,7 +3113,7 @@ ViewerGL::getRoD(int textureIndex) const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _imp->currentViewerInfos[textureIndex].getRoD();
+    return _imp->currentViewerInfo[textureIndex].getRoD();
 }
 
 /*The displayWindow of the currentFrame(Resolution)
@@ -3124,7 +3124,7 @@ ViewerGL::getDisplayWindow() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _imp->currentViewerInfos[0].getDisplayWindow();
+    return _imp->currentViewerInfo[0].getDisplayWindow();
 }
 
 void
@@ -3136,19 +3136,19 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
     if (!_imp->viewerTab->getGui()) {
         return;
     }
-    _imp->currentViewerInfos[textureIndex].setRoD(rod);
+    _imp->currentViewerInfo[textureIndex].setRoD(rod);
     if (_imp->infoViewer[textureIndex] && !_imp->viewerTab->getGui()->isGUIFrozen()) {
         _imp->infoViewer[textureIndex]->setDataWindow(rod);
     }
 
-    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append( QString::number( std::ceil( rod.left() ) ) );
-    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append( QString::number( std::ceil( rod.bottom() ) ) );
-    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append( QString::number( std::floor( rod.right() ) ) );
-    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append( QString::number( std::floor( rod.top() ) ) );
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QString::number( std::ceil( rod.left() ) ) );
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QString::number( std::ceil( rod.bottom() ) ) );
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].clear();
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QString::number( std::floor( rod.right() ) ) );
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QString::number( std::floor( rod.top() ) ) );
 }
 
 void
@@ -3161,18 +3161,18 @@ ViewerGL::onProjectFormatChanged(const Format & format)
         return;
     }
     
-    _imp->blankViewerInfos.setDisplayWindow(format);
-    _imp->blankViewerInfos.setRoD(format);
+    _imp->blankViewerInfo.setDisplayWindow(format);
+    _imp->blankViewerInfo.setRoD(format);
     for (int i = 0; i < 2; ++i) {
         if (_imp->infoViewer[i]) {
             _imp->infoViewer[i]->setResolution(format);
         }
     }
     _imp->projectFormat = format;
-    _imp->currentViewerInfos_resolutionOverlay.clear();
-    _imp->currentViewerInfos_resolutionOverlay.append( QString::number( std::ceil(format.width()) ) );
-    _imp->currentViewerInfos_resolutionOverlay.append("x");
-    _imp->currentViewerInfos_resolutionOverlay.append( QString::number( std::ceil(format.height()) ) );
+    _imp->currentViewerInfo_resolutionOverlay.clear();
+    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.width()) ) );
+    _imp->currentViewerInfo_resolutionOverlay.append("x");
+    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.height()) ) );
 
 
     if ( !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
@@ -3873,7 +3873,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                 ///unkwn state
                 assert(false);
             }
-            double par = _imp->currentViewerInfos[texIndex].getDisplayWindow().getPixelAspectRatio();
+            double par = _imp->currentViewerInfo[texIndex].getDisplayWindow().getPixelAspectRatio();
             QPoint imgPosPixel;
             imgPosPixel.rx() = std::floor(imgPos.x() / par);
             imgPosPixel.ry() = std::floor(imgPos.y());

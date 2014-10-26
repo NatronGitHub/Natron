@@ -230,7 +230,7 @@ namespace  {
 }
 
 /**
- * @brief These args are local to a renderRoI call and used to retrieve these infos 
+ * @brief These args are local to a renderRoI call and used to retrieve this info 
  * in a thread-safe and thread-local manner in getImage
  **/
 struct EffectInstance::RenderArgs

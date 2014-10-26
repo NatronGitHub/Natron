@@ -201,8 +201,8 @@
 #define kShortcutIDActionHideTop "hideTop"
 #define kShortcutDescActionHideTop "Show/Hide top toolbar"
 
-#define kShortcutIDActionHideInfobar "hideInfos"
-#define kShortcutDescActionHideInfobar "Show/Hide infos bar"
+#define kShortcutIDActionHideInfobar "hideInfo"
+#define kShortcutDescActionHideInfobar "Show/Hide info bar"
 
 #define kShortcutIDActionHideAll "hideAll"
 #define kShortcutDescActionHideAll "Hide all"

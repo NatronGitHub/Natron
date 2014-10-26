@@ -122,7 +122,7 @@ struct Node::Implementation
     , infoDisclaimer()
     , inputFormats()
     , outputFormat()
-    , refreshInfosButton()
+    , refreshInfoButton()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -221,7 +221,7 @@ struct Node::Implementation
     boost::shared_ptr<String_Knob> infoDisclaimer;
     std::vector< boost::shared_ptr<String_Knob> > inputFormats;
     boost::shared_ptr<String_Knob> outputFormat;
-    boost::shared_ptr<Button_Knob> refreshInfosButton;
+    boost::shared_ptr<Button_Knob> refreshInfoButton;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -1078,8 +1078,8 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     loadKnob(_imp->disableNodeKnob, serialization);
     
     
-    _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Infos",1,false);
-    _imp->infoPage->setName("infos");
+    _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Info",1,false);
+    _imp->infoPage->setName("info");
     
     _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance, "Input and output informations",1,false);
     _imp->infoDisclaimer->setName("infoDisclaimer");
@@ -1093,20 +1093,20 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     
     for (int i = 0; i < inputsCount; ++i) {
         std::string inputLabel = getInputLabel(i);
-        boost::shared_ptr<String_Knob> inputInfos = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(inputLabel + " Infos"), 1, false);
-        inputInfos->setName(inputLabel + "Infos");
-        inputInfos->setAnimationEnabled(false);
-        inputInfos->setIsPersistant(false);
-        inputInfos->setEvaluateOnChange(false);
-        inputInfos->hideDescription();
-        inputInfos->setAsLabel();
-        _imp->inputFormats.push_back(inputInfos);
-        _imp->infoPage->addKnob(inputInfos);
+        boost::shared_ptr<String_Knob> inputInfo = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(inputLabel + " Info"), 1, false);
+        inputInfo->setName(inputLabel + "Info");
+        inputInfo->setAnimationEnabled(false);
+        inputInfo->setIsPersistant(false);
+        inputInfo->setEvaluateOnChange(false);
+        inputInfo->hideDescription();
+        inputInfo->setAsLabel();
+        _imp->inputFormats.push_back(inputInfo);
+        _imp->infoPage->addKnob(inputInfo);
     }
     
     std::string outputLabel("Output");
-    _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(outputLabel + " Infos"), 1, false);
-    _imp->outputFormat->setName(outputLabel + "Infos");
+    _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(outputLabel + " Info"), 1, false);
+    _imp->outputFormat->setName(outputLabel + "Info");
     _imp->outputFormat->setAnimationEnabled(false);
     _imp->outputFormat->setIsPersistant(false);
     _imp->outputFormat->setEvaluateOnChange(false);
@@ -1114,10 +1114,10 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->outputFormat->setAsLabel();
     _imp->infoPage->addKnob(_imp->outputFormat);
     
-    _imp->refreshInfosButton = Natron::createKnob<Button_Knob>(_imp->liveInstance, "Refresh Infos");
-    _imp->refreshInfosButton->setName("refreshButton");
-    _imp->refreshInfosButton->setEvaluateOnChange(false);
-    _imp->infoPage->addKnob(_imp->refreshInfosButton);
+    _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance, "Refresh Info");
+    _imp->refreshInfoButton->setName("refreshButton");
+    _imp->refreshInfoButton->setEvaluateOnChange(false);
+    _imp->infoPage->addKnob(_imp->refreshInfoButton);
     
     
     _imp->knobsInitialized = true;
@@ -2851,14 +2851,14 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
-    } else if ( what == _imp->refreshInfosButton.get() ) {
+    } else if ( what == _imp->refreshInfoButton.get() ) {
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
-            std::string inputInfos = makeInfoForInput(i);
-            _imp->inputFormats[i]->setValue(inputInfos, 0);
+            std::string inputInfo = makeInfoForInput(i);
+            _imp->inputFormats[i]->setValue(inputInfo, 0);
         }
-        std::string outputInfos = makeInfoForInput(-1);
-        _imp->outputFormat->setValue(outputInfos, 0);
+        std::string outputInfo = makeInfoForInput(-1);
+        _imp->outputFormat->setValue(outputInfo, 0);
     }
 }
 

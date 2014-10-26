@@ -389,7 +389,7 @@ public:
      * and will be cached. These parameters aren't taken into account for the computation of
      * the hash key. It is a safe place to cache any extra data that is relative to an entry,
      * but doesn't make it an identifier of that entry. The base class just adds the necessary
-     * infos for the cache to be able to instantiate a new entry (that is the cost and the elements count).
+     * info for the cache to be able to instantiate a new entry (that is the cost and the elements count).
      *
      * @param key The key identifying the entry we're looking for.
      *

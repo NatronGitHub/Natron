@@ -175,7 +175,7 @@ public:
 
     /**
      *@brief Disconnects the viewer.
-     * Clears out the viewer and reset the viewer infos. Note that calling this
+     * Clears out the viewer and reset the viewer info. Note that calling this
      * function while the engine is processing will abort the engine.
      **/
     void disconnectViewer();

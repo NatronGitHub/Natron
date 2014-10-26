@@ -2423,7 +2423,7 @@ NodeGraphPrivate::calcNodesBoundingRect()
 }
 
 void
-NodeGraph::toggleCacheInfos()
+NodeGraph::toggleCacheInfo()
 {
     if ( _imp->_cacheSizeText->isVisible() ) {
         _imp->_cacheSizeText->hide();
@@ -2530,7 +2530,7 @@ NodeGraph::showMenu(const QPoint & pos)
                                                              kShortcutDescActionGraphShowCacheSize,_imp->_menu);
     displayCacheInfoAction->setCheckable(true);
     displayCacheInfoAction->setChecked( _imp->_cacheSizeText->isVisible() );
-    QObject::connect( displayCacheInfoAction,SIGNAL( triggered() ),this,SLOT( toggleCacheInfos() ) );
+    QObject::connect( displayCacheInfoAction,SIGNAL( triggered() ),this,SLOT( toggleCacheInfo() ) );
     _imp->_menu->addAction(displayCacheInfoAction);
     
     QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphTogglePreview,

@@ -2397,7 +2397,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _mainLayout->addWidget(_richTextOptions);
 
-            restoreTextInfosFromString();
+            restoreTextInfoFromString();
 
             ///Connect the slot after restoring
             QObject::connect( _fontCombo,SIGNAL( currentFontChanged(QFont) ),this,SLOT( onCurrentFontChanged(QFont) ) );
@@ -2533,7 +2533,7 @@ String_KnobGui::addHtmlTags(QString text) const
 }
 
 void
-String_KnobGui::restoreTextInfosFromString()
+String_KnobGui::restoreTextInfoFromString()
 {
     QString text( _knob->getValue(0,false).c_str() );
 
@@ -2645,7 +2645,7 @@ String_KnobGui::restoreTextInfosFromString()
 
         updateFontColorIcon(_fontColor);
     }
-} // restoreTextInfosFromString
+} // restoreTextInfoFromString
 
 void
 String_KnobGui::parseFont(const QString & label,

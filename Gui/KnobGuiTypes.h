@@ -694,7 +694,7 @@ private:
 
     void mergeFormat(const QTextCharFormat & fmt);
 
-    void restoreTextInfosFromString();
+    void restoreTextInfoFromString();
 
 
     /**
