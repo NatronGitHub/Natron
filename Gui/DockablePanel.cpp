@@ -1330,19 +1330,29 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     QWidget* emitter = qobject_cast<QWidget*>( sender() );
 
     assert(emitter);
+    
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
+    if (isEffect) {
+        
+        boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
+        QMenu menu(this);
+        menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+        QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
+        menu.addAction(setKeys);
+        QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
+        menu.addAction(removeAnimation);
+        
+        if (master || _imp->_holder->getApp()->isGuiFrozen()) {
+            setKeys->setEnabled(false);
+            removeAnimation->setEnabled(false);
+        }
 
-    QMenu menu(this);
-    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
-    QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
-    menu.addAction(setKeys);
-    QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
-    menu.addAction(removeAnimation);
-
-    QAction* ret = menu.exec( emitter->mapToGlobal(pos) );
-    if (ret == setKeys) {
-        setKeyOnAllParameters();
-    } else if (ret == removeAnimation) {
-        removeAnimationOnAllParameters();
+        QAction* ret = menu.exec( emitter->mapToGlobal(pos) );
+        if (ret == setKeys) {
+            setKeyOnAllParameters();
+        } else if (ret == removeAnimation) {
+            removeAnimationOnAllParameters();
+        }
     }
 } // onRightClickMenuRequested
 
@@ -1501,6 +1511,8 @@ NodeSettingsPanel::onSettingsButtonClicked()
     QMenu menu(this);
     menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
     
+    boost::shared_ptr<Natron::Node> master = _nodeGUI->getNode()->getMasterNode();
+    
     QAction* importPresets = new QAction(tr("Import presets"),&menu);
     QObject::connect(importPresets,SIGNAL(triggered()),this,SLOT(onImportPresetsActionTriggered()));
     QAction* exportAsPresets = new QAction(tr("Export as presets"),&menu);
@@ -1516,6 +1528,13 @@ NodeSettingsPanel::onSettingsButtonClicked()
     QObject::connect(removeAnimationOnAll,SIGNAL(triggered()),this,SLOT(removeAnimationOnAllParameters()));
     menu.addAction(setKeyOnAll);
     menu.addAction(removeAnimationOnAll);
+    
+    if (master || _nodeGUI->getDagGui()->getGui()->isGUIFrozen()) {
+        importPresets->setEnabled(false);
+        exportAsPresets->setEnabled(false);
+        setKeyOnAll->setEnabled(false);
+        removeAnimationOnAll->setEnabled(false);
+    }
     
     menu.exec(_settingsButton->mapToGlobal(_settingsButton->pos()));
 }
