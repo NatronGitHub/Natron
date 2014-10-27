@@ -507,6 +507,8 @@ public:
     
     void quitThread();
     
+    void abortRendering();
+    
     bool hasThreadsWorking() const;
     
 public slots:

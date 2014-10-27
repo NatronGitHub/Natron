@@ -26,6 +26,8 @@
 #include <QFutureWatcher>
 #include <QRunnable>
 
+#include "Global/MemoryInfo.h"
+
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
@@ -191,6 +193,13 @@ struct OutputSchedulerThreadPrivate
     Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
     RenderEngine* engine;
     
+    ///An approximation of the RAM required by 1 parallel render to compute a frame.
+    ///This is just the number of nodes in the tree times the size in RAM of an image of the size of the project.
+    ///Once we have the approximation we can determine what is the ideal number of parallel renders so we don't
+    ///hit the swap.
+    ///This is only accessed by the Scheduler Thread
+    std::size_t idealParallelRendersForRAM;
+    
     OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::Mode mode)
     : buf()
     , bufferRAMOccupation(0)
@@ -231,6 +240,7 @@ struct OutputSchedulerThreadPrivate
     , framesToRenderNotEmptyCond()
     , outputEffect(effect)
     , engine(engine)
+    , idealParallelRendersForRAM(0)
     {
        
     }
@@ -732,6 +742,22 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     }
 }
 
+static void getNbNodesRecursive(Natron::EffectInstance* effect,int* nbNodes,std::set<Natron::EffectInstance*>& markedNodes)
+{
+    if (markedNodes.find(effect) != markedNodes.end()) {
+        return;
+    }
+    *nbNodes = *nbNodes + 1;
+    markedNodes.insert(effect);
+    
+    std::vector<boost::shared_ptr<Natron::Node> > inputs = effect->getNode()->getInputs_copy();
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if (inputs[i]) {
+            getNbNodesRecursive(inputs[i]->getLiveInstance(), nbNodes, markedNodes);
+        }
+    }
+}
+
 void
 OutputSchedulerThread::startRender()
 {
@@ -754,6 +780,32 @@ OutputSchedulerThread::startRender()
         startingFrame = timelineGetTime();
     }
     
+    ///Evaluate the number of nodes in the tree to get an idea of the RAM required
+    {
+        int nbNodes = 0;
+        std::set<Natron::EffectInstance*> marked;
+        getNbNodesRecursive(_imp->outputEffect, &nbNodes, marked);
+        
+        Format f;
+        _imp->outputEffect->getRenderFormat(&f);
+        
+        ///The approximation is about nbNodes times the size of a RGBA 32bit fp frame of the size of the project.
+        std::size_t approximateRAMNeededFor1Frame = f.width() * f.height() * 4 * sizeof(float);
+        approximateRAMNeededFor1Frame *= nbNodes;
+        
+        
+        if (approximateRAMNeededFor1Frame > 0) {
+            
+            double maxRAMPercent = appPTR->getCurrentSettings()->getRamMaximumPercent();
+            double totalRAM = getSystemTotalRAM();
+            
+            double usableRAM = maxRAMPercent * totalRAM;
+            _imp->idealParallelRendersForRAM = usableRAM / approximateRAMNeededFor1Frame;
+            
+        } else {
+            _imp->idealParallelRendersForRAM = appPTR->getHardwareIdealThreadCount();
+        }
+    }
     
     aboutToStartRender();
     
@@ -1134,7 +1186,9 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     }
     optimalNThreads = std::max(1,optimalNThreads);
     
-    
+    ///Clamp optimalNThreads to the     _imp->idealParallelRendersForRAM so we don't hit the swap
+    optimalNThreads = std::min((int)_imp->idealParallelRendersForRAM,optimalNThreads);
+
     if (runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) {
      
         ////////
@@ -2352,6 +2406,9 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     bool mustQuit;
     mutable QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
+    
+    int abortRequested;
+    QMutex abortRequestedMutex;
 
     
     ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
@@ -2368,6 +2425,8 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     , mustQuit(false)
     , mustQuitMutex()
     , mustQuitCond()
+    , abortRequested(0)
+    , abortRequestedMutex()
     {
         
     }
@@ -2378,6 +2437,16 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         if (mustQuit) {
             mustQuit = false;
             mustQuitCond.wakeAll();
+            return true;
+        }
+        return false;
+    }
+    
+    bool checkForAbortion()
+    {
+        QMutexLocker k(&abortRequestedMutex);
+        if (abortRequested > 0) {
+            abortRequested = 0;
             return true;
         }
         return false;
@@ -2501,12 +2570,13 @@ ViewerCurrentFrameRequestScheduler::run()
             if (_imp->checkForExit()) {
                 return;
             }
+            
             {
                 QMutexLocker treatLocker(&_imp->treatMutex);
                 _imp->treatRunning = true;
                 emit s_treatProducedFrameOnMainThread(found->frames);
                 
-                while (_imp->treatRunning) {
+                while (_imp->treatRunning && !_imp->checkForAbortion()) {
                     _imp->treatCondition.wait(&_imp->treatMutex);
                 }
             }
@@ -2559,11 +2629,32 @@ ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableOb
 }
 
 void
+ViewerCurrentFrameRequestScheduler::abortRendering()
+{
+    if (!isRunning()) {
+        return;
+    }
+    
+    {
+        QMutexLocker l2(&_imp->treatMutex);
+        _imp->treatRunning = false;
+        _imp->treatCondition.wakeOne();
+    }
+    
+    {
+        QMutexLocker k(&_imp->abortRequestedMutex);
+        ++_imp->abortRequested;
+    }
+}
+
+void
 ViewerCurrentFrameRequestScheduler::quitThread()
 {
     if (!isRunning()) {
         return;
     }
+    
+    abortRendering();
     
     {
         QMutexLocker l2(&_imp->treatMutex);
