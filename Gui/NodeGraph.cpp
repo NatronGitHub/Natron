@@ -1767,33 +1767,42 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
     } else {
         bool intercepted = false;
-        /// Search for a node which has a shortcut bound
-        const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
-        for (U32 i = 0; i < allPlugins.size(); ++i) {
-            if ( allPlugins[i]->getHasShortcut() ) {
-                QString group(kShortcutGroupNodes);
-                QStringList groupingSplit = allPlugins[i]->getGrouping();
-                for (int j = 0; j < groupingSplit.size(); ++j) {
-                    group.push_back('/');
-                    group.push_back(groupingSplit[j]);
-                }
-                if ( isKeybind(group.toStdString().c_str(), allPlugins[i]->getPluginID().toStdString().c_str(), modifiers, key) ) {
-                    QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    getGui()->getApp()->createNode( CreateNodeArgs( allPlugins[i]->getPluginID(),
-                                                                   "",
-                                                                   -1,-1,
-                                                                   -1,
-                                                                   true,
-                                                                   hint.x(),hint.y(),
-                                                                   true,
-                                                                   true,
-                                                                   QString(),
-                                                                   CreateNodeArgs::DefaultValuesList()) );
-                    intercepted = true;
-                    break;
+        
+        if ( modifiers.testFlag(Qt::ControlModifier) && (key == Qt::Key_Up || key == Qt::Key_Down)) {
+            ///These shortcuts pans the graphics view but we don't want it
+            intercepted = true;
+        }
+        
+        if (!intercepted) {
+            /// Search for a node which has a shortcut bound
+            const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
+            for (U32 i = 0; i < allPlugins.size(); ++i) {
+                if ( allPlugins[i]->getHasShortcut() ) {
+                    QString group(kShortcutGroupNodes);
+                    QStringList groupingSplit = allPlugins[i]->getGrouping();
+                    for (int j = 0; j < groupingSplit.size(); ++j) {
+                        group.push_back('/');
+                        group.push_back(groupingSplit[j]);
+                    }
+                    if ( isKeybind(group.toStdString().c_str(), allPlugins[i]->getPluginID().toStdString().c_str(), modifiers, key) ) {
+                        QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                        getGui()->getApp()->createNode( CreateNodeArgs( allPlugins[i]->getPluginID(),
+                                                                       "",
+                                                                       -1,-1,
+                                                                       -1,
+                                                                       true,
+                                                                       hint.x(),hint.y(),
+                                                                       true,
+                                                                       true,
+                                                                       QString(),
+                                                                       CreateNodeArgs::DefaultValuesList()) );
+                        intercepted = true;
+                        break;
+                    }
                 }
             }
         }
+        
         
         if (!intercepted) {
             QGraphicsView::keyPressEvent(e);
