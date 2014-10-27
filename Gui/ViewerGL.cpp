@@ -20,6 +20,7 @@
 #include <QtCore/QWaitCondition>
 #include <QtGui/QPainter>
 #include <QtGui/QImage>
+#include <QToolButton>
 #include <QApplication>
 #include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
@@ -3275,6 +3276,7 @@ ViewerGL::enterEvent(QEvent* e)
     dynamic_cast<CurveWidget*>(currentFocus) ||
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
+    dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "PropertiesBinScrollArea" ||
     currentFocus->objectName() == "SettingsPanel";
     

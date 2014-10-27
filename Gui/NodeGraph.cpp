@@ -28,6 +28,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QDialogButtonBox>
 #include <QUndoStack>
 #include <QMenu>
+#include <QToolButton>
 #include <QThread>
 #include <QDropEvent>
 #include <QApplication>
@@ -1941,6 +1942,7 @@ NodeGraph::enterEvent(QEvent* e)
     dynamic_cast<CurveWidget*>(currentFocus) ||
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
+    dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "PropertiesBinScrollArea" ||
     currentFocus->objectName() == "SettingsPanel";
     

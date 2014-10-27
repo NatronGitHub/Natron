@@ -26,6 +26,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QThread>
 #include <QUndoStack>
 #include <QApplication>
+#include <QToolButton>
 #include <QDesktopWidget>
 
 #include "Engine/Knob.h"
@@ -2782,6 +2783,7 @@ CurveWidget::enterEvent(QEvent* e)
     dynamic_cast<CurveWidget*>(currentFocus) ||
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
+    dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "PropertiesBinScrollArea" ||
     currentFocus->objectName() == "tree" ||
     currentFocus->objectName() == "SettingsPanel";
