@@ -298,6 +298,7 @@ Image::Image(ImageComponentsEnum components,
              const RectD & regionOfDefinition, //!< rod in canonical coordinates
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
+             double par,
              Natron::ImageBitDepthEnum bitdepth)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
 {
@@ -322,7 +323,7 @@ Image::Image(ImageComponentsEnum components,
     _bitDepth = bitdepth;
     _rod = regionOfDefinition;
     _bounds = _params->getBounds();
-    _par = 1.;
+    _par = par;
     allocateMemory();
 }
 
@@ -934,7 +935,7 @@ Image::downscaleMipMap(const RectI & roi,
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getBitDepth() ) );
+    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() ) );
 
     buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -1321,7 +1322,7 @@ Image::buildMipMapLevel(const RectI & roi,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getBitDepth() );
+        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getPixelAspectRatio(),getBitDepth() );
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image

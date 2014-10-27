@@ -642,6 +642,7 @@ public:
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
                                       const Natron::ImageComponentsEnum comp,
                                       const Natron::ImageBitDepthEnum depth,
+                                      const double par,
                                       const bool dontUpscale,
                                       RectI* roiPixel) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;

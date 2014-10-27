@@ -653,6 +653,60 @@ OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
     return true;
 }
 
+void
+OfxImageEffectInstance::setupClipPreferencesArgs(OFX::Host::Property::Set &outArgs)
+{
+    /// reset all the clip prefs stuff to their defaults
+    setDefaultClipPreferences();
+    
+    static const OFX::Host::Property::PropSpec clipPrefsStuffs []=
+    {
+        { kOfxImageEffectPropFrameRate,          OFX::Host::Property::eDouble,  1, false,  "1" },
+        { kOfxImageEffectPropPreMultiplication,  OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropFieldOrder,           OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropContinuousSamples,    OFX::Host::Property::eInt,     1, false,  "0" },
+        { kOfxImageEffectFrameVarying,           OFX::Host::Property::eInt,     1, false,  "0" },
+        OFX::Host::Property::propSpecEnd
+    };
+    
+    outArgs.addProperties(clipPrefsStuffs);
+    
+    /// set the default for those
+    
+    /// is there multiple bit depth support? Depends on host, plugin and context
+    bool multiBitDepth = canCurrentlyHandleMultipleClipDepths();
+    
+    outArgs.setStringProperty(kOfxImageClipPropFieldOrder, _outputFielding);
+    outArgs.setStringProperty(kOfxImageEffectPropPreMultiplication, _outputPreMultiplication);
+    outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, _outputFrameRate);
+    
+    /// now add the clip gubbins to the out args
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
+        it!=_clips.end();
+        ++it) {
+        OFX::Host::ImageEffect::ClipInstance *clip = it->second;
+        
+        std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
+        std::string depthParamName     = "OfxImageClipPropDepth_"+it->first;
+        std::string parParamName       = "OfxImageClipPropPAR_"+it->first;
+        
+        OFX::Host::Property::PropSpec specComp = {componentParamName.c_str(),  OFX::Host::Property::eString, 0, false,          ""}; // note the support for multi-planar clips
+        outArgs.createProperty(specComp);
+        outArgs.setStringProperty(componentParamName.c_str(), clip->getComponents().c_str()); // as it is variable dimension, there is no default value, so we have to set it explicitly
+        
+        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, clip->getPixelDepth().c_str()};
+        outArgs.createProperty(specDep);
+        
+        {
+            std::stringstream ss;
+            ss << clip->getAspectRatio();
+            OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,        ss.str().c_str()};
+            outArgs.createProperty(specPAR);
+        }
+    }
+
+}
+
 
 bool
 OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs)

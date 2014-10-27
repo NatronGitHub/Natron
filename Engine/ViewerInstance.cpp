@@ -749,6 +749,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                                                    rod,
                                                                                    bounds,
                                                                                    mipMapLevel,
+                                                                                   par,
                                                                                    downscaledImage->getBitDepth() ) );
                 downscaledImage->scaleBox( downscaledImage->getBounds(), upscaledImage.get() );
                 inputImage = upscaledImage;

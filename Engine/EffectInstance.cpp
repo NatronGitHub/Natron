@@ -810,6 +810,7 @@ EffectInstance::getImage(int inputNb,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
                          const Natron::ImageComponentsEnum comp,
                          const Natron::ImageBitDepthEnum depth,
+                         const double par,
                          const bool dontUpscale,
                          RectI* roiPixel)
 {
@@ -904,11 +905,7 @@ EffectInstance::getImage(int inputNb,
         return boost::shared_ptr<Image>();
     }
 
-    double par = 1.;
-    if (n && !useRotoInput) {
-        par = n->getPreferredAspectRatio();
-    }
-    
+
     ///Both the result of getRegionsOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates
     RectI pixelRoI;
@@ -957,24 +954,39 @@ EffectInstance::getImage(int inputNb,
     }
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
 
-    ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
+    bool mustResample = false;
+    
+    ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
     ///Note that we do NOT cache it
     if ( !dontUpscale && (inputImgMipMapLevel != 0) && !supportsRenderScale() ) {
-        Natron::ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
-        int mipMapLevel = 0;
-        RectI bounds;
-        inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
-        boost::shared_ptr<Natron::Image> upscaledImg( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
-                                                                        bounds, mipMapLevel, bitdepth) );
-        //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
-        inputImg->scaleBox( inputImg->getBounds(), upscaledImg.get() );
-
-        return upscaledImg;
+        mustResample = true;
     } else {
-        _imp->addInputImageTempPointer(inputImg);
-
-        return inputImg;
+        
+        ///If the returned image doesn't have the pixel aspect ratio required, re-sample it.
+        ///This should only happen when the plug-in explicitly doesn't support multipleClipsPAR
+        ///otherwise Natron should have remapped everything
+        if (par != inputImg->getPixelAspectRatio()) {
+            mustResample = true;
+        } else {
+            ///The image is cached and we don't want Natron to remove it, so we hold a pointer to it (which will be removed
+            ///once the plug-in render action returns)
+            _imp->addInputImageTempPointer(inputImg);
+            return inputImg;
+        }
     }
+    
+    assert(mustResample);
+    
+    ///Resample the image according to the requested scale and requested pixel aspect ratio
+    Natron::ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
+    RectI bounds;
+    inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
+    boost::shared_ptr<Natron::Image> resampledImage( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
+                                                                       bounds, mipMapLevel, par, bitdepth) );
+    //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
+    inputImg->scaleBox( inputImg->getBounds(), resampledImage.get() );
+    return resampledImage;
+
 } // getImage
 
 void
@@ -1576,6 +1588,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                  &canonicalRoI,
                                  args.components,
                                  args.bitdepth,
+                                 par,
                                  true,
                                  NULL);
                 ///Clear input images pointer because getImage has stored the image .
@@ -1666,7 +1679,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             assert(renderMappedMipMapLevel == 0);
             RectI bounds;
             rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
-            image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, args.bitdepth) );
+            image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, downscaledImage->getPixelAspectRatio(), args.bitdepth) );
         }
 
 
@@ -1906,7 +1919,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 RectD rod = image->getRoD();
                 RectI bounds;
                 rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
-                fullScaleMappedImage.reset( new Image(outputComponents, rod, bounds, renderMappedMipMapLevel, outputDepth) );
+                fullScaleMappedImage.reset( new Image(outputComponents, rod, bounds, renderMappedMipMapLevel, image->getPixelAspectRatio(), outputDepth) );
                 downscaledMappedImage = downscaledImage;
                 assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
                 assert( fullScaleMappedImage->getBounds() == image->getBounds() );
@@ -1914,7 +1927,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 RectD rod = downscaledImage->getRoD();
                 RectI bounds;
                 rod.toPixelEnclosing(mipMapLevel, par, &bounds);
-                downscaledMappedImage.reset( new Image(outputComponents, rod, image->getBounds(), mipMapLevel, outputDepth) );
+                downscaledMappedImage.reset( new Image(outputComponents, rod, image->getBounds(), mipMapLevel,downscaledImage->getPixelAspectRatio(), outputDepth) );
                 fullScaleMappedImage = image;
                 assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
                 assert( fullScaleMappedImage->getBounds() == image->getBounds() );

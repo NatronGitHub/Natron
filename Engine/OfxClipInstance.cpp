@@ -41,6 +41,7 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
     : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
       , _nodeInstance(nodeInstance)
       , _effect(effect)
+      , _aspectRatio(1.)
 {
     assert(_nodeInstance);
     assert(_effect);
@@ -213,7 +214,16 @@ OfxClipInstance::getPremult() const
 double
 OfxClipInstance::getAspectRatio() const
 {
-    return _aspectRatio;
+  //  if (isOutput()) {
+        return _aspectRatio;
+//    }
+//    
+//    EffectInstance* input = getAssociatedNode();
+//    if (input) {
+//        return input->getPreferredAspectRatio();
+//    } else {
+//        return 1.;
+//    }
 }
 
 void
@@ -437,11 +447,16 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.y2 = optionalBounds->y2;
     }
 
+    Natron::ImageComponentsEnum comps =  ofxComponentsToNatronComponents( getComponents() );
+    Natron::ImageBitDepthEnum bitDepth = ofxDepthToNatronDepth( getPixelDepth() );
+    double par = getAspectRatio();
     RectI renderWindow;
     boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
                                                                      optionalBounds ? &bounds : NULL,
-                                                                     ofxComponentsToNatronComponents( getComponents() ),
-                                                                     ofxDepthToNatronDepth( getPixelDepth() ),false,&renderWindow);
+                                                                     comps,
+                                                                     bitDepth,
+                                                                     par,
+                                                                     false,&renderWindow);
     if (!image) {
         return NULL;
     } else {
