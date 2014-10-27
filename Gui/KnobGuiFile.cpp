@@ -62,9 +62,9 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob,
 
 File_KnobGui::~File_KnobGui()
 {
-    delete _lineEdit;
-    delete _openFileButton;
-    delete _watcher;
+//    delete _lineEdit;
+//    delete _openFileButton;
+//    delete _watcher;
 }
 
 void
@@ -358,8 +358,8 @@ OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<KnobI> knob,
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
 {
-    delete _lineEdit;
-    delete _openFileButton;
+//    delete _lineEdit;
+//    delete _openFileButton;
 }
 
 void
@@ -572,7 +572,7 @@ Path_KnobGui::Path_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Path_KnobGui::~Path_KnobGui()
 {
-    delete _mainContainer;
+    //delete _mainContainer;
 }
 
 ////////////// TableView delegate

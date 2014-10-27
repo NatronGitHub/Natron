@@ -153,8 +153,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
 
 KnobGui::~KnobGui()
 {
-    delete _imp->animationButton;
-    delete _imp->animationMenu;
+//    delete _imp->animationButton;
+//    delete _imp->animationMenu;
 }
 
 Gui*
