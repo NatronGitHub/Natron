@@ -863,8 +863,30 @@ OfxEffectInstance::onInputChanged(int inputNo)
     
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
-    if ( !getApp()->getProject()->isLoadingProject() && _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
+    if (_effect->areAllNonOptionalClipsConnected()) {
+        
+        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
+        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
+            OfxRectD rod;
+            OfxPointD scaleOne;
+            scaleOne.x = scaleOne.y = 1.;
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                OfxPointD scale;
+                scale.x = 0.5;
+                scale.y = 0.5;
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                    setSupportsRenderScaleMaybe(eSupportsYes);
+                } else {
+                    setSupportsRenderScaleMaybe(eSupportsNo);
+                }
+            }
+
+        }
+        if ( !getApp()->getProject()->isLoadingProject() ) {
+            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
+        }
     }
     
     {
@@ -1148,6 +1170,28 @@ OfxEffectInstance::onMultipleInputsChanged()
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
+        
+        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
+        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
+            OfxRectD rod;
+            OfxPointD scaleOne;
+            scaleOne.x = scaleOne.y = 1.;
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                OfxPointD scale;
+                scale.x = 0.5;
+                scale.y = 0.5;
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                    setSupportsRenderScaleMaybe(eSupportsYes);
+                } else {
+                    setSupportsRenderScaleMaybe(eSupportsNo);
+                }
+            }
+            
+        }
+
+        
         checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true);
     }
 }
