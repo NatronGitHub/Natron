@@ -333,7 +333,7 @@ struct NodeGraphPrivate
     QRectF calcNodesBoundingRect();
 
     void copyNodesInternal(NodeClipBoard & clipboard);
-    void pasteNodesInternal(const NodeClipBoard & clipboard);
+    void pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenPos);
 
     /**
      * @brief Create a new node given the serialization of another one
@@ -2757,7 +2757,8 @@ NodeGraph::cutSelectedNodes()
 void
 NodeGraph::pasteNodeClipBoards()
 {
-    _imp->pasteNodesInternal(_imp->_nodeClipBoard);
+    QPointF position = mapToScene(mapFromGlobal(QCursor::pos()));
+    _imp->pasteNodesInternal(_imp->_nodeClipBoard,position);
 }
 
 void
@@ -2803,13 +2804,15 @@ NodeGraphPrivate::copyNodesInternal(NodeClipBoard & clipboard)
 }
 
 void
-NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard)
+NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenePos)
 {
     if ( !clipboard.isEmpty() ) {
         std::list<boost::shared_ptr<NodeGui> > newNodes;
         std::list<NodeBackDrop*> newBds;
         double xmax = INT_MIN;
         double xmin = INT_MAX;
+        double ymin = INT_MAX;
+        double ymax = INT_MIN;
         ///find out what is the right most X coordinate and offset relative to that coordinate
         for (std::list <boost::shared_ptr<NodeBackDropSerialization> >::const_iterator it = clipboard.bds.begin();
              it != clipboard.bds.end(); ++it) {
@@ -2823,28 +2826,37 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard)
             if (x < xmin) {
                 xmin = x;
             }
+            if ( (y + h) > ymax ) {
+                ymax = y + h;
+            }
+            if (y < ymin) {
+                ymin = y;
+            }
         }
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it) {
             double x = (*it)->getX();
+            double y = (*it)->getY();
             if (x > xmax) {
                 xmax = x;
             }
             if (x < xmin) {
                 xmin = x;
             }
+            if (y > ymax) {
+                ymax = y;
+            }
+            if (y < ymin) {
+                ymin = y;
+            }
         }
 
 
-        ///offset of 100 pixels to be sure we copy on the right side of any node (true size of nodes isn't serializd unlike
-        ///the size of the backdrops)
-        xmax += 100;
-
-        double offset = xmax - xmin;
+        QPointF offset(scenePos.x() - ((xmin + xmax) / 2.), scenePos.y() - ((ymin + ymax) / 2.));
 
         for (std::list <boost::shared_ptr<NodeBackDropSerialization> >::const_iterator it = clipboard.bds.begin();
              it != clipboard.bds.end(); ++it) {
-            NodeBackDrop* bd = pasteBackdrop( **it,QPointF(offset,0) );
+            NodeBackDrop* bd = pasteBackdrop(**it,offset);
             newBds.push_back(bd);
         }
 
@@ -2853,7 +2865,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard)
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it,++itOther) {
-            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,QPointF(offset,0) );
+            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset);
             newNodes.push_back(node);
         }
         assert( clipboard.nodes.size() == newNodes.size() );
@@ -2984,12 +2996,15 @@ NodeGraph::duplicateSelectedNodes()
     ///Don't use the member clipboard as the user might have something copied
     NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(tmpClipboard);
-    _imp->pasteNodesInternal(tmpClipboard);
+    QPointF scenePos = mapToScene(mapFromGlobal(QCursor::pos()));
+    _imp->pasteNodesInternal(tmpClipboard,scenePos);
 }
 
 void
 NodeGraph::cloneSelectedNodes()
 {
+    QPointF scenePos = mapToScene(mapFromGlobal(QCursor::pos()));
+    
     if ( _imp->_selection.nodes.empty() && _imp->_selection.bds.empty() ) {
         Natron::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
 
@@ -2998,6 +3013,8 @@ NodeGraph::cloneSelectedNodes()
 
     double xmax = INT_MIN;
     double xmin = INT_MAX;
+    double ymin = INT_MAX;
+    double ymax = INT_MIN;
     std::list<boost::shared_ptr<NodeGui> > nodesToCopy = _imp->_selection.nodes;
     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
         if ( (*it)->isSlave() ) {
@@ -3005,12 +3022,19 @@ NodeGraph::cloneSelectedNodes()
 
             return;
         }
-        QRectF bbox = (*it)->boundingRect();
+        QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
         if ( ( bbox.x() + bbox.width() ) > xmax ) {
             xmax = ( bbox.x() + bbox.width() );
         }
         if (bbox.x() < xmin) {
             xmin = bbox.x();
+        }
+        
+        if ( ( bbox.y() + bbox.height() ) > ymax ) {
+            ymax = ( bbox.y() + bbox.height() );
+        }
+        if (bbox.y() < ymin) {
+            ymin = bbox.y();
         }
 
         ///Also copy all nodes within the backdrop
@@ -3024,13 +3048,20 @@ NodeGraph::cloneSelectedNodes()
     }
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        QRectF bbox = (*it)->boundingRect();
+        QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
         if ( ( bbox.x() + bbox.width() ) > xmax ) {
             xmax = bbox.x() + bbox.width();
         }
         if (bbox.x() < xmin) {
             xmin = bbox.x();
         }
+        if ( ( bbox.y() + bbox.height() ) > ymax ) {
+            ymax = ( bbox.y() + bbox.height() );
+        }
+        if (bbox.y() < ymin) {
+            ymin = bbox.y();
+        }
+        
         if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
             Natron::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
 
@@ -3050,10 +3081,7 @@ NodeGraph::cloneSelectedNodes()
         }
     }
 
-    ///Offset of some pixels to clone on the right of the original nodes
-    xmax += 30;
-
-    double offset = xmax - xmin;
+    QPointF offset(scenePos.x() - ((xmax + xmin) / 2.), scenePos.y() -  ((ymax + ymin) / 2.));
     std::list<boost::shared_ptr<NodeGui> > newNodes;
     std::list<NodeBackDrop*> newBackdrops;
     std::list <boost::shared_ptr<NodeSerialization> > serializations;
@@ -3061,7 +3089,7 @@ NodeGraph::cloneSelectedNodes()
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
-        boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, QPointF(offset,0) );
+        boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset );
         DotGui* isDot = dynamic_cast<DotGui*>( clone.get() );
         ///Dots cannot be cloned, just copy them
         if (!isDot) {
@@ -3075,7 +3103,7 @@ NodeGraph::cloneSelectedNodes()
     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
         NodeBackDropSerialization s;
         s.initialize(*it);
-        NodeBackDrop* bd = _imp->pasteBackdrop( s,QPointF(offset,0) );
+        NodeBackDrop* bd = _imp->pasteBackdrop( s,offset );
         bd->slaveTo(*it);
         newBackdrops.push_back(bd);
     }
