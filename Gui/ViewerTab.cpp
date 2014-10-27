@@ -95,6 +95,8 @@ struct ViewerTabPrivate
     Button* _clipToProjectFormatButton;
     Button* _enableViewerRoI;
     Button* _refreshButton;
+    QIcon _iconRefreshOff,_iconRefreshOn;
+    
     Button* _activateRenderScale;
     bool _renderScaleActive;
     ComboBox* _renderScaleCombo;
@@ -712,6 +714,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QPixmap pixPrevIncr;
     QPixmap pixNextIncr;
     QPixmap pixRefresh;
+    QPixmap pixRefreshActive;
     QPixmap pixCenterViewer;
     QPixmap pixLoopMode;
     QPixmap pixClipToProjectEnabled;
@@ -735,6 +738,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_INCR,&pixPrevIncr);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_INCR,&pixNextIncr);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH,&pixRefresh);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE,&pixRefreshActive);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenterViewer);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_ENABLED,&pixClipToProjectEnabled);
@@ -763,7 +767,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->lastFrame_Button->setIcon( QIcon(pixLast) );
     _imp->previousIncrement_Button->setIcon( QIcon(pixPrevIncr) );
     _imp->nextIncrement_Button->setIcon( QIcon(pixNextIncr) );
-    _imp->_refreshButton->setIcon( QIcon(pixRefresh) );
+    _imp->_iconRefreshOff = QIcon(pixRefresh);
+    _imp->_iconRefreshOn = QIcon(pixRefreshActive);
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOff);
     _imp->_centerViewerButton->setIcon( QIcon(pixCenterViewer) );
     _imp->playbackMode_Button->setIcon( QIcon(pixLoopMode) );
 
@@ -853,6 +859,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_autoConstrastLabel,SIGNAL( clicked(bool) ),_imp->_autoContrast,SLOT( setChecked(bool) ) );
     QObject::connect( _imp->_renderScaleCombo,SIGNAL( currentIndexChanged(int) ),this,SLOT( onRenderScaleComboIndexChanged(int) ) );
     QObject::connect( _imp->_activateRenderScale,SIGNAL( toggled(bool) ),this,SLOT( onRenderScaleButtonClicked(bool) ) );
+    
+    QObject::connect( _imp->_viewerNode, SIGNAL( viewerRenderingStarted() ), this, SLOT( onViewerRenderingStarted() ) );
+    QObject::connect( _imp->_viewerNode, SIGNAL( viewerRenderingEnded() ), this, SLOT( onViewerRenderingStopped() ) );
 
     connectToViewerCache();
 
@@ -3009,3 +3018,14 @@ ViewerTab::setDesiredFps(double fps)
     _imp->_viewerNode->getRenderEngine()->setDesiredFPS(fps);
 }
 
+void
+ViewerTab::onViewerRenderingStarted()
+{
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOn);
+}
+
+void
+ViewerTab::onViewerRenderingStopped()
+{
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOff);
+}

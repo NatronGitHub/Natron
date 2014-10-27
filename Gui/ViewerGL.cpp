@@ -4568,3 +4568,4 @@ ViewerGL::getCurrentlyDisplayedTime() const
         return _imp->viewerTab->getTimeLine()->currentFrame();
     }
 }
+

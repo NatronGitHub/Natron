@@ -324,6 +324,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             img.load(NATRON_IMAGES_PATH "refresh.png");
             *pix = QPixmap::fromImage(img);
             break;
+        case NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE:
+            img.load(NATRON_IMAGES_PATH "refreshActive.png");
+            *pix = QPixmap::fromImage(img);
+            break;
         case NATRON_PIXMAP_VIEWER_ROI_ENABLED:
             img.load(NATRON_IMAGES_PATH "viewer_roiEnabled.png");
             *pix = QPixmap::fromImage(img);

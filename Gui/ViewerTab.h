@@ -285,6 +285,10 @@ public slots:
     
     void onEngineStopped();
     
+    void onViewerRenderingStarted();
+    
+    void onViewerRenderingStopped();
+    
 private:
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);

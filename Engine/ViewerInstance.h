@@ -145,6 +145,9 @@ public:
     
     void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 
+    void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
+    
+    void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
 public slots:
 
 
@@ -170,6 +173,9 @@ signals:
     void activeInputsChanged();
 
     void disconnectTextureRequest(int index);
+    
+    void viewerRenderingStarted();
+    void viewerRenderingEnded();
 
 private:
     /*******************************************

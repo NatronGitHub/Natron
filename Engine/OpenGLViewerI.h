@@ -170,6 +170,7 @@ public:
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() = 0;
+    
 };
 
 

@@ -106,6 +106,31 @@ ViewerInstance::lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
 }
 
 
+class ViewerRenderingStarted_RAII
+{
+    ViewerInstance* _node;
+    bool _didEmit;
+public:
+    
+    ViewerRenderingStarted_RAII(ViewerInstance* node)
+    : _node(node)
+    {
+        _didEmit = node->getNode()->notifyRenderingStarted();
+        if (_didEmit) {
+            _node->s_viewerRenderingStarted();
+        }
+    }
+    
+    ~ViewerRenderingStarted_RAII()
+    {
+        if (_didEmit) {
+            _node->getNode()->notifyRenderingEnded();
+            _node->s_viewerRenderingEnded();
+        }
+    }
+};
+
+
 Natron::EffectInstance*
 ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node> n)
 {
@@ -674,7 +699,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         }
         
         ///Notify the gui we're rendering.
-        EffectInstance::NotifyRenderingStarted_RAII renderingNotifier(_node.get());
+        ViewerRenderingStarted_RAII renderingNotifier(this);
         
         ///Don't different threads to write the texture entry
         FrameEntryLocker entryLocker(_imp.get());
