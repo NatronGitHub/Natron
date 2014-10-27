@@ -2954,7 +2954,15 @@ Bezier::getBoundingBox(int time) const
 #pragma message WARN("TODO: use featherPointsAtDistance")
     // BUG https://github.com/MrKepzie/Natron/issues/145 : the feather Bezier must be moved by featherdistance before RoD computation!
     bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
-
+    
+    
+    // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
+    // enclosing the real bbox and close enough
+    double featherDistance = getFeatherDistance(time);
+    bbox.x1 -= featherDistance;
+    bbox.x2 += featherDistance;
+    bbox.y1 -= featherDistance;
+    bbox.y2 += featherDistance;
     return bbox;
 }
 
