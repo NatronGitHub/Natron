@@ -376,6 +376,7 @@ SpinBox::increment(int delta,
         // Add trailing zero, maybe preceded by a dot
         if (pos == dot) {
             str.append('.');
+            ++pos; // increment pos, because we just added a '.', and next iteration will add a '0'
             ++len;
         } else {
             assert(pos > dot);
