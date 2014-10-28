@@ -653,12 +653,21 @@ NodeGui::refreshOptionalStateOfEdges()
     if (viewer) {
         int activeInputs[2];
         viewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+        
+        int nbInputsConnected = 0;
+        
         for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
             if (i->first == activeInputs[0] || i->first == activeInputs[1]) {
                 i->second->setOptional(false);
             } else {
                 i->second->setOptional(true);
             }
+            if (i->second->getSource()) {
+                ++nbInputsConnected;
+            }
+        }
+        if (nbInputsConnected == 0) {
+            _inputEdges[0]->setOptional(false);
         }
     }
 }
