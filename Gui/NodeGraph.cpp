@@ -2757,7 +2757,7 @@ NodeGraph::cutSelectedNodes()
 void
 NodeGraph::pasteNodeClipBoards()
 {
-    QPointF position = mapToScene(mapFromGlobal(QCursor::pos()));
+    QPointF position = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
     _imp->pasteNodesInternal(_imp->_nodeClipBoard,position);
 }
 
@@ -2996,14 +2996,14 @@ NodeGraph::duplicateSelectedNodes()
     ///Don't use the member clipboard as the user might have something copied
     NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(tmpClipboard);
-    QPointF scenePos = mapToScene(mapFromGlobal(QCursor::pos()));
+    QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
     _imp->pasteNodesInternal(tmpClipboard,scenePos);
 }
 
 void
 NodeGraph::cloneSelectedNodes()
 {
-    QPointF scenePos = mapToScene(mapFromGlobal(QCursor::pos()));
+    QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
     
     if ( _imp->_selection.nodes.empty() && _imp->_selection.bds.empty() ) {
         Natron::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
