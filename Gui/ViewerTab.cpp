@@ -2351,6 +2351,8 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
         _imp->_secondInputImage->setEnabled_natron(false);
         manageSlotsForInfoWidget(1, false);
         _imp->_infoWidget[1]->hide();
+    } else {
+        _imp->_secondInputImage->setEnabled_natron(true);
     }
 
 

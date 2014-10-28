@@ -165,10 +165,12 @@ public slots:
 
 
 signals:
-
+    
     void s_callRedrawOnMainThread();
 
     void viewerDisconnected();
+    
+    void refreshOptionalState();
 
     void activeInputsChanged();
 

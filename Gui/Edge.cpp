@@ -124,6 +124,12 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
 }
 
 void
+Edge::setOptional(bool optional)
+{
+    _paintWithDash = optional;
+}
+
+void
 Edge::setUseHighlight(bool highlight)
 {
     _useHighlight = highlight;

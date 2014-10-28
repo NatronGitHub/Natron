@@ -1668,6 +1668,7 @@ ViewerInstance::isInputOptional(int n) const
     int activeInputs[2];
 
     getActiveInputs(activeInputs[0], activeInputs[1]);
+    
     if ( (n == 0) && (activeInputs[0] == -1) && (activeInputs[1] == -1) ) {
         return false;
     }
@@ -1874,7 +1875,8 @@ ViewerInstance::onInputChanged(int inputNb)
                 _imp->activeInputs[1] = -1;
             }
         } else {
-            if (_imp->activeInputs[0] == -1) {
+            bool autoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
+            if (_imp->activeInputs[0] == -1 || !autoWipeEnabled) {
                 _imp->activeInputs[0] = inputNb;
             } else {
                 _imp->activeInputs[1] = inputNb;
@@ -1882,6 +1884,7 @@ ViewerInstance::onInputChanged(int inputNb)
         }
     }
     emit activeInputsChanged();
+    emit refreshOptionalState();
 }
 
 void
@@ -1906,16 +1909,22 @@ void
 ViewerInstance::setInputA(int inputNb)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    QMutexLocker l(&_imp->activeInputsMutex);
-    _imp->activeInputs[0] = inputNb;
+    {
+        QMutexLocker l(&_imp->activeInputsMutex);
+        _imp->activeInputs[0] = inputNb;
+    }
+    emit refreshOptionalState();
 }
 
 void
 ViewerInstance::setInputB(int inputNb)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    QMutexLocker l(&_imp->activeInputsMutex);
-    _imp->activeInputs[1] = inputNb;
+    {
+        QMutexLocker l(&_imp->activeInputsMutex);
+        _imp->activeInputs[1] = inputNb;
+    }
+    emit refreshOptionalState();
 }
 
 bool

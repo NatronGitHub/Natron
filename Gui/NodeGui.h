@@ -334,6 +334,8 @@ public slots:
 
     void refreshEdges();
 
+    void refreshOptionalStateOfEdges();
+    
     void refreshKnobLinks();
 
     /*initialises the input edges*/

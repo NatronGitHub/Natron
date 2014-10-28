@@ -180,6 +180,10 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect (isOutput->getRenderEngine(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()));
     }
 
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isOutput);
+    if (isViewer) {
+        QObject::connect(isViewer,SIGNAL(refreshOptionalState()),this,SLOT(refreshOptionalStateOfEdges()));
+    }
 
     createGui();
 
@@ -643,10 +647,27 @@ NodeGui::changePosition(double dx,
 }
 
 void
+NodeGui::refreshOptionalStateOfEdges()
+{
+    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+    if (viewer) {
+        int activeInputs[2];
+        viewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+        for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
+            if (i->first == activeInputs[0] || i->first == activeInputs[1]) {
+                i->second->setOptional(false);
+            } else {
+                i->second->setOptional(true);
+            }
+        }
+    }
+}
+
+void
 NodeGui::refreshEdges()
 {
     const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = _internalNode->getInputs_mt_safe();
-
+    
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
         assert(i->first < (int)nodeInputs.size() && i->first >= 0);
         boost::shared_ptr<NodeGui> nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
