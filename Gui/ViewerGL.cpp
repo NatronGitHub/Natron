@@ -3180,7 +3180,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
         fitImageToFormat();
     }
 
-    if ( displayingImage() ) {
+    if ( displayingImage() && _imp->viewerTab->getInternalNode()) {
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
 
