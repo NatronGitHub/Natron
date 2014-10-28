@@ -4150,7 +4150,7 @@ void
 Gui::keyPressEvent(QKeyEvent* e)
 {
     QWidget* w = qApp->widgetAt(QCursor::pos());
-    if (w->objectName() == QString("SettingsPanel") && e->key() == Qt::Key_Escape) {
+    if (w && w->objectName() == QString("SettingsPanel") && e->key() == Qt::Key_Escape) {
         RightClickableWidget* panel = dynamic_cast<RightClickableWidget*>(w);
         assert(panel);
         panel->getPanel()->closePanel();
