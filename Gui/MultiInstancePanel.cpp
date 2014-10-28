@@ -888,13 +888,18 @@ MultiInstancePanel::onSettingsPanelClosed(bool closed)
     getSelectedInstances(&selection);
 
     std::list<Node*>::iterator next = selection.begin();
-    ++next;
+	if (!selection.empty()) {
+		++next;
+	}
     for (std::list<Node*>::iterator it = selection.begin(); it != selection.end(); ++it,++next) {
         if (closed) {
             (*it)->hideKeyframesFromTimeline( next == selection.end() );
         } else {
             (*it)->showKeyframesOnTimeline( next == selection.end() );
         }
+		if (next == selection.end()) {
+			--next;
+		}
     }
 }
 
