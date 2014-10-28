@@ -18,7 +18,7 @@
 
 #include "Gui/FromQtEnums.h"
 
-
+namespace Natron {
 struct MessageBoxPrivate
 {
     MessageBox::MessageBoxTypeEnum type;
@@ -264,4 +264,6 @@ MessageBox::event(QEvent* e)
             break;
     }
     return result;
+}
+
 }

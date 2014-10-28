@@ -1889,7 +1889,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             if ( it != _imp->_viewerTabs.end() ) {
                 _imp->_viewerTabs.erase(it);
             }
-            delete tab;
+            tab->deleteLater();
         }
     }
     emit viewersChanged();
@@ -3011,14 +3011,14 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit onDoDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeQuestion,
+        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit onDoDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeQuestion,
+        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
     }
     
@@ -3031,7 +3031,7 @@ void
 Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB)
 {
     
-    MessageBox dialog(title,content,(MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
+    Natron::MessageBox dialog(title,content,(Natron::MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
     
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
     dialog.setCheckBox(stopAskingCheckbox);
