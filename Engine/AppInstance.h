@@ -278,13 +278,6 @@ public:
     {
     }
 
-    virtual void aboutToAutoSave()
-    {
-    }
-
-    virtual void autoSaveFinished()
-    {
-    }
 
     virtual std::string openImageFileDialog() { return std::string(); }
     virtual std::string saveImageFileDialog() { return std::string(); }

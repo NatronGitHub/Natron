@@ -713,18 +713,6 @@ GuiAppInstance::disconnectViewersFromViewerCache()
     _imp->_gui->disconnectViewersFromViewerCache();
 }
 
-void
-GuiAppInstance::aboutToAutoSave()
-{
-    _imp->_gui->aboutToSave();
-}
-
-void
-GuiAppInstance::autoSaveFinished()
-{
-    _imp->_gui->saveFinished();
-}
-
 
 boost::shared_ptr<FileDialogPreviewProvider>
 GuiAppInstance::getPreviewProvider() const
