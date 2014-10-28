@@ -1036,6 +1036,7 @@ DockablePanel::setClosed(bool c)
         QMutexLocker l(&_imp->_isClosedMutex);
         if (c == _imp->_isClosed) {
             return;
+
         }
         _imp->_isClosed = c;
     }
@@ -1049,7 +1050,9 @@ DockablePanel::setClosed(bool c)
             ///show all selected instances
             const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            ++next;
+			if (!childrenInstances.empty()) {
+				++next;
+			}
             for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end(); ++it,++next) {
                 if (c) {
@@ -1057,6 +1060,9 @@ DockablePanel::setClosed(bool c)
                 } else if (!c && it->second) {
                     it->first->showKeyframesOnTimeline( next == childrenInstances.end() );
                 }
+				if (next == childrenInstances.end()) {
+					--next;
+				}
             }
         } else {
             ///Regular show/hide

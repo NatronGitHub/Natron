@@ -698,10 +698,9 @@ OfxImageEffectInstance::setupClipPreferencesArgs(OFX::Host::Property::Set &outAr
         outArgs.createProperty(specDep);
         
         {
-            std::stringstream ss;
-            ss << clip->getAspectRatio();
-            OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,        ss.str().c_str()};
+            OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,        "1"};
             outArgs.createProperty(specPAR);
+			outArgs.setDoubleProperty(parParamName, clip->getAspectRatio());
         }
     }
 
