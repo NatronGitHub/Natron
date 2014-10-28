@@ -407,9 +407,6 @@ public:
     ///Close the application instance, asking questions to the user
     bool closeInstance();
 
-    void aboutToSave();
-    void saveFinished();
-    
     void checkNumberOfNonFloatingPanes();
 
     void openProject(const std::string& filename);

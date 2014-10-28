@@ -331,7 +331,6 @@ struct GuiPrivate
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
-    TabWidget* fullScreenWidgetDuringSave;
     ShortCutEditor* shortcutEditor;
 
     GuiPrivate(GuiAppInstance* app,
@@ -436,7 +435,6 @@ struct GuiPrivate
           , _toolButtonMenuOpened(NULL)
           , aboutToCloseMutex()
           , _aboutToClose(false)
-          , fullScreenWidgetDuringSave(0)
           , shortcutEditor(0)
     {
     }
@@ -2397,37 +2395,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     appPTR->updateAllRecentFileMenus();
 }
 
-void
-Gui::aboutToSave()
-{
-    assert( QThread::currentThread() == qApp->thread() );
 
-    ///If a tab is fullscreen, minimize it otherwise the splitter's state wouldn't be saved correctly
-    std::list<TabWidget*> panesCpy;
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        panesCpy = _imp->_panes;
-    }
-    for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
-        if ( (*it)->isFullScreen() ) {
-            _imp->fullScreenWidgetDuringSave = *it;
-            minimize();
-            QCoreApplication::processEvents();
-            break;
-        }
-    }
-}
-
-void
-Gui::saveFinished()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    ///fullscreen again the tab
-    if (_imp->fullScreenWidgetDuringSave) {
-        maximize(_imp->fullScreenWidgetDuringSave);
-        _imp->fullScreenWidgetDuringSave = 0;
-    }
-}
 
 static void updateRecentFiles(const QString& filename)
 {
@@ -2447,10 +2415,8 @@ bool
 Gui::saveProject()
 {
     if ( _imp->_appInstance->getProject()->hasProjectBeenSavedByUser() ) {
-        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
                                                       _imp->_appInstance->getProject()->getProjectName(),false);
-        saveFinished();
 
 
         ///update the open recents
@@ -2475,9 +2441,7 @@ Gui::saveProjectAs()
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         std::string path = SequenceParsing::removePath(outFile);
-        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(path.c_str(),outFile.c_str(),false);
-        saveFinished();
 
         QString filePath = QString(path.c_str()) + QString(outFile.c_str());
         updateRecentFiles(filePath);
@@ -2552,9 +2516,7 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion,toInsert);
     }
     
-    aboutToSave();
     _imp->_appInstance->getProject()->saveProject(path,name,false);
-    saveFinished();
     
     QString filename = path = name;
     updateRecentFiles(filename);
