@@ -54,6 +54,8 @@ public:
 
 
     ViewerInstance* getInternalNode() const;
+    void discardInternalNodePointer();
+    
     Gui* getGui() const;
     ViewerGL* getViewer() const;
 

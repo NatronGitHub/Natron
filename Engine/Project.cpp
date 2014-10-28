@@ -679,7 +679,7 @@ Project::initializeKnobs()
     _imp->envVars->setMultiPath(true);
     
     ///Initialize the OCIO Config
-    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
     
     page->addKnob(_imp->envVars);
     
@@ -772,6 +772,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
     _imp->natronVersion->setAsLabel();
+    _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
     
     _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
@@ -781,6 +782,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
     _imp->originalAuthorName->setAsLabel();
+    _imp->originalAuthorName->setEvaluateOnChange(false);
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
     _imp->originalAuthorName->setDefaultValue(authorName);
@@ -790,6 +792,7 @@ Project::initializeKnobs()
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
     _imp->lastAuthorName->setAsLabel();
+    _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
     _imp->lastAuthorName->setDefaultValue(authorName);
     infoPage->addKnob(_imp->lastAuthorName);
@@ -799,6 +802,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip("The creation date of the project.");
     _imp->projectCreationDate->setAsLabel();
+    _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
     _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
     infoPage->addKnob(_imp->projectCreationDate);
@@ -807,6 +811,7 @@ Project::initializeKnobs()
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip("The date this project was last saved.");
     _imp->saveDate->setAsLabel();
+    _imp->saveDate->setEvaluateOnChange(false);
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
     
@@ -1307,7 +1312,9 @@ Project::reset()
         knobs[i]->unblockEvaluation();
     }
 
-    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    _imp->envVars->blockEvaluation();
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
+    _imp->envVars->unblockEvaluation();
     
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
@@ -1879,7 +1886,7 @@ Project::fixFilePath(const std::string& projectPathName,const std::string& newPr
 }
     
 void
-Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath)
+Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath,bool blockEval)
 {
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     {
@@ -1889,6 +1896,9 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isActivated()) {
+            if (blockEval) {
+                nodes[i]->getLiveInstance()->blockEvaluation();
+            }
             const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
                 
@@ -1905,6 +1915,9 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
                         isString->setValue(filepath, 0);
                     }
                 }
+            }
+            if (blockEval) {
+                nodes[i]->getLiveInstance()->unblockEvaluation();
             }
             
         }
@@ -2031,9 +2044,11 @@ Project::makeRelativeToProject(std::string& str)
 
     
 void
-Project::onOCIOConfigPathChanged(const std::string& path)
+Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
-    
+    if (block) {
+        blockEvaluation();
+    }
     std::string env = _imp->envVars->getValue();
     std::map<std::string, std::string> envMap;
     makeEnvMap(env, envMap);
@@ -2059,9 +2074,12 @@ Project::onOCIOConfigPathChanged(const std::string& path)
     }
     if (env != newEnv) {
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path);
+            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
         }
         _imp->envVars->setValue(newEnv, 0);
+    }
+    if (block) {
+        unblockEvaluation();
     }
 }
 

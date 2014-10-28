@@ -502,7 +502,8 @@ Node::computeHash()
         
         ///Also append the project's creation time in the hash because 2 projects openend concurrently
         ///could reproduce the same (especially simple graphs like Viewer-Reader)
-        _imp->hash.append( getApp()->getProject()->getProjectCreationTime() );
+        qint64 creationTime =  getApp()->getProject()->getProjectCreationTime();
+        _imp->hash.append(creationTime);
         
         _imp->hash.computeHash();
     }

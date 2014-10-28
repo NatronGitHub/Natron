@@ -262,7 +262,7 @@ public:
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
      * change the file-path to be relative to the newProjectPath.
      **/
-    void fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath);
+    void fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath,bool blockEval);
 
     
     /**
@@ -289,7 +289,7 @@ public:
      **/
     void makeRelativeToProject(std::string& str);
     
-    void onOCIOConfigPathChanged(const std::string& path);
+    void onOCIOConfigPathChanged(const std::string& path,bool blockevaluation);
 
 
     static std::string escapeXML(const std::string &input);

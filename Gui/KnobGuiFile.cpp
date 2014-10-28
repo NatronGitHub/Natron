@@ -804,7 +804,7 @@ Path_KnobGui::onRemoveButtonClicked()
     if (_knob->getHolder() && _knob->getHolder() == getGui()->getApp()->getProject().get() &&
         appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
         for (std::list<std::string>::iterator it = removeVars.begin(); it != removeVars.end(); ++it) {
-            getGui()->getApp()->getProject()->fixRelativeFilePaths(*it, "");
+            getGui()->getApp()->getProject()->fixRelativeFilePaths(*it, "",false);
         }
         
     }
@@ -984,7 +984,7 @@ Path_KnobGui::onItemDataChanged(TableItem* /*item*/)
                         getGui()->getApp()->getProject()->fixPathName(itOld->first, itNew->first);
                         break;
                     } else if (itOld->second != itOld->second) {
-                        getGui()->getApp()->getProject()->fixRelativeFilePaths(itOld->first, itNew->second);
+                        getGui()->getApp()->getProject()->fixRelativeFilePaths(itOld->first, itNew->second,false);
                         break;
                     }
                 }

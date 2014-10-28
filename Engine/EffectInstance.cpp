@@ -2598,7 +2598,7 @@ EffectInstance::evaluate(KnobI* knob,
     }
 
     ///increments the knobs age following a change
-    if (!button) {
+    if (!button && isSignificant) {
         _node->incrementKnobsAge();
     }
 

@@ -1129,7 +1129,9 @@ ViewerTab::refresh()
 ViewerTab::~ViewerTab()
 {
     if (_imp->_gui) {
-        _imp->_viewerNode->invalidateUiContext();
+        if (_imp->_viewerNode) {
+            _imp->_viewerNode->invalidateUiContext();
+        }
         if ( _imp->app && !_imp->app->isClosing() && (_imp->_gui->getLastSelectedViewer() == this) ) {
             assert(_imp->_gui);
             _imp->_gui->setLastSelectedViewer(NULL);
@@ -1907,6 +1909,12 @@ ViewerInstance*
 ViewerTab::getInternalNode() const
 {
     return _imp->_viewerNode;
+}
+
+void
+ViewerTab::discardInternalNodePointer()
+{
+    _imp->_viewerNode = 0;
 }
 
 Gui*

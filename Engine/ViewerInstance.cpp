@@ -1777,7 +1777,9 @@ ViewerInstance::disconnectViewer()
     // always running in the render thread
 
     //_lastRenderedImage.reset(); // if you uncomment this, _lastRenderedImage is not set back when you reconnect the viewer immediately after disconnecting
-    emit viewerDisconnected();
+    if (_imp->uiContext) {
+        emit viewerDisconnected();
+    }
 }
 
 
