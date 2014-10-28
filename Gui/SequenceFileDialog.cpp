@@ -1475,6 +1475,7 @@ SequenceFileDialog::openSelectedFiles()
     } else {
         if ( isDirectory(str) ) {
             _selectionLineEdit->setText(str);
+            setDirectory(str);
         }
     }
 } // openSelectedFiles
