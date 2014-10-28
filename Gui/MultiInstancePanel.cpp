@@ -926,7 +926,9 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
     QModelIndexList rows = _imp->view->selectionModel()->selectedRows();
     bool setDirty = rows.count() > 1;
     std::list<std::pair<Node*,bool> >::iterator nextPreviouslySelected = previouslySelectedInstances.begin();
-    ++nextPreviouslySelected;
+	if (!previouslySelectedInstances.empty()) {
+		++nextPreviouslySelected;
+	}
     for (std::list<std::pair<Node*,bool> >::iterator it = previouslySelectedInstances.begin();
          it != previouslySelectedInstances.end(); ++it,++nextPreviouslySelected) {
         ///if the item is in the new selection, don't consider it
@@ -961,12 +963,17 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                 break;
             }
         }
+		if (nextPreviouslySelected == previouslySelectedInstances.end()) {
+			--nextPreviouslySelected;
+		}
     }
 
 
     std::list<SequenceTime> allKeysToAdd;
     std::list<std::pair<Node*,bool> >::iterator nextNewlySelected = newlySelectedInstances.begin();
-    ++nextNewlySelected;
+	if (!newlySelectedInstances.empty()) {
+		++nextNewlySelected;
+	}
     for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin();
          it != newlySelectedInstances.end(); ++it,++nextNewlySelected) {
         ///if the item is in the old selection, don't consider it
@@ -1018,6 +1025,10 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                 break;
             }
         }
+
+		if (nextNewlySelected == newlySelectedInstances.end()) {
+			--nextNewlySelected;
+		}
     }
 
 
