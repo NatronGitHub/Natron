@@ -1666,8 +1666,11 @@ Settings::doOCIOStartupCheckIfNeeded()
                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                      Natron::eStandardButtonYes,
                                     &stopAsking);
-        
-        _ocioStartupCheck->setValue(!stopAsking,0);
+        bool mustSaveSettings = false;
+		if (stopAsking != !docheck) {
+			_ocioStartupCheck->setValue(!stopAsking,0);
+			mustSaveSettings = true;
+		}
         
         if (reply == Natron::eStandardButtonYes) {
             
@@ -1680,13 +1683,17 @@ Settings::doOCIOStartupCheckIfNeeded()
             }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex,0);
+				mustSaveSettings = true;
             } else {
                 Natron::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
                                                                  "This is probably because you're not using the OpenColorIO-Configs folder that should "
                                                                  "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
             }
         }
-        
+        if (mustSaveSettings) {
+			saveSettings();
+
+		}
     }
 }
 

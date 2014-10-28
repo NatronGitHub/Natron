@@ -81,8 +81,12 @@ GuiAppInstance::aboutToQuit()
      **/
     if (_imp->_previewProvider->viewerNode) {
         _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-        _imp->_previewProvider->viewerNode->getNode()->deactivate(std::list< Natron::Node* > (),false,false,true,false);
-        _imp->_previewProvider->viewerNode->getNode()->removeReferences();
+		boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
+		ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+		assert(liveInstance);
+        node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
+		liveInstance->invalidateUiContext();
+        node->removeReferences();
         _imp->_previewProvider->viewerNode->deleteReferences();
     }
     

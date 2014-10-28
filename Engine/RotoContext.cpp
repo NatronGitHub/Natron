@@ -2819,21 +2819,21 @@ Bezier::setKeyframe(int time)
             double leftDerivX,rightDerivX,leftDerivY,rightDerivY;
 
             {
-                (*it)->getPositionAtTime(time, &x, &y);
+                (*it)->getPositionAtTime(time, &x, &y,true);
                 (*it)->setPositionAtTime(time, x, y);
 
-                (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-                (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
+                (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*it)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
             }
 
             {
-                (*itF)->getPositionAtTime(time, &x, &y);
+                (*itF)->getPositionAtTime(time, &x, &y,true);
                 (*itF)->setPositionAtTime(time, x, y);
 
-                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
+                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*itF)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*itF)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
             }

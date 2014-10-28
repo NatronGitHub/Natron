@@ -562,10 +562,10 @@ dragTangent(int time,
             bool breakTangents)
 {
     double leftX,leftY,rightX,rightY,x,y;
-    bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY);
+    bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY,true);
 
-    p.getRightBezierPointAtTime(time, &rightX, &rightY);
-    p.getPositionAtTime(time, &x, &y);
+    p.getRightBezierPointAtTime(time, &rightX, &rightY,true);
+    p.getPositionAtTime(time, &x, &y,true);
     double dist = left ?  sqrt( (rightX - x) * (rightX - x) + (rightY - y) * (rightY - y) )
                   : sqrt( (leftX - x) * (leftX - x) + (leftY - y) * (leftY - y) );
     if (left) {

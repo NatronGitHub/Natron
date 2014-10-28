@@ -2024,7 +2024,7 @@ Project::makeRelativeToProject(std::string& str)
     getEnvironmentVariables(envvar);
 
     std::map<std::string,std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
-    if (found != envvar.end()) {
+    if (found != envvar.end() && !found->second.empty()) {
         makeRelativeToVariable(found->first, found->second, str);
     }
 }
