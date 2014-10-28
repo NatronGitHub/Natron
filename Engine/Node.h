@@ -737,6 +737,7 @@ public slots:
     
     void dequeueActions();
 
+    void onParentMultiInstanceInputChanged(int input);
 
 signals:
 
@@ -857,6 +858,8 @@ private:
 class InspectorNode
     : public Natron::Node
 {
+    Q_OBJECT
+    
     int _inputsCount;
     int _activeInput;
     mutable QMutex _activeInputMutex;

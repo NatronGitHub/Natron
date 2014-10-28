@@ -426,6 +426,7 @@ Node::fetchParentMultiInstancePointer()
             ///no need to store the boost pointer because the main instance lives the same time
             ///as the child
             _imp->multiInstanceParent = nodes[i].get();
+            QObject::connect(nodes[i].get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)));
             break;
         }
     }
@@ -2790,6 +2791,14 @@ Node::onInputChanged(int inputNb)
 }
 
 void
+Node::onParentMultiInstanceInputChanged(int input)
+{
+    _imp->duringInputChangedAction = true;
+    _imp->liveInstance->onInputChanged(input);
+    _imp->duringInputChangedAction = false;
+}
+
+void
 Node::onMultipleInputChanged()
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -3405,6 +3414,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
         _activeInput = inputNb;
     }
     computeHash();
+    emit inputChanged(inputNb);
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
         dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame(true);
