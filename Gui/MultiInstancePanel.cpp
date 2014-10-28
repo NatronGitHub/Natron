@@ -773,14 +773,19 @@ MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Natron::No
 {
     boost::shared_ptr<Node> mainInstance = getMainInstance();
     std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
-    
-    ++next;
+    if (!instances.empty()) {
+	   ++next;
+	}
+   
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
         int index = getNodeIndex(*it);
         assert(index != -1);
         removeRow(index);
         bool isMainInstance = (*it) == mainInstance;
         (*it)->deactivate( std::list<Natron::Node* >(),false,false,!isMainInstance,next == instances.end() );
+		if (next == instances.end()) {
+			--next;
+		}
     }
     
 
@@ -790,11 +795,15 @@ void
 MultiInstancePanel::addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances)
 {
     std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
-    
-    ++next;
+    if (!instances.empty()) {
+		++next;
+	}
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
         addRow(*it);
         (*it)->activate( std::list<Natron::Node* >(),false,next == instances.end() );
+		if (next == instances.end()) {
+			--next;
+		}
     }
 }
 
@@ -1701,8 +1710,9 @@ TrackerPanel::handleTrackNextAndPrevious(const std::list<Button_Knob*> & selecte
     
     ///Forward the button click event to all the selected instances
     std::list<Button_Knob*>::const_iterator next = selectedInstances.begin();
-
-    ++next;
+	if (!selectedInstances.empty()) {
+		++next;
+	}
     for (std::list<Button_Knob*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it,++next) {
         ///When a reason of eValueChangedReasonUserEdited is given, the tracker plug-in will move the timeline so just send it
         ///upon the last track if we want to update the viewer
@@ -1714,6 +1724,10 @@ TrackerPanel::handleTrackNextAndPrevious(const std::list<Button_Knob*> & selecte
         }
 
         (*it)->getHolder()->onKnobValueChanged_public(*it,reason,currentFrame);
+
+		if (next == selectedInstances.end()) {
+			--next;
+		}
     }
     
 }

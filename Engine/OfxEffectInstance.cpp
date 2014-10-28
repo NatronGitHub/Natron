@@ -885,7 +885,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
         }
         if ( !getApp()->getProject()->isLoadingProject() ) {
-            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
+            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true);
         }
     }
     
