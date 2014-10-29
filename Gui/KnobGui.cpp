@@ -596,7 +596,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
     getGui()->setCurveEditorOnTop();
     std::vector<boost::shared_ptr<Curve> > curves;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        boost::shared_ptr<Curve> c = knob->getCurve(i);
+        boost::shared_ptr<Curve> c = getCurve(i);
         if ( c->isAnimated() ) {
             curves.push_back(c);
         }
