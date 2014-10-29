@@ -479,7 +479,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     
     
     RectI pixelRod;
-    rod.toPixelEnclosing(0, par, &pixelRod);
+    rod.toPixelEnclosing(0, 1., &pixelRod);
    
     
     bool clipToDisplayWindow;
@@ -490,7 +490,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     if (clipToDisplayWindow) {
         ///clip the RoD to the project format.
         RectI pixelProjectFormat;
-        _imp->projectFormat.toPixelEnclosing(0, par, &pixelProjectFormat);
+        _imp->projectFormat.toPixelEnclosing(0, 1., &pixelProjectFormat);
         if ( !pixelRod.intersect(pixelProjectFormat,&pixelRod) ) {
             return;
         }
@@ -501,7 +501,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     texRect.toCanonical_noClipping(mipMapLevel,par, &canonicalTexRect);
     
     RectI pixelTexRect_scale1;
-    canonicalTexRect.toPixelEnclosing(0, par, &pixelTexRect_scale1);
+    canonicalTexRect.toPixelEnclosing(0, 1., &pixelTexRect_scale1);
     
     pixelTexRect_scale1.intersect(pixelRod,&pixelTexRect_scale1);
     
@@ -531,7 +531,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         {
             QMutexLocker l(&_imp->userRoIMutex);
             RectI pixelUserRoi;
-            _imp->userRoI.toPixelEnclosing(0, par, &pixelUserRoi);
+            _imp->userRoI.toPixelEnclosing(0, 1., &pixelUserRoi);
             //if the userRoI isn't intersecting the rod, just don't render anything
             if ( !pixelRod.intersect(pixelUserRoi,&pixelRod) ) {
                 return;
