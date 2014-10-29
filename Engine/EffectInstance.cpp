@@ -954,39 +954,35 @@ EffectInstance::getImage(int inputNb,
     }
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
 
-    bool mustResample = false;
+    if (inputImg->getPixelAspectRatio() != par) {
+        qDebug() << "WARNING: " << getName_mt_safe().c_str() << " requested an image with a pixel aspect ratio of " << par <<
+        " but " << n->getName_mt_safe().c_str() << " rendered an image with a pixel aspect ratio of " << inputImg->getPixelAspectRatio();
+    }
     
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
     ///Note that we do NOT cache it
     if ( !dontUpscale && (inputImgMipMapLevel != 0) && !supportsRenderScale() ) {
-        mustResample = true;
+        
+        ///Resize the image according to the requested scale
+        Natron::ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
+        RectI bounds;
+        inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
+        boost::shared_ptr<Natron::Image> rescaledImg( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
+                                                                           bounds, mipMapLevel, par, bitdepth) );
+        //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
+        inputImg->scaleBox( inputImg->getBounds(), rescaledImg.get() );
+        return rescaledImg;
+
+        
     } else {
         
-        ///If the returned image doesn't have the pixel aspect ratio required, re-sample it.
-        ///This should only happen when the plug-in explicitly doesn't support multipleClipsPAR
-        ///otherwise Natron should have remapped everything
-        if (par != inputImg->getPixelAspectRatio()) {
-            mustResample = true;
-        } else {
-            ///The image is cached and we don't want Natron to remove it, so we hold a pointer to it (which will be removed
-            ///once the plug-in render action returns)
-            _imp->addInputImageTempPointer(inputImg);
-            return inputImg;
-        }
+        ///The image is cached and we don't want Natron to remove it, so we hold a pointer to it (which will be removed
+        ///once the plug-in render action returns)
+        _imp->addInputImageTempPointer(inputImg);
+        return inputImg;
+        
     }
     
-    assert(mustResample);
-    
-    ///Resample the image according to the requested scale and requested pixel aspect ratio
-    Natron::ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
-    RectI bounds;
-    inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
-    boost::shared_ptr<Natron::Image> resampledImage( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
-                                                                       bounds, mipMapLevel, par, bitdepth) );
-    //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
-    inputImg->scaleBox( inputImg->getBounds(), resampledImage.get() );
-    return resampledImage;
-
 } // getImage
 
 void

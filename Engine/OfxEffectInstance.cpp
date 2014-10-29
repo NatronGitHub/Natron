@@ -1043,9 +1043,11 @@ clipPrefsProxy(OfxEffectInstance* self,
                 setBitDepthWarning = true;
             }
             
-            if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio) {
-                foundClipPrefs->second.par = outputAspectRatio;
-                hasChanged = true;
+            if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio && foundClipPrefs->first->getConnected()) {
+                qDebug() << self->getName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
+                << ") has a pixel aspect ratio (" << foundClipPrefs->second.par
+                << ") different than the output clip (" << outputAspectRatio << ") but it doesn't support multiple clips PAR. "
+                << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
             }
             
             if (hasChanged) {
@@ -1891,6 +1893,12 @@ OfxEffectInstance::render(SequenceTime time,
         return eStatusOK;
     }
 } // render
+
+bool
+OfxEffectInstance::supportsMultipleClipsPAR() const
+{
+    return _effect->supportsMultipleClipPARs();
+}
 
 EffectInstance::RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const

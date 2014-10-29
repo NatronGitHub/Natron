@@ -1421,6 +1421,59 @@ Node::isNodeUpstream(const Natron::Node* input,
     }
 }
 
+Node::CanConnectInputReturnValue
+Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const
+{
+   
+    
+    
+    ///No-one is allowed to connect to the other node
+    if (!input->canOthersConnectToThisNode()) {
+        return eCanConnectInput_givenNodeNotConnectable;
+    }
+    
+    ///Applying this connection would create cycles in the graph
+    if (!checkIfConnectingInputIsOk(input.get())) {
+        return eCanConnectInput_graphCycles;
+    }
+    
+    {
+        ///Check for invalid index
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() )) {
+            return eCanConnectInput_indexOutOfRange;
+        }
+        if (_imp->inputs[inputNumber]) {
+            return eCanConnectInput_inputAlreadyConnected;
+        }
+        
+        ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
+        if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
+            
+            bool inputPARSet = false;
+            double inputPAR = 1.;
+            for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+                if (*it) {
+                    if (!inputPARSet) {
+                        inputPAR = (*it)->getLiveInstance()->getPreferredAspectRatio();
+                        inputPARSet = true;
+                    } else {
+                        if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                            return eCanConnectInput_differentPars;
+                        }
+                    }
+                }
+            }
+            
+            if (inputPARSet && inputPAR != input->getLiveInstance()->getPreferredAspectRatio()) {
+                return eCanConnectInput_differentPars;
+            }
+        }
+    }
+    
+    return eCanConnectInput_ok;
+}
+
 bool
 Node::connectInput(boost::shared_ptr<Node> input,
                    int inputNumber)

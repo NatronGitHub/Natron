@@ -219,6 +219,7 @@ public:
      * input and output images can be offset from the origin
      **/
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void onMultipleInputsChanged() OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;

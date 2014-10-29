@@ -214,16 +214,16 @@ OfxClipInstance::getPremult() const
 double
 OfxClipInstance::getAspectRatio() const
 {
-  //  if (isOutput()) {
+    if (isOutput()) {
         return _aspectRatio;
-//    }
-//    
-//    EffectInstance* input = getAssociatedNode();
-//    if (input) {
-//        return input->getPreferredAspectRatio();
-//    } else {
-//        return 1.;
-//    }
+    }
+    
+    EffectInstance* input = getAssociatedNode();
+    if (input) {
+        return input->getPreferredAspectRatio();
+    } else {
+        return 1.;
+    }
 }
 
 void

@@ -323,6 +323,21 @@ public:
      * represented as empty strings.
      **/
     void getInputNames(std::vector<std::string> & inputNames) const;
+    
+    enum CanConnectInputReturnValue
+    {
+        eCanConnectInput_ok = 0,
+        eCanConnectInput_indexOutOfRange,
+        eCanConnectInput_inputAlreadyConnected,
+        eCanConnectInput_givenNodeNotConnectable,
+        eCanConnectInput_graphCycles,
+        eCanConnectInput_differentPars
+    };
+    /**
+     * @brief Returns true if a connection is possible for the given input number of the current node 
+     * to the given input.
+     **/
+    Node::CanConnectInputReturnValue canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const;
 
     /** @brief Adds the node parent to the input inputNumber of the
      * node. Returns true if it succeeded, false otherwise.
