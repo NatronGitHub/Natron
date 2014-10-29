@@ -2506,7 +2506,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     ///The app is closing don't do anything
-    if ( !_imp->viewerTab->getGui() ) {
+    if ( !_imp->viewerTab->getGui() || !getInternalNode()) {
         return;
     }
 
@@ -3188,7 +3188,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
         fitImageToFormat();
     }
 
-    if ( displayingImage() ) {
+    if ( displayingImage() && _imp->viewerTab->getInternalNode()) {
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
 
