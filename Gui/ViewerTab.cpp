@@ -1241,6 +1241,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         _imp->_renderScaleCombo->setCurrentIndex(4);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
+        _imp->_zoomCombobox->setCurrentIndex_no_emit(4);
     }
 } // keyPressEvent
 
