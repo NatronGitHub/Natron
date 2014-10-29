@@ -470,6 +470,11 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
 
     ///the RoD of the image in canonical coords.
     RectD rod = getRoD(textureIndex);
+    //Convert rod to integers
+    rod.x1 = std::ceil(rod.x1);
+    rod.y1 = std::ceil(rod.y1);
+    rod.x2 = std::floor(rod.x2);
+    rod.y2 = std::floor(rod.y2);
     bool clipToDisplayWindow;
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
@@ -1265,7 +1270,10 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
                 break;
             }
             RectD dataW = getRoD(i);
-
+            dataW.x1 = std::ceil(dataW.x1);
+            dataW.y1 = std::ceil(dataW.y1);
+            dataW.x2 = std::floor(dataW.x2);
+            dataW.y2 = std::floor(dataW.y2);
             if (dataW != _imp->projectFormat) {
                 renderText(dataW.right(), dataW.top(),
                            _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
