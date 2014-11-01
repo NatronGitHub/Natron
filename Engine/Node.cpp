@@ -2538,35 +2538,61 @@ Node::getRenderInstancesSharedMutex()
     return _imp->renderInstancesSharedMutex;
 }
 
+static void refreshPreviewsRecursivelyUpstreamInternal(int time,Node* node,std::list<Node*>& marked)
+{
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
+    }
+
+    if ( node->isPreviewEnabled() ) {
+        node->refreshPreviewImage( time );
+    }
+    
+    marked.push_back(node);
+    
+    std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
+    
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if (inputs[i]) {
+            inputs[i]->refreshPreviewsRecursivelyUpstream(time);
+        }
+    }
+
+}
+
 void
 Node::refreshPreviewsRecursivelyUpstream(int time)
 {
-    if ( isPreviewEnabled() ) {
-        refreshPreviewImage( time );
+    std::list<Node*> marked;
+    refreshPreviewsRecursivelyUpstreamInternal(time,this,marked);
+}
+
+static void refreshPreviewsRecursivelyDownstreamInternal(int time,Node* node,std::list<Node*>& marked)
+{
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
     }
     
-    QMutexLocker l (&_imp->inputsMutex);
-    
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->refreshPreviewsRecursivelyUpstream(time);
-        }
+    if ( node->isPreviewEnabled() ) {
+        node->refreshPreviewImage( time );
     }
+    
+    marked.push_back(node);
+    
+    std::list<Node*> outputs;
+    node->getOutputs_mt_safe(outputs);
+    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        assert(*it);
+        (*it)->refreshPreviewsRecursivelyDownstream(time);
+    }
+
 }
 
 void
 Node::refreshPreviewsRecursivelyDownstream(int time)
 {
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    if ( isPreviewEnabled() ) {
-        refreshPreviewImage( time );
-    }
-    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        assert(*it);
-        (*it)->refreshPreviewsRecursivelyDownstream(time);
-    }
+    std::list<Node*> marked;
+    refreshPreviewsRecursivelyDownstreamInternal(time,this,marked);
 }
 
 void
