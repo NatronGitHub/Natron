@@ -109,7 +109,8 @@ SOURCES += \
     NatronEngine/app_wrapper.cpp \
     NatronEngine/effect_wrapper.cpp \
     NatronEngine/intparam_wrapper.cpp \
-    NatronEngine/param_wrapper.cpp
+    NatronEngine/param_wrapper.cpp \
+    NatronEngine/doubleparam_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -210,7 +211,8 @@ HEADERS += \
     NatronEngine/app_wrapper.h \
     NatronEngine/effect_wrapper.h \
     NatronEngine/intparam_wrapper.h \
-    NatronEngine/param_wrapper.h
+    NatronEngine/param_wrapper.h \
+    NatronEngine/doubleparam_wrapper.h
 
 OTHER_FILES += \
     typesystem_engine.xml

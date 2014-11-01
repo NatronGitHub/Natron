@@ -284,4 +284,99 @@ public:
 
 };
 
+
+class DoubleParam : public Param
+{
+    boost::shared_ptr<Double_Knob> _doubleKnob;
+public:
+    
+    DoubleParam(const boost::shared_ptr<Double_Knob>& knob);
+    
+    virtual ~DoubleParam();
+    
+    /**
+     * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
+     * will be called instead at the current's timeline position.
+     **/
+    int getValue(int dimension = 0) const;
+    
+    /**
+     * @brief Set the value held by the parameter. If it is animated
+     * this function will either add a new keyframe or modify a keyframe already existing at the current time.
+     **/
+    void setValue(int value,int dimension = 0);
+    
+    /**
+     * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
+     * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
+     * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
+     **/
+    int getValueAtTime(int time,int dimension = 0) const;
+    
+    /**
+     * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
+     **/
+    void setValueAtTime(int value,int time,int dimension = 0);
+    
+    /**
+     * @brief Set the default value for the given dimension
+     **/
+    void setDefaultValue(int value,int dimension = 0);
+    
+    /**
+     * @brief Return the default value for the given dimension
+     **/
+    int getDefaultValue(int dimension = 0) const;
+    
+    /**
+     * @brief Restores the default value for the given dimension
+     **/
+    void restoreDefaultValue(int dimension = 0);
+    
+    /**
+     * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
+     * will still be able to input values smaller than the minimum, but values returned by getValue() or getValueAtTime() will
+     * return a value clamped to it.
+     **/
+    void setMinimum(int minimum,int dimension = 0);
+    
+    /**
+     * @brief Get the minimum for the given dimension.
+     **/
+    int getMinimum(int dimension = 0) const;
+    
+    /**
+     * @brief Set the maximum possible value for the given dimension. The maximum will not limit the user on the GUI, i.e: he/she
+     * will still be able to input values greater than the maximum, but values returned by getValue() or getValueAtTime() will
+     * return a value clamped to it.
+     **/
+    void setMaximum(int maximum,int dimension = 0);
+    
+    /**
+     * @brief Get the minimum for the given dimension.
+     **/
+    int getMaximum(int dimension = 0) const;
+    
+    /**
+     * @brief Set the minimum to be displayed on a slider if this parameter has a slider.
+     **/
+    void setDisplayMinimum(int minimum,int dimension = 0);
+    
+    /**
+     * @brief Get the display minimum for the given dimension
+     **/
+    int getDisplayMinimum(int dimension) const;
+    
+    /**
+     * @brief Set the maximum to be displayed on a slider if this parameter has a slider.
+     **/
+    void setDisplayMaximum(int maximum,int dimension = 0);
+    
+    /**
+     * @brief Get the display maximum for the given dimension
+     **/
+    int getDisplayMaximum(int dimension) const;
+    
+};
+
 #endif // PARAMETERWRAPPER_H

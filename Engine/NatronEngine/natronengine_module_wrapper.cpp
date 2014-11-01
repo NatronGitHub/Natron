@@ -115,6 +115,7 @@ void init_App(PyObject* module);
 void init_Effect(PyObject* module);
 void init_Param(PyObject* module);
 void init_IntParam(PyObject* module);
+void init_DoubleParam(PyObject* module);
 void init_Natron(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -411,6 +412,7 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_Effect(module);
     init_Param(module);
     init_IntParam(module);
+    init_DoubleParam(module);
     init_Natron(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.

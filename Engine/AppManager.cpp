@@ -556,6 +556,8 @@ AppManager::loadInternal(const QString & projectFilename,
                        "value = whichParam.getValue() \n"
                        "print \"Which Param Value: \",value \n"
                        "print \"Which help: \", whichParam.getHelp() \n"
+                       "translateParam = transform.getParam(\"translate\") \n"
+                       "print \"Translate = \",translateParam.getValue() \n"
                        );
 
     

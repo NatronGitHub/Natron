@@ -291,8 +291,8 @@
             </inject-code>
         </modify-function>
     </object-type>
-    <object-type name="IntParam">
-    </object-type>
+    <object-type name="IntParam"/>
+    <object-type name="DoubleParam"/>
     
     <rejection class="App" field-name="_instance"/>
     <rejection class="Effect" field-name="_node"/>

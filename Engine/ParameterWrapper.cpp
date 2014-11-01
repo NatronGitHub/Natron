@@ -288,3 +288,109 @@ IntParam::getDisplayMaximum(int dimension) const
 {
     return _intKnob->getDisplayMaximum(dimension);
 }
+
+
+//////////// IntParam
+
+DoubleParam::DoubleParam(const boost::shared_ptr<Double_Knob>& knob)
+: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+, _doubleKnob(knob)
+{
+    
+}
+
+DoubleParam::~DoubleParam()
+{
+    
+}
+
+int
+DoubleParam::getValue(int dimension) const
+{
+    return _doubleKnob->getValue(dimension);
+}
+
+void
+DoubleParam::setValue(int value,int dimension)
+{
+    _doubleKnob->setValue(value, dimension);
+}
+
+int
+DoubleParam::getValueAtTime(int time,int dimension) const
+{
+    return _doubleKnob->getValueAtTime(time,dimension);
+}
+
+void
+DoubleParam::setValueAtTime(int value,int time,int dimension)
+{
+    _doubleKnob->setValueAtTime(time, value, dimension);
+}
+
+void
+DoubleParam::setDefaultValue(int value,int dimension)
+{
+    _doubleKnob->setDefaultValue(value,dimension);
+}
+
+int
+DoubleParam::getDefaultValue(int dimension) const
+{
+    return _doubleKnob->getDefaultValues_mt_safe()[dimension];
+}
+
+void
+DoubleParam::restoreDefaultValue(int dimension)
+{
+    _doubleKnob->resetToDefaultValue(dimension);
+}
+
+void
+DoubleParam::setMinimum(int minimum,int dimension)
+{
+    _doubleKnob->setMinimum(minimum,dimension);
+}
+
+int
+DoubleParam::getMinimum(int dimension) const
+{
+    return _doubleKnob->getMinimum(dimension);
+}
+
+void
+DoubleParam::setMaximum(int maximum,int dimension)
+{
+    _doubleKnob->setMaximum(maximum,dimension);
+}
+
+int
+DoubleParam::getMaximum(int dimension) const
+{
+    return _doubleKnob->getMaximum(dimension);
+}
+
+void
+DoubleParam::setDisplayMinimum(int minimum,int dimension)
+{
+    return _doubleKnob->setDisplayMinimum(minimum,dimension);
+}
+
+int
+DoubleParam::getDisplayMinimum(int dimension) const
+{
+    return _doubleKnob->getDisplayMinimum(dimension);
+}
+
+void
+DoubleParam::setDisplayMaximum(int maximum,int dimension)
+{
+    _doubleKnob->setDisplayMaximum(maximum,dimension);
+}
+
+
+int
+DoubleParam::getDisplayMaximum(int dimension) const
+{
+    return _doubleKnob->getDisplayMaximum(dimension);
+}
