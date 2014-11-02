@@ -3246,7 +3246,7 @@ Node::declareCurrentNodeVariable_Python(std::string& script)
     
     ///Now define the thisNode variable
     std::stringstream ss;
-    ss << "thisNode = app.getNode(" << getName_mt_safe() << ") \n";
+    ss << "thisNode = app.getNode(\"" << getName_mt_safe() << "\") \n";
     std::string toInsert = ss.str();
     script.insert(startLine, toInsert);
     return startLine + toInsert.size();

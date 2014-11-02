@@ -589,7 +589,7 @@ AppInstance::declareCurrentAppVariable_Python(std::string& script)
     
     ///Now define the app variable
     std::stringstream ss;
-    ss << "app = natron.getInstance(" << getAppID() << ") \n";
+    ss << "app = getInstance(" << getAppID() << ") \n";
     std::string toInsert = ss.str();
     script.insert(firstLine, toInsert);
     

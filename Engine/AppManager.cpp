@@ -523,13 +523,11 @@ AppManager::loadInternal(const QString & projectFilename,
 
     AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
 
-    PyRun_SimpleString("import NatronEngine as natron \n"
-                       "list = natron.getPluginIDs() \n"
+    PyRun_SimpleString("from NatronEngine import * \n"
+                       "list = getPluginIDs() \n"
                        "for i in list: \n"
                        "    print i \n"
-                       "numInstances = natron.getNumInstances() \n"
-                       "print (\"Number of instances: %i\" % numInstances) \n"
-                       "mainInstance = natron.getInstance(0) \n"
+                       "mainInstance = getInstance(0) \n"
                        "print (\"Main instance ID: %i \" % mainInstance.getAppID()) \n"
                        "switch = mainInstance.createNode(\"SwitchOFX  [Merge]\") \n"
                        "transform = mainInstance.createNode(\"TransformOFX  [Transform]\") \n"
@@ -557,7 +555,10 @@ AppManager::loadInternal(const QString & projectFilename,
                        "print \"Which Param Value: \",value \n"
                        "print \"Which help: \", whichParam.getHelp() \n"
                        "translateParam = transform.getParam(\"translate\") \n"
-                       "print \"Translate = \",translateParam.getValue() \n"
+                       "if translateParam is None: \n"
+                       "    print \"bug\" \n"
+                       "val = translateParam.getValue() \n"
+                       "print \"Translate = \",val \n"
                        );
 
     
@@ -2028,12 +2029,9 @@ questionDialog(const std::string & title,
     
 std::size_t ensureScriptHasEngineImport(std::string& script)
 {
-    ///Find out if the script already imports NATRON_ENGINE_PYTHON_MODULE_NAME
-    size_t foundNatronEngine = script.find(NATRON_ENGINE_PYTHON_MODULE_NAME);
-    if (foundNatronEngine == std::string::npos) {
-        //import NATRON_ENGINE_PYTHON_MODULE_NAME
-        script = "from " NATRON_ENGINE_PYTHON_MODULE_NAME " import *\n" + script;
-    }
+    /// import NATRON_ENGINE_PYTHON_MODULE_NAME
+    script = "from " NATRON_ENGINE_PYTHON_MODULE_NAME " import * \n" + script;
+    
     
     ///Find position of the last import
     size_t foundImport = script.find("import ");
@@ -2068,26 +2066,26 @@ std::size_t ensureScriptHasEngineImport(std::string& script)
 bool interpretPythonScript(const std::string& script,std::string* error)
 {
     //this is python code to redirect stdout/stderr
-    std::string stdOutErr =
-    "import sys \n"
-    "class CatchOutErr:\n"
-    "def __init__(self):\n"
-    "   self.value = ''\n"
-    "def write(self, txt):\n"
-    "   self.value += txt\n"
-    "catchOutErr = CatchOutErr()\n"
-    "sys.stdout = catchOutErr\n"
-    "sys.stderr = catchOutErr\n";
-    
-    PyObject *pModule = PyImport_AddModule("__main__"); //create main module
-    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
+//    std::string stdOutErr =
+//    "import sys \n"
+//    "class CatchOutErr:\n"
+//    "   def __init__(self):\n"
+//    "       self.value = ''\n"
+//    "   def write(self, txt):\n"
+//    "       self.value += txt\n"
+//    "catchOutErr = CatchOutErr()\n"
+//    "sys.stdout = catchOutErr\n"
+//    "sys.stderr = catchOutErr\n";
+//    
+//    PyObject *pModule = PyImport_AddModule("__main__"); //create main module
+//    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
     PyRun_SimpleString(script.c_str());
-    PyObject *catcher = PyObject_GetAttrString(pModule,"catchOutErr"); //get our catchOutErr created above
+//    PyObject *catcher = PyObject_GetAttrString(pModule,"catchOutErr"); //get our catchOutErr created above
     
     if (PyErr_Occurred()) {
         PyErr_Print(); //make python print any errors
-        PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object
-        *error = std::string(PyString_AsString(output));
+//        PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object
+//        *error = std::string(PyString_AsString(output));
         return false;
     }
     return true;

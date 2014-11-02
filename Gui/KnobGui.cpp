@@ -16,6 +16,8 @@
 #include <cfloat>
 #include <stdexcept>
 
+#include <Python.h>
+
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -479,7 +481,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 }
             }
             menu->addSeparator();
-        }
+        } // if (!isSlave)
         
 
         if (!isSlave) {
@@ -548,8 +550,40 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 pasteAction->setEnabled(false);
             }
         }
+    } //if ( knob->isAnimationEnabled() ) {
+    
+    menu->addSeparator();
+    if (dimension != -1 || knob->getDimension() == 1) {
+        QAction* setExprAction = new QAction(tr("Set expression..."),menu);
+        QObject::connect(setExprAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
+        setExprAction->setData(dimension);
+        menu->addAction(setExprAction);
+    }
+    
+    if (knob->getDimension() > 1) {
+        QAction* setExprsAction = new QAction(tr("Set expression (all dimensions)"),menu);
+        setExprsAction->setData(-1);
+        QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
+        menu->addAction(setExprsAction);
     }
 } // createAnimationMenu
+
+void
+KnobGui::onSetExprActionTriggered()
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    assert(action);
+    
+    int dim = action->data().toInt();
+    
+  
+    EditExpressionDialog dialog(dim,this,_imp->container);
+    if (dialog.exec()) {
+        bool hasRetVar;
+        QString expr = dialog.getExpression(&hasRetVar);
+        pushUndoCommand(new SetExpressionCommand(getKnob(),hasRetVar,dim,expr.toStdString()));
+    }
+}
 
 void
 KnobGui::setSecret()
@@ -1718,4 +1752,142 @@ KnobGui::onRefreshGuiCurve(int /*dimension*/)
 {
     emit refreshCurveEditor();
 }
+
+struct EditExpressionDialogPrivate
+{
+    KnobGui* knob;
+    int dimension;
+    
+    QVBoxLayout* mainLayout;
+    
+    QLabel* expressionLabel;
+    QTextEdit* expressionEdit;
+    
+    QWidget* midButtonsContainer;
+    QHBoxLayout* midButtonsLayout;
+    
+    Button* useRetButton;
+    
+    QLabel* resultLabel;
+    QTextEdit* resultEdit;
+    
+    QDialogButtonBox* buttons;
+    
+    EditExpressionDialogPrivate(int dimension,KnobGui* knob)
+    : knob(knob)
+    , dimension(dimension)
+    , mainLayout(0)
+    , expressionLabel(0)
+    , expressionEdit(0)
+    , midButtonsContainer(0)
+    , midButtonsLayout(0)
+    , useRetButton(0)
+    , resultLabel(0)
+    , resultEdit(0)
+    , buttons(0)
+    {
+        
+    }
+};
+
+EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
+: QDialog(parent)
+, _imp(new EditExpressionDialogPrivate(dimension,knob))
+{
+    boost::shared_ptr<KnobI> k = knob->getKnob();
+    
+    QString title(tr("Set expression on "));
+    title.append(k->getName().c_str());
+    if (dimension != -1 && k->getDimension() > 1) {
+        title.append(".");
+        title.append(k->getDimensionName(dimension).c_str());
+    }
+    setWindowTitle(title);
+    
+    _imp->mainLayout = new QVBoxLayout(this);
+    
+    _imp->expressionLabel = new QLabel(tr("Python Expression:"),this);
+    _imp->mainLayout->addWidget(_imp->expressionLabel);
+    
+    std::string curExpr = k->getExpression(dimension == -1 ? 0 : dimension);
+    _imp->expressionEdit = new QTextEdit(this);
+    _imp->mainLayout->addWidget(_imp->expressionEdit);
+    _imp->expressionEdit->setPlainText(curExpr.c_str());
+    
+    _imp->midButtonsContainer = new QWidget(this);
+    _imp->midButtonsLayout = new QHBoxLayout(_imp->midButtonsContainer);
+    
+    bool hasRetVariable = k->isExpressionUsingRetVariable(dimension == -1 ? 0 : dimension);
+    
+    
+    _imp->useRetButton = new Button(tr("Ret"),_imp->midButtonsContainer);
+    _imp->useRetButton->setCheckable(true);
+    bool checked = !curExpr.empty() && hasRetVariable;
+    _imp->useRetButton->setChecked(checked);
+    _imp->useRetButton->setDown(checked);
+    QObject::connect(_imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)));
+    
+    _imp->midButtonsLayout->addWidget(_imp->useRetButton);
+    _imp->midButtonsLayout->addStretch();
+    
+    _imp->mainLayout->addWidget(_imp->midButtonsContainer);
+    
+    _imp->resultLabel = new QLabel(tr("Result:"),this);
+    _imp->mainLayout->addWidget(_imp->resultLabel);
+    
+    _imp->resultEdit = new QTextEdit(this);
+    _imp->resultEdit->setReadOnly(true);
+    _imp->mainLayout->addWidget(_imp->resultEdit);
+    
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
+    _imp->mainLayout->addWidget(_imp->buttons);
+    QObject::connect(_imp->buttons,SIGNAL(accepted()),this,SLOT(accept()));
+    QObject::connect(_imp->buttons,SIGNAL(rejected()),this,SLOT(reject()));
+    
+    if (!curExpr.empty()) {
+        compileExpression(curExpr.c_str());
+    }
+    QObject::connect(_imp->expressionEdit, SIGNAL(textChanged()), this, SLOT(onTextEditChanged()));
+
+}
+
+void
+EditExpressionDialog::compileExpression(const QString& expr)
+{
+    try {
+        _imp->knob->getKnob()->validateExpression(expr.toStdString(),_imp->dimension == -1 ? 0 : _imp->dimension,_imp->useRetButton->isChecked());
+    } catch(const std::exception& e) {
+        QString err = QString("ERROR: %1").arg(e.what());
+        _imp->resultEdit->setPlainText(err);
+        return;
+    }
+    _imp->resultEdit->clear();
+    
+}
+
+QString
+EditExpressionDialog::getExpression(bool* hasRetVariable) const
+{
+    *hasRetVariable = _imp->useRetButton->isChecked();
+    return _imp->expressionEdit->toPlainText();
+}
+
+void
+EditExpressionDialog::onTextEditChanged()
+{
+    compileExpression(_imp->expressionEdit->toPlainText());
+}
+
+void
+EditExpressionDialog::onUseRetButtonClicked(bool useRet)
+{
+    compileExpression(_imp->expressionEdit->toPlainText());
+    _imp->useRetButton->setDown(useRet);
+}
+
+EditExpressionDialog::~EditExpressionDialog()
+{
+    
+}
+
 

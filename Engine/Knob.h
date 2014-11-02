@@ -441,6 +441,19 @@ public:
      **/
     virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) = 0;
     virtual std::string getExpression(int dimension) const = 0;
+    
+    /**
+     * @brief Checks that the given expr for the given dimension will produce a correct behaviour.
+     * On success this function returns correctly, otherwise an exception is thrown with the error.
+     * This function also declares some extra python variables via the declareCurrentKnobVariable_Python function.
+     * The new expression is returned.
+     **/
+    std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable);
+    
+    /**
+     * @brief Returns whether the expr at the given dimension uses the ret variable to assign to the return value or not
+     **/
+    virtual bool isExpressionUsingRetVariable(int dimension = 0) const = 0;
 
     /**
      * @brief Called when the master knob has changed its values or keyframes.
@@ -749,15 +762,17 @@ public:
      * @brief Inserts in the given script after the import lines the declaration of the variable "thisParam" which is in fact a pointer
      * to this knob. This function also declares the variable "frame" which holds the current time and "value" which holds the current value
      * at the current time.
+     * @param dimension If not -1 a variable named "dimension" will be declared with the current dimension of the parameter on which the 
+     * expression is applied to.
      * @returns the index of the start of the next line after the  variable declaration
      **/
-    std::size_t declareCurrentKnobVariable_Python(std::string& script);
+    static std::size_t declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& script);
     
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(KnobI* knob) = 0;
+    virtual void addListener(int fromExprDimension,KnobI* knob) = 0;
     virtual void removeListener(KnobI* knob) = 0;
 
 protected:
@@ -934,6 +949,7 @@ public:
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) OVERRIDE FINAL;
+    virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
@@ -1011,7 +1027,7 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(KnobI* knob) OVERRIDE FINAL;
+    virtual void addListener(int fromExprDimension,KnobI* knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
 
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;

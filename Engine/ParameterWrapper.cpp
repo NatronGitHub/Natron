@@ -168,15 +168,9 @@ Param::getCurrentTime() const
 }
 
 void
-Param::addDependency(const Param* param)
+Param::addAsDependencyOf(int fromExprDimension,Param* param)
 {
-    _knob->addListener(param->_knob.get());
-}
-
-void
-Param::addAsDependencyOf(Param* param)
-{
-    param->addDependency(this);
+    param->_knob->addListener(fromExprDimension, _knob.get());
 }
 
 void
@@ -290,7 +284,7 @@ IntParam::getDisplayMaximum(int dimension) const
 }
 
 
-//////////// IntParam
+//////////// DoubleParam
 
 DoubleParam::DoubleParam(const boost::shared_ptr<Double_Knob>& knob)
 : Param(boost::dynamic_pointer_cast<KnobI>(knob))
@@ -304,37 +298,37 @@ DoubleParam::~DoubleParam()
     
 }
 
-int
+double
 DoubleParam::getValue(int dimension) const
 {
     return _doubleKnob->getValue(dimension);
 }
 
 void
-DoubleParam::setValue(int value,int dimension)
+DoubleParam::setValue(double value,int dimension)
 {
     _doubleKnob->setValue(value, dimension);
 }
 
-int
+double
 DoubleParam::getValueAtTime(int time,int dimension) const
 {
     return _doubleKnob->getValueAtTime(time,dimension);
 }
 
 void
-DoubleParam::setValueAtTime(int value,int time,int dimension)
+DoubleParam::setValueAtTime(double value,int time,int dimension)
 {
     _doubleKnob->setValueAtTime(time, value, dimension);
 }
 
 void
-DoubleParam::setDefaultValue(int value,int dimension)
+DoubleParam::setDefaultValue(double value,int dimension)
 {
     _doubleKnob->setDefaultValue(value,dimension);
 }
 
-int
+double
 DoubleParam::getDefaultValue(int dimension) const
 {
     return _doubleKnob->getDefaultValues_mt_safe()[dimension];
@@ -347,49 +341,49 @@ DoubleParam::restoreDefaultValue(int dimension)
 }
 
 void
-DoubleParam::setMinimum(int minimum,int dimension)
+DoubleParam::setMinimum(double minimum,int dimension)
 {
     _doubleKnob->setMinimum(minimum,dimension);
 }
 
-int
+double
 DoubleParam::getMinimum(int dimension) const
 {
     return _doubleKnob->getMinimum(dimension);
 }
 
 void
-DoubleParam::setMaximum(int maximum,int dimension)
+DoubleParam::setMaximum(double maximum,int dimension)
 {
     _doubleKnob->setMaximum(maximum,dimension);
 }
 
-int
+double
 DoubleParam::getMaximum(int dimension) const
 {
     return _doubleKnob->getMaximum(dimension);
 }
 
 void
-DoubleParam::setDisplayMinimum(int minimum,int dimension)
+DoubleParam::setDisplayMinimum(double minimum,int dimension)
 {
     return _doubleKnob->setDisplayMinimum(minimum,dimension);
 }
 
-int
+double
 DoubleParam::getDisplayMinimum(int dimension) const
 {
     return _doubleKnob->getDisplayMinimum(dimension);
 }
 
 void
-DoubleParam::setDisplayMaximum(int maximum,int dimension)
+DoubleParam::setDisplayMaximum(double maximum,int dimension)
 {
     _doubleKnob->setDisplayMaximum(maximum,dimension);
 }
 
 
-int
+double
 DoubleParam::getDisplayMaximum(int dimension) const
 {
     return _doubleKnob->getDisplayMaximum(dimension);

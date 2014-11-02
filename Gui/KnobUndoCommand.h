@@ -312,4 +312,27 @@ private:
     std::list<boost::shared_ptr<KnobI> > _knobs,_clones;
 };
 
+class SetExpressionCommand
+: public QUndoCommand
+{
+public:
+    
+    SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+                         bool hasRetVar,
+                         int dimension,
+                         const std::string& expr,
+                         QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    boost::shared_ptr<KnobI > _knob;
+    std::vector<std::string> _oldExprs;
+    std::vector<bool> _hadRetVar;
+    std::string _newExpr;
+    bool _hasRetVar;
+    int _dimension;
+};
+
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H_

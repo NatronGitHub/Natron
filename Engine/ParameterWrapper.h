@@ -177,12 +177,11 @@ public:
     int getCurrentTime() const;
     
     /**
-     * @brief Adds the given param as a dependency to the current Param. This is used mainly by the GUI to notify the user
-     * when a dependency is destroyed (because the holding node has been removed).
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    void addDependency(const Param* param);
-    void addAsDependencyOf(Param* param);
+    void addAsDependencyOf(int fromExprDimension,Param* param);
     
     /**
      * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
@@ -298,35 +297,35 @@ public:
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    int getValue(int dimension = 0) const;
+    double getValue(int dimension = 0) const;
     
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(int value,int dimension = 0);
+    void setValue(double value,int dimension = 0);
     
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(int time,int dimension = 0) const;
+    double getValueAtTime(int time,int dimension = 0) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value,int time,int dimension = 0);
+    void setValueAtTime(double value,int time,int dimension = 0);
     
     /**
      * @brief Set the default value for the given dimension
      **/
-    void setDefaultValue(int value,int dimension = 0);
+    void setDefaultValue(double value,int dimension = 0);
     
     /**
      * @brief Return the default value for the given dimension
      **/
-    int getDefaultValue(int dimension = 0) const;
+    double getDefaultValue(int dimension = 0) const;
     
     /**
      * @brief Restores the default value for the given dimension
@@ -338,44 +337,44 @@ public:
      * will still be able to input values smaller than the minimum, but values returned by getValue() or getValueAtTime() will
      * return a value clamped to it.
      **/
-    void setMinimum(int minimum,int dimension = 0);
+    void setMinimum(double minimum,int dimension = 0);
     
     /**
      * @brief Get the minimum for the given dimension.
      **/
-    int getMinimum(int dimension = 0) const;
+    double getMinimum(int dimension = 0) const;
     
     /**
      * @brief Set the maximum possible value for the given dimension. The maximum will not limit the user on the GUI, i.e: he/she
      * will still be able to input values greater than the maximum, but values returned by getValue() or getValueAtTime() will
      * return a value clamped to it.
      **/
-    void setMaximum(int maximum,int dimension = 0);
+    void setMaximum(double maximum,int dimension = 0);
     
     /**
      * @brief Get the minimum for the given dimension.
      **/
-    int getMaximum(int dimension = 0) const;
+    double getMaximum(int dimension = 0) const;
     
     /**
      * @brief Set the minimum to be displayed on a slider if this parameter has a slider.
      **/
-    void setDisplayMinimum(int minimum,int dimension = 0);
+    void setDisplayMinimum(double minimum,int dimension = 0);
     
     /**
      * @brief Get the display minimum for the given dimension
      **/
-    int getDisplayMinimum(int dimension) const;
+    double getDisplayMinimum(int dimension) const;
     
     /**
      * @brief Set the maximum to be displayed on a slider if this parameter has a slider.
      **/
-    void setDisplayMaximum(int maximum,int dimension = 0);
+    void setDisplayMaximum(double maximum,int dimension = 0);
     
     /**
      * @brief Get the display maximum for the given dimension
      **/
-    int getDisplayMaximum(int dimension) const;
+    double getDisplayMaximum(int dimension) const;
     
 };
 

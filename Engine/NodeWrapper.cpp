@@ -96,8 +96,11 @@ Effect::getPluginID() const
 Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
 {
     boost::shared_ptr<Int_Knob> isInt = boost::dynamic_pointer_cast<Int_Knob>(knob);
+    boost::shared_ptr<Double_Knob> isDouble = boost::dynamic_pointer_cast<Double_Knob>(knob);
     if (isInt) {
         return new IntParam(isInt);
+    } else if (isDouble) {
+        return new DoubleParam(isDouble);
     }
     return NULL;
 }

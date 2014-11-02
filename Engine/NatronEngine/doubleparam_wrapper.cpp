@@ -80,9 +80,9 @@ static PyObject* Sbk_DoubleParamFunc_getDefaultValue(PyObject* self, PyObject* a
         if (!PyErr_Occurred()) {
             // getDefaultValue(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDefaultValue(cppArg0);
+            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDefaultValue(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -127,9 +127,9 @@ static PyObject* Sbk_DoubleParamFunc_getDisplayMaximum(PyObject* self, PyObject*
         if (!PyErr_Occurred()) {
             // getDisplayMaximum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDisplayMaximum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDisplayMaximum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -174,9 +174,9 @@ static PyObject* Sbk_DoubleParamFunc_getDisplayMinimum(PyObject* self, PyObject*
         if (!PyErr_Occurred()) {
             // getDisplayMinimum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDisplayMinimum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDisplayMinimum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -247,9 +247,9 @@ static PyObject* Sbk_DoubleParamFunc_getMaximum(PyObject* self, PyObject* args, 
         if (!PyErr_Occurred()) {
             // getMaximum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getMaximum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getMaximum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -320,9 +320,9 @@ static PyObject* Sbk_DoubleParamFunc_getMinimum(PyObject* self, PyObject* args, 
         if (!PyErr_Occurred()) {
             // getMinimum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getMinimum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getMinimum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -393,9 +393,9 @@ static PyObject* Sbk_DoubleParamFunc_getValue(PyObject* self, PyObject* args, Py
         if (!PyErr_Occurred()) {
             // getValue(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getValue(cppArg0);
+            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getValue(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -473,9 +473,9 @@ static PyObject* Sbk_DoubleParamFunc_getValueAtTime(PyObject* self, PyObject* ar
         if (!PyErr_Occurred()) {
             // getValueAtTime(int,int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
+            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -589,12 +589,12 @@ static PyObject* Sbk_DoubleParamFunc_setDefaultValue(PyObject* self, PyObject* a
 
 
     // Overloaded function decisor
-    // 0: setDefaultValue(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: setDefaultValue(double,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setDefaultValue(int,int)
+            overloadId = 0; // setDefaultValue(double,int)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setDefaultValue(int,int)
+            overloadId = 0; // setDefaultValue(double,int)
         }
     }
 
@@ -614,13 +614,13 @@ static PyObject* Sbk_DoubleParamFunc_setDefaultValue(PyObject* self, PyObject* a
                     goto Sbk_DoubleParamFunc_setDefaultValue_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setDefaultValue(int,int)
+            // setDefaultValue(double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setDefaultValue(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -633,7 +633,7 @@ static PyObject* Sbk_DoubleParamFunc_setDefaultValue(PyObject* self, PyObject* a
     Py_RETURN_NONE;
 
     Sbk_DoubleParamFunc_setDefaultValue_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.DoubleParam.setDefaultValue", overloads);
         return 0;
 }
@@ -666,12 +666,12 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMaximum(PyObject* self, PyObject*
 
 
     // Overloaded function decisor
-    // 0: setDisplayMaximum(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: setDisplayMaximum(double,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setDisplayMaximum(int,int)
+            overloadId = 0; // setDisplayMaximum(double,int)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setDisplayMaximum(int,int)
+            overloadId = 0; // setDisplayMaximum(double,int)
         }
     }
 
@@ -691,13 +691,13 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMaximum(PyObject* self, PyObject*
                     goto Sbk_DoubleParamFunc_setDisplayMaximum_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setDisplayMaximum(int,int)
+            // setDisplayMaximum(double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setDisplayMaximum(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -710,7 +710,7 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMaximum(PyObject* self, PyObject*
     Py_RETURN_NONE;
 
     Sbk_DoubleParamFunc_setDisplayMaximum_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.DoubleParam.setDisplayMaximum", overloads);
         return 0;
 }
@@ -743,12 +743,12 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMinimum(PyObject* self, PyObject*
 
 
     // Overloaded function decisor
-    // 0: setDisplayMinimum(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: setDisplayMinimum(double,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setDisplayMinimum(int,int)
+            overloadId = 0; // setDisplayMinimum(double,int)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setDisplayMinimum(int,int)
+            overloadId = 0; // setDisplayMinimum(double,int)
         }
     }
 
@@ -768,13 +768,13 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMinimum(PyObject* self, PyObject*
                     goto Sbk_DoubleParamFunc_setDisplayMinimum_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setDisplayMinimum(int,int)
+            // setDisplayMinimum(double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setDisplayMinimum(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -787,7 +787,7 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMinimum(PyObject* self, PyObject*
     Py_RETURN_NONE;
 
     Sbk_DoubleParamFunc_setDisplayMinimum_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.DoubleParam.setDisplayMinimum", overloads);
         return 0;
 }
@@ -820,12 +820,12 @@ static PyObject* Sbk_DoubleParamFunc_setMaximum(PyObject* self, PyObject* args, 
 
 
     // Overloaded function decisor
-    // 0: setMaximum(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: setMaximum(double,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setMaximum(int,int)
+            overloadId = 0; // setMaximum(double,int)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setMaximum(int,int)
+            overloadId = 0; // setMaximum(double,int)
         }
     }
 
@@ -845,13 +845,13 @@ static PyObject* Sbk_DoubleParamFunc_setMaximum(PyObject* self, PyObject* args, 
                     goto Sbk_DoubleParamFunc_setMaximum_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setMaximum(int,int)
+            // setMaximum(double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setMaximum(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -864,7 +864,7 @@ static PyObject* Sbk_DoubleParamFunc_setMaximum(PyObject* self, PyObject* args, 
     Py_RETURN_NONE;
 
     Sbk_DoubleParamFunc_setMaximum_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.DoubleParam.setMaximum", overloads);
         return 0;
 }
@@ -897,12 +897,12 @@ static PyObject* Sbk_DoubleParamFunc_setMinimum(PyObject* self, PyObject* args, 
 
 
     // Overloaded function decisor
-    // 0: setMinimum(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: setMinimum(double,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setMinimum(int,int)
+            overloadId = 0; // setMinimum(double,int)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setMinimum(int,int)
+            overloadId = 0; // setMinimum(double,int)
         }
     }
 
@@ -922,13 +922,13 @@ static PyObject* Sbk_DoubleParamFunc_setMinimum(PyObject* self, PyObject* args, 
                     goto Sbk_DoubleParamFunc_setMinimum_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setMinimum(int,int)
+            // setMinimum(double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setMinimum(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -941,7 +941,7 @@ static PyObject* Sbk_DoubleParamFunc_setMinimum(PyObject* self, PyObject* args, 
     Py_RETURN_NONE;
 
     Sbk_DoubleParamFunc_setMinimum_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.DoubleParam.setMinimum", overloads);
         return 0;
 }
@@ -974,12 +974,12 @@ static PyObject* Sbk_DoubleParamFunc_setValue(PyObject* self, PyObject* args, Py
 
 
     // Overloaded function decisor
-    // 0: setValue(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: setValue(double,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setValue(int,int)
+            overloadId = 0; // setValue(double,int)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setValue(int,int)
+            overloadId = 0; // setValue(double,int)
         }
     }
 
@@ -999,13 +999,13 @@ static PyObject* Sbk_DoubleParamFunc_setValue(PyObject* self, PyObject* args, Py
                     goto Sbk_DoubleParamFunc_setValue_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setValue(int,int)
+            // setValue(double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setValue(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -1018,7 +1018,7 @@ static PyObject* Sbk_DoubleParamFunc_setValue(PyObject* self, PyObject* args, Py
     Py_RETURN_NONE;
 
     Sbk_DoubleParamFunc_setValue_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.DoubleParam.setValue", overloads);
         return 0;
 }
@@ -1051,14 +1051,14 @@ static PyObject* Sbk_DoubleParamFunc_setValueAtTime(PyObject* self, PyObject* ar
 
 
     // Overloaded function decisor
-    // 0: setValueAtTime(int,int,int)
+    // 0: setValueAtTime(double,int,int)
     if (numArgs >= 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
         if (numArgs == 2) {
-            overloadId = 0; // setValueAtTime(int,int,int)
+            overloadId = 0; // setValueAtTime(double,int,int)
         } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-            overloadId = 0; // setValueAtTime(int,int,int)
+            overloadId = 0; // setValueAtTime(double,int,int)
         }
     }
 
@@ -1078,7 +1078,7 @@ static PyObject* Sbk_DoubleParamFunc_setValueAtTime(PyObject* self, PyObject* ar
                     goto Sbk_DoubleParamFunc_setValueAtTime_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
@@ -1086,7 +1086,7 @@ static PyObject* Sbk_DoubleParamFunc_setValueAtTime(PyObject* self, PyObject* ar
         if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // setValueAtTime(int,int,int)
+            // setValueAtTime(double,int,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setValueAtTime(cppArg0, cppArg1, cppArg2);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -1099,7 +1099,7 @@ static PyObject* Sbk_DoubleParamFunc_setValueAtTime(PyObject* self, PyObject* ar
     Py_RETURN_NONE;
 
     Sbk_DoubleParamFunc_setValueAtTime_TypeError:
-        const char* overloads[] = {"int, int, int = 0", 0};
+        const char* overloads[] = {"float, int, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.DoubleParam.setValueAtTime", overloads);
         return 0;
 }

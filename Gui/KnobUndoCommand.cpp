@@ -512,3 +512,62 @@ RestoreDefaultsCommand::redo()
     setText( QObject::tr("Restore default value(s)") );
 }
 
+
+SetExpressionCommand::SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+                     bool hasRetVar,
+                     int dimension,
+                     const std::string& expr,
+                     QUndoCommand *parent)
+: QUndoCommand(parent)
+, _knob(knob)
+, _oldExprs()
+, _hadRetVar()
+, _newExpr(expr)
+, _hasRetVar(hasRetVar)
+, _dimension(dimension)
+{
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        _oldExprs.push_back(knob->getExpression(i));
+        _hadRetVar.push_back(knob->isExpressionUsingRetVariable(i));
+    }
+}
+
+void
+SetExpressionCommand::undo()
+{
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        try {
+            _knob->setExpression(i, _oldExprs[i], _hadRetVar[i]);
+        } catch (...) {
+            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            break;
+        }
+    }
+    
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited);
+
+    setText( QObject::tr("Set expression") );
+}
+
+void
+SetExpressionCommand::redo()
+{
+    if (_dimension == -1) {
+        for (int i = 0; i < _knob->getDimension(); ++i) {
+            try {
+                _knob->setExpression(i, _newExpr, _hasRetVar);
+            } catch (...) {
+                Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+                break;
+            }
+        }
+    } else {
+        try {
+            _knob->setExpression(_dimension, _newExpr, _hasRetVar);
+        } catch (...) {
+            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+        }
+    }
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited);
+    setText( QObject::tr("Set expression") );
+}

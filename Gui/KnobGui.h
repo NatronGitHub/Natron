@@ -270,6 +270,7 @@ public slots:
 
     void updateCurveEditorKeyframes();
 
+    void onSetExprActionTriggered();
 signals:
 
     void knobUndoneChange();
@@ -372,6 +373,31 @@ public slots:
 private:
 
     boost::scoped_ptr<LinkToKnobDialogPrivate> _imp;
+};
+
+
+struct EditExpressionDialogPrivate;
+class EditExpressionDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent);
+    
+    virtual ~EditExpressionDialog();
+    
+    QString getExpression(bool* hasRetVariable) const;
+public slots:
+    
+    void onUseRetButtonClicked(bool useRet);
+    void onTextEditChanged();
+    
+private:
+    
+    void compileExpression(const QString& expr);
+    
+    boost::scoped_ptr<EditExpressionDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_KNOBGUI_H_
