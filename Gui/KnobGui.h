@@ -273,6 +273,10 @@ public slots:
     void onSetExprActionTriggered();
     
     void onEditExprDialogFinished();
+    
+    void onExprChanged(int dimension);
+    
+    void onHelpChanged();
 signals:
 
     void knobUndoneChange();
@@ -338,7 +342,11 @@ private:
                                        Natron::AnimationLevelEnum /*level*/)
     {
     }
+    
+    virtual void reflectExpressionState(int /*dimension*/,bool /*hasExpr*/) {}
 
+    virtual void updateToolTip() {}
+    
     void createAnimationMenu(QMenu* menu,int dimension);
 
     void createAnimationButton(QHBoxLayout* layout);

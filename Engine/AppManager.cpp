@@ -522,45 +522,6 @@ AppManager::loadInternal(const QString & projectFilename,
     }
 
     AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
-
-    PyRun_SimpleString("from NatronEngine import * \n"
-                       "list = getPluginIDs() \n"
-                       "for i in list: \n"
-                       "    print i \n"
-                       "mainInstance = getInstance(0) \n"
-                       "print (\"Main instance ID: %i \" % mainInstance.getAppID()) \n"
-                       "switch = mainInstance.createNode(\"SwitchOFX  [Merge]\") \n"
-                       "transform = mainInstance.createNode(\"TransformOFX  [Transform]\") \n"
-                       "success = switch.connectInput(0,transform) \n"
-                       "print success \n"
-                       "input = switch.getInput(0) \n"
-                       "if input is not None: \n"
-                       "    print \"Correctly connected!\"\n"
-                       "print \"Input name:\",input.getName() \n"
-                       "switch.disconnectInput(0) \n"
-                       "input = switch.getInput(0) \n"
-                       "if input is None: \n"
-                       "    print \"Correctly disconnected!\"\n"
-                       "else: \n"
-                       "   print \"BUG!\" \n"
-                       "parameters = switch.getParams() \n"
-                       "print \"Printing parameters of Switch...\" \n"
-                       "for param in parameters: \n"
-                       "    print param.getScriptName() \n"
-                       "print \"End Switch parameters found\" \n"
-                       "whichParam = switch.getParam(\"which\") \n"
-                       "if whichParam is not None: \n"
-                       "    print \"Correctly found which parameter!\"\n"
-                       "value = whichParam.getValue() \n"
-                       "print \"Which Param Value: \",value \n"
-                       "print \"Which help: \", whichParam.getHelp() \n"
-                       "translateParam = transform.getParam(\"translate\") \n"
-                       "if translateParam is None: \n"
-                       "    print \"bug\" \n"
-                       "val = translateParam.getValue() \n"
-                       "print \"Translate = \",val \n"
-                       );
-
     
     hideSplashScreen();
 

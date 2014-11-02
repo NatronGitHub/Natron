@@ -621,6 +621,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
             continue;
         }
         (*it)->restoreKnobLinks(knob,allNodes);
+        (*it)->restoreExpressions(knob);
         (*it)->restoreTracks(knob,allNodes);
     }
 }
@@ -2627,10 +2628,10 @@ Node::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-Node::onKnobSlaved(const boost::shared_ptr<KnobI> & knob,
+Node::onKnobSlaved(const boost::shared_ptr<KnobI> & slave,
+                   const boost::shared_ptr<KnobI> & master,
                    int dimension,
-                   bool isSlave,
-                   KnobHolder* master)
+                   bool isSlave)
 {
     ///ignore the call if the node is a clone
     {
@@ -2640,8 +2641,11 @@ Node::onKnobSlaved(const boost::shared_ptr<KnobI> & knob,
         }
     }
     
+    assert(master->getHolder());
+    
+    
     ///If the holder isn't an effect, ignore it too
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(master);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(master->getHolder());
     
     if (!isEffect) {
         return;
@@ -2666,7 +2670,8 @@ Node::onKnobSlaved(const boost::shared_ptr<KnobI> & knob,
                 ///Add a new link
                 KnobLink link;
                 link.masterNode = parentNode;
-                link.knob = knob;
+                link.slave = slave;
+                link.master = master;
                 link.dimension = dimension;
                 _imp->nodeLinks.push_back(link);
                 changed = true;

@@ -479,15 +479,13 @@ private:
     boost::shared_ptr<NodeGui> _masterNodeGui;
 
     ///For each knob that has a link to another parameter, display an arrow
-    ///This might need to be a multimap in the future if an expression refers to several params
     struct LinkedDim
     {
-        KnobI* knob;
-        int dimension;
+        std::list<std::pair<KnobI*,KnobI*> > knobs;
         LinkArrow* arrow;
     };
 
-    typedef std::list<LinkedDim> KnobGuiLinks;
+    typedef std::map<boost::shared_ptr<Natron::Node>,LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
     NodeGuiIndicator* _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y

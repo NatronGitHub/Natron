@@ -550,7 +550,7 @@ public:
 
     void onAllKnobsSlaved(bool isSlave,KnobHolder* master);
 
-    void onKnobSlaved(const boost::shared_ptr<KnobI> & knob,int dimension,bool isSlave,KnobHolder* master);
+    void onKnobSlaved(const boost::shared_ptr<KnobI> & slave,const boost::shared_ptr<KnobI> & master,int dimension,bool isSlave);
 
     boost::shared_ptr<Natron::Node> getMasterNode() const;
 
@@ -645,12 +645,13 @@ public:
     struct KnobLink
     {
         ///The knob being slaved
-        boost::shared_ptr<KnobI> knob;
+        boost::shared_ptr<KnobI> slave;
+        boost::shared_ptr<KnobI> master;
 
-        ///The dimension being slaved
+        ///The dimension being slaved, -1 if irrelevant
         int dimension;
 
-        ///The master to which the knob is slaved to
+        ///The master node to which the knob is slaved to
         boost::shared_ptr<Node> masterNode;
     };
 

@@ -704,7 +704,7 @@ void
 NodeGui::refreshKnobLinks()
 {
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->arrow->refreshPosition();
+        it->second.arrow->refreshPosition();
     }
     if (_slaveMasterLink) {
         _slaveMasterLink->refreshPosition();
@@ -1209,7 +1209,7 @@ NodeGui::showGui()
         }
     }
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->arrow->show();
+        it->second.arrow->show();
     }
 }
 
@@ -1278,7 +1278,7 @@ NodeGui::hideGui()
         _slaveMasterLink->hide();
     }
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->arrow->hide();
+        it->second.arrow->hide();
     }
 
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( _internalNode->getLiveInstance() );
@@ -1686,6 +1686,27 @@ NodeGui::onAllKnobsSlaved(bool b)
     update();
 }
 
+static QString makeLinkString(Natron::Node* masterNode,KnobI* master,Natron::Node* slaveNode,KnobI* slave)
+{
+    QString tt("<br>");
+    tt.append(masterNode->getName().c_str());
+    tt.append(".");
+    tt.append(master->getName().c_str());
+    
+    
+    tt.append(" (master) ");
+    
+    tt.append("------->");
+    
+    tt.append(slaveNode->getName().c_str());
+    tt.append(".");
+    tt.append(slave->getName().c_str());
+    
+    
+    tt.append(" (slave)</br>");
+    return tt;
+}
+
 void
 NodeGui::onKnobsLinksChanged()
 {
@@ -1698,15 +1719,15 @@ NodeGui::onKnobsLinksChanged()
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
         bool found = false;
         for (InternalLinks::iterator it2 = links.begin(); it2 != links.end(); ++it2) {
-            if ( (it2->knob.get() == it->knob) && (it2->dimension == it->dimension) ) {
+            if (it2->masterNode == it->first) {
                 found = true;
                 break;
             }
         }
         if (!found) {
-            delete it->arrow;
+            delete it->second.arrow;
         } else {
-            newLinks.push_back(*it);
+            newLinks.insert(*it);
         }
     }
     _knobsLinks = newLinks;
@@ -1714,57 +1735,45 @@ NodeGui::onKnobsLinksChanged()
     ///2nd pass: create the new links
 
     for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
-        bool found = false;
-        for (KnobGuiLinks::iterator it2 = _knobsLinks.begin(); it2 != _knobsLinks.end(); ++it2) {
-            if ( it2->knob == it->knob.get() ) {
-                found = true;
-                break;
+        
+        KnobGuiLinks::iterator foundGuiLink = _knobsLinks.find(it->masterNode);
+        if (foundGuiLink != _knobsLinks.end()) {
+            
+            bool found = false;
+
+            for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
+                if (it2->first == it->slave.get() && it2->second == it->master.get()) {
+                    found = true;
+                    break;
+                }
             }
-        }
-        if (!found) {
+            if (!found) {
+                foundGuiLink->second.knobs.push_back(std::make_pair(it->slave.get(),it->master.get()));
+                QString fullTooltip;
+                for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
+                    QString tt = makeLinkString(it->masterNode.get(),it2->second,_internalNode.get(),it2->first);
+                    fullTooltip.append(tt);
+                }
+            }
+        } else {
             boost::shared_ptr<NodeGui> master = getDagGui()->getGui()->getApp()->getNodeGui(it->masterNode);
             LinkArrow* arrow = new LinkArrow( master.get(),this,parentItem() );
             arrow->setWidth(2);
             arrow->setColor( QColor(143,201,103) );
             arrow->setArrowHeadColor( QColor(200,255,200) );
-
-            int masterDim,slaveDim;
-            slaveDim = it->dimension;
-            std::pair<int,boost::shared_ptr<KnobI> > masterKnob = it->knob->getMaster(slaveDim);
-            assert(masterKnob.second);
-            masterDim = masterKnob.first;
-            QString tt;
-            tt.append( master->getNode()->getName().c_str() );
-            tt.append(".");
-            tt.append( masterKnob.second->getDescription().c_str() );
-            if (masterKnob.second->getDimension() > 1) {
-                tt.append(".");
-                tt.append( masterKnob.second->getDimensionName(masterDim).c_str() );
-            }
-            tt.append(" (master) ");
-
-            tt.append("------->");
-
-            tt.append( getNode()->getName().c_str() );
-            tt.append(".");
-            tt.append( QString( it->knob->getDescription().c_str() ) );
-            if (it->knob->getDimension() > 1) {
-                tt.append(".");
-                tt.append( it->knob->getDimensionName(slaveDim).c_str() );
-            }
-
-            tt.append(" (slave) ");
-
+            
+            QString tt = makeLinkString(it->masterNode.get(),it->master.get(),_internalNode.get(),it->slave.get());
             arrow->setToolTip(tt);
             if ( !getDagGui()->areKnobLinksVisible() ) {
                 arrow->setVisible(false);
             }
             LinkedDim guilink;
-            guilink.knob = it->knob.get();
-            guilink.dimension = slaveDim;
+            guilink.knobs.push_back(std::make_pair(it->slave.get(),it->master.get()));
             guilink.arrow = arrow;
-            _knobsLinks.push_back(guilink);
+            _knobsLinks.insert(std::make_pair(it->masterNode,guilink));
+
         }
+
     }
 
     if (_knobsLinks.size() > 0) {
@@ -2282,7 +2291,7 @@ void
 NodeGui::setKnobLinksVisible(bool visible)
 {
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->arrow->setVisible(visible);
+        it->second.arrow->setVisible(visible);
     }
 }
 

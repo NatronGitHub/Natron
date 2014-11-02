@@ -175,5 +175,9 @@
         <file>Resources/Images/treeview_more.png</file>
         <file>Resources/Images/treeview_vline.png</file>
         <file>Resources/Images/refreshActive.png</file>
+        <file>Resources/Images/checkbox_animation3_checked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation3_checked.png</file>
+        <file>Resources/Images/checkbox_animation3_unchecked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation3_unchecked.png</file>
     </qresource>
 </RCC>

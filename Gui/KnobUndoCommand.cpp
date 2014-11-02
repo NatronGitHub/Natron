@@ -545,7 +545,6 @@ SetExpressionCommand::undo()
     }
     
     _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited);
-
     setText( QObject::tr("Set expression") );
 }
 

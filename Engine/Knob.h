@@ -443,6 +443,8 @@ public:
      * Python interpreter.
      * @param hasRetVariable If true the expression is expected to be multi-line and have its return value set to the variable "ret", otherwise
      * the expression is expected to be single-line.
+     * @param force If set to true, this function will not check if the expression is valid nor will it attempt to compile/evaluate it, it will
+     * just store it. This flag is used for serialisation, you should always pass false
      **/
     virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) = 0;
     virtual std::string getExpression(int dimension) const = 0;
@@ -782,7 +784,7 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(int fromExprDimension,KnobI* knob) = 0;
+    virtual void addListener(bool isExpression,int fromExprDimension,KnobI* knob) = 0;
     virtual void removeListener(KnobI* knob) = 0;
 
 protected:
@@ -1040,7 +1042,7 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(int fromExprDimension,KnobI* knob) OVERRIDE FINAL;
+    virtual void addListener(bool isFromExpr,int fromExprDimension,KnobI* knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
 
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
@@ -1061,6 +1063,8 @@ protected:
                                 const RangeD* /*range*/)
     {
     }
+    
+    void cloneExpressions(KnobI* other);
 
     /**
      * @brief Override to copy extra properties, such as the entries for a combobox for example.
@@ -1107,8 +1111,9 @@ protected:
 
 private:
     
-    void expressionChanged(int dimension,bool reset);
-
+    void clearExpression(int dimension);
+    void expressionChanged(int dimension);
+        
     boost::scoped_ptr<KnobHelperPrivate> _imp;
 };
 
@@ -1698,10 +1703,10 @@ public:
     /**
      * @brief Same as onAllKnobsSlaved but called when only 1 knob is slaved
      **/
-    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & /*knob*/,
+    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & /*slave*/,
+                              const boost::shared_ptr<KnobI> & /*master*/,
                               int /*dimension*/,
-                              bool /*isSlave*/,
-                              KnobHolder* /*master*/)
+                              bool /*isSlave*/)
     {
     }
 

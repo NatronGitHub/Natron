@@ -129,6 +129,8 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -172,7 +174,8 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
 private:
 
     AnimatedCheckBox *_checkBox;
@@ -235,7 +238,9 @@ private:
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     ScaleSliderQWidget *_slider;
@@ -329,82 +334,14 @@ private:
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
     boost::shared_ptr<Choice_Knob> _knob;
 };
 
-//================================
-//class Table_KnobGui;
-//class ComboBoxDelegate : public QStyledItemDelegate{
-//
-//    Q_OBJECT
-//
-//    Table_KnobGui* _tableKnob;
-//
-//public:
-//
-//    ComboBoxDelegate(Table_KnobGui* tableKnob,QObject *parent = 0);
-//
-//    virtual ~ComboBoxDelegate(){}
-//
-//    virtual QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
-//                          const QModelIndex &index) const OVERRIDE;
-//
-//    virtual void setEditorData(QWidget *editor, const QModelIndex &index) const;
-//    virtual void setModelData(QWidget *editor, QAbstractItemModel *model,
-//                      const QModelIndex &index) const OVERRIDE;
-//
-//    virtual void updateEditorGeometry(QWidget *editor,
-//                              const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE;
-//
-//    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE;
-//
-//    virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE;
-//
-//};
-//
-//
-//class Table_KnobGui : public KnobGui
-//{
-//    Q_OBJECT
-//public:
-//    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
-//        return new Table_KnobGui(knob, container);
-//    }
-//
-//
-//    Table_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
-//
-//    virtual ~Table_KnobGui() OVERRIDE;
-//
-//    public slots:
-//
-//    void onCurrentIndexChanged(int);
-//
-//    void onPopulated();
-//
-//private:
-//
-//    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
-//
-//    virtual void _hide() OVERRIDE FINAL;
-//
-//    virtual void _show() OVERRIDE FINAL;
-//
-//    virtual void setEnabled() OVERRIDE FINAL;
-//
-//    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-//
-//    // ComboBoxDelegate* _tableComboBoxDelegate;
-//    QLabel *_descriptionLabel;
-//    QScrollArea* _sa;
-//    QWidget* _container;
-//    QVBoxLayout* _layout;
-//    std::vector<ComboBox*> _choices;
-//};
-
-//=========================
 class Separator_KnobGui
     : public KnobGui
 {
@@ -547,7 +484,9 @@ private:
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
     void updateLabel(double r, double g, double b, double a);
 
 private:
@@ -691,7 +630,9 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
     void mergeFormat(const QTextCharFormat & fmt);
 
     void restoreTextInfoFromString();

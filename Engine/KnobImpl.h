@@ -976,7 +976,8 @@ Knob<T>::unSlave(int dimension,
         }
     }
     if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),dimension,false, master.second->getHolder() );
+        getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),
+                                  master.second,dimension,false );
     }
     evaluateValueChange(dimension, reason);
 }
@@ -1009,6 +1010,10 @@ Knob<std::string>::unSlave(int dimension,
     resetMaster(dimension);
 
     _signalSlotHandler->s_valueChanged(dimension,reason);
+    if (getHolder() && _signalSlotHandler) {
+        getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),
+                                  master.second,dimension,false );
+    }
     if (reason == Natron::eValueChangedReasonPluginEdited) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
     }
@@ -1542,6 +1547,7 @@ Knob<T>::clone(KnobI* other)
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
     cloneValues(other);
+    cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         getCurve(i)->clone( *other->getCurve(i) );
         if (_signalSlotHandler) {
@@ -1561,6 +1567,7 @@ Knob<T>::clone(KnobI* other,
         return;
     }
     cloneValues(other);
+    cloneExpressions(other);
     int dimMin = std::min( getDimension(), other->getDimension() );
     for (int i = 0; i < dimMin; ++i) {
         getCurve(i)->clone(*other->getCurve(i), offset, range);
@@ -1580,6 +1587,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other)
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
     cloneValues(other);
+    cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if (_signalSlotHandler) {
             int nKeys = getKeyFramesCount(i);

@@ -83,10 +83,6 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_lineEdit, 0);
 
-
-    if ( hasToolTip() ) {
-        _lineEdit->setToolTip( toolTip() );
-    }
     QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
 
     _openFileButton = new Button( layout->parentWidget() );
@@ -346,6 +342,24 @@ File_KnobGui::onSimplifyTriggered()
     }
 }
 
+
+void
+File_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _lineEdit->setAnimation(3);
+    _lineEdit->setReadOnly(hasExpr);
+    _openFileButton->setEnabled(!hasExpr);
+}
+
+void
+File_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        _lineEdit->setToolTip(tt);
+    }
+}
+
 //============================OUTPUT_FILE_KNOB_GUI====================================
 OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<KnobI> knob,
                                        DockablePanel *container)
@@ -370,9 +384,7 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
     QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
 
     _lineEdit->setPlaceholderText( tr("File path...") );
-    if ( hasToolTip() ) {
-        _lineEdit->setToolTip( toolTip() );
-    }
+
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     ///set the copy/link actions in the right click menu
@@ -559,6 +571,23 @@ OutputFile_KnobGui::onSimplifyTriggered()
     }
 }
 
+void
+OutputFile_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _lineEdit->setAnimation(3);
+    _lineEdit->setReadOnly(hasExpr);
+    _openFileButton->setEnabled(!hasExpr);
+}
+
+void
+OutputFile_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        _lineEdit->setToolTip(tt);
+    }
+}
+
 //============================PATH_KNOB_GUI====================================
 Path_KnobGui::Path_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
@@ -654,9 +683,7 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         _table = new TableView( _mainContainer );
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         //    QObject::connect( _table, SIGNAL( editingFinished() ), this, SLOT( onReturnPressed() ) );
-        if ( hasToolTip() ) {
-            _table->setToolTip( toolTip() );
-        }
+  
         _table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         _table->setAttribute(Qt::WA_MacShowFocusRect,0);
 
@@ -716,9 +743,6 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _lineEdit, SIGNAL( textDropped() ), this, SLOT( onTextDropped() ) );
         QObject::connect( _lineEdit, SIGNAL( textPasted() ), this, SLOT( onTextPasted() ) );
 
-        if ( hasToolTip() ) {
-            _lineEdit->setToolTip( toolTip() );
-        }
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
         _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
@@ -1124,5 +1148,28 @@ Path_KnobGui::onSimplifyTriggered()
         std::string newValue = oldValue;
         _knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+    }
+}
+
+void
+Path_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    if (!_knob->isMultiPath()) {
+        _lineEdit->setAnimation(3);
+        _lineEdit->setReadOnly(hasExpr);
+        _openFileButton->setEnabled(!hasExpr);
+    }
+}
+
+void
+Path_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        if (!_knob->isMultiPath()) {
+            _lineEdit->setToolTip(tt);
+        } else {
+            _table->setToolTip(tt);
+        }
     }
 }

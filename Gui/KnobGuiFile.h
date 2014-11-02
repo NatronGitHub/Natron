@@ -93,7 +93,8 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
 private:
 
     void updateLastOpened(const QString &str);
@@ -153,7 +154,8 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
     void updateLastOpened(const QString &str);
 
 private:
@@ -218,7 +220,8 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
     void updateLastOpened(const QString &str);
 
     /**

@@ -1656,7 +1656,8 @@ Gui::loadStyleSheet()
                        .arg("rgb(200,200,200)") // %5: text colour
                        .arg("rgb(86,117,156)") // %6: interpolated value color
                        .arg("rgb(21,97,248)") // %7: keyframe value color
-                       .arg("rgb(0,0,0)") ); // %8: disabled editable text
+                       .arg("rgb(0,0,0)")  // %8: disabled editable text
+                       .arg("rgb(180, 200, 100)") ); // %9: expression background color
     }
 }
 

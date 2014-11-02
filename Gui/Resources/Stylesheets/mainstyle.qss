@@ -1,6 +1,6 @@
 /* -*- mode: css -*- */
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
-/*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) */
+/*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) %9 = expression value color*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
@@ -205,6 +205,14 @@ ClickableLabel[dirty="false"][animation="2"]{
 ClickableLabel[dirty="true"][animation="2"]{
     background-color: black;
     color: %7;
+}
+ClickableLabel[dirty="false"][animation="3"]{
+    background-color: %7;
+    color: %9;
+}
+ClickableLabel[dirty="true"][animation="3"]{
+    background-color: black;
+    color: %9;
 }
 ClickableLabel[readOnly="true"][dirty="false"]{
     background-color: %2;
@@ -476,6 +484,9 @@ SpinBox[animation="1"] {
 SpinBox[animation="2"] {
     background-color: %7;
 }
+SpinBox[animation="3"] {
+    background-color: %9;
+}
 SpinBox[dirty="true"] {
     background-color: black;
 }
@@ -488,6 +499,9 @@ LineEdit[animation="1"] {
 }
 LineEdit[animation="2"] {
     background-color: %7;
+}
+LineEdit[animation="3"] {
+    background-color: %9;
 }
 LineEdit[dirty="true"] {
     background-color: black;
@@ -502,6 +516,9 @@ AnimatingTextEdit[animation="1"] {
 }
 AnimatingTextEdit[animation="2"] {
     background-color: %7;
+}
+AnimatingTextEdit[animation="3"] {
+    background-color: %9;
 }
 AnimatingTextEdit[readOnlyNatron="true"]{
     background-color: %3;
@@ -568,6 +585,24 @@ AnimatedCheckBox[animation="2"]::indicator:unchecked:hover{
 }
 AnimatedCheckBox[animation="2"]::indicator:unchecked:focus{
     image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:unchecked {
+    image: url(:/Resources/Images/checkbox_animation3_unchecked.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:checked {
+    image: url(:/Resources/Images/checkbox_animation3_checked.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:checked:hover {
+    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:unchecked:hover{
+    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:unchecked:focus{
+    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
 }
 AnimatedCheckBox[readOnly="true"]::indicator:checked{
     image: url(:/Resources/Images/checkbox_checked_readonly.png);

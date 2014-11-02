@@ -38,7 +38,9 @@ CLANG_DIAG_ON(unused-parameter)
 #define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
-#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL
+#define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS
+
 
 struct MasterSerialization
 {
@@ -92,6 +94,8 @@ struct ValueSerialization
     boost::shared_ptr<KnobI> _knob;
     int _dimension;
     MasterSerialization _master;
+    std::string _expression;
+    bool _exprHasRetVar;
     
     TypeExtraData* _extraData;
     
@@ -168,6 +172,9 @@ struct ValueSerialization
         if (hasMaster) {
             ar & boost::serialization::make_nvp("Master",_master);
         }
+        
+        ar & boost::serialization::make_nvp("Expression",_expression);
+        ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
     } // save
 
     template<class Archive>
@@ -267,6 +274,12 @@ struct ValueSerialization
         if (hasMaster) {
             ar & boost::serialization::make_nvp("Master",_master);
         }
+        
+        if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS) {
+            ar & boost::serialization::make_nvp("Expression",_expression);
+            ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
+            _knob->setExpression(_dimension, _expression, _exprHasRetVar);
+        }
     } // load
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -281,6 +294,7 @@ class KnobSerialization
     std::string _typeName;
     int _dimension;
     std::list<MasterSerialization> _masters; //< used when deserializating, we can't restore it before all knobs have been restored.
+    std::vector<std::pair<std::string,bool> > _expressions; //< used when deserializing, we can't restore it before all knobs have been restored.
     std::list< Curve > parametricCurves;
     std::list<Double_Knob::SerializedTrack> slavedTracks; //< same as for master, can't be used right away when deserializing
     
@@ -369,6 +383,7 @@ class KnobSerialization
             ValueSerialization vs(_knob,_extraData,i,false);
             ar & boost::serialization::make_nvp("item",vs);
             _masters.push_back(vs._master);
+            _expressions.push_back(std::make_pair(vs._expression,vs._exprHasRetVar));
         }
 
         ////restore extra datas
@@ -384,7 +399,8 @@ class KnobSerialization
             if ( !isFile || ( isFile && (isFile->getName() != kOfxImageEffectFileParamName) ) ) {
                 isStringAnimated->loadAnimation(extraDatas);
             }
-        } else if ( (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS) &&
+        }
+        if ( (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS) &&
                     isDouble && ( isDouble->getName() == "center") && ( isDouble->getDimension() == 2) ) {
             int count;
             ar & boost::serialization::make_nvp("SlavePtsNo",count);
@@ -400,6 +416,7 @@ class KnobSerialization
                 slavedTracks.push_back(t);
             }
         }
+       
     } // load
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -450,6 +467,11 @@ public:
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
     void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,const std::vector<boost::shared_ptr<Natron::Node> > & allNodes);
+    
+    /**
+     * @brief This function cannot be called until all knobs of the project have been created.
+     **/
+    void restoreExpressions(const boost::shared_ptr<KnobI> & knob);
 
     boost::shared_ptr<KnobI> getKnob() const
     {

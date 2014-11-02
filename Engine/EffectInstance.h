@@ -1203,7 +1203,10 @@ private:
 
 
     virtual void onAllKnobsSlaved(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
-    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & knob,int dimension,bool isSlave,KnobHolder* master) OVERRIDE FINAL;
+    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & slave,
+                              const boost::shared_ptr<KnobI> & master,
+                              int dimension,
+                              bool isSlave) OVERRIDE FINAL;
 
 
     struct TiledRenderingFunctorArgs

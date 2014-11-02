@@ -2750,12 +2750,12 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-EffectInstance::onKnobSlaved(const boost::shared_ptr<KnobI> & knob,
+EffectInstance::onKnobSlaved(const boost::shared_ptr<KnobI> & slave,
+                             const boost::shared_ptr<KnobI> & master,
                              int dimension,
-                             bool isSlave,
-                             KnobHolder* master)
+                             bool isSlave)
 {
-    _node->onKnobSlaved(knob,dimension,isSlave,master);
+    _node->onKnobSlaved(slave,master,dimension,isSlave);
 }
 
 void

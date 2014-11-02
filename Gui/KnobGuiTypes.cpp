@@ -159,18 +159,14 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
         
         box->setIncrement(increments[i]);
-        if ( hasToolTip() ) {
-            box->setToolTip( toolTip() );
-        }
+
         boxContainerLayout->addWidget(box);
         if ( (getKnob()->getDimension() == 1) && !_knob->isSliderDisabled() && getKnobsCountOnSameLine() == 0 ) {
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
             
             _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
-            if ( hasToolTip() ) {
-                _slider->setToolTip( toolTip() );
-            }
+         
             QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
             QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
             
@@ -385,6 +381,29 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    _spinBoxes[dimension].first->setAnimation(3);
+    _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    if (_slider) {
+        _slider->setReadOnly(hasExpr);
+    }
+}
+
+void
+Int_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _spinBoxes[i].first->setToolTip( tt );
+        }
+        if (_slider) {
+            _slider->setToolTip(tt);
+        }
+    }
+}
 //==========================BOOL_KNOB_GUI======================================
 
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -404,9 +423,7 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
 //    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
 //
     _checkBox = new AnimatedCheckBox( layout->parentWidget() );
-    if ( hasToolTip() ) {
-        _checkBox->setToolTip( toolTip() );
-    }
+ 
     QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
 
@@ -492,9 +509,28 @@ Bool_KnobGui::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> Bool_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+Bool_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+void
+Bool_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _checkBox->setAnimation(3);
+    _checkBox->setReadOnly(hasExpr);
+}
+
+void
+Bool_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _checkBox->setToolTip( tt );
+        }
+    }
 }
 
 //=============================DOUBLE_KNOB_GUI===================================
@@ -633,9 +669,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         box->decimals(decimals[i]);
         
         box->setIncrement(increments[i]);
-        if ( hasToolTip() ) {
-            box->setToolTip( toolTip() );
-        }
+       
         boxContainerLayout->addWidget(box);
 
         if ( (_knob->getDimension() == 1) && !_knob->isSliderDisabled()  && getKnobsCountOnSameLine() == 0) {
@@ -646,9 +680,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             
             
             _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
-            if ( hasToolTip() ) {
-                _slider->setToolTip( toolTip() );
-            }
+          
             QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
             QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
             boxContainerLayout->addWidget(_slider);
@@ -880,9 +912,34 @@ Double_KnobGui::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> Double_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+Double_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+void
+Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    _spinBoxes[dimension].first->setAnimation(3);
+    _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    if (_slider) {
+        _slider->setReadOnly(hasExpr);
+    }
+}
+
+void
+Double_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _spinBoxes[i].first->setToolTip( tt );
+        }
+        if (_slider) {
+            _slider->setToolTip(tt);
+        }
+    }
 }
 
 //=============================BUTTON_KNOB_GUI===================================
@@ -1012,14 +1069,23 @@ Choice_KnobGui::onEntriesPopulated()
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
 
-    QString tt = getScriptNameHtml();
-    QString realTt( _knob->getHintToolTipFull().c_str() );
-    if ( !realTt.isEmpty() ) {
-        realTt = Qt::convertFromPlainText(realTt,Qt::WhiteSpaceNormal);
-        tt.append(realTt);
-    }
-    _comboBox->setToolTip(tt);
+    updateToolTip();
 }
+
+void
+Choice_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _comboBox->setAnimation(3);
+    _comboBox->setReadOnly(hasExpr);
+}
+
+void
+Choice_KnobGui::updateToolTip()
+{
+    QString tt = toolTip();
+    _comboBox->setToolTip( tt );
+}
+
 
 void
 Choice_KnobGui::updateGUI(int /*dimension*/)
@@ -1225,13 +1291,9 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_rBox,0);
 
-    if ( hasToolTip() ) {
-        _rBox->setToolTip( toolTip() );
-    }
+    
     _rLabel = new QLabel(QString( _knob->getDimensionName(0).c_str() ).toLower(), boxContainers);
-    if ( hasToolTip() ) {
-        _rLabel->setToolTip( toolTip() );
-    }
+    
     boxLayout->addWidget(_rLabel);
     boxLayout->addWidget(_rBox);
 
@@ -1247,14 +1309,9 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
 
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_gBox,1);
-
-        if ( hasToolTip() ) {
-            _gBox->setToolTip( toolTip() );
-        }
+        
         _gLabel = new QLabel(QString( _knob->getDimensionName(1).c_str() ).toLower(), boxContainers);
-        if ( hasToolTip() ) {
-            _gLabel->setToolTip( toolTip() );
-        }
+        
         boxLayout->addWidget(_gLabel);
         boxLayout->addWidget(_gBox);
 
@@ -1270,13 +1327,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(_bBox,2);
 
 
-        if ( hasToolTip() ) {
-            _bBox->setToolTip( toolTip() );
-        }
         _bLabel = new QLabel(QString( _knob->getDimensionName(2).c_str() ).toLower(), boxContainers);
-        if ( hasToolTip() ) {
-            _bLabel->setToolTip( toolTip() );
-        }
+       
         boxLayout->addWidget(_bLabel);
         boxLayout->addWidget(_bBox);
     }
@@ -1293,13 +1345,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(_aBox,3);
 
 
-        if ( hasToolTip() ) {
-            _aBox->setToolTip( toolTip() );
-        }
         _aLabel = new QLabel(QString( _knob->getDimensionName(3).c_str() ).toLower(), boxContainers);
-        if ( hasToolTip() ) {
-            _aLabel->setToolTip( toolTip() );
-        }
+ 
         boxLayout->addWidget(_aLabel);
         boxLayout->addWidget(_aBox);
     }
@@ -1671,6 +1718,49 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
             break;
     } // switch
 } // reflectAnimationLevel
+
+void
+Color_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    switch (dimension) {
+        case 0:
+            _rBox->setAnimation(3);
+            _rBox->setReadOnly(hasExpr);
+            break;
+        case 1:
+            _gBox->setAnimation(3);
+            _gBox->setReadOnly(hasExpr);
+            break;
+        case 2:
+            _bBox->setAnimation(3);
+            _bBox->setReadOnly(hasExpr);
+            break;
+        case 3:
+            _aBox->setAnimation(3);
+            _aBox->setReadOnly(hasExpr);
+            break;
+        default:
+            break;
+    }
+    
+}
+
+void
+Color_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        _rBox->setToolTip(tt);
+        if (_dimension >= 3) {
+            _gBox->setToolTip(tt);
+            _bBox->setToolTip(tt);
+            if (_dimension >= 4) {
+                _aBox->setToolTip(tt);
+            }
+        }
+        _slider->setToolTip(tt);
+    }
+}
 
 void
 Color_KnobGui::showColorDialog()
@@ -2088,15 +2178,8 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         bool useRichText = _knob->usesRichText();
         _textEdit = new AnimatingTextEdit(_container);
-        if ( hasToolTip() ) {
-            QString tt = toolTip();
-            if (useRichText) {
-                tt += tr(" This text area supports html encoding. "
-                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
-            }
-            _textEdit->setAcceptRichText(useRichText);
-            _textEdit->setToolTip(tt);
-        }
+        _textEdit->setAcceptRichText(useRichText);
+
 
         _mainLayout->addWidget(_textEdit);
 
@@ -2175,16 +2258,12 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         layout->addWidget(_container);
     } else if ( _knob->isLabel() ) {
         _label = new QLabel( layout->parentWidget() );
-        if ( hasToolTip() ) {
-            _label->setToolTip( toolTip() );
-        }
+
         _label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
-        if ( hasToolTip() ) {
-            _lineEdit->setToolTip( toolTip() );
-        }
+    
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -2914,9 +2993,42 @@ String_KnobGui::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> String_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+String_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+void
+String_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    if (_textEdit) {
+        _textEdit->setAnimation(3);
+        _textEdit->setReadOnly(hasExpr);
+    } else if (_lineEdit) {
+        _lineEdit->setAnimation(3);
+        _lineEdit->setReadOnly(hasExpr);
+    }
+}
+
+void
+String_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        if (_textEdit) {
+            bool useRichText = _knob->usesRichText();
+            if (useRichText) {
+                tt += tr(" This text area supports html encoding. "
+                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
+            }
+            _textEdit->setToolTip(tt);
+        } else if (_lineEdit) {
+            _lineEdit->setToolTip(tt);
+        } else if (_label) {
+            _label->setToolTip(tt);
+        }
+    }
 }
 
 //=============================GROUP_KNOB_GUI===================================

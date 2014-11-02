@@ -232,6 +232,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                 case 2:
                     fillColor.setRgb(21,97,248);
                     break;
+                case 3:
+                    fillColor.setRgb(180, 200, 100);
+                    break;
                     
             }
         }

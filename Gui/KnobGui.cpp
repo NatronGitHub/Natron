@@ -146,7 +146,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( handler,SIGNAL( appendParamEditChange(Variant,int,int,bool,bool) ),this,
                       SLOT( onAppendParamEditChanged(Variant,int,int,bool,bool) ) );
     QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
-    
+    QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
+    QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
     _imp->guiCurves.resize(knob->getDimension());
     for (int i = 0; i < knob->getDimension(); ++i) {
         _imp->guiCurves[i].reset(new Curve(*(knob->getCurve(i))));
@@ -204,7 +205,7 @@ KnobGui::createGUI(QFormLayout* containerLayout,
         layout->addWidget(label);
     }
 
-    label->setToolTip( toolTip() );
+    _imp->descriptionLabel->setToolTip( toolTip() );
 
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
     if (customInteract != 0) {
@@ -212,6 +213,7 @@ KnobGui::createGUI(QFormLayout* containerLayout,
         layout->addWidget(_imp->customInteract);
     } else {
         createWidget(layout);
+        updateToolTip();
     }
     if ( knob->isAnimationEnabled() ) {
         createAnimationButton(layout);
@@ -894,8 +896,43 @@ KnobGui::getScriptNameHtml() const
 QString
 KnobGui::toolTip() const
 {
+    boost::shared_ptr<KnobI> knob = getKnob();
+    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
     QString tt = getScriptNameHtml();
-    QString realTt( getKnob()->getHintToolTip().c_str() );
+    
+    QString realTt;
+    if (!isChoice) {
+        realTt.append( knob->getHintToolTip().c_str() );
+    } else {
+        realTt.append( isChoice->getHintToolTipFull().c_str() );
+    }
+    
+    std::vector<std::string> expressions;
+    bool exprAllSame = true;
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        expressions.push_back(knob->getExpression(i));
+        if (i > 0 && expressions[i] != expressions[0]) {
+            exprAllSame = false;
+        }
+    }
+    
+    QString exprTt;
+    if (exprAllSame) {
+        if (!expressions[0].empty()) {
+            std::string dimName = knob->getDimensionName(0);
+            exprTt = QString("<br>%1 = <b>%2</b></br>").arg(dimName.c_str()).arg(expressions[0].c_str());
+        }
+    } else {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            std::string dimName = knob->getDimensionName(i);
+            QString toAppend = QString("<br>%1 = <b>%2</b></br>").arg(dimName.c_str()).arg(expressions[i].c_str());
+            exprTt.append(toAppend);
+        }
+    }
+    
+    if (!exprTt.isEmpty()) {
+        tt.append(exprTt);
+    }
 
     if ( !realTt.isEmpty() ) {
         realTt = Qt::convertFromPlainText(realTt,Qt::WhiteSpaceNormal);
@@ -1736,7 +1773,12 @@ void
 KnobGui::onAnimationLevelChanged(int dim,int level)
 {
     if (!_imp->customInteract) {
-        reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
+        std::string expr = getKnob()->getExpression(dim);
+        reflectExpressionState(dim,!expr.empty());
+        if (expr.empty()) {
+            reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
+        }
+        
     }
 }
 
@@ -1854,6 +1896,11 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     
     
     _imp->useRetButton = new Button(tr("Ret"),_imp->midButtonsContainer);
+    _imp->useRetButton->setToolTip(Qt::convertFromPlainText(tr("When checked the Python expression will be interpreted "
+                                                               "as series of statement. The return value should be then assigned to the "
+                                                               "\"ret\" variable. When unchecked the expression must not contain "
+                                                               "any new line character and the result will be interpreted from the "
+                                                               "interpretation of the single line."),Qt::WhiteSpaceNormal));
     _imp->useRetButton->setCheckable(true);
     bool checked = !curExpr.empty() && hasRetVariable;
     _imp->useRetButton->setChecked(checked);
@@ -1870,7 +1917,7 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
     _imp->resultEdit = new QTextEdit(this);
-    _imp->resultEdit->resize(_imp->resultEdit->sizeHint().width(), 80);
+    _imp->resultEdit->setFixedSize(_imp->resultEdit->sizeHint().width(), 80);
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);
     
@@ -1942,4 +1989,25 @@ int
 EditExpressionDialog::getDimension() const
 {
     return _imp->dimension;
+}
+
+void
+KnobGui::onExprChanged(int dimension)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    std::string exp = knob->getExpression(dimension);
+    reflectExpressionState(dimension,!exp.empty());
+    if (exp.empty()) {
+        reflectAnimationLevel(dimension, knob->getAnimationLevel(dimension));
+        
+    }
+    
+    onHelpChanged();
+}
+
+void
+KnobGui::onHelpChanged()
+{
+    _imp->descriptionLabel->setToolTip( toolTip() );
+    updateToolTip();
 }

@@ -184,6 +184,7 @@ struct KnobHelperPrivate
     ///This is a list of all the knobs that have expressions/links to this knob. It could be named "slaves" but
     ///in the future we will also add expressions.
     std::list<KnobI*> listeners;
+
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevelEnum> animationLevel; //< indicates for each dimension whether it is static/interpolated/onkeyframe
     bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
@@ -1177,7 +1178,12 @@ void
 KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRetVariable)
 {
     ///Clear previous expr
-    expressionChanged(dimension, true);
+    clearExpression(dimension);
+    
+    if (expression.empty()) {
+        expressionChanged(dimension);
+        return;
+    }
 
     std::string exprCpy = validateExpression(expression, dimension, hasRetVariable);
    
@@ -1207,7 +1213,8 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
             --_expressionsRecursionLevel;
         } catch (const std::runtime_error& e) {
             --_expressionsRecursionLevel;
-            expressionChanged(dimension, true);
+            clearExpression(dimension);
+            expressionChanged(dimension);
             throw e;
         }
     }
@@ -1233,7 +1240,8 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
     }
     
     
-    expressionChanged(dimension,false);
+    expressionChanged(dimension);
+    
 }
 
 bool
@@ -1244,31 +1252,42 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 }
 
 void
-KnobHelper::expressionChanged(int dimension,bool reset)
+KnobHelper::clearExpression(int dimension)
+{
+    QMutexLocker k(&_imp->expressionMutex);
+    _imp->expressions[dimension].expression.clear();
+    _imp->expressions[dimension].originalExpression.clear();
+    Py_XDECREF(_imp->expressions[dimension].code); //< new ref
+    _imp->expressions[dimension].code = 0;
+    _imp->expressions[dimension].global_dict = 0; //< python borrowed ref!
+    
+    
+    QWriteLocker kk(&_imp->mastersMutex);
+    for (std::list<KnobI*>::iterator it = _imp->expressions[dimension].dependencies.begin();
+         it != _imp->expressions[dimension].dependencies.end(); ++it) {
+        std::list<KnobI*>::iterator  found = std::find(_imp->listeners.begin(), _imp->listeners.end(), *it);
+        if (found != _imp->listeners.end()) {
+            
+            if ( (*found)->getHolder() && (*found)->getSignalSlotHandler() ) {
+                ///hackish way to get a shared ptr to this knob
+                (*found)->getHolder()->onKnobSlaved( (*found)->getSignalSlotHandler()->getKnob(),
+                                                    getSignalSlotHandler()->getKnob(),dimension,false );
+            }
+            QObject::disconnect((*found)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
+                                SLOT(onExprDependencyChanged(int)));
+            _imp->listeners.erase(found);
+            
+        }
+    }
+    _imp->expressions[dimension].dependencies.clear();
+}
+
+void
+KnobHelper::expressionChanged(int dimension)
 {
     
-    if (reset) {
-        QMutexLocker k(&_imp->expressionMutex);
-        _imp->expressions[dimension].expression.clear();
-        _imp->expressions[dimension].originalExpression.clear();
-        Py_XDECREF(_imp->expressions[dimension].code); //< new ref
-        _imp->expressions[dimension].code = 0;
-        _imp->expressions[dimension].global_dict = 0; //< python borrowed ref!
-        
-        QWriteLocker kk(&_imp->mastersMutex);
-        for (std::list<KnobI*>::iterator it = _imp->expressions[dimension].dependencies.begin();
-             it != _imp->expressions[dimension].dependencies.end(); ++it) {
-            std::list<KnobI*>::iterator  found = std::find(_imp->listeners.begin(), _imp->listeners.end(), *it);
-            if (found != _imp->listeners.end()) {
-                QObject::disconnect((*found)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
-                                    SLOT(onExprDependencyChanged(int)));
-                _imp->listeners.erase(found);
-            }
-        }
-        _imp->expressions[dimension].dependencies.clear();
-    }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_helpChanged();
+        _signalSlotHandler->s_expressionChanged(dimension);
     }
 
 }
@@ -1577,16 +1596,11 @@ KnobHelper::slaveTo(int dimension,
         if (reason == Natron::eValueChangedReasonPluginEdited) {
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
-
-        if ( getHolder() ) {
-            ///hackish way to get a shared ptr to this knob
-            getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),dimension,true, other->getHolder() );
-        }
     }
     evaluateValueChange(dimension, reason);
 
     ///Register this as a listener of the master
-    helper->addListener(-1,this);
+    helper->addListener(false,dimension,this);
 
     return true;
 }
@@ -1833,12 +1847,34 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
 }
 
 void
-KnobHelper::addListener(int fromExprDimension,KnobI* knob)
+KnobHelper::cloneExpressions(KnobI* other)
 {
+    assert((int)_imp->expressions.size() == getDimension());
+    try {
+        for (int i = 0; i < getDimension(); ++i) {
+            std::string expr = other->getExpression(i);
+            bool hasRet = other->isExpressionUsingRetVariable(i);
+            setExpression(i, expr,hasRet);
+        }
+    } catch(...) {
+        ///ignore errors
+    }
+}
+
+void
+KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
+{
+    assert(fromExprDimension != -1);
     KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
     
+    if ( getHolder() && other->getSignalSlotHandler() && getSignalSlotHandler() ) {
+        ///hackish way to get a shared ptr to this knob
+        getHolder()->onKnobSlaved(getSignalSlotHandler()->getKnob(),
+                                  other->getSignalSlotHandler()->getKnob(),fromExprDimension,true );
+    }
+    
     if (other->_signalSlotHandler && _signalSlotHandler) {
-        if (fromExprDimension == -1) {
+        if (!isExpression) {
             QObject::connect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
         } else {
             QObject::connect( other->_signalSlotHandler.get(), SIGNAL( updateDependencies(int) ), _signalSlotHandler.get(), SLOT( onExprDependencyChanged(int) ) );
@@ -1848,6 +1884,7 @@ KnobHelper::addListener(int fromExprDimension,KnobI* knob)
         QWriteLocker l(&_imp->mastersMutex);
         
         _imp->listeners.push_back(knob);
+
     }
     if (fromExprDimension != -1) {
         QMutexLocker k(&_imp->expressionMutex);
@@ -1863,6 +1900,7 @@ KnobHelper::removeListener(KnobI* knob)
     if (other->_signalSlotHandler && _signalSlotHandler) {
         QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
     }
+    
     QWriteLocker l(&_imp->mastersMutex);
     std::list<KnobI*>::iterator found = std::find(_imp->listeners.begin(), _imp->listeners.end(), knob);
 
@@ -1870,6 +1908,7 @@ KnobHelper::removeListener(KnobI* knob)
         _imp->listeners.erase(found);
     }
 }
+
 
 void
 KnobHelper::getListeners(std::list<KnobI*> & listeners) const
