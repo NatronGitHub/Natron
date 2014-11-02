@@ -143,6 +143,7 @@ struct ViewerTabPrivate
     bool frameRangeLocked;
     QLabel* fpsName;
     SpinBox* fpsBox;
+    Button* turboButton;
 
     /*frame seeker*/
     TimeLineGui* _timeLineGui;
@@ -697,8 +698,26 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->fpsBox->setIncrement(0.1);
     _imp->fpsBox->setToolTip( "<p><b>" + tr("fps") + ": \n</b></p>" + tr(
                                   "Enter here the desired playback rate.") );
+    
     _imp->_playerLayout->addWidget(_imp->fpsBox);
-
+    
+    QPixmap pixFreezeEnabled,pixFreezeDisabled;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
+    QIcon icFreeze;
+    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
+    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
+    _imp->turboButton = new Button(icFreeze,"",_imp->_playerButtonsContainer);
+    _imp->turboButton->setCheckable(true);
+    _imp->turboButton->setChecked(false);
+    _imp->turboButton->setDown(false);
+    _imp->turboButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->turboButton->setToolTip("<p><b>" + tr("Turbo mode:") + "</p></b><p>" +
+                                  tr("When checked, everything besides the viewer will not be refreshed in the user interface "
+                                                                                              "for maximum efficiency during playback.") + "</p>");
+    _imp->turboButton->setFocusPolicy(Qt::NoFocus);
+    QObject::connect( _imp->turboButton, SIGNAL (clicked(bool)), getGui(), SLOT(onFreezeUIButtonClicked(bool) ) );
+    _imp->_playerLayout->addWidget(_imp->turboButton);
 
     QPixmap pixFirst;
     QPixmap pixPrevKF;
@@ -3039,4 +3058,11 @@ void
 ViewerTab::onViewerRenderingStopped()
 {
     _imp->_refreshButton->setIcon(_imp->_iconRefreshOff);
+}
+
+void
+ViewerTab::setTurboButtonDown(bool down)
+{
+    _imp->turboButton->setDown(down);
+    _imp->turboButton->setChecked(down);
 }

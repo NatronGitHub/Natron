@@ -282,7 +282,6 @@ struct GuiPrivate
     QVBoxLayout *_layoutPropertiesBin;
     Button* _clearAllPanelsButton;
     SpinBox* _maxPanelsOpenedSpinBox;
-    Button* _freezeUIButton;
     
     QMutex _isGUIFrozenMutex;
     bool _isGUIFrozen;
@@ -406,7 +405,6 @@ struct GuiPrivate
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
-          , _freezeUIButton(0)
           , _isGUIFrozenMutex()
           , _isGUIFrozen(false)
           , menubar(0)
@@ -1032,26 +1030,9 @@ GuiPrivate::createPropertiesBinGui()
                                                                   Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox,SIGNAL( valueChanged(double) ),_gui,SLOT( onMaxPanelsSpinBoxValueChanged(double) ) );
-
-    QPixmap pixFreezeEnabled,pixFreezeDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
-    QIcon icFreeze;
-    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
-    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
-    _freezeUIButton = new Button(icFreeze,"",propertiesAreaButtonsContainer);
-    _freezeUIButton->setCheckable(true);
-    _freezeUIButton->setChecked(false);
-    _freezeUIButton->setDown(false);
-    _freezeUIButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _freezeUIButton->setToolTip("<p><b>" + _gui->tr("Turbo mode:") + "</p></b><p>" + _gui->tr("When checked, everything besides the viewer will not be refreshed in the user interface "
-                                         "for maximum efficiency during playback.") + "</p>");
-    _freezeUIButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _freezeUIButton, SIGNAL (clicked(bool)), _gui, SLOT(onFreezeUIButtonClicked(bool) ) );
     
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
-    propertiesAreaButtonsLayout->addWidget(_freezeUIButton);
     propertiesAreaButtonsLayout->addStretch();
     
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
@@ -4186,7 +4167,12 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         QMutexLocker k(&_imp->_isGUIFrozenMutex);
         _imp->_isGUIFrozen = clicked;
     }
-    _imp->_freezeUIButton->setDown(clicked);
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+            (*it)->setTurboButtonDown(clicked);
+        }
+    }
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
 }
 
