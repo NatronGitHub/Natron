@@ -177,16 +177,19 @@ public:
     int getCurrentTime() const;
     
     /**
+     * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
+     **/
+    void setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
+    
+protected:
+    
+    /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    void addAsDependencyOf(int fromExprDimension,Param* param);
-    
-    /**
-     * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
-     **/
-    void setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
+    void _addAsDependencyOf(int fromExprDimension,Param* param);
+
 };
 
 class IntParam : public Param
@@ -280,6 +283,13 @@ public:
      * @brief Get the display maximum for the given dimension
      **/
     int getDisplayMaximum(int dimension) const;
+
+    /**
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    int addAsDependencyOf(int fromExprDimension,Param* param);
 
 };
 
@@ -376,6 +386,13 @@ public:
      **/
     double getDisplayMaximum(int dimension) const;
     
+    /**
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    double addAsDependencyOf(int fromExprDimension,Param* param);
+
 };
 
 #endif // PARAMETERWRAPPER_H

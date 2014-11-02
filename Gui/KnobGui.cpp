@@ -577,11 +577,41 @@ KnobGui::onSetExprActionTriggered()
     int dim = action->data().toInt();
     
   
-    EditExpressionDialog dialog(dim,this,_imp->container);
-    if (dialog.exec()) {
-        bool hasRetVar;
-        QString expr = dialog.getExpression(&hasRetVar);
-        pushUndoCommand(new SetExpressionCommand(getKnob(),hasRetVar,dim,expr.toStdString()));
+    EditExpressionDialog* dialog = new EditExpressionDialog(dim,this,_imp->container);
+    
+    QObject::connect( dialog,SIGNAL( accepted() ),this,SLOT( onEditExprDialogFinished() ) );
+    QObject::connect( dialog,SIGNAL( rejected() ),this,SLOT( onEditExprDialogFinished() ) );
+    
+    dialog->show();
+    
+}
+
+void
+KnobGui::onEditExprDialogFinished()
+{
+    
+    EditExpressionDialog* dialog = qobject_cast<EditExpressionDialog*>( sender() );
+    
+    if (dialog) {
+        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
+        
+        switch (ret) {
+            case QDialog::Accepted: {
+                bool hasRetVar;
+                QString expr = dialog->getExpression(&hasRetVar);
+                std::string stdExpr = expr.toStdString();
+                int dim = dialog->getDimension();
+                std::string existingExpr = getKnob()->getExpression(dim);
+                if (existingExpr != stdExpr) {
+                    pushUndoCommand(new SetExpressionCommand(getKnob(),hasRetVar,dim,stdExpr));
+                }
+            } break;
+            case QDialog::Rejected:
+                break;
+        }
+        
+        dialog->deleteLater();
+
     }
 }
 
@@ -1796,6 +1826,8 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
 {
     boost::shared_ptr<KnobI> k = knob->getKnob();
     
+    QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
+    
     QString title(tr("Set expression on "));
     title.append(k->getName().c_str());
     if (dimension != -1 && k->getDimension() > 1) {
@@ -1807,6 +1839,7 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     _imp->mainLayout = new QVBoxLayout(this);
     
     _imp->expressionLabel = new QLabel(tr("Python Expression:"),this);
+    _imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
     std::string curExpr = k->getExpression(dimension == -1 ? 0 : dimension);
@@ -1833,9 +1866,11 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
     
     _imp->resultLabel = new QLabel(tr("Result:"),this);
+    _imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
     _imp->resultEdit = new QTextEdit(this);
+    _imp->resultEdit->resize(_imp->resultEdit->sizeHint().width(), 80);
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);
     
@@ -1848,7 +1883,7 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
         compileExpression(curExpr.c_str());
     }
     QObject::connect(_imp->expressionEdit, SIGNAL(textChanged()), this, SLOT(onTextEditChanged()));
-
+    _imp->expressionEdit->setFocus();
 }
 
 void
@@ -1890,4 +1925,21 @@ EditExpressionDialog::~EditExpressionDialog()
     
 }
 
+void
+EditExpressionDialog::keyPressEvent(QKeyEvent* e)
+{
+    if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
+        accept();
+    } else if (e->key() == Qt::Key_Escape) {
+        reject();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+    
+}
 
+int
+EditExpressionDialog::getDimension() const
+{
+    return _imp->dimension;
+}

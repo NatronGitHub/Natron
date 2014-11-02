@@ -271,6 +271,8 @@ public slots:
     void updateCurveEditorKeyframes();
 
     void onSetExprActionTriggered();
+    
+    void onEditExprDialogFinished();
 signals:
 
     void knobUndoneChange();
@@ -387,6 +389,8 @@ public:
     
     virtual ~EditExpressionDialog();
     
+    int getDimension() const;
+    
     QString getExpression(bool* hasRetVariable) const;
 public slots:
     
@@ -394,6 +398,9 @@ public slots:
     void onTextEditChanged();
     
 private:
+    
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     void compileExpression(const QString& expr);
     

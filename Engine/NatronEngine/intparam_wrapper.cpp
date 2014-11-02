@@ -25,6 +25,68 @@ IntParamWrapper::~IntParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_IntParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
+{
+    ::IntParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "addAsDependencyOf", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: addAsDependencyOf(int,Param*)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[1])))) {
+        overloadId = 0; // addAsDependencyOf(int,Param*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_IntParamFunc_addAsDependencyOf_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        if (!Shiboken::Object::isValid(pyArgs[1]))
+            return 0;
+        ::Param* cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // addAsDependencyOf(int,Param*)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = cppSelf->addAsDependencyOf(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_IntParamFunc_addAsDependencyOf_TypeError:
+        const char* overloads[] = {"int, NatronEngine.Param", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.IntParam.addAsDependencyOf", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_IntParamFunc_getDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::IntParam* cppSelf = 0;
@@ -1105,6 +1167,7 @@ static PyObject* Sbk_IntParamFunc_setValueAtTime(PyObject* self, PyObject* args,
 }
 
 static PyMethodDef Sbk_IntParam_methods[] = {
+    {"addAsDependencyOf", (PyCFunction)Sbk_IntParamFunc_addAsDependencyOf, METH_VARARGS},
     {"getDefaultValue", (PyCFunction)Sbk_IntParamFunc_getDefaultValue, METH_VARARGS|METH_KEYWORDS},
     {"getDisplayMaximum", (PyCFunction)Sbk_IntParamFunc_getDisplayMaximum, METH_O},
     {"getDisplayMinimum", (PyCFunction)Sbk_IntParamFunc_getDisplayMinimum, METH_O},

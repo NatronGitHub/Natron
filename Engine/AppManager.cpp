@@ -2066,26 +2066,32 @@ std::size_t ensureScriptHasEngineImport(std::string& script)
 bool interpretPythonScript(const std::string& script,std::string* error)
 {
     //this is python code to redirect stdout/stderr
-//    std::string stdOutErr =
-//    "import sys \n"
-//    "class CatchOutErr:\n"
-//    "   def __init__(self):\n"
-//    "       self.value = ''\n"
-//    "   def write(self, txt):\n"
-//    "       self.value += txt\n"
-//    "catchOutErr = CatchOutErr()\n"
-//    "sys.stdout = catchOutErr\n"
-//    "sys.stderr = catchOutErr\n";
-//    
-//    PyObject *pModule = PyImport_AddModule("__main__"); //create main module
-//    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
-    PyRun_SimpleString(script.c_str());
-//    PyObject *catcher = PyObject_GetAttrString(pModule,"catchOutErr"); //get our catchOutErr created above
+    std::string stdOutErr =
+    "import sys \n"
+    "class CatchOutErr:\n"
+    "   def __init__(self):\n"
+    "       self.value = ''\n"
+    "   def write(self, txt):\n"
+    "       self.value += txt\n"
+    "catchOutErr = CatchOutErr()\n"
+    "sys.stdout = catchOutErr\n"
+    "sys.stderr = catchOutErr\n";
     
-    if (PyErr_Occurred()) {
-        PyErr_Print(); //make python print any errors
-//        PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object
-//        *error = std::string(PyString_AsString(output));
+    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
+    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
+    PyRun_SimpleString(script.c_str());
+    PyObject *catcher = PyObject_GetAttrString(pModule,"catchOutErr"); //get our catchOutErr created above, new ref
+    assert(catcher);
+    
+    PyErr_Print(); //make python print any errors
+    
+    PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object, new ref
+    *error = std::string(PyString_AsString(output));
+    
+    Py_DECREF(catcher);
+    Py_DECREF(output);
+    
+    if (!error->empty()) {
         return false;
     }
     return true;

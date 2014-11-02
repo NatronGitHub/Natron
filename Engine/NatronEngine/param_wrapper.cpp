@@ -25,7 +25,7 @@ ParamWrapper::~ParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_ParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
+static PyObject* Sbk_ParamFunc__addAsDependencyOf(PyObject* self, PyObject* args)
 {
     ::Param* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -41,20 +41,20 @@ static PyObject* Sbk_ParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "addAsDependencyOf", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_UnpackTuple(args, "_addAsDependencyOf", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: addAsDependencyOf(int,Param*)
+    // 0: _addAsDependencyOf(int,Param*)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[1])))) {
-        overloadId = 0; // addAsDependencyOf(int,Param*)
+        overloadId = 0; // _addAsDependencyOf(int,Param*)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_ParamFunc_addAsDependencyOf_TypeError;
+    if (overloadId == -1) goto Sbk_ParamFunc__addAsDependencyOf_TypeError;
 
     // Call function/method
     {
@@ -66,9 +66,9 @@ static PyObject* Sbk_ParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // addAsDependencyOf(int,Param*)
+            // _addAsDependencyOf(int,Param*)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->addAsDependencyOf(cppArg0, cppArg1);
+            cppSelf->_addAsDependencyOf(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
@@ -78,9 +78,9 @@ static PyObject* Sbk_ParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
     }
     Py_RETURN_NONE;
 
-    Sbk_ParamFunc_addAsDependencyOf_TypeError:
+    Sbk_ParamFunc__addAsDependencyOf_TypeError:
         const char* overloads[] = {"int, NatronEngine.Param", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.addAsDependencyOf", overloads);
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param._addAsDependencyOf", overloads);
         return 0;
 }
 
@@ -1361,7 +1361,7 @@ static PyObject* Sbk_ParamFunc_setVisible(PyObject* self, PyObject* pyArg)
 }
 
 static PyMethodDef Sbk_Param_methods[] = {
-    {"addAsDependencyOf", (PyCFunction)Sbk_ParamFunc_addAsDependencyOf, METH_VARARGS},
+    {"_addAsDependencyOf", (PyCFunction)Sbk_ParamFunc__addAsDependencyOf, METH_VARARGS},
     {"deleteValueAtTime", (PyCFunction)Sbk_ParamFunc_deleteValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"getCanAnimate", (PyCFunction)Sbk_ParamFunc_getCanAnimate, METH_NOARGS},
     {"getCurrentTime", (PyCFunction)Sbk_ParamFunc_getCurrentTime, METH_NOARGS},

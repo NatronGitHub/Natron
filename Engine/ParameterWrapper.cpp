@@ -168,8 +168,11 @@ Param::getCurrentTime() const
 }
 
 void
-Param::addAsDependencyOf(int fromExprDimension,Param* param)
+Param::_addAsDependencyOf(int fromExprDimension,Param* param)
 {
+    if (param->_knob == _knob) {
+        return;
+    }
     param->_knob->addListener(fromExprDimension, _knob.get());
 }
 
@@ -283,6 +286,12 @@ IntParam::getDisplayMaximum(int dimension) const
     return _intKnob->getDisplayMaximum(dimension);
 }
 
+int
+IntParam::addAsDependencyOf(int fromExprDimension,Param* param)
+{
+    _addAsDependencyOf(fromExprDimension, param);
+    return _intKnob->getValue();
+}
 
 //////////// DoubleParam
 
@@ -387,4 +396,11 @@ double
 DoubleParam::getDisplayMaximum(int dimension) const
 {
     return _doubleKnob->getDisplayMaximum(dimension);
+}
+
+double
+DoubleParam::addAsDependencyOf(int fromExprDimension,Param* param)
+{
+    _addAsDependencyOf(fromExprDimension, param);
+    return _doubleKnob->getValue();
 }

@@ -109,9 +109,10 @@ public:
         emit animationRemoved(dimension);
     }
     
-    void s_updateSlaves(int dimension)
+    void s_updateDependencies(int dimension)
     {
         emit updateSlaves(dimension);
+        emit updateDependencies(dimension);
     }
     
     void s_knobSlaved(int dim,
@@ -187,6 +188,8 @@ public slots:
      **/
     void onMasterChanged(int);
     
+    void onExprDependencyChanged(int);
+    
     /**
      * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
      **/
@@ -240,6 +243,8 @@ signals:
     ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
     ///of the changes that occured in this knob, letting them a chance to update their interface.
     void updateSlaves(int dimension);
+    
+    void updateDependencies(int dimension);
     
     ///Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
     void knobSlaved(int,bool);
@@ -448,8 +453,13 @@ public:
      * This function also declares some extra python variables via the declareCurrentKnobVariable_Python function.
      * The new expression is returned.
      **/
-    std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable);
+    virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable) = 0;
     
+    /**
+     * @brief Called whenever a dependency through expressions has changed its value. This function will refresh the GUI for this knob.
+     **/
+    virtual void onExprDependencyChanged(KnobI* knob,int dimension) = 0;
+
     /**
      * @brief Returns whether the expr at the given dimension uses the ret variable to assign to the return value or not
      **/
@@ -949,6 +959,8 @@ public:
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) OVERRIDE FINAL;
+    virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void onExprDependencyChanged(KnobI* knob,int dimension) OVERRIDE FINAL;
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1011,6 +1023,7 @@ protected:
      **/
     void resetMaster(int dimension);
     
+    ///The return value must be Py_DECRREF
     PyObject* executeExpression(int dimension) const;
 
 public:
@@ -1085,6 +1098,12 @@ protected:
 
     void checkAnimationLevel(int dimension);
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
+
+    
+protected:
+    
+    mutable int _expressionsRecursionLevel;
+    mutable QMutex _expressionRecursionLevelMutex;
 
 private:
     

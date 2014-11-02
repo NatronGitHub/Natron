@@ -62,6 +62,15 @@ KnobSignalSlotHandler::onMasterChanged(int dimension)
 }
 
 void
+KnobSignalSlotHandler::onExprDependencyChanged(int dimension)
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+    
+    assert(handler);
+    k->onExprDependencyChanged(handler->getKnob().get(), dimension);
+}
+
+void
 KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension,
                                                            int reason)
 {
@@ -139,9 +148,8 @@ struct Expr
     
     PyCodeObject* code;
     PyObject* global_dict;
-    PyObject* local_dict;
     
-    Expr() : expression(), originalExpression(), hasRet(false),  code(0), global_dict(0), local_dict(0) {}
+    Expr() : expression(), originalExpression(), hasRet(false),  code(0), global_dict(0) {}
 };
 
 
@@ -262,7 +270,9 @@ KnobHelper::KnobHelper(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : _signalSlotHandler()
-      , _imp( new KnobHelperPrivate(this,holder,dimension,description,declaredByPlugin) )
+    , _expressionsRecursionLevel(0)
+    , _expressionRecursionLevelMutex(QMutex::Recursive)
+    , _imp( new KnobHelperPrivate(this,holder,dimension,description,declaredByPlugin) )
 {
 }
 
@@ -455,7 +465,7 @@ KnobHelper::deleteValueAtTime(int time,
     if (!useGuiCurve) {
 
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_updateSlaves(dimension);
+            _signalSlotHandler->s_updateDependencies(dimension);
         }
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(dimension);
@@ -868,7 +878,7 @@ KnobHelper::evaluateValueChange(int dimension,
 
     if (!guiFrozen  && _signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
-        _signalSlotHandler->s_updateSlaves(dimension);
+        _signalSlotHandler->s_updateDependencies(dimension);
         checkAnimationLevel(dimension);
     }
 }
@@ -1054,7 +1064,7 @@ static bool parseTokenFrom(const std::string& str,const std::string& token,std::
     return true;
 }
 
-static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& token)
+static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& token,int fromDim)
 {
     
     std::size_t tokenStart,tokenSize;
@@ -1065,8 +1075,12 @@ static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& toke
         return false;
     }
     
+    std::stringstream ss;
+    ss << "addAsDependencyOf(" << fromDim << ",thisParam)";
+    std::string toInsert = ss.str();
+    
     while (couldFindToken) {
-        str.replace(tokenStart, tokenSize, std::string("addAsDependencyOf(thisParam)"));
+        str.replace(tokenStart, tokenSize, toInsert);
         try {
             couldFindToken = parseTokenFrom(str, token, tokenStart, &tokenStart, &tokenSize);
         } catch (...) {
@@ -1079,7 +1093,6 @@ static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& toke
 void
 KnobHelperPrivate::parseListenersFromExpression(int dimension)
 {
-    assert(!expressionMutex.tryLock());
     
     //Extract pointers to knobs referred to by the expression
     //Our heuristic is quite simple: we replace in the python code all calls to:
@@ -1089,22 +1102,26 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     // - getIntegrateFromTimeToTime
     // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
     
-    std::string expressionCopy = expressions[dimension].expression;
+    std::string expressionCopy;
     
-
-    if  (!replaceAllOcurrencesOfToken(expressionCopy, "getValue")) {
+    {
+        QMutexLocker k(&expressionMutex);
+        expressionCopy = expressions[dimension].expression;
+    }
+    
+    if  (!replaceAllOcurrencesOfToken(expressionCopy, "getValue",dimension)) {
         return ;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "getValueAtTime")) {
+    if (!replaceAllOcurrencesOfToken(expressionCopy, "getValueAtTime",dimension)) {
         return;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "getDerivativeAtTime")) {
+    if (!replaceAllOcurrencesOfToken(expressionCopy, "getDerivativeAtTime",dimension)) {
         return;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "getIntegrateFromTimeToTime")) {
+    if (!replaceAllOcurrencesOfToken(expressionCopy, "getIntegrateFromTimeToTime",dimension)) {
         return;
     }
     
@@ -1120,7 +1137,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
 }
 
 std::string
-KnobI::validateExpression(const std::string& expression,int dimension,bool hasRetVariable)
+KnobHelper::validateExpression(const std::string& expression,int dimension,bool hasRetVariable)
 {
     if (expression.empty()) {
         throw std::invalid_argument("empty expression");;
@@ -1143,7 +1160,12 @@ KnobI::validateExpression(const std::string& expression,int dimension,bool hasRe
     ///Try to compile the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     ///with the error.
     std::string error;
+    
+    QMutexLocker k(&_expressionRecursionLevelMutex);
+    assert(_expressionsRecursionLevel == 0);
+    ++_expressionsRecursionLevel;
     bool success = Natron::interpretPythonScript(exprCpy, &error);
+    --_expressionsRecursionLevel;
     if (!success) {
         throw std::runtime_error(error);
     }
@@ -1167,9 +1189,8 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
     {
         QMutexLocker k(&_imp->expressionMutex);
         _imp->expressions[dimension].hasRet = hasRetVariable;
-        _imp->expressions[dimension].global_dict = Shiboken::Module::import(NATRON_ENGINE_PYTHON_MODULE_NAME);
-        _imp->expressions[dimension].code = (PyCodeObject*)Py_CompileString(exprCpy.c_str(), "expr.py", Py_eval_input);
-        _imp->expressions[dimension].local_dict = PyDict_New();
+        _imp->expressions[dimension].global_dict = PyModule_GetDict(PyImport_AddModule("__main__"));
+        _imp->expressions[dimension].code = (PyCodeObject*)Py_CompileString(exprCpy.c_str(), "<string>", Py_file_input);
         if (PyErr_Occurred() || !_imp->expressions[dimension].code) {
 #ifdef DEBUG
             PyErr_Print();
@@ -1179,22 +1200,39 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
 
     }
     
-    PyObject* ret;
-    try {
-        ret = executeExpression(dimension);
-    } catch (const std::runtime_error& e) {
-        expressionChanged(dimension, true);
-        throw e;
+    {
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        assert(_expressionsRecursionLevel == 0);
+        ++_expressionsRecursionLevel;
+        PyObject* ret;
+        try {
+            ret = executeExpression(dimension);
+            --_expressionsRecursionLevel;
+        } catch (const std::runtime_error& e) {
+            --_expressionsRecursionLevel;
+            expressionChanged(dimension, true);
+            throw e;
+        }
     }
     
     {
-        QMutexLocker k(&_imp->expressionMutex);
-
-        ///The expression is good so far, register it and add listeners (dependencies)
+        {
+            QMutexLocker k(&_imp->expressionMutex);
+            
+            ///The expression is good so far, register it and add listeners (dependencies)
+            
+            _imp->expressions[dimension].expression = exprCpy;
+            _imp->expressions[dimension].originalExpression = expression;
+        }
         
-        _imp->expressions[dimension].expression = exprCpy;
-        _imp->expressions[dimension].originalExpression = expression;
-        _imp->parseListenersFromExpression(dimension);
+        {
+            QMutexLocker k(&_expressionRecursionLevelMutex);
+            assert(_expressionsRecursionLevel == 0);
+            ++_expressionsRecursionLevel;
+            _imp->parseListenersFromExpression(dimension);
+            --_expressionsRecursionLevel;
+
+        }
     }
     
     
@@ -1211,15 +1249,14 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 void
 KnobHelper::expressionChanged(int dimension,bool reset)
 {
-    assert(!_imp->expressionMutex.tryLock());
     
     if (reset) {
         QMutexLocker k(&_imp->expressionMutex);
         _imp->expressions[dimension].expression.clear();
         _imp->expressions[dimension].originalExpression.clear();
+        Py_XDECREF(_imp->expressions[dimension].code); //< new ref
         _imp->expressions[dimension].code = 0;
-        _imp->expressions[dimension].global_dict = 0;
-        _imp->expressions[dimension].local_dict = 0;
+        _imp->expressions[dimension].global_dict = 0; //< python borrowed ref!
         
         QWriteLocker kk(&_imp->mastersMutex);
         for (std::list<KnobI*>::iterator it = _imp->expressions[dimension].dependencies.begin();
@@ -1240,8 +1277,15 @@ KnobHelper::expressionChanged(int dimension,bool reset)
 PyObject*
 KnobHelper::executeExpression(int dimension) const
 {
-    QMutexLocker k(&_imp->expressionMutex);
-    (void)PyEval_EvalCode(_imp->expressions[dimension].code, _imp->expressions[dimension].global_dict, _imp->expressions[dimension].local_dict);
+    Expr exp;
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        exp = _imp->expressions[dimension];
+    }
+    //returns a new ref, this function's documentation is not clear onto what it returns...
+    //https://docs.python.org/2/c-api/veryhigh.html
+    PyObject* evalRet = PyEval_EvalCode(exp.code, exp.global_dict, exp.global_dict);
+    Py_XDECREF(evalRet);
     
     if (PyErr_Occurred()) {
 #ifdef DEBUG
@@ -1251,10 +1295,13 @@ KnobHelper::executeExpression(int dimension) const
         assert(false);
         throw std::runtime_error("Failed to execute compiled Python code");
     }
-    
-    PyObject *ret = PyObject_GetAttrString(_imp->expressions[dimension].global_dict,"ret"); //get our ret variable created above
+    PyObject* mainModule = PyImport_ImportModule("__main__");
+    PyObject *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
     
     if (!ret || PyErr_Occurred()) {
+#ifdef DEBUG
+        PyErr_Print();
+#endif
         throw std::runtime_error("return value must be assigned to the \"ret\" variable");
     }
     return ret;
@@ -1525,9 +1572,6 @@ KnobHelper::slaveTo(int dimension,
     KnobHelper* helper = dynamic_cast<KnobHelper*>( other.get() );
     assert(helper);
 
-    if (helper->_signalSlotHandler && _signalSlotHandler) {
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
-    }
 
     if (_signalSlotHandler) {
         ///Notify we want to refresh
@@ -1768,9 +1812,39 @@ KnobHelper::onMasterChanged(KnobI* master,
     assert(false);
 }
 
+
+void
+KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
+{
+    int dim = -1;
+    
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        for (int i = 0; i < _imp->dimension; ++i) {
+            std::list<KnobI*>::iterator found = std::find(_imp->expressions[i].dependencies.begin(),_imp->expressions[i].dependencies.end(),knob);
+            if (found != _imp->expressions[i].dependencies.end()) {
+                dim = i;
+                break;
+            }
+        }
+    }
+    assert(dim != -1);
+    evaluateValueChange(dim, Natron::eValueChangedReasonSlaveRefresh);
+
+}
+
 void
 KnobHelper::addListener(int fromExprDimension,KnobI* knob)
 {
+    KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
+    
+    if (other->_signalSlotHandler && _signalSlotHandler) {
+        if (fromExprDimension == -1) {
+            QObject::connect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+        } else {
+            QObject::connect( other->_signalSlotHandler.get(), SIGNAL( updateDependencies(int) ), _signalSlotHandler.get(), SLOT( onExprDependencyChanged(int) ) );
+        }
+    }
     if (knob != this) {
         QWriteLocker l(&_imp->mastersMutex);
         
@@ -1785,6 +1859,11 @@ KnobHelper::addListener(int fromExprDimension,KnobI* knob)
 void
 KnobHelper::removeListener(KnobI* knob)
 {
+    KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
+    
+    if (other->_signalSlotHandler && _signalSlotHandler) {
+        QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+    }
     QWriteLocker l(&_imp->mastersMutex);
     std::list<KnobI*>::iterator found = std::find(_imp->listeners.begin(), _imp->listeners.end(), knob);
 

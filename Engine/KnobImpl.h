@@ -333,7 +333,10 @@ T Knob<T>::evaluateExpression(int dimension) const
         qDebug() << "Failure to execute expression, please investigate this bug.";
         return T();
     }
-    return pyObjectToType(ret);
+    
+    T val =  pyObjectToType(ret);
+    Py_DECREF(ret); //< new ref
+    return val;
 }
 
 //Declare the specialization before defining it to avoid the following
@@ -388,12 +391,22 @@ Knob<T>::getValue(int dimension,bool clamp) const
 {
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        if (clamp ) {
+        
+        ///Prevent recursive call of the expression
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        if (_expressionsRecursionLevel == 0) {
+            ++_expressionsRecursionLevel;
             T ret = evaluateExpression(dimension);
-            return clampToMinMax(ret,dimension);
-        } else {
-            return evaluateExpression(dimension);
+            --_expressionsRecursionLevel;
+            
+            
+            if (clamp) {
+                return clampToMinMax(ret,dimension);
+            } else {
+                return ret;
+            }
         }
+      
     }
     
     if ( isAnimated(dimension) ) {
@@ -439,7 +452,16 @@ Knob<std::string>::getValueAtTime(double time,
 
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        return evaluateExpression(dimension);
+        
+        ///Prevent recursive call of the expression
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        if (_expressionsRecursionLevel == 0) {
+            ++_expressionsRecursionLevel;
+            std::string ret =  evaluateExpression(dimension);
+            --_expressionsRecursionLevel;
+            return ret;
+        }
+        
     }
     
     ///if the knob is slaved to another knob, returns the other knob value
@@ -493,14 +515,24 @@ Knob<T>::getValueAtTime(double time,
     
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        if (clamp ) {
+        
+        ///Prevent recursive call of the expression
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        if (_expressionsRecursionLevel == 0) {
+
+            ++_expressionsRecursionLevel;
             T ret = evaluateExpression(dimension);
-            return clampToMinMax(ret,dimension);
-        } else {
-            return evaluateExpression(dimension);
+            --_expressionsRecursionLevel;
+            
+            if (clamp) {
+                return clampToMinMax(ret,dimension);
+            } else {
+                return ret;
+            }
+            
         }
     }
-
+    
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (master.second) {
@@ -1263,7 +1295,7 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
         
         if (_signalSlotHandler && isAnimated(i)) {
             _signalSlotHandler->s_valueChanged(i, Natron::eValueChangedReasonTimeChanged);
-            _signalSlotHandler->s_updateSlaves(i);
+            _signalSlotHandler->s_updateDependencies(i);
         }
         checkAnimationLevel(i);
     }

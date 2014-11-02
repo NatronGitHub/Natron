@@ -1581,7 +1581,7 @@ boost::shared_ptr<Natron::Node> Project::getNodeByName(const std::string & name)
     QMutexLocker l(&_imp->nodesLock);
 
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if (_imp->currentNodes[i]->getName() == name) {
+        if (_imp->currentNodes[i]->getName_mt_safe() == name) {
             return _imp->currentNodes[i];
         }
     }
