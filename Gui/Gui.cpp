@@ -4149,6 +4149,10 @@ Gui::keyPressEvent(QKeyEvent* e)
         getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         getApp()->getTimeLine()->goToNextKeyframe();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
+        _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+        _imp->_nodeGraphArea->popFindDialog();  
     } else {
         QMainWindow::keyPressEvent(e);
     }

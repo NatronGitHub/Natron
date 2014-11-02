@@ -1890,12 +1890,6 @@ NodeGraphPrivate::rearrangeSelectedNodes()
 }
 
 void
-NodeGraph::toggleSelectedNodesEnabled()
-{
-    _imp->toggleSelectedNodesEnabled();
-}
-
-void
 NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
 {
     _bendPointsVisible = visible;
@@ -3596,6 +3590,12 @@ NodeGraph::focusOutEvent(QFocusEvent* e)
         _imp->setNodesBendPointsVisible(false);
     }
     QGraphicsView::focusOutEvent(e);
+}
+
+void
+NodeGraph::toggleSelectedNodesEnabled()
+{
+    _imp->toggleSelectedNodesEnabled();
 }
 
 void
