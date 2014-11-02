@@ -376,6 +376,7 @@ SpinBox::increment(int delta,
         // Add trailing zero, maybe preceded by a dot
         if (pos == dot) {
             str.append('.');
+            ++pos; // increment pos, because we just added a '.', and next iteration will add a '0'
             ++len;
         } else {
             assert(pos > dot);
@@ -405,7 +406,17 @@ SpinBox::increment(int delta,
     }
     assert( (_imp->type == INT_SPINBOX && noDotLen == dot) || noDotLen >= dot );
     double val = oldVal; // The value, as a double
-    qlonglong llval = noDotStr.toLongLong(); // The value, as a long long int
+    if (noDotLen > 16 && 16 >= dot) {
+        // don't handle more than 16 significant digits (this causes over/underflows in the following)
+        assert(noDotLen == noDotStr.size());
+        noDotLen = 16;
+        noDotStr.resize(noDotLen);
+    }
+    qlonglong llval = noDotStr.toLongLong(&ok); // The value, as a long long int
+    if (!ok) {
+        // Not a valid long long value, don't do anything
+        return;
+    }
     int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
     assert(llpowerOfTen <= 0);
     // check that val and llval*10^llPowerOfTen are close enough (relative error should be less than 1e-8)
@@ -439,7 +450,13 @@ SpinBox::increment(int delta,
     
     int powerOfTen = dot - pos - (pos < dot); // the power of ten
     assert( (_imp->type == DOUBLE_SPINBOX) || ( powerOfTen >= 0 && dot == str.size() ) );
-    
+
+    if (powerOfTen - llpowerOfTen > 16) {
+        // too many digits to handle, don't do anything
+        // (may overflow when adjusting llval)
+        return;
+    }
+
     double inc = inc_int * std::pow(10., (double)powerOfTen);
     
     // Check that we are within the authorized range
@@ -460,7 +477,7 @@ SpinBox::increment(int delta,
         // out of the authorized range, don't do anything
         return;
     }
-    
+
     // Adjust llval so that the increment becomes an int, and avoid rounding errors
     if (powerOfTen >= llpowerOfTen) {
         llval += inc_int * std::pow(10., powerOfTen - llpowerOfTen);
@@ -488,8 +505,8 @@ SpinBox::increment(int delta,
         assert(_imp->type == DOUBLE_SPINBOX);
         newStr.insert(newDot, '.');
     }
-    // Check that the backed string is close to the wanted value
-    assert( (newStr.toDouble() - val) * std::pow(10.,-llpowerOfTen) < 1e-8 );
+    // Check that the backed string is close to the wanted value (relative error should be less than 1e-8)
+    assert( (newStr.toDouble() - val) / std::max(1e-8,std::abs(val)) < 1e-8 );
     // The new cursor position
     int newPos = newDot + (pos - dot);
     // Remove the shift (may have to be done twice due to the dot)

@@ -114,8 +114,7 @@ public:
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
     virtual void clearNodeGuiMapping() OVERRIDE FINAL;
-    virtual void aboutToAutoSave() OVERRIDE FINAL;
-    virtual void autoSaveFinished() OVERRIDE FINAL;
+
 
     boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
 

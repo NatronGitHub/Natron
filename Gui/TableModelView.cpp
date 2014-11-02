@@ -9,6 +9,7 @@
 #include <set>
 #include <QHeaderView>
 #include <QMouseEvent>
+#include <QScrollBar>
 #include "Gui/GuiMacros.h"
 
 //////////////TableItem
@@ -872,8 +873,17 @@ TableView::editItem(TableItem *item)
     if (!item) {
         return;
     }
-    edit( _imp->model->index(item) );
+    QTreeView::edit( _imp->model->index(item) );
 }
+
+bool
+TableView::edit(const QModelIndex & index, QAbstractItemView::EditTrigger trigger, QEvent * event)
+{
+    
+    scrollTo(index);
+    return QTreeView::edit(index,trigger,event);
+}
+
 
 void
 TableView::openPersistentEditor(TableItem *item)

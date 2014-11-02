@@ -2819,21 +2819,21 @@ Bezier::setKeyframe(int time)
             double leftDerivX,rightDerivX,leftDerivY,rightDerivY;
 
             {
-                (*it)->getPositionAtTime(time, &x, &y);
+                (*it)->getPositionAtTime(time, &x, &y,true);
                 (*it)->setPositionAtTime(time, x, y);
 
-                (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-                (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
+                (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*it)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
             }
 
             {
-                (*itF)->getPositionAtTime(time, &x, &y);
+                (*itF)->getPositionAtTime(time, &x, &y,true);
                 (*itF)->setPositionAtTime(time, x, y);
 
-                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
+                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*itF)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*itF)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
             }
@@ -2954,7 +2954,15 @@ Bezier::getBoundingBox(int time) const
 #pragma message WARN("TODO: use featherPointsAtDistance")
     // BUG https://github.com/MrKepzie/Natron/issues/145 : the feather Bezier must be moved by featherdistance before RoD computation!
     bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
-
+    
+    
+    // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
+    // enclosing the real bbox and close enough
+    double featherDistance = getFeatherDistance(time);
+    bbox.x1 -= featherDistance;
+    bbox.x2 += featherDistance;
+    bbox.y1 -= featherDistance;
+    bbox.y2 += featherDistance;
     return bbox;
 }
 

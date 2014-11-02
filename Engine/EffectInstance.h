@@ -642,6 +642,7 @@ public:
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
                                       const Natron::ImageComponentsEnum comp,
                                       const Natron::ImageBitDepthEnum depth,
+                                      const double par,
                                       const bool dontUpscale,
                                       RectI* roiPixel) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
@@ -846,6 +847,17 @@ public:
 
     /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
     void setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const;
+
+    /**
+     * @brief Does this effect can support multiple clips PAR ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultipleClipPARs
+     * If a plugin does not accept clips of differing PARs, then the host must resample all images fed to that effect to agree with the output's PAR.
+     * If a plugin does accept clips of differing PARs, it will need to specify the output clip's PAR in the kOfxImageEffectActionGetClipPreferences action.
+     **/
+    virtual bool supportsMultipleClipsPAR() const
+    {
+        return false;
+    }
 
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed

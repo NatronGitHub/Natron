@@ -62,9 +62,9 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob,
 
 File_KnobGui::~File_KnobGui()
 {
-    delete _lineEdit;
-    delete _openFileButton;
-    delete _watcher;
+//    delete _lineEdit;
+//    delete _openFileButton;
+//    delete _watcher;
 }
 
 void
@@ -94,6 +94,8 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
+    _openFileButton->setToolTip(tr("Browse file..."));
+    _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
@@ -356,8 +358,8 @@ OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<KnobI> knob,
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
 {
-    delete _lineEdit;
-    delete _openFileButton;
+//    delete _lineEdit;
+//    delete _openFileButton;
 }
 
 void
@@ -382,6 +384,8 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
+    _openFileButton->setToolTip(tr("Browse file..."));
+    _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
@@ -568,7 +572,7 @@ Path_KnobGui::Path_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Path_KnobGui::~Path_KnobGui()
 {
-    delete _mainContainer;
+    //delete _mainContainer;
 }
 
 ////////////// TableView delegate
@@ -681,19 +685,23 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
         buttonsLayout->setContentsMargins(0, 0, 0, 0);
         
-        _addPathButton = new Button( "+",buttonsContainer );
-        _addPathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _addPathButton = new Button( tr("Add"),buttonsContainer );
+        //_addPathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _addPathButton->setToolTip( tr("Click to add a new project path") );
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
-        _removePathButton = new Button( "-",buttonsContainer);
-        _removePathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+        _removePathButton = new Button( tr("Remove"),buttonsContainer);
+       // _removePathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
         _removePathButton->setToolTip(tr("Click to remove selected project path"));
         
+        _editPathButton = new Button( tr("Edit"), buttonsContainer);
+        QObject::connect( _editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );
+        _editPathButton->setToolTip(tr("Click to change the path of the selected project path"));
         
         buttonsLayout->addWidget(_addPathButton);
         buttonsLayout->addWidget(_removePathButton);
+        buttonsLayout->addWidget(_editPathButton);
         buttonsLayout->addStretch();
         
         mainLayout->addWidget(_table);
@@ -757,6 +765,42 @@ Path_KnobGui::onAddButtonClicked()
 }
 
 void
+Path_KnobGui::onEditButtonClicked()
+{
+    std::string oldValue = _knob->getValue();
+    QModelIndexList selection = _table->selectionModel()->selectedRows();
+    
+    if (selection.size() != 1) {
+        return;
+    }
+    
+    Variables::iterator found = _items.find(selection[0].row());
+    if (found != _items.end()) {
+        std::vector<std::string> filters;
+        
+        SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::DIR_DIALOG, found->second.value->text().toStdString(),getGui(),true );
+        if (dialog.exec()) {
+            
+            std::string dirPath = dialog.selectedDirectory();
+            if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
+                dirPath.erase(dirPath.size() - 1, 1);
+            }
+            updateLastOpened(dirPath.c_str());
+            
+            found->second.value->setText(dirPath.c_str());
+            std::string newPath = rebuildPath();
+            
+            
+            
+            pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
+        }
+    }
+
+    
+    
+}
+
+void
 Path_KnobGui::onOpenFileButtonClicked()
 {
     std::vector<std::string> filters;
@@ -800,7 +844,7 @@ Path_KnobGui::onRemoveButtonClicked()
     if (_knob->getHolder() && _knob->getHolder() == getGui()->getApp()->getProject().get() &&
         appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
         for (std::list<std::string>::iterator it = removeVars.begin(); it != removeVars.end(); ++it) {
-            getGui()->getApp()->getProject()->fixRelativeFilePaths(*it, "");
+            getGui()->getApp()->getProject()->fixRelativeFilePaths(*it, "",false);
         }
         
     }
@@ -980,7 +1024,7 @@ Path_KnobGui::onItemDataChanged(TableItem* /*item*/)
                         getGui()->getApp()->getProject()->fixPathName(itOld->first, itNew->first);
                         break;
                     } else if (itOld->second != itOld->second) {
-                        getGui()->getApp()->getProject()->fixRelativeFilePaths(itOld->first, itNew->second);
+                        getGui()->getApp()->getProject()->fixRelativeFilePaths(itOld->first, itNew->second,false);
                         break;
                     }
                 }

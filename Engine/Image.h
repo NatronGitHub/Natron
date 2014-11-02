@@ -116,6 +116,7 @@ namespace Natron {
               const RectD & regionOfDefinition,    //!< rod in canonical coordinates
               const RectI & bounds,    //!< bounds in pixel coordinates
               unsigned int mipMapLevel,
+              double par,
               Natron::ImageBitDepthEnum bitdepth);
 
         virtual ~Image()

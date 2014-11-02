@@ -1280,36 +1280,35 @@ AppManager::registerEngineMetaTypes() const
 void
 AppManagerPrivate::saveCaches()
 {
-    if (!appPTR->isBackground()) {
-        std::ofstream ofile;
-        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
-        try {
-            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-        } catch (const std::ofstream::failure & e) {
-            qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": " << e.what();
-
-            return;
-        }
-
-        if ( !ofile.good() ) {
-            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
-
-            return;
-        }
-
-        Natron::Cache<FrameEntry>::CacheTOC toc;
-        _viewerCache->save(&toc);
-
-        try {
-            boost::archive::binary_oarchive oArchive(ofile);
-            oArchive << toc;
-        } catch (const std::exception & e) {
-            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
-        }
-
-        ofile.close();
+    std::ofstream ofile;
+    ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
+    try {
+        ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
+    } catch (const std::ofstream::failure & e) {
+        qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": " << e.what();
+        
+        return;
     }
+    
+    if ( !ofile.good() ) {
+        qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+        
+        return;
+    }
+    
+    Natron::Cache<FrameEntry>::CacheTOC toc;
+    _viewerCache->save(&toc);
+    
+    try {
+        boost::archive::binary_oarchive oArchive(ofile);
+        oArchive << toc;
+    } catch (const std::exception & e) {
+        qDebug() << "Failed to serialize the cache table of contents: " << e.what();
+    }
+    
+    ofile.close();
+    
 
     //
     //    {

@@ -653,6 +653,86 @@ OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
     return true;
 }
 
+void
+OfxImageEffectInstance::setupClipPreferencesArgs(OFX::Host::Property::Set &outArgs)
+{
+    /// reset all the clip prefs stuff to their defaults
+    setDefaultClipPreferences();
+    
+    static const OFX::Host::Property::PropSpec clipPrefsStuffs []=
+    {
+        { kOfxImageEffectPropFrameRate,          OFX::Host::Property::eDouble,  1, false,  "1" },
+        { kOfxImageEffectPropPreMultiplication,  OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropFieldOrder,           OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropContinuousSamples,    OFX::Host::Property::eInt,     1, false,  "0" },
+        { kOfxImageEffectFrameVarying,           OFX::Host::Property::eInt,     1, false,  "0" },
+        OFX::Host::Property::propSpecEnd
+    };
+    
+    outArgs.addProperties(clipPrefsStuffs);
+    
+    /// set the default for those
+    
+    /// is there multiple bit depth support? Depends on host, plugin and context
+    bool multiBitDepth = canCurrentlyHandleMultipleClipDepths();
+    
+    outArgs.setStringProperty(kOfxImageClipPropFieldOrder, _outputFielding);
+    outArgs.setStringProperty(kOfxImageEffectPropPreMultiplication, _outputPreMultiplication);
+    outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, _outputFrameRate);
+    
+    /// now add the clip gubbins to the out args
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
+        it!=_clips.end();
+        ++it) {
+        OFX::Host::ImageEffect::ClipInstance *clip = it->second;
+        
+        std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
+        std::string depthParamName     = "OfxImageClipPropDepth_"+it->first;
+        std::string parParamName       = "OfxImageClipPropPAR_"+it->first;
+        
+        OFX::Host::Property::PropSpec specComp = {componentParamName.c_str(),  OFX::Host::Property::eString, 0, false,          ""}; // note the support for multi-planar clips
+        outArgs.createProperty(specComp);
+        outArgs.setStringProperty(componentParamName.c_str(), clip->getComponents().c_str()); // as it is variable dimension, there is no default value, so we have to set it explicitly
+        
+        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, clip->getPixelDepth().c_str()};
+        outArgs.createProperty(specDep);
+        
+        {
+            OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,        "1"};
+            outArgs.createProperty(specPAR);
+            
+            ///If the clip is output we should propagate the pixel aspect ratio of the inputs unless it does support multiple clip PARs
+            ///in which case the plug-in should implement the action getClipPreferences() and set the PAR explicitly on the output clip.
+            if (clip->isOutput() && !supportsMultipleClipPARs()) {
+                double inputPar = 1.;
+                bool inputParSet = false;
+                for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it2=_clips.begin();
+                      it2!=_clips.end();
+                      ++it2) {
+                    if (!it2->second->isOutput() && it2->second->getConnected()) {
+                        if (!inputParSet) {
+                            inputPar = it2->second->getAspectRatio();
+                        } else {
+                            if (inputPar != it2->second->getAspectRatio()) {
+                                ///We have several inputs with different aspect ratio, we should have caught this earlier, we can't deal with it
+                                ///properly.
+                                qDebug() << "WARNING: getClipPreferences() for " << _ofxEffectInstance->getName_mt_safe().c_str() << ": "
+                                << "This node has several input clips with different pixel aspect ratio but it does not support multiple input clips PAR. "
+                                << "Your script or the GUI should have handled this earlier (before connecting the node @see Node::canConnectInput) .";
+                                break;
+                            }
+                        }
+                    }
+                }
+                outArgs.setDoubleProperty(parParamName, inputPar);
+            } else {
+                outArgs.setDoubleProperty(parParamName, clip->getAspectRatio());
+            }
+        }
+    }
+
+}
+
 
 bool
 OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs)

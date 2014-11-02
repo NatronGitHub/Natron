@@ -230,7 +230,7 @@ namespace  {
 }
 
 /**
- * @brief These args are local to a renderRoI call and used to retrieve these infos 
+ * @brief These args are local to a renderRoI call and used to retrieve this info 
  * in a thread-safe and thread-local manner in getImage
  **/
 struct EffectInstance::RenderArgs
@@ -810,6 +810,7 @@ EffectInstance::getImage(int inputNb,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
                          const Natron::ImageComponentsEnum comp,
                          const Natron::ImageBitDepthEnum depth,
+                         const double par,
                          const bool dontUpscale,
                          RectI* roiPixel)
 {
@@ -904,11 +905,7 @@ EffectInstance::getImage(int inputNb,
         return boost::shared_ptr<Image>();
     }
 
-    double par = 1.;
-    if (n && !useRotoInput) {
-        par = n->getPreferredAspectRatio();
-    }
-    
+
     ///Both the result of getRegionsOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates
     RectI pixelRoI;
@@ -957,24 +954,35 @@ EffectInstance::getImage(int inputNb,
     }
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
 
-    ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
+    if (inputImg->getPixelAspectRatio() != par) {
+        qDebug() << "WARNING: " << getName_mt_safe().c_str() << " requested an image with a pixel aspect ratio of " << par <<
+        " but " << n->getName_mt_safe().c_str() << " rendered an image with a pixel aspect ratio of " << inputImg->getPixelAspectRatio();
+    }
+    
+    ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
     ///Note that we do NOT cache it
     if ( !dontUpscale && (inputImgMipMapLevel != 0) && !supportsRenderScale() ) {
+        
+        ///Resize the image according to the requested scale
         Natron::ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
-        int mipMapLevel = 0;
         RectI bounds;
         inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
-        boost::shared_ptr<Natron::Image> upscaledImg( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
-                                                                        bounds, mipMapLevel, bitdepth) );
+        boost::shared_ptr<Natron::Image> rescaledImg( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
+                                                                           bounds, mipMapLevel, par, bitdepth) );
         //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
-        inputImg->scaleBox( inputImg->getBounds(), upscaledImg.get() );
+        inputImg->scaleBox( inputImg->getBounds(), rescaledImg.get() );
+        return rescaledImg;
 
-        return upscaledImg;
+        
     } else {
+        
+        ///The image is cached and we don't want Natron to remove it, so we hold a pointer to it (which will be removed
+        ///once the plug-in render action returns)
         _imp->addInputImageTempPointer(inputImg);
-
         return inputImg;
+        
     }
+    
 } // getImage
 
 void
@@ -1087,6 +1095,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->x1 = projectDefault.x1;
             isProjectFormat = true;
         }
+        rod->x2 = std::max(rod->x1, rod->x2);
     }
     if (y1Infinite) {
         if ( !inputsUnion.isNull() ) {
@@ -1095,6 +1104,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->y1 = projectDefault.y1;
             isProjectFormat = true;
         }
+        rod->y2 = std::max(rod->y1, rod->y2);
     }
     if (x2Infinite) {
         if ( !inputsUnion.isNull() ) {
@@ -1103,6 +1113,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->x2 = projectDefault.x2;
             isProjectFormat = true;
         }
+        rod->x1 = std::min(rod->x1, rod->x2);
     }
     if (y2Infinite) {
         if ( !inputsUnion.isNull() ) {
@@ -1111,6 +1122,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->y2 = projectDefault.y2;
             isProjectFormat = true;
         }
+        rod->y1 = std::min(rod->y1, rod->y2);
     }
     if ( isProjectFormat && !isGenerator() ) {
         isProjectFormat = false;
@@ -1572,6 +1584,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                  &canonicalRoI,
                                  args.components,
                                  args.bitdepth,
+                                 par,
                                  true,
                                  NULL);
                 ///Clear input images pointer because getImage has stored the image .
@@ -1662,7 +1675,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             assert(renderMappedMipMapLevel == 0);
             RectI bounds;
             rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
-            image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, args.bitdepth) );
+            image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, downscaledImage->getPixelAspectRatio(), args.bitdepth) );
         }
 
 
@@ -1902,7 +1915,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 RectD rod = image->getRoD();
                 RectI bounds;
                 rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
-                fullScaleMappedImage.reset( new Image(outputComponents, rod, bounds, renderMappedMipMapLevel, outputDepth) );
+                fullScaleMappedImage.reset( new Image(outputComponents, rod, bounds, renderMappedMipMapLevel, image->getPixelAspectRatio(), outputDepth) );
                 downscaledMappedImage = downscaledImage;
                 assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
                 assert( fullScaleMappedImage->getBounds() == image->getBounds() );
@@ -1910,7 +1923,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 RectD rod = downscaledImage->getRoD();
                 RectI bounds;
                 rod.toPixelEnclosing(mipMapLevel, par, &bounds);
-                downscaledMappedImage.reset( new Image(outputComponents, rod, image->getBounds(), mipMapLevel, outputDepth) );
+                downscaledMappedImage.reset( new Image(outputComponents, rod, image->getBounds(), mipMapLevel,downscaledImage->getPixelAspectRatio(), outputDepth) );
                 fullScaleMappedImage = image;
                 assert( downscaledMappedImage->getBounds() == downscaledImage->getBounds() );
                 assert( fullScaleMappedImage->getBounds() == image->getBounds() );
@@ -2581,7 +2594,7 @@ EffectInstance::evaluate(KnobI* knob,
     }
 
     ///increments the knobs age following a change
-    if (!button) {
+    if (!button && isSignificant) {
         _node->incrementKnobsAge();
     }
 

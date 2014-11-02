@@ -23,7 +23,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-
+#include "Gui/ZoomContext.h"
 using Natron::ScaleTypeEnum;
 
 class QFont;
@@ -88,43 +88,20 @@ private:
 
     void seekInternal(double v);
 
-    /**
-     *@brief See toZoomCoordinates in ViewerGL.h
-     **/
-    QPointF toScaleCoordinates(double x, double y);
-
-    /**
-     *@brief See toWidgetCoordinates in ViewerGL.h
-     **/
-    QPointF toWidgetCoordinates(double x, double y);
 
     void centerOn(double left,double right);
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
-
-
-    // see ViewerGL.cpp for a full documentation of ZoomContext
-    struct ZoomContext
-    {
-        ZoomContext()
-            : bottom(0.)
-              , left(0.)
-              , zoomFactor(1.)
-        {
-        }
-
-        QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double bottom; /// the bottom edge of orthographic projection
-        double left; /// the left edge of the orthographic projection
-        double zoomFactor; /// the zoom factor applied to the current image
-        double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
-    };
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 
     ZoomContext _zoomCtx;
+    QPointF _oldClick;
     double _minimum,_maximum;
     Natron::ScaleTypeEnum _type;
     double _value;
@@ -136,6 +113,9 @@ private:
     bool _initialized;
     bool _mustInitializeSliderPosition;
     bool _readOnly;
+    bool _ctrlDown;
+    bool _shiftDown;
+    double _currentZoom;
 };
 
 #endif // SCALESLIDERQWIDGET_H

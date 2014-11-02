@@ -522,7 +522,7 @@ struct RotoContextPrivate
     Natron::Node* node;
     U64 age;
 
-    ///These are knobs that take the value of the selected splines infos.
+    ///These are knobs that take the value of the selected splines info.
     ///Their value changes when selection changes.
     boost::shared_ptr<Double_Knob> opacity;
     boost::shared_ptr<Double_Knob> feather;

@@ -54,6 +54,8 @@ public:
 
 
     ViewerInstance* getInternalNode() const;
+    void discardInternalNodePointer();
+    
     Gui* getGui() const;
     ViewerGL* getViewer() const;
 
@@ -284,6 +286,12 @@ public slots:
     void onSpinboxFpsChanged(double fps);
     
     void onEngineStopped();
+    
+    void onViewerRenderingStarted();
+    
+    void onViewerRenderingStopped();
+    
+    void setTurboButtonDown(bool down);
     
 private:
     

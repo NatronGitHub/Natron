@@ -109,6 +109,11 @@ public:
      * it returns false, true otherwise. @see Settings::onKnobValueChanged
      **/
     bool supportsGLSL() const WARN_UNUSED_RETURN;
+    
+    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
 
 
     void setDisplayChannels(DisplayChannels channels);
@@ -145,6 +150,9 @@ public:
     
     void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 
+    void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
+    
+    void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
 public slots:
 
 
@@ -162,14 +170,19 @@ public slots:
 
 
 signals:
-
+    
     void s_callRedrawOnMainThread();
 
     void viewerDisconnected();
+    
+    void refreshOptionalState();
 
     void activeInputsChanged();
 
     void disconnectTextureRequest(int index);
+    
+    void viewerRenderingStarted();
+    void viewerRenderingEnded();
 
 private:
     /*******************************************

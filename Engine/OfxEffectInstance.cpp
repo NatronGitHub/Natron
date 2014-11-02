@@ -77,7 +77,7 @@ namespace  {
  * It is to be instantiated right before calling the action that will need the per thread-storage
  * This way even if exceptions are thrown, clip thread-storage will be purged.
  *
- * All the infos set on clip thread-storage are "cached" data that might be needed by a call of the OpenFX API which would
+ * All the info set on clip thread-storage are "cached" data that might be needed by a call of the OpenFX API which would
  * otherwise require a recursive action call, which is forbidden by the specification.
  * The more you pass parameters, the safer you are that the plug-in will not attempt recursive action calls but the more expensive
  * it is.
@@ -863,8 +863,30 @@ OfxEffectInstance::onInputChanged(int inputNo)
     
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
-    if ( !getApp()->getProject()->isLoadingProject() && _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,false);
+    if (_effect->areAllNonOptionalClipsConnected()) {
+        
+        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
+        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
+            OfxRectD rod;
+            OfxPointD scaleOne;
+            scaleOne.x = scaleOne.y = 1.;
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                OfxPointD scale;
+                scale.x = 0.5;
+                scale.y = 0.5;
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                    setSupportsRenderScaleMaybe(eSupportsYes);
+                } else {
+                    setSupportsRenderScaleMaybe(eSupportsNo);
+                }
+            }
+
+        }
+        if ( !getApp()->getProject()->isLoadingProject() ) {
+            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true);
+        }
     }
     
     {
@@ -1021,9 +1043,11 @@ clipPrefsProxy(OfxEffectInstance* self,
                 setBitDepthWarning = true;
             }
             
-            if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio) {
-                foundClipPrefs->second.par = outputAspectRatio;
-                hasChanged = true;
+            if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio && foundClipPrefs->first->getConnected()) {
+                qDebug() << self->getName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
+                << ") has a pixel aspect ratio (" << foundClipPrefs->second.par
+                << ") different than the output clip (" << outputAspectRatio << ") but it doesn't support multiple clips PAR. "
+                << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
             }
             
             if (hasChanged) {
@@ -1148,6 +1172,28 @@ OfxEffectInstance::onMultipleInputsChanged()
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
+        
+        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
+        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
+            OfxRectD rod;
+            OfxPointD scaleOne;
+            scaleOne.x = scaleOne.y = 1.;
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                OfxPointD scale;
+                scale.x = 0.5;
+                scale.y = 0.5;
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                    setSupportsRenderScaleMaybe(eSupportsYes);
+                } else {
+                    setSupportsRenderScaleMaybe(eSupportsNo);
+                }
+            }
+            
+        }
+
+        
         checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true);
     }
 }
@@ -1380,7 +1426,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
     OfxStatus stat;
 
-    ///before calling getRoIaction set the relevant infos on the clips
+    ///before calling getRoIaction set the relevant info on the clips
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
@@ -1847,6 +1893,12 @@ OfxEffectInstance::render(SequenceTime time,
         return eStatusOK;
     }
 } // render
+
+bool
+OfxEffectInstance::supportsMultipleClipsPAR() const
+{
+    return _effect->supportsMultipleClipPARs();
+}
 
 EffectInstance::RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const

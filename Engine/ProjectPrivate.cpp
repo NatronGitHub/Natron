@@ -137,7 +137,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
                 autoSetProjectDirectory(isAutoSave ? realFilePath : path);
             }
-            _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+            _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
         }
 
     }
@@ -387,7 +387,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     }
     if (env != newEnv) {
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy);
+            _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy,false);
         }
         envVars->setValue(newEnv, 0);
     }

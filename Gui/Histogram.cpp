@@ -19,6 +19,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QDebug>
 #include <QApplication>
 #include <QMenu>
+#include <QToolButton>
 #include <QActionGroup>
 
 #include "Engine/Image.h"
@@ -1315,6 +1316,8 @@ Histogram::keyPressEvent(QKeyEvent* e)
         _imp->hasBeenModifiedSinceResize = false;
         _imp->zoomCtx.fill(0., 1., 0., 10.);
         computeHistogramAndRefresh();
+    } else {
+        QGLWidget::keyPressEvent(e);
     }
 }
 
@@ -1327,6 +1330,7 @@ Histogram::enterEvent(QEvent* e) {
     dynamic_cast<CurveWidget*>(currentFocus) ||
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
+    dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "PropertiesBinScrollArea" ||
     currentFocus->objectName() == "SettingsPanel";
     

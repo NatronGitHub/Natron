@@ -180,6 +180,10 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect (isOutput->getRenderEngine(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()));
     }
 
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isOutput);
+    if (isViewer) {
+        QObject::connect(isViewer,SIGNAL(refreshOptionalState()),this,SLOT(refreshOptionalStateOfEdges()));
+    }
 
     createGui();
 
@@ -370,16 +374,7 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         return;
     }
     if ( _internalNode->isPreviewEnabled() ) {
-        if (!_previewPixmap) {
-            QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
-            prev.fill(Qt::black);
-            QPixmap prev_pixmap = QPixmap::fromImage(prev);
-            _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
-            _previewPixmap->setZValue(1);
-        }
-        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
-        _previewPixmap->stackBefore(_nameItem);
-        _previewPixmap->show();
+        ensurePreviewCreated();
         if (refreshPreview) {
             _internalNode->computePreviewImage( _graph->getGui()->getApp()->getTimeLine()->currentFrame() );
         }
@@ -389,6 +384,27 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         }
         updateShape(NODE_WIDTH,NODE_HEIGHT);
     }
+}
+
+void
+NodeGui::ensurePreviewCreated()
+{
+    if (!_previewPixmap) {
+        QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
+        prev.fill(Qt::black);
+        QPixmap prev_pixmap = QPixmap::fromImage(prev);
+        _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
+        _previewPixmap->setZValue(1);
+        
+    }
+    QSize size = getSize();
+    if (size.width() < NODE_WITH_PREVIEW_WIDTH ||
+        size.height() < NODE_WITH_PREVIEW_HEIGHT) {
+        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
+        _previewPixmap->stackBefore(_nameItem);
+        _previewPixmap->show();
+    }
+
 }
 
 void
@@ -643,10 +659,36 @@ NodeGui::changePosition(double dx,
 }
 
 void
+NodeGui::refreshOptionalStateOfEdges()
+{
+    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+    if (viewer) {
+        int activeInputs[2];
+        viewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+        
+        int nbInputsConnected = 0;
+        
+        for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
+            if (i->first == activeInputs[0] || i->first == activeInputs[1]) {
+                i->second->setOptional(false);
+            } else {
+                i->second->setOptional(true);
+            }
+            if (i->second->getSource()) {
+                ++nbInputsConnected;
+            }
+        }
+        if (nbInputsConnected == 0) {
+            _inputEdges[0]->setOptional(false);
+        }
+    }
+}
+
+void
 NodeGui::refreshEdges()
 {
     const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = _internalNode->getInputs_mt_safe();
-
+    
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
         assert(i->first < (int)nodeInputs.size() && i->first >= 0);
         boost::shared_ptr<NodeGui> nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
@@ -702,6 +744,8 @@ NodeGui::updatePreviewImage(int time)
             return;
         }
         
+        ensurePreviewCreated();
+
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -717,6 +761,8 @@ NodeGui::forceComputePreview(int time)
             return;
         }
         
+        ensurePreviewCreated();
+
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -727,6 +773,7 @@ NodeGui::computePreviewImage(int time)
     if ( _internalNode->isRenderingPreview() ) {
         return;
     }
+    
 
     int w = NATRON_PREVIEW_WIDTH;
     int h = NATRON_PREVIEW_HEIGHT;

@@ -282,7 +282,6 @@ struct GuiPrivate
     QVBoxLayout *_layoutPropertiesBin;
     Button* _clearAllPanelsButton;
     SpinBox* _maxPanelsOpenedSpinBox;
-    Button* _freezeUIButton;
     
     QMutex _isGUIFrozenMutex;
     bool _isGUIFrozen;
@@ -331,7 +330,6 @@ struct GuiPrivate
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
-    TabWidget* fullScreenWidgetDuringSave;
     ShortCutEditor* shortcutEditor;
 
     GuiPrivate(GuiAppInstance* app,
@@ -407,7 +405,6 @@ struct GuiPrivate
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
-          , _freezeUIButton(0)
           , _isGUIFrozenMutex()
           , _isGUIFrozen(false)
           , menubar(0)
@@ -436,7 +433,6 @@ struct GuiPrivate
           , _toolButtonMenuOpened(NULL)
           , aboutToCloseMutex()
           , _aboutToClose(false)
-          , fullScreenWidgetDuringSave(0)
           , shortcutEditor(0)
     {
     }
@@ -1020,6 +1016,7 @@ GuiPrivate::createPropertiesBinGui()
     _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _clearAllPanelsButton->setToolTip( Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
+    _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton,SIGNAL( clicked(bool) ),_gui,SLOT( clearAllVisiblePanels() ) );
 
 
@@ -1033,25 +1030,9 @@ GuiPrivate::createPropertiesBinGui()
                                                                   Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox,SIGNAL( valueChanged(double) ),_gui,SLOT( onMaxPanelsSpinBoxValueChanged(double) ) );
-
-    QPixmap pixFreezeEnabled,pixFreezeDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
-    QIcon icFreeze;
-    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
-    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
-    _freezeUIButton = new Button(icFreeze,"",propertiesAreaButtonsContainer);
-    _freezeUIButton->setCheckable(true);
-    _freezeUIButton->setChecked(false);
-    _freezeUIButton->setDown(false);
-    _freezeUIButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _freezeUIButton->setToolTip("<p><b>" + _gui->tr("Turbo mode:") + "</p></b><p>" + _gui->tr("When checked, everything besides the viewer will not be refreshed in the user interface "
-                                         "for maximum efficiency during playback.") + "</p>");
-    QObject::connect( _freezeUIButton, SIGNAL (clicked(bool)), _gui, SLOT(onFreezeUIButtonClicked(bool) ) );
     
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
-    propertiesAreaButtonsLayout->addWidget(_freezeUIButton);
     propertiesAreaButtonsLayout->addStretch();
     
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
@@ -1887,7 +1868,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             if ( it != _imp->_viewerTabs.end() ) {
                 _imp->_viewerTabs.erase(it);
             }
-            delete tab;
+            tab->deleteLater();
         }
     }
     emit viewersChanged();
@@ -2239,6 +2220,7 @@ public:
           , _menuOpened(false)
     {
         setMouseTracking(true);
+        setFocusPolicy(Qt::StrongFocus);
     }
 
 private:
@@ -2247,6 +2229,7 @@ private:
     {
         _menuOpened = !_menuOpened;
         if (_menuOpened) {
+            setFocus();
             _gui->setToolButtonMenuOpened(this);
         } else {
             _gui->setToolButtonMenuOpened(NULL);
@@ -2259,6 +2242,29 @@ private:
         _gui->setToolButtonMenuOpened(NULL);
         QToolButton::mouseReleaseEvent(e);
     }
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL
+    {
+        if (e->key() == Qt::Key_Right) {
+            QMenu* m = menu();
+            if (m) {
+                QList<QAction*> actions = m->actions();
+                if (!actions.isEmpty()) {
+                    m->setActiveAction(actions[0]);
+                }
+            }
+            showMenu();
+        } else if (e->key() == Qt::Key_Left) {
+            //This code won't work because the menu is active and modal
+            //But at least it deactivate the focus tabbing when pressing the left key
+            QMenu* m = menu();
+            if (m && m->isVisible()) {
+                m->hide();
+            }
+        } else {
+            QToolButton::keyPressEvent(e);
+        }
+    }
 
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL
     {
@@ -2267,6 +2273,7 @@ private:
         if ( btn && (btn != this) && btn->menu()->isActiveWindow() ) {
             btn->menu()->close();
             btn->_menuOpened = false;
+            setFocus();
             _gui->setToolButtonMenuOpened(this);
             _menuOpened = true;
             showMenu();
@@ -2369,37 +2376,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     appPTR->updateAllRecentFileMenus();
 }
 
-void
-Gui::aboutToSave()
-{
-    assert( QThread::currentThread() == qApp->thread() );
 
-    ///If a tab is fullscreen, minimize it otherwise the splitter's state wouldn't be saved correctly
-    std::list<TabWidget*> panesCpy;
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        panesCpy = _imp->_panes;
-    }
-    for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
-        if ( (*it)->isFullScreen() ) {
-            _imp->fullScreenWidgetDuringSave = *it;
-            minimize();
-            QCoreApplication::processEvents();
-            break;
-        }
-    }
-}
-
-void
-Gui::saveFinished()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    ///fullscreen again the tab
-    if (_imp->fullScreenWidgetDuringSave) {
-        maximize(_imp->fullScreenWidgetDuringSave);
-        _imp->fullScreenWidgetDuringSave = 0;
-    }
-}
 
 static void updateRecentFiles(const QString& filename)
 {
@@ -2419,10 +2396,8 @@ bool
 Gui::saveProject()
 {
     if ( _imp->_appInstance->getProject()->hasProjectBeenSavedByUser() ) {
-        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
                                                       _imp->_appInstance->getProject()->getProjectName(),false);
-        saveFinished();
 
 
         ///update the open recents
@@ -2447,9 +2422,7 @@ Gui::saveProjectAs()
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         std::string path = SequenceParsing::removePath(outFile);
-        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(path.c_str(),outFile.c_str(),false);
-        saveFinished();
 
         QString filePath = QString(path.c_str()) + QString(outFile.c_str());
         updateRecentFiles(filePath);
@@ -2524,9 +2497,7 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion,toInsert);
     }
     
-    aboutToSave();
     _imp->_appInstance->getProject()->saveProject(path,name,false);
-    saveFinished();
     
     QString filename = path = name;
     updateRecentFiles(filename);
@@ -2983,14 +2954,14 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit onDoDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeQuestion,
+        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit onDoDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeQuestion,
+        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
     }
     
@@ -3003,7 +2974,7 @@ void
 Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB)
 {
     
-    MessageBox dialog(title,content,(MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
+    Natron::MessageBox dialog(title,content,(Natron::MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
     
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
     dialog.setCheckBox(stopAskingCheckbox);
@@ -4118,6 +4089,56 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize( width(), height() );
 }
 
+void
+Gui::keyPressEvent(QKeyEvent* e)
+{
+    QWidget* w = qApp->widgetAt(QCursor::pos());
+    if (w && w->objectName() == QString("SettingsPanel") && e->key() == Qt::Key_Escape) {
+        RightClickableWidget* panel = dynamic_cast<RightClickableWidget*>(w);
+        assert(panel);
+        panel->getPanel()->closePanel();
+    }
+    
+    Qt::Key key = (Qt::Key)e->key();
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    
+    if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->firstFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->lastFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousIncrement();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextIncrement();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
+        getApp()->getTimeLine()->goToPreviousKeyframe();
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
+        getApp()->getTimeLine()->goToNextKeyframe();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
+        _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+        _imp->_nodeGraphArea->popFindDialog();  
+    } else {
+        QMainWindow::keyPressEvent(e);
+    }
+}
+
 TabWidget*
 Gui::getAnchor() const
 {
@@ -4146,7 +4167,12 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         QMutexLocker k(&_imp->_isGUIFrozenMutex);
         _imp->_isGUIFrozen = clicked;
     }
-    _imp->_freezeUIButton->setDown(clicked);
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+            (*it)->setTurboButtonDown(clicked);
+        }
+    }
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
 }
 

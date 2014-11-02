@@ -155,11 +155,13 @@ public:
 
     void showMenu(const QPoint & pos);
 
-    void toggleCacheInfos();
+    void toggleCacheInfo();
 
     void togglePreviewsForSelectedNodes();
 
     void toggleAutoPreview();
+    
+    void toggleSelectedNodesEnabled();
 
     void forceRefreshAllPreviews();
 
@@ -168,6 +170,8 @@ public:
     void onProjectNodesCleared();
 
     void switchInputs1and2ForSelectedNodes();
+    
+    void extractSelectedNode();
 
     ///All these actions also work for backdrops
     /////////////////////////////////////////////
@@ -185,8 +189,6 @@ public:
 
     void toggleConnectionHints();
     
-    void toggleSelectedNodesEnabled();
-
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
     

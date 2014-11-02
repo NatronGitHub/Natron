@@ -197,6 +197,7 @@ public:
      **/
     bool didSettingsExistOnStartup() const;
     
+    bool isAutoWipeEnabled() const;
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -261,6 +262,7 @@ private:
     boost::shared_ptr<Int_Knob> _checkerboardTileSize;
     boost::shared_ptr<Color_Knob> _checkerboardColor1;
     boost::shared_ptr<Color_Knob> _checkerboardColor2;
+    boost::shared_ptr<Bool_Knob> _autoWipe;
     boost::shared_ptr<Page_Knob> _nodegraphTab;
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Bool_Knob> _snapNodesToConnections;

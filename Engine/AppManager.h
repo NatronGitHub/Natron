@@ -93,7 +93,7 @@ public:
 
     /**
      * @brief This function initializes the QCoreApplication (or QApplication) object and the AppManager object (load plugins etc...)
-     * It must be called right away after the constructor. It cannot be put in the constructor as this function relies on RTTI infos.
+     * It must be called right away after the constructor. It cannot be put in the constructor as this function relies on RTTI info.
      * @param argc The number of arguments passed to the main function.
      * @param argv An array of strings passed to the main function.
      * @param projectFilename The project absolute filename that the application's main instance should try to load.

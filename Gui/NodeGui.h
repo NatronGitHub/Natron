@@ -334,6 +334,8 @@ public slots:
 
     void refreshEdges();
 
+    void refreshOptionalStateOfEdges();
+    
     void refreshKnobLinks();
 
     /*initialises the input edges*/
@@ -415,6 +417,8 @@ private:
 
     void togglePreview_internal(bool refreshPreview = true);
 
+    void ensurePreviewCreated();
+    
     void setAboveItem(QGraphicsItem* item);
 
     void computePreviewImage(int time);

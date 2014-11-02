@@ -635,6 +635,12 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     for (int i = 0; i < bookmarks.count(); ++i) {
         QString urlPath = bookmarks[i].path();
         
+		// On windows url.path() will return something starting with a /
+#ifdef __NATRON_WIN32__
+		if (urlPath.startsWith("/")) {
+			urlPath.remove(0,1);
+		}
+#endif
         if (!urlPath.isEmpty()) {
             if (urlPath.size() > 1 && (urlPath.endsWith('/') || urlPath.endsWith('\\'))) {
                 urlPath = urlPath.remove(urlPath.size() - 1, 1);
@@ -1475,6 +1481,7 @@ SequenceFileDialog::openSelectedFiles()
     } else {
         if ( isDirectory(str) ) {
             _selectionLineEdit->setText(str);
+            setDirectory(str);
         }
     }
 } // openSelectedFiles
@@ -2145,6 +2152,11 @@ FavoriteItemDelegate::paint(QPainter * painter,
     if (index.column() == 0) {
         QString str = index.data().toString();
         
+#ifdef __NATRON_WIN32__
+		//On Windows strings are stored with backslashes
+		str.replace(QChar('\\'),QChar('/'));
+#endif
+
         ///if str ends with '/' remove it
         if (str.size() > 1 && (str.endsWith('/') || str.endsWith('\\'))) {
             str = str.remove(str.size() - 1, 1);

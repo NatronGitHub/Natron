@@ -155,8 +155,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
 
 KnobGui::~KnobGui()
 {
-    delete _imp->animationButton;
-    delete _imp->animationMenu;
+//    delete _imp->animationButton;
+//    delete _imp->animationMenu;
 }
 
 Gui*
@@ -660,7 +660,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
     getGui()->setCurveEditorOnTop();
     std::vector<boost::shared_ptr<Curve> > curves;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        boost::shared_ptr<Curve> c = knob->getCurve(i);
+        boost::shared_ptr<Curve> c = getCurve(i);
         if ( c->isAnimated() ) {
             curves.push_back(c);
         }

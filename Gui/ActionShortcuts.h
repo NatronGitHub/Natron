@@ -201,8 +201,8 @@
 #define kShortcutIDActionHideTop "hideTop"
 #define kShortcutDescActionHideTop "Show/Hide top toolbar"
 
-#define kShortcutIDActionHideInfobar "hideInfos"
-#define kShortcutDescActionHideInfobar "Show/Hide infos bar"
+#define kShortcutIDActionHideInfobar "hideInfo"
+#define kShortcutDescActionHideInfobar "Show/Hide info bar"
 
 #define kShortcutIDActionHideAll "hideAll"
 #define kShortcutDescActionHideAll "Hide all"
@@ -397,6 +397,8 @@
 #define kShortcutIDActionGraphRenameNode "renameNode"
 #define kShortcutDescActionGraphRenameNode "Rename node"
 
+#define kShortcutIDActionGraphExtractNode "extractNode"
+#define kShortcutDescActionGraphExtractNode "Extract node"
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
 #define kShortcutDescActionCurveEditorRemoveKeys "Delete keyframes"

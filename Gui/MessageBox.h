@@ -15,6 +15,7 @@
 class QCheckBox;
 class QAbstractButton;
 
+namespace Natron {
 struct MessageBoxPrivate;
 class MessageBox : public QDialog
 {
@@ -62,5 +63,7 @@ private:
     
     boost::scoped_ptr<MessageBoxPrivate> _imp;
 };
+
+}
 
 #endif // QUESTIONDIALOG_H

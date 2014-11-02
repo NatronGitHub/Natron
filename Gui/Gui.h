@@ -213,7 +213,7 @@ public:
 
     ///Make the layout according to the serialization.
     ///@param enableOldProjectCompatibility When true, the default Gui layout will be created
-    ///prior to restoring. This is because older projects didn't have as much infos to recreate the entire layout.
+    ///prior to restoring. This is because older projects didn't have as much info to recreate the entire layout.
     void restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,
                        const GuiLayoutSerialization & layoutSerialization);
 
@@ -407,9 +407,6 @@ public:
     ///Close the application instance, asking questions to the user
     bool closeInstance();
 
-    void aboutToSave();
-    void saveFinished();
-    
     void checkNumberOfNonFloatingPanes();
 
     void openProject(const std::string& filename);
@@ -557,6 +554,8 @@ private:
 
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 

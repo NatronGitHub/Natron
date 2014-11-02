@@ -412,6 +412,13 @@ Settings::initializeKnobs()
     _checkerboardColor2->setHintToolTip("The second color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor2);
     
+    _autoWipe = Natron::createKnob<Bool_Knob>(this, "Automatically enable wipe");
+    _autoWipe->setName("autoWipe");
+    _autoWipe->setHintToolTip("When checked, the wipe tool of all viewers will be automatic, that is, when changing "
+                              "an input of a viewer, it will be set to the input B of the viewer. When unchecked it will instead "
+                              "change the input A of the viewer, leaving the input B intact.");
+    _autoWipe->setAnimationEnabled(false);
+    _viewersTab->addKnob(_autoWipe);
     
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
@@ -709,6 +716,7 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
+    _autoWipe->setDefaultValue(true);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -1666,8 +1674,11 @@ Settings::doOCIOStartupCheckIfNeeded()
                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                      Natron::eStandardButtonYes,
                                     &stopAsking);
-        
-        _ocioStartupCheck->setValue(!stopAsking,0);
+        bool mustSaveSettings = false;
+		if (stopAsking != !docheck) {
+			_ocioStartupCheck->setValue(!stopAsking,0);
+			mustSaveSettings = true;
+		}
         
         if (reply == Natron::eStandardButtonYes) {
             
@@ -1680,9 +1691,17 @@ Settings::doOCIOStartupCheckIfNeeded()
             }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex,0);
+				mustSaveSettings = true;
+            } else {
+                Natron::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
+                                                                 "This is probably because you're not using the OpenColorIO-Configs folder that should "
+                                                                 "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
             }
         }
-        
+        if (mustSaveSettings) {
+			saveSettings();
+
+		}
     }
 }
 
@@ -1690,4 +1709,10 @@ bool
 Settings::didSettingsExistOnStartup() const
 {
     return _settingsExisted;
+}
+
+bool
+Settings::isAutoWipeEnabled() const
+{
+    return _autoWipe->getValue();
 }

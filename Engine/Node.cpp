@@ -122,7 +122,7 @@ struct Node::Implementation
     , infoDisclaimer()
     , inputFormats()
     , outputFormat()
-    , refreshInfosButton()
+    , refreshInfoButton()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -221,7 +221,7 @@ struct Node::Implementation
     boost::shared_ptr<String_Knob> infoDisclaimer;
     std::vector< boost::shared_ptr<String_Knob> > inputFormats;
     boost::shared_ptr<String_Knob> outputFormat;
-    boost::shared_ptr<Button_Knob> refreshInfosButton;
+    boost::shared_ptr<Button_Knob> refreshInfoButton;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -426,6 +426,7 @@ Node::fetchParentMultiInstancePointer()
             ///no need to store the boost pointer because the main instance lives the same time
             ///as the child
             _imp->multiInstanceParent = nodes[i].get();
+            QObject::connect(nodes[i].get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)));
             break;
         }
     }
@@ -501,7 +502,8 @@ Node::computeHash()
         
         ///Also append the project's creation time in the hash because 2 projects openend concurrently
         ///could reproduce the same (especially simple graphs like Viewer-Reader)
-        _imp->hash.append( getApp()->getProject()->getProjectCreationTime() );
+        qint64 creationTime =  getApp()->getProject()->getProjectCreationTime();
+        _imp->hash.append(creationTime);
         
         _imp->hash.computeHash();
     }
@@ -1078,8 +1080,8 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     loadKnob(_imp->disableNodeKnob, serialization);
     
     
-    _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Infos",1,false);
-    _imp->infoPage->setName("infos");
+    _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Info",1,false);
+    _imp->infoPage->setName("info");
     
     _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance, "Input and output informations",1,false);
     _imp->infoDisclaimer->setName("infoDisclaimer");
@@ -1093,20 +1095,20 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     
     for (int i = 0; i < inputsCount; ++i) {
         std::string inputLabel = getInputLabel(i);
-        boost::shared_ptr<String_Knob> inputInfos = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(inputLabel + " Infos"), 1, false);
-        inputInfos->setName(inputLabel + "Infos");
-        inputInfos->setAnimationEnabled(false);
-        inputInfos->setIsPersistant(false);
-        inputInfos->setEvaluateOnChange(false);
-        inputInfos->hideDescription();
-        inputInfos->setAsLabel();
-        _imp->inputFormats.push_back(inputInfos);
-        _imp->infoPage->addKnob(inputInfos);
+        boost::shared_ptr<String_Knob> inputInfo = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(inputLabel + " Info"), 1, false);
+        inputInfo->setName(inputLabel + "Info");
+        inputInfo->setAnimationEnabled(false);
+        inputInfo->setIsPersistant(false);
+        inputInfo->setEvaluateOnChange(false);
+        inputInfo->hideDescription();
+        inputInfo->setAsLabel();
+        _imp->inputFormats.push_back(inputInfo);
+        _imp->infoPage->addKnob(inputInfo);
     }
     
     std::string outputLabel("Output");
-    _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(outputLabel + " Infos"), 1, false);
-    _imp->outputFormat->setName(outputLabel + "Infos");
+    _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance, std::string(outputLabel + " Info"), 1, false);
+    _imp->outputFormat->setName(outputLabel + "Info");
     _imp->outputFormat->setAnimationEnabled(false);
     _imp->outputFormat->setIsPersistant(false);
     _imp->outputFormat->setEvaluateOnChange(false);
@@ -1114,10 +1116,10 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->outputFormat->setAsLabel();
     _imp->infoPage->addKnob(_imp->outputFormat);
     
-    _imp->refreshInfosButton = Natron::createKnob<Button_Knob>(_imp->liveInstance, "Refresh Infos");
-    _imp->refreshInfosButton->setName("refreshButton");
-    _imp->refreshInfosButton->setEvaluateOnChange(false);
-    _imp->infoPage->addKnob(_imp->refreshInfosButton);
+    _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance, "Refresh Info");
+    _imp->refreshInfoButton->setName("refreshButton");
+    _imp->refreshInfoButton->setEvaluateOnChange(false);
+    _imp->infoPage->addKnob(_imp->refreshInfoButton);
     
     
     _imp->knobsInitialized = true;
@@ -1417,6 +1419,59 @@ Node::isNodeUpstream(const Natron::Node* input,
             }
         }
     }
+}
+
+Node::CanConnectInputReturnValue
+Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const
+{
+   
+    
+    
+    ///No-one is allowed to connect to the other node
+    if (!input->canOthersConnectToThisNode()) {
+        return eCanConnectInput_givenNodeNotConnectable;
+    }
+    
+    ///Applying this connection would create cycles in the graph
+    if (!checkIfConnectingInputIsOk(input.get())) {
+        return eCanConnectInput_graphCycles;
+    }
+    
+    {
+        ///Check for invalid index
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() )) {
+            return eCanConnectInput_indexOutOfRange;
+        }
+        if (_imp->inputs[inputNumber]) {
+            return eCanConnectInput_inputAlreadyConnected;
+        }
+        
+        ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
+        if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
+            
+            bool inputPARSet = false;
+            double inputPAR = 1.;
+            for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+                if (*it) {
+                    if (!inputPARSet) {
+                        inputPAR = (*it)->getLiveInstance()->getPreferredAspectRatio();
+                        inputPARSet = true;
+                    } else {
+                        if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                            return eCanConnectInput_differentPars;
+                        }
+                    }
+                }
+            }
+            
+            if (inputPARSet && inputPAR != input->getLiveInstance()->getPreferredAspectRatio()) {
+                return eCanConnectInput_differentPars;
+            }
+        }
+    }
+    
+    return eCanConnectInput_ok;
 }
 
 bool
@@ -2483,35 +2538,61 @@ Node::getRenderInstancesSharedMutex()
     return _imp->renderInstancesSharedMutex;
 }
 
+static void refreshPreviewsRecursivelyUpstreamInternal(int time,Node* node,std::list<Node*>& marked)
+{
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
+    }
+
+    if ( node->isPreviewEnabled() ) {
+        node->refreshPreviewImage( time );
+    }
+    
+    marked.push_back(node);
+    
+    std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
+    
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if (inputs[i]) {
+            inputs[i]->refreshPreviewsRecursivelyUpstream(time);
+        }
+    }
+
+}
+
 void
 Node::refreshPreviewsRecursivelyUpstream(int time)
 {
-    if ( isPreviewEnabled() ) {
-        refreshPreviewImage( time );
+    std::list<Node*> marked;
+    refreshPreviewsRecursivelyUpstreamInternal(time,this,marked);
+}
+
+static void refreshPreviewsRecursivelyDownstreamInternal(int time,Node* node,std::list<Node*>& marked)
+{
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
     }
     
-    QMutexLocker l (&_imp->inputsMutex);
-    
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->refreshPreviewsRecursivelyUpstream(time);
-        }
+    if ( node->isPreviewEnabled() ) {
+        node->refreshPreviewImage( time );
     }
+    
+    marked.push_back(node);
+    
+    std::list<Node*> outputs;
+    node->getOutputs_mt_safe(outputs);
+    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        assert(*it);
+        (*it)->refreshPreviewsRecursivelyDownstream(time);
+    }
+
 }
 
 void
 Node::refreshPreviewsRecursivelyDownstream(int time)
 {
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    if ( isPreviewEnabled() ) {
-        refreshPreviewImage( time );
-    }
-    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        assert(*it);
-        (*it)->refreshPreviewsRecursivelyDownstream(time);
-    }
+    std::list<Node*> marked;
+    refreshPreviewsRecursivelyDownstreamInternal(time,this,marked);
 }
 
 void
@@ -2790,6 +2871,14 @@ Node::onInputChanged(int inputNb)
 }
 
 void
+Node::onParentMultiInstanceInputChanged(int input)
+{
+    _imp->duringInputChangedAction = true;
+    _imp->liveInstance->onInputChanged(input);
+    _imp->duringInputChangedAction = false;
+}
+
+void
 Node::onMultipleInputChanged()
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -2851,14 +2940,14 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
-    } else if ( what == _imp->refreshInfosButton.get() ) {
+    } else if ( what == _imp->refreshInfoButton.get() ) {
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
-            std::string inputInfos = makeInfoForInput(i);
-            _imp->inputFormats[i]->setValue(inputInfos, 0);
+            std::string inputInfo = makeInfoForInput(i);
+            _imp->inputFormats[i]->setValue(inputInfo, 0);
         }
-        std::string outputInfos = makeInfoForInput(-1);
-        _imp->outputFormat->setValue(outputInfos, 0);
+        std::string outputInfo = makeInfoForInput(-1);
+        _imp->outputFormat->setValue(outputInfo, 0);
     }
 }
 
@@ -3418,6 +3507,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
         _activeInput = inputNb;
     }
     computeHash();
+    emit inputChanged(inputNb);
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
         dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame(true);

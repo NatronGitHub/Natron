@@ -253,6 +253,7 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
             _imp->_centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_centerNodeButton->setToolTip( tr("Centers the node graph on this item.") );
+            _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
         }
@@ -261,6 +262,7 @@ DockablePanel::DockablePanel(Gui* gui
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
         _imp->_helpButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
         if ( !helpToolTip.isEmpty() ) {
             _imp->_helpButton->setToolTip( Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal) );
         }
@@ -277,15 +279,18 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_minimize = new Button(QIcon(pixM),"",_imp->_headerWidget);
         _imp->_minimize->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_minimize->setCheckable(true);
+        _imp->_minimize->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_minimize,SIGNAL( toggled(bool) ),this,SLOT( minimizeOrMaximize(bool) ) );
 
         _imp->_floatButton = new Button(QIcon(pixF),"",_imp->_headerWidget);
         _imp->_floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_floatButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_floatButton,SIGNAL( clicked() ),this,SLOT( floatPanel() ) );
 
 
         _imp->_cross = new Button(QIcon(pixC),"",_imp->_headerWidget);
         _imp->_cross->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_cross->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_cross,SIGNAL( clicked() ),this,SLOT( closePanel() ) );
 
         if (headerMode != READ_ONLY_NAME) {
@@ -350,6 +355,7 @@ DockablePanel::DockablePanel(Gui* gui
                                                                         "By default the color of the node is the one set in the "
                                                                         "preferences of %1").arg(NATRON_APPLICATION_NAME)
                                                                      ,Qt::WhiteSpaceNormal) );
+            _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton,SIGNAL( clicked() ),this,SLOT( onColorButtonClicked() ) );
 
             if ( iseffect && !iseffect->getNode()->isMultiInstance() ) {
@@ -368,7 +374,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_undoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_undoButton->setToolTip( Qt::convertFromPlainText(tr("Undo the last change made to this operator"), Qt::WhiteSpaceNormal) );
         _imp->_undoButton->setEnabled(false);
-
+        _imp->_undoButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRedo;
         appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
         QPixmap pixRedo_gray;
@@ -380,6 +386,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_redoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_redoButton->setToolTip( Qt::convertFromPlainText(tr("Redo the last change undone to this operator"), Qt::WhiteSpaceNormal) );
         _imp->_redoButton->setEnabled(false);
+        _imp->_redoButton->setFocusPolicy(Qt::NoFocus);
 
         QPixmap pixRestore;
         appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED, &pixRestore);
@@ -389,6 +396,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_restoreDefaultsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_restoreDefaultsButton->setToolTip( Qt::convertFromPlainText(tr("Restore default values for this operator."
                                                                               " This cannot be undone!"),Qt::WhiteSpaceNormal) );
+        _imp->_restoreDefaultsButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_restoreDefaultsButton,SIGNAL( clicked() ),this,SLOT( onRestoreDefaultsButtonClicked() ) );
         QObject::connect( _imp->_undoButton, SIGNAL( clicked() ),this, SLOT( onUndoClicked() ) );
         QObject::connect( _imp->_redoButton, SIGNAL( clicked() ),this, SLOT( onRedoPressed() ) );
@@ -445,7 +453,8 @@ DockablePanel::~DockablePanel()
         if (it->second) {
             KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
             QObject::disconnect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),this,SLOT( onKnobDeletion() ) );
-            delete it->second;
+            it->first->setKnobGuiPointer(0);
+            it->second->deleteLater();
         }
     }
 }
@@ -919,7 +928,7 @@ RightClickableWidget::keyPressEvent(QKeyEvent* e)
 void
 RightClickableWidget::enterEvent(QEvent* e)
 {
-    setFocus();
+    //setFocus();
     QWidget::enterEvent(e);
 }
 
@@ -941,7 +950,7 @@ DockablePanelPrivate::addPage(const QString & name)
         sa->setWidget(layoutContainer);
         newTab = sa;
     } else {
-        RightClickableWidget* clickableWidget = new RightClickableWidget(_tabWidget);
+        RightClickableWidget* clickableWidget = new RightClickableWidget(_publicInterface,_tabWidget);
         QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
         QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT( closePanel() ) );
         newTab = clickableWidget;
@@ -1027,6 +1036,7 @@ DockablePanel::setClosed(bool c)
         QMutexLocker l(&_imp->_isClosedMutex);
         if (c == _imp->_isClosed) {
             return;
+
         }
         _imp->_isClosed = c;
     }
@@ -1040,7 +1050,9 @@ DockablePanel::setClosed(bool c)
             ///show all selected instances
             const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            ++next;
+			if (!childrenInstances.empty()) {
+				++next;
+			}
             for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end(); ++it,++next) {
                 if (c) {
@@ -1048,6 +1060,9 @@ DockablePanel::setClosed(bool c)
                 } else if (!c && it->second) {
                     it->first->showKeyframesOnTimeline( next == childrenInstances.end() );
                 }
+				if (next == childrenInstances.end()) {
+					--next;
+				}
             }
         } else {
             ///Regular show/hide
@@ -1181,7 +1196,7 @@ DockablePanel::onKnobDeletion()
             KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
             if (helper->getSignalSlotHandler().get() == handler) {
                 if (it->second) {
-                    delete it->second;
+                    it->second->deleteLater();
                 }
                 _imp->_knobs.erase(it);
 
@@ -1322,19 +1337,29 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     QWidget* emitter = qobject_cast<QWidget*>( sender() );
 
     assert(emitter);
+    
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
+    if (isEffect) {
+        
+        boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
+        QMenu menu(this);
+        menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+        QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
+        menu.addAction(setKeys);
+        QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
+        menu.addAction(removeAnimation);
+        
+        if (master || _imp->_holder->getApp()->isGuiFrozen()) {
+            setKeys->setEnabled(false);
+            removeAnimation->setEnabled(false);
+        }
 
-    QMenu menu(this);
-    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
-    QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
-    menu.addAction(setKeys);
-    QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
-    menu.addAction(removeAnimation);
-
-    QAction* ret = menu.exec( emitter->mapToGlobal(pos) );
-    if (ret == setKeys) {
-        setKeyOnAllParameters();
-    } else if (ret == removeAnimation) {
-        removeAnimationOnAllParameters();
+        QAction* ret = menu.exec( emitter->mapToGlobal(pos) );
+        if (ret == setKeys) {
+            setKeyOnAllParameters();
+        } else if (ret == removeAnimation) {
+            removeAnimationOnAllParameters();
+        }
     }
 } // onRightClickMenuRequested
 
@@ -1445,6 +1470,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
     _settingsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _settingsButton->setToolTip( tr("Settings and presets") );
+    _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );
     insertHeaderWidget(1, _settingsButton);
 }
@@ -1492,6 +1518,8 @@ NodeSettingsPanel::onSettingsButtonClicked()
     QMenu menu(this);
     menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
     
+    boost::shared_ptr<Natron::Node> master = _nodeGUI->getNode()->getMasterNode();
+    
     QAction* importPresets = new QAction(tr("Import presets"),&menu);
     QObject::connect(importPresets,SIGNAL(triggered()),this,SLOT(onImportPresetsActionTriggered()));
     QAction* exportAsPresets = new QAction(tr("Export as presets"),&menu);
@@ -1507,6 +1535,13 @@ NodeSettingsPanel::onSettingsButtonClicked()
     QObject::connect(removeAnimationOnAll,SIGNAL(triggered()),this,SLOT(removeAnimationOnAllParameters()));
     menu.addAction(setKeyOnAll);
     menu.addAction(removeAnimationOnAll);
+    
+    if (master || _nodeGUI->getDagGui()->getGui()->isGUIFrozen()) {
+        importPresets->setEnabled(false);
+        exportAsPresets->setEnabled(false);
+        setKeyOnAll->setEnabled(false);
+        removeAnimationOnAll->setEnabled(false);
+    }
     
     menu.exec(_settingsButton->mapToGlobal(_settingsButton->pos()));
 }

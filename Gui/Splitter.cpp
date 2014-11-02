@@ -56,6 +56,10 @@ Splitter::restoreNatron(const QString & serialization)
     assert(list.size() == 2);
     QList<int> s;
     s << list[0].toInt() << list[1].toInt();
+    if (s[0] == 0 || s[1] == 0) {
+        int mean = (s[0] + s[1]) / 2;
+        s[0] = s[1] = mean;
+    }
     setSizes(s);
 }
 

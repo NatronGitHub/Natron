@@ -265,7 +265,7 @@ struct FileSystemModelPrivate
 {
     SortableViewI* view;
     
-    ///A background thread that fetches infos about the file-system and reports when done
+    ///A background thread that fetches info about the file-system and reports when done
     FileGathererThread gatherer;
     
     ///The watcher watches the current root path
@@ -769,12 +769,12 @@ static boost::shared_ptr<FileSystemItem> mkPathInternal(FileSystemItem* item,con
 
     if (!child) {
         
-        QFileInfo infos(generateChildAbsoluteName(item, path[index]));
+        QFileInfo info(generateChildAbsoluteName(item, path[index]));
         ///The child doesn't exist already, create it without populating it
         child.reset(new FileSystemItem(true, //isDir
                                        path[index], //name
                                        boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
-                                       infos.lastModified(),
+                                       info.lastModified(),
                                        0, //0 for directories
                                        item));
         item->addChild(child);

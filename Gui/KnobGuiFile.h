@@ -194,6 +194,8 @@ public slots:
     
     void onRemoveButtonClicked();
     
+    void onEditButtonClicked();
+    
     void onOpenFileButtonClicked();
     
     void onItemDataChanged(TableItem* item);
@@ -248,6 +250,7 @@ private:
     TableModel* _model;
     Button *_addPathButton;
     Button* _removePathButton;
+    Button* _editPathButton;
     QString _lastOpened;
     boost::shared_ptr<Path_Knob> _knob;
     bool _isInsertingItem;

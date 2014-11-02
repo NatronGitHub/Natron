@@ -95,6 +95,8 @@ struct ViewerTabPrivate
     Button* _clipToProjectFormatButton;
     Button* _enableViewerRoI;
     Button* _refreshButton;
+    QIcon _iconRefreshOff,_iconRefreshOn;
+    
     Button* _activateRenderScale;
     bool _renderScaleActive;
     ComboBox* _renderScaleCombo;
@@ -114,8 +116,8 @@ struct ViewerTabPrivate
     ComboBox* _viewsComboBox;
     int _currentViewIndex;
     QMutex _currentViewMutex;
-    /*Infos*/
-    InfoViewerWidget* _infosWidget[2];
+    /*Info*/
+    InfoViewerWidget* _infoWidget[2];
 
 
     /*TimeLine buttons*/
@@ -141,6 +143,7 @@ struct ViewerTabPrivate
     bool frameRangeLocked;
     QLabel* fpsName;
     SpinBox* fpsBox;
+    Button* turboButton;
 
     /*frame seeker*/
     TimeLineGui* _timeLineGui;
@@ -465,11 +468,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         "A:", "B:"
     };
     for (int i = 0; i < 2; ++i) {
-        _imp->_infosWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
-        _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget[i]);
-        _imp->viewer->setInfoViewer(_imp->_infosWidget[i],i);
+        _imp->_infoWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
+        _imp->_viewerSubContainerLayout->addWidget(_imp->_infoWidget[i]);
+        _imp->viewer->setInfoViewer(_imp->_infoWidget[i],i);
         if (i == 1) {
-            _imp->_infosWidget[i]->hide();
+            _imp->_infoWidget[i]->hide();
         }
     }
 
@@ -695,8 +698,26 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->fpsBox->setIncrement(0.1);
     _imp->fpsBox->setToolTip( "<p><b>" + tr("fps") + ": \n</b></p>" + tr(
                                   "Enter here the desired playback rate.") );
+    
     _imp->_playerLayout->addWidget(_imp->fpsBox);
-
+    
+    QPixmap pixFreezeEnabled,pixFreezeDisabled;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
+    QIcon icFreeze;
+    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
+    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
+    _imp->turboButton = new Button(icFreeze,"",_imp->_playerButtonsContainer);
+    _imp->turboButton->setCheckable(true);
+    _imp->turboButton->setChecked(false);
+    _imp->turboButton->setDown(false);
+    _imp->turboButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->turboButton->setToolTip("<p><b>" + tr("Turbo mode:") + "</p></b><p>" +
+                                  tr("When checked, everything besides the viewer will not be refreshed in the user interface "
+                                                                                              "for maximum efficiency during playback.") + "</p>");
+    _imp->turboButton->setFocusPolicy(Qt::NoFocus);
+    QObject::connect( _imp->turboButton, SIGNAL (clicked(bool)), getGui(), SLOT(onFreezeUIButtonClicked(bool) ) );
+    _imp->_playerLayout->addWidget(_imp->turboButton);
 
     QPixmap pixFirst;
     QPixmap pixPrevKF;
@@ -712,6 +733,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QPixmap pixPrevIncr;
     QPixmap pixNextIncr;
     QPixmap pixRefresh;
+    QPixmap pixRefreshActive;
     QPixmap pixCenterViewer;
     QPixmap pixLoopMode;
     QPixmap pixClipToProjectEnabled;
@@ -735,6 +757,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_INCR,&pixPrevIncr);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_INCR,&pixNextIncr);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH,&pixRefresh);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE,&pixRefreshActive);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenterViewer);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_ENABLED,&pixClipToProjectEnabled);
@@ -763,7 +786,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->lastFrame_Button->setIcon( QIcon(pixLast) );
     _imp->previousIncrement_Button->setIcon( QIcon(pixPrevIncr) );
     _imp->nextIncrement_Button->setIcon( QIcon(pixNextIncr) );
-    _imp->_refreshButton->setIcon( QIcon(pixRefresh) );
+    _imp->_iconRefreshOff = QIcon(pixRefresh);
+    _imp->_iconRefreshOn = QIcon(pixRefreshActive);
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOff);
     _imp->_centerViewerButton->setIcon( QIcon(pixCenterViewer) );
     _imp->playbackMode_Button->setIcon( QIcon(pixLoopMode) );
 
@@ -853,6 +878,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_autoConstrastLabel,SIGNAL( clicked(bool) ),_imp->_autoContrast,SLOT( setChecked(bool) ) );
     QObject::connect( _imp->_renderScaleCombo,SIGNAL( currentIndexChanged(int) ),this,SLOT( onRenderScaleComboIndexChanged(int) ) );
     QObject::connect( _imp->_activateRenderScale,SIGNAL( toggled(bool) ),this,SLOT( onRenderScaleButtonClicked(bool) ) );
+    
+    QObject::connect( _imp->_viewerNode, SIGNAL( viewerRenderingStarted() ), this, SLOT( onViewerRenderingStarted() ) );
+    QObject::connect( _imp->_viewerNode, SIGNAL( viewerRenderingEnded() ), this, SLOT( onViewerRenderingStopped() ) );
 
     connectToViewerCache();
 
@@ -1120,7 +1148,9 @@ ViewerTab::refresh()
 ViewerTab::~ViewerTab()
 {
     if (_imp->_gui) {
-        _imp->_viewerNode->invalidateUiContext();
+        if (_imp->_viewerNode) {
+            _imp->_viewerNode->invalidateUiContext();
+        }
         if ( _imp->app && !_imp->app->isClosing() && (_imp->_gui->getLastSelectedViewer() == this) ) {
             assert(_imp->_gui);
             _imp->_gui->setLastSelectedViewer(NULL);
@@ -1230,6 +1260,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         _imp->_renderScaleCombo->setCurrentIndex(4);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
+        _imp->_zoomCombobox->setCurrentIndex_no_emit(4);
     }
 } // keyPressEvent
 
@@ -1900,6 +1931,12 @@ ViewerTab::getInternalNode() const
     return _imp->_viewerNode;
 }
 
+void
+ViewerTab::discardInternalNodePointer()
+{
+    _imp->_viewerNode = 0;
+}
+
 Gui*
 ViewerTab::getGui() const
 {
@@ -1945,8 +1982,8 @@ ViewerTab::onRenderScaleButtonClicked(bool checked)
 void
 ViewerTab::setInfoBarResolution(const Format & f)
 {
-    _imp->_infosWidget[0]->setResolution(f);
-    _imp->_infosWidget[1]->setResolution(f);
+    _imp->_infoWidget[0]->setResolution(f);
+    _imp->_infoWidget[1]->setResolution(f);
 }
 
 void
@@ -2310,7 +2347,7 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
             _imp->_compOperator = eViewerCompositingOperatorNone;
             _imp->_secondInputImage->setEnabled_natron(false);
             manageSlotsForInfoWidget(1, false);
-            _imp->_infosWidget[1]->hide();
+            _imp->_infoWidget[1]->hide();
             break;
         case 1:
             _imp->_compOperator = eViewerCompositingOperatorOver;
@@ -2337,11 +2374,13 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
     if ( (_imp->_compOperator != eViewerCompositingOperatorNone) && !_imp->_secondInputImage->isEnabled() ) {
         _imp->_secondInputImage->setEnabled_natron(true);
         manageSlotsForInfoWidget(1, true);
-        _imp->_infosWidget[1]->show();
+        _imp->_infoWidget[1]->show();
     } else if (_imp->_compOperator == eViewerCompositingOperatorNone) {
         _imp->_secondInputImage->setEnabled_natron(false);
         manageSlotsForInfoWidget(1, false);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
+    } else {
+        _imp->_secondInputImage->setEnabled_natron(true);
     }
 
 
@@ -2420,10 +2459,10 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
         //setCompositingOperator(Natron::eViewerCompositingOperatorNone);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
     } else {
-        if ( !_imp->_infosWidget[1]->isVisible() ) {
-            _imp->_infosWidget[1]->show();
+        if ( !_imp->_infoWidget[1]->isVisible() ) {
+            _imp->_infoWidget[1]->show();
             manageSlotsForInfoWidget(1, true);
             _imp->_secondInputImage->setEnabled_natron(true);
             if (_imp->_compOperator == Natron::eViewerCompositingOperatorNone) {
@@ -2457,8 +2496,8 @@ ViewerTab::onActiveInputsChanged()
 
         assert(indexInB != -1);
         _imp->_secondInputImage->setCurrentIndex_no_emit(indexInB);
-        if ( !_imp->_infosWidget[1]->isVisible() ) {
-            _imp->_infosWidget[1]->show();
+        if ( !_imp->_infoWidget[1]->isVisible() ) {
+            _imp->_infoWidget[1]->show();
             _imp->_secondInputImage->setEnabled_natron(true);
             manageSlotsForInfoWidget(1, true);
         }
@@ -2466,14 +2505,14 @@ ViewerTab::onActiveInputsChanged()
         _imp->_secondInputImage->setCurrentIndex_no_emit(0);
         setCompositingOperator(Natron::eViewerCompositingOperatorNone);
         manageSlotsForInfoWidget(1, false);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
         //_imp->_secondInputImage->setEnabled_natron(false);
     }
 
     if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
          && ( getCompositingOperator() != eViewerCompositingOperatorNone) ) {
         //setCompositingOperator(eViewerCompositingOperatorNone);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->_secondInputImage->setEnabled_natron(false);
     } else if ( (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
@@ -2548,19 +2587,19 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
     RenderEngine* engine = _imp->_viewerNode->getRenderEngine();
     assert(engine);
     if (connect) {
-        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infoWidget[textureIndex], SLOT( setFps(double,double) ) );
+        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->_infoWidget[textureIndex],SLOT( hideFps() ) );
     } else {
-        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex],
+        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infoWidget[textureIndex],
                             SLOT( setFps(double,double) ) );
-        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->_infoWidget[textureIndex],SLOT( hideFps() ) );
     }
 }
 
 void
 ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth)
 {
-    _imp->_infosWidget[textureIndex]->setImageFormat(components,depth);
+    _imp->_infoWidget[textureIndex]->setImageFormat(components,depth);
 }
 
 void
@@ -2805,7 +2844,7 @@ ViewerTab::setInfobarVisible(bool visible)
             }
         }
         
-        _imp->_infosWidget[i]->setVisible(_imp->_infobarVisible);
+        _imp->_infoWidget[i]->setVisible(_imp->_infobarVisible);
     }
 
 }
@@ -3009,3 +3048,21 @@ ViewerTab::setDesiredFps(double fps)
     _imp->_viewerNode->getRenderEngine()->setDesiredFPS(fps);
 }
 
+void
+ViewerTab::onViewerRenderingStarted()
+{
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOn);
+}
+
+void
+ViewerTab::onViewerRenderingStopped()
+{
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOff);
+}
+
+void
+ViewerTab::setTurboButtonDown(bool down)
+{
+    _imp->turboButton->setDown(down);
+    _imp->turboButton->setChecked(down);
+}
