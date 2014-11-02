@@ -24,7 +24,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 #define TICK_HEIGHT 7
 #define SLIDER_WIDTH 4
-#define SLIDER_HEIGHT 20
+#define SLIDER_HEIGHT 15
 
 ScaleSliderQWidget::ScaleSliderQWidget(double bottom,
                                        double top,
@@ -59,7 +59,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double bottom,
 QSize
 ScaleSliderQWidget::sizeHint() const
 {
-    return QSize(150,30);
+    return QSize(150,20);
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
