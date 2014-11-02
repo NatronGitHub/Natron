@@ -1176,14 +1176,11 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 void
 KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRetVariable)
 {
-    std::string exprCpy;
-    try {
-        exprCpy = validateExpression(expression, dimension, hasRetVariable);
-    } catch (const std::exception& e) {
-        expressionChanged(dimension, true);
-        throw e;
-    }
- 
+    ///Clear previous expr
+    expressionChanged(dimension, true);
+
+    std::string exprCpy = validateExpression(expression, dimension, hasRetVariable);
+   
 
     ///Compile the expression
     {
@@ -1263,6 +1260,8 @@ KnobHelper::expressionChanged(int dimension,bool reset)
              it != _imp->expressions[dimension].dependencies.end(); ++it) {
             std::list<KnobI*>::iterator  found = std::find(_imp->listeners.begin(), _imp->listeners.end(), *it);
             if (found != _imp->listeners.end()) {
+                QObject::disconnect((*found)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
+                                    SLOT(onExprDependencyChanged(int)));
                 _imp->listeners.erase(found);
             }
         }
