@@ -1836,6 +1836,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         popRenameDialog(QCursor::pos());
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
         pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
+        togglePreviewsForSelectedNodes();
     } else {
         bool intercepted = false;
         
