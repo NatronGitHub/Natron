@@ -178,6 +178,7 @@ struct RotoGui::RotoGuiPrivate
     bool evaluateOnKeyUp;  //< if true the next key up will call context->evaluateChange()
     bool iSelectingwithCtrlA;
     bool shiftDown;
+    bool ctrlDown;
 
     RotoGuiPrivate(RotoGui* pub,
                    NodeGui* n,
@@ -206,6 +207,7 @@ struct RotoGui::RotoGuiPrivate
           , evaluateOnKeyUp(false)
           , iSelectingwithCtrlA(false)
           , shiftDown(false)
+          , ctrlDown(false)
     {
         if ( n->getNode()->isRotoPaintingNode() ) {
             type = ROTOPAINTING;
@@ -1262,7 +1264,16 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
                     if ( !isFeatherVisible() && ptIt->first->isFeatherPoint() ) {
                         continue;
                     }
-                    _imp->rotoData->selectedCps.push_back(*ptIt);
+                    SelectedCPs::iterator foundCP = std::find(_imp->rotoData->selectedCps.begin(),_imp->rotoData->selectedCps.end(),*ptIt);
+                    if (foundCP == _imp->rotoData->selectedCps.end()) {
+                        if (!_imp->shiftDown || !_imp->ctrlDown) {
+                            _imp->rotoData->selectedCps.push_back(*ptIt);
+                        }
+                    } else {
+                        if (_imp->shiftDown && _imp->ctrlDown) {
+                            _imp->rotoData->selectedCps.erase(foundCP);
+                        }
+                    }
                 }
             }
             if ( !points.empty()) {
@@ -2196,6 +2207,8 @@ RotoGui::keyDown(double /*scaleX*/,
 
     if (key == Qt::Key_Shift) {
         _imp->shiftDown = true;
+    } else if (key == Qt::Key_Control) {
+        _imp->ctrlDown = true;
     }
     
     if ( modCASIsControl(e) ) {
@@ -2314,7 +2327,10 @@ RotoGui::keyUp(double /*scaleX*/,
 
     if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = false;
+    } else if (e->key() == Qt::Key_Control) {
+        _imp->ctrlDown = false;
     }
+
     
     if ( !modCASIsControl(e) ) {
         if ( !_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && (e->key() == Qt::Key_Control) ) {
