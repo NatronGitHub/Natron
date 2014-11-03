@@ -29,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Curve.h"
 #include "Engine/Node.h"
 #include "Engine/KnobFile.h"
+#include "Engine/RotoContext.h"
 
 #include "Gui/CurveWidget.h"
 #include "Gui/NodeGui.h"
@@ -160,7 +161,7 @@ CurveEditor::removeNode(NodeGui* node)
 
 NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                                                CurveWidget* curveWidget,
-                                               boost::shared_ptr<NodeGui> node)
+                                               const boost::shared_ptr<NodeGui> &node)
     : _node(node)
       , _nodeElements()
       , _nameItem()
@@ -577,5 +578,124 @@ CurveWidget*
 CurveEditor::getCurveWidget() const
 {
     return _curveWidget;
+}
+
+struct BezierEditorContextPrivate {
+    
+    RotoCurveEditorContext* context;
+    Bezier* curve;
+    QTreeWidgetItem* item;
+    
+    BezierEditorContextPrivate(Bezier* curve,RotoCurveEditorContext* context)
+    : context(context)
+    , curve(curve)
+    {
+        
+    }
+};
+
+BezierEditorContext::BezierEditorContext(Bezier* curve,
+                    RotoCurveEditorContext* context)
+: _imp(new BezierEditorContextPrivate(curve,context))
+{
+    _imp->item = new QTreeWidgetItem(_imp->context->getItem());
+    _imp->item->setText(0, _imp->curve->getName_mt_safe().c_str());
+}
+
+BezierEditorContext::~BezierEditorContext()
+{
+    
+}
+
+Bezier*
+BezierEditorContext::getBezier() const
+{
+    return _imp->curve;
+}
+
+void
+BezierEditorContext::onNameChanged(const QString & name)
+{
+    _imp->item->setText(0, name);
+}
+
+void
+BezierEditorContext::onTreeItemExpanded(QTreeWidgetItem* item)
+{
+    ///Make sure all points in the bezier are created
+    if (item == _imp->item) {
+        
+    }
+}
+
+
+
+
+struct RotoCurveEditorContextPrivate
+{
+    boost::shared_ptr<NodeGui> node;
+    QTreeWidgetItem* nameItem;
+    std::list< BezierEditorContext* > curves;
+    
+    RotoCurveEditorContextPrivate(const boost::shared_ptr<NodeGui>& node)
+    : node(node)
+    , nameItem(0)
+    , curves()
+    {
+        
+    }
+};
+
+RotoCurveEditorContext::RotoCurveEditorContext(QTreeWidget *tree,
+                       const boost::shared_ptr<NodeGui>& node)
+: _imp(new RotoCurveEditorContextPrivate(node))
+{
+    boost::shared_ptr<RotoContext> rotoCtx = node->getNode()->getRotoContext();
+    assert(rotoCtx);
+    
+    _imp->nameItem = new QTreeWidgetItem(tree);
+    _imp->nameItem->setText( 0,_imp->node->getNode()->getName().c_str() );
+    QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+    
+    std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
+    
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
+        BezierEditorContext* c = new BezierEditorContext(it->get(),this);
+        _imp->curves.push_back(c);
+    }
+}
+
+RotoCurveEditorContext::~RotoCurveEditorContext()
+{
+    
+}
+
+
+boost::shared_ptr<NodeGui>
+RotoCurveEditorContext::getNode() const
+{
+    return _imp->node;
+}
+
+QTreeWidgetItem*
+RotoCurveEditorContext::getItem() const
+{
+    return _imp->nameItem;
+}
+
+void
+RotoCurveEditorContext::onNameChanged(const QString & name)
+{
+     _imp->nameItem->setText(0,name);
+}
+
+void
+RotoCurveEditorContext::onItemNameChanged(RotoItem* item)
+{
+    for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
+        if ((*it)->getBezier() == item) {
+            (*it)->onNameChanged(item->getName_mt_safe().c_str());
+        }
+    }
 }
 

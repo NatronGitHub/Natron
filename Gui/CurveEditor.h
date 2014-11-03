@@ -37,6 +37,8 @@ class CurveGui;
 class QHBoxLayout;
 class QSplitter;
 class KnobGui;
+class Bezier;
+class RotoItem;
 class KeyFrame;
 class Variant;
 class Gui;
@@ -127,7 +129,7 @@ public:
 
     NodeCurveEditorContext(QTreeWidget *tree,
                            CurveWidget* curveWidget,
-                           boost::shared_ptr<NodeGui> node);
+                           const boost::shared_ptr<NodeGui> &node);
 
     virtual ~NodeCurveEditorContext() OVERRIDE;
 
@@ -154,6 +156,64 @@ private:
     boost::shared_ptr<NodeGui> _node;
     Elements _nodeElements;
     QTreeWidgetItem* _nameItem;
+};
+
+class RotoCurveEditorContext;
+struct BezierEditorContextPrivate;
+class BezierEditorContext
+: public QObject
+{
+    Q_OBJECT
+    
+public:
+    
+    BezierEditorContext(Bezier* curve,
+                        RotoCurveEditorContext* context);
+    
+    virtual ~BezierEditorContext() OVERRIDE;
+    
+    Bezier* getBezier() const;
+    
+public slots:
+    
+    void onNameChanged(const QString & name);
+    
+    void onTreeItemExpanded(QTreeWidgetItem* item);
+    
+private:
+    
+    boost::scoped_ptr<BezierEditorContextPrivate> _imp;
+    
+};
+
+
+struct RotoCurveEditorContextPrivate;
+class RotoCurveEditorContext
+: public QObject
+{
+    Q_OBJECT
+    
+public:
+    
+    RotoCurveEditorContext(QTreeWidget *tree,
+                           const boost::shared_ptr<NodeGui> &node);
+    
+    virtual ~RotoCurveEditorContext() OVERRIDE;
+    
+    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN;
+    
+    QTreeWidgetItem* getItem() const;
+    
+public slots:
+    
+    void onNameChanged(const QString & name);
+    
+    void onItemNameChanged(RotoItem* item);
+
+private:
+
+    boost::scoped_ptr<RotoCurveEditorContextPrivate> _imp;
+    
 };
 
 class CurveEditor

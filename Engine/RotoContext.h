@@ -1015,6 +1015,8 @@ public:
      * @brief Returns the name of the node holding this item
      **/
     std::string getRotoNodeName() const;
+    
+    void onItemNameChanged(RotoItem* item);
 
 signals:
 
@@ -1033,6 +1035,8 @@ signals:
     void refreshViewerOverlays();
 
     void itemLockedChanged();
+    
+    void itemNameChanged(RotoItem*);
 
 public slots:
 

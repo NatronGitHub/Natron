@@ -924,9 +924,11 @@ RotoItem::setName(const std::string & name)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
-
-    QMutexLocker l(&itemMutex);
-    _imp->name = name;
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->name = name;
+    }
+    _imp->context->onItemNameChanged(this);
 }
 
 std::string
@@ -4701,6 +4703,12 @@ RotoContext::onItemLockedChanged(RotoItem* item)
 #endif
 
     emit itemLockedChanged();
+}
+
+void
+RotoContext::onItemNameChanged(RotoItem* item)
+{
+    emit itemNameChanged(item);
 }
 
 std::string
