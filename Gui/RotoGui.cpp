@@ -1430,6 +1430,13 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
         }
         rotoData->selectedCps.push_back(p);
         computeSelectedCpsBBOX();
+    } else {
+        
+        ///Erase the point from the selection to allow the user to toggle the selection
+        if (modCASIsShift(e)) {
+            rotoData->selectedCps.erase(foundCP);
+            computeSelectedCpsBBOX();
+        }
     }
 
     rotoData->cpBeingDragged = p;
