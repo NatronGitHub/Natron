@@ -1299,6 +1299,7 @@ Project::reset()
         _imp->projectPath.clear();
         _imp->autoSaveTimer->stop();
         _imp->additionalFormats.clear();
+        _imp->nodeCounters.clear();
     }
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
