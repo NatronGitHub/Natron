@@ -193,6 +193,9 @@ AddMultipleNodesCommand::undo()
             }
         }
     }
+    
+    _graph->clearSelection();
+    
     _graph->getGui()->getApp()->triggerAutoSave();
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
@@ -219,6 +222,9 @@ AddMultipleNodesCommand::redo()
                                        false); //triggerRender
         }
     }
+    
+    _graph->setSelection(_nodes);
+
     _graph->getGui()->getApp()->triggerAutoSave();
 
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
@@ -231,6 +237,7 @@ AddMultipleNodesCommand::redo()
             }
         }
     }
+    
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);

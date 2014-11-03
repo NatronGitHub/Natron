@@ -226,7 +226,10 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
                               double yPosHint,
                               bool pushUndoRedoCommand)
 {
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand);
+    
+    std::list<boost::shared_ptr<NodeGui> >  selectedNodes = _imp->_gui->getSelectedNodes();
+
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
 
     assert(nodegui);
     if ( !multiInstanceParentName.empty() ) {
@@ -269,12 +272,14 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
 
 
     if ( !loadRequest && multiInstanceParentName.empty() ) {
-        const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = _imp->_gui->getSelectedNodes();
         if ( (selectedNodes.size() == 1) && autoConnect ) {
-            const boost::shared_ptr<Node> & selected = selectedNodes.front()->getNode();
-            getProject()->autoConnectNodes(selected, node);
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
+                if (*it != nodegui) {
+                    getProject()->autoConnectNodes((*it)->getNode(), node);
+                    break;
+                }
+            }
         }
-        _imp->_gui->selectNode(nodegui);
         
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );

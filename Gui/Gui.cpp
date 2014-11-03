@@ -624,11 +624,12 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool requestedByLoad,
                     double xPosHint,
                     double yPosHint,
-                    bool pushUndoRedoCommand)
+                    bool pushUndoRedoCommand,
+                    bool autoConnect)
 {
     assert(_imp->_nodeGraphArea);
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
-                                                                             xPosHint,yPosHint,pushUndoRedoCommand);
+                                                                             xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
     QObject::connect( nodeGui.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 

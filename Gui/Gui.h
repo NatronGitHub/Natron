@@ -98,7 +98,8 @@ public:
                                              bool requestedByLoad,
                                              double xPosHint,
                                              double yPosHint,
-                                             bool pushUndoRedoCommand);
+                                             bool pushUndoRedoCommand,
+                                             bool autoConnect);
 
     void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
 

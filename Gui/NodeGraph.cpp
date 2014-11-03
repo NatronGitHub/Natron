@@ -592,7 +592,8 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
                          bool requestedByLoad,
                          double xPosHint,
                          double yPosHint,
-                         bool pushUndoRedoCommand)
+                         bool pushUndoRedoCommand,
+                         bool autoConnect)
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
@@ -606,11 +607,11 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (_imp->_selection.nodes.size() != 1) ) {
+        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             node_ui->refreshPosition( pos.x(),pos.y() );
         } else {
-            moveNodesForIdealPosition(node_ui);
+            moveNodesForIdealPosition(node_ui,autoConnect);
         }
     }
 
@@ -632,7 +633,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 }
 
 void
-NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node)
+NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoConnect)
 {
     QRectF viewPos = visibleSceneRect();
 
@@ -647,7 +648,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node)
         selected = _imp->_selection.nodes.front();
     }
 
-    if (!selected) {
+    if (!selected || !autoConnect) {
         behavior = 0;
     } else {
         ///this function is redundant with Project::autoConnect, depending on the node selected
@@ -2219,17 +2220,7 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
     if (addToSelection && !alreadyInSelection) {
         _imp->_selection.nodes.push_back(n);
     } else if (!addToSelection) {
-        {
-            QMutexLocker l(&_imp->_nodesMutex);
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
-                (*it)->setUserSelected(false);
-            }
-        }
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-            (*it)->setUserSelected(false);
-        }
-        _imp->_selection.nodes.clear();
-        _imp->_selection.bds.clear();
+        clearSelection();
         _imp->_selection.nodes.push_back(n);
     }
 
@@ -2255,6 +2246,32 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
         _imp->_magnifOn = false;
         _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
+}
+
+void
+NodeGraph::setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes)
+{
+    clearSelection();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        selectNode(*it, true);
+    }
+}
+
+void
+NodeGraph::clearSelection()
+{
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+            (*it)->setUserSelected(false);
+        }
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
+        (*it)->setUserSelected(false);
+    }
+    _imp->_selection.nodes.clear();
+    _imp->_selection.bds.clear();
+
 }
 
 void
