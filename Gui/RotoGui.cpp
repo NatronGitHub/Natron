@@ -1217,7 +1217,7 @@ void
 RotoGui::onSelectionCleared()
 {
     if ( !isStickySelectionEnabled() ) {
-        _imp->clearSelection();
+        _imp->clearCPSSelection();
     }
 }
 
@@ -1228,8 +1228,9 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
         return;
     }
 
-    if ( !isStickySelectionEnabled() ) {
-        _imp->clearSelection();
+    bool stickySel = isStickySelectionEnabled();
+    if ( !stickySel ) {
+        _imp->clearCPSSelection();
     }
 
     int selectionMode = -1;
@@ -1241,11 +1242,18 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
         selectionMode = 2;
     }
 
+    bool mustAddToBezierSelection = _imp->rotoData->selectedBeziers.empty();
+    
     double l,r,b,t;
     _imp->viewer->getSelectionRectangle(l, r, b, t);
     std::list<boost::shared_ptr<Bezier> > curves = _imp->context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        if ( !(*it)->isLockedRecursive() ) {
+        
+        SelectedBeziers::iterator isSelected = std::find(_imp->rotoData->selectedBeziers.begin(),
+                                                               _imp->rotoData->selectedBeziers.end(),
+                                                               *it);
+        
+        if ( !(*it)->isLockedRecursive() && (isSelected != _imp->rotoData->selectedBeziers.end() || mustAddToBezierSelection)) {
             SelectedCPs points  = (*it)->controlPointsWithinRect(l, r, b, t, 0,selectionMode);
             if (_imp->selectedTool != SELECT_CURVES) {
                 for (SelectedCPs::iterator ptIt = points.begin(); ptIt != points.end(); ++ptIt) {
@@ -1255,8 +1263,14 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
                     _imp->rotoData->selectedCps.push_back(*ptIt);
                 }
             }
-            if ( !points.empty() ) {
-                _imp->rotoData->selectedBeziers.push_back(*it);
+            if ( !points.empty()) {
+                if (mustAddToBezierSelection) {
+                    _imp->rotoData->selectedBeziers.push_back(*it);
+                }
+            } else {
+                if (!stickySel && isSelected != _imp->rotoData->selectedBeziers.end()) {
+                    _imp->rotoData->selectedBeziers.erase(isSelected);
+                }
             }
         }
     }
