@@ -54,7 +54,7 @@ Effect*
 App::getNode(const std::string& name) const
 {
     boost::shared_ptr<Natron::Node> node = _instance->getProject()->getNodeByName(name);
-    if (node) {
+    if (node && node->isActivated()) {
         return new Effect(node);
     } else {
         return NULL;

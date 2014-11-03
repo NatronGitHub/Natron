@@ -272,6 +272,8 @@ public slots:
 
     void onSetExprActionTriggered();
     
+    void onClearExprActionTriggered();
+    
     void onEditExprDialogFinished();
     
     void onExprChanged(int dimension);

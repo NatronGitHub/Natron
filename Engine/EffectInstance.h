@@ -1203,8 +1203,7 @@ private:
 
 
     virtual void onAllKnobsSlaved(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
-    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & slave,
-                              const boost::shared_ptr<KnobI> & master,
+    virtual void onKnobSlaved(KnobI* slave,KnobI* master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 

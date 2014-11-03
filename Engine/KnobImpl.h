@@ -976,8 +976,7 @@ Knob<T>::unSlave(int dimension,
         }
     }
     if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),
-                                  master.second,dimension,false );
+        getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
     }
     evaluateValueChange(dimension, reason);
 }
@@ -1011,8 +1010,7 @@ Knob<std::string>::unSlave(int dimension,
 
     _signalSlotHandler->s_valueChanged(dimension,reason);
     if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),
-                                  master.second,dimension,false );
+        getHolder()->onKnobSlaved( this,master.second.get(),dimension,false );
     }
     if (reason == Natron::eValueChangedReasonPluginEdited) {
         _signalSlotHandler->s_knobSlaved(dimension, false);

@@ -1819,6 +1819,11 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
                 if (master.second == knobs[i]) {
                     (*it)->unSlave(dim, true);
                 }
+                
+                std::string hasExpr = (*it)->getExpression(dim);
+                if (!hasExpr.empty()) {
+                    (*it)->clearExpression(dim);
+                }
             }
         }
     }
@@ -2628,8 +2633,7 @@ Node::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-Node::onKnobSlaved(const boost::shared_ptr<KnobI> & slave,
-                   const boost::shared_ptr<KnobI> & master,
+Node::onKnobSlaved(KnobI* slave,KnobI* master,
                    int dimension,
                    bool isSlave)
 {

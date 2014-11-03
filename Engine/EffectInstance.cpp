@@ -2750,8 +2750,7 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-EffectInstance::onKnobSlaved(const boost::shared_ptr<KnobI> & slave,
-                             const boost::shared_ptr<KnobI> & master,
+EffectInstance::onKnobSlaved(KnobI* slave,KnobI* master,
                              int dimension,
                              bool isSlave)
 {

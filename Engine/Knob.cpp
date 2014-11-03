@@ -1181,7 +1181,6 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
     clearExpression(dimension);
     
     if (expression.empty()) {
-        expressionChanged(dimension);
         return;
     }
 
@@ -1214,7 +1213,6 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
         } catch (const std::runtime_error& e) {
             --_expressionsRecursionLevel;
             clearExpression(dimension);
-            expressionChanged(dimension);
             throw e;
         }
     }
@@ -1254,32 +1252,53 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 void
 KnobHelper::clearExpression(int dimension)
 {
-    QMutexLocker k(&_imp->expressionMutex);
-    _imp->expressions[dimension].expression.clear();
-    _imp->expressions[dimension].originalExpression.clear();
-    Py_XDECREF(_imp->expressions[dimension].code); //< new ref
-    _imp->expressions[dimension].code = 0;
-    _imp->expressions[dimension].global_dict = 0; //< python borrowed ref!
-    
-    
-    QWriteLocker kk(&_imp->mastersMutex);
-    for (std::list<KnobI*>::iterator it = _imp->expressions[dimension].dependencies.begin();
-         it != _imp->expressions[dimension].dependencies.end(); ++it) {
-        std::list<KnobI*>::iterator  found = std::find(_imp->listeners.begin(), _imp->listeners.end(), *it);
-        if (found != _imp->listeners.end()) {
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        _imp->expressions[dimension].expression.clear();
+        _imp->expressions[dimension].originalExpression.clear();
+        Py_XDECREF(_imp->expressions[dimension].code); //< new ref
+        _imp->expressions[dimension].code = 0;
+        _imp->expressions[dimension].global_dict = 0; //< python borrowed ref!
+    }
+    {
+        std::list<KnobI*> dependencies;
+        {
+            QWriteLocker kk(&_imp->mastersMutex);
+            dependencies = _imp->expressions[dimension].dependencies;
+            _imp->expressions[dimension].dependencies.clear();
+        }
+        for (std::list<KnobI*>::iterator it = dependencies.begin();
+             it != dependencies.end(); ++it) {
             
-            if ( (*found)->getHolder() && (*found)->getSignalSlotHandler() ) {
-                ///hackish way to get a shared ptr to this knob
-                (*found)->getHolder()->onKnobSlaved( (*found)->getSignalSlotHandler()->getKnob(),
-                                                    getSignalSlotHandler()->getKnob(),dimension,false );
+            KnobHelper* other = dynamic_cast<KnobHelper*>(*it);
+            assert(other);
+            
+            std::list<KnobI*> otherListeners;
+            {
+                QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
+                otherListeners = other->_imp->listeners;
             }
-            QObject::disconnect((*found)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
-                                SLOT(onExprDependencyChanged(int)));
-            _imp->listeners.erase(found);
+            std::list<KnobI*>::iterator  found = std::find(otherListeners.begin(), otherListeners.end(), this);
+            if (found != otherListeners.end()) {
+                
+                if ( (*found)->getHolder() && (*found)->getSignalSlotHandler() ) {
+                    ///hackish way to get a shared ptr to this knob
+                    getHolder()->onKnobSlaved(this, other,dimension,false );
+                }
+                QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
+                                    SLOT(onExprDependencyChanged(int)));
+                otherListeners.erase(found);
+                
+            }
             
+            {
+                QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
+                other->_imp->listeners = otherListeners;
+            }
         }
     }
-    _imp->expressions[dimension].dependencies.clear();
+    expressionChanged(dimension);
+    
 }
 
 void
@@ -1865,19 +1884,21 @@ void
 KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
 {
     assert(fromExprDimension != -1);
-    KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
+    KnobHelper* slave = dynamic_cast<KnobHelper*>(knob);
     
-    if ( getHolder() && other->getSignalSlotHandler() && getSignalSlotHandler() ) {
+    if ( getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
         ///hackish way to get a shared ptr to this knob
-        getHolder()->onKnobSlaved(getSignalSlotHandler()->getKnob(),
-                                  other->getSignalSlotHandler()->getKnob(),fromExprDimension,true );
+        slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
     }
     
-    if (other->_signalSlotHandler && _signalSlotHandler) {
+    if (slave->_signalSlotHandler && _signalSlotHandler) {
         if (!isExpression) {
-            QObject::connect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int) ) );
         } else {
-            QObject::connect( other->_signalSlotHandler.get(), SIGNAL( updateDependencies(int) ), _signalSlotHandler.get(), SLOT( onExprDependencyChanged(int) ) );
+            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateDependencies(int) ),slave->_signalSlotHandler.get() , SLOT( onExprDependencyChanged(int) ) );
+            
+            QMutexLocker k(&slave->_imp->expressionMutex);
+            slave->_imp->expressions[fromExprDimension].dependencies.push_back(this);
         }
     }
     if (knob != this) {
@@ -1886,10 +1907,8 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
         _imp->listeners.push_back(knob);
 
     }
-    if (fromExprDimension != -1) {
-        QMutexLocker k(&_imp->expressionMutex);
-        _imp->expressions[fromExprDimension].dependencies.push_back(knob);
-    }
+    
+    
 }
 
 void

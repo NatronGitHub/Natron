@@ -447,6 +447,7 @@ public:
      * just store it. This flag is used for serialisation, you should always pass false
      **/
     virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) = 0;
+    virtual void clearExpression(int dimension) = 0;
     virtual std::string getExpression(int dimension) const = 0;
     
     /**
@@ -961,6 +962,7 @@ public:
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) OVERRIDE FINAL;
+    virtual void clearExpression(int dimension) OVERRIDE FINAL;
     virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onExprDependencyChanged(KnobI* knob,int dimension) OVERRIDE FINAL;
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1111,7 +1113,6 @@ protected:
 
 private:
     
-    void clearExpression(int dimension);
     void expressionChanged(int dimension);
         
     boost::scoped_ptr<KnobHelperPrivate> _imp;
@@ -1703,8 +1704,7 @@ public:
     /**
      * @brief Same as onAllKnobsSlaved but called when only 1 knob is slaved
      **/
-    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & /*slave*/,
-                              const boost::shared_ptr<KnobI> & /*master*/,
+    virtual void onKnobSlaved(KnobI* /*slave*/,KnobI* /*master*/,
                               int /*dimension*/,
                               bool /*isSlave*/)
     {

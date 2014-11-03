@@ -1742,13 +1742,13 @@ NodeGui::onKnobsLinksChanged()
             bool found = false;
 
             for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                if (it2->first == it->slave.get() && it2->second == it->master.get()) {
+                if (it2->first == it->slave && it2->second == it->master) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                foundGuiLink->second.knobs.push_back(std::make_pair(it->slave.get(),it->master.get()));
+                foundGuiLink->second.knobs.push_back(std::make_pair(it->slave,it->master));
                 QString fullTooltip;
                 for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
                     QString tt = makeLinkString(it->masterNode.get(),it2->second,_internalNode.get(),it2->first);
@@ -1762,13 +1762,13 @@ NodeGui::onKnobsLinksChanged()
             arrow->setColor( QColor(143,201,103) );
             arrow->setArrowHeadColor( QColor(200,255,200) );
             
-            QString tt = makeLinkString(it->masterNode.get(),it->master.get(),_internalNode.get(),it->slave.get());
+            QString tt = makeLinkString(it->masterNode.get(),it->master,_internalNode.get(),it->slave);
             arrow->setToolTip(tt);
             if ( !getDagGui()->areKnobLinksVisible() ) {
                 arrow->setVisible(false);
             }
             LinkedDim guilink;
-            guilink.knobs.push_back(std::make_pair(it->slave.get(),it->master.get()));
+            guilink.knobs.push_back(std::make_pair(it->slave,it->master));
             guilink.arrow = arrow;
             _knobsLinks.insert(std::make_pair(it->masterNode,guilink));
 
