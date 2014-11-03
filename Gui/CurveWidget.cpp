@@ -36,7 +36,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Variant.h"
 #include "Engine/Curve.h"
 #include "Engine/Settings.h"
-
+#include "Engine/RotoContext.h"
 
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
@@ -102,8 +102,6 @@ struct SelectedKey_belongs_to_curve
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
                    boost::shared_ptr<Curve> curve,
-                   KnobGui* knob,
-                   int dimension,
                    const QString & name,
                    const QColor & color,
                    int thickness)
@@ -114,8 +112,6 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
       , _visible(false)
       , _selected(false)
       , _curveWidget(curveWidget)
-      , _knob(knob)
-      , _dimension(dimension)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -474,6 +470,49 @@ CurveGui::setVisibleAndRefresh(bool visible)
     emit curveChanged();
 }
 
+KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
+             boost::shared_ptr<Curve>  curve,
+             KnobGui* knob,
+             int dimension,
+             const QString & name,
+             const QColor & color,
+             int thickness)
+: CurveGui(curveWidget,curve,name,color,thickness)
+, _knob(knob)
+, _dimension(dimension)
+{
+    
+}
+
+KnobCurveGui::~KnobCurveGui()
+{
+    
+}
+
+BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
+                                   boost::shared_ptr<Curve>  curve,
+                                   const boost::shared_ptr<BezierCP>& bezier,
+                                   const boost::shared_ptr<RotoContext>& roto,
+                                   const QString & name,
+                                   const QColor & color,
+                                   int thickness)
+: CurveGui(curveWidget,curve,name,color,thickness)
+, _point(bezier)
+, _rotoContext(roto)
+{
+    
+}
+
+Bezier*
+BezierCPCurveGui::getBezier() const
+{
+    return _point->getBezier();
+}
+
+BezierCPCurveGui::~BezierCPCurveGui()
+{
+    
+}
 /*****************************CURVE WIDGET***********************************************/
 
 namespace { // protext local classes in anonymous namespace
@@ -1399,26 +1438,12 @@ CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
     
     double dy = key->key.getValue() - pos.y();
     double dx = key->key.getTime() - pos.x();
-
-   
-   
-    boost::shared_ptr<KnobI> attachedKnob = key->curve->getKnob()->getKnob();
-    assert(attachedKnob);
-
+    
+    
     ///If the knob is evaluating on change and _updateOnPenUpOnly is true, set it to false prior
     ///to modifying the keyframe, and set it back to its original value afterwards.
     
-    bool isAttachedKnobEvaluatingOnChange = attachedKnob->getEvaluateOnChange();
     bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-    if (updateOnPenUpOnly && isAttachedKnobEvaluatingOnChange) {
-        attachedKnob->setEvaluateOnChange(false);
-    }
-
-    ///set back its original value
-    if (updateOnPenUpOnly && isAttachedKnobEvaluatingOnChange) {
-        attachedKnob->setEvaluateOnChange(isAttachedKnobEvaluatingOnChange);
-        _evaluateOnPenUp = true;
-    }
     
     _widget->pushUndoCommand(new MoveTangentCommand(_widget,_selectedDerivative.first,key,dx,dy,!updateOnPenUpOnly));
 
@@ -1760,24 +1785,18 @@ CurveWidget::initializeGL()
     }
 }
 
-CurveGui*
-CurveWidget::createCurve(boost::shared_ptr<Curve> curve,
-                         KnobGui* knob,
-                         int dimension,
-                         const QString & name)
+void
+CurveWidget::addCurveAndSetColor(CurveGui* curve)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    assert(knob);
     //updateGL(); //force initializeGL to be called if it wasn't before.
-    CurveGui* curveGui = new CurveGui(this,curve,knob,dimension,name,QColor(255,255,255),1);
-    _imp->_curves.push_back(curveGui);
-    curveGui->setColor(_imp->_nextCurveAddedColor);
+    _imp->_curves.push_back(curve);
+    curve->setColor(_imp->_nextCurveAddedColor);
     _imp->_nextCurveAddedColor.setHsv( _imp->_nextCurveAddedColor.hsvHue() + 60,
                                        _imp->_nextCurveAddedColor.hsvSaturation(),_imp->_nextCurveAddedColor.value() );
 
-    return curveGui;
 }
 
 void
@@ -2219,7 +2238,14 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         }
         std::vector<KeyFrame> keys(1);
         keys[0] = KeyFrame(xCurve,yCurve);
-        (*foundCurveNearby)->getKnob()->pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
+        
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*foundCurveNearby);
+        
+        if (isKnobCurve) {
+            isKnobCurve->getKnob()->pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
+        } else {
+            pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
+        }
     }
 }
 
@@ -2385,29 +2411,45 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
 
     if (_imp->_evaluateOnPenUp) {
         _imp->_evaluateOnPenUp = false;
-
+        
         if (_imp->_state == eEventStateDraggingKeys) {
             std::map<KnobHolder*,bool> toEvaluate;
+            std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
             for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-                boost::shared_ptr<KnobI> knob = (*it)->curve->getKnob()->getKnob();
-                assert(knob);
-                KnobHolder* holder = knob->getHolder();
-                assert(holder);
-                std::map<KnobHolder*,bool>::iterator found = toEvaluate.find(holder);
-                bool evaluateOnChange = knob->getEvaluateOnChange();
-                if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
-                    found->second = true;
-                } else if ( found == toEvaluate.end() ) {
-                    toEvaluate.insert( std::make_pair(holder,evaluateOnChange) );
+                KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve);
+                BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
+                if (isKnobCurve) {
+                    boost::shared_ptr<KnobI> knob = isKnobCurve->getKnob()->getKnob();
+                    assert(knob);
+                    KnobHolder* holder = knob->getHolder();
+                    assert(holder);
+                    std::map<KnobHolder*,bool>::iterator found = toEvaluate.find(holder);
+                    bool evaluateOnChange = knob->getEvaluateOnChange();
+                    if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
+                        found->second = true;
+                    } else if ( found == toEvaluate.end() ) {
+                        toEvaluate.insert( std::make_pair(holder,evaluateOnChange) );
+                    }
+                } else if (isBezierCurve) {
+                    rotoToEvaluate.push_back(isBezierCurve->getRotoContext());
                 }
             }
             for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
                 it->first->evaluate_public(NULL, it->second,Natron::eValueChangedReasonUserEdited);
             }
+            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end(); ++it) {
+                (*it)->evaluateChange();
+            }
         } else if (_imp->_state == eEventStateDraggingTangent) {
-            boost::shared_ptr<KnobI> toEvaluate = _imp->_selectedDerivative.second->curve->getKnob()->getKnob();
-            assert(toEvaluate);
-            toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::eValueChangedReasonUserEdited);
+            KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(_imp->_selectedDerivative.second->curve);
+            BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(_imp->_selectedDerivative.second->curve);
+            if (isKnobCurve) {
+                boost::shared_ptr<KnobI> toEvaluate = isKnobCurve->getKnob()->getKnob();
+                assert(toEvaluate);
+                toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::eValueChangedReasonUserEdited);
+            } else if (isBezierCurve) {
+                isBezierCurve->getRotoContext()->evaluateChange();
+            }
         }
     }
 
@@ -2918,22 +2960,13 @@ CurveWidget::deleteSelectedKeyFrames()
 
     //apply the same strategy than for moveSelectedKeyFrames()
 
-    std::map<KnobGui*,std::vector< std::pair<CurveGui*,KeyFrame > > > toRemove;
+    std::vector< std::pair<CurveGui*,KeyFrame > >  toRemove;
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        std::map<KnobGui*,std::vector< std::pair<CurveGui*,KeyFrame > > >::iterator foundKnob = toRemove.find( (*it)->curve->getKnob() );
-
-        if ( foundKnob == toRemove.end() ) {
-            std::vector< std::pair<CurveGui*,KeyFrame > > newV;
-            newV.push_back( std::make_pair( (*it)->curve, (*it)->key ) );
-            toRemove.insert( std::make_pair( (*it)->curve->getKnob(), newV ) );
-        } else {
-            foundKnob->second.push_back( std::make_pair( (*it)->curve, (*it)->key ) );
-        }
+        toRemove.push_back( std::make_pair( (*it)->curve, (*it)->key ) );
     }
 
-    for (std::map<KnobGui*,std::vector< std::pair<CurveGui*,KeyFrame > > >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
-        it->first->pushUndoCommand( new RemoveKeysCommand(this,it->second) );
-    }
+    pushUndoCommand( new RemoveKeysCommand(this,toRemove) );
+    
 
     _imp->_selectedKeyFrames.clear();
 
@@ -2971,7 +3004,7 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
         return;
     }
     //this function will call updateGL() for us
-    curve->getKnob()->pushUndoCommand( new AddKeysCommand(this,curve, _imp->_keyFramesClipBoard) );
+    pushUndoCommand( new AddKeysCommand(this,curve, _imp->_keyFramesClipBoard) );
 }
 
 void

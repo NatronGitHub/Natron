@@ -89,12 +89,12 @@ struct BezierCPPrivate
     Bezier* holder;
 
     ///the animation curves for the position in the 2D plane
-    Curve curveX,curveY;
+    boost::shared_ptr<Curve> curveX,curveY;
     double x,y; //< used when there is no keyframe
 
     ///the animation curves for the derivatives
     ///They do not need to be protected as Curve is a thread-safe class.
-    Curve curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
+    boost::shared_ptr<Curve> curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
     mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
     double leftX,rightX,leftY,rightY; //< used when there is no keyframe
     mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
@@ -103,14 +103,14 @@ struct BezierCPPrivate
 
     BezierCPPrivate(Bezier* curve)
         : holder(curve)
-          , curveX()
-          , curveY()
+          , curveX(new Curve)
+          , curveY(new Curve)
           , x(0)
           , y(0)
-          , curveLeftBezierX()
-          , curveRightBezierX()
-          , curveLeftBezierY()
-          , curveRightBezierY()
+          , curveLeftBezierX(new Curve)
+          , curveRightBezierX(new Curve)
+          , curveLeftBezierY(new Curve)
+          , curveRightBezierY(new Curve)
           , staticPositionMutex()
           , leftX(0)
           , rightX(0)

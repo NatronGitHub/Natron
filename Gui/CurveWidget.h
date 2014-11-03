@@ -40,6 +40,9 @@ class Button;
 class LineEdit;
 class SpinBox;
 class Gui;
+class Bezier;
+class RotoContext;
+class BezierCP;
 class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
@@ -53,8 +56,6 @@ public:
   
     CurveGui(const CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
-             KnobGui* knob,
-             int dimension,
              const QString & name,
              const QColor & color,
              int thickness = 1);
@@ -113,15 +114,6 @@ public:
         _selected = s;
     }
 
-    KnobGui* getKnob() const
-    {
-        return _knob;
-    }
-
-    int getDimension() const
-    {
-        return _dimension;
-    }
 
     /**
      * @brief Evaluates the curve and returns the y position corresponding to the given x.
@@ -149,10 +141,64 @@ private:
     bool _visible; /// should we draw this curve ?
     bool _selected; /// is this curve selected
     const CurveWidget* _curveWidget;
+   
+};
+
+class KnobCurveGui : public CurveGui
+{
+    
+public:
+    
+    
+    KnobCurveGui(const CurveWidget *curveWidget,
+             boost::shared_ptr<Curve>  curve,
+             KnobGui* knob,
+             int dimension,
+             const QString & name,
+             const QColor & color,
+             int thickness = 1);
+    
+    virtual ~KnobCurveGui();
+    
+    KnobGui* getKnob() const
+    {
+        return _knob;
+    }
+    
+    int getDimension() const
+    {
+        return _dimension;
+    }
+    
+private:
     KnobGui* _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
 
+class BezierCPCurveGui : public CurveGui
+{
+public:
+    
+    BezierCPCurveGui(const CurveWidget *curveWidget,
+                 boost::shared_ptr<Curve>  curve,
+                 const boost::shared_ptr<BezierCP>& bezier,
+                 const boost::shared_ptr<RotoContext>& roto,
+                 const QString & name,
+                 const QColor & color,
+                 int thickness = 1);
+    
+    virtual ~BezierCPCurveGui();
+    
+    boost::shared_ptr<RotoContext> getRotoContext() const { return _rotoContext; }
+    
+    Bezier* getBezier() const ;
+    
+    boost::shared_ptr<BezierCP> getCP() const { return _point; }
+private:
+    
+    boost::shared_ptr<BezierCP> _point;
+    boost::shared_ptr<RotoContext> _rotoContext;
+};
 
 class QMenu;
 class CurveWidgetPrivate;
@@ -179,7 +225,7 @@ public:
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    CurveGui * createCurve(boost::shared_ptr<Curve> curve,KnobGui* knob,int dimension, const QString &name);
+    void addCurveAndSetColor(CurveGui* curve);
 
     void removeCurve(CurveGui* curve);
 

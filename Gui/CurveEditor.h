@@ -37,8 +37,10 @@ class CurveGui;
 class QHBoxLayout;
 class QSplitter;
 class KnobGui;
+class BezierCP;
 class Bezier;
 class RotoItem;
+class RotoContext;
 class KeyFrame;
 class Variant;
 class Gui;
@@ -158,6 +160,24 @@ private:
     QTreeWidgetItem* _nameItem;
 };
 
+class BezierEditorContext;
+struct CPEditorContextPrivate;
+class CPEditorContext
+{
+public:
+    
+    CPEditorContext(CurveWidget* widget,const boost::shared_ptr<BezierCP>& cp,BezierEditorContext* bezier);
+    
+    ~CPEditorContext();
+    
+    BezierCP* getCP() const;
+    
+    Bezier* getBezier() const;
+private:
+    
+    boost::scoped_ptr<CPEditorContextPrivate> _imp;
+};
+
 class RotoCurveEditorContext;
 struct BezierEditorContextPrivate;
 class BezierEditorContext
@@ -167,20 +187,31 @@ class BezierEditorContext
     
 public:
     
-    BezierEditorContext(Bezier* curve,
+    BezierEditorContext(CurveWidget* widget,
+                        Bezier* curve,
                         RotoCurveEditorContext* context);
     
     virtual ~BezierEditorContext() OVERRIDE;
     
     Bezier* getBezier() const;
     
+    QTreeWidgetItem* getItem() const;
+    
+    boost::shared_ptr<RotoContext> getContext() const;
 public slots:
     
     void onNameChanged(const QString & name);
     
     void onTreeItemExpanded(QTreeWidgetItem* item);
     
+    void onControlPointAdded();
+    
+    void onControlPointRemoved();
 private:
+    
+    void buildMissingCPs();
+    
+    void removeUnexistingCPs();
     
     boost::scoped_ptr<BezierEditorContextPrivate> _imp;
     
@@ -195,7 +226,8 @@ class RotoCurveEditorContext
     
 public:
     
-    RotoCurveEditorContext(QTreeWidget *tree,
+    RotoCurveEditorContext(CurveWidget* widget,
+                           QTreeWidget *tree,
                            const boost::shared_ptr<NodeGui> &node);
     
     virtual ~RotoCurveEditorContext() OVERRIDE;
@@ -209,6 +241,10 @@ public slots:
     void onNameChanged(const QString & name);
     
     void onItemNameChanged(RotoItem* item);
+    
+    void itemInserted(int);
+    
+    void onItemRemoved(RotoItem* item,int);
 
 private:
 
@@ -262,6 +298,7 @@ private:
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
 
     std::list<NodeCurveEditorContext*> _nodes;
+    std::list<RotoCurveEditorContext*> _rotos;
     QHBoxLayout* _mainLayout;
     QSplitter* _splitter;
     CurveWidget* _curveWidget;

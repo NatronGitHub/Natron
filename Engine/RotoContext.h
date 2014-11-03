@@ -52,6 +52,7 @@ class Int_Knob;
 class Choice_Knob;
 class Color_Knob;
 
+class Curve;
 class Bezier;
 class RotoItemSerialization;
 class BezierSerialization;
@@ -92,6 +93,13 @@ public:
     BezierCP(Bezier* curve);
 
     virtual ~BezierCP();
+    
+    boost::shared_ptr<Curve> getXCurve() const;
+    boost::shared_ptr<Curve> getYCurve() const;
+    boost::shared_ptr<Curve> getLeftXCurve() const;
+    boost::shared_ptr<Curve> getLeftYCurve() const;
+    boost::shared_ptr<Curve> getRightXCurve() const;
+    boost::shared_ptr<Curve> getRightYCurve() const;
 
     void clone(const BezierCP & other);
 
@@ -810,6 +818,10 @@ signals:
     void keyframeSet(int time);
 
     void keyframeRemoved(int time);
+    
+    void controlPointAdded();
+    
+    void controlPointRemoved();
 
 private:
 

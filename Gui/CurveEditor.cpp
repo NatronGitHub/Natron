@@ -111,11 +111,16 @@ CurveEditor::CurveEditor(Gui* gui,
 
 CurveEditor::~CurveEditor()
 {
-    for (std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+    for (std::list<NodeCurveEditorContext*>::iterator it = _nodes.begin();
          it != _nodes.end(); ++it) {
         delete (*it);
     }
     _nodes.clear();
+    
+    for (std::list<RotoCurveEditorContext*>::iterator it = _rotos.begin(); it != _rotos.end(); ++it) {
+        delete *it;
+    }
+    _rotos.clear();
 }
 
 std::pair<QAction*,QAction*> CurveEditor::getUndoRedoActions() const
@@ -141,19 +146,36 @@ CurveEditor::addNode(boost::shared_ptr<NodeGui> node)
     if (!hasKnobsAnimating) {
         return;
     }
-
-    NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_tree,_curveWidget,node);
-    _nodes.push_back(nodeContext);
+    
+    boost::shared_ptr<RotoContext> roto = node->getNode()->getRotoContext();
+    if (!roto) {
+        NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_tree,_curveWidget,node);
+        _nodes.push_back(nodeContext);
+    } else {
+        RotoCurveEditorContext* rotoEditorCtx = new RotoCurveEditorContext(_curveWidget,_tree,node);
+        _rotos.push_back(rotoEditorCtx);
+    }
 }
 
 void
 CurveEditor::removeNode(NodeGui* node)
 {
-    for (std::list<NodeCurveEditorContext*>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        if ( (*it)->getNode().get() == node ) {
-            delete (*it);
-            _nodes.erase(it);
-            break;
+    boost::shared_ptr<RotoContext> roto = node->getNode()->getRotoContext();
+    if (!roto) {
+        for (std::list<NodeCurveEditorContext*>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+            if ( (*it)->getNode().get() == node ) {
+                delete (*it);
+                _nodes.erase(it);
+                break;
+            }
+        }
+    } else {
+        for (std::list<RotoCurveEditorContext*>::iterator it = _rotos.begin(); it != _rotos.end(); ++it) {
+            if ((*it)->getNode().get() == node) {
+                delete *it;
+                _rotos.erase(it);
+                break;
+            }
         }
     }
     _curveWidget->centerOn(-10,500,-10,10);
@@ -198,7 +220,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
         bool hideKnob = true;
         if (k->getDimension() == 1) {
             
-            knobCurve = curveWidget->createCurve(kgui->getCurve(0),kgui,0,k->getDescription().c_str() );
+            KnobCurveGui* knobCurve = new KnobCurveGui(curveWidget,kgui->getCurve(0),kgui,0,k->getDescription().c_str(),QColor(255,255,255),1.);
             
             if ( !k->getCurve(0)->isAnimated() ) {
                 knobItem->setHidden(true);
@@ -213,7 +235,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                 dimItem->setText( 0,k->getDimensionName(j).c_str() );
                 QString curveName = QString( k->getDescription().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
                 
-                CurveGui* dimCurve = curveWidget->createCurve(kgui->getCurve(j),kgui,j,curveName);
+                KnobCurveGui* dimCurve = new KnobCurveGui(curveWidget,kgui->getCurve(j),kgui,j,curveName,QColor(255,255,255),1.);
                 
                 NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
                 _nodeElements.push_back(elem);
@@ -580,37 +602,172 @@ CurveEditor::getCurveWidget() const
     return _curveWidget;
 }
 
+struct CPEditorContextPrivate
+{
+    CurveWidget* widget;
+    BezierEditorContext* bezier;
+    boost::shared_ptr<BezierCP> cp;
+    QTreeWidgetItem* itemX;
+    QTreeWidgetItem* itemY;
+    QTreeWidgetItem* itemLeftX;
+    QTreeWidgetItem* itemLeftY;
+    QTreeWidgetItem* itemRightX;
+    QTreeWidgetItem* itemRightY;
+    
+    BezierCPCurveGui* curveX;
+    BezierCPCurveGui* curveY;
+    BezierCPCurveGui* curveLeftX;
+    BezierCPCurveGui* curveLeftY;
+    BezierCPCurveGui* curveRightX;
+    BezierCPCurveGui* curveRightY;
+    
+    CPEditorContextPrivate(CurveWidget* widget,const boost::shared_ptr<BezierCP>& cp,BezierEditorContext* bezier)
+    : widget(widget)
+    , bezier(bezier)
+    , cp(cp)
+    , itemX(0)
+    , itemY(0)
+    , itemLeftX(0)
+    , itemLeftY(0)
+    , itemRightX(0)
+    , itemRightY(0)
+    , curveX(0)
+    , curveY(0)
+    , curveLeftX(0)
+    , curveLeftY(0)
+    , curveRightX(0)
+    , curveRightY(0)
+    {
+     
+    }
+};
+
+CPEditorContext::CPEditorContext(CurveWidget* widget,const boost::shared_ptr<BezierCP>& cp,BezierEditorContext* bezier)
+: _imp(new CPEditorContextPrivate(widget,cp,bezier))
+{
+    QTreeWidgetItem* parent = bezier->getItem();
+    _imp->itemX = new QTreeWidgetItem(parent);
+    _imp->itemX->setText(0, "x");
+    
+    boost::shared_ptr<RotoContext> roto = bezier->getContext();
+    assert(roto);
+    
+    _imp->curveX = new BezierCPCurveGui(widget,cp->getXCurve(),cp,roto,"x",QColor(255,255,255),1.);
+    widget->addCurveAndSetColor(_imp->curveX);
+    
+    _imp->itemY = new QTreeWidgetItem(parent);
+    _imp->itemY->setText(0, "y");
+    _imp->curveY = new BezierCPCurveGui(widget,cp->getYCurve(),cp,roto,"y",QColor(255,255,255),1.);
+    widget->addCurveAndSetColor(_imp->curveY);
+    
+    _imp->itemLeftX = new QTreeWidgetItem(parent);
+    _imp->itemLeftX->setText(0, "leftX");
+    _imp->curveLeftX = new BezierCPCurveGui(widget,cp->getLeftXCurve(),cp,roto,"leftX",QColor(255,255,255),1.);
+    widget->addCurveAndSetColor(_imp->curveLeftX);
+    
+    _imp->itemLeftY = new QTreeWidgetItem(parent);
+    _imp->itemLeftY->setText(0, "leftY");
+    _imp->curveLeftY = new BezierCPCurveGui(widget,cp->getLeftYCurve(),cp,roto,"leftY",QColor(255,255,255),1.);
+    widget->addCurveAndSetColor(_imp->curveLeftY);
+    
+    _imp->itemRightX = new QTreeWidgetItem(parent);
+    _imp->itemRightX->setText(0, "rightX");
+    _imp->curveRightX = new BezierCPCurveGui(widget,cp->getRightXCurve(),cp,roto,"rightX",QColor(255,255,255),1.);
+    widget->addCurveAndSetColor(_imp->curveRightX);
+    
+    _imp->itemRightY = new QTreeWidgetItem(parent);
+    _imp->itemRightY->setText(0, "rightY");
+    _imp->curveRightY = new BezierCPCurveGui(widget,cp->getRightYCurve(),cp,roto,"rightY",QColor(255,255,255),1.);
+    widget->addCurveAndSetColor(_imp->curveRightY);
+    
+}
+
+CPEditorContext::~CPEditorContext()
+{
+    delete _imp->itemX;
+    delete _imp->itemY;
+    delete _imp->itemLeftX;
+    delete _imp->itemLeftY;
+    delete _imp->itemRightX;
+    delete _imp->itemRightY;
+    
+    _imp->widget->removeCurve(_imp->curveX);
+    _imp->widget->removeCurve(_imp->curveY);
+    _imp->widget->removeCurve(_imp->curveLeftX);
+    _imp->widget->removeCurve(_imp->curveLeftY);
+    _imp->widget->removeCurve(_imp->curveRightX);
+    _imp->widget->removeCurve(_imp->curveRightY);
+}
+
+BezierCP*
+CPEditorContext::getCP() const
+{
+    return _imp->cp.get();
+}
+
+Bezier*
+CPEditorContext::getBezier() const
+{
+    return _imp->bezier->getBezier();
+}
+
 struct BezierEditorContextPrivate {
     
+    CurveWidget* widget;
     RotoCurveEditorContext* context;
     Bezier* curve;
     QTreeWidgetItem* item;
+    std::list<CPEditorContext*> cps,fps;
     
-    BezierEditorContextPrivate(Bezier* curve,RotoCurveEditorContext* context)
-    : context(context)
+    
+    BezierEditorContextPrivate(CurveWidget* widget,Bezier* curve,RotoCurveEditorContext* context)
+    : widget(widget)
+    , context(context)
     , curve(curve)
     {
         
     }
 };
 
-BezierEditorContext::BezierEditorContext(Bezier* curve,
+BezierEditorContext::BezierEditorContext(CurveWidget* widget,
+                                         Bezier* curve,
                     RotoCurveEditorContext* context)
-: _imp(new BezierEditorContextPrivate(curve,context))
+: _imp(new BezierEditorContextPrivate(widget,curve,context))
 {
     _imp->item = new QTreeWidgetItem(_imp->context->getItem());
     _imp->item->setText(0, _imp->curve->getName_mt_safe().c_str());
+    _imp->item->setExpanded(false);
+    QObject::connect(curve, SIGNAL(controlPointAdded()), this, SLOT(onControlPointAdded()));
+    QObject::connect(curve, SIGNAL(controlPointRemoved()), this, SLOT(onControlPointRemoved()));
 }
 
 BezierEditorContext::~BezierEditorContext()
 {
-    
+    for (std::list<CPEditorContext*>::iterator it = _imp->cps.begin(); it!=_imp->cps.end(); ++it) {
+        delete *it;
+    }
+    for (std::list<CPEditorContext*>::iterator it = _imp->fps.begin(); it!=_imp->fps.end(); ++it) {
+        delete *it;
+    }
+
 }
 
 Bezier*
 BezierEditorContext::getBezier() const
 {
     return _imp->curve;
+}
+
+QTreeWidgetItem*
+BezierEditorContext::getItem() const
+{
+    return _imp->item;
+}
+
+boost::shared_ptr<RotoContext>
+BezierEditorContext::getContext() const
+{
+    return _imp->context->getNode()->getNode()->getRotoContext();
 }
 
 void
@@ -620,11 +777,115 @@ BezierEditorContext::onNameChanged(const QString & name)
 }
 
 void
-BezierEditorContext::onTreeItemExpanded(QTreeWidgetItem* item)
+BezierEditorContext::onControlPointAdded()
+{
+    buildMissingCPs();
+}
+
+void
+BezierEditorContext::onControlPointRemoved()
+{
+    
+}
+
+void
+BezierEditorContext::removeUnexistingCPs()
+{
+    ///Make sure all points in the bezier exist
+    
+    {
+        const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->curve->getControlPoints();
+    
+        std::list<CPEditorContext*> toRemove;
+        std::list<CPEditorContext*> toKeep;
+        for (std::list<CPEditorContext*>::iterator it2 = _imp->cps.begin(); it2!=_imp->cps.end(); ++it2) {
+            std::list<boost::shared_ptr<BezierCP> >::const_iterator found =
+            std::find(cps.begin(),cps.end(),(*it2)->getCP());
+            
+            if (found == cps.end()) {
+                toRemove.push_back(*it2);
+            } else {
+                toKeep.push_back(*it2);
+            }
+            
+        }
+        
+        for (std::list<CPEditorContext*>::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
+            delete *it;
+        }
+        _imp->cps = toKeep;
+    }
+    
+    {
+        const std::list<boost::shared_ptr<BezierCP> >& fps = _imp->curve->getControlPoints();
+        
+        std::list<CPEditorContext*> toRemove;
+        std::list<CPEditorContext*> toKeep;
+        for (std::list<CPEditorContext*>::iterator it2 = _imp->fps.begin(); it2!=_imp->fps.end(); ++it2) {
+            std::list<boost::shared_ptr<BezierCP> >::const_iterator found =
+            std::find(fps.begin(),fps.end(),(*it2)->getCP());
+            
+            if (found == fps.end()) {
+                toRemove.push_back(*it2);
+            } else {
+                toKeep.push_back(*it2);
+            }
+            
+        }
+        
+        for (std::list<CPEditorContext*>::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
+            delete *it;
+        }
+        _imp->fps = toKeep;
+    }
+
+}
+
+void
+BezierEditorContext::buildMissingCPs()
 {
     ///Make sure all points in the bezier are created
-    if (item == _imp->item) {
+    const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->curve->getControlPoints();
+    for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
         
+        bool found = false;
+        for (std::list<CPEditorContext*>::iterator it2 = _imp->cps.begin(); it2!=_imp->cps.end(); ++it2) {
+            if ((*it2)->getCP() == it->get()) {
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            CPEditorContext* c = new CPEditorContext(_imp->widget,*it,this);
+            _imp->cps.push_back(c);
+        }
+    }
+    
+    const std::list<boost::shared_ptr<BezierCP> >& fps = _imp->curve->getControlPoints();
+    for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = fps.begin(); it != fps.end(); ++it) {
+        
+        bool found = false;
+        for (std::list<CPEditorContext*>::iterator it2 = _imp->fps.begin(); it2!=_imp->fps.end(); ++it2) {
+            if ((*it2)->getCP() == it->get()) {
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            CPEditorContext* c = new CPEditorContext(_imp->widget,*it,this);
+            _imp->fps.push_back(c);
+        }
+    }
+    
+}
+
+void
+BezierEditorContext::onTreeItemExpanded(QTreeWidgetItem* item)
+{
+    if (item == _imp->item) {
+        buildMissingCPs();
     }
 }
 
@@ -633,12 +894,14 @@ BezierEditorContext::onTreeItemExpanded(QTreeWidgetItem* item)
 
 struct RotoCurveEditorContextPrivate
 {
+    CurveWidget* widget;
     boost::shared_ptr<NodeGui> node;
     QTreeWidgetItem* nameItem;
     std::list< BezierEditorContext* > curves;
     
-    RotoCurveEditorContextPrivate(const boost::shared_ptr<NodeGui>& node)
-    : node(node)
+    RotoCurveEditorContextPrivate(CurveWidget* widget,const boost::shared_ptr<NodeGui>& node)
+    : widget(widget)
+    , node(node)
     , nameItem(0)
     , curves()
     {
@@ -646,9 +909,10 @@ struct RotoCurveEditorContextPrivate
     }
 };
 
-RotoCurveEditorContext::RotoCurveEditorContext(QTreeWidget *tree,
+RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
+                                               QTreeWidget *tree,
                        const boost::shared_ptr<NodeGui>& node)
-: _imp(new RotoCurveEditorContextPrivate(node))
+: _imp(new RotoCurveEditorContextPrivate(widget,node))
 {
     boost::shared_ptr<RotoContext> rotoCtx = node->getNode()->getRotoContext();
     assert(rotoCtx);
@@ -656,18 +920,23 @@ RotoCurveEditorContext::RotoCurveEditorContext(QTreeWidget *tree,
     _imp->nameItem = new QTreeWidgetItem(tree);
     _imp->nameItem->setText( 0,_imp->node->getNode()->getName().c_str() );
     QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+    QObject::connect( node.get(),SIGNAL( itemRemoved(RotoItem*,int) ),this,SLOT( onItemRemoved(RotoItem*,int) ) );
+    QObject::connect( node.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );
     
     std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
     
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
-        BezierEditorContext* c = new BezierEditorContext(it->get(),this);
+        BezierEditorContext* c = new BezierEditorContext(widget,it->get(),this);
         _imp->curves.push_back(c);
     }
 }
 
 RotoCurveEditorContext::~RotoCurveEditorContext()
 {
-    
+    delete _imp->nameItem;
+    for (std::list< BezierEditorContext*>::iterator it = _imp->curves.begin(); it!=_imp->curves.end(); ++it) {
+        delete *it;
+    }
 }
 
 
@@ -696,6 +965,31 @@ RotoCurveEditorContext::onItemNameChanged(RotoItem* item)
         if ((*it)->getBezier() == item) {
             (*it)->onNameChanged(item->getName_mt_safe().c_str());
         }
+    }
+}
+
+void
+RotoCurveEditorContext::onItemRemoved(RotoItem* item,int)
+{
+    for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
+        if ((*it)->getBezier() == item) {
+            delete *it;
+            _imp->curves.erase(it);
+            return;
+        }
+    }
+}
+
+void
+RotoCurveEditorContext::itemInserted(int)
+{
+    boost::shared_ptr<RotoContext> roto = _imp->node->getNode()->getRotoContext();
+    assert(roto);
+    boost::shared_ptr<RotoItem> item = roto->getLastInsertedItem();
+    Bezier* isBezier = dynamic_cast<Bezier*>(item.get());
+    if (isBezier) {
+        BezierEditorContext* b = new BezierEditorContext(_imp->widget,isBezier,this);
+        _imp->curves.push_back(b);
     }
 }
 
