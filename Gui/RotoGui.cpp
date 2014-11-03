@@ -1425,9 +1425,9 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
                                                      QMouseEvent* e)
 {
     ///find out if the cp is already selected.
-    SelectedCPs::const_iterator foundCP = rotoData->selectedCps.end();
+    SelectedCPs::iterator foundCP = rotoData->selectedCps.end();
 
-    for (SelectedCPs::const_iterator it = rotoData->selectedCps.begin(); it != rotoData->selectedCps.end(); ++it) {
+    for (SelectedCPs::iterator it = rotoData->selectedCps.begin(); it != rotoData->selectedCps.end(); ++it) {
         if (p.first == it->first) {
             foundCP = it;
             break;
