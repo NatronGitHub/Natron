@@ -362,11 +362,9 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             if (args.isMipmapLevelValid) {
                 mipmapLevel = args.mipMapLevel;
             } else {
-                 qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
                 mipmapLevel = 0;
             }
         } else {
-            qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
             mipmapLevel = 0;
             view = 0;
         }
