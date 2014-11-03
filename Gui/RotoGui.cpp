@@ -177,6 +177,7 @@ struct RotoGui::RotoGuiPrivate
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
     bool evaluateOnKeyUp;  //< if true the next key up will call context->evaluateChange()
     bool iSelectingwithCtrlA;
+    bool shiftDown;
 
     RotoGuiPrivate(RotoGui* pub,
                    NodeGui* n,
@@ -204,6 +205,7 @@ struct RotoGui::RotoGuiPrivate
           , evaluateOnPenUp(false)
           , evaluateOnKeyUp(false)
           , iSelectingwithCtrlA(false)
+          , shiftDown(false)
     {
         if ( n->getNode()->isRotoPaintingNode() ) {
             type = ROTOPAINTING;
@@ -1216,7 +1218,7 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
 void
 RotoGui::onSelectionCleared()
 {
-    if ( !isStickySelectionEnabled() ) {
+    if ( !isStickySelectionEnabled()  && !_imp->shiftDown ) {
         _imp->clearCPSSelection();
     }
 }
@@ -1229,7 +1231,7 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
     }
 
     bool stickySel = isStickySelectionEnabled();
-    if ( !stickySel ) {
+    if ( !stickySel && !_imp->shiftDown) {
         _imp->clearCPSSelection();
     }
 
@@ -1268,7 +1270,7 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
                     _imp->rotoData->selectedBeziers.push_back(*it);
                 }
             } else {
-                if (!stickySel && isSelected != _imp->rotoData->selectedBeziers.end()) {
+                if (!stickySel && !_imp->shiftDown && isSelected != _imp->rotoData->selectedBeziers.end()) {
                     _imp->rotoData->selectedBeziers.erase(isSelected);
                 }
             }
@@ -2185,6 +2187,10 @@ RotoGui::keyDown(double /*scaleX*/,
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 
+    if (key == Qt::Key_Shift) {
+        _imp->shiftDown = true;
+    }
+    
     if ( modCASIsControl(e) ) {
         if ( !_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && (e->key() == Qt::Key_Control) ) {
             _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
@@ -2299,6 +2305,10 @@ RotoGui::keyUp(double /*scaleX*/,
 {
     bool didSomething = false;
 
+    if (e->key() == Qt::Key_Shift) {
+        _imp->shiftDown = false;
+    }
+    
     if ( !modCASIsControl(e) ) {
         if ( !_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && (e->key() == Qt::Key_Control) ) {
             _imp->rotoData->transformMode = (_imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
