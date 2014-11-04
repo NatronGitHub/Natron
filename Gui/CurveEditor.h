@@ -193,7 +193,7 @@ public:
     
     boost::shared_ptr<RotoContext> getContext() const;
     
-    void recursiveSelectBezier(QTreeWidgetItem* cur,
+    void recursiveSelectBezier(QTreeWidgetItem* cur,bool mustSelect,
                              std::vector<CurveGui*> *curves);
 public slots:
     

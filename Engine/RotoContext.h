@@ -643,6 +643,11 @@ public:
      * @brief Removes a keyframe at the given time if any.
      **/
     void removeKeyframe(int time);
+    
+    /**
+     * @brief Moves a keyframe
+     **/
+    void moveKeyframe(int oldTime,int newTime);
 
 
     /**

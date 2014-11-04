@@ -297,8 +297,7 @@ moveKey(KeyPtr &k,
         int oldTime = k->key.getTime();
         k->key.setTime(k->key.getTime() + dt);
         k->key.setValue(k->key.getValue() + dv);
-        isBezierCurve->getBezier()->setKeyframe(k->key.getTime());
-        isBezierCurve->getBezier()->removeKeyframe(oldTime);
+        isBezierCurve->getBezier()->moveKeyframe(oldTime, k->key.getTime());
 
     }
 }

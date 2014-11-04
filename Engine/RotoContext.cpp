@@ -2915,6 +2915,38 @@ Bezier::removeKeyframe(int time)
     emit keyframeRemoved(time);
 }
 
+void
+Bezier::moveKeyframe(int oldTime,int newTime)
+{
+    
+    BezierCPs::iterator fp = _imp->featherPoints.begin();
+    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+        double x,y,lx,ly,rx,ry;
+        (*it)->getPositionAtTime(oldTime, &x, &y);
+        (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
+        (*it)->getRightBezierPointAtTime(oldTime, &rx, &ry);
+        
+        (*it)->removeKeyframe(oldTime);
+        
+        (*it)->setPositionAtTime(newTime, x, y);
+        (*it)->setLeftBezierPointAtTime(newTime, lx, ly);
+        (*it)->setRightBezierPointAtTime(newTime, rx, ry);
+        
+        (*fp)->getPositionAtTime(oldTime, &x, &y);
+        (*fp)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
+        (*fp)->getRightBezierPointAtTime(oldTime, &rx, &ry);
+        
+        (*fp)->removeKeyframe(oldTime);
+        
+        (*fp)->setPositionAtTime(newTime, x, y);
+        (*fp)->setLeftBezierPointAtTime(newTime, lx, ly);
+        (*fp)->setRightBezierPointAtTime(newTime, rx, ry);
+        
+    }
+    emit keyframeRemoved(oldTime);
+    emit keyframeSet(newTime);
+}
+
 int
 Bezier::getKeyframesCount() const
 {
