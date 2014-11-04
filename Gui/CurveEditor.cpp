@@ -40,9 +40,10 @@ using std::make_pair;
 using std::cout;
 using std::endl;
 
+
 void
 CurveEditor::recursiveSelect(QTreeWidgetItem* cur,
-                             std::vector<CurveGui*> *curves)
+                             std::vector<CurveGui*> *curves,bool inspectRotos)
 {
     if (!cur) {
         return;
@@ -60,8 +61,18 @@ CurveEditor::recursiveSelect(QTreeWidgetItem* cur,
         }
     }
     for (int j = 0; j < cur->childCount(); ++j) {
-        recursiveSelect(cur->child(j),curves);
+        recursiveSelect(cur->child(j),curves,false);
     }
+    
+    if (inspectRotos) {
+        for (std::list<RotoCurveEditorContext*>::const_iterator it = _rotos.begin(); it != _rotos.end(); ++it) {
+            (*it)->recursiveSelectRoto(cur,curves);
+            if (curves->size() > 0) {
+                break;
+            }
+        }
+    }
+   
 }
 
 CurveEditor::CurveEditor(Gui* gui,
@@ -763,6 +774,38 @@ BezierEditorContext::onKeyframeRemoved()
     _imp->widget->update();
 }
 
+static void recursiveSelectElement(const std::list<NodeCurveEditorElement*>& elements,
+                                   QTreeWidgetItem* cur,
+                                   std::vector<CurveGui*> *curves)
+{
+    for (std::list<NodeCurveEditorElement*>::const_iterator it = elements.begin(); it != elements.end(); ++it) {
+        if ((*it)->getTreeItem() == cur) {
+            CurveGui* curve = (*it)->getCurve();
+            cur->setSelected(true);
+            if (curve) {
+                curves->push_back(curve);
+            } else {
+                for (int i = 0; i < cur->childCount(); ++i) {
+                    recursiveSelectElement(elements, cur->child(i), curves);
+                }
+            }
+            break;
+        }
+    }
+}
+
+void
+BezierEditorContext::recursiveSelectBezier(QTreeWidgetItem* cur,
+                           std::vector<CurveGui*> *curves)
+{
+    if (_imp->nameItem == cur) {
+        cur->setSelected(true);
+        curves->push_back(_imp->animCurve);
+    } else {
+        recursiveSelectElement(_imp->knobs, cur, curves);
+    }
+}
+
 struct RotoCurveEditorContextPrivate
 {
     CurveWidget* widget;
@@ -793,8 +836,8 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     _imp->nameItem = new QTreeWidgetItem(tree);
     _imp->nameItem->setText( 0,_imp->node->getNode()->getName().c_str() );
     QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
-    QObject::connect( node.get(),SIGNAL( itemRemoved(RotoItem*,int) ),this,SLOT( onItemRemoved(RotoItem*,int) ) );
-    QObject::connect( node.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );
+    QObject::connect( rotoCtx.get(),SIGNAL( itemRemoved(RotoItem*,int) ),this,SLOT( onItemRemoved(RotoItem*,int) ) );
+    QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );
     
     std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
     
@@ -863,6 +906,22 @@ RotoCurveEditorContext::itemInserted(int)
     if (isBezier) {
         BezierEditorContext* b = new BezierEditorContext(_imp->tree,_imp->widget,isBezier,this);
         _imp->curves.push_back(b);
+    }
+}
+
+void
+RotoCurveEditorContext::recursiveSelectRoto(QTreeWidgetItem* cur,
+                         std::vector<CurveGui*> *curves)
+{
+    if (cur == _imp->nameItem) {
+        cur->setSelected(true);
+        for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
+            (*it)->recursiveSelectBezier((*it)->getItem(), curves);
+        }
+    } else {
+        for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
+            (*it)->recursiveSelectBezier(cur, curves);
+        }
     }
 }
 

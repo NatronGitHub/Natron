@@ -192,6 +192,9 @@ public:
     QTreeWidgetItem* getItem() const;
     
     boost::shared_ptr<RotoContext> getContext() const;
+    
+    void recursiveSelectBezier(QTreeWidgetItem* cur,
+                             std::vector<CurveGui*> *curves);
 public slots:
     
     void onNameChanged(const QString & name);
@@ -224,6 +227,9 @@ public:
     
     QTreeWidgetItem* getItem() const;
     
+    void recursiveSelectRoto(QTreeWidgetItem* cur,
+                             std::vector<CurveGui*> *curves);
+
 public slots:
     
     void onNameChanged(const QString & name);
@@ -283,7 +289,7 @@ private:
 
 
     // FIXME: PIMPL
-    void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
+    void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves,bool inspectRotos = true);
 
     std::list<NodeCurveEditorContext*> _nodes;
     std::list<RotoCurveEditorContext*> _rotos;

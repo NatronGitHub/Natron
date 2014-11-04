@@ -117,10 +117,6 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    // even when there is only one keyframe, there may be tangents!
-    if (curve->getKeyFramesCount() > 0) {
-        _visible = true;
-    }
 
     QObject::connect( this,SIGNAL( curveChanged() ),curveWidget,SLOT( onCurveChanged() ) );
 }
@@ -530,6 +526,10 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 , _dimension(dimension)
 {
     
+    // even when there is only one keyframe, there may be tangents!
+    if (curve->getKeyFramesCount() > 0) {
+        setVisible(true);
+    }
 }
 
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
@@ -544,7 +544,10 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 , _knob(0)
 , _dimension(dimension)
 {
-    
+    // even when there is only one keyframe, there may be tangents!
+    if (curve->getKeyFramesCount() > 0) {
+        setVisible(true);
+    }
 }
 
 KnobCurveGui::~KnobCurveGui()
@@ -568,7 +571,10 @@ BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
 , _bezier(bezier)
 , _rotoContext(roto)
 {
-    
+    // even when there is only one keyframe, there may be tangents!
+    if (bezier->getKeyframesCount() > 0) {
+        setVisible(true);
+    }
 }
 
 Bezier*
