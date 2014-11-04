@@ -2118,8 +2118,8 @@ CurveWidget::getPixelScale(double & xScale,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    xScale = _imp->zoomCtx.screenPixelWidth();
-    yScale = _imp->zoomCtx.screenPixelHeight();
+    xScale = _imp->zoomCtx.screenPixelWidthCanonical();
+    yScale = _imp->zoomCtx.screenPixelHeightCanonical();
 }
 
 /**

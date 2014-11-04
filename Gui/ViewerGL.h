@@ -467,30 +467,30 @@ private:
 
     bool isNearByUserRoITopEdge(const RectD & roi,
                                 const QPointF & zoomPos,
-                                double zoomScreenPixelWidth,
-                                double zoomScreenPixelHeight);
+                                double screenPixelWidthCanonical,
+                                double screenPixelHeightCanonical);
 
     bool isNearByUserRoIRightEdge(const RectD & roi,
                                   const QPointF & zoomPos,
-                                  double zoomScreenPixelWidth,
-                                  double zoomScreenPixelHeight);
+                                  double screenPixelWidthCanonical,
+                                  double screenPixelHeightCanonical);
 
     bool isNearByUserRoILeftEdge(const RectD & roi,
                                  const QPointF & zoomPos,
-                                 double zoomScreenPixelWidth,
-                                 double zoomScreenPixelHeight);
+                                 double screenPixelWidthCanonical,
+                                 double screenPixelHeightCanonical);
 
 
     bool isNearByUserRoIBottomEdge(const RectD & roi,
                                    const QPointF & zoomPos,
-                                   double zoomScreenPixelWidth,
-                                   double zoomScreenPixelHeight);
+                                   double screenPixelWidthCanonical,
+                                   double screenPixelHeightCanonical);
 
     bool isNearByUserRoI(double x,
                          double y,
                          const QPointF & zoomPos,
-                         double zoomScreenPixelWidth,
-                         double zoomScreenPixelHeight);
+                         double screenPixelWidthCanonical,
+                         double screenPixelHeightCanonical);
 
     void updateInfoWidgetColorPicker(const QPointF & imgPos,
                                      const QPoint & widgetPos,
