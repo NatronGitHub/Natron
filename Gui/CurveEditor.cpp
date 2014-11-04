@@ -231,6 +231,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
         } else {
             knobCurve = new KnobCurveGui(curveWidget,k->getCurve(0),k,0,k->getDescription().c_str(),QColor(255,255,255),1.);
         }
+        curveWidget->addCurveAndSetColor(knobCurve);
         
         if ( !k->getCurve(0)->isAnimated() ) {
             knobItem->setHidden(true);
@@ -254,7 +255,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
                 dimCurve = new KnobCurveGui(curveWidget,k->getCurve(j),k,j,curveName,QColor(255,255,255),1.);
                 elem = new NodeCurveEditorElement(tree,curveWidget,k,j,dimItem,dimCurve);
             }
-            
+            curveWidget->addCurveAndSetColor(dimCurve);
             
             elements.push_back(elem);
             if ( !dimCurve->getInternalCurve()->isAnimated() ) {
@@ -734,7 +735,6 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
 
 BezierEditorContext::~BezierEditorContext()
 {
-    delete _imp->nameItem;
     _imp->widget->removeCurve(_imp->animCurve);
     for (std::list<NodeCurveEditorElement*>::iterator it = _imp->knobs.begin() ; it != _imp->knobs.end();++it) {
         delete *it;

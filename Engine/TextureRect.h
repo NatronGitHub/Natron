@@ -29,6 +29,7 @@ struct TextureRect
           , w(0)
           , h(0)
           , closestPo2(1)
+          , par(1.)
     {
     }
 
@@ -38,7 +39,8 @@ struct TextureRect
                 int y2_,
                 int w_,
                 int h_,
-                int closestPo2_)
+                int closestPo2_,
+                double par_)
         : x1(x1_)
           , y1(y1_)
           , x2(x2_)
@@ -46,6 +48,7 @@ struct TextureRect
           , w(w_)
           , h(h_)
           , closestPo2(closestPo2_)
+          , par(par_)
     {
     }
 
@@ -55,7 +58,8 @@ struct TextureRect
              int y2_,
              int w_,
              int h_,
-             int closestPo2_)
+             int closestPo2_,
+             double par_)
     {
         x1 = x1_;
         y1 = y1_;
@@ -64,17 +68,19 @@ struct TextureRect
         w = w_;
         h = h_;
         closestPo2 = closestPo2_;
+        par = par_;
     }
 
     void reset()
     {
-        set(0, 0, 0, 0, 0, 0, 1);
+        set(0, 0, 0, 0, 0, 0, 1, 1.);
     }
 
     int x1,y1,x2,y2; // the edges of the texture. These are coordinates in the full size image
     int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t
     int closestPo2; //< the closest power of 2 of the original region of interest of the image
-
+    double par; // the par of the associated image
+    
     bool isNull() const
     {
         return (x2 <= x1) || (y2 <= y1);
@@ -110,7 +116,8 @@ operator==(const TextureRect & first,
            first.y2 == second.y2 &&
            first.w == second.w &&
            first.h == second.h &&
-           first.closestPo2 == second.closestPo2;
+           first.closestPo2 == second.closestPo2 &&
+           first.par == second.par;
 }
 
 inline bool

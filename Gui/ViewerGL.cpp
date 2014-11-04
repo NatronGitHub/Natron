@@ -471,7 +471,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
 
-    const double par = _imp->currentViewerInfo[textureIndex].getDisplayWindow().getPixelAspectRatio();
+    const double par = r.par;
 
 
     ///the RoD of the image in canonical coords.
@@ -2300,7 +2300,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
     }
-    setRegionOfDefinition(rod, textureIndex);
+    setRegionOfDefinition(rod,textureIndex);
 
     emit imageChanged(textureIndex);
 }
@@ -3200,17 +3200,26 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
     if (_imp->infoViewer[textureIndex] && !_imp->viewerTab->getGui()->isGUIFrozen()) {
         _imp->infoViewer[textureIndex]->setDataWindow(rod);
     }
+    
+    QString left,btm,right,top;
+    left.setNum(rod.left(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(left);
+    btm.setNum(rod.bottom(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(btm);
+    right.setNum(rod.right(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(right);
+    top.setNum(rod.top(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(top);
 
-    RectI rodPixel;
-    rod.toPixelEnclosing(0, _imp->currentViewerInfo[textureIndex].getDisplayWindow().getPixelAspectRatio(), &rodPixel);
+
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QString::number(rodPixel.left() ) );
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(left);
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QString::number(rodPixel.bottom() ) );
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(btm);
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QString::number(rodPixel.right() ) );
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(right);
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QString::number(rodPixel.top() ) );
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(top);
 }
 
 void

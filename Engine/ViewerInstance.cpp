@@ -523,7 +523,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     ///Texture rect contains the pixel coordinates in the image to be rendered
     TextureRect textureRect(roi.x1,roi.y1,roi.x2,
-                            roi.y2,roi.width(),roi.height(),closestPowerOf2);
+                            roi.y2,roi.width(),roi.height(),closestPowerOf2,par);
     size_t bytesCount = textureRect.w * textureRect.h * 4;
     if (bytesCount == 0) {
         return eStatusOK;

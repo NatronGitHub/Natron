@@ -285,6 +285,25 @@ InfoViewerWidget::setMousePos(QPoint p)
 }
 
 void
+InfoViewerWidget::removeTrailingZeroes(QString& str)
+{
+    int dot = str.lastIndexOf('.');
+    if (dot != -1) {
+        int i = str.size() - 1;
+        while (i > dot) {
+            if (str[i] == QChar('0')) {
+                --i;
+            } else {
+                break;
+            }
+        }
+        if (i != (str.size() -1)) {
+            str.remove(i, str.size() - i);
+        }
+    }
+}
+
+void
 InfoViewerWidget::setResolution(const Format & f)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -292,10 +311,17 @@ InfoViewerWidget::setResolution(const Format & f)
     
     const QFont& font = resolution->font();
     if ( format.getName() == std::string("") ) {
+        
+        QString w,h;
+        w.setNum(format.width(),'f',1);
+        h.setNum(format.height(),'f',1);
+        removeTrailingZeroes(w);
+        removeTrailingZeroes(h);
+        
         QString reso;
         reso = QString("<font color=\"#DBE0E0\" face=\"%3\" size=%4>%1x%2</font>")
-        .arg( std::ceil(format.width()) )
-        .arg( std::ceil(format.height()) )
+        .arg(w)
+        .arg(h)
         .arg(font.family())
         .arg(font.pixelSize());
         resolution->setText(reso);
@@ -315,14 +341,24 @@ InfoViewerWidget::setDataWindow(const RectD & r)
 {
     QString bbox;
     const QFont& font = coordDispWindow->font();
+    QString left,btm,right,top;
+    left.setNum(r.left(),'f',1);
+    removeTrailingZeroes(left);
+    btm.setNum(r.bottom(),'f',1);
+    removeTrailingZeroes(btm);
+    right.setNum(r.right(),'f',1);
+    removeTrailingZeroes(right);
+    top.setNum(r.top(),'f',1);
+    removeTrailingZeroes(top);
+    
     bbox = QString("<font color=\"#DBE0E0\" face=\"%5\" size=%6>RoD: %1 %2 %3 %4</font>")
-           .arg( std::ceil( r.left() ) )
-           .arg( std::ceil( r.bottom() ) )
-           .arg( std::floor( r.right() ) )
-           .arg( std::floor( r.top() ) )
-           .arg(font.family())
-           .arg(font.pixelSize());
-
+    .arg(left)
+    .arg(btm)
+    .arg(right)
+    .arg(top)
+    .arg(font.family())
+    .arg(font.pixelSize());
+    
     coordDispWindow->setText(bbox);
 }
 
