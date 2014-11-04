@@ -314,6 +314,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
 
 NodeCurveEditorContext::~NodeCurveEditorContext()
 {
+    delete _nameItem;
     for (Elements::iterator it = _nodeElements.begin(); it!=_nodeElements.end();++it) {
         delete *it;
     }
