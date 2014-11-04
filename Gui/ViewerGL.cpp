@@ -3247,8 +3247,8 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     _imp->currentViewerInfo_resolutionOverlay.append("x");
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.height()) ) );
 
-
-    if ( !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
+    bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
+    if ( !loadingProject ) {
         fitImageToFormat();
     }
 
@@ -3263,7 +3263,9 @@ ViewerGL::onProjectFormatChanged(const Format & format)
         }
         _imp->isUserRoISet = true;
     }
-    updateGL();
+    if (!loadingProject) {
+        updateGL();
+    }
 }
 
 void
