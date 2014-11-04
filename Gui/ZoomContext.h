@@ -135,7 +135,9 @@ public:
         return _zoomFactor;
     }
 
-    double par() const
+    // the aspect ratio of zoom coordinates. For a Viewer, it should always be 1., since
+    // zoom coordinates == canonical coordinates, which are orthonormal
+    double aspectRatio() const
     {
         return _zoomAspectRatio;
     }
@@ -207,14 +209,14 @@ public:
         double width = xmax - xmin;
         double height = ymax - ymin;
 
-        if ( screenWidth() / ( screenHeight() * par() ) < (width / height) ) {
+        if ( screenWidth() / ( screenHeight() * aspectRatio() ) < (width / height) ) {
             _zoomLeft = xmin;
-            _zoomFactor = screenWidth() / ( width * par() );
-            _zoomBottom = (ymax + ymin) / 2. - ( ( screenHeight() * par() ) / screenWidth() ) * width / 2.;
+            _zoomFactor = screenWidth() / ( width * aspectRatio() );
+            _zoomBottom = (ymax + ymin) / 2. - ( ( screenHeight() * aspectRatio() ) / screenWidth() ) * width / 2.;
         } else {
             _zoomBottom = ymin;
             _zoomFactor = screenHeight() / height;
-            _zoomLeft = (xmax + xmin) / 2. - ( screenWidth() / ( screenHeight() * par() ) ) * height / 2.;
+            _zoomLeft = (xmax + xmin) / 2. - ( screenWidth() / ( screenHeight() * aspectRatio() ) ) * height / 2.;
         }
     }
 

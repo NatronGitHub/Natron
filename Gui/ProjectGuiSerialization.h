@@ -65,7 +65,7 @@ struct ViewerData
     double zoomLeft;
     double zoomBottom;
     double zoomFactor;
-    double zoomPAR;
+    double zoomAspectRatio;
     bool userRoIenabled;
     RectD userRoI; // in canonical coordinates
     bool isClippedToProject;
@@ -98,7 +98,7 @@ struct ViewerData
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
         ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
-        ar & boost::serialization::make_nvp("zoomPAR",zoomPAR);
+        ar & boost::serialization::make_nvp("zoomPAR",zoomAspectRatio);
         ar & boost::serialization::make_nvp("UserRoIEnabled",userRoIenabled);
         ar & boost::serialization::make_nvp("UserRoI",userRoI);
         ar & boost::serialization::make_nvp("ClippedToProject",isClippedToProject);

@@ -3089,10 +3089,9 @@ ViewerGL::fitImageToFormat()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    double w,h,zoomPAR;
-    h = _imp->projectFormat.height();
-    w = _imp->projectFormat.width();
-    zoomPAR = _imp->projectFormat.getPixelAspectRatio();
+    // size in Canonical = Zoom coordinates !
+    double h = _imp->projectFormat.height();
+    double w = _imp->projectFormat.width() * _imp->projectFormat.getPixelAspectRatio();
 
     assert(h > 0. && w > 0.);
 
@@ -3102,7 +3101,7 @@ ViewerGL::fitImageToFormat()
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
         // set the PAR first
-        _imp->zoomCtx.setZoom(0., 0., 1., zoomPAR);
+        //_imp->zoomCtx.setZoom(0., 0., 1., 1.);
         // leave 4% of margin around
         _imp->zoomCtx.fit(-0.02 * w, 1.02 * w, -0.02 * h, 1.02 * h);
         zoomFactor = _imp->zoomCtx.factor();
@@ -3604,7 +3603,7 @@ void
 ViewerGL::getProjection(double *zoomLeft,
                         double *zoomBottom,
                         double *zoomFactor,
-                        double *zoomPAR) const
+                        double *zoomAspectRatio) const
 {
     // MT-SAFE
     QMutexLocker l(&_imp->zoomCtxMutex);
@@ -3612,19 +3611,19 @@ ViewerGL::getProjection(double *zoomLeft,
     *zoomLeft = _imp->zoomCtx.left();
     *zoomBottom = _imp->zoomCtx.bottom();
     *zoomFactor = _imp->zoomCtx.factor();
-    *zoomPAR = _imp->zoomCtx.par();
+    *zoomAspectRatio = _imp->zoomCtx.aspectRatio();
 }
 
 void
 ViewerGL::setProjection(double zoomLeft,
                         double zoomBottom,
                         double zoomFactor,
-                        double zoomPAR)
+                        double zoomAspectRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QMutexLocker l(&_imp->zoomCtxMutex);
-    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
+    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
 }
 
 void

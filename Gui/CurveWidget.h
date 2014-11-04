@@ -272,9 +272,9 @@ public:
 
     double getZoomFactor() const;
 
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     /**
      * @brief Swap the OpenGL buffers.

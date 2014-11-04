@@ -2785,10 +2785,10 @@ CurveWidget::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
-        par = _imp->zoomCtx.par() / scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() / scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
@@ -2796,10 +2796,10 @@ CurveWidget::wheelEvent(QWheelEvent* e)
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         // Alt + Wheel: zoom time only, keep point under mouse
-        par = _imp->zoomCtx.par() * scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() * scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
@@ -3261,7 +3261,7 @@ void
 CurveWidget::getProjection(double *zoomLeft,
                            double *zoomBottom,
                            double *zoomFactor,
-                           double *zoomPAR) const
+                           double *zoomAspectRatio) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3269,19 +3269,19 @@ CurveWidget::getProjection(double *zoomLeft,
     *zoomLeft = _imp->zoomCtx.left();
     *zoomBottom = _imp->zoomCtx.bottom();
     *zoomFactor = _imp->zoomCtx.factor();
-    *zoomPAR = _imp->zoomCtx.par();
+    *zoomAspectRatio = _imp->zoomCtx.aspectRatio();
 }
 
 void
 CurveWidget::setProjection(double zoomLeft,
                            double zoomBottom,
                            double zoomFactor,
-                           double zoomPAR)
+                           double zoomAspectRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
+    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
 }
 
 void

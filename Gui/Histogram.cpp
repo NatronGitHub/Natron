@@ -1265,10 +1265,10 @@ Histogram::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
-        par = _imp->zoomCtx.par() / scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() / scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
@@ -1276,10 +1276,10 @@ Histogram::wheelEvent(QWheelEvent* e)
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         // Alt + Wheel: zoom time only, keep point under mouse
-        par = _imp->zoomCtx.par() * scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() * scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();

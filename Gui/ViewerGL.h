@@ -242,9 +242,9 @@ public:
 
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
 
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     void setUserRoIEnabled(bool b);
 
