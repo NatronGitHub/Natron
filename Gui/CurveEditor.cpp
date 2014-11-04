@@ -298,7 +298,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
     bool hasAtLeast1KnobWithACurveShown = false;
 
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        createElementsForKnob(nameItem, it->second, it->first, curveWidget, tree, _nodeElements, &hasAtLeast1KnobWithACurveShown);
+        createElementsForKnob(nameItem, it->second,boost::shared_ptr<KnobI>() , curveWidget, tree, _nodeElements, &hasAtLeast1KnobWithACurveShown);
         
     }
     
