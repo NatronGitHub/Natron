@@ -1374,11 +1374,11 @@ ViewerGL::drawUserRoI()
 
         glColor4f(0.9, 0.9, 0.9, 1.);
 
-        double screenPixelWidthCanonical, screenPixelHeightCanonical;
+        double zoomScreenPixelWidth, zoomScreenPixelHeight;
         {
             QMutexLocker l(&_imp->zoomCtxMutex);
-            screenPixelWidthCanonical = _imp->zoomCtx.screenPixelWidthCanonical();
-            screenPixelHeightCanonical = _imp->zoomCtx.screenPixelHeightCanonical();
+            zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
+            zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
         }
         RectD userRoI;
         {
@@ -1397,8 +1397,8 @@ ViewerGL::drawUserRoI()
 
         glBegin(GL_LINES);
         ///border ticks
-        double borderTickWidth = USER_ROI_BORDER_TICK_SIZE * screenPixelWidthCanonical;
-        double borderTickHeight = USER_ROI_BORDER_TICK_SIZE * screenPixelHeightCanonical;
+        double borderTickWidth = USER_ROI_BORDER_TICK_SIZE * zoomScreenPixelWidth;
+        double borderTickHeight = USER_ROI_BORDER_TICK_SIZE * zoomScreenPixelHeight;
         glVertex2f(userRoI.x1, (userRoI.y1 + userRoI.y2) / 2);
         glVertex2f(userRoI.x1 - borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
 
@@ -1412,8 +1412,8 @@ ViewerGL::drawUserRoI()
         glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 - borderTickHeight );
 
         ///middle cross
-        double crossWidth = USER_ROI_CROSS_RADIUS * screenPixelWidthCanonical;
-        double crossHeight = USER_ROI_CROSS_RADIUS * screenPixelHeightCanonical;
+        double crossWidth = USER_ROI_CROSS_RADIUS * zoomScreenPixelWidth;
+        double crossHeight = USER_ROI_CROSS_RADIUS * zoomScreenPixelHeight;
         glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 - crossHeight );
         glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 + crossHeight );
 
@@ -1425,8 +1425,8 @@ ViewerGL::drawUserRoI()
         ///draw handles hint for the user
         glBegin(GL_QUADS);
 
-        double rectHalfWidth = (USER_ROI_SELECTION_POINT_SIZE * screenPixelWidthCanonical) / 2.;
-        double rectHalfHeight = (USER_ROI_SELECTION_POINT_SIZE * screenPixelWidthCanonical) / 2.;
+        double rectHalfWidth = (USER_ROI_SELECTION_POINT_SIZE * zoomScreenPixelWidth) / 2.;
+        double rectHalfHeight = (USER_ROI_SELECTION_POINT_SIZE * zoomScreenPixelWidth) / 2.;
         //left
         glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
         glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
@@ -1750,13 +1750,13 @@ ViewerGL::drawPersistentMessage()
 
     int offset = metrics.height() + 10;
     QPointF topLeft, bottomRight, textPos;
-    double screenPixelHeightCanonical;
+    double zoomScreenPixelHeight;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         topLeft = _imp->zoomCtx.toZoomCoordinates(0,0);
         bottomRight = _imp->zoomCtx.toZoomCoordinates( _imp->zoomCtx.screenWidth(),numberOfLines * (metrics.height() * 2) );
         textPos = _imp->zoomCtx.toZoomCoordinates(20, offset);
-        screenPixelHeightCanonical = _imp->zoomCtx.screenPixelHeightCanonical();
+        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     
     {
@@ -1779,7 +1779,7 @@ ViewerGL::drawPersistentMessage()
 
         for (int j = 0; j < lines.size(); ++j) {
             renderText(textPos.x(),textPos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
-            textPos.setY(textPos.y() - metrics.height() * 2 * screenPixelHeightCanonical);
+            textPos.setY(textPos.y() - metrics.height() * 2 * zoomScreenPixelHeight);
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -2373,12 +2373,12 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     _imp->oldClick = e->pos();
     _imp->lastMousePosition = e->pos();
     QPointF zoomPos;
-    double screenPixelWidthCanonical, screenPixelHeightCanonical; // screen pixel size in zoom coordinates
+    double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-        screenPixelWidthCanonical = _imp->zoomCtx.screenPixelWidthCanonical();
-        screenPixelHeightCanonical = _imp->zoomCtx.screenPixelHeightCanonical();
+        zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
+        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     RectD userRoI;
     {
@@ -2435,48 +2435,48 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             mustRedraw = true;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoIBottomEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                    isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the bottom edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiBottomEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoILeftEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                    isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the left edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiLeftEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoIRightEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                    isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the right edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiRightEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoITopEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                    isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the top edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiTopEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
                     isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
-                                     zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical ) ) {
+                                     zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight ) ) {
             // start dragging the midpoint of the user ROI
             _imp->ms = eMouseStateDraggingRoiCross;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                    isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the topleft corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiTopLeft;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                    isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the topright corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiTopRight;
             overlaysCaught = true;
         }  else if ( buttonDownIsLeft(e) &&
-                     isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                     isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the bottomleft corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiBottomLeft;
             overlaysCaught = true;
         }  else if ( buttonDownIsLeft(e) &&
-                     isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ) {
+                     isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the bottomright corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiBottomRight;
             overlaysCaught = true;
@@ -2570,12 +2570,12 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         _imp->pickerState = ePickerStateInactive;
     }
 
-    double screenPixelWidthCanonical, screenPixelHeightCanonical; // screen pixel size in zoom coordinates
+    double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-        screenPixelWidthCanonical = _imp->zoomCtx.screenPixelWidthCanonical();
-        screenPixelHeightCanonical = _imp->zoomCtx.screenPixelHeightCanonical();
+        zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
+        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     Format dispW = getDisplayWindow();
     for (int i = 0; i < 2; ++i) {
@@ -2611,26 +2611,26 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->hs = eHoverStateWipeRotateHandle;
             mustRedraw = true;
         } else if (userRoIEnabled) {
-            if ( isNearByUserRoIBottomEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical)
-                 || isNearByUserRoITopEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical)
+            if ( isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                 || isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
                  || ( _imp->ms == eMouseStateDraggingRoiBottomEdge)
                  || ( _imp->ms == eMouseStateDraggingRoiTopEdge) ) {
                 setCursor( QCursor(Qt::SizeVerCursor) );
-            } else if ( isNearByUserRoILeftEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical)
-                        || isNearByUserRoIRightEdge(userRoI,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical)
+            } else if ( isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                        || isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
                         || ( _imp->ms == eMouseStateDraggingRoiLeftEdge)
                         || ( _imp->ms == eMouseStateDraggingRoiRightEdge) ) {
                 setCursor( QCursor(Qt::SizeHorCursor) );
-            } else if ( isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2, zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical )
+            } else if ( isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight )
                         || ( _imp->ms == eMouseStateDraggingRoiCross) ) {
                 setCursor( QCursor(Qt::SizeAllCursor) );
-            } else if ( isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ||
-                        isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ||
+            } else if ( isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
+                        isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
                         ( _imp->ms == eMouseStateDraggingRoiBottomRight) ||
                         ( _imp->ms == eMouseStateDraggingRoiTopLeft) ) {
                 setCursor( QCursor(Qt::SizeFDiagCursor) );
-            } else if ( isNearByUserRoI(userRoI.x1, userRoI.y1,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ||
-                        isNearByUserRoI(userRoI.x2, userRoI.y2,zoomPos, screenPixelWidthCanonical, screenPixelHeightCanonical) ||
+            } else if ( isNearByUserRoI(userRoI.x1, userRoI.y1,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
+                        isNearByUserRoI(userRoI.x2, userRoI.y2,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
                         ( _imp->ms == eMouseStateDraggingRoiBottomLeft) ||
                         ( _imp->ms == eMouseStateDraggingRoiTopRight) ) {
                 setCursor( QCursor(Qt::SizeBDiagCursor) );
@@ -3645,16 +3645,16 @@ ViewerGL::setUserRoIEnabled(bool b)
 bool
 ViewerGL::isNearByUserRoITopEdge(const RectD & roi,
                                  const QPointF & zoomPos,
-                                 double screenPixelWidthCanonical,
-                                 double screenPixelHeightCanonical)
+                                 double zoomScreenPixelWidth,
+                                 double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    double length = std::min(roi.x2 - roi.x1 - 10, (USER_ROI_CLICK_TOLERANCE * screenPixelWidthCanonical) * 2);
+    double length = std::min(roi.x2 - roi.x1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth) * 2);
     RectD r(roi.x1 + length / 2,
-            roi.y2 - USER_ROI_CLICK_TOLERANCE * screenPixelHeightCanonical,
+            roi.y2 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight,
             roi.x2 - length / 2,
-            roi.y2 + USER_ROI_CLICK_TOLERANCE * screenPixelHeightCanonical);
+            roi.y2 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight);
 
     return r.contains( zoomPos.x(), zoomPos.y() );
 }
@@ -3662,15 +3662,15 @@ ViewerGL::isNearByUserRoITopEdge(const RectD & roi,
 bool
 ViewerGL::isNearByUserRoIRightEdge(const RectD & roi,
                                    const QPointF & zoomPos,
-                                   double screenPixelWidthCanonical,
-                                   double screenPixelHeightCanonical)
+                                   double zoomScreenPixelWidth,
+                                   double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    double length = std::min(roi.y2 - roi.y1 - 10, (USER_ROI_CLICK_TOLERANCE * screenPixelHeightCanonical) * 2);
-    RectD r(roi.x2 - USER_ROI_CLICK_TOLERANCE * screenPixelWidthCanonical,
+    double length = std::min(roi.y2 - roi.y1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight) * 2);
+    RectD r(roi.x2 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
             roi.y1 + length / 2,
-            roi.x2 + USER_ROI_CLICK_TOLERANCE * screenPixelWidthCanonical,
+            roi.x2 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
             roi.y2 - length / 2);
 
     return r.contains( zoomPos.x(), zoomPos.y() );
@@ -3679,15 +3679,15 @@ ViewerGL::isNearByUserRoIRightEdge(const RectD & roi,
 bool
 ViewerGL::isNearByUserRoILeftEdge(const RectD & roi,
                                   const QPointF & zoomPos,
-                                  double screenPixelWidthCanonical,
-                                  double screenPixelHeightCanonical)
+                                  double zoomScreenPixelWidth,
+                                  double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    double length = std::min(roi.y2 - roi.y1 - 10, (USER_ROI_CLICK_TOLERANCE * screenPixelHeightCanonical) * 2);
-    RectD r(roi.x1 - USER_ROI_CLICK_TOLERANCE * screenPixelWidthCanonical,
+    double length = std::min(roi.y2 - roi.y1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight) * 2);
+    RectD r(roi.x1 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
             roi.y1 + length / 2,
-            roi.x1 + USER_ROI_CLICK_TOLERANCE * screenPixelWidthCanonical,
+            roi.x1 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
             roi.y2 - length / 2);
 
     return r.contains( zoomPos.x(), zoomPos.y() );
@@ -3696,16 +3696,16 @@ ViewerGL::isNearByUserRoILeftEdge(const RectD & roi,
 bool
 ViewerGL::isNearByUserRoIBottomEdge(const RectD & roi,
                                     const QPointF & zoomPos,
-                                    double screenPixelWidthCanonical,
-                                    double screenPixelHeightCanonical)
+                                    double zoomScreenPixelWidth,
+                                    double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    double length = std::min(roi.x2 - roi.x1 - 10, (USER_ROI_CLICK_TOLERANCE * screenPixelWidthCanonical) * 2);
+    double length = std::min(roi.x2 - roi.x1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth) * 2);
     RectD r(roi.x1 + length / 2,
-            roi.y1 - USER_ROI_CLICK_TOLERANCE * screenPixelHeightCanonical,
+            roi.y1 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight,
             roi.x2 - length / 2,
-            roi.y1 + USER_ROI_CLICK_TOLERANCE * screenPixelHeightCanonical);
+            roi.y1 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight);
 
     return r.contains( zoomPos.x(), zoomPos.y() );
 }
@@ -3714,15 +3714,15 @@ bool
 ViewerGL::isNearByUserRoI(double x,
                           double y,
                           const QPointF & zoomPos,
-                          double screenPixelWidthCanonical,
-                          double screenPixelHeightCanonical)
+                          double zoomScreenPixelWidth,
+                          double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    RectD r(x - USER_ROI_CROSS_RADIUS * screenPixelWidthCanonical,
-            y - USER_ROI_CROSS_RADIUS * screenPixelHeightCanonical,
-            x + USER_ROI_CROSS_RADIUS * screenPixelWidthCanonical,
-            y + USER_ROI_CROSS_RADIUS * screenPixelHeightCanonical);
+    RectD r(x - USER_ROI_CROSS_RADIUS * zoomScreenPixelWidth,
+            y - USER_ROI_CROSS_RADIUS * zoomScreenPixelHeight,
+            x + USER_ROI_CROSS_RADIUS * zoomScreenPixelWidth,
+            y + USER_ROI_CROSS_RADIUS * zoomScreenPixelHeight);
 
     return r.contains( zoomPos.x(), zoomPos.y() );
 }
@@ -3799,8 +3799,8 @@ ViewerGL::getPixelScale(double & xScale,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QMutexLocker l(&_imp->zoomCtxMutex);
-    xScale = _imp->zoomCtx.screenPixelWidthCanonical();
-    yScale = _imp->zoomCtx.screenPixelHeightCanonical();
+    xScale = _imp->zoomCtx.screenPixelWidth();
+    yScale = _imp->zoomCtx.screenPixelHeight();
 }
 
 /**

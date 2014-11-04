@@ -98,26 +98,14 @@ public:
     {
     }
 
-    /// width of a screen pixel in canonical coordinates
-    double screenPixelWidthCanonical() const
-    {
-        return 1. / _zoomFactor;
-    }
-
-    /// height of a screen pixel in canonical coordinates
-    double screenPixelHeightCanonical() const
-    {
-        return 1. / _zoomFactor;
-    }
-    
-    /// width of a screen pixel in texture pixel coordinates
-    double screenPixelWidthPixel() const
+    /// width of a screen pixel in zoom coordinates
+    double screenPixelWidth() const
     {
         return 1. / (_zoomFactor * _zoomPAR);
     }
 
-    /// height of a screen pixel in texture pixel coordinates
-    double screenPixelHeightPixel() const
+    /// height of a screen pixel in zoom coordinates
+    double screenPixelHeight() const
     {
         return 1. / _zoomFactor;
     }
@@ -129,7 +117,7 @@ public:
 
     double right() const
     {
-        return _zoomLeft + _screenWidth * screenPixelWidthCanonical();
+        return _zoomLeft + _screenWidth / (_zoomFactor * _zoomPAR);
     }
 
     double bottom() const
@@ -139,7 +127,7 @@ public:
 
     double top() const
     {
-        return _zoomBottom + _screenHeight * screenPixelHeightCanonical();
+        return _zoomBottom + _screenHeight / _zoomFactor;
     }
 
     double factor() const
