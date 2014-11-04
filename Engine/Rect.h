@@ -265,7 +265,7 @@ public:
     }
 
     /**
-     * @brief Scales down the rectangle by the given power of 2, and return the smallest *enclosing* rectangle
+     * @brief Scales down the rectangle in pixel coordinates by the given power of 2, and return the smallest *enclosing* rectangle in pixel coordinates
      **/
     RectI downscalePowerOfTwoSmallestEnclosing(unsigned int thisLevel) const
     {
