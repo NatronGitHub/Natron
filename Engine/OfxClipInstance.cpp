@@ -222,7 +222,9 @@ OfxClipInstance::getAspectRatio() const
     if (input) {
         return input->getPreferredAspectRatio();
     } else {
-        return 1.;
+        Format f;
+        _nodeInstance->getRenderFormat(&f);
+        return f.getPixelAspectRatio();
     }
 }
 
