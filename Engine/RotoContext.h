@@ -46,6 +46,7 @@ class access;
 
 class RectI;
 class RectD;
+class KnobI;
 class Bool_Knob;
 class Double_Knob;
 class Int_Knob;
@@ -390,6 +391,8 @@ public:
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     boost::shared_ptr<Color_Knob> getColorKnob() const;
 
+    const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
+    
 signals:
 
 #ifdef NATRON_ROTO_INVERTIBLE

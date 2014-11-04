@@ -3154,10 +3154,8 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     std::vector<CurveGui*> visibleCurves;
     for (int i = 0; i < _knob->getDimension(); ++i) {
         QString curveName = _knob->getDimensionName(i).c_str();
-        CurveGui* curve =  _curveWidget->createCurve(_knob->getParametricCurve(i),
-                                                     this,
-                                                     i,
-                                                     curveName);
+        KnobCurveGui* curve = new KnobCurveGui(_curveWidget,_knob->getParametricCurve(i),this,i,curveName,QColor(255,255,255),1.);
+        _curveWidget->addCurveAndSetColor(curve);
         QColor color;
         double r,g,b;
         _knob->getCurveColor(i, &r, &g, &b);

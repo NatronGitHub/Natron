@@ -1241,6 +1241,12 @@ boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const
     return _imp->color;
 }
 
+const std::list<boost::shared_ptr<KnobI> >&
+RotoDrawableItem::getKnobs() const
+{
+    return _imp->knobs;
+}
+
 ////////////////////////////////////Layer////////////////////////////////////
 
 RotoLayer::RotoLayer(RotoContext* context,

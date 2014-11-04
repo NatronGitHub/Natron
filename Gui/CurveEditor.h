@@ -37,6 +37,7 @@ class CurveGui;
 class QHBoxLayout;
 class QSplitter;
 class KnobGui;
+class KnobI;
 class BezierCP;
 class Bezier;
 class RotoItem;
@@ -64,6 +65,13 @@ public:
     NodeCurveEditorElement(QTreeWidget* tree,
                            CurveWidget* curveWidget,
                            KnobGui* knob,
+                           int dimension,
+                           QTreeWidgetItem* item,
+                           CurveGui* curve);
+    
+    NodeCurveEditorElement(QTreeWidget* tree,
+                           CurveWidget* curveWidget,
+                           const boost::shared_ptr<KnobI>& internalKnob,
                            int dimension,
                            QTreeWidgetItem* item,
                            CurveGui* curve);
@@ -95,11 +103,12 @@ public:
         return _dimension;
     }
 
-    KnobGui* getKnob() const WARN_UNUSED_RETURN
+    KnobGui* getKnobGui() const WARN_UNUSED_RETURN
     {
         return _knob;
     }
-
+    
+    boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
 public slots:
 
     /**
@@ -117,6 +126,7 @@ private:
     CurveWidget* _curveWidget;
     QTreeWidget* _treeWidget;
     KnobGui* _knob;
+    boost::shared_ptr<KnobI> _internalKnob;
     int _dimension;
 };
 
@@ -127,7 +137,7 @@ class NodeCurveEditorContext
 
 public:
 
-    typedef std::vector< NodeCurveEditorElement* > Elements;
+    typedef std::list< NodeCurveEditorElement* > Elements;
 
     NodeCurveEditorContext(QTreeWidget *tree,
                            CurveWidget* curveWidget,
@@ -160,23 +170,6 @@ private:
     QTreeWidgetItem* _nameItem;
 };
 
-class BezierEditorContext;
-struct CPEditorContextPrivate;
-class CPEditorContext
-{
-public:
-    
-    CPEditorContext(CurveWidget* widget,const boost::shared_ptr<BezierCP>& cp,BezierEditorContext* bezier);
-    
-    ~CPEditorContext();
-    
-    BezierCP* getCP() const;
-    
-    Bezier* getBezier() const;
-private:
-    
-    boost::scoped_ptr<CPEditorContextPrivate> _imp;
-};
 
 class RotoCurveEditorContext;
 struct BezierEditorContextPrivate;
@@ -187,7 +180,8 @@ class BezierEditorContext
     
 public:
     
-    BezierEditorContext(CurveWidget* widget,
+    BezierEditorContext(QTreeWidget* tree,
+                        CurveWidget* widget,
                         Bezier* curve,
                         RotoCurveEditorContext* context);
     
@@ -202,17 +196,11 @@ public slots:
     
     void onNameChanged(const QString & name);
     
-    void onTreeItemExpanded(QTreeWidgetItem* item);
+    void onKeyframeAdded();
     
-    void onControlPointAdded();
-    
-    void onControlPointRemoved();
+    void onKeyframeRemoved();
 private:
-    
-    void buildMissingCPs();
-    
-    void removeUnexistingCPs();
-    
+       
     boost::scoped_ptr<BezierEditorContextPrivate> _imp;
     
 };

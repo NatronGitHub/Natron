@@ -181,6 +181,95 @@ CurveEditor::removeNode(NodeGui* node)
     _curveWidget->centerOn(-10,500,-10,10);
 }
 
+static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::shared_ptr<KnobI> k,CurveWidget* curveWidget,QTreeWidget* tree,
+                                  std::list<NodeCurveEditorElement*>& elements,bool* hasCurveVisible)
+{
+    if (k) {
+        assert(!kgui);
+    } else {
+        assert(kgui && !k);
+        k = kgui->getKnob();
+    }
+    
+    if ( !k->canAnimate() || ( k->typeName() == File_Knob::typeNameStatic() ) ) {
+        return;
+    }
+    
+    boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>( k.get() )->getSignalSlotHandler();
+    
+    if (kgui) {
+        QObject::connect( kgui,SIGNAL( keyFrameSet() ),curveWidget,SLOT( onCurveChanged() ) );
+        QObject::connect( kgui,SIGNAL( keyFrameRemoved() ),curveWidget,SLOT( onCurveChanged() ) );
+        QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
+        QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
+        QObject::connect( kgui, SIGNAL( refreshCurveEditor() ),curveWidget, SLOT( onCurveChanged() ) );
+    }
+    
+    QTreeWidgetItem* knobItem = new QTreeWidgetItem(parent);
+    knobItem->setText( 0,k->getDescription().c_str() );
+    
+    CurveGui* knobCurve = NULL;
+    bool hideKnob = true;
+    
+    if (k->getDimension() == 1) {
+        
+        KnobCurveGui* knobCurve;
+        
+        if (kgui) {
+            knobCurve = new KnobCurveGui(curveWidget,kgui->getCurve(0),kgui,0,k->getDescription().c_str(),QColor(255,255,255),1.);
+        } else {
+            knobCurve = new KnobCurveGui(curveWidget,k->getCurve(0),k,0,k->getDescription().c_str(),QColor(255,255,255),1.);
+        }
+        
+        if ( !k->getCurve(0)->isAnimated() ) {
+            knobItem->setHidden(true);
+        } else {
+            *hasCurveVisible = true;
+            hideKnob = false;
+        }
+        knobCurve->setVisible(false);
+    } else {
+        for (int j = 0; j < k->getDimension(); ++j) {
+            QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
+            dimItem->setText( 0,k->getDimensionName(j).c_str() );
+            QString curveName = QString( k->getDescription().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
+            
+            NodeCurveEditorElement* elem;
+            KnobCurveGui* dimCurve;
+            if (kgui) {
+                dimCurve = new KnobCurveGui(curveWidget,kgui->getCurve(j),kgui,j,curveName,QColor(255,255,255),1.);
+                elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
+            } else {
+                dimCurve = new KnobCurveGui(curveWidget,k->getCurve(j),k,j,curveName,QColor(255,255,255),1.);
+                elem = new NodeCurveEditorElement(tree,curveWidget,k,j,dimItem,dimCurve);
+            }
+            
+            
+            elements.push_back(elem);
+            if ( !dimCurve->getInternalCurve()->isAnimated() ) {
+                dimItem->setHidden(true);
+            } else {
+                *hasCurveVisible = true;
+                hideKnob = false;
+            }
+            dimCurve->setVisible(false);
+        }
+    }
+    
+    
+    if (hideKnob) {
+        knobItem->setHidden(true);
+    }
+    NodeCurveEditorElement* elem ;
+    if (kgui) {
+        elem = new NodeCurveEditorElement(tree,curveWidget,kgui,0,knobItem,knobCurve);
+    } else {
+        elem = new NodeCurveEditorElement(tree,curveWidget,k,0,knobItem,knobCurve);
+    }
+    elements.push_back(elem);
+    
+}
+
 NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                                                CurveWidget* curveWidget,
                                                const boost::shared_ptr<NodeGui> &node)
@@ -198,64 +287,10 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
     bool hasAtLeast1KnobWithACurveShown = false;
 
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        const boost::shared_ptr<KnobI> & k = it->first;
-        KnobGui* kgui = it->second;
-        if ( !k->canAnimate() || ( k->typeName() == File_Knob::typeNameStatic() ) ) {
-            continue;
-        }
-
-        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>( k.get() )->getSignalSlotHandler();
-        QObject::connect( kgui,SIGNAL( keyFrameSet() ),curveWidget,SLOT( onCurveChanged() ) );
-        QObject::connect( kgui,SIGNAL( keyFrameRemoved() ),curveWidget,SLOT( onCurveChanged() ) );
-        QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
-        QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
-        QObject::connect( kgui, SIGNAL( refreshCurveEditor() ),curveWidget, SLOT( onCurveChanged() ) );
-
-        hasAtLeast1KnobWithACurve = true;
-
-        QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
-
-        knobItem->setText( 0,k->getDescription().c_str() );
-        CurveGui* knobCurve = NULL;
-        bool hideKnob = true;
-        if (k->getDimension() == 1) {
-            
-            KnobCurveGui* knobCurve = new KnobCurveGui(curveWidget,kgui->getCurve(0),kgui,0,k->getDescription().c_str(),QColor(255,255,255),1.);
-            
-            if ( !k->getCurve(0)->isAnimated() ) {
-                knobItem->setHidden(true);
-            } else {
-                hasAtLeast1KnobWithACurveShown = true;
-                hideKnob = false;
-            }
-            knobCurve->setVisible(false);
-        } else {
-            for (int j = 0; j < k->getDimension(); ++j) {
-                QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
-                dimItem->setText( 0,k->getDimensionName(j).c_str() );
-                QString curveName = QString( k->getDescription().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
-                
-                KnobCurveGui* dimCurve = new KnobCurveGui(curveWidget,kgui->getCurve(j),kgui,j,curveName,QColor(255,255,255),1.);
-                
-                NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
-                _nodeElements.push_back(elem);
-                if ( !dimCurve->getInternalCurve()->isAnimated() ) {
-                    dimItem->setHidden(true);
-                } else {
-                    hasAtLeast1KnobWithACurveShown = true;
-                    hideKnob = false;
-                }
-                dimCurve->setVisible(false);
-            }
-        }
-
-
-        if (hideKnob) {
-            knobItem->setHidden(true);
-        }
-        NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,0,knobItem,knobCurve);
-        _nodeElements.push_back(elem);
+        createElementsForKnob(nameItem, it->second, it->first, curveWidget, tree, _nodeElements, &hasAtLeast1KnobWithACurveShown);
+        
     }
+    
     if (hasAtLeast1KnobWithACurve) {
         NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,(KnobGui*)NULL,-1,
                                                                   nameItem,(CurveGui*)NULL);
@@ -269,8 +304,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
 
 NodeCurveEditorContext::~NodeCurveEditorContext()
 {
-    for (U32 i = 0; i < _nodeElements.size(); ++i) {
-        delete _nodeElements[i];
+    for (Elements::iterator it = _nodeElements.begin(); it!=_nodeElements.end();++it) {
+        delete *it;
     }
     _nodeElements.clear();
 }
@@ -307,6 +342,12 @@ checkIfHiddenRecursivly(QTreeWidget* tree,
     if (!isTopLvl) {
         checkIfHiddenRecursivly( tree,item->parent() );
     }
+}
+
+boost::shared_ptr<KnobI>
+NodeCurveEditorElement::getInternalKnob() const
+{
+    return _knob ? _knob->getKnob() : _internalKnob;
 }
 
 void
@@ -389,12 +430,38 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
       ,_curveWidget(curveWidget)
       ,_treeWidget(tree)
       ,_knob(knob)
+      ,_internalKnob()
       ,_dimension(dimension)
 {
     if (knob) {
         QObject::connect( knob,SIGNAL( keyFrameSet() ),this,SLOT( checkVisibleState() ) );
         QObject::connect( knob,SIGNAL( keyFrameRemoved() ),this,SLOT( checkVisibleState() ) );
     }
+    if (curve) {
+        // even when there is only one keyframe, there may be tangents!
+        if (curve->getInternalCurve()->getKeyFramesCount() > 0) {
+            _curveDisplayed = true;
+        }
+    } else {
+        _dimension = -1; //set dimension to be meaningless
+    }
+}
+
+NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
+                                               CurveWidget* curveWidget,
+                                               const boost::shared_ptr<KnobI>& internalKnob,
+                                               int dimension,
+                                               QTreeWidgetItem* item,
+                                               CurveGui* curve)
+: _treeItem(item)
+,_curve(curve)
+,_curveDisplayed(false)
+,_curveWidget(curveWidget)
+,_treeWidget(tree)
+,_knob(0)
+,_internalKnob(internalKnob)
+,_dimension(dimension)
+{
     if (curve) {
         // even when there is only one keyframe, there may be tangents!
         if (curve->getInternalCurve()->getKeyFramesCount() > 0) {
@@ -420,19 +487,19 @@ CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> > & curves)
     for (std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
          it != _nodes.end(); ++it) {
         const NodeCurveEditorContext::Elements & elems = (*it)->getElements();
-        for (U32 i = 0; i < elems.size(); ++i) {
-            CurveGui* curve = elems[i]->getCurve();
+        for (NodeCurveEditorContext::Elements::const_iterator it2 = elems.begin() ; it2 != elems.end(); ++it2) {
+            CurveGui* curve = (*it2)->getCurve();
             if (curve) {
                 std::vector<boost::shared_ptr<Curve> >::const_iterator found =
                     std::find( curves.begin(), curves.end(), curve->getInternalCurve() );
                 if ( found != curves.end() ) {
                     curvesGuis.push_back(curve);
-                    elems[i]->getTreeItem()->setSelected(true);
+                    (*it2)->getTreeItem()->setSelected(true);
                 } else {
-                    elems[i]->getTreeItem()->setSelected(false);
+                    (*it2)->getTreeItem()->setSelected(false);
                 }
             } else {
-                elems[i]->getTreeItem()->setSelected(false);
+                (*it2)->getTreeItem()->setSelected(false);
             }
         }
     }
@@ -459,9 +526,9 @@ CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,
 NodeCurveEditorElement*
 NodeCurveEditorContext::findElement(CurveGui* curve) const
 {
-    for (U32 i = 0; i < _nodeElements.size(); ++i) {
-        if (_nodeElements[i]->getCurve() == curve) {
-            return _nodeElements[i];
+    for (Elements::const_iterator it = _nodeElements.begin(); it != _nodeElements.end() ; ++it) {
+        if ((*it)->getCurve() == curve) {
+            return *it;
         }
     }
 
@@ -472,9 +539,9 @@ NodeCurveEditorElement*
 NodeCurveEditorContext::findElement(KnobGui* knob,
                                     int dimension) const
 {
-    for (U32 i = 0; i < _nodeElements.size(); ++i) {
-        if ( (_nodeElements[i]->getKnob() == knob) && (_nodeElements[i]->getDimension() == dimension) ) {
-            return _nodeElements[i];
+    for (Elements::const_iterator it = _nodeElements.begin(); it != _nodeElements.end() ; ++it) {
+        if ( ((*it)->getKnobGui() == knob) && ((*it)->getDimension() == dimension) ) {
+            return *it;
         }
     }
 
@@ -484,9 +551,9 @@ NodeCurveEditorContext::findElement(KnobGui* knob,
 NodeCurveEditorElement*
 NodeCurveEditorContext::findElement(QTreeWidgetItem* item) const
 {
-    for (U32 i = 0; i < _nodeElements.size(); ++i) {
-        if (_nodeElements[i]->getTreeItem() == item) {
-            return _nodeElements[i];
+    for (Elements::const_iterator it = _nodeElements.begin(); it != _nodeElements.end() ; ++it) {
+        if ((*it)->getTreeItem() == item) {
+            return *it;
         }
     }
 
@@ -602,154 +669,62 @@ CurveEditor::getCurveWidget() const
     return _curveWidget;
 }
 
-struct CPEditorContextPrivate
-{
-    CurveWidget* widget;
-    BezierEditorContext* bezier;
-    boost::shared_ptr<BezierCP> cp;
-    QTreeWidgetItem* itemX;
-    QTreeWidgetItem* itemY;
-    QTreeWidgetItem* itemLeftX;
-    QTreeWidgetItem* itemLeftY;
-    QTreeWidgetItem* itemRightX;
-    QTreeWidgetItem* itemRightY;
-    
-    BezierCPCurveGui* curveX;
-    BezierCPCurveGui* curveY;
-    BezierCPCurveGui* curveLeftX;
-    BezierCPCurveGui* curveLeftY;
-    BezierCPCurveGui* curveRightX;
-    BezierCPCurveGui* curveRightY;
-    
-    CPEditorContextPrivate(CurveWidget* widget,const boost::shared_ptr<BezierCP>& cp,BezierEditorContext* bezier)
-    : widget(widget)
-    , bezier(bezier)
-    , cp(cp)
-    , itemX(0)
-    , itemY(0)
-    , itemLeftX(0)
-    , itemLeftY(0)
-    , itemRightX(0)
-    , itemRightY(0)
-    , curveX(0)
-    , curveY(0)
-    , curveLeftX(0)
-    , curveLeftY(0)
-    , curveRightX(0)
-    , curveRightY(0)
-    {
-     
-    }
-};
-
-CPEditorContext::CPEditorContext(CurveWidget* widget,const boost::shared_ptr<BezierCP>& cp,BezierEditorContext* bezier)
-: _imp(new CPEditorContextPrivate(widget,cp,bezier))
-{
-    QTreeWidgetItem* parent = bezier->getItem();
-    _imp->itemX = new QTreeWidgetItem(parent);
-    _imp->itemX->setText(0, "x");
-    
-    boost::shared_ptr<RotoContext> roto = bezier->getContext();
-    assert(roto);
-    
-    _imp->curveX = new BezierCPCurveGui(widget,cp->getXCurve(),cp,roto,"x",QColor(255,255,255),1.);
-    widget->addCurveAndSetColor(_imp->curveX);
-    
-    _imp->itemY = new QTreeWidgetItem(parent);
-    _imp->itemY->setText(0, "y");
-    _imp->curveY = new BezierCPCurveGui(widget,cp->getYCurve(),cp,roto,"y",QColor(255,255,255),1.);
-    widget->addCurveAndSetColor(_imp->curveY);
-    
-    _imp->itemLeftX = new QTreeWidgetItem(parent);
-    _imp->itemLeftX->setText(0, "leftX");
-    _imp->curveLeftX = new BezierCPCurveGui(widget,cp->getLeftXCurve(),cp,roto,"leftX",QColor(255,255,255),1.);
-    widget->addCurveAndSetColor(_imp->curveLeftX);
-    
-    _imp->itemLeftY = new QTreeWidgetItem(parent);
-    _imp->itemLeftY->setText(0, "leftY");
-    _imp->curveLeftY = new BezierCPCurveGui(widget,cp->getLeftYCurve(),cp,roto,"leftY",QColor(255,255,255),1.);
-    widget->addCurveAndSetColor(_imp->curveLeftY);
-    
-    _imp->itemRightX = new QTreeWidgetItem(parent);
-    _imp->itemRightX->setText(0, "rightX");
-    _imp->curveRightX = new BezierCPCurveGui(widget,cp->getRightXCurve(),cp,roto,"rightX",QColor(255,255,255),1.);
-    widget->addCurveAndSetColor(_imp->curveRightX);
-    
-    _imp->itemRightY = new QTreeWidgetItem(parent);
-    _imp->itemRightY->setText(0, "rightY");
-    _imp->curveRightY = new BezierCPCurveGui(widget,cp->getRightYCurve(),cp,roto,"rightY",QColor(255,255,255),1.);
-    widget->addCurveAndSetColor(_imp->curveRightY);
-    
-}
-
-CPEditorContext::~CPEditorContext()
-{
-    delete _imp->itemX;
-    delete _imp->itemY;
-    delete _imp->itemLeftX;
-    delete _imp->itemLeftY;
-    delete _imp->itemRightX;
-    delete _imp->itemRightY;
-    
-    _imp->widget->removeCurve(_imp->curveX);
-    _imp->widget->removeCurve(_imp->curveY);
-    _imp->widget->removeCurve(_imp->curveLeftX);
-    _imp->widget->removeCurve(_imp->curveLeftY);
-    _imp->widget->removeCurve(_imp->curveRightX);
-    _imp->widget->removeCurve(_imp->curveRightY);
-}
-
-BezierCP*
-CPEditorContext::getCP() const
-{
-    return _imp->cp.get();
-}
-
-Bezier*
-CPEditorContext::getBezier() const
-{
-    return _imp->bezier->getBezier();
-}
 
 struct BezierEditorContextPrivate {
     
     CurveWidget* widget;
     RotoCurveEditorContext* context;
     Bezier* curve;
-    QTreeWidgetItem* item;
-    std::list<CPEditorContext*> cps,fps;
+    QTreeWidgetItem* nameItem;
+    QTreeWidgetItem* curveItem;
+    BezierCPCurveGui* animCurve;
+    std::list<NodeCurveEditorElement*> knobs;
     
     
     BezierEditorContextPrivate(CurveWidget* widget,Bezier* curve,RotoCurveEditorContext* context)
     : widget(widget)
     , context(context)
     , curve(curve)
+    , nameItem(0)
+    , curveItem(0)
+    , animCurve(0)
     {
         
     }
 };
 
-BezierEditorContext::BezierEditorContext(CurveWidget* widget,
+BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
+                                         CurveWidget* widget,
                                          Bezier* curve,
                     RotoCurveEditorContext* context)
 : _imp(new BezierEditorContextPrivate(widget,curve,context))
 {
-    _imp->item = new QTreeWidgetItem(_imp->context->getItem());
-    _imp->item->setText(0, _imp->curve->getName_mt_safe().c_str());
-    _imp->item->setExpanded(false);
-    QObject::connect(curve, SIGNAL(controlPointAdded()), this, SLOT(onControlPointAdded()));
-    QObject::connect(curve, SIGNAL(controlPointRemoved()), this, SLOT(onControlPointRemoved()));
+    _imp->nameItem = new QTreeWidgetItem(_imp->context->getItem());
+    QString name(_imp->curve->getName_mt_safe().c_str());
+    _imp->nameItem->setText(0, name);
+    QObject::connect(curve, SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
+    QObject::connect(curve, SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
+    
+    _imp->curveItem = new QTreeWidgetItem(_imp->nameItem);
+    _imp->curveItem->setText(0, "Animation");
+    
+    _imp->animCurve = new BezierCPCurveGui(widget,curve,context->getNode()->getNode()->getRotoContext(),name,QColor(255,255,255),1.);
+    widget->addCurveAndSetColor(_imp->animCurve);
+    
+    const std::list<boost::shared_ptr<KnobI> >& knobs = curve->getKnobs();
+    
+    
+    bool hasAtLeast1KnobWithACurveShown = false;
+    
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        createElementsForKnob(_imp->curveItem, 0, *it, widget, tree, _imp->knobs, &hasAtLeast1KnobWithACurveShown);
+    }
+
 }
 
 BezierEditorContext::~BezierEditorContext()
 {
-    for (std::list<CPEditorContext*>::iterator it = _imp->cps.begin(); it!=_imp->cps.end(); ++it) {
-        delete *it;
-    }
-    for (std::list<CPEditorContext*>::iterator it = _imp->fps.begin(); it!=_imp->fps.end(); ++it) {
-        delete *it;
-    }
-
+    _imp->widget->removeCurve(_imp->animCurve);
 }
 
 Bezier*
@@ -761,7 +736,7 @@ BezierEditorContext::getBezier() const
 QTreeWidgetItem*
 BezierEditorContext::getItem() const
 {
-    return _imp->item;
+    return _imp->nameItem;
 }
 
 boost::shared_ptr<RotoContext>
@@ -773,134 +748,32 @@ BezierEditorContext::getContext() const
 void
 BezierEditorContext::onNameChanged(const QString & name)
 {
-    _imp->item->setText(0, name);
+    _imp->nameItem->setText(0, name);
 }
 
 void
-BezierEditorContext::onControlPointAdded()
+BezierEditorContext::onKeyframeAdded()
 {
-    buildMissingCPs();
+    _imp->widget->update();
 }
 
 void
-BezierEditorContext::onControlPointRemoved()
+BezierEditorContext::onKeyframeRemoved()
 {
-    
+    _imp->widget->update();
 }
-
-void
-BezierEditorContext::removeUnexistingCPs()
-{
-    ///Make sure all points in the bezier exist
-    
-    {
-        const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->curve->getControlPoints();
-    
-        std::list<CPEditorContext*> toRemove;
-        std::list<CPEditorContext*> toKeep;
-        for (std::list<CPEditorContext*>::iterator it2 = _imp->cps.begin(); it2!=_imp->cps.end(); ++it2) {
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator found =
-            std::find(cps.begin(),cps.end(),(*it2)->getCP());
-            
-            if (found == cps.end()) {
-                toRemove.push_back(*it2);
-            } else {
-                toKeep.push_back(*it2);
-            }
-            
-        }
-        
-        for (std::list<CPEditorContext*>::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
-            delete *it;
-        }
-        _imp->cps = toKeep;
-    }
-    
-    {
-        const std::list<boost::shared_ptr<BezierCP> >& fps = _imp->curve->getControlPoints();
-        
-        std::list<CPEditorContext*> toRemove;
-        std::list<CPEditorContext*> toKeep;
-        for (std::list<CPEditorContext*>::iterator it2 = _imp->fps.begin(); it2!=_imp->fps.end(); ++it2) {
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator found =
-            std::find(fps.begin(),fps.end(),(*it2)->getCP());
-            
-            if (found == fps.end()) {
-                toRemove.push_back(*it2);
-            } else {
-                toKeep.push_back(*it2);
-            }
-            
-        }
-        
-        for (std::list<CPEditorContext*>::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
-            delete *it;
-        }
-        _imp->fps = toKeep;
-    }
-
-}
-
-void
-BezierEditorContext::buildMissingCPs()
-{
-    ///Make sure all points in the bezier are created
-    const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->curve->getControlPoints();
-    for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
-        
-        bool found = false;
-        for (std::list<CPEditorContext*>::iterator it2 = _imp->cps.begin(); it2!=_imp->cps.end(); ++it2) {
-            if ((*it2)->getCP() == it->get()) {
-                found = true;
-                break;
-            }
-        }
-        
-        if (!found) {
-            CPEditorContext* c = new CPEditorContext(_imp->widget,*it,this);
-            _imp->cps.push_back(c);
-        }
-    }
-    
-    const std::list<boost::shared_ptr<BezierCP> >& fps = _imp->curve->getControlPoints();
-    for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = fps.begin(); it != fps.end(); ++it) {
-        
-        bool found = false;
-        for (std::list<CPEditorContext*>::iterator it2 = _imp->fps.begin(); it2!=_imp->fps.end(); ++it2) {
-            if ((*it2)->getCP() == it->get()) {
-                found = true;
-                break;
-            }
-        }
-        
-        if (!found) {
-            CPEditorContext* c = new CPEditorContext(_imp->widget,*it,this);
-            _imp->fps.push_back(c);
-        }
-    }
-    
-}
-
-void
-BezierEditorContext::onTreeItemExpanded(QTreeWidgetItem* item)
-{
-    if (item == _imp->item) {
-        buildMissingCPs();
-    }
-}
-
-
-
 
 struct RotoCurveEditorContextPrivate
 {
     CurveWidget* widget;
+    QTreeWidget* tree;
     boost::shared_ptr<NodeGui> node;
     QTreeWidgetItem* nameItem;
     std::list< BezierEditorContext* > curves;
     
-    RotoCurveEditorContextPrivate(CurveWidget* widget,const boost::shared_ptr<NodeGui>& node)
+    RotoCurveEditorContextPrivate(CurveWidget* widget,QTreeWidget *tree,const boost::shared_ptr<NodeGui>& node)
     : widget(widget)
+    , tree(tree)
     , node(node)
     , nameItem(0)
     , curves()
@@ -912,7 +785,7 @@ struct RotoCurveEditorContextPrivate
 RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
                                                QTreeWidget *tree,
                        const boost::shared_ptr<NodeGui>& node)
-: _imp(new RotoCurveEditorContextPrivate(widget,node))
+: _imp(new RotoCurveEditorContextPrivate(widget,tree,node))
 {
     boost::shared_ptr<RotoContext> rotoCtx = node->getNode()->getRotoContext();
     assert(rotoCtx);
@@ -926,7 +799,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
     
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
-        BezierEditorContext* c = new BezierEditorContext(widget,it->get(),this);
+        BezierEditorContext* c = new BezierEditorContext(tree,widget,it->get(),this);
         _imp->curves.push_back(c);
     }
 }
@@ -988,7 +861,7 @@ RotoCurveEditorContext::itemInserted(int)
     boost::shared_ptr<RotoItem> item = roto->getLastInsertedItem();
     Bezier* isBezier = dynamic_cast<Bezier*>(item.get());
     if (isBezier) {
-        BezierEditorContext* b = new BezierEditorContext(_imp->widget,isBezier,this);
+        BezierEditorContext* b = new BezierEditorContext(_imp->tree,_imp->widget,isBezier,this);
         _imp->curves.push_back(b);
     }
 }

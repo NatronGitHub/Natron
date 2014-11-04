@@ -28,6 +28,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QApplication>
 #include <QToolButton>
 #include <QDesktopWidget>
+#include <QDebug>
 
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
@@ -139,15 +140,8 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
     assert( !keys.empty() );
     double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(),0).x();
     double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.rbegin()->getTime(),0).x();
-    std::pair<double,double> curveYRange;
-    try {
-        curveYRange = _internalCurve->getCurveYRange();
-    } catch (const std::exception & e) {
-        std::cout << e.what() << std::endl;
-
-        return std::make_pair(KeyFrame(0.,0.),false);
-    }
-
+    std::pair<double,double> curveYRange = getCurveYRange();
+  
     if (x1 < xminCurveWidgetCoord) {
         if ( ( curveYRange.first <= kOfxFlagInfiniteMin) && ( curveYRange.second >= kOfxFlagInfiniteMax) ) {
             *x2 = xminCurveWidgetCoord;
@@ -252,6 +246,17 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
     return std::make_pair(KeyFrame(0.,0.),false);
 } // nextPointForSegment
 
+std::pair<double,double>
+CurveGui::getCurveYRange() const
+{
+    try {
+        return _internalCurve->getCurveYRange();
+    } catch (const std::exception & e) {
+        qDebug() << e.what();
+        return std::make_pair(INT_MIN,INT_MAX);
+    }
+}
+
 void
 CurveGui::drawCurve(int curveIndex,
                     int curvesCount)
@@ -269,7 +274,19 @@ CurveGui::drawCurve(int curveIndex,
     double x1 = 0;
     double x2;
     double w = _curveWidget->width();
-    KeyFrameSet keyframes = _internalCurve->getKeyFrames_mt_safe();
+    KeyFrameSet keyframes;
+    
+    BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(this);
+    if (isBezier) {
+        std::set<int> keys;
+        isBezier->getBezier()->getKeyframeTimes(&keys);
+        int i = 0;
+        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+            keyframes.insert(KeyFrame(*it,i));
+        }
+    } else {
+        keyframes = _internalCurve->getKeyFrames_mt_safe();
+    }
     std::pair<KeyFrame,bool> isX1AKey;
     while ( x1 < (w - 1) ) {
         double x,y;
@@ -303,7 +320,7 @@ CurveGui::drawCurve(int curveIndex,
         
         if (_selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
-            std::pair<double,double> curveYRange = _internalCurve->getCurveYRange();
+            std::pair<double,double> curveYRange = getCurveYRange();
             if (curveYRange.first != INT_MIN && curveYRange.second != INT_MAX) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979,0.398979,0.398979);
@@ -470,6 +487,30 @@ CurveGui::setVisibleAndRefresh(bool visible)
     emit curveChanged();
 }
 
+bool
+CurveGui::areKeyFramesTimeClampedToIntegers() const
+{
+    return _internalCurve->areKeyFramesTimeClampedToIntegers();
+}
+
+bool
+CurveGui::areKeyFramesValuesClampedToBooleans() const
+{
+    return _internalCurve->areKeyFramesValuesClampedToBooleans();
+}
+
+bool
+CurveGui::areKeyFramesValuesClampedToIntegers() const
+{
+    return _internalCurve->areKeyFramesValuesClampedToIntegers();
+}
+
+bool
+CurveGui::isYComponentMovable() const
+{
+    return _internalCurve->isYComponentMovable();
+}
+
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
              KnobGui* knob,
@@ -478,7 +519,23 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
              const QColor & color,
              int thickness)
 : CurveGui(curveWidget,curve,name,color,thickness)
+, _internalKnob()
 , _knob(knob)
+, _dimension(dimension)
+{
+    
+}
+
+KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
+             boost::shared_ptr<Curve>  curve,
+             const boost::shared_ptr<KnobI>& knob,
+             int dimension,
+             const QString & name,
+             const QColor & color,
+             int thickness)
+: CurveGui(curveWidget,curve,name,color,thickness)
+, _internalKnob(knob)
+, _knob(0)
 , _dimension(dimension)
 {
     
@@ -489,15 +546,20 @@ KnobCurveGui::~KnobCurveGui()
     
 }
 
+boost::shared_ptr<KnobI>
+KnobCurveGui::getInternalKnob() const
+{
+    return _knob ? _knob->getKnob() : _internalKnob;
+}
+
 BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
-                                   boost::shared_ptr<Curve>  curve,
-                                   const boost::shared_ptr<BezierCP>& bezier,
+                                   Bezier* bezier,
                                    const boost::shared_ptr<RotoContext>& roto,
                                    const QString & name,
                                    const QColor & color,
                                    int thickness)
-: CurveGui(curveWidget,curve,name,color,thickness)
-, _point(bezier)
+: CurveGui(curveWidget,boost::shared_ptr<Curve>(),name,color,thickness)
+, _bezier(bezier)
 , _rotoContext(roto)
 {
     
@@ -506,12 +568,40 @@ BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
 Bezier*
 BezierCPCurveGui::getBezier() const
 {
-    return _point->getBezier();
+    return _bezier;
 }
 
 BezierCPCurveGui::~BezierCPCurveGui()
 {
     
+}
+
+double
+BezierCPCurveGui::evaluate(double x) const
+{
+    std::set<int> keys;
+    _bezier->getKeyframeTimes(&keys);
+    std::set<int>::iterator it = keys.upper_bound(std::floor(x + 0.5));
+    if (it == keys.end()) {
+        return keys.size() - 1;
+    } else if (it == keys.begin()) {
+        return 0;
+    } else {
+        std::set<int>::iterator prev = it;
+        --prev;
+        if ((x - *prev) < ((*it) - x)) {
+            return std::distance(keys.begin(), prev);
+        } else {
+            return std::distance(keys.begin(), it);
+        }
+    }
+}
+
+std::pair<double,double>
+BezierCPCurveGui::getCurveYRange() const
+{
+    int keys = _bezier->getKeyframesCount();
+    return std::make_pair(0, keys - 1);
 }
 /*****************************CURVE WIDGET***********************************************/
 
@@ -1327,11 +1417,16 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
     double top = rect.bottomRight().y();
     for (Curves::const_iterator it = _curves.begin(); it != _curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            std::vector<KeyFrame> keysInsideRect;
-            (*it)->getInternalCurve()->getKeyFramesWithinRect(left, bottom, right, top, &keysInsideRect);
-            for (U32 i = 0; i < keysInsideRect.size(); ++i) {
-                keys->push_back( std::make_pair(*it,keysInsideRect[i]) );
+            
+            KeyFrameSet set = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
+            for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
+                double y = it2->getValue();
+                double x = it2->getTime();
+                if ( (x <= right) && (x >= left) && (y <= top) && (y >= bottom) ) {
+                    keys->push_back( std::make_pair(*it,*it2) );
+                }
             }
+
         }
     }
 }
@@ -1344,7 +1439,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates( _dragStartPoint.x(),_dragStartPoint.y() );
-    bool clampToIntegers = ( *_selectedKeyFrames.begin() )->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
+    bool clampToIntegers = ( *_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
     
     bool useOneDirectionOnly = qApp->keyboardModifiers().testFlag(Qt::ControlModifier) || clampToIntegers;
 
@@ -1368,10 +1463,10 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     if (clampToIntegers) {
         ///Only for the curve editor, parametric curves are not affected by the following
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            if ( (*it)->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans() ) {
+            if ( (*it)->curve->areKeyFramesValuesClampedToBooleans() ) {
                 totalMovement.ry() = std::max( 0.,std::min(std::floor(totalMovement.y() + 0.5),1.) );
                 break;
-            } else if ( (*it)->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers() ) {
+            } else if ( (*it)->curve->areKeyFramesValuesClampedToIntegers() ) {
                 totalMovement.ry() = std::floor(totalMovement.y() + 0.5);
             }
         }
@@ -1684,7 +1779,7 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             }
 
             ///Compute the max up/down movements given the min/max of the curve
-            std::pair<double,double> maxY = (*it)->curve->getInternalCurve()->getCurveYRange();
+            std::pair<double,double> maxY = (*it)->curve->getCurveYRange();
             curveMaxMovement.top = maxY.second - topMost->getValue();
             curveMaxMovement.bottom = maxY.first - bottomMost->getValue();
             curvesMaxMovements.insert( std::make_pair( (*it)->curve, curveMaxMovement ) );
@@ -2228,7 +2323,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     double xCurve,yCurve;
     Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
     if ( foundCurveNearby != _imp->_curves.end() ) {
-        std::pair<double,double> yRange = (*foundCurveNearby)->getInternalCurve()->getCurveYRange();
+        std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
         if (yCurve < yRange.first || yCurve > yRange.second) {
             QString err =  tr(" Out of curve y range ") +
             QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
@@ -2239,13 +2334,9 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         std::vector<KeyFrame> keys(1);
         keys[0] = KeyFrame(xCurve,yCurve);
         
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*foundCurveNearby);
+       
+        pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
         
-        if (isKnobCurve) {
-            isKnobCurve->getKnob()->pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
-        } else {
-            pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
-        }
     }
 }
 
@@ -2419,7 +2510,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve);
                 BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
                 if (isKnobCurve) {
-                    boost::shared_ptr<KnobI> knob = isKnobCurve->getKnob()->getKnob();
+                    boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
                     assert(knob);
                     KnobHolder* holder = knob->getHolder();
                     assert(holder);
@@ -2444,7 +2535,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(_imp->_selectedDerivative.second->curve);
             BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(_imp->_selectedDerivative.second->curve);
             if (isKnobCurve) {
-                boost::shared_ptr<KnobI> toEvaluate = isKnobCurve->getKnob()->getKnob();
+                boost::shared_ptr<KnobI> toEvaluate = isKnobCurve->getInternalKnob();
                 assert(toEvaluate);
                 toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::eValueChangedReasonUserEdited);
             } else if (isBezierCurve) {
@@ -2548,7 +2639,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingKeys:
         if (!_imp->_mustSetDragOrientation) {
             if ( !_imp->_selectedKeyFrames.empty() ) {
-                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
+                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
                 if (!clampToIntegers) {
                     _imp->updateSelectedKeysMaxMovement();
                 }
@@ -2746,25 +2837,6 @@ CurveWidget::addKeyFrame(CurveGui* curve,
     }
 }
 
-#if 0 // dead code
-void
-CurveWidget::removeKeyFrame(CurveGui* curve,
-                            const KeyFrame & key)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    curve->getInternalCurve()->removeKeyFrameWithTime( key.getTime() );
-    if ( !curve->getInternalCurve()->isAnimated() ) {
-        curve->setVisibleAndRefresh(false);
-    }
-    SelectedKeys::iterator it = _imp->_selectedKeyFrames.find( SelectedKey(curve,key) );
-    if ( it != _imp->_selectedKeyFrames.end() ) {
-        _imp->_selectedKeyFrames.erase(it);
-    }
-}
-
-#endif
 
 void
 CurveWidget::keyPressEvent(QKeyEvent* e)
@@ -3236,7 +3308,7 @@ CurveWidget::exportCurveToAscii()
             double incrInt = std::floor(incr);
             double xInt = std::floor(x);
             double endInt = std::floor(end);
-            if ( curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers() &&
+            if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) || ( endInt != end) ) ) {
                 warningDialog( tr("Curve Export").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
 
@@ -3312,7 +3384,7 @@ CurveWidget::importCurveFromAscii()
             ///if the curve only supports integers values for X steps, and values are not rounded warn the user that the settings are not good
             double incrInt = std::floor(incr);
             double xInt = std::floor(x);
-            if ( curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers() &&
+            if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) ) ) {
                 warningDialog( tr("Curve Import").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
 
@@ -3499,7 +3571,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         if (curvemax > max) {
             max = curvemax;
         }
-        if ( curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers() ) {
+        if ( curves[i]->areKeyFramesTimeClampedToIntegers() ) {
             curveIsClampedToIntegers = true;
         }
         column._curve = curves[i];
@@ -3683,7 +3755,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     SpinBox::SPINBOX_TYPE xType;
     
     if (mode == eEditModeKeyframePosition) {
-        xType = key->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers() ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
+        xType = key->curve->areKeyFramesTimeClampedToIntegers() ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
     } else {
         xType = SpinBox::DOUBLE_SPINBOX;
     }
@@ -3695,15 +3767,12 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     
     if (mode == eEditModeKeyframePosition) {
         
-//        std::pair<double,double> xRange = _imp->key->curve->getInternalCurve()->getXRange();
-//        _imp->xSpinbox->setMinimum(xRange.first);
-//        _imp->xSpinbox->setMaximum(xRange.second);
-        
+
         _imp->yLabel = new QLabel("y: ",_imp->boxContainer);
         _imp->boxLayout->addWidget(_imp->yLabel);
         
-        bool clampedToInt = key->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers() ;
-        bool clampedToBool = key->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans();
+        bool clampedToInt = key->curve->areKeyFramesValuesClampedToIntegers() ;
+        bool clampedToBool = key->curve->areKeyFramesValuesClampedToBooleans();
         SpinBox::SPINBOX_TYPE yType = (clampedToBool || clampedToInt) ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
         
         _imp->ySpinbox = new SpinBox(_imp->boxContainer,yType);
@@ -3712,7 +3781,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
             _imp->ySpinbox->setMinimum(0);
             _imp->ySpinbox->setMaximum(1);
         } else {
-            std::pair<double,double> range = key->curve->getInternalCurve()->getCurveYRange();
+            std::pair<double,double> range = key->curve->getCurveYRange();
             _imp->ySpinbox->setMinimum(range.first);
             _imp->ySpinbox->setMaximum(range.second);
         }

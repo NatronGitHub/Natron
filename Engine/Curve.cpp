@@ -1373,21 +1373,4 @@ Curve::mustClamp() const
     return _imp->owner || hasYRange();
 }
 
-void
-Curve::getKeyFramesWithinRect(double l,
-                              double b,
-                              double r,
-                              double t,
-                              std::vector<KeyFrame>* ret) const
-{
-    QReadLocker locker(&_imp->_lock);
-
-    for (KeyFrameSet::const_iterator it2 = _imp->keyFrames.begin(); it2 != _imp->keyFrames.end(); ++it2) {
-        double y = it2->getValue();
-        double x = it2->getTime();
-        if ( (x <= r) && (x >= l) && (y <= t) && (y >= b) ) {
-            ret->push_back(*it2);
-        }
-    }
-}
 

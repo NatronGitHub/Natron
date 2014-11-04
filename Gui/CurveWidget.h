@@ -42,7 +42,6 @@ class SpinBox;
 class Gui;
 class Bezier;
 class RotoContext;
-class BezierCP;
 class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
@@ -119,7 +118,8 @@ public:
      * @brief Evaluates the curve and returns the y position corresponding to the given x.
      * The coordinates are those of the curve, not of the widget.
      **/
-    double evaluate(double x) const;
+    virtual double evaluate(double x) const;
+    
     boost::shared_ptr<Curve>  getInternalCurve() const
     {
         return _internalCurve;
@@ -127,9 +127,18 @@ public:
 
     void drawCurve(int curveIndex,int curvesCount);
 
+    virtual std::pair<double,double> getCurveYRange() const;
+
+    virtual bool areKeyFramesTimeClampedToIntegers() const;
+    virtual bool areKeyFramesValuesClampedToBooleans() const;
+    virtual bool areKeyFramesValuesClampedToIntegers() const;
+    virtual bool isYComponentMovable() const;
+    
 signals:
 
     void curveChanged();
+    
+    
 
 private:
 
@@ -158,12 +167,23 @@ public:
              const QColor & color,
              int thickness = 1);
     
+    
+    KnobCurveGui(const CurveWidget *curveWidget,
+                 boost::shared_ptr<Curve>  curve,
+                 const boost::shared_ptr<KnobI>& knob,
+                 int dimension,
+                 const QString & name,
+                 const QColor & color,
+                 int thickness = 1);
+    
     virtual ~KnobCurveGui();
     
-    KnobGui* getKnob() const
+    KnobGui* getKnobGui() const
     {
         return _knob;
     }
+    
+    boost::shared_ptr<KnobI> getInternalKnob() const;
     
     int getDimension() const
     {
@@ -171,6 +191,8 @@ public:
     }
     
 private:
+    
+    boost::shared_ptr<KnobI> _internalKnob;
     KnobGui* _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
@@ -180,8 +202,7 @@ class BezierCPCurveGui : public CurveGui
 public:
     
     BezierCPCurveGui(const CurveWidget *curveWidget,
-                 boost::shared_ptr<Curve>  curve,
-                 const boost::shared_ptr<BezierCP>& bezier,
+                 Bezier* bezier,
                  const boost::shared_ptr<RotoContext>& roto,
                  const QString & name,
                  const QColor & color,
@@ -193,10 +214,17 @@ public:
     
     Bezier* getBezier() const ;
     
-    boost::shared_ptr<BezierCP> getCP() const { return _point; }
+    virtual double evaluate(double x) const;
+    virtual std::pair<double,double> getCurveYRange() const;
+
+    virtual bool areKeyFramesTimeClampedToIntegers() const { return true; }
+    virtual bool areKeyFramesValuesClampedToBooleans() const { return false; }
+    virtual bool areKeyFramesValuesClampedToIntegers() const { return true; }
+    virtual bool isYComponentMovable() const { return false; }
 private:
     
-    boost::shared_ptr<BezierCP> _point;
+    
+    Bezier* _bezier;
     boost::shared_ptr<RotoContext> _rotoContext;
 };
 

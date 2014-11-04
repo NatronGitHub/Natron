@@ -425,6 +425,8 @@ struct RotoDrawableItemPrivate
 #endif
     boost::shared_ptr<Color_Knob> color;
     boost::shared_ptr<Choice_Knob> compOperator;
+    
+    std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
     RotoDrawableItemPrivate()
         : opacity( new Double_Knob(NULL, kRotoOpacityParamName, 1, false) )
@@ -436,6 +438,7 @@ struct RotoDrawableItemPrivate
 #endif
           , color( new Color_Knob(NULL, kRotoColorParamName, 3, false) )
           , compOperator( new Choice_Knob(NULL, kRotoCompOperatorParamName, 1, false) )
+          , knobs()
     {
         opacity->setHintToolTip(kRotoOpacityHint);
         opacity->populate();
@@ -444,6 +447,7 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(opacity) );
             opacity->setSignalSlotHandler(handler);
         }
+        knobs.push_back(opacity);
 
         feather->setHintToolTip(kRotoFeatherHint);
         feather->populate();
@@ -452,6 +456,7 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(feather) );
             feather->setSignalSlotHandler(handler);
         }
+        knobs.push_back(feather);
 
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->populate();
@@ -460,6 +465,8 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(featherFallOff) );
             featherFallOff->setSignalSlotHandler(handler);
         }
+        
+        knobs.push_back(featherFallOff);
 
         activated->setHintToolTip(kRotoActivatedHint);
         activated->populate();
@@ -468,6 +475,7 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(activated) );
             activated->setSignalSlotHandler(handler);
         }
+        knobs.push_back(activated);
 
 #ifdef NATRON_ROTO_INVERTIBLE
         inverted->setHintToolTip(kRotoInvertedHint);
@@ -477,7 +485,9 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(inverted) );
             inverted->setSignalSlotHandler(handler);
         }
+        knobs.push_back(inverted);
 #endif
+        
 
         color->setHintToolTip(kRotoColorHint);
         color->populate();
@@ -488,6 +498,7 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(color) );
             color->setSignalSlotHandler(handler);
         }
+        knobs.push_back(color);
 
         compOperator->setHintToolTip(kRotoCompOperatorHint);
         compOperator->populate();
@@ -500,6 +511,7 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(compOperator) );
             compOperator->setSignalSlotHandler(handler);
         }
+        knobs.push_back(compOperator);
 
         overlayColor[0] = 0.85164;
         overlayColor[1] = 0.196936;

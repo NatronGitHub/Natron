@@ -263,7 +263,6 @@ public:
     /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
     void setYRange(double yMin, double yMax);
 
-    void getKeyFramesWithinRect(double l,double b,double r,double t,std::vector<KeyFrame>* ret) const;
 
 private:
     template<class Archive>

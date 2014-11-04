@@ -67,7 +67,7 @@ class ComboBox;
 class ScaleSliderQWidget;
 class GroupBoxLabel;
 class CurveWidget;
-class CurveGui;
+class KnobCurveGui;
 
 // private classes, defined in KnobGuiTypes.cpp
 class ClickableLabel;
@@ -334,75 +334,6 @@ private:
     boost::shared_ptr<Choice_Knob> _knob;
 };
 
-//================================
-//class Table_KnobGui;
-//class ComboBoxDelegate : public QStyledItemDelegate{
-//
-//    Q_OBJECT
-//
-//    Table_KnobGui* _tableKnob;
-//
-//public:
-//
-//    ComboBoxDelegate(Table_KnobGui* tableKnob,QObject *parent = 0);
-//
-//    virtual ~ComboBoxDelegate(){}
-//
-//    virtual QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
-//                          const QModelIndex &index) const OVERRIDE;
-//
-//    virtual void setEditorData(QWidget *editor, const QModelIndex &index) const;
-//    virtual void setModelData(QWidget *editor, QAbstractItemModel *model,
-//                      const QModelIndex &index) const OVERRIDE;
-//
-//    virtual void updateEditorGeometry(QWidget *editor,
-//                              const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE;
-//
-//    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE;
-//
-//    virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE;
-//
-//};
-//
-//
-//class Table_KnobGui : public KnobGui
-//{
-//    Q_OBJECT
-//public:
-//    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
-//        return new Table_KnobGui(knob, container);
-//    }
-//
-//
-//    Table_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
-//
-//    virtual ~Table_KnobGui() OVERRIDE;
-//
-//    public slots:
-//
-//    void onCurrentIndexChanged(int);
-//
-//    void onPopulated();
-//
-//private:
-//
-//    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
-//
-//    virtual void _hide() OVERRIDE FINAL;
-//
-//    virtual void _show() OVERRIDE FINAL;
-//
-//    virtual void setEnabled() OVERRIDE FINAL;
-//
-//    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-//
-//    // ComboBoxDelegate* _tableComboBoxDelegate;
-//    QLabel *_descriptionLabel;
-//    QScrollArea* _sa;
-//    QWidget* _container;
-//    QVBoxLayout* _layout;
-//    std::vector<ComboBox*> _choices;
-//};
 
 //=========================
 class Separator_KnobGui
@@ -837,7 +768,7 @@ private:
     Button* _resetButton;
     struct CurveDescriptor
     {
-        CurveGui* curve;
+        KnobCurveGui* curve;
         QTreeWidgetItem* treeItem;
     };
 
