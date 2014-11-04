@@ -294,10 +294,12 @@ moveKey(KeyPtr &k,
             isKnobCurve->getInternalKnob()->moveValueAtTime(k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
     } else if (isBezierCurve) {
-        isBezierCurve->getBezier()->removeKeyframe(k->key.getTime());
+        int oldTime = k->key.getTime();
         k->key.setTime(k->key.getTime() + dt);
         k->key.setValue(k->key.getValue() + dv);
         isBezierCurve->getBezier()->setKeyframe(k->key.getTime());
+        isBezierCurve->getBezier()->removeKeyframe(oldTime);
+
     }
 }
 
