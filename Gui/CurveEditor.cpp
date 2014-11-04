@@ -735,7 +735,12 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
 
 BezierEditorContext::~BezierEditorContext()
 {
+    delete _imp->nameItem;
+    delete _imp->curveItem;
     _imp->widget->removeCurve(_imp->animCurve);
+    for (std::list<NodeCurveEditorElement*>::iterator it = _imp->knobs.begin() ; it != _imp->knobs.end();++it) {
+        delete *it;
+    }
 }
 
 Bezier*

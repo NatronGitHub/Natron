@@ -314,7 +314,7 @@ CurveGui::drawCurve(int curveIndex,
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
         
-        if (_selected) {
+        if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             std::pair<double,double> curveYRange = getCurveYRange();
             if (curveYRange.first != INT_MIN && curveYRange.second != INT_MAX) {
@@ -389,7 +389,8 @@ CurveGui::drawCurve(int curveIndex,
             glBegin(GL_POINTS);
             glVertex2f(x,y);
             glEnd();
-            if ( ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+            
+            if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
                 
                 QFontMetrics m( _curveWidget->getFont() );
 
@@ -1288,16 +1289,19 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     int yOffset = 4;
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         
-        QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it)->key.getTime(), (*it)->key.getValue() );
-        topLeftWidget.ry() += yOffset;
-        
-        QString coordStr =  QString("x: %1, y: %2").arg((*it)->key.getTime()).arg((*it)->key.getValue());
-        
-        QPointF btmRightWidget(topLeftWidget.x() + fm.width(coordStr),topLeftWidget.y() + fm.height());
-        
-        if (pt.x() >= topLeftWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRightWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
-            pt.y() >= topLeftWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRightWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
-            return *it;
+        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
+        if (!isBezier) {
+            QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it)->key.getTime(), (*it)->key.getValue() );
+            topLeftWidget.ry() += yOffset;
+            
+            QString coordStr =  QString("x: %1, y: %2").arg((*it)->key.getTime()).arg((*it)->key.getValue());
+            
+            QPointF btmRightWidget(topLeftWidget.x() + fm.width(coordStr),topLeftWidget.y() + fm.height());
+            
+            if (pt.x() >= topLeftWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRightWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
+                pt.y() >= topLeftWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRightWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
+                return *it;
+            }
         }
     }
     return KeyPtr();
@@ -1308,20 +1312,23 @@ CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        QPointF leftTanPt = zoomCtx.toWidgetCoordinates( (*it)->leftTan.first,(*it)->leftTan.second );
-        QPointF rightTanPt = zoomCtx.toWidgetCoordinates( (*it)->rightTan.first,(*it)->rightTan.second );
-        if ( ( pt.x() >= (leftTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-             ( pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-             ( pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-             ( pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
-            return std::make_pair(MoveTangentCommand::LEFT_TANGENT,*it);
-        } else if ( ( pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                    ( pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                    ( pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                    ( pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
-            return std::make_pair(MoveTangentCommand::RIGHT_TANGENT,*it);
+        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
+        if (!isBezier) {
+            QPointF leftTanPt = zoomCtx.toWidgetCoordinates( (*it)->leftTan.first,(*it)->leftTan.second );
+            QPointF rightTanPt = zoomCtx.toWidgetCoordinates( (*it)->rightTan.first,(*it)->rightTan.second );
+            if ( ( pt.x() >= (leftTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                ( pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                ( pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                ( pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+                return std::make_pair(MoveTangentCommand::LEFT_TANGENT,*it);
+            } else if ( ( pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                       ( pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                       ( pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                       ( pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+                return std::make_pair(MoveTangentCommand::RIGHT_TANGENT,*it);
+            }
         }
     }
 
@@ -1340,25 +1347,28 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
     int yOffset = 4;
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         
-        double rounding = std::pow(10., DERIVATIVE_ROUND_PRECISION);
-        
-        QPointF topLeft_LeftTanWidget = zoomCtx.toWidgetCoordinates( (*it)->leftTan.first, (*it)->leftTan.second);
-        QPointF topLeft_RightTanWidget = zoomCtx.toWidgetCoordinates( (*it)->rightTan.first, (*it)->rightTan.second);
-        topLeft_LeftTanWidget.ry() += yOffset;
-        topLeft_RightTanWidget.ry() += yOffset;
-        
-        QString leftCoordStr =  QString(QObject::tr("l: %1")).arg(std::floor(((*it)->key.getLeftDerivative() * rounding) + 0.5) / rounding);
-        QString rightCoordStr =  QString(QObject::tr("r: %1")).arg(std::floor(((*it)->key.getRightDerivative() * rounding) + 0.5) / rounding);
-        
-        QPointF btmRight_LeftTanWidget(topLeft_LeftTanWidget.x() + fm.width(leftCoordStr),topLeft_LeftTanWidget.y() + fm.height());
-        QPointF btmRight_RightTanWidget(topLeft_RightTanWidget.x() + fm.width(rightCoordStr),topLeft_RightTanWidget.y() + fm.height());
-        
-        if (pt.x() >= topLeft_LeftTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_LeftTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
-            pt.y() >= topLeft_LeftTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_LeftTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
-            return std::make_pair(MoveTangentCommand::LEFT_TANGENT, *it);
-        } else if (pt.x() >= topLeft_RightTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_RightTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
-                   pt.y() >= topLeft_RightTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_RightTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
-            return std::make_pair(MoveTangentCommand::RIGHT_TANGENT, *it);
+        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
+        if (!isBezier) {
+            double rounding = std::pow(10., DERIVATIVE_ROUND_PRECISION);
+            
+            QPointF topLeft_LeftTanWidget = zoomCtx.toWidgetCoordinates( (*it)->leftTan.first, (*it)->leftTan.second);
+            QPointF topLeft_RightTanWidget = zoomCtx.toWidgetCoordinates( (*it)->rightTan.first, (*it)->rightTan.second);
+            topLeft_LeftTanWidget.ry() += yOffset;
+            topLeft_RightTanWidget.ry() += yOffset;
+            
+            QString leftCoordStr =  QString(QObject::tr("l: %1")).arg(std::floor(((*it)->key.getLeftDerivative() * rounding) + 0.5) / rounding);
+            QString rightCoordStr =  QString(QObject::tr("r: %1")).arg(std::floor(((*it)->key.getRightDerivative() * rounding) + 0.5) / rounding);
+            
+            QPointF btmRight_LeftTanWidget(topLeft_LeftTanWidget.x() + fm.width(leftCoordStr),topLeft_LeftTanWidget.y() + fm.height());
+            QPointF btmRight_RightTanWidget(topLeft_RightTanWidget.x() + fm.width(rightCoordStr),topLeft_RightTanWidget.y() + fm.height());
+            
+            if (pt.x() >= topLeft_LeftTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_LeftTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
+                pt.y() >= topLeft_LeftTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_LeftTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
+                return std::make_pair(MoveTangentCommand::LEFT_TANGENT, *it);
+            } else if (pt.x() >= topLeft_RightTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_RightTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
+                       pt.y() >= topLeft_RightTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_RightTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
+                return std::make_pair(MoveTangentCommand::RIGHT_TANGENT, *it);
+            }
         }
     }
     return std::make_pair( MoveTangentCommand::LEFT_TANGENT,KeyPtr() );
