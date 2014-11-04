@@ -486,7 +486,6 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 NodeCurveEditorElement::~NodeCurveEditorElement()
 {
     _curveWidget->removeCurve(_curve);
-    delete _treeItem;
 }
 
 void
@@ -736,7 +735,6 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
 BezierEditorContext::~BezierEditorContext()
 {
     delete _imp->nameItem;
-    delete _imp->curveItem;
     _imp->widget->removeCurve(_imp->animCurve);
     for (std::list<NodeCurveEditorElement*>::iterator it = _imp->knobs.begin() ; it != _imp->knobs.end();++it) {
         delete *it;
@@ -806,6 +804,7 @@ BezierEditorContext::recursiveSelectBezier(QTreeWidgetItem* cur,
     if (_imp->nameItem == cur) {
         cur->setSelected(true);
         curves->push_back(_imp->animCurve);
+        recursiveSelectElement(_imp->knobs, cur, curves);
     } else {
         recursiveSelectElement(_imp->knobs, cur, curves);
     }
