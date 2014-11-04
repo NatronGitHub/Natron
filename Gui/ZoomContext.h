@@ -92,7 +92,7 @@ public:
         : _zoomLeft(0.)
           , _zoomBottom(0.)
           , _zoomFactor(1.)
-          , _zoomPAR(1.)
+          , _zoomAspectRatio(1.)
           , _screenWidth(0)
           , _screenHeight(0)
     {
@@ -101,7 +101,7 @@ public:
     /// width of a screen pixel in zoom coordinates
     double screenPixelWidth() const
     {
-        return 1. / (_zoomFactor * _zoomPAR);
+        return 1. / (_zoomFactor * _zoomAspectRatio);
     }
 
     /// height of a screen pixel in zoom coordinates
@@ -117,7 +117,7 @@ public:
 
     double right() const
     {
-        return _zoomLeft + _screenWidth / (_zoomFactor * _zoomPAR);
+        return _zoomLeft + _screenWidth / (_zoomFactor * _zoomAspectRatio);
     }
 
     double bottom() const
@@ -137,7 +137,7 @@ public:
 
     double par() const
     {
-        return _zoomPAR;
+        return _zoomAspectRatio;
     }
 
     /// width in screen pixels of the zoomed area
@@ -155,12 +155,12 @@ public:
     void setZoom(double zoomLeft,
                  double zoomBottom,
                  double zoomFactor,
-                 double zoomPAR)
+                 double zoomAspectRatio)
     {
         _zoomLeft = zoomLeft;
         _zoomBottom = zoomBottom;
         _zoomFactor = zoomFactor;
-        _zoomPAR = zoomPAR;
+        _zoomAspectRatio = zoomAspectRatio;
     }
 
     void translate(double dx,
@@ -179,26 +179,26 @@ public:
         _zoomFactor *= scale;
     }
 
-    // only zoom the x axis: changes the PAR and the Left but not the zoomFactor or the bottom
+    // only zoom the x axis: changes the AspectRatio and the Left but not the zoomFactor or the bottom
     void zoomx(double centerX,
                double /*centerY*/,
                double scale)
     {
         _zoomLeft = centerX - ( centerX - left() ) / scale;
-        _zoomPAR *= scale;
+        _zoomAspectRatio *= scale;
     }
 
-    // only zoom the y axis: changes the PAR, the zoomFactor and the Bottom but not the Left
+    // only zoom the y axis: changes the AspectRatio, the zoomFactor and the Bottom but not the Left
     void zoomy(double /*centerX*/,
                double centerY,
                double scale)
     {
         _zoomBottom = centerY - ( centerY - bottom() ) / scale;
-        _zoomPAR /= scale;
+        _zoomAspectRatio /= scale;
         _zoomFactor *= scale;
     }
 
-    // fit the area (xmin-xmax,ymin-ymax) in the zoom window, without modifying the PAR
+    // fit the area (xmin-xmax,ymin-ymax) in the zoom window, without modifying the AspectRatio
     void fit(double xmin,
              double xmax,
              double ymin,
@@ -218,7 +218,7 @@ public:
         }
     }
 
-    // fill the area (xmin-xmax,ymin-ymax) in the zoom window, modifying the PAR
+    // fill the area (xmin-xmax,ymin-ymax) in the zoom window, modifying the AspectRatio
     void fill(double xmin,
               double xmax,
               double ymin,
@@ -230,7 +230,7 @@ public:
         _zoomLeft = xmin;
         _zoomBottom = ymin;
         _zoomFactor = screenHeight() / height;
-        _zoomPAR = (screenWidth() * height) / (screenHeight() * width);
+        _zoomAspectRatio = (screenWidth() * height) / (screenHeight() * width);
     }
 
     void setScreenSize(double screenWidth,
@@ -273,7 +273,7 @@ private:
     double _zoomLeft; /// the left edge of the orthographic projection
     double _zoomBottom; /// the bottom edge of orthographic projection
     double _zoomFactor; /// the zoom factor applied to the current image
-    double _zoomPAR; /// the pixel aspect ration; a pixel from the image data occupies a size (zoomFactor*zoomPar,zoomFactor)
+    double _zoomAspectRatio; /// the aspect ratio; a 1x1 area in zoom coordinates occupies a size (zoomFactor*zoomPar,zoomFactor)
     double _screenWidth; /// window width in screen pixels
     double _screenHeight; /// window height in screen pixels
 };

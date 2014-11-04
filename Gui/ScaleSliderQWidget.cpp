@@ -23,133 +23,17 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QStyleOption>
 
 #include "Gui/ticks.h"
+#include "Gui/ZoomContext.h"
 
 #define TICK_HEIGHT 7
 #define SLIDER_WIDTH 4
 #define SLIDER_HEIGHT 15
 
-class ZoomHelper
-{
-public:
-    ZoomHelper()
-    : _zoomLeft(0.)
-    , _zoomBottom(0.)
-    , _zoomFactor(1.)
-    , _zoomPAR(1.)
-    , _screenWidth(0)
-    , _screenHeight(0)
-    {
-    }
-    
-    double left() const
-    {
-        return _zoomLeft;
-    }
-    
-    double right() const
-    {
-        return _zoomLeft + _screenWidth / (_zoomFactor * _zoomPAR);
-    }
-    
-    double bottom() const
-    {
-        return _zoomBottom;
-    }
-    
-    double top() const
-    {
-        return _zoomBottom + _screenHeight / _zoomFactor;
-    }
-
-    /// width in screen pixels of the zoomed area
-    double screenWidth() const
-    {
-        return _screenWidth;
-    }
-    
-    /// height in screen pixels of the zoomed area
-    double screenHeight() const
-    {
-        return _screenHeight;
-    }
-    
-    
-    // only zoom the x axis: changes the PAR and the Left but not the zoomFactor or the bottom
-    void zoomx(double centerX,
-               double /*centerY*/,
-               double scale)
-    {
-        _zoomLeft = centerX - ( centerX - left() ) / scale;
-        _zoomPAR *= scale;
-    }
-
-
-    
-    // fill the area (xmin-xmax,ymin-ymax) in the zoom window, modifying the PAR
-    void fill(double xmin,
-              double xmax,
-              double ymin,
-              double ymax)
-    {
-        double width = xmax - xmin;
-        double height = ymax - ymin;
-        
-        _zoomLeft = xmin;
-        _zoomBottom = ymin;
-        _zoomFactor = screenHeight() / height;
-        _zoomPAR = (screenWidth() * height) / (screenHeight() * width);
-    }
-    
-    void setScreenSize(double screenWidth,
-                       double screenHeight)
-    {
-        _screenWidth = screenWidth;
-        _screenHeight = screenHeight;
-    }
-    
-    /**
-     *@brief Computes the image coordinates of the point passed in parameter.
-     * This is a fast in-line method much faster than toZoomCoordinates_slow().
-     * This function actually does the unprojection to retrieve the position.
-     *@param x[in] The x coordinate of the point in viewport coordinates.
-     *@param y[in] The y coordinates of the point in viewport coordinates.
-     *@returns Returns the image coordinates mapped equivalent of (x,y).
-     **/
-    QPointF toZoomCoordinates(double widgetX,
-                              double widgetY) const
-    {
-        return QPointF( ( ( ( right() - left() ) * widgetX ) / screenWidth() ) + left(),
-                       ( ( ( bottom() - top() ) * widgetY ) / screenHeight() ) + top() );
-    }
-    
-    /**
-     *@brief Computes the viewport coordinates of the point passed in parameter.
-     * This function actually does the projection to retrieve the position;
-     *@param x[in] The x coordinate of the point in image coordinates.
-     *@param y[in] The y coordinates of the point in image coordinates.
-     *@returns Returns the viewport coordinates mapped equivalent of (x,y).
-     **/
-    QPointF toWidgetCoordinates(double zoomX,
-                                double zoomY) const
-    {
-        return QPointF( ( ( zoomX - left() ) / ( right() - left() ) ) * screenWidth(),
-                       ( ( zoomY - top() ) / ( bottom() - top() ) ) * screenHeight() );
-    }
-    
-private:
-    double _zoomLeft; /// the left edge of the orthographic projection
-    double _zoomBottom; /// the bottom edge of orthographic projection
-    double _zoomFactor; /// the zoom factor applied to the current image
-    double _zoomPAR; /// the pixel aspect ration; a pixel from the image data occupies a size (zoomFactor*zoomPar,zoomFactor)
-    double _screenWidth; /// window width in screen pixels
-    double _screenHeight; /// window height in screen pixels
-};
-
 
 struct ScaleSliderQWidgetPrivate
 {
     
-    ZoomHelper zoomCtx;
+    ZoomContext zoomCtx;
     QPointF oldClick;
     double minimum,maximum;
     Natron::ScaleTypeEnum type;
