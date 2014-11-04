@@ -202,10 +202,10 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
         k = kgui->getKnob();
     }
     
-    if ( !k->canAnimate() || ( k->typeName() == File_Knob::typeNameStatic() ) ) {
+    if ( !k->canAnimate() || !k->isAnimationEnabled() ) {
         return;
     }
-    
+
     boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>( k.get() )->getSignalSlotHandler();
     
     if (kgui) {
@@ -223,9 +223,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     bool hideKnob = true;
     
     if (k->getDimension() == 1) {
-        
-        KnobCurveGui* knobCurve;
-        
+                
         if (kgui) {
             knobCurve = new KnobCurveGui(curveWidget,kgui->getCurve(0),kgui,0,k->getDescription().c_str(),QColor(255,255,255),1.);
         } else {

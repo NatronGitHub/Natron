@@ -291,7 +291,7 @@ moveKey(KeyPtr &k,
             
             k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
         } else {
-            isKnobCurve->getInternalKnob()->moveValueAtTime(k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
+            knob->moveValueAtTime(k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
     } else if (isBezierCurve) {
         int oldTime = k->key.getTime();

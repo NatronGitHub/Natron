@@ -2027,13 +2027,12 @@ CurveWidget::onCurveChanged()
     ///we cannot use std::transform here because a keyframe might have disappeared from a curve
     ///hence the number of keyframes selected would decrease
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        KeyFrame kf;
         
         KeyFrameSet set = (*it)->curve->getKeyFrames();
         KeyFrameSet::const_iterator found = Curve::findWithTime(set, (*it)->key.getTime());
         
         if (found != set.end()) {
-            (*it)->key = kf;
+            (*it)->key = *found;
             _imp->refreshKeyTangents(*it);
             copy.push_back(*it);
         }
