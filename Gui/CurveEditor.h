@@ -187,6 +187,10 @@ public:
     
     virtual ~BezierEditorContext() OVERRIDE;
     
+    //Called when the destr. of RotoCurveEditorContext is called to prevent
+    //the tree items to be deleted twice due to Qt's parenting
+    void preventItemDeletion();
+    
     Bezier* getBezier() const;
     
     QTreeWidgetItem* getItem() const;

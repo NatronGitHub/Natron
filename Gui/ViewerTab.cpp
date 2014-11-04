@@ -1588,14 +1588,15 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
          ++it) {
         
         if (it->get() == _imp->_currentRoto.first) {
-            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentTracker.second->keyDown(scaleX, scaleY, e) ) {
+            
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentRoto.second->keyDown(scaleX, scaleY, e) ) {
                     return true;
                 }
             }
         } else if (it->get() == _imp->_currentTracker.first) {
-            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentRoto.second->keyDown(scaleX, scaleY, e) ) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentTracker.second->keyDown(scaleX, scaleY, e) ) {
                     return true;
                 }
             }

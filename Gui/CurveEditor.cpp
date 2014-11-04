@@ -689,7 +689,7 @@ struct BezierEditorContextPrivate {
     QTreeWidgetItem* curveItem;
     BezierCPCurveGui* animCurve;
     std::list<NodeCurveEditorElement*> knobs;
-    
+    bool doDeleteItem;
     
     BezierEditorContextPrivate(CurveWidget* widget,Bezier* curve,RotoCurveEditorContext* context)
     : widget(widget)
@@ -698,6 +698,8 @@ struct BezierEditorContextPrivate {
     , nameItem(0)
     , curveItem(0)
     , animCurve(0)
+    , knobs()
+    , doDeleteItem(true)
     {
         
     }
@@ -719,6 +721,7 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
     _imp->curveItem->setText(0, "Animation");
     
     _imp->animCurve = new BezierCPCurveGui(widget,curve,context->getNode()->getNode()->getRotoContext(),name,QColor(255,255,255),1.);
+    _imp->animCurve->setVisible(false);
     widget->addCurveAndSetColor(_imp->animCurve);
     
     const std::list<boost::shared_ptr<KnobI> >& knobs = curve->getKnobs();
@@ -734,10 +737,19 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
 
 BezierEditorContext::~BezierEditorContext()
 {
+    if (_imp->doDeleteItem) {
+        delete _imp->nameItem;
+    }
     _imp->widget->removeCurve(_imp->animCurve);
     for (std::list<NodeCurveEditorElement*>::iterator it = _imp->knobs.begin() ; it != _imp->knobs.end();++it) {
         delete *it;
     }
+}
+
+void
+BezierEditorContext::preventItemDeletion()
+{
+    _imp->doDeleteItem = false;
 }
 
 Bezier*
@@ -865,6 +877,7 @@ RotoCurveEditorContext::~RotoCurveEditorContext()
 {
     delete _imp->nameItem;
     for (std::list< BezierEditorContext*>::iterator it = _imp->curves.begin(); it!=_imp->curves.end(); ++it) {
+        (*it)->preventItemDeletion();
         delete *it;
     }
 }
