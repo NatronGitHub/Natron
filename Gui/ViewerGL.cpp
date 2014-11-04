@@ -3255,6 +3255,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
         }
         _imp->isUserRoISet = true;
     }
+    updateGL();
 }
 
 void
