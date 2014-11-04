@@ -511,6 +511,12 @@ CurveGui::isYComponentMovable() const
     return _internalCurve->isYComponentMovable();
 }
 
+KeyFrameSet
+CurveGui::getKeyFrames() const
+{
+    return _internalCurve->getKeyFrames_mt_safe();
+}
+
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
              KnobGui* knob,
@@ -602,6 +608,19 @@ BezierCPCurveGui::getCurveYRange() const
 {
     int keys = _bezier->getKeyframesCount();
     return std::make_pair(0, keys - 1);
+}
+
+KeyFrameSet
+BezierCPCurveGui::getKeyFrames() const
+{
+    KeyFrameSet ret;
+    std::set<int> keys;
+    _bezier->getKeyframeTimes(&keys);
+    int i = 0;
+    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+        ret.insert(KeyFrame(*it,i));
+    }
+    return ret;
 }
 /*****************************CURVE WIDGET***********************************************/
 
@@ -1236,7 +1255,7 @@ std::pair<CurveGui*,KeyFrame> CurveWidgetPrivate::isNearbyKeyFrame(const QPoint 
 
     for (Curves::const_iterator it = _curves.begin(); it != _curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            KeyFrameSet keyFrames = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
+            KeyFrameSet keyFrames = (*it)->getKeyFrames();
             for (KeyFrameSet::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
                 QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
                 if ( (std::abs( pt.y() - keyFramewidgetPos.y() ) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
@@ -1418,7 +1437,7 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
     for (Curves::const_iterator it = _curves.begin(); it != _curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
             
-            KeyFrameSet set = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
+            KeyFrameSet set = (*it)->getKeyFrames();
             for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
                 double y = it2->getValue();
                 double x = it2->getTime();
@@ -1500,7 +1519,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
 
     if ( (dt != 0) || (dv != 0) ) {
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            if ( !(*it)->curve->getInternalCurve()->isYComponentMovable() ) {
+            if ( !(*it)->curve->isYComponentMovable() ) {
                 dv = 0;
             }
         }
@@ -1555,7 +1574,7 @@ CurveWidgetPrivate::refreshKeyTangents(KeyPtr & key)
     double x = key->key.getTime();
     double y = key->key.getValue();
     QPointF keyWidgetCoord = zoomCtx.toWidgetCoordinates(x,y);
-    KeyFrameSet keyframes = key->curve->getInternalCurve()->getKeyFrames_mt_safe();
+    KeyFrameSet keyframes = key->curve->getKeyFrames();
     KeyFrameSet::const_iterator k = keyframes.find(key->key);
 
     //the key might have disappeared from the curve if the plugin deleted it.
@@ -1693,8 +1712,7 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             continue;
         } else {
             assert( (*it)->curve );
-            assert( (*it)->curve->getInternalCurve() );
-            KeyFrameSet ks = (*it)->curve->getInternalCurve()->getKeyFrames_mt_safe();
+            KeyFrameSet ks = (*it)->curve->getKeyFrames();
 
             //find out in this set what is the first key selected
             SelectedKeys::const_iterator leftMostSelected = _selectedKeyFrames.end();
@@ -1744,8 +1762,8 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 
             MaxMovement curveMaxMovement;
             double minimumTimeSpanBetween2Keys = 1.;
-           // std::pair<double,double> curveXRange = (*it)->curve->getInternalCurve()->getXRange();
-            if ( !(*it)->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers() ) {
+            
+            if ( !(*it)->curve->areKeyFramesTimeClampedToIntegers() ) {
                 minimumTimeSpanBetween2Keys = NATRON_CURVE_X_SPACING_EPSILON ;//* std::abs(curveXRange.second - curveXRange.first) * 10; //< be safe
             }
 
@@ -1932,16 +1950,18 @@ CurveWidget::centerOn(const std::vector<CurveGui*> & curves)
     RectD ret;
     for (U32 i = 0; i < curves.size(); ++i) {
         CurveGui* c = curves[i];
-        if (c->getInternalCurve()->getKeyFramesCount() == 0) {
+        
+        KeyFrameSet keys = c->getKeyFrames();
+
+        if (keys.empty()) {
             continue;
         }
         doCenter = true;
-        double xmin = c->getInternalCurve()->getMinimumTimeCovered();
-        double xmax = c->getInternalCurve()->getMaximumTimeCovered();
+        double xmin = keys.begin()->getTime();
+        double xmax = keys.rbegin()->getTime();
         double ymin = INT_MAX;
         double ymax = INT_MIN;
         //find out ymin,ymax
-        KeyFrameSet keys = c->getInternalCurve()->getKeyFrames_mt_safe();
         for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
             double value = it2->getValue();
             if (value < ymin) {
@@ -1992,9 +2012,11 @@ CurveWidget::onCurveChanged()
     ///hence the number of keyframes selected would decrease
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
         KeyFrame kf;
-        bool found = (*it)->curve->getInternalCurve()->getKeyFrameWithTime( (*it)->key.getTime(), &kf );
-        if (found) {
-            
+        
+        KeyFrameSet set = (*it)->curve->getKeyFrames();
+        KeyFrameSet::const_iterator found = Curve::findWithTime(set, (*it)->key.getTime());
+        
+        if (found != set.end()) {
             (*it)->key = kf;
             _imp->refreshKeyTangents(*it);
             copy.push_back(*it);
@@ -2825,20 +2847,6 @@ CurveWidget::sizeHint() const
 }
 
 void
-CurveWidget::addKeyFrame(CurveGui* curve,
-                         const KeyFrame & key)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    curve->getInternalCurve()->addKeyFrame(key);
-    if ( curve->getInternalCurve()->isAnimated() ) {
-        curve->setVisibleAndRefresh(true);
-    }
-}
-
-
-void
 CurveWidget::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
@@ -3108,7 +3116,7 @@ CurveWidget::selectAllKeyFrames()
     _imp->_selectedKeyFrames.clear();
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
+            KeyFrameSet keys = (*it)->getKeyFrames();
             for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
                 KeyPtr newSelected( new SelectedKey(*it,*it2) );
                 _imp->refreshKeyTangents(newSelected);
@@ -3285,7 +3293,8 @@ CurveWidget::exportCurveToAscii()
 
     std::vector<CurveGui*> curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if ( (*it)->isVisible() ) {
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
+        if ( (*it)->isVisible() && isKnobCurve) {
             curves.push_back(*it);
         }
     }
@@ -3355,7 +3364,8 @@ CurveWidget::importCurveFromAscii()
 
     std::vector<CurveGui*> curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if ( (*it)->isVisible() ) {
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
+        if ( (*it)->isVisible() && isKnobCurve ) {
             curves.push_back(*it);
         }
     }
@@ -3818,7 +3828,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
         }
         
         int curEqualKeys = 0;
-        KeyFrameSet set = _imp->key->curve->getInternalCurve()->getKeyFrames_mt_safe();
+        KeyFrameSet set = _imp->key->curve->getKeyFrames();
         for (KeyFrameSet::iterator it = set.begin(); it!=set.end(); ++it) {
             
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {

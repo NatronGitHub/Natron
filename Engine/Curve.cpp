@@ -1267,10 +1267,16 @@ Curve::evaluateCurveChanged(CurveChangedReasonEnum reason,
 }
 
 KeyFrameSet::const_iterator
+Curve::findWithTime(const KeyFrameSet& keys,double time)
+{
+    return std::find_if( keys.begin(), keys.end(), KeyFrameTimePredicate(time) );
+}
+
+KeyFrameSet::const_iterator
 Curve::find(double time) const
 {
     // PRIVATE - should not lock
-    return std::find_if( _imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time) );
+    return findWithTime(_imp->keyFrames, time);
 }
 
 KeyFrameSet::const_iterator

@@ -30,6 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Gui/CurveEditorUndoRedo.h"
 #include "Engine/OverlaySupport.h"
+#include "Engine/Curve.h"
 
 class QFont;
 class Variant;
@@ -133,6 +134,7 @@ public:
     virtual bool areKeyFramesValuesClampedToBooleans() const;
     virtual bool areKeyFramesValuesClampedToIntegers() const;
     virtual bool isYComponentMovable() const;
+    virtual KeyFrameSet getKeyFrames() const;
     
 signals:
 
@@ -221,6 +223,7 @@ public:
     virtual bool areKeyFramesValuesClampedToBooleans() const { return false; }
     virtual bool areKeyFramesValuesClampedToIntegers() const { return true; }
     virtual bool isYComponentMovable() const { return false; }
+    virtual KeyFrameSet getKeyFrames() const;
 private:
     
     
@@ -262,8 +265,6 @@ public:
     void showCurvesAndHideOthers(const std::vector<CurveGui*> & curves);
 
     void getVisibleCurves(std::vector<CurveGui*>* curves) const;
-
-    void addKeyFrame(CurveGui* curve, const KeyFrame & key);
 
     void setSelectedKeys(const SelectedKeys & keys);
 
