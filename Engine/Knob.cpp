@@ -437,7 +437,7 @@ KnobHelper::deleteValueAtTime(int time,
         evaluateValueChange(dimension,reason);
     } else {
         if (_signalSlotHandler) {
-             _signalSlotHandler->s_keyFrameRemoved(time,dimension);
+             _signalSlotHandler->s_keyFrameRemoved(time,dimension,(int)reason);
         }
     }
 }
@@ -462,7 +462,7 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
-        curve = getCurve(dimension);
+        curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
@@ -750,12 +750,12 @@ KnobHelper::setGuiCurveHasChanged(int dimension,bool changed)
     _imp->mustCloneGuiCurves[dimension] = changed;
 }
 
-boost::shared_ptr<Curve> KnobHelper::getCurve(int dimension) const
+boost::shared_ptr<Curve> KnobHelper::getCurve(int dimension,bool byPassMaster) const
 {
     assert( 0 <= dimension && dimension < (int)_imp->curves.size() );
 
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
+    if (!byPassMaster && master.second) {
         return master.second->getCurve(master.first);
     }
 

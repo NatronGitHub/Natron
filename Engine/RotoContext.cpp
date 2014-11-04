@@ -4265,37 +4265,36 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
         if ( !isBezier->isLockedRecursive() ) {
             ++nbUnlockedBeziers;
         }
-        ///first-off set the context knobs to the value of this bezier
-        boost::shared_ptr<KnobI> activated = isBezier->getActivatedKnob();
-        boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
-        boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
-        boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
-#ifdef NATRON_ROTO_INVERTIBLE
-        boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
-#endif
-        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
-        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
+        
+        const std::list<boost::shared_ptr<KnobI> >& bezierKnobs = isBezier->getKnobs();
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = bezierKnobs.begin(); it != bezierKnobs.end(); ++it) {
+            
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+                if ((*it2)->getName() == (*it)->getName()) {
+                    
+                    //Clone current state
+                    (*it2)->cloneAndUpdateGui(it->get());
+                    
+                    //Slave internal knobs of the bezier
+                    assert((*it)->getDimension() == (*it2)->getDimension());
+                    for (int i = 0; i < (*it)->getDimension(); ++i) {
+                        (*it)->slaveTo(i, (*it2), i);
+                    }
+                    
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(SequenceTime,int,int,bool)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(SequenceTime,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
 
-        _imp->activated->clone( activated.get() );
-        _imp->feather->clone( feather.get() );
-        _imp->featherFallOff->clone( featherFallOff.get() );
-        _imp->opacity->clone( opacity.get() );
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->clone( inverted.get() );
-#endif
-        _imp->colorKnob->clone( colorknob.get() );
 
-        ///link this bezier knobs to the context
-        activated->slaveTo(0, _imp->activated, 0);
-        feather->slaveTo(0, _imp->feather, 0);
-        featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
-        opacity->slaveTo(0, _imp->opacity, 0);
-#ifdef NATRON_ROTO_INVERTIBLE
-        inverted->slaveTo(0, _imp->inverted, 0);
-#endif
-        for (int i = 0; i < colorknob->getDimension(); ++i) {
-            colorknob->slaveTo(i, _imp->colorKnob, i);
+                    break;
+                }
+            }
+            
         }
+
     } else if (isLayer) {
         const RotoItems & children = isLayer->getItems();
         for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
@@ -4303,34 +4302,38 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
         }
     }
 
-    if (nbUnlockedBeziers > 0) {
         ///enable the knobs
-        _imp->activated->setAllDimensionsEnabled(true);
-        _imp->opacity->setAllDimensionsEnabled(true);
-        _imp->featherFallOff->setAllDimensionsEnabled(true);
-        _imp->feather->setAllDimensionsEnabled(true);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setAllDimensionsEnabled(true);
-#endif
-        _imp->colorKnob->setAllDimensionsEnabled(true);
-    }
-
-    ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
-    ///(maybe black or something)
-    if (nbUnlockedBeziers >= 2) {
-        _imp->activated->setDirty(true);
-        _imp->opacity->setDirty(true);
-        _imp->feather->setDirty(true);
-        _imp->featherFallOff->setDirty(true);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setDirty(true);
-#endif
-        _imp->colorKnob->setDirty(true);
-    }
-
+        
+        for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+            if (nbUnlockedBeziers > 0) {
+                (*it2)->setAllDimensionsEnabled(true);
+                
+                ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
+                ///(maybe black or something)
+                
+                if (nbUnlockedBeziers >= 2) {
+                    (*it2)->setDirty(true);
+                }
+            }
+        }
 
     _imp->selectedItems.push_back(item);
 } // selectInternal
+
+void
+RotoContext::onSelectedKnobCurveChanged()
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (handler) {
+        boost::shared_ptr<KnobI> knob = handler->getKnob();
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+            if ((*it)->getName() == knob->getName()) {
+                (*it)->cloneAndUpdateGui(knob.get());
+                break;
+            }
+        }
+    }
+}
 
 void
 RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
@@ -4361,56 +4364,57 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>( b.get() );
     if (isBezier) {
         ///first-off set the context knobs to the value of this bezier
-        boost::shared_ptr<KnobI> activated = isBezier->getActivatedKnob();
-        boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
-        boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
-        boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
-#ifdef NATRON_ROTO_INVERTIBLE
-        boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
-#endif
-        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
-        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
+        
+        const std::list<boost::shared_ptr<KnobI> >& bezierKnobs = isBezier->getKnobs();
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = bezierKnobs.begin(); it != bezierKnobs.end(); ++it) {
+            
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+                if ((*it2)->getName() == (*it)->getName()) {
+                    
+                    //Clone current state
+                    (*it2)->cloneAndUpdateGui(it->get());
+                    
+                    //Slave internal knobs of the bezier
+                    assert((*it)->getDimension() == (*it2)->getDimension());
+                    for (int i = 0; i < (*it)->getDimension(); ++i) {
+                        (*it)->unSlave(i,notDirty);
+                    }
+                    
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(SequenceTime,int,int,bool)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(SequenceTime,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
 
-        activated->unSlave(0,notDirty);
-        feather->unSlave(0,notDirty);
-        featherFallOff->unSlave(0,notDirty);
-        opacity->unSlave(0,notDirty);
-#ifdef NATRON_ROTO_INVERTIBLE
-        inverted->unSlave(0,notDirty);
-#endif
-        for (int i = 0; i < colorknob->getDimension(); ++i) {
-            colorknob->unSlave(i, notDirty);
+                    break;
+                }
+            }
+            
         }
-        compOp->unSlave(0, notDirty);
+
+
     } else if (isLayer) {
         const RotoItems & children = isLayer->getItems();
         for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
             deselectInternal(*it);
         }
     }
-
-    if (notDirty) {
-        _imp->activated->setDirty(false);
-        _imp->opacity->setDirty(false);
-        _imp->feather->setDirty(false);
-        _imp->featherFallOff->setDirty(false);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setDirty(false);
-#endif
-        _imp->colorKnob->setDirty(false);
+    
+    
+    
+    for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+        if (notDirty) {
+            (*it2)->setDirty(false);
+        }
+        
+        ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
+        
+        if (nbBeziersUnLockedBezier == 0) {
+            (*it2)->setAllDimensionsEnabled(false);
+        }
     }
-
-    ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
-    if (nbBeziersUnLockedBezier == 0) {
-        _imp->activated->setAllDimensionsEnabled(false);
-        _imp->opacity->setAllDimensionsEnabled(false);
-        _imp->featherFallOff->setAllDimensionsEnabled(false);
-        _imp->feather->setAllDimensionsEnabled(false);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setAllDimensionsEnabled(false);
-#endif
-        _imp->colorKnob->setAllDimensionsEnabled(false);
-    }
+    
 } // deselectInternal
 
 void

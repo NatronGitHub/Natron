@@ -284,7 +284,7 @@ Knob<bool>::clampToMinMax(const bool& value,int /*dimension*/) const
 //Declare the specialization before defining it to avoid the following
 //error: explicit specialization of 'getValueAtTime' after instantiation
 template<>
-std::string Knob<std::string>::getValueAtTime(double time, int dimension,bool clamp) const;
+std::string Knob<std::string>::getValueAtTime(double time, int dimension,bool clamp,bool byPassMaster) const;
 
 template<>
 std::string
@@ -360,7 +360,7 @@ Knob<T>::getValue(int dimension,bool clamp) const
 template<>
 std::string
 Knob<std::string>::getValueAtTime(double time,
-                                  int dimension,bool /*clampToMinMax*/) const
+                                  int dimension,bool /*clampToMinMax*/,bool byPassMaster) const
 {
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
@@ -369,7 +369,7 @@ Knob<std::string>::getValueAtTime(double time,
 
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
+    if (!byPassMaster && master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
         assert(isString); //< other data types aren't supported
         return isString->getValueAtTime(time,master.first,false);
@@ -385,7 +385,7 @@ Knob<std::string>::getValueAtTime(double time,
     }
     assert( ret.empty() );
 
-    boost::shared_ptr<Curve> curve  = getCurve(dimension);
+    boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
     if (curve->getKeyFramesCount() > 0) {
         assert(isStringAnimated);
         isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), &ret);
@@ -410,7 +410,7 @@ Knob<std::string>::getValueAtTime(double time,
 template<typename T>
 T
 Knob<T>::getValueAtTime(double time,
-                        int dimension,bool clamp ) const
+                        int dimension,bool clamp ,bool byPassMaster) const
 {
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
@@ -419,7 +419,7 @@ Knob<T>::getValueAtTime(double time,
 
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
+    if (!byPassMaster && master.second) {
         Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
         Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
         Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
@@ -432,7 +432,7 @@ Knob<T>::getValueAtTime(double time,
             return isDouble->getValueAtTime(time,master.first);
         }
     }
-    boost::shared_ptr<Curve> curve  = getCurve(dimension);
+    boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
     if (curve->getKeyFramesCount() > 0) {
         //getValueAt already clamps to the range for us
         return (T)curve->getValueAt(time,clamp);
@@ -821,9 +821,7 @@ Knob<T>::setValueAtTime(int time,
     guiCurveCloneInternalCurve(dimension);
     
     if (_signalSlotHandler && ret) {
-        if (reason != Natron::eValueChangedReasonUserEdited) {
-            _signalSlotHandler->s_keyFrameSet(time,dimension,ret);
-        }
+        _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
     }
     evaluateValueChange(dimension, reason);
 
@@ -1472,7 +1470,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other)
                 bool ok = getKeyFrameTime(k, i, &time);
                 assert(ok);
                 if (ok) {
-                    _signalSlotHandler->s_keyFrameRemoved(time, i);
+                    _signalSlotHandler->s_keyFrameRemoved(time, i,(int)Natron::eValueChangedReasonNatronInternalEdited);
                 }
             }
         }
@@ -1484,7 +1482,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other)
                 bool ok = getKeyFrameTime(k, i, &time);
                 assert(ok);
                 if (ok) {
-                    _signalSlotHandler->s_keyFrameSet(time, i,true);
+                    _signalSlotHandler->s_keyFrameSet(time, i,(int)Natron::eValueChangedReasonNatronInternalEdited,true);
                 }
             }
             _signalSlotHandler->s_valueChanged(i,Natron::eValueChangedReasonPluginEdited);

@@ -1065,6 +1065,8 @@ public slots:
     void onFeatherLinkChanged(bool enabled);
 
     void onRippleEditChanged(bool enabled);
+    
+    void onSelectedKnobCurveChanged();
 
 private:
 

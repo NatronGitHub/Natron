@@ -130,8 +130,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
     QObject::connect( handler,SIGNAL( refreshGuiCurve(int)),this,SLOT( onRefreshGuiCurve(int) ) );
     QObject::connect( handler,SIGNAL( valueChanged(int,int) ),this,SLOT( onInternalValueChanged(int,int) ) );
-    QObject::connect( handler,SIGNAL( keyFrameSet(SequenceTime,int,bool) ),this,SLOT( onInternalKeySet(SequenceTime,int,bool) ) );
-    QObject::connect( handler,SIGNAL( keyFrameRemoved(SequenceTime,int) ),this,SLOT( onInternalKeyRemoved(SequenceTime,int) ) );
+    QObject::connect( handler,SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),this,SLOT( onInternalKeySet(SequenceTime,int,int,bool) ) );
+    QObject::connect( handler,SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),this,SLOT( onInternalKeyRemoved(SequenceTime,int,int) ) );
     QObject::connect( handler,SIGNAL( keyFrameMoved(int,int,int)), this, SLOT( onKeyFrameMoved(int,int,int)));
     QObject::connect( handler,SIGNAL( secretChanged() ),this,SLOT( setSecret() ) );
     QObject::connect( handler,SIGNAL( enabledChanged() ),this,SLOT( setEnabledSlot() ) );
@@ -1025,22 +1025,27 @@ KnobGui::updateCurveEditorKeyframes()
 
 void
 KnobGui::onInternalKeySet(SequenceTime time,
-                          int,
+                          int /*dimension*/,
+                          int reason,
                           bool added )
 {
-    if (added) {
-        boost::shared_ptr<KnobI> knob = getKnob();
-        if ( !knob->getIsSecret() ) {
-            knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+        if (added) {
+            boost::shared_ptr<KnobI> knob = getKnob();
+            if ( !knob->getIsSecret() ) {
+                knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+            }
         }
-    }
 
+    }
+    
     updateCurveEditorKeyframes();
 }
 
 void
 KnobGui::onInternalKeyRemoved(SequenceTime time,
-                              int)
+                              int /*dimension*/,
+                              int /*reason*/)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
 

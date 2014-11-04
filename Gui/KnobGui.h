@@ -190,9 +190,9 @@ public slots:
      **/
     void onInternalValueChanged(int dimension,int reason);
 
-    void onInternalKeySet(SequenceTime time,int dimension,bool added);
+    void onInternalKeySet(SequenceTime time,int dimension,int reason,bool added);
 
-    void onInternalKeyRemoved(SequenceTime time,int dimension);
+    void onInternalKeyRemoved(SequenceTime time,int dimension,int reason);
 
     void onInternalAnimationAboutToBeRemoved();
     

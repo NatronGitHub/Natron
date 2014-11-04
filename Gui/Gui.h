@@ -492,6 +492,8 @@ public slots:
     void setVisibleProjectSettingsPanel();
 
     void putSettingsPanelFirst(DockablePanel* panel);
+    
+    void buildTabFocusOrderPropertiesBin();
 
     void addToolButttonsToToolBar();
 

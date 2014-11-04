@@ -199,6 +199,8 @@ public:
     
     void recursiveSelectBezier(QTreeWidgetItem* cur,bool mustSelect,
                              std::vector<CurveGui*> *curves);
+    
+    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
 public slots:
     
     void onNameChanged(const QString & name);
@@ -234,6 +236,8 @@ public:
     void recursiveSelectRoto(QTreeWidgetItem* cur,
                              std::vector<CurveGui*> *curves);
 
+    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
+    
 public slots:
     
     void onNameChanged(const QString & name);

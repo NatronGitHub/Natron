@@ -1629,6 +1629,23 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
     _imp->_layoutPropertiesBin->removeWidget(panel);
     _imp->_layoutPropertiesBin->insertWidget(0, panel);
     _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+    buildTabFocusOrderPropertiesBin();
+}
+
+void
+Gui::buildTabFocusOrderPropertiesBin()
+{
+    int next = 1;
+    for (int i = 0; i < _imp->_layoutPropertiesBin->count(); ++i,++next) {
+        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
+        QWidget* w = item->widget();
+        QWidget* nextWidget = next >= _imp->_layoutPropertiesBin->count() ? _imp->_layoutPropertiesBin->itemAt(0)->widget()
+        : _imp->_layoutPropertiesBin->itemAt(next)->widget();
+        
+        if (w && nextWidget) {
+            setTabOrder(w, nextWidget);
+        }
+    }
 }
 
 void

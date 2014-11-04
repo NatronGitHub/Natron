@@ -93,7 +93,7 @@ PasteUndoCommand::undo()
             }
         }
         ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0,false);
+        _knob->onInternalKeySet(0, 0,Natron::eValueChangedReasonNatronGuiEdited,false);
         _knob->setAllKeyframeMarkersOnTimeline(-1);
 
         if (hasKeyframes) {

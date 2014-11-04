@@ -1140,6 +1140,7 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     for (U32 i = 0; i < _panels.size(); ++i) {
         _imp->_container->addWidget(_panels[i]);
     }
+    getGui()->buildTabFocusOrderPropertiesBin();
     update();
 }
 
@@ -1163,6 +1164,7 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }
+    getGui()->buildTabFocusOrderPropertiesBin();
 }
 
 void

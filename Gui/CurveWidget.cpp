@@ -461,8 +461,11 @@ CurveGui::evaluate(double x) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return _internalCurve->getValueAt(x);
+    try {
+        return _internalCurve->getValueAt(x,false);
+    } catch (...) {
+        return 0.;
+    }
 }
 
 void
@@ -536,11 +539,13 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
              const boost::shared_ptr<KnobI>& knob,
+             const boost::shared_ptr<RotoContext>& roto,
              int dimension,
              const QString & name,
              const QColor & color,
              int thickness)
 : CurveGui(curveWidget,curve,name,color,thickness)
+, _roto(roto)
 , _internalKnob(knob)
 , _knob(0)
 , _dimension(dimension)
@@ -635,7 +640,7 @@ namespace { // protext local classes in anonymous namespace
 typedef std::list<CurveGui* > Curves;
 struct MaxMovement
 {
-    double left,right,bottom,top;
+    double left,right;
 };
 }
 
@@ -1488,7 +1493,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     }
     // clamp totalMovement to _keyDragMaxMovement
     totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
-    totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
+   // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
 
     /// round to the nearest integer the keyframes total motion (in X only)
     if (clampToIntegers) {
@@ -1813,9 +1818,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             }
 
             ///Compute the max up/down movements given the min/max of the curve
-            std::pair<double,double> maxY = (*it)->curve->getCurveYRange();
-            curveMaxMovement.top = maxY.second - topMost->getValue();
-            curveMaxMovement.bottom = maxY.first - bottomMost->getValue();
+//            std::pair<double,double> maxY = (*it)->curve->getCurveYRange();
+//            curveMaxMovement.top = maxY.second - topMost->getValue();
+//            curveMaxMovement.bottom = maxY.first - bottomMost->getValue();
             curvesMaxMovements.insert( std::make_pair( (*it)->curve, curveMaxMovement ) );
         }
     }
@@ -1825,35 +1830,40 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 
     _keyDragMaxMovement.left = INT_MIN;
     _keyDragMaxMovement.right = INT_MAX;
-    _keyDragMaxMovement.bottom = INT_MIN;
-    _keyDragMaxMovement.top = INT_MAX;
+   // _keyDragMaxMovement.bottom = INT_MIN;
+   // _keyDragMaxMovement.top = INT_MAX;
 
     for (std::map<CurveGui*,MaxMovement>::const_iterator it = curvesMaxMovements.begin(); it != curvesMaxMovements.end(); ++it) {
         const MaxMovement & move = it->second;
-        assert(move.left <= 0 && _keyDragMaxMovement.left <= 0);
+        
+        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
+        //assert(move.left <= 0 && _keyDragMaxMovement.left <= 0);
         //get the minimum for the left movement (numbers are all negatives here)
         if (move.left > _keyDragMaxMovement.left) {
             _keyDragMaxMovement.left = move.left;
         }
 
-        assert(move.right >= 0 && _keyDragMaxMovement.right >= 0);
+        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
+        //assert(move.right >= 0 && _keyDragMaxMovement.right >= 0);
         //get the minimum for the right movement (numbers are all positives here)
         if (move.right < _keyDragMaxMovement.right) {
             _keyDragMaxMovement.right = move.right;
         }
 
-        assert(move.bottom <= 0 && _keyDragMaxMovement.bottom <= 0);
-        if (move.bottom > _keyDragMaxMovement.bottom) {
-            _keyDragMaxMovement.bottom = move.bottom;
-        }
+        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
+        //assert(move.bottom <= 0 && _keyDragMaxMovement.bottom <= 0);
+//        if (move.bottom > _keyDragMaxMovement.bottom) {
+//            _keyDragMaxMovement.bottom = move.bottom;
+//        }
 
-        assert(move.top >= 0 && _keyDragMaxMovement.top >= 0);
-        if (move.top < _keyDragMaxMovement.top) {
-            _keyDragMaxMovement.top = move.top;
-        }
+        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
+        //assert(move.top >= 0 && _keyDragMaxMovement.top >= 0);
+//        if (move.top < _keyDragMaxMovement.top) {
+//            _keyDragMaxMovement.top = move.top;
+//        }
     }
-    assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
-           && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
+  //  assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
+   //        && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
 } // updateSelectedKeysMaxMovement
 
 void
@@ -2547,16 +2557,24 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve);
                 BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
                 if (isKnobCurve) {
-                    boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-                    assert(knob);
-                    KnobHolder* holder = knob->getHolder();
-                    assert(holder);
-                    std::map<KnobHolder*,bool>::iterator found = toEvaluate.find(holder);
-                    bool evaluateOnChange = knob->getEvaluateOnChange();
-                    if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
-                        found->second = true;
-                    } else if ( found == toEvaluate.end() ) {
-                        toEvaluate.insert( std::make_pair(holder,evaluateOnChange) );
+                    
+                    if (!isKnobCurve->getKnobGui()) {
+                        boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
+                        assert(roto);
+                        rotoToEvaluate.push_back(roto);
+                    } else {
+                        
+                        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+                        assert(knob);
+                        KnobHolder* holder = knob->getHolder();
+                        assert(holder);
+                        std::map<KnobHolder*,bool>::iterator found = toEvaluate.find(holder);
+                        bool evaluateOnChange = knob->getEvaluateOnChange();
+                        if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
+                            found->second = true;
+                        } else if ( found == toEvaluate.end() ) {
+                            toEvaluate.insert( std::make_pair(holder,evaluateOnChange) );
+                        }
                     }
                 } else if (isBezierCurve) {
                     rotoToEvaluate.push_back(isBezierCurve->getRotoContext());
@@ -2572,9 +2590,15 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(_imp->_selectedDerivative.second->curve);
             BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(_imp->_selectedDerivative.second->curve);
             if (isKnobCurve) {
-                boost::shared_ptr<KnobI> toEvaluate = isKnobCurve->getInternalKnob();
-                assert(toEvaluate);
-                toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::eValueChangedReasonUserEdited);
+                if (!isKnobCurve->getKnobGui()) {
+                    boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
+                    assert(roto);
+                    roto->evaluateChange();
+                } else {
+                    boost::shared_ptr<KnobI> toEvaluate = isKnobCurve->getInternalKnob();
+                    assert(toEvaluate);
+                    toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::eValueChangedReasonUserEdited);
+                }
             } else if (isBezierCurve) {
                 isBezierCurve->getRotoContext()->evaluateChange();
             }

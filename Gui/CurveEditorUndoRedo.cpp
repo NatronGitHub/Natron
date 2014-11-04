@@ -308,13 +308,24 @@ MoveKeysCommand::move(double dt,
 {
     std::list<KnobI*> differentKnobs;
 
+    std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
+    
     for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve);
         if (isKnobCurve) {
-            KnobI* k = isKnobCurve->getInternalKnob().get();
-            if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
-                differentKnobs.push_back(k);
-                k->blockEvaluation();
+            
+            if (!isKnobCurve->getKnobGui()) {
+                boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
+                assert(roto);
+                if (std::find(rotoToEvaluate.begin(),rotoToEvaluate.end(),roto) == rotoToEvaluate.end()) {
+                    rotoToEvaluate.push_back(roto);
+                }
+            } else {
+                KnobI* k = isKnobCurve->getInternalKnob().get();
+                if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
+                    differentKnobs.push_back(k);
+                    k->blockEvaluation();
+                }
             }
         }
     }
@@ -334,8 +345,14 @@ MoveKeysCommand::move(double dt,
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->unblockEvaluation();
         if (_firstRedoCalled || _updateOnFirstRedo) {
-            (*it)->getHolder()->evaluate_public(*it, true, Natron::eValueChangedReasonUserEdited);
+            if ((*it)->getHolder()) {
+                (*it)->getHolder()->evaluate_public(*it, true, Natron::eValueChangedReasonUserEdited);
+            }
         }
+    }
+    
+    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end();++it) {
+        (*it)->evaluateChange();
     }
 
     _widget->refreshSelectedKeys();
@@ -403,13 +420,24 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 {
     std::list<KnobI*> differentKnobs;
 
+    std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
+
     for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->key->curve);
         if (isKnobCurve) {
-            KnobI* k = isKnobCurve->getInternalKnob().get();
-            if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
-                differentKnobs.push_back(k);
-                k->blockEvaluation();
+            
+            if (!isKnobCurve->getKnobGui()) {
+                boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
+                assert(roto);
+                if (std::find(rotoToEvaluate.begin(),rotoToEvaluate.end(),roto) == rotoToEvaluate.end()) {
+                    rotoToEvaluate.push_back(roto);
+                }
+            } else {
+                KnobI* k = isKnobCurve->getInternalKnob().get();
+                if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
+                    differentKnobs.push_back(k);
+                    k->blockEvaluation();
+                }
             }
         }
     }
@@ -442,6 +470,9 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->unblockEvaluation();
         (*it)->getHolder()->evaluate_public(*it, true, Natron::eValueChangedReasonUserEdited);
+    }
+    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end();++it) {
+        (*it)->evaluateChange();
     }
 
     _widget->refreshSelectedKeys();

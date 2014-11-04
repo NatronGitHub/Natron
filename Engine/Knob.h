@@ -87,15 +87,17 @@ public:
     
     void s_keyFrameSet(SequenceTime time,
                        int dimension,
+                       int reason,
                        bool added)
     {
-        emit keyFrameSet(time,dimension,added);
+        emit keyFrameSet(time,dimension,reason,added);
     }
     
     void s_keyFrameRemoved(SequenceTime time,
-                           int dimension)
+                           int dimension,
+                           int reason)
     {
-        emit keyFrameRemoved(time,dimension);
+        emit keyFrameRemoved(time,dimension,reason);
     }
     
     void s_animationAboutToBeRemoved(int dimension)
@@ -210,13 +212,13 @@ signals:
     
     ///Emitted whenever a keyframe is set with a reason different of eValueChangedReasonUserEdited
     ///@param added True if this is the first time that the keyframe was set
-    void keyFrameSet(SequenceTime time,int dimension,bool added);
+    void keyFrameSet(SequenceTime time,int dimension,int reason,bool added);
     
     void refreshGuiCurve(int dimension);
 
     
     ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
-    void keyFrameRemoved(SequenceTime,int);
+    void keyFrameRemoved(SequenceTime,int dimension,int reason);
     
     void keyFrameMoved(int dimension,int oldTime,int newTime);
     
@@ -486,7 +488,7 @@ public:
      * @brief Returns a pointer to the curve in the given dimension.
      * It cannot be a null pointer.
      **/
-    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const = 0;
+    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0,bool byPassMaster = false) const = 0;
 
     /**
      * @brief Returns true if the dimension is animated with keyframes.
@@ -889,7 +891,7 @@ public:
     virtual int getKeyFramesCount(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getKeyFrameIndex(int dimension, double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0,bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1071,7 +1073,7 @@ public:
      * This function is overloaded by the String_Knob which can have its custom interpolation
      * but this should be the only knob which should ever need to overload it.
      **/
-    T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
+    T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true,bool byPassMaster = false) const WARN_UNUSED_RETURN;
 
 private:
 

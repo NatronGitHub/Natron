@@ -545,6 +545,8 @@ struct RotoContextPrivate
 #endif
     boost::shared_ptr<Color_Knob> colorKnob;
 
+    std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
+    
     ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
     ////to give a unique default name to each shape
     std::map<std::string, int> itemCounters;
@@ -578,6 +580,8 @@ struct RotoContextPrivate
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         opacity->setAllDimensionsEnabled(false);
         opacity->setIsPersistant(false);
+        knobs.push_back(opacity);
+        
         feather = Natron::createKnob<Double_Knob>(effect, kRotoFeatherParamName, 1, false);
         feather->setHintToolTip(kRotoFeatherHint);
         feather->setMinimum(-100);
@@ -587,6 +591,8 @@ struct RotoContextPrivate
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         feather->setAllDimensionsEnabled(false);
         feather->setIsPersistant(false);
+        knobs.push_back(feather);
+        
         featherFallOff = Natron::createKnob<Double_Knob>(effect, kRotoFeatherFallOffParamName, 1, false);
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->setMinimum(0.001);
@@ -596,18 +602,23 @@ struct RotoContextPrivate
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOff->setAllDimensionsEnabled(false);
         featherFallOff->setIsPersistant(false);
+        knobs.push_back(featherFallOff);
+        
         activated = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamName, 1, false);
         activated->setHintToolTip(kRotoActivatedHint);
         activated->turnOffNewLine();
         activated->setDefaultValue(true);
         activated->setAllDimensionsEnabled(false);
         activated->setIsPersistant(false);
+        knobs.push_back(activated);
+        
 #ifdef NATRON_ROTO_INVERTIBLE
         inverted = Natron::createKnob<Bool_Knob>(effect, kRotoInvertedParamName, 1, false);
         inverted->setHintToolTip(kRotoInvertedHint);
         inverted->setDefaultValue(false);
         inverted->setAllDimensionsEnabled(false);
         inverted->setIsPersistant(false);
+        knobs.push_back(inverted);
 #endif
 
         colorKnob = Natron::createKnob<Color_Knob>(effect, kRotoColorParamName, 3, false);
@@ -617,6 +628,7 @@ struct RotoContextPrivate
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         colorKnob->setAllDimensionsEnabled(false);
         colorKnob->setIsPersistant(false);
+        knobs.push_back(colorKnob);
     }
 
     /**
