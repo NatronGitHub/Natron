@@ -246,7 +246,7 @@ public slots:
     void onPasteAnimationActionTriggered();
 
     void onLinkToActionTriggered();
-    void linkTo();
+    void linkTo(int dimension);
 
     void onUnlinkActionTriggered();
     void unlink();

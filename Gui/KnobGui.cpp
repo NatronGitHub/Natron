@@ -336,9 +336,17 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 
     if (!isSlave && enabled) {
         QAction* linkToAction = new QAction(tr("Link to"),_imp->copyRightClickMenu);
-        linkToAction->setData( QVariant(dimension) );
+        linkToAction->setData(dimension);
         QObject::connect( linkToAction,SIGNAL( triggered() ),this,SLOT( onLinkToActionTriggered() ) );
         _imp->copyRightClickMenu->addAction(linkToAction);
+        
+        if (dim > 1) {
+            QAction* linkToAction = new QAction(tr("Link to (all dimensions)"),_imp->copyRightClickMenu);
+            linkToAction->setData(-1);
+            QObject::connect( linkToAction,SIGNAL( triggered() ),this,SLOT( onLinkToActionTriggered() ) );
+            _imp->copyRightClickMenu->addAction(linkToAction);
+        }
+        
     } else if (isSlave) {
         QAction* unlinkAction = new QAction(tr("Unlink"),_imp->copyRightClickMenu);
         unlinkAction->setData( QVariant(dimension) );
@@ -1346,7 +1354,7 @@ KnobGui::onKnobSlavedChanged(int dimension,
 }
 
 void
-KnobGui::linkTo()
+KnobGui::linkTo(int dimension)
 {
     LinkToKnobDialog dialog( this,_imp->copyRightClickMenu->parentWidget() );
 
@@ -1379,8 +1387,10 @@ KnobGui::linkTo()
                 if (i == dims - 1) {
                     thisKnob->unblockEvaluation();
                 }
-                thisKnob->onKnobSlavedTo(i, otherKnob,i);
-                onKnobSlavedChanged(i, true);
+                if ((i == dimension || dimension == -1) && i < otherKnob->getDimension()) {
+                    thisKnob->onKnobSlavedTo(i, otherKnob,i);
+                    onKnobSlavedChanged(i, true);
+                }
             }
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
@@ -1390,7 +1400,10 @@ KnobGui::linkTo()
 void
 KnobGui::onLinkToActionTriggered()
 {
-    linkTo();
+    QAction* action = qobject_cast<QAction*>(sender());
+    assert(action);
+    
+    linkTo(action->data().toInt());
 }
 
 void
