@@ -1196,7 +1196,7 @@ Project::endKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
 ///this function is only called on the main thread
 void
 Project::onKnobValueChanged(KnobI* knob,
-                            Natron::ValueChangedReasonEnum /*reason*/,
+                            Natron::ValueChangedReasonEnum reason,
                             SequenceTime /*time*/)
 {
     if ( knob == _imp->viewsCount.get() ) {
@@ -1214,6 +1214,14 @@ Project::onKnobValueChanged(KnobI* knob,
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
         if (found) {
+            if (reason == Natron::eValueChangedReasonUserEdited) {
+                ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
+                QMutexLocker k(&_imp->nodesLock);
+                for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end();++it)
+                {
+                    (*it)->incrementKnobsAge();
+                }
+            }
             emit formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
