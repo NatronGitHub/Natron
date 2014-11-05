@@ -113,8 +113,14 @@ public slots:
     void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
 
     void onIncrementChanged(int incr, int index = 0);
-
+    
+    void onDimensionSwitchClicked();
+    
 private:
+    void expandAllDimensions();
+    void foldAllDimensions();
+    
+    void sliderEditingEnd(double d);
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
@@ -133,6 +139,7 @@ private:
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     ScaleSliderQWidget *_slider;
+    Button *_dimensionSwitchButton;
     boost::shared_ptr<Int_Knob> _knob;
 };
 
