@@ -278,7 +278,6 @@ struct ValueSerialization
         if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS) {
             ar & boost::serialization::make_nvp("Expression",_expression);
             ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
-            _knob->setExpression(_dimension, _expression, _exprHasRetVar);
         }
     } // load
 

@@ -1942,7 +1942,7 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
     _imp->resultEdit = new QTextEdit(this);
-    _imp->resultEdit->setFixedSize(_imp->resultEdit->sizeHint().width(), 80);
+    _imp->resultEdit->setFixedHeight(80);
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);
     
