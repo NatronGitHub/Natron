@@ -656,7 +656,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         if (spatial) {
             getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
         }
-        if (dispmin < SLIDER_MAX_RANGE) {
+        if (dispmin < -SLIDER_MAX_RANGE) {
             if (spatial) {
                 dispmin = -f.width();
             } else {
