@@ -2413,6 +2413,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    setFocus();
     ////
     // right button: popup menu
     if ( buttonDownIsRight(e) ) {
@@ -2950,7 +2951,8 @@ CurveWidget::enterEvent(QEvent* e)
     dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "PropertiesBinScrollArea" ||
     currentFocus->objectName() == "tree" ||
-    currentFocus->objectName() == "SettingsPanel";
+    currentFocus->objectName() == "SettingsPanel" ||
+    currentFocus->objectName() == "qt_tabwidget_tabbar";
     
     if (canSetFocus) {
         setFocus();
