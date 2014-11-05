@@ -4289,6 +4289,12 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(SequenceTime,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(SequenceTime,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+
                     break;
                 }
             }
@@ -4387,6 +4393,11 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
                     QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(SequenceTime,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(SequenceTime,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     break;
                 }

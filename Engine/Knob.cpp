@@ -590,7 +590,9 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
             _signalSlotHandler->s_refreshGuiCurve(dimension);
         }
     }
-    
+     if (_signalSlotHandler) {
+         _signalSlotHandler->s_keyFrameInterpolationChanged(time, dimension);
+     }
     return true;
 }
 
@@ -629,6 +631,9 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
             _signalSlotHandler->s_refreshGuiCurve(dimension);
         }
     }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_derivativeMoved(time, dimension);
+    }
     return true;
 }
 
@@ -645,7 +650,7 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
-        curve = getCurve(dimension);
+        curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
@@ -671,7 +676,9 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
             _signalSlotHandler->s_refreshGuiCurve(dimension);
         }
     }
-
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_derivativeMoved(time, dimension);
+    }
     return true;
 }
 

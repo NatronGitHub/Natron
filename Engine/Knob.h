@@ -166,6 +166,15 @@ public:
         emit displayMinMaxChanged(mini,maxi,index);
     }
     
+    void s_derivativeMoved(SequenceTime time,int dimension)
+    {
+        emit derivativeMoved(time,dimension);
+    }
+    
+    void s_keyFrameInterpolationChanged(SequenceTime time,int dimension)
+    {
+        emit keyFrameInterpolationChanged(time,dimension);
+    }
 public slots:
 
     /**
@@ -222,13 +231,17 @@ signals:
     ///@param added True if this is the first time that the keyframe was set
     void keyFrameSet(SequenceTime time,int dimension,int reason,bool added);
     
-    void refreshGuiCurve(int dimension);
-
     
     ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
     void keyFrameRemoved(SequenceTime,int dimension,int reason);
     
     void keyFrameMoved(int dimension,int oldTime,int newTime);
+    
+    void derivativeMoved(SequenceTime time,int dimension);
+    
+    void keyFrameInterpolationChanged(SequenceTime time,int dimension);
+    
+    void refreshGuiCurve(int dimension);
     
     ///Emitted whenever all keyframes of a dimension are about removed with a reason different of eValueChangedReasonUserEdited
     void animationAboutToBeRemoved(int);

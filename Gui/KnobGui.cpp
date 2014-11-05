@@ -736,7 +736,8 @@ KnobGui::setKeyframe(double time,
     bool keyAdded = knob->onKeyFrameSet(time, dimension);
     
     emit keyFrameSet();
-    if ( !knob->getIsSecret() && keyAdded ) {
+    
+    if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin()) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
 }
@@ -751,7 +752,7 @@ KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
     bool keyAdded = knob->onKeyFrameSet(time, key, dimension);
     
     emit keyFrameSet();
-    if ( !knob->getIsSecret() && keyAdded ) {
+    if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
 }
@@ -1032,7 +1033,7 @@ KnobGui::onInternalKeySet(SequenceTime time,
     if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
         if (added) {
             boost::shared_ptr<KnobI> knob = getKnob();
-            if ( !knob->getIsSecret() ) {
+            if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
                 knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
             }
         }
@@ -1654,8 +1655,9 @@ void
 KnobGui::setKeyframeMarkerOnTimeline(int time)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-
-    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    if (knob->isDeclaredByPlugin()) {
+        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    }
 }
 
 void
@@ -1668,9 +1670,11 @@ KnobGui::onKeyFrameMoved(int /*dimension*/,
     if ( !knob->isAnimationEnabled() || !knob->canAnimate() ) {
         return;
     }
-    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
-    timeline->removeKeyFrameIndicator(oldTime);
-    timeline->addKeyframeIndicator(newTime);
+    if (knob->isDeclaredByPlugin()) {
+        boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+        timeline->removeKeyFrameIndicator(oldTime);
+        timeline->addKeyframeIndicator(newTime);
+    }
 }
 
 void
