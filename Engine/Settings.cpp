@@ -695,7 +695,7 @@ Settings::setDefaultValues()
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(false,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10,0);
