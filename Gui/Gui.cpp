@@ -99,7 +99,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 
 #define kViewerPaneName "ViewerPane"
-#define kPropertiesBinName "Properties"
+#define kPropertiesBinName "PropertiesBin"
 
 #define NAMED_PLUGIN_GROUP_NO 15
 
@@ -996,7 +996,7 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
     
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
-    _propertiesScrollArea->setObjectName("PropertiesBinScrollArea");
+    _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);
 
     QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
