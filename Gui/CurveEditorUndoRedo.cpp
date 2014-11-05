@@ -62,46 +62,63 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve);
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
         if (isKnobCurve) {
-            boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>( isKnobCurve->getInternalKnob() );
-            isKnobCurve->getInternalKnob()->blockEvaluation();
+            boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+            boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+            
+            knob->blockEvaluation();
             bool isUnblocked = false;
             assert( !(*it)->keys.empty() );
             for (U32 i = 0; i < (*it)->keys.size(); ++i) {
                 if ( (i == (*it)->keys.size() - 1) && ( next == _keys.end() ) ) {
-                    isKnobCurve->getInternalKnob()->unblockEvaluation();
+                    knob->unblockEvaluation();
                     isUnblocked = true;
                 }
+                
+                double time = (*it)->keys[i].getTime();
                 
                 if (add) {
                     if (isParametric) {
                         Natron::StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(),
-                                                                              (*it)->keys[i].getTime(),
+                                                                              time,
                                                                               (*it)->keys[i].getValue() );
                         assert(st == Natron::eStatusOK);
                         (void)st;
                     } else {
                         KnobGui* isgui = isKnobCurve->getKnobGui();
                         if (isgui) {
-                            isgui->setKeyframe( (*it)->keys[i].getTime(), isKnobCurve->getDimension() );
+                            isgui->setKeyframe(time, isKnobCurve->getDimension() );
                         } else {
-                            isKnobCurve->getInternalKnob()->onKeyFrameSet((*it)->keys[i].getTime(), isKnobCurve->getDimension());
+                            
+                            Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+                            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+                            Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+                            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+                            if (isDouble) {
+                                isDouble->setValueAtTime(time, isDouble->getValueAtTime(time), isKnobCurve->getDimension());
+                            } else if (isBool) {
+                                isBool->setValueAtTime(time, isBool->getValueAtTime(time), isKnobCurve->getDimension());
+                            } else if (isInt) {
+                                isInt->setValueAtTime(time, isInt->getValueAtTime(time), isKnobCurve->getDimension());
+                            } else if (isString) {
+                                isString->setValueAtTime(time, isString->getValueAtTime(time), isKnobCurve->getDimension());
+                            }
+
                         }
                         
                     }
                 } else {
                     if (isParametric) {
                         Natron::StatusEnum st = isParametric->deleteControlPoint( isKnobCurve->getDimension(),
-                                                                                 (*it)->curve->getInternalCurve()->keyFrameIndex(
-                                                                                                                                 (*it)->keys[i].getTime() ) );
+                                                                                 (*it)->curve->getInternalCurve()->keyFrameIndex(time) );
                         assert(st == Natron::eStatusOK);
                         (void)st;
                     } else {
                         KnobGui* isgui = isKnobCurve->getKnobGui();
 
                         if (isgui) {
-                            isgui->removeKeyFrame( (*it)->keys[i].getTime(), isKnobCurve->getDimension() );
+                            isgui->removeKeyFrame(time, isKnobCurve->getDimension() );
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime((*it)->keys[i].getTime(), isKnobCurve->getDimension());
+                            knob->deleteValueAtTime(time, isKnobCurve->getDimension());
                         }
                         
                     }
@@ -111,7 +128,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
                 --next;
             }
             if (!isUnblocked) {
-                isKnobCurve->getInternalKnob()->unblockEvaluation();
+                knob->unblockEvaluation();
             }
         } else if (isBezierCurve) {
             for (U32 i = 0; i < (*it)->keys.size(); ++i) {
@@ -167,23 +184,44 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
             }
             
             if (add) {
-                if ( isKnobCurve->getInternalKnob()->typeName() == Parametric_Knob::typeNameStatic() ) {
-                    boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( isKnobCurve->getInternalKnob() );
-                    Natron::StatusEnum st = knob->addControlPoint( isKnobCurve->getDimension(), _keys[i].second.getTime(),_keys[i].second.getValue() );
+                
+                int time = _keys[i].second.getTime();
+                boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+                boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+
+                if (isParametric) {
+                    
+                    Natron::StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), _keys[i].second.getTime(),_keys[i].second.getValue() );
                     assert(st == Natron::eStatusOK);
                     (void) st;
                 } else {
                     KnobGui* guiKnob = isKnobCurve->getKnobGui();
                     if (guiKnob) {
-                        guiKnob->setKeyframe( _keys[i].second.getTime(),_keys[i].second, isKnobCurve->getDimension() );
+                        guiKnob->setKeyframe(time,_keys[i].second, isKnobCurve->getDimension() );
                     } else {
-                        isKnobCurve->getInternalKnob()->onKeyFrameSet(_keys[i].second.getTime(), isKnobCurve->getDimension());
+                        
+                        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+                        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+                        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+                        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+                        if (isDouble) {
+                            isDouble->setValueAtTime(time, isDouble->getValueAtTime(time), isKnobCurve->getDimension());
+                        } else if (isBool) {
+                            isBool->setValueAtTime(time, isBool->getValueAtTime(time), isKnobCurve->getDimension());
+                        } else if (isInt) {
+                            isInt->setValueAtTime(time, isInt->getValueAtTime(time), isKnobCurve->getDimension());
+                        } else if (isString) {
+                            isString->setValueAtTime(time, isString->getValueAtTime(time), isKnobCurve->getDimension());
+                        }
+
                     }
                     
                 }
             } else {
-                if ( isKnobCurve->getInternalKnob()->typeName() == Parametric_Knob::typeNameStatic() ) {
-                    boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( isKnobCurve->getInternalKnob() );
+                
+                boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( isKnobCurve->getInternalKnob() );
+
+                if (knob) {
                     Natron::StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
                                                                      _keys[i].first->getInternalCurve()->keyFrameIndex( _keys[i].second.getTime() ) );
                     assert(st == Natron::eStatusOK);

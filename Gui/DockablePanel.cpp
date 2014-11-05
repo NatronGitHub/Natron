@@ -1088,6 +1088,7 @@ DockablePanel::closePanel()
     }
     emit closeChanged(true);
     _imp->_gui->removeVisibleDockablePanel(this);
+    _imp->_gui->buildTabFocusOrderPropertiesBin();
 
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {

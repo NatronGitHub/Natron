@@ -62,6 +62,50 @@ KnobSignalSlotHandler::onMasterChanged(int dimension)
 }
 
 void
+KnobSignalSlotHandler::onMasterKeyFrameSet(SequenceTime time,int dimension,int reason,bool added)
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+    assert(handler);
+    boost::shared_ptr<KnobI> master = handler->getKnob();
+    
+    k->clone(master.get(), dimension);
+    emit keyFrameSet(time, dimension, reason, added);
+}
+
+void
+KnobSignalSlotHandler::onMasterKeyFrameRemoved(SequenceTime time,int dimension,int reason)
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+    assert(handler);
+    boost::shared_ptr<KnobI> master = handler->getKnob();
+    
+    k->clone(master.get(), dimension);
+    emit keyFrameRemoved(time, dimension, reason);
+}
+
+void
+KnobSignalSlotHandler::onMasterKeyFrameMoved(int dimension,int oldTime,int newTime)
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+    assert(handler);
+    boost::shared_ptr<KnobI> master = handler->getKnob();
+    
+    k->clone(master.get(), dimension);
+    emit keyFrameMoved(dimension, oldTime, newTime);
+}
+
+void
+KnobSignalSlotHandler::onMasterAnimationRemoved(int dimension)
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+    assert(handler);
+    boost::shared_ptr<KnobI> master = handler->getKnob();
+    
+    k->clone(master.get(), dimension);
+    emit animationRemoved(dimension);
+}
+
+void
 KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension,
                                                            int reason)
 {
@@ -400,11 +444,6 @@ KnobHelper::deleteValueAtTime(int time,
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
-    ///if the knob is slaved to another knob,return, because we don't want the
-    ///gui to be unsynchronized with what lies internally.
-    if ( isSlave(dimension) ) {
-        return;
-    }
     
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
@@ -412,7 +451,7 @@ KnobHelper::deleteValueAtTime(int time,
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
-        curve = getCurve(dimension);
+        curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
@@ -435,11 +474,12 @@ KnobHelper::deleteValueAtTime(int time,
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(dimension);
         evaluateValueChange(dimension,reason);
-    } else {
-        if (_signalSlotHandler) {
-             _signalSlotHandler->s_keyFrameRemoved(time,dimension,(int)reason);
-        }
     }
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_keyFrameRemoved(time,dimension,(int)reason);
+    }
+    
 }
 
 void
@@ -529,7 +569,7 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
-        curve = getCurve(dimension);
+        curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
@@ -567,7 +607,7 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
-        curve = getCurve(dimension);
+        curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
@@ -644,12 +684,6 @@ KnobHelper::removeAnimation(int dimension,
         throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
     }
 
-    ///if the knob is slaved to another knob,return, because we don't want the
-    ///gui to be unsynchronized with what lies internally.
-    if ( isSlave(dimension) ) {
-        return;
-    }
-    
     KnobHolder* holder = getHolder();
 
     boost::shared_ptr<Curve> curve;
@@ -657,7 +691,7 @@ KnobHelper::removeAnimation(int dimension,
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
-        curve = getCurve(dimension);
+        curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
@@ -1200,6 +1234,16 @@ KnobHelper::slaveTo(int dimension,
 
     if (helper->_signalSlotHandler && _signalSlotHandler) {
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
+        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(SequenceTime,int,int)) );
+
+        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(int,int,int) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,int,int) ) );
+        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL(animationRemoved(int) ),
+                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
+
     }
 
     if (_signalSlotHandler) {
@@ -1427,10 +1471,16 @@ KnobHelper::onMasterChanged(KnobI* master,
                             int masterDimension)
 {
     ///Map to the good dimension
+    
     {
         QReadLocker l(&_imp->mastersMutex);
         for (U32 i = 0; i < _imp->masters.size(); ++i) {
             if (_imp->masters[i].second.get() == master && _imp->masters[i].first == masterDimension) {
+                
+                ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
+                ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
+                clone(master,i);
+                
                 evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
 
                 return;
@@ -1967,7 +2017,7 @@ KnobHolder::discardAppPointer()
 
 /***************************STRING ANIMATION******************************************/
 void
-AnimatingString_KnobHelper::cloneExtraData(KnobI* other)
+AnimatingString_KnobHelper::cloneExtraData(KnobI* other,int /*dimension*/ )
 {
     AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
 
@@ -1979,7 +2029,8 @@ AnimatingString_KnobHelper::cloneExtraData(KnobI* other)
 void
 AnimatingString_KnobHelper::cloneExtraData(KnobI* other,
                                            SequenceTime offset,
-                                           const RangeD* range)
+                                           const RangeD* range,
+                                           int /*dimension*/)
 {
     AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
 

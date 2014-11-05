@@ -178,6 +178,14 @@ public slots:
      **/
     void onMasterChanged(int);
     
+    void onMasterKeyFrameSet(SequenceTime time,int dimension,int reason,bool added);
+    
+    void onMasterKeyFrameRemoved(SequenceTime time,int dimension,int reason);
+    
+    void onMasterKeyFrameMoved(int dimension,int oldTime,int newTime);
+    
+    void onMasterAnimationRemoved(int dimension);
+    
     /**
      * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
      **/
@@ -322,18 +330,20 @@ public:
      * The evaluateValueChange function will not be called as a result of the clone.
      * However a valueChanged signal will be emitted by the KnobSignalSlotHandler if there's any.
      *
+     * @param dimension If -1 all dimensions will be cloned, otherwise you can clone only a specific dimension
+     *
      * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
-    virtual void clone(KnobI* other) = 0;
-    virtual void clone(const boost::shared_ptr<KnobI> & other)
+    virtual void clone(KnobI* other,int dimension = -1) = 0;
+    virtual void clone(const boost::shared_ptr<KnobI> & other,int dimension = -1)
     {
-        clone( other.get() );
+        clone( other.get(), dimension );
     }
 
     /**
      * @brief Performs the same as clone but also refresh any gui it has.
      **/
-    virtual void cloneAndUpdateGui(KnobI* other) = 0;
+    virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) = 0;
 
     /**
      * @brief Performs the same as cloneAndUpdateGui, but also copies the properties of the knob such as whether it is enabled, secret,
@@ -350,12 +360,13 @@ public:
      * with different dimensions, but only the intersection of the dimension of the 2 parameters will be copied.
      * The restriction on types still apply.
      **/
-    virtual void clone(KnobI* other, SequenceTime offset, const RangeD* range) = 0;
+    virtual void clone(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) = 0;
     virtual void clone(const boost::shared_ptr<KnobI> & other,
                        SequenceTime offset,
-                       const RangeD* range)
+                       const RangeD* range,
+                       int dimension = -1)
     {
-        clone(other.get(),offset,range);
+        clone(other.get(),offset,range,dimension);
     }
 
 protected:
@@ -980,14 +991,17 @@ protected:
      * @brief Called when you must copy any extra data you maintain from the other knob.
      * The other knob is guaranteed to be of the same type.
      **/
-    virtual void cloneExtraData(KnobI* /*other*/)
+    virtual void cloneExtraData(KnobI* /*other*/,int dimension = -1)
     {
+        (void)dimension;
     }
 
     virtual void cloneExtraData(KnobI* /*other*/,
                                 SequenceTime /*offset*/,
-                                const RangeD* /*range*/)
+                                const RangeD* /*range*/,
+                                int dimension = -1)
     {
+        (void)dimension;
     }
 
     /**
@@ -1189,9 +1203,9 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
-    virtual void clone(KnobI* other)  OVERRIDE FINAL;
-    virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
-    virtual void cloneAndUpdateGui(KnobI* other) OVERRIDE FINAL;
+    virtual void clone(KnobI* other,int dimension = -1)  OVERRIDE FINAL;
+    virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual void deepClone(KnobI* other)  OVERRIDE FINAL;
     
     virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
@@ -1337,8 +1351,8 @@ public:
 
 protected:
 
-    virtual void cloneExtraData(KnobI* other) OVERRIDE;
-    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE;
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;
 

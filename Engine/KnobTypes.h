@@ -804,8 +804,8 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
 

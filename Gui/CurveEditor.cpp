@@ -230,7 +230,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
             knobCurve = new KnobCurveGui(curveWidget,kgui->getCurve(0),kgui,0,k->getDescription().c_str(),QColor(255,255,255),1.);
         } else {
             
-            knobCurve = new KnobCurveGui(curveWidget,k->getCurve(0),k,rotoctx,0,k->getDescription().c_str(),QColor(255,255,255),1.);
+            knobCurve = new KnobCurveGui(curveWidget,k->getCurve(0,true),k,rotoctx,0,k->getDescription().c_str(),QColor(255,255,255),1.);
         }
         curveWidget->addCurveAndSetColor(knobCurve);
         
@@ -253,7 +253,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
                 dimCurve = new KnobCurveGui(curveWidget,kgui->getCurve(j),kgui,j,curveName,QColor(255,255,255),1.);
                 elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
             } else {
-                dimCurve = new KnobCurveGui(curveWidget,k->getCurve(j),k,rotoctx,j,curveName,QColor(255,255,255),1.);
+                dimCurve = new KnobCurveGui(curveWidget,k->getCurve(j,true),k,rotoctx,j,curveName,QColor(255,255,255),1.);
                 elem = new NodeCurveEditorElement(tree,curveWidget,k,j,dimItem,dimCurve);
             }
             curveWidget->addCurveAndSetColor(dimCurve);
@@ -371,8 +371,10 @@ NodeCurveEditorElement::checkVisibleState()
     if (!_curve) {
         return;
     }
+    
+    boost::shared_ptr<Curve> curve =  _curve->getInternalCurve() ;
     // even when there is only one keyframe, there may be tangents!
-    if ( (_curve->getInternalCurve()->getKeyFramesCount() > 0) && !_knob->getKnob()->isSlave(_dimension) ) {
+    if (curve->getKeyFramesCount() > 0) {
         //show the item
         if (!_curveDisplayed) {
             _curveDisplayed = true;
@@ -477,6 +479,12 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 ,_internalKnob(internalKnob)
 ,_dimension(dimension)
 {
+    if (internalKnob) {
+        boost::shared_ptr<KnobSignalSlotHandler> handler = internalKnob->getSignalSlotHandler();
+        QObject::connect( handler.get(),SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( animationRemoved(int) ),this,SLOT( checkVisibleState() ) );
+    }
     if (curve) {
         // even when there is only one keyframe, there may be tangents!
         if (curve->getInternalCurve()->getKeyFramesCount() > 0) {

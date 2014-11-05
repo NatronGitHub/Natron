@@ -4287,8 +4287,8 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-
-
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
                     break;
                 }
             }
@@ -4328,7 +4328,7 @@ RotoContext::onSelectedKnobCurveChanged()
         boost::shared_ptr<KnobI> knob = handler->getKnob();
         for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
             if ((*it)->getName() == knob->getName()) {
-                (*it)->cloneAndUpdateGui(knob.get());
+                (*it)->clone(knob.get());
                 break;
             }
         }
@@ -4386,7 +4386,8 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
                     break;
                 }
             }

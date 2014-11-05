@@ -271,7 +271,6 @@ CurveGui::drawCurve(int curveIndex,
     double x2;
     double w = _curveWidget->width();
     KeyFrameSet keyframes;
-    
     BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(this);
     if (isBezier) {
         std::set<int> keys;
@@ -283,6 +282,10 @@ CurveGui::drawCurve(int curveIndex,
     } else {
         keyframes = _internalCurve->getKeyFrames_mt_safe();
     }
+    if (keyframes.empty()) {
+        return;
+    }
+    
     std::pair<KeyFrame,bool> isX1AKey;
     while ( x1 < (w - 1) ) {
         double x,y;
