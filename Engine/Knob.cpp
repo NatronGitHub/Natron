@@ -1479,21 +1479,24 @@ KnobHelper::onMasterChanged(KnobI* master,
 {
     ///Map to the good dimension
     
+    MastersMap masters;
     {
         QReadLocker l(&_imp->mastersMutex);
-        for (U32 i = 0; i < _imp->masters.size(); ++i) {
-            if (_imp->masters[i].second.get() == master && _imp->masters[i].first == masterDimension) {
-                
-                ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
-                ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
-                clone(master,i);
-                
-                evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
-
-                return;
-            }
+        masters = _imp->masters;
+    }
+    for (U32 i = 0; i < masters.size(); ++i) {
+        if (masters[i].second.get() == master && masters[i].first == masterDimension) {
+            
+            ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
+            ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
+            clone(master,i);
+            
+            evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
+            
+            return;
         }
     }
+    
     ///The master must exist.
     assert(false);
 }
