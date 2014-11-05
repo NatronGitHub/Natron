@@ -541,6 +541,9 @@ ComboBox::setCurrentIndex_internal(int index)
 void
 ComboBox::setCurrentIndex(int index)
 {
+    if (_readOnly || !_enabled) {
+        return;
+    }
     if ( setCurrentIndex_internal(index) ) {
         ///emit the signal only if the entry changed
         emit currentIndexChanged(_currentIndex);
