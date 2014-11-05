@@ -1301,6 +1301,7 @@ Project::reset()
         _imp->additionalFormats.clear();
         _imp->nodeCounters.clear();
     }
+    _imp->timeline->removeAllKeyframesIndicators();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
