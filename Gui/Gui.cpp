@@ -99,7 +99,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 
 #define kViewerPaneName "ViewerPane"
-#define kPropertiesBinName "PropertiesBin"
+#define kPropertiesBinName "Properties"
 
 #define NAMED_PLUGIN_GROUP_NO 15
 
