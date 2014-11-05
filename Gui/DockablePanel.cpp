@@ -409,6 +409,7 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
             _imp->_nameLabel = new QLabel(initialName,_imp->_headerWidget);
+            _imp->_nameLabel->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
             _imp->_headerLayout->addWidget(_imp->_nameLabel);
         }
 
