@@ -279,8 +279,6 @@ public:
 
     boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
 
-    bool shouldDrawOverlay() const;
-
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
 
 

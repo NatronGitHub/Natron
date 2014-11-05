@@ -2251,26 +2251,7 @@ boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
     }
 }
 
-bool
-NodeGui::shouldDrawOverlay() const
-{
-    if ( _internalNode->isNodeDisabled() ) {
-        return false;
-    }
 
-    if ( _internalNode->isTrackerNode() ) {
-        ///Tracker overlays are handled in the TrackerGui by Natron so we can have more control over them
-
-        ///This also allows us to have control with the selection in the settings panel
-        return false;
-    }
-
-    if (_parentMultiInstance) {
-        return _parentMultiInstance->isSettingsPanelVisible();
-    } else {
-        return _internalNode->isActivated() && isSettingsPanelVisible();
-    }
-}
 
 void
 NodeGui::setParentMultiInstance(const boost::shared_ptr<NodeGui> & node)

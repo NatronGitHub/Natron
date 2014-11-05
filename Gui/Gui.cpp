@@ -4325,13 +4325,16 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                 if (multiInstance) {
                     const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
                     for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        nodes.push_back(it->first);
+                        if (it->first->isActivated()) {
+                            nodes.push_back(it->first);
+                        }
                     }
                     
-                } else if (node->shouldDrawOverlay()) {
+                }
+                boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+                if (!internalNode->isNodeDisabled()) {
                     nodes.push_back(node->getNode());
                 }
-                
             }
         }
     }

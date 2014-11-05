@@ -1373,12 +1373,13 @@ ViewerTab::drawOverlays(double scaleX,
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 _imp->_currentTracker.second->drawOverlays(scaleX, scaleY);
             }
+        } else {
+            
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            effect->drawOverlay_public(scaleX,scaleY);
         }
-        
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        effect->drawOverlay_public(scaleX,scaleY);
     }
 }
 
@@ -1413,18 +1414,19 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
                     return true;
                 }
             }
-        }
-        
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+        } else {
             
-            // to any other interactive object it may own that shares the same view.
-            return true;
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
 
@@ -1484,26 +1486,25 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
                     return true;
                 }
             }
-        }
-        
-        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
                     return true;
                 }
             }
-        }
-        
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+        } else {
             
-            // to any other interactive object it may own that shares the same view.
-            return true;
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
 
@@ -1544,18 +1545,19 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
                     return true;
                 }
             }
-        }
-        
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+        } else {
             
-            // to any other interactive object it may own that shares the same view.
-            return true;
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
         
     }
@@ -1600,19 +1602,20 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
                     return true;
                 }
             }
-
-        }
-        
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,natronKey,natronMod);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
             
-            // to any other interactive object it may own that shares the same view.
-            return true;
+        } else {
+            
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,natronKey,natronMod);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
 
@@ -1650,19 +1653,19 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
                     return true;
                 }
             }
-        }
-        
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyUp_public( scaleX,scaleY,
-                                                        QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+        } else {
             
-            // to any other interactive object it may own that shares the same view.
-            return true;
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayKeyUp_public( scaleX,scaleY,
+                                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
-        
     }
 
    
@@ -1694,22 +1697,23 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
                     return true;
                 }
             }
-        }
-        //if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        //    if (_imp->_currentTracker.second->loseFocus(scaleX, scaleY,e)) {
-        //        return true;
-        //    }
-        //}
-        
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyRepeat_public( scaleX,scaleY,
-                                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+        } else {
+            //if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+            //    if (_imp->_currentTracker.second->loseFocus(scaleX, scaleY,e)) {
+            //        return true;
+            //    }
+            //}
             
-            // to any other interactive object it may own that shares the same view.
-            return true;
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayKeyRepeat_public( scaleX,scaleY,
+                                                                QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
         
     }
