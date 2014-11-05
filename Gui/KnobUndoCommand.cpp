@@ -386,6 +386,8 @@ MultipleKnobEditsUndoCommand::redo()
         if (effect) {
             if (firstRedoCalled) {
                 effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+            } else {
+                effect->getApp()->triggerAutoSave();
             }
             holderName = effect->getName().c_str();
         }
