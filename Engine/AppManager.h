@@ -524,6 +524,11 @@ std::size_t ensureScriptHasEngineImport(std::string& script);
 **/
 bool interpretPythonScript(const std::string& script,std::string* error);
     
+void declareNodeVariableToPython(int appID,const std::string& nodeName);
+void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
+void deleteNodeVariableToPython(const std::string& nodeName);
+void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName);
+    
 } // namespace Natron
 
 

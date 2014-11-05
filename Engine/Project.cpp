@@ -861,6 +861,7 @@ void
 Project::initNodeCountersAndSetName(Node* n)
 {
     assert(n);
+
     QMutexLocker l(&_imp->nodesLock);
     std::map<std::string,int>::iterator it = _imp->nodeCounters.find( n->getPluginID() );
     QString pluginLabel = n->getPluginLabel().c_str();
@@ -870,10 +871,11 @@ Project::initNodeCountersAndSetName(Node* n)
     }
     if ( it != _imp->nodeCounters.end() ) {
         it->second++;
-
+        l.unlock();
         n->setName( pluginLabel + QString::number(it->second) );
     } else {
         _imp->nodeCounters.insert( make_pair(n->getPluginID(), 1) );
+        l.unlock();
         n->setName( pluginLabel + QString::number(1) );
     }
 }
@@ -907,7 +909,6 @@ Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node> & n)
             }
         }
     }
-    n->removeReferences();
 }
 
 void

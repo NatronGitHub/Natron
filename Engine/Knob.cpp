@@ -1328,8 +1328,6 @@ KnobHelper::executeExpression(int dimension) const
 #ifdef DEBUG
         PyErr_Print();
 #endif
-        ///This should never occur since we already interpreted the code above.
-        assert(false);
         throw std::runtime_error("Failed to execute compiled Python code");
     }
     PyObject* mainModule = PyImport_ImportModule("__main__");

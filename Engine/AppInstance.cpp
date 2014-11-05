@@ -229,9 +229,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
         }
     }
     
+    
+    if (addToProject) {
+        //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
+        //of the node works
+        _imp->_currentProject->addNodeToProject(node);
+    }
+    
     try {
         node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
+        _imp->_currentProject->removeNodeFromProject(node);
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
         qDebug() << message.c_str();
@@ -239,6 +247,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
+        _imp->_currentProject->removeNodeFromProject(node);
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString();
         qDebug() << message.c_str();
@@ -247,9 +256,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return boost::shared_ptr<Natron::Node>();
     }
 
-    if (addToProject) {
-        _imp->_currentProject->addNodeToProject(node);
-    }
 
     // createNodeGui also sets the filename parameter for reader or writers
     createNodeGui(node,

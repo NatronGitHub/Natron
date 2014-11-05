@@ -539,12 +539,20 @@ DockablePanel::onLineEditNameEditingFinished()
     
     NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
     boost::shared_ptr<NodeGui> node;
+    
+    QString newName = _imp->_nameLineEdit->text();
     if (panel) {
         node = panel->getNode();
+        if (node->getNode()->getName() == newName.toStdString()) {
+            return;
+        }
     }
     NodeBackDrop* bd = dynamic_cast<NodeBackDrop*>(_imp->_holder);
+    if (bd && bd->getName() == newName) {
+        return;
+    }
     assert(node || bd);
-    pushUndoCommand(new RenameNodeUndoRedoCommand(node,bd,_imp->_nameLineEdit->text()));
+    pushUndoCommand(new RenameNodeUndoRedoCommand(node,bd,newName));
    
 }
 

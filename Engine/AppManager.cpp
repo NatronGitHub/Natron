@@ -2057,4 +2057,46 @@ bool interpretPythonScript(const std::string& script,std::string* error)
     return true;
 }
     
+static void runScriptWithEngineImport(std::string& script)
+{
+    ensureScriptHasEngineImport(script);
+    std::string error;
+    interpretPythonScript(script,&error);
+#ifdef DEBUG
+    if (!error.empty()) {
+        qDebug() << error.c_str();
+    }
+#endif
+}
+    
+void declareNodeVariableToPython(int appID,const std::string& nodeName)
+{
+    QString str = QString("%1 = getInstance(%2).getNode(\"%1\")").arg(nodeName.c_str()).arg(appID);
+    std::string script = str.toStdString();
+    runScriptWithEngineImport(script);
+}
+    
+void setNodeVariableToPython(const std::string& oldName,const std::string& newName)
+{
+    QString str = QString("%1 = %2 \ndel %2").arg(newName.c_str()).arg(oldName.c_str());
+    std::string script = str.toStdString();
+    runScriptWithEngineImport(script);
+
+}
+    
+void deleteNodeVariableToPython(const std::string& nodeName)
+{
+    QString str = QString("del %1").arg(nodeName.c_str());
+    std::string script = str.toStdString();
+    runScriptWithEngineImport(script);
+    
+}
+    
+void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName)
+{
+    QString str = QString("%1.%2 = %1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
+    std::string script = str.toStdString();
+    runScriptWithEngineImport(script);
+}
+    
 } //Namespace Natron

@@ -355,6 +355,7 @@ GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
 {
     if ( !isClosing() ) {
         getProject()->removeNodeFromProject( n->getNode() );
+        n->getNode()->removeReferences();
     }
     for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodeMapping.begin(); it != _imp->_nodeMapping.end(); ++it) {
         if (it->second == n) {

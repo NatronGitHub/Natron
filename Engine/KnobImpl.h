@@ -330,7 +330,6 @@ T Knob<T>::evaluateExpression(int dimension) const
     try {
         ret = executeExpression(dimension);
     } catch (...) {
-        qDebug() << "Failure to execute expression, please investigate this bug.";
         return T();
     }
     

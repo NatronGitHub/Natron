@@ -13,6 +13,7 @@
 #include "ofxNatron.h"
 
 #include <limits>
+#include <locale>
 
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>
@@ -84,6 +85,7 @@ struct Node::Implementation
     Implementation(AppInstance* app_,
                    LibraryBinary* plugin_)
     : app(app_)
+    , pluginID()
     , knobsInitialized(false)
     , inputsInitialized(false)
     , outputsMutex()
@@ -161,6 +163,8 @@ struct Node::Implementation
     }
     
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
+    std::string pluginID; //< the ID of the embedded plug-in
+    
     bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
@@ -314,7 +318,8 @@ Node::load(const std::string & pluginID,
     
     ///cannot load twice
     assert(!_imp->liveInstance);
-    
+
+    _imp->pluginID = pluginID;
     
     bool nameSet = false;
     bool isMultiInstanceChild = false;
@@ -339,6 +344,8 @@ Node::load(const std::string & pluginID,
     if (serialization.isNull() && !parentMultiInstanceName.empty()) {
         fetchParentMultiInstancePointer();
     }
+    
+    
     
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     bool isFileDialogPreviewReader = fixedName.contains("Natron_File_Dialog_Preview_Provider_Reader");
@@ -411,6 +418,7 @@ Node::load(const std::string & pluginID,
         assert(nameSet);
         updateEffectLabelKnob( QString( parentMultiInstanceName.c_str() ) + '_' + QString::number(childIndex) );
     }
+    declarePythonFields();
     
     computeHash();
     assert(_imp->liveInstance);
@@ -917,10 +925,43 @@ Node::getName_mt_safe() const
 void
 Node::setName(const QString & name)
 {
+    std::string oldName;
+    std::string newName = name.toStdString();
     {
         QMutexLocker l(&_imp->nameMutex);
-        _imp->name = name.toStdString();
+        oldName = _imp->name;
+        _imp->name = newName;
     }
+    if (!oldName.empty()) {
+        Natron::setNodeVariableToPython(oldName,newName);
+        
+        const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+        
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            std::list<KnobI*> listeners;
+            knobs[i]->getListeners(listeners);
+            ///For all listeners make sure they belong to a node
+            bool foundEffect = false;
+            for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+                if ( isEffect && ( isEffect != _imp->liveInstance ) ) {
+                    foundEffect = true;
+                    break;
+                }
+            }
+            if (foundEffect) {
+                Natron::warningDialog( tr("Rename").toStdString(), tr("This node has one or several "
+                                                                      "parameters from which other parameters "
+                                                                      "of the project rely on through expressions "
+                                                                      "or links. Changing the name of this node will probably "
+                                                                      "break these expressions. You should carefully update them. ")
+                                      .toStdString() );
+                break;
+            }
+        }
+       
+    }
+    
     emit nameChanged(name);
 }
 
@@ -1932,6 +1973,8 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = false;
     }
+    
+    Natron::deleteNodeVariableToPython(getName());
 } // deactivate
 
 void
@@ -1944,6 +1987,8 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     if (!_imp->liveInstance) {
         return;
     }
+    
+    Natron::declareNodeVariableToPython(getApp()->getAppID(), getName());
     
     ///No need to lock, guiInputs is only written to by the main-thread
     
@@ -2264,7 +2309,7 @@ std::string
 Node::getPluginID() const
 {
     ///MT-safe, never changes
-    return _imp->liveInstance->getPluginID();
+    return _imp->pluginID;
 }
 
 std::string
@@ -3348,6 +3393,20 @@ Node::declareCurrentNodeVariable_Python(std::string& script)
     std::string toInsert = ss.str();
     script.insert(startLine, toInsert);
     return startLine + toInsert.size();
+}
+
+void
+Node::declarePythonFields()
+{
+    std::locale locale;
+    Natron::declareNodeVariableToPython(getApp()->getAppID(), getName());
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        const std::string& knobName = knobs[i]->getName();
+        if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
+            Natron::declareParameterAsNodeField(getName(), knobName);
+        }
+    }
 }
 
 //////////////////////////////////
