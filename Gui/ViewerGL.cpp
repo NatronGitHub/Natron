@@ -1122,7 +1122,7 @@ ViewerGL::paintGL()
 
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_LEFT_PLANE);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
