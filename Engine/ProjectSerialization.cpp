@@ -24,7 +24,7 @@ ProjectSerialization::initialize(const Natron::Project* project)
     std::vector<boost::shared_ptr<Natron::Node> > nodes = project->getCurrentNodes();
 
     for (U32 i = 0; i < nodes.size(); ++i) {
-        if ( nodes[i]->isActivated() ) {
+        if ( nodes[i]->isActivated() || (nodes[i]->isMultiInstance() && nodes[i]->getParentMultiInstanceName().empty())) {
             activeNodes.push_back(nodes[i]);
         }
     }

@@ -96,6 +96,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ShortCutEditor.h"
 #include "Gui/NodeBackDrop.h"
 #include "Gui/MessageBox.h"
+#include "Gui/MultiInstancePanel.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -4311,14 +4312,27 @@ FloatingWidget::closeEvent(QCloseEvent* e)
 
 
 void
-Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<NodeGui> >& nodes) const
+Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
 {
     int layoutItemsCount = _imp->_layoutPropertiesBin->count();
     for (int i = 0; i < layoutItemsCount; ++i) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(item->widget());
-        if (panel && panel->getNode() && panel->getNode()->shouldDrawOverlay()) {
-            nodes.push_back(panel->getNode());
+        if (panel) {
+            boost::shared_ptr<NodeGui> node = panel->getNode();
+            if (node) {
+                boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
+                if (multiInstance) {
+                    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+                    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                        nodes.push_back(it->first);
+                    }
+                    
+                } else if (node->shouldDrawOverlay()) {
+                    nodes.push_back(node->getNode());
+                }
+                
+            }
         }
     }
 }

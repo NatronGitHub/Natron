@@ -1359,23 +1359,23 @@ ViewerTab::drawOverlays(double scaleX,
         return;
     }
 
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
     ///Draw overlays in reverse order of appearance
-    for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         
-        if (it->get() == _imp->_currentRoto.first) {
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
                 _imp->_currentRoto.second->drawOverlays(scaleX, scaleY);
             }
-        } else if (it->get() == _imp->_currentTracker.first) {
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 _imp->_currentTracker.second->drawOverlays(scaleX, scaleY);
             }
         }
         
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         effect->drawOverlay_public(scaleX,scaleY);
@@ -1395,19 +1395,19 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
         return false;
     }
 
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
        
         
-        if (it->get() == _imp->_currentRoto.first) {
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
                     return true;
                 }
             }
-        } else if (it->get() == _imp->_currentTracker.first) {
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentTracker.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
                     return true;
@@ -1415,7 +1415,7 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
             }
         }
         
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
@@ -1474,11 +1474,11 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
         return false;
     }
     
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
-        if (it->get() == _imp->_currentRoto.first) {
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
                     return true;
@@ -1486,7 +1486,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
             }
         }
         
-        if (it->get() == _imp->_currentTracker.first) {
+        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
                     return true;
@@ -1494,7 +1494,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
             }
         }
         
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
@@ -1527,18 +1527,18 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         return false;
     }
     
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
-        if (it->get() == _imp->_currentRoto.first) {
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
                     return true;
                 }
             }
-        } else if (it->get() == _imp->_currentTracker.first) {
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
                     return true;
@@ -1546,7 +1546,7 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
             }
         }
         
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
@@ -1581,20 +1581,20 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin();
          it != nodes.end();
          ++it) {
         
-        if (it->get() == _imp->_currentRoto.first) {
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentRoto.second->keyDown(scaleX, scaleY, e) ) {
                     return true;
                 }
             }
-        } else if (it->get() == _imp->_currentTracker.first) {
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentTracker.second->keyDown(scaleX, scaleY, e) ) {
                     return true;
@@ -1603,7 +1603,7 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
 
         }
         
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,natronKey,natronMod);
@@ -1632,19 +1632,19 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     }
 
 
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
-        if (it->get() == _imp->_currentRoto.first) {
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentRoto.second->keyUp(scaleX, scaleY, e) ) {
                     return true;
                 }
             }
-        } else if (it->get() == _imp->_currentTracker.first) {
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentTracker.second->keyUp(scaleX, scaleY, e) ) {
                     return true;
@@ -1681,13 +1681,13 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
         return false;
     }
     
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
-        if (it->get() == _imp->_currentRoto.first) {
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentRoto.second->keyRepeat(scaleX, scaleY, e) ) {
@@ -1728,10 +1728,10 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
         return false;
     }
     bool ret = false;
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1753,11 +1753,11 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
         return false;
     }
     bool ret = false;
-    std::list<boost::shared_ptr<NodeGui> >  nodes;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
-        if (it->get() == _imp->_currentTracker.first) {
+        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->_currentTracker.second->loseFocus(scaleX, scaleY) ) {
                     return true;
@@ -1765,7 +1765,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
             }
         }
         
-        Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
