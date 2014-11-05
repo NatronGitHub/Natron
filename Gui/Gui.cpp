@@ -1643,7 +1643,7 @@ Gui::buildTabFocusOrderPropertiesBin()
         : _imp->_layoutPropertiesBin->itemAt(next)->widget();
         
         if (w && nextWidget) {
-            setTabOrder(w, nextWidget);
+            setTabOrder(w,nextWidget);
         }
     }
 }

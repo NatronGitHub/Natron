@@ -1344,7 +1344,14 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
         _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_X);
         _knob->setNormalizedState(1, Double_Knob::NORMALIZATION_Y);
     }
+    
+    bool isSpatial = doubleType == kOfxParamDoubleTypeNormalisedXY ||
+    doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute ||
+    doubleType == kOfxParamDoubleTypeXY ||
+    doubleType == kOfxParamDoubleTypeXYAbsolute;
 
+    _knob->setSpatial(isSpatial);
+    
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);

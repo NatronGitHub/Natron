@@ -152,6 +152,7 @@ Double_Knob::Double_Knob(KnobHolder* holder,
                          int dimension,
                          bool declaredByPlugin)
 : Knob<double>(holder, description, dimension,declaredByPlugin)
+, _spatial(false)
 , _increments(dimension)
 , _decimals(dimension)
 , _disableSlider(false)
@@ -402,6 +403,17 @@ getInputRoD(EffectInstance* effect,
 #endif
 }
 
+void
+Double_Knob::setSpatial(bool spatial)
+{
+    _spatial = spatial;
+}
+
+bool
+Double_Knob::getIsSpatial() const
+{
+    return _spatial;
+}
 
 void
 Double_Knob::setDefaultValuesNormalized(int dims,

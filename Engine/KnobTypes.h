@@ -197,6 +197,9 @@ public:
             _normalizationXY.second = state;
         }
     }
+    
+    void setSpatial(bool spatial);
+    bool getIsSpatial() const;
 
     /**
      * @brief Normalize the default values, set the _defaultStoredNormalized to true and
@@ -298,7 +301,8 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
 private:
-
+    
+    bool _spatial;
     std::vector<double>  _increments;
     std::vector<int> _decimals;
     bool _disableSlider;

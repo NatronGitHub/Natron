@@ -212,8 +212,13 @@ public slots:
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
 
-private:
+    void onDimensionSwitchClicked();
 
+private:
+    void expandAllDimensions();
+    void foldAllDimensions();
+
+    void sliderEditingEnd(double d);
     /**
      * @brief Normalized parameters handling. It converts from project format
      * to normailzed coords or from project format to normalized coords.
@@ -239,6 +244,7 @@ private:
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     ScaleSliderQWidget *_slider;
+    Button *_dimensionSwitchButton;
     boost::shared_ptr<Double_Knob> _knob;
     int _digits;
 };

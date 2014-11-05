@@ -238,6 +238,7 @@ DockablePanel::DockablePanel(Gui* gui
     setLayout(_imp->_mainLayout);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFrameShape(QFrame::Box);
+    setFocusPolicy(Qt::TabFocus);
 
     if (headerMode != NO_HEADER) {
         _imp->_headerWidget = new QFrame(this);
