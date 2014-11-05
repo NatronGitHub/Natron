@@ -381,9 +381,15 @@ public:
     {
         clone(other.get(),offset,range,dimension);
     }
+    
+    /**
+     * @brief Must return the curve used by the GUI of the parameter
+     **/
+    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
 
 protected:
 
+    
     /**
      * @brief Removes all the keyframes in the given dimension.
      **/
@@ -1047,7 +1053,7 @@ protected:
     
     void guiCurveCloneInternalCurve(int dimension);
     
-    boost::shared_ptr<Curve> getGuiCurve(int dimension) const;
+    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const OVERRIDE FINAL;
     
     void setGuiCurveHasChanged(int dimension,bool changed);
 

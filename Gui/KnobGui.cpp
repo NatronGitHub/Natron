@@ -335,6 +335,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
     }
 
     if (!isSlave && enabled) {
+        _imp->copyRightClickMenu->addSeparator();
         QAction* linkToAction = new QAction(tr("Link to"),_imp->copyRightClickMenu);
         linkToAction->setData(dimension);
         QObject::connect( linkToAction,SIGNAL( triggered() ),this,SLOT( onLinkToActionTriggered() ) );
@@ -348,6 +349,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         }
         
     } else if (isSlave) {
+        _imp->copyRightClickMenu->addSeparator();
         QAction* unlinkAction = new QAction(tr("Unlink"),_imp->copyRightClickMenu);
         unlinkAction->setData( QVariant(dimension) );
         QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );

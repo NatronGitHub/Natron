@@ -1252,7 +1252,9 @@ KnobHelper::slaveTo(int dimension,
                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
 
     }
-
+    
+    clone(other,dimension);
+    
     if (_signalSlotHandler) {
         ///Notify we want to refresh
         if (reason == Natron::eValueChangedReasonPluginEdited) {

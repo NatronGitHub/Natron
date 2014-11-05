@@ -1442,6 +1442,11 @@ Knob<T>::clone(KnobI* other,
     for (int i = 0; i < dimMin; ++i) {
         if (i == dimension || dimension == -1) {
             getCurve(i,true)->clone( *other->getCurve(i,true) );
+            boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
+            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
+            if (guiCurve && otherGuiCurve) {
+                guiCurve->clone(*otherGuiCurve);
+            }
             checkAnimationLevel(i);
             if (_signalSlotHandler) {
                 _signalSlotHandler->s_valueChanged(i,Natron::eValueChangedReasonPluginEdited);
@@ -1466,6 +1471,11 @@ Knob<T>::clone(KnobI* other,
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
             getCurve(i,true)->clone(*other->getCurve(i,true), offset, range);
+            boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
+            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
+            if (guiCurve && otherGuiCurve) {
+                guiCurve->clone(*otherGuiCurve,offset,range);
+            }
             checkAnimationLevel(i);
             if (_signalSlotHandler) {
                 _signalSlotHandler->s_valueChanged(i,Natron::eValueChangedReasonPluginEdited);
@@ -1498,6 +1508,11 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                 }
             }
             getCurve(i,true)->clone( *other->getCurve(i,true) );
+            boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
+            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
+            if (guiCurve && otherGuiCurve) {
+                guiCurve->clone(*otherGuiCurve);
+            }
             if (_signalSlotHandler) {
                 int nKeys = getKeyFramesCount(i);
                 for (int k = 0; k < nKeys; ++k) {
