@@ -4332,7 +4332,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                     
                 }
                 boost::shared_ptr<Natron::Node> internalNode = node->getNode();
-                if (!internalNode->isNodeDisabled()) {
+                if (!internalNode->isNodeDisabled() && internalNode->isActivated()) {
                     nodes.push_back(node->getNode());
                 }
             }
