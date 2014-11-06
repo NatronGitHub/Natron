@@ -3231,10 +3231,17 @@ void
 Gui::removeUndoStack(QUndoStack* stack)
 {
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
+    
+    if (_imp->_currentUndoAction == it->second.first) {
+        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
+    }
+    if (_imp->_currentRedoAction == it->second.second) {
+        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
+    }
     if ( it != _imp->_undoStacksActions.end() ) {
         _imp->_undoStacksActions.erase(it);
     }
+   
 }
 
 void
