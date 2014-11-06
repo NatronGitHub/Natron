@@ -1843,7 +1843,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     if ( isReader() ) {
         Format frmt;
         frmt.set( cachedImgParams->getRoD() );
-        ///FIXME: what about the pixel aspect ratio ?
+        frmt.setPixelAspectRatio(par);
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
 
