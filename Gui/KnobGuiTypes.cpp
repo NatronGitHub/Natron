@@ -348,20 +348,20 @@ Int_KnobGui::updateGUI(int dimension)
             }
         }
     }
-    bool valuesEqual = true;
-    double v0 = _spinBoxes[0].first->value();
-    
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        if (_spinBoxes[i].first->value() != v0) {
-            valuesEqual = false;
-            break;
-        }
-    }
-    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && !valuesEqual) {
-        expandAllDimensions();
-    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && valuesEqual) {
-        foldAllDimensions();
-    }
+//    bool valuesEqual = true;
+//    double v0 = _spinBoxes[0].first->value();
+//    
+//    for (int i = 1; i < _knob->getDimension(); ++i) {
+//        if (_spinBoxes[i].first->value() != v0) {
+//            valuesEqual = false;
+//            break;
+//        }
+//    }
+//    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && !valuesEqual) {
+//        expandAllDimensions();
+//    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && valuesEqual) {
+//        foldAllDimensions();
+//    }
 }
 
 void
@@ -999,20 +999,20 @@ Double_KnobGui::updateGUI(int dimension)
             }
         }
     }
-    bool valuesEqual = true;
-    double v0 = _spinBoxes[0].first->value();
-    
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        if (_spinBoxes[i].first->value() != v0) {
-            valuesEqual = false;
-            break;
-        }
-    }
-    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && !valuesEqual) {
-        expandAllDimensions();
-    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && valuesEqual) {
-        foldAllDimensions();
-    }
+//    bool valuesEqual = true;
+//    double v0 = _spinBoxes[0].first->value();
+//    
+//    for (int i = 1; i < _knob->getDimension(); ++i) {
+//        if (_spinBoxes[i].first->value() != v0) {
+//            valuesEqual = false;
+//            break;
+//        }
+//    }
+//    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && !valuesEqual) {
+//        expandAllDimensions();
+//    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && valuesEqual) {
+//        foldAllDimensions();
+//    }
 }
 
 void
@@ -1891,17 +1891,17 @@ Color_KnobGui::updateGUI(int dimension)
     }
     updateLabel(r, g, b, a);
 
-    bool colorsEqual = true;
-    if (_dimension == 3) {
-        colorsEqual = (r == g && r == b);
-    } else {
-        colorsEqual = (r == g && r == b && r == a);
-    }
-    if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
-        expandAllDimensions();
-    } else if (_knob->areAllDimensionsEnabled() && colorsEqual) {
-        foldAllDimensions();
-    }
+//    bool colorsEqual = true;
+//    if (_dimension == 3) {
+//        colorsEqual = (r == g && r == b);
+//    } else {
+//        colorsEqual = (r == g && r == b && r == a);
+//    }
+//    if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
+//        expandAllDimensions();
+//    } else if (_knob->areAllDimensionsEnabled() && colorsEqual) {
+//        foldAllDimensions();
+//    }
 } // updateGUI
 
 void
