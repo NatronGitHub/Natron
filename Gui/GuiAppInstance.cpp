@@ -79,26 +79,27 @@ GuiAppInstance::aboutToQuit()
     /**
      Kill the nodes used to make the previews in the file dialogs
      **/
-    if (_imp->_previewProvider->viewerNode) {
-        _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-		boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
-		ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
-		assert(liveInstance);
-        node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
-		liveInstance->invalidateUiContext();
-        node->removeReferences();
-        _imp->_previewProvider->viewerNode->deleteReferences();
+    if (_imp->_previewProvider) {
+        if (_imp->_previewProvider->viewerNode) {
+            _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
+            boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
+            ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+            assert(liveInstance);
+            node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
+            liveInstance->invalidateUiContext();
+            node->removeReferences();
+            _imp->_previewProvider->viewerNode->deleteReferences();
+        }
+        
+        for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
+             it != _imp->_previewProvider->readerNodes.end(); ++it) {
+            it->second->getNode()->removeReferences();
+            it->second->deleteReferences();
+        }
+        _imp->_previewProvider->readerNodes.clear();
+        
+        _imp->_previewProvider.reset();
     }
-    
-    for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
-         it != _imp->_previewProvider->readerNodes.end(); ++it) {
-        it->second->getNode()->removeReferences();
-        it->second->deleteReferences();
-    }
-    _imp->_previewProvider->readerNodes.clear();
-    
-    _imp->_previewProvider.reset();
-
     
     _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
