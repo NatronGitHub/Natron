@@ -538,6 +538,19 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
         newY = k.getValue();
     }
     
+    ///Make sure string animation follows up
+    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>(this);
+    std::string v;
+    if (isString) {
+        isString->stringFromInterpolatedValue(k.getValue(), &v);
+    }
+    keyframeRemoved_virtual(dimension,time);
+    if (isString) {
+        double ret;
+        isString->stringToKeyFrameValue(newX, v, &ret);
+    }
+
+    
     try {
         *newKey = curve->setKeyFrameValueAndTime(newX,newY, keyindex, NULL);
     } catch (...) {
