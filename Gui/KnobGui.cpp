@@ -630,11 +630,14 @@ KnobGui::onRemoveAnimationActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || dim == i) {
-            CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-            KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
-            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                toRemove.push_back( std::make_pair(curve,*it) );
+            std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(this, i);
+            for (std::list<CurveGui*>::iterator it = curves.begin(); it != curves.end(); ++it) {
+                KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
+                for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
+                    toRemove.push_back( std::make_pair(*it,*it2) );
+                }
             }
+            
         }
     }
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
@@ -780,40 +783,43 @@ KnobGui::onSetKeyActionTriggered()
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
 
+    AddKeysCommand::KeysToAddList toAdd;
+    
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || i == dim) {
             
-            CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-            if (!curve) {
-                return;
+            std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(this, i);
+            for (std::list<CurveGui*>::iterator it = curves.begin(); it != curves.end(); ++it) {
+                boost::shared_ptr<AddKeysCommand::KeysForCurve> kfc(new AddKeysCommand::KeysForCurve());
+
+                KeyFrame kf;
+                kf.setTime(time);
+                Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+                AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
+                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+                
+                if (isInt) {
+                    kf.setValue( isInt->getValue(i) );
+                } else if (isBool) {
+                    kf.setValue( isBool->getValue(i) );
+                } else if (isDouble) {
+                    kf.setValue( isDouble->getValue(i) );
+                } else if (isString) {
+                    std::string v = isString->getValue(i);
+                    double dv;
+                    isString->stringToKeyFrameValue(time, v, &dv);
+                    kf.setValue(dv);
+                }
+                
+                kfc->keys.push_back(kf);
+                kfc->curve = *it;
+                toAdd.push_back(kfc);
             }
-            std::vector<KeyFrame> kVec;
-            KeyFrame kf;
-            kf.setTime(time);
-            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-            AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
-            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-            
-            if (isInt) {
-                kf.setValue( isInt->getValue(i) );
-            } else if (isBool) {
-                kf.setValue( isBool->getValue(i) );
-            } else if (isDouble) {
-                kf.setValue( isDouble->getValue(i) );
-            } else if (isString) {
-                std::string v = isString->getValue(i);
-                double dv;
-                isString->stringToKeyFrameValue(time, v, &dv);
-                kf.setValue(dv);
-            }
-            
-            kVec.push_back(kf);
-            pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
-                                                curve,kVec) );
         }
     }
+    pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(), toAdd) );
 }
 
 void
@@ -875,14 +881,17 @@ KnobGui::onRemoveKeyActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || i == dim) {
-            CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-            
-            KeyFrame kf;
-            bool foundKey = knob->getCurve(i)->getKeyFrameWithTime(time, &kf);
-            
-            if (foundKey) {
-                toRemove.push_back( std::make_pair(curve,kf) );
+            std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(this, i);
+            for (std::list<CurveGui*>::iterator it = curves.begin(); it != curves.end(); ++it) {
+                
+                KeyFrame kf;
+                bool foundKey = knob->getCurve(i)->getKeyFrameWithTime(time, &kf);
+                
+                if (foundKey) {
+                    toRemove.push_back( std::make_pair(*it,kf) );
+                }
             }
+            
         }
     }
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),

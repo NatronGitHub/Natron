@@ -582,7 +582,7 @@ NodeCurveEditorContext::findElement(QTreeWidgetItem* item) const
     return NULL;
 }
 
-CurveGui*
+std::list<CurveGui*>
 CurveEditor::findCurve(KnobGui* knob,
                        int dimension) const
 {
@@ -591,12 +591,17 @@ CurveEditor::findCurve(KnobGui* knob,
     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
     assert(effect);
     
+    std::list<CurveGui*> ret;
+    
     if (effect->getNode()->getRotoContext()) {
         
         for (std::list<RotoCurveEditorContext*>::const_iterator it =_rotos.begin(); it != _rotos.end(); ++it) {
-            NodeCurveEditorElement* elem = (*it)->findElement(knob, dimension);
-            if (elem) {
-                return elem->getCurve();
+            std::list<NodeCurveEditorElement*> elems = (*it)->findElement(knob, dimension);
+            if (!elems.empty()) {
+                for (std::list<NodeCurveEditorElement*>::iterator it2 = elems.begin(); it2 != elems.end(); ++it2) {
+                    ret.push_back((*it2)->getCurve());
+                }
+                return ret;
             }
         }
     } else {
@@ -604,12 +609,13 @@ CurveEditor::findCurve(KnobGui* knob,
              it != _nodes.end(); ++it) {
             NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
             if (elem) {
-                return elem->getCurve();
+                ret.push_back(elem->getCurve());
+                return ret;
             }
         }
     }
 
-    return (CurveGui*)NULL;
+    return ret;
 }
 
 void
@@ -1001,14 +1007,41 @@ RotoCurveEditorContext::recursiveSelectRoto(QTreeWidgetItem* cur,
     }
 }
 
-NodeCurveEditorElement*
+std::list<NodeCurveEditorElement*>
 RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
 {
-    for (std::list<BezierEditorContext*>::const_iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
-        NodeCurveEditorElement* found = (*it)->findElement(knob, dimension);
-        if (found) {
-            return found;
-        }
+    
+    std::list<NodeCurveEditorElement*> ret;
+    
+    KnobHolder* holder = knob->getKnob()->getHolder();
+    if (!holder) {
+        return ret;
     }
-    return 0;
+    
+    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+    if (!effect) {
+        return ret;
+    }
+    
+    boost::shared_ptr<RotoContext> roto = effect->getNode()->getRotoContext();
+    if (!roto) {
+        return ret;
+    }
+    
+    std::list<boost::shared_ptr<Bezier> > selectedBeziers = roto->getSelectedCurves();
+    
+    for (std::list<BezierEditorContext*>::const_iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
+        
+        for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = selectedBeziers.begin(); it2 != selectedBeziers.end(); ++it2) {
+            if (it2->get() == (*it)->getBezier()) {
+                NodeCurveEditorElement* found = (*it)->findElement(knob, dimension);
+                if (found) {
+                    ret.push_back(found);
+                }
+                break;
+            }
+        }
+        
+    }
+    return ret;
 }

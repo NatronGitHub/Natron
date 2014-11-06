@@ -236,7 +236,7 @@ public:
     void recursiveSelectRoto(QTreeWidgetItem* cur,
                              std::vector<CurveGui*> *curves);
 
-    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
+    std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
     
 public slots:
     
@@ -277,7 +277,7 @@ public:
     void centerOn(const std::vector<boost::shared_ptr<Curve> > & curves);
 
     std::pair<QAction*,QAction*> getUndoRedoActions() const WARN_UNUSED_RETURN;
-    CurveGui* findCurve(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
+    std::list<CurveGui*> findCurve(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
 
     void hideCurves(KnobGui* knob);
 
