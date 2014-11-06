@@ -593,15 +593,18 @@ CurveEditor::findCurve(KnobGui* knob,
     
     std::list<CurveGui*> ret;
     
-    if (effect->getNode()->getRotoContext()) {
+    boost::shared_ptr<RotoContext> roto = effect->getNode()->getRotoContext();
+    if (roto) {
         
         for (std::list<RotoCurveEditorContext*>::const_iterator it =_rotos.begin(); it != _rotos.end(); ++it) {
-            std::list<NodeCurveEditorElement*> elems = (*it)->findElement(knob, dimension);
-            if (!elems.empty()) {
-                for (std::list<NodeCurveEditorElement*>::iterator it2 = elems.begin(); it2 != elems.end(); ++it2) {
-                    ret.push_back((*it2)->getCurve());
+            if (roto == (*it)->getNode()->getNode()->getRotoContext()) {
+                std::list<NodeCurveEditorElement*> elems = (*it)->findElement(knob, dimension);
+                if (!elems.empty()) {
+                    for (std::list<NodeCurveEditorElement*>::iterator it2 = elems.begin(); it2 != elems.end(); ++it2) {
+                        ret.push_back((*it2)->getCurve());
+                    }
+                    return ret;
                 }
-                return ret;
             }
         }
     } else {
