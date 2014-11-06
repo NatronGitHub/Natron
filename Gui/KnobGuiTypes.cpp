@@ -207,6 +207,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         }
         if (!showSlider) {
             _slider->hide();
+            _dimensionSwitchButton->setChecked(true);
         } else {
             foldAllDimensions();
         }
@@ -846,6 +847,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         }
         if (!showSlider) {
             _slider->hide();
+            _dimensionSwitchButton->setChecked(true);
         } else {
             foldAllDimensions();
         }
