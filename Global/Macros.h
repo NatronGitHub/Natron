@@ -46,7 +46,7 @@
 #define NATRON_VERSION_REVISION 0
 
 ///For example RC 1, RC 2 etc...
-#define NATRON_BUILD_NUMBER 2
+#define NATRON_BUILD_NUMBER 3
 
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
 #define NATRON_CUSTOM_BUILD_USER_NAME ""
