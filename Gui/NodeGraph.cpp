@@ -2342,9 +2342,11 @@ NodeGraph::areAllNodesVisible()
         }
     }
     for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-        if ( !rect.contains(bbox) ) {
-            return false;
+        if ((*it)->isVisible()) {
+            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+            if ( !rect.contains(bbox) ) {
+                return false;
+            }
         }
     }
 
