@@ -12,10 +12,10 @@
 #ifndef SCALESLIDERQWIDGET_H
 #define SCALESLIDERQWIDGET_H
 
-#include <vector>
-#include <cmath> // for std::pow()
+
 
 #include "Global/Macros.h"
+#include <boost/scoped_ptr.hpp>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -24,8 +24,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-using Natron::Scale_Type;
+using Natron::ScaleTypeEnum;
 
+struct ScaleSliderQWidgetPrivate;
 class QFont;
 class ScaleSliderQWidget
     : public QWidget
@@ -37,45 +38,27 @@ public:
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
-                       Natron::Scale_Type type = Natron::LINEAR_SCALE, // the type of scale
+                       Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
 
     virtual ~ScaleSliderQWidget() OVERRIDE;
 
     void setMinimumAndMaximum(double min,double max);
 
-    void changeScale(Natron::Scale_Type type)
-    {
-        _type = type;
-    }
 
-    Natron::Scale_Type type() const
-    {
-        return _type;
-    }
+    Natron::ScaleTypeEnum type() const;
 
-    double minimum() const
-    {
-        return _minimum;
-    }
+    double minimum() const;
 
-    double maximum() const
-    {
-        return _maximum;
-    }
+    double maximum() const;
 
+    double getPosition() const;
+
+    bool isReadOnly() const;
+    
     void setReadOnly(bool ro);
 
-    bool isReadOnly() const
-    {
-        return _readOnly;
-    }
-
-    double getPosition() const
-    {
-        return _value;
-    }
-
+    
 signals:
     void editingFinished();
     void positionChanged(double);
@@ -88,54 +71,20 @@ private:
 
     void seekInternal(double v);
 
-    /**
-     *@brief See toZoomCoordinates in ViewerGL.h
-     **/
-    QPointF toScaleCoordinates(double x, double y);
-
-    /**
-     *@brief See toWidgetCoordinates in ViewerGL.h
-     **/
-    QPointF toWidgetCoordinates(double x, double y);
 
     void centerOn(double left,double right);
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 
-
-    // see ViewerGL.cpp for a full documentation of ZoomContext
-    struct ZoomContext
-    {
-        ZoomContext()
-            : bottom(0.)
-              , left(0.)
-              , zoomFactor(1.)
-        {
-        }
-
-        QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double bottom; /// the bottom edge of orthographic projection
-        double left; /// the left edge of the orthographic projection
-        double zoomFactor; /// the zoom factor applied to the current image
-        double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
-    };
-
-    ZoomContext _zoomCtx;
-    double _minimum,_maximum;
-    Natron::Scale_Type _type;
-    double _value;
-    bool _dragging;
-    QFont* _font;
-    QColor _textColor;
-    QColor _scaleColor;
-    QColor _sliderColor;
-    bool _initialized;
-    bool _mustInitializeSliderPosition;
-    bool _readOnly;
+    boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
+    
 };
 
 #endif // SCALESLIDERQWIDGET_H

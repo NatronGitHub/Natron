@@ -303,5 +303,61 @@ private:
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations,_oldSerialization;
 };
 
+class RenameNodeUndoRedoCommand
+: public QUndoCommand
+{
+public:
+    
+    RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
+                              NodeBackDrop* bd,
+                              const QString& newName);
+    
+    virtual ~RenameNodeUndoRedoCommand();
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    boost::shared_ptr<NodeGui> _node;
+    NodeBackDrop* _bd;
+    QString _oldName,_newName;
+};
+
+class ExtractNodeUndoRedoCommand
+: public QUndoCommand
+{
+public:
+    
+    ExtractNodeUndoRedoCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    
+    virtual ~ExtractNodeUndoRedoCommand();
+    virtual void undo();
+    virtual void redo();
+    
+    
+    struct ExtractedOutput
+    {
+        boost::shared_ptr<NodeGui> node;
+        std::list<std::pair<int,Natron::Node*> > outputs;
+    };
+    
+    struct ExtractedInput
+    {
+        boost::shared_ptr<NodeGui> node;
+        std::vector<boost::shared_ptr<Natron::Node> > inputs;
+    };
+    
+    struct ExtractedTree
+    {
+        ExtractedOutput output;
+        std::list<ExtractedInput> inputs;
+        std::list<boost::shared_ptr<NodeGui> > inbetweenNodes;
+    };
+private:
+  
+    NodeGraph* _graph;
+    std::list<ExtractedTree> _trees;
+};
+
 
 #endif // NODEGRAPHUNDOREDO_H

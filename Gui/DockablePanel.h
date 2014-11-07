@@ -54,26 +54,36 @@ public:
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
 };
 
+class DockablePanel;
 class RightClickableWidget : public QWidget
 {
     Q_OBJECT
+    
+    DockablePanel* panel;
+    
 public:
     
     
-    RightClickableWidget(QWidget* parent)
+    RightClickableWidget(DockablePanel* panel,QWidget* parent)
     : QWidget(parent)
+    , panel(panel)
     {
-        
+        setObjectName("SettingsPanel");
     }
     
     virtual ~RightClickableWidget() {}
     
+    DockablePanel* getPanel() const { return panel; }
+    
 signals:
     
     void rightClicked(const QPoint& p);
-
+    void escapePressed();
+    
 private:
     
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
 };
@@ -174,10 +184,9 @@ public slots:
     /*Internal slot, not meant to be called externally.*/
     void showHelp();
 
-    /*You can connect to this when you want to change
-       the name externally.*/
-    void onNameChanged(const QString & str);
-
+    ///Set the name on the line-edit/label header
+    void setName(const QString & str);
+    
     /*initializes the knobs GUI and also the roto context if any*/
     void initializeKnobs();
 
@@ -209,6 +218,8 @@ public slots:
 
     void onCenterButtonClicked();
 
+    void onHideUnmodifiedButtonClicked(bool checked);
+    
 signals:
 
     /*emitted when the panel is clicked*/
@@ -251,6 +262,7 @@ protected:
     }
 
 private:
+
 
     void initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> > & knobs);
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
@@ -304,6 +316,7 @@ public:
 
 private:
 
+    
     virtual RotoPanel* initializeRotoPanel();
     virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;

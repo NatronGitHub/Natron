@@ -132,13 +132,22 @@ struct MultiInstancePanelPrivate
         Button_Knob* isButton = dynamic_cast<Button_Knob*>( ref.get() );
         Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( ref.get() );
         String_Knob* isString = dynamic_cast<String_Knob*>( ref.get() );
+        Double_Knob* isDouble = dynamic_cast<Double_Knob*>( ref.get() );
+        Int_Knob* isInt = dynamic_cast<Int_Knob*>( ref.get() );
+        
         boost::shared_ptr<KnobHelper> ret;
-        if ( dynamic_cast<Int_Knob*>( ref.get() ) ) {
-            ret = Natron::createKnob<Int_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+        if ( isInt  ) {
+            boost::shared_ptr<Int_Knob> intKnb = Natron::createKnob<Int_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+            intKnb->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
+            intKnb->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(), isInt->getDisplayMaximums());
+            ret = intKnb;
         } else if ( dynamic_cast<Bool_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Bool_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<Double_Knob*>( ref.get() ) ) {
-            ret = Natron::createKnob<Double_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+        } else if ( isDouble ) {
+            boost::shared_ptr<Double_Knob> dblKnob = Natron::createKnob<Double_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+            dblKnob->setMinimumsAndMaximums(isDouble->getMinimums(), isDouble->getMaximums());
+            dblKnob->setDisplayMinimumsAndMaximums(isDouble->getDisplayMinimums(), isDouble->getDisplayMaximums());
+            ret = dblKnob;
         } else if (isChoice) {
             boost::shared_ptr<Choice_Knob> choice = Natron::createKnob<Choice_Knob>(publicInterface,
                                                                                     ref->getDescription(),ref->getDimension(),declaredByPlugin);
@@ -292,8 +301,8 @@ TableItemDelegate::paint(QPainter * painter,
         return;
     }
     assert(0 <= dim);
-    Natron::AnimationLevel level = knob->getAnimationLevel(dim);
-    if (level == NO_ANIMATION) {
+    Natron::AnimationLevelEnum level = knob->getAnimationLevel(dim);
+    if (level == eAnimationLevelNone) {
         QStyledItemDelegate::paint(painter,option,index);
 
         return;
@@ -309,9 +318,9 @@ TableItemDelegate::paint(QPainter * painter,
         return;
     }
     QColor bgColor;
-    if (level == ON_KEYFRAME) {
+    if (level == eAnimationLevelOnKeyframe) {
         bgColor.setRgb(21,97,248);
-    } else if (level == INTERPOLATED_VALUE) {
+    } else if (level == eAnimationLevelInterpolatedValue) {
         bgColor.setRgb(86,117,156);
     }
 
@@ -773,14 +782,19 @@ MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Natron::No
 {
     boost::shared_ptr<Node> mainInstance = getMainInstance();
     std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
-    
-    ++next;
+    if (!instances.empty()) {
+	   ++next;
+	}
+   
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
         int index = getNodeIndex(*it);
         assert(index != -1);
         removeRow(index);
         bool isMainInstance = (*it) == mainInstance;
         (*it)->deactivate( std::list<Natron::Node* >(),false,false,!isMainInstance,next == instances.end() );
+		if (next == instances.end()) {
+			--next;
+		}
     }
     
 
@@ -790,11 +804,15 @@ void
 MultiInstancePanel::addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances)
 {
     std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
-    
-    ++next;
+    if (!instances.empty()) {
+		++next;
+	}
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
         addRow(*it);
         (*it)->activate( std::list<Natron::Node* >(),false,next == instances.end() );
+		if (next == instances.end()) {
+			--next;
+		}
     }
 }
 
@@ -888,13 +906,18 @@ MultiInstancePanel::onSettingsPanelClosed(bool closed)
     getSelectedInstances(&selection);
 
     std::list<Node*>::iterator next = selection.begin();
-    ++next;
+	if (!selection.empty()) {
+		++next;
+	}
     for (std::list<Node*>::iterator it = selection.begin(); it != selection.end(); ++it,++next) {
         if (closed) {
             (*it)->hideKeyframesFromTimeline( next == selection.end() );
         } else {
             (*it)->showKeyframesOnTimeline( next == selection.end() );
         }
+		if (next == selection.end()) {
+			--next;
+		}
     }
 }
 
@@ -926,7 +949,9 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
     QModelIndexList rows = _imp->view->selectionModel()->selectedRows();
     bool setDirty = rows.count() > 1;
     std::list<std::pair<Node*,bool> >::iterator nextPreviouslySelected = previouslySelectedInstances.begin();
-    ++nextPreviouslySelected;
+	if (!previouslySelectedInstances.empty()) {
+		++nextPreviouslySelected;
+	}
     for (std::list<std::pair<Node*,bool> >::iterator it = previouslySelectedInstances.begin();
          it != previouslySelectedInstances.end(); ++it,++nextPreviouslySelected) {
         ///if the item is in the new selection, don't consider it
@@ -961,12 +986,17 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                 break;
             }
         }
+		if (nextPreviouslySelected == previouslySelectedInstances.end()) {
+			--nextPreviouslySelected;
+		}
     }
 
 
     std::list<SequenceTime> allKeysToAdd;
     std::list<std::pair<Node*,bool> >::iterator nextNewlySelected = newlySelectedInstances.begin();
-    ++nextNewlySelected;
+	if (!newlySelectedInstances.empty()) {
+		++nextNewlySelected;
+	}
     for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin();
          it != newlySelectedInstances.end(); ++it,++nextNewlySelected) {
         ///if the item is in the old selection, don't consider it
@@ -1018,6 +1048,10 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                 break;
             }
         }
+
+		if (nextNewlySelected == newlySelectedInstances.end()) {
+			--nextNewlySelected;
+		}
     }
 
 
@@ -1185,7 +1219,7 @@ void
 MultiInstancePanel::onInstanceKnobValueChanged(int dim,
                                                int reason)
 {
-    if ( (Natron::ValueChangedReason)reason == Natron::SLAVE_REFRESH ) {
+    if ( (Natron::ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
         return;
     }
 
@@ -1335,7 +1369,7 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
             }
         }
     }
-    instances.front()->getLiveInstance()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    instances.front()->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
 
     ///To update interacts, kinda hack but can't figure out where else put this
     getMainInstance()->getApp()->redrawAllViewers();
@@ -1344,11 +1378,11 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
 void
 MultiInstancePanel::evaluate(KnobI* knob,
                              bool /*isSignificant*/,
-                             Natron::ValueChangedReason reason)
+                             Natron::ValueChangedReasonEnum reason)
 {
     Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob);
 
-    if ( isButton && (reason == USER_EDITED) ) {
+    if ( isButton && (reason == eValueChangedReasonUserEdited) ) {
         onButtonTriggered(isButton);
     }
 }
@@ -1365,13 +1399,13 @@ MultiInstancePanel::onButtonTriggered(Button_Knob* button)
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName( button->getName() );
         assert( k && dynamic_cast<Button_Knob*>( k.get() ) );
-        (*it)->getLiveInstance()->onKnobValueChanged_public(k.get(),USER_EDITED,time);
+        (*it)->getLiveInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited,time);
     }
 }
 
 void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
-                                       Natron::ValueChangedReason reason,
+                                       Natron::ValueChangedReasonEnum reason,
                                        SequenceTime time)
 {
     if ( !k->isDeclaredByPlugin() ) {
@@ -1379,7 +1413,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             _imp->mainInstance->onDisabledKnobToggled( dynamic_cast<Bool_Knob*>(k)->getValue() );
         }
     } else {
-        if (reason == Natron::USER_EDITED) {
+        if (reason == Natron::eValueChangedReasonUserEdited) {
             ///Buttons are already handled in evaluate()
             Button_Knob* isButton = dynamic_cast<Button_Knob*>(k);
             if (isButton) {
@@ -1405,7 +1439,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                         isString->clone(k);
                     }
 
-                    sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), PLUGIN_EDITED,time);
+                    sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time);
                 }
             }
         }
@@ -1685,19 +1719,24 @@ TrackerPanel::handleTrackNextAndPrevious(const std::list<Button_Knob*> & selecte
     
     ///Forward the button click event to all the selected instances
     std::list<Button_Knob*>::const_iterator next = selectedInstances.begin();
-
-    ++next;
+	if (!selectedInstances.empty()) {
+		++next;
+	}
     for (std::list<Button_Knob*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it,++next) {
-        ///When a reason of USER_EDITED is given, the tracker plug-in will move the timeline so just send it
+        ///When a reason of eValueChangedReasonUserEdited is given, the tracker plug-in will move the timeline so just send it
         ///upon the last track if we want to update the viewer
-        Natron::ValueChangedReason reason;
+        Natron::ValueChangedReasonEnum reason;
         if (_imp->updateViewerOnTrackingEnabled) {
-            reason = next == selectedInstances.end() ? USER_EDITED : PLUGIN_EDITED;
+            reason = next == selectedInstances.end() ? eValueChangedReasonNatronGuiEdited : eValueChangedReasonNatronInternalEdited;
         } else {
-            reason = PLUGIN_EDITED;
+            reason = eValueChangedReasonNatronInternalEdited;
         }
 
         (*it)->getHolder()->onKnobValueChanged_public(*it,reason,currentFrame);
+
+		if (next == selectedInstances.end()) {
+			--next;
+		}
     }
     
 }
@@ -1925,7 +1964,7 @@ TrackerPanel::clearBackwardAnimationForSelection()
         const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationBeforeTime(time,dim,Natron::PLUGIN_EDITED);
+                knobs[i]->deleteAnimationBeforeTime(time,dim,Natron::eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -1942,7 +1981,7 @@ TrackerPanel::clearForwardAnimationForSelection()
         const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationAfterTime(time,dim,Natron::PLUGIN_EDITED);
+                knobs[i]->deleteAnimationAfterTime(time,dim,Natron::eValueChangedReasonPluginEdited);
             }
         }
     }

@@ -54,6 +54,8 @@ public:
 
 
     ViewerInstance* getInternalNode() const;
+    void discardInternalNodePointer();
+    
     Gui* getGui() const;
     ViewerGL* getViewer() const;
 
@@ -158,9 +160,9 @@ public:
     void getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes, std::pair<NodeGui*,TrackerGui*>* currentTracker) const;
 
 
-    Natron::ViewerCompositingOperator getCompositingOperator() const;
+    Natron::ViewerCompositingOperatorEnum getCompositingOperator() const;
 
-    void setCompositingOperator(Natron::ViewerCompositingOperator op);
+    void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
 
     bool isFrameRangeLocked() const;
 
@@ -191,8 +193,7 @@ public:
     void setDesiredFps(double fps);
 
     ///Called by ViewerGL when the image changes to refresh the info bar
-    void setImageFormat(int textureIndex,Natron::ImageComponents components,Natron::ImageBitDepth depth);
-
+    void setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth);
     
 public slots:
 
@@ -285,6 +286,12 @@ public slots:
     void onSpinboxFpsChanged(double fps);
     
     void onEngineStopped();
+    
+    void onViewerRenderingStarted();
+    
+    void onViewerRenderingStopped();
+    
+    void setTurboButtonDown(bool down);
     
 private:
     

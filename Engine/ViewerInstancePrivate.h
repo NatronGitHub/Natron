@@ -36,7 +36,7 @@ struct RenderViewerArgs
     RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
                      const TextureRect & texRect_,
                      ViewerInstance::DisplayChannels channels_,
-                      Natron::ImagePremultiplication srcPremult_,
+                      Natron::ImagePremultiplicationEnum srcPremult_,
                      int closestPowerOf2_,
                      int bitDepth_,
                      double gain_,
@@ -59,7 +59,7 @@ struct RenderViewerArgs
     boost::shared_ptr<const Natron::Image> inputImage;
     TextureRect texRect;
     ViewerInstance::DisplayChannels channels;
-    Natron::ImagePremultiplication srcPremult;
+    Natron::ImagePremultiplicationEnum srcPremult;
     int closestPowerOf2;
     int bitDepth;
     double gain;
@@ -83,7 +83,7 @@ public:
           , gain(1.)
           , offset(0.)
           , mipMapLevel(0)
-          , lut(Natron::sRGB)
+          , lut(Natron::eViewerColorSpaceSRGB)
           , cachedFrame()
           , image()
           , rod()
@@ -105,13 +105,13 @@ public:
     bool mustFreeRamBuffer; //< set to true when !cachedFrame
     int textureIndex;
     TextureRect textureRect;
-    Natron::ImagePremultiplication srcPremult;
+    Natron::ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
     double gain;
     double offset;
     unsigned int mipMapLevel;
-    Natron::ImagePremultiplication premult;
-    Natron::ViewerColorSpace lut;
+    Natron::ImagePremultiplicationEnum premult;
+    Natron::ViewerColorSpaceEnum lut;
     
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
     boost::shared_ptr<Natron::FrameEntry> cachedFrame;
@@ -134,7 +134,7 @@ public:
           , updateViewerPboIndex(0)
           , viewerParamsMutex()
           , viewerParamsGain(1.)
-          , viewerParamsLut(Natron::sRGB)
+          , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
           , viewerParamsAutoContrast(false)
           , viewerParamsChannels(ViewerInstance::RGB)
           , viewerMipMapLevel(0)
@@ -214,7 +214,7 @@ public:
     // viewerParams: The viewer parameters that may be accessed from the GUI
     mutable QMutex viewerParamsMutex;   //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
     double viewerParamsGain;           /*!< Current gain setting in the GUI. Not affected by autoContrast. */
-    Natron::ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
+    Natron::ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;
     DisplayChannels viewerParamsChannels;

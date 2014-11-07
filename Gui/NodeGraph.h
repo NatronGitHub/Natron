@@ -35,6 +35,7 @@ class QKeyEvent;
 class Gui;
 class NodeGui;
 class QDropEvent;
+class QUndoCommand;
 class QDragEnterEvent;
 class NodeSerialization;
 class NodeGuiSerialization;
@@ -58,13 +59,15 @@ public:
 
     virtual ~NodeGraph() OVERRIDE;
 
-    void setPropertyBinPtr(QScrollArea* propertyBin);
-
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
-                                             double xPosHint,double yPosHint,bool pushUndoRedoCommand);
+                                             double xPosHint,double yPosHint,bool pushUndoRedoCommand,bool autoConnect);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
+    
+    void setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes);
+    
+    void clearSelection();
 
     void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
 
@@ -144,7 +147,9 @@ public:
     
     void refreshNodesKnobsAtTime(SequenceTime time);
     
-public slots:
+    void pushUndoCommand(QUndoCommand* command);
+
+   public slots:
 
     void deleteSelection();
 
@@ -154,11 +159,13 @@ public slots:
 
     void showMenu(const QPoint & pos);
 
-    void toggleCacheInfos();
+    void toggleCacheInfo();
 
     void togglePreviewsForSelectedNodes();
 
     void toggleAutoPreview();
+    
+    void toggleSelectedNodesEnabled();
 
     void forceRefreshAllPreviews();
 
@@ -167,6 +174,8 @@ public slots:
     void onProjectNodesCleared();
 
     void switchInputs1and2ForSelectedNodes();
+    
+    void extractSelectedNode();
 
     ///All these actions also work for backdrops
     /////////////////////////////////////////////
@@ -184,8 +193,6 @@ public slots:
 
     void toggleConnectionHints();
     
-    void toggleSelectedNodesEnabled();
-
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
     
@@ -195,9 +202,13 @@ public slots:
 
     void popFindDialog(const QPoint& pos = QPoint(0,0));
     
+    void popRenameDialog(const QPoint& pos = QPoint(0,0));
+    
     void onFindNodeDialogFinished();
     
     void refreshAllKnobsGui();
+        
+    void onNodeNameEditDialogFinished();
     
 private:
 
@@ -209,7 +220,7 @@ private:
      * It will move the inputs / outputs slightly to fit this node into the nodegraph
      * so they do not overlap.
      **/
-    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n);
+    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
     
     bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
 
@@ -267,6 +278,25 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<FindNodeDialogPrivate> _imp;
+};
+
+struct EditNodeNameDialogPrivate;
+class EditNodeNameDialog: public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd,QWidget* parent);
+    
+    virtual ~EditNodeNameDialog();
+    
+private:
+    
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    boost::scoped_ptr<EditNodeNameDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_NODEGRAPH_H_

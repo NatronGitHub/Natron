@@ -158,6 +158,9 @@ public:
         bool frameVarying;
     };
     
+    
+    virtual void setupClipPreferencesArgs(OFX::Host::Property::Set &args) OVERRIDE FINAL;
+    
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/

@@ -504,9 +504,7 @@ Project::onAutoSaveTimerTriggered()
     }
 
     if (canAutoSave) {
-        getApp()->aboutToAutoSave();
         QtConcurrent::run(this,&Project::autoSave);
-        getApp()->autoSaveFinished();
     } else {
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
         ///We don't use the user-provided timeout interval here because it could be an inapropriate value.
@@ -560,10 +558,10 @@ Project::findAndTryLoadAutoSave()
 
             appPTR->hideSplashScreen();
 
-            Natron::StandardButton ret = Natron::questionDialog(tr("Auto-save").toStdString(),
-                                                                text.toStdString(),Natron::StandardButtons(Natron::Yes | Natron::No),
-                                                                Natron::Yes);
-            if ( (ret == Natron::No) || (ret == Natron::Escape) ) {
+            Natron::StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
+                                                                text.toStdString(),Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                                Natron::eStandardButtonYes);
+            if ( (ret == Natron::eStandardButtonNo) || (ret == Natron::eStandardButtonEscape) ) {
                 removeAutoSaves();
                 reset();
 
@@ -679,7 +677,7 @@ Project::initializeKnobs()
     _imp->envVars->setMultiPath(true);
     
     ///Initialize the OCIO Config
-    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
     
     page->addKnob(_imp->envVars);
     
@@ -766,49 +764,54 @@ Project::initializeKnobs()
     _imp->colorSpace32bits->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32bits);
     
-    boost::shared_ptr<Page_Knob> infosPage = Natron::createKnob<Page_Knob>(this, "Infos");
+    boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, "Info");
     
     _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
     _imp->natronVersion->setAsLabel();
+    _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
     
     _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
-    infosPage->addKnob(_imp->natronVersion);
+    infoPage->addKnob(_imp->natronVersion);
     
     _imp->originalAuthorName = Natron::createKnob<String_Knob>(this, "Original author");
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
     _imp->originalAuthorName->setAsLabel();
+    _imp->originalAuthorName->setEvaluateOnChange(false);
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
     _imp->originalAuthorName->setDefaultValue(authorName);
-    infosPage->addKnob(_imp->originalAuthorName);
+    infoPage->addKnob(_imp->originalAuthorName);
     
     _imp->lastAuthorName = Natron::createKnob<String_Knob>(this, "Last author");
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
     _imp->lastAuthorName->setAsLabel();
+    _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
     _imp->lastAuthorName->setDefaultValue(authorName);
-    infosPage->addKnob(_imp->lastAuthorName);
+    infoPage->addKnob(_imp->lastAuthorName);
 
 
     _imp->projectCreationDate = Natron::createKnob<String_Knob>(this, "Created on");
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip("The creation date of the project.");
     _imp->projectCreationDate->setAsLabel();
+    _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
     _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
-    infosPage->addKnob(_imp->projectCreationDate);
+    infoPage->addKnob(_imp->projectCreationDate);
     
     _imp->saveDate = Natron::createKnob<String_Knob>(this, "Last saved on");
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip("The date this project was last saved.");
     _imp->saveDate->setAsLabel();
+    _imp->saveDate->setEvaluateOnChange(false);
     _imp->saveDate->setAnimationEnabled(false);
-    infosPage->addKnob(_imp->saveDate);
+    infoPage->addKnob(_imp->saveDate);
     
     boost::shared_ptr<String_Knob> comments = Natron::createKnob<String_Knob>(this, "Comments");
     comments->setName("comments");
@@ -816,7 +819,7 @@ Project::initializeKnobs()
                              "and anything worth mentionning about it.");
     comments->setAsMultiLine();
     comments->setAnimationEnabled(false);
-    infosPage->addKnob(comments);
+    infoPage->addKnob(comments);
     
     emit knobsInitialized();
 } // initializeKnobs
@@ -824,7 +827,7 @@ Project::initializeKnobs()
 void
 Project::evaluate(KnobI* knob,
                   bool isSignificant,
-                  Natron::ValueChangedReason /*reason*/)
+                  Natron::ValueChangedReasonEnum /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (isSignificant && knob != _imp->formatKnob.get()) {
@@ -1181,19 +1184,19 @@ Project::load(const ProjectSerialization & obj,const QString& name,const QString
 }
 
 void
-Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/)
+Project::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
 {
 }
 
 void
-Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/)
+Project::endKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
 {
 }
 
 ///this function is only called on the main thread
 void
 Project::onKnobValueChanged(KnobI* knob,
-                            Natron::ValueChangedReason /*reason*/,
+                            Natron::ValueChangedReasonEnum reason,
                             SequenceTime /*time*/)
 {
     if ( knob == _imp->viewsCount.get() ) {
@@ -1211,6 +1214,14 @@ Project::onKnobValueChanged(KnobI* knob,
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
         if (found) {
+            if (reason == Natron::eValueChangedReasonUserEdited) {
+                ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
+                QMutexLocker k(&_imp->nodesLock);
+                for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end();++it)
+                {
+                    (*it)->incrementKnobsAge();
+                }
+            }
             emit formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
@@ -1243,7 +1254,13 @@ Project::isGraphWorthLess() const
      */
 
     ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
-    return !hasEverAutoSaved() && !hasProjectBeenSavedByUser();
+    int nbNodes;
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        nbNodes = (int)_imp->currentNodes.size();
+    }
+    
+    return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || nbNodes == 0;
 }
 
 void
@@ -1290,7 +1307,9 @@ Project::reset()
         _imp->projectPath.clear();
         _imp->autoSaveTimer->stop();
         _imp->additionalFormats.clear();
+        _imp->nodeCounters.clear();
     }
+    _imp->timeline->removeAllKeyframesIndicators();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -1301,7 +1320,9 @@ Project::reset()
         knobs[i]->unblockEvaluation();
     }
 
-    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath());
+    _imp->envVars->blockEvaluation();
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
+    _imp->envVars->unblockEvaluation();
     
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
@@ -1596,20 +1617,20 @@ boost::shared_ptr<Natron::Node> Project::getNodePointer(Natron::Node* n) const
     return boost::shared_ptr<Natron::Node>();
 }
 
-Natron::ViewerColorSpace
-Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
+Natron::ViewerColorSpaceEnum
+Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
 {
     switch (bitdepth) {
-    case Natron::IMAGE_BYTE:
+    case Natron::eImageBitDepthByte:
 
-        return (Natron::ViewerColorSpace)_imp->colorSpace8bits->getValue();
-    case Natron::IMAGE_SHORT:
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8bits->getValue();
+    case Natron::eImageBitDepthShort:
 
-        return (Natron::ViewerColorSpace)_imp->colorSpace16bits->getValue();
-    case Natron::IMAGE_FLOAT:
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16bits->getValue();
+    case Natron::eImageBitDepthFloat:
 
-        return (Natron::ViewerColorSpace)_imp->colorSpace32bits->getValue();
-    case Natron::IMAGE_NONE:
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32bits->getValue();
+    case Natron::eImageBitDepthNone:
         assert(false);
         break;
     }
@@ -1873,7 +1894,7 @@ Project::fixFilePath(const std::string& projectPathName,const std::string& newPr
 }
     
 void
-Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath)
+Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath,bool blockEval)
 {
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     {
@@ -1883,6 +1904,9 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isActivated()) {
+            if (blockEval) {
+                nodes[i]->getLiveInstance()->blockEvaluation();
+            }
             const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
                 
@@ -1899,6 +1923,9 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
                         isString->setValue(filepath, 0);
                     }
                 }
+            }
+            if (blockEval) {
+                nodes[i]->getLiveInstance()->unblockEvaluation();
             }
             
         }
@@ -2018,16 +2045,18 @@ Project::makeRelativeToProject(std::string& str)
     getEnvironmentVariables(envvar);
 
     std::map<std::string,std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
-    if (found != envvar.end()) {
+    if (found != envvar.end() && !found->second.empty()) {
         makeRelativeToVariable(found->first, found->second, str);
     }
 }
 
     
 void
-Project::onOCIOConfigPathChanged(const std::string& path)
+Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
-    
+    if (block) {
+        blockEvaluation();
+    }
     std::string env = _imp->envVars->getValue();
     std::map<std::string, std::string> envMap;
     makeEnvMap(env, envMap);
@@ -2053,9 +2082,12 @@ Project::onOCIOConfigPathChanged(const std::string& path)
     }
     if (env != newEnv) {
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path);
+            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
         }
         _imp->envVars->setValue(newEnv, 0);
+    }
+    if (block) {
+        unblockEvaluation();
     }
 }
 

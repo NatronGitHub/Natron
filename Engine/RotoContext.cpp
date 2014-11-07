@@ -63,17 +63,17 @@ BezierCP::getPositionAtTime(int time,
     bool ret;
     KeyFrame k;
 
-    if ( _imp->curveX.getKeyFrameWithTime(time, &k) ) {
+    if ( _imp->curveX->getKeyFrameWithTime(time, &k) ) {
         bool ok;
         *x = k.getValue();
-        ok = _imp->curveY.getKeyFrameWithTime(time, &k);
+        ok = _imp->curveY->getKeyFrameWithTime(time, &k);
         assert(ok);
         *y = k.getValue();
         ret = true;
     } else {
         try {
-            *x = _imp->curveX.getValueAt(time);
-            *y = _imp->curveY.getValueAt(time);
+            *x = _imp->curveX->getValueAt(time);
+            *y = _imp->curveY->getValueAt(time);
         } catch (const std::exception & e) {
             QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->x;
@@ -114,23 +114,14 @@ BezierCP::setPositionAtTime(int time,
 
 
     {
-        ///update the offset time
-        QWriteLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            return;
-            // _imp->offsetTime = time;
-        }
-    }
-
-    {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
-        _imp->curveX.addKeyFrame(k);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        _imp->curveX->addKeyFrame(k);
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
-        _imp->curveY.addKeyFrame(k);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        _imp->curveY->addKeyFrame(k);
     }
 }
 
@@ -176,17 +167,17 @@ BezierCP::getLeftBezierPointAtTime(int time,
     KeyFrame k;
     bool ret;
 
-    if ( _imp->curveLeftBezierX.getKeyFrameWithTime(time, &k) ) {
+    if ( _imp->curveLeftBezierX->getKeyFrameWithTime(time, &k) ) {
         bool ok;
         *x = k.getValue();
-        ok = _imp->curveLeftBezierY.getKeyFrameWithTime(time, &k);
+        ok = _imp->curveLeftBezierY->getKeyFrameWithTime(time, &k);
         assert(ok);
         *y = k.getValue();
         ret =  true;
     } else {
         try {
-            *x = _imp->curveLeftBezierX.getValueAt(time);
-            *y = _imp->curveLeftBezierY.getValueAt(time);
+            *x = _imp->curveLeftBezierX->getValueAt(time);
+            *y = _imp->curveLeftBezierY->getValueAt(time);
         } catch (const std::exception & e) {
             QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->leftX;
@@ -226,17 +217,17 @@ BezierCP::getRightBezierPointAtTime(int time,
     KeyFrame k;
     bool ret;
 
-    if ( _imp->curveRightBezierX.getKeyFrameWithTime(time, &k) ) {
+    if ( _imp->curveRightBezierX->getKeyFrameWithTime(time, &k) ) {
         bool ok;
         *x = k.getValue();
-        ok = _imp->curveRightBezierY.getKeyFrameWithTime(time, &k);
+        ok = _imp->curveRightBezierY->getKeyFrameWithTime(time, &k);
         assert(ok);
         *y = k.getValue();
         ret = true;
     } else {
         try {
-            *x = _imp->curveRightBezierX.getValueAt(time);
-            *y = _imp->curveRightBezierY.getValueAt(time);
+            *x = _imp->curveRightBezierX->getValueAt(time);
+            *y = _imp->curveRightBezierY->getValueAt(time);
         } catch (const std::exception & e) {
             QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->rightX;
@@ -275,23 +266,16 @@ BezierCP::setLeftBezierPointAtTime(int time,
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    {
-        ///update the offset time
-        QWriteLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            return;
-            //_imp->offsetTime = time;
-        }
-    }
+
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
-        _imp->curveLeftBezierX.addKeyFrame(k);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        _imp->curveLeftBezierX->addKeyFrame(k);
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
-        _imp->curveLeftBezierY.addKeyFrame(k);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        _imp->curveLeftBezierY->addKeyFrame(k);
     }
 }
 
@@ -302,23 +286,16 @@ BezierCP::setRightBezierPointAtTime(int time,
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    {
-        ///update the offset time
-        QWriteLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            return;
-            // _imp->offsetTime = time;
-        }
-    }
+
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
-        _imp->curveRightBezierX.addKeyFrame(k);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        _imp->curveRightBezierX->addKeyFrame(k);
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::KEYFRAME_LINEAR);
-        _imp->curveRightBezierY.addKeyFrame(k);
+        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        _imp->curveRightBezierY->addKeyFrame(k);
     }
 }
 
@@ -329,23 +306,23 @@ BezierCP::removeKeyframe(int time)
     assert( QThread::currentThread() == qApp->thread() );
 
     ///if the keyframe count reaches 0 update the "static" values which may be fetched
-    if (_imp->curveX.getKeyFramesCount() == 1) {
+    if (_imp->curveX->getKeyFramesCount() == 1) {
         QMutexLocker l(&_imp->staticPositionMutex);
-        _imp->x = _imp->curveX.getValueAt(time);
-        _imp->y = _imp->curveY.getValueAt(time);
-        _imp->leftX = _imp->curveLeftBezierX.getValueAt(time);
-        _imp->leftY = _imp->curveLeftBezierY.getValueAt(time);
-        _imp->rightX = _imp->curveRightBezierX.getValueAt(time);
-        _imp->rightY = _imp->curveRightBezierY.getValueAt(time);
+        _imp->x = _imp->curveX->getValueAt(time);
+        _imp->y = _imp->curveY->getValueAt(time);
+        _imp->leftX = _imp->curveLeftBezierX->getValueAt(time);
+        _imp->leftY = _imp->curveLeftBezierY->getValueAt(time);
+        _imp->rightX = _imp->curveRightBezierX->getValueAt(time);
+        _imp->rightY = _imp->curveRightBezierY->getValueAt(time);
     }
 
     try {
-        _imp->curveX.removeKeyFrameWithTime(time);
-        _imp->curveY.removeKeyFrameWithTime(time);
-        _imp->curveLeftBezierX.removeKeyFrameWithTime(time);
-        _imp->curveRightBezierX.removeKeyFrameWithTime(time);
-        _imp->curveLeftBezierY.removeKeyFrameWithTime(time);
-        _imp->curveRightBezierY.removeKeyFrameWithTime(time);
+        _imp->curveX->removeKeyFrameWithTime(time);
+        _imp->curveY->removeKeyFrameWithTime(time);
+        _imp->curveLeftBezierX->removeKeyFrameWithTime(time);
+        _imp->curveRightBezierX->removeKeyFrameWithTime(time);
+        _imp->curveLeftBezierY->removeKeyFrameWithTime(time);
+        _imp->curveRightBezierY->removeKeyFrameWithTime(time);
     } catch (...) {
     }
 }
@@ -355,13 +332,13 @@ BezierCP::hasKeyFrameAtTime(int time) const
 {
     KeyFrame k;
 
-    return _imp->curveX.getKeyFrameWithTime(time, &k);
+    return _imp->curveX->getKeyFrameWithTime(time, &k);
 }
 
 void
 BezierCP::getKeyframeTimes(std::set<int>* times) const
 {
-    KeyFrameSet set = _imp->curveX.getKeyFrames_mt_safe();
+    KeyFrameSet set = _imp->curveX->getKeyFrames_mt_safe();
 
     for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
         times->insert( (int)it->getTime() );
@@ -372,7 +349,7 @@ int
 BezierCP::getKeyframeTime(int index) const
 {
     KeyFrame k;
-    bool ok = _imp->curveX.getKeyFrameWithIndex(index, &k);
+    bool ok = _imp->curveX->getKeyFrameWithIndex(index, &k);
 
     if (ok) {
         return k.getTime();
@@ -384,7 +361,7 @@ BezierCP::getKeyframeTime(int index) const
 int
 BezierCP::getKeyframesCount() const
 {
-    return _imp->curveX.getKeyFramesCount();
+    return _imp->curveX->getKeyFramesCount();
 }
 
 int
@@ -552,9 +529,9 @@ BezierCP::cuspPoint(int time,
     }
 
     double x,y,leftX,leftY,rightX,rightY;
-    getPositionAtTime(time, &x, &y);
-    getLeftBezierPointAtTime(time, &leftX, &leftY);
-    bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY);
+    getPositionAtTime(time, &x, &y,true);
+    getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+    bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY,true);
     double newLeftX = leftX,newLeftY = leftY,newRightX = rightX,newRightY = rightY;
     cuspTangent(x, y, &newLeftX, &newLeftY);
     cuspTangent(x, y, &newRightX, &newRightY);
@@ -597,9 +574,9 @@ BezierCP::smoothPoint(int time,
     }
 
     double x,y,leftX,leftY,rightX,rightY;
-    getPositionAtTime(time, &x, &y);
-    getLeftBezierPointAtTime(time, &leftX, &leftY);
-    bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY);
+    getPositionAtTime(time, &x, &y,true);
+    getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+    bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY,true);
 
     smoothTangent(time,true,this,x, y, &leftX, &leftY);
     smoothTangent(time,false,this,x, y, &rightX, &rightY);
@@ -626,15 +603,51 @@ BezierCP::smoothPoint(int time,
     return keyframeSet;
 }
 
+boost::shared_ptr<Curve>
+BezierCP::getXCurve() const
+{
+    return _imp->curveX;
+}
+
+boost::shared_ptr<Curve>
+BezierCP::getYCurve() const
+{
+    return _imp->curveY;
+}
+
+boost::shared_ptr<Curve>
+BezierCP::getLeftXCurve() const
+{
+    return _imp->curveLeftBezierX;
+}
+
+boost::shared_ptr<Curve>
+BezierCP::getLeftYCurve() const
+{
+    return _imp->curveLeftBezierY;
+}
+
+boost::shared_ptr<Curve>
+BezierCP::getRightXCurve() const
+{
+    return _imp->curveRightBezierX;
+}
+
+boost::shared_ptr<Curve>
+BezierCP::getRightYCurve() const
+{
+    return _imp->curveRightBezierY;
+}
+
 void
 BezierCP::clone(const BezierCP & other)
 {
-    _imp->curveX.clone(other._imp->curveX);
-    _imp->curveY.clone(other._imp->curveY);
-    _imp->curveLeftBezierX.clone(other._imp->curveLeftBezierX);
-    _imp->curveLeftBezierY.clone(other._imp->curveLeftBezierY);
-    _imp->curveRightBezierX.clone(other._imp->curveRightBezierX);
-    _imp->curveRightBezierY.clone(other._imp->curveRightBezierY);
+    _imp->curveX->clone(*other._imp->curveX);
+    _imp->curveY->clone(*other._imp->curveY);
+    _imp->curveLeftBezierX->clone(*other._imp->curveLeftBezierX);
+    _imp->curveLeftBezierY->clone(*other._imp->curveLeftBezierY);
+    _imp->curveRightBezierX->clone(*other._imp->curveRightBezierX);
+    _imp->curveRightBezierY->clone(*other._imp->curveRightBezierY);
 
     {
         QMutexLocker l(&_imp->staticPositionMutex);
@@ -659,14 +672,14 @@ BezierCP::equalsAtTime(int time,
 {
     double x,y,leftX,leftY,rightX,rightY;
 
-    getPositionAtTime(time, &x, &y);
-    getLeftBezierPointAtTime(time, &leftX, &leftY);
-    getRightBezierPointAtTime(time, &rightX, &rightY);
+    getPositionAtTime(time, &x, &y,true);
+    getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+    getRightBezierPointAtTime(time, &rightX, &rightY,true);
 
     double ox,oy,oLeftX,oLeftY,oRightX,oRightY;
-    other.getPositionAtTime(time, &ox, &oy);
-    other.getLeftBezierPointAtTime(time, &oLeftX, &oLeftY);
-    other.getRightBezierPointAtTime(time, &oRightX, &oRightY);
+    other.getPositionAtTime(time, &ox, &oy,true);
+    other.getLeftBezierPointAtTime(time, &oLeftX, &oLeftY,true);
+    other.getRightBezierPointAtTime(time, &oRightX, &oRightY,true);
 
     if ( (x == ox) && (y == oy) && (leftX == oLeftX) && (leftY == oLeftY) && (rightX == oRightX) && (rightY == oRightY) ) {
         return true;
@@ -947,9 +960,11 @@ RotoItem::setName(const std::string & name)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
-
-    QMutexLocker l(&itemMutex);
-    _imp->name = name;
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->name = name;
+    }
+    _imp->context->onItemNameChanged(this);
 }
 
 std::string
@@ -1224,6 +1239,12 @@ boost::shared_ptr<Choice_Knob> RotoDrawableItem::getOperatorKnob() const
 boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const
 {
     return _imp->color;
+}
+
+const std::list<boost::shared_ptr<KnobI> >&
+RotoDrawableItem::getKnobs() const
+{
+    return _imp->knobs;
 }
 
 ////////////////////////////////////Layer////////////////////////////////////
@@ -1950,7 +1971,7 @@ Bezier::addControlPoint(double x,
         }
         _imp->featherPoints.insert(_imp->featherPoints.end(),fp);
     }
-
+    emit controlPointAdded();
     return p;
 }
 
@@ -1960,131 +1981,134 @@ Bezier::addControlPointAfterIndex(int index,
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-
-    QMutexLocker l(&itemMutex);
-
-    if ( ( index >= (int)_imp->points.size() ) || (index < -1) ) {
-        throw std::invalid_argument("Spline control point index out of range.");
-    }
-
+    
     boost::shared_ptr<BezierCP> p( new BezierCP(this) );
     boost::shared_ptr<BezierCP> fp( new FeatherPoint(this) );
-    ///we set the new control point position to be in the exact position the curve would have at each keyframe
-    std::set<int> existingKeyframes;
-    _imp->getKeyframeTimes(&existingKeyframes);
-
-    BezierCPs::const_iterator prev,next,prevF,nextF;
-    if (index == -1) {
-        prev = _imp->points.end();
-        --prev;
-        next = _imp->points.begin();
-
-        prevF = _imp->featherPoints.end();
-        --prevF;
-        nextF = _imp->featherPoints.begin();
-    } else {
-        prev = _imp->atIndex(index);
-        next = prev;
-        ++next;
-        if ( _imp->finished && ( next == _imp->points.end() ) ) {
+    {
+        QMutexLocker l(&itemMutex);
+        
+        if ( ( index >= (int)_imp->points.size() ) || (index < -1) ) {
+            throw std::invalid_argument("Spline control point index out of range.");
+        }
+        
+        
+        ///we set the new control point position to be in the exact position the curve would have at each keyframe
+        std::set<int> existingKeyframes;
+        _imp->getKeyframeTimes(&existingKeyframes);
+        
+        BezierCPs::const_iterator prev,next,prevF,nextF;
+        if (index == -1) {
+            prev = _imp->points.end();
+            --prev;
             next = _imp->points.begin();
-        }
-        assert( next != _imp->points.end() );
-        prevF = _imp->featherPoints.begin();
-        std::advance(prevF, index);
-        nextF = prevF;
-        ++nextF;
-        if ( _imp->finished && ( nextF == _imp->featherPoints.end() ) ) {
+            
+            prevF = _imp->featherPoints.end();
+            --prevF;
             nextF = _imp->featherPoints.begin();
+        } else {
+            prev = _imp->atIndex(index);
+            next = prev;
+            ++next;
+            if ( _imp->finished && ( next == _imp->points.end() ) ) {
+                next = _imp->points.begin();
+            }
+            assert( next != _imp->points.end() );
+            prevF = _imp->featherPoints.begin();
+            std::advance(prevF, index);
+            nextF = prevF;
+            ++nextF;
+            if ( _imp->finished && ( nextF == _imp->featherPoints.end() ) ) {
+                nextF = _imp->featherPoints.begin();
+            }
+        }
+        
+        
+        for (std::set<int>::iterator it = existingKeyframes.begin(); it != existingKeyframes.end(); ++it) {
+            Point p0,p1,p2,p3;
+            (*prev)->getPositionAtTime(*it, &p0.x, &p0.y);
+            (*prev)->getRightBezierPointAtTime(*it, &p1.x, &p1.y);
+            (*next)->getPositionAtTime(*it, &p3.x, &p3.y);
+            (*next)->getLeftBezierPointAtTime(*it, &p2.x, &p2.y);
+            
+            
+            Point dest;
+            Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
+            bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
+            
+            //update prev and next inner control points
+            (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
+            (*prevF)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
+            
+            (*next)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
+            (*nextF)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
+            
+            p->setPositionAtTime(*it, dest.x, dest.y);
+            ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
+            p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
+            p->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
+            
+            fp->setPositionAtTime(*it, dest.x, dest.y);
+            fp->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
+            fp->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
+        }
+        
+        ///if there's no keyframes
+        if ( existingKeyframes.empty() ) {
+            Point p0,p1,p2,p3;
+            
+            (*prev)->getPositionAtTime(0, &p0.x, &p0.y);
+            (*prev)->getRightBezierPointAtTime(0, &p1.x, &p1.y);
+            (*next)->getPositionAtTime(0, &p3.x, &p3.y);
+            (*next)->getLeftBezierPointAtTime(0, &p2.x, &p2.y);
+            
+            
+            Point dest;
+            Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
+            bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
+            
+            //update prev and next inner control points
+            (*prev)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
+            (*prevF)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
+            
+            (*next)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
+            (*nextF)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
+            
+            p->setStaticPosition(dest.x, dest.y);
+            ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
+            p->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
+            p->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
+            
+            fp->setStaticPosition(dest.x, dest.y);
+            fp->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
+            fp->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
+        }
+        
+        
+        ////Insert the point into the container
+        if (index != -1) {
+            BezierCPs::iterator it = _imp->points.begin();
+            ///it will point at the element right after index
+            std::advance(it, index + 1);
+            _imp->points.insert(it,p);
+            
+            ///insert the feather point
+            BezierCPs::iterator itF = _imp->featherPoints.begin();
+            std::advance(itF, index + 1);
+            _imp->featherPoints.insert(itF, fp);
+        } else {
+            _imp->points.push_front(p);
+            _imp->featherPoints.push_front(fp);
+        }
+        
+        
+        ///If auto-keying is enabled, set a new keyframe
+        int currentTime = getContext()->getTimelineCurrentTime();
+        if ( !_imp->hasKeyframeAtTime(currentTime) && getContext()->isAutoKeyingEnabled() ) {
+            l.unlock();
+            setKeyframe(currentTime);
         }
     }
-
-
-    for (std::set<int>::iterator it = existingKeyframes.begin(); it != existingKeyframes.end(); ++it) {
-        Point p0,p1,p2,p3;
-        (*prev)->getPositionAtTime(*it, &p0.x, &p0.y);
-        (*prev)->getRightBezierPointAtTime(*it, &p1.x, &p1.y);
-        (*next)->getPositionAtTime(*it, &p3.x, &p3.y);
-        (*next)->getLeftBezierPointAtTime(*it, &p2.x, &p2.y);
-
-
-        Point dest;
-        Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
-        bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
-
-        //update prev and next inner control points
-        (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
-        (*prevF)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
-
-        (*next)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
-        (*nextF)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
-
-        p->setPositionAtTime(*it, dest.x, dest.y);
-        ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-        p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
-        p->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
-
-        fp->setPositionAtTime(*it, dest.x, dest.y);
-        fp->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
-        fp->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
-    }
-
-    ///if there's no keyframes
-    if ( existingKeyframes.empty() ) {
-        Point p0,p1,p2,p3;
-
-        (*prev)->getPositionAtTime(0, &p0.x, &p0.y);
-        (*prev)->getRightBezierPointAtTime(0, &p1.x, &p1.y);
-        (*next)->getPositionAtTime(0, &p3.x, &p3.y);
-        (*next)->getLeftBezierPointAtTime(0, &p2.x, &p2.y);
-
-
-        Point dest;
-        Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
-        bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
-
-        //update prev and next inner control points
-        (*prev)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
-        (*prevF)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
-
-        (*next)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
-        (*nextF)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
-
-        p->setStaticPosition(dest.x, dest.y);
-        ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-        p->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
-        p->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
-
-        fp->setStaticPosition(dest.x, dest.y);
-        fp->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
-        fp->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
-    }
-
-
-    ////Insert the point into the container
-    if (index != -1) {
-        BezierCPs::iterator it = _imp->points.begin();
-        ///it will point at the element right after index
-        std::advance(it, index + 1);
-        _imp->points.insert(it,p);
-
-        ///insert the feather point
-        BezierCPs::iterator itF = _imp->featherPoints.begin();
-        std::advance(itF, index + 1);
-        _imp->featherPoints.insert(itF, fp);
-    } else {
-        _imp->points.push_front(p);
-        _imp->featherPoints.push_front(fp);
-    }
-
-
-    ///If auto-keying is enabled, set a new keyframe
-    int currentTime = getContext()->getTimelineCurrentTime();
-    if ( !_imp->hasKeyframeAtTime(currentTime) && getContext()->isAutoKeyingEnabled() ) {
-        l.unlock();
-        setKeyframe(currentTime);
-    }
-
+    emit controlPointAdded();
     return p;
 } // addControlPointAfterIndex
 
@@ -2189,25 +2213,28 @@ Bezier::removeControlPointByIndex(int index)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-
-    QMutexLocker l(&itemMutex);
-    BezierCPs::iterator it;
-    try {
-        it = _imp->atIndex(index);
-    } catch (...) {
-        ///attempt to remove an unexsiting point
-        return;
+    
+    {
+        QMutexLocker l(&itemMutex);
+        BezierCPs::iterator it;
+        try {
+            it = _imp->atIndex(index);
+        } catch (...) {
+            ///attempt to remove an unexsiting point
+            return;
+        }
+        
+        boost::shared_ptr<Double_Knob> isSlaved = (*it)->isSlaved();
+        if (isSlaved) {
+            isSlaved->removeSlavedTrack(*it);
+        }
+        _imp->points.erase(it);
+        
+        BezierCPs::iterator itF = _imp->featherPoints.begin();
+        std::advance(itF, index);
+        _imp->featherPoints.erase(itF);
     }
-
-    boost::shared_ptr<Double_Knob> isSlaved = (*it)->isSlaved();
-    if (isSlaved) {
-        isSlaved->removeSlavedTrack(*it);
-    }
-    _imp->points.erase(it);
-
-    BezierCPs::iterator itF = _imp->featherPoints.begin();
-    std::advance(itF, index);
-    _imp->featherPoints.erase(itF);
+    emit controlPointRemoved();
 }
 
 #pragma message WARN("Roto: refactor the following!!! too much copy/paste between these move* functions!!!")
@@ -2226,17 +2253,17 @@ Bezier::movePointByIndex(int index,
         QMutexLocker l(&itemMutex);
         BezierCPs::iterator it = _imp->atIndex(index);
         double x,y,leftX,leftY,rightX,rightY;
-        bool isOnKeyframe = (*it)->getPositionAtTime(time, &x, &y);
-        (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY);
-        (*it)->getRightBezierPointAtTime(time, &rightX, &rightY);
+        bool isOnKeyframe = (*it)->getPositionAtTime(time, &x, &y,true);
+        (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+        (*it)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
 
 
         BezierCPs::iterator itF = _imp->featherPoints.begin();
         std::advance(itF, index);
         double xF,yF,leftXF,leftYF,rightXF,rightYF;
-        (*itF)->getPositionAtTime(time, &xF, &yF);
-        (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF);
-        (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF);
+        (*itF)->getPositionAtTime(time, &xF, &yF,true);
+        (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+        (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
 
         bool fLinkEnabled = getContext()->isFeatherLinkEnabled();
         bool moveFeather = ( fLinkEnabled || ( !fLinkEnabled && (*it)->equalsAtTime(time, **itF) ) );
@@ -2266,17 +2293,17 @@ Bezier::movePointByIndex(int index,
                 if (*it2 == time) {
                     continue;
                 }
-                (*it)->getPositionAtTime(*it2, &x, &y);
-                (*it)->getLeftBezierPointAtTime(*it2, &leftX, &leftY);
-                (*it)->getRightBezierPointAtTime(*it2, &rightX, &rightY);
+                (*it)->getPositionAtTime(*it2, &x, &y,true);
+                (*it)->getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
+                (*it)->getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
 
                 (*it)->setPositionAtTime(*it2, x + dx, y + dy);
                 (*it)->setLeftBezierPointAtTime(*it2, leftX + dx, leftY + dy);
                 (*it)->setRightBezierPointAtTime(*it2, rightX + dx, rightY + dy);
                 if (moveFeather) {
-                    (*itF)->getPositionAtTime(*it2, &xF, &yF);
-                    (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF);
-                    (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF);
+                    (*itF)->getPositionAtTime(*it2, &xF, &yF,true);
+                    (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
+                    (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
 
                     (*itF)->setPositionAtTime(*it2, xF + dx, yF + dy);
                     (*itF)->setLeftBezierPointAtTime(*it2, leftXF + dx, leftYF + dy);
@@ -2309,14 +2336,14 @@ Bezier::moveFeatherByIndex(int index,
         BezierCPs::iterator itF = _imp->featherPoints.begin();
         std::advance(itF, index);
         double xF,yF,leftXF,leftYF,rightXF,rightYF;
-        bool isOnkeyframe = (*itF)->getPositionAtTime(time, &xF, &yF);
+        bool isOnkeyframe = (*itF)->getPositionAtTime(time, &xF, &yF,true);
 
         if (isOnkeyframe || autoKeying) {
             (*itF)->setPositionAtTime(time, xF + dx, yF + dy);
         }
 
-        (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF);
-        (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF);
+        (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+        (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
 
         if (isOnkeyframe || autoKeying) {
             (*itF)->setLeftBezierPointAtTime(time, leftXF + dx, leftYF + dy);
@@ -2334,9 +2361,9 @@ Bezier::moveFeatherByIndex(int index,
                     continue;
                 }
 
-                (*itF)->getPositionAtTime(*it2, &xF, &yF);
-                (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF);
-                (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF);
+                (*itF)->getPositionAtTime(*it2, &xF, &yF,true);
+                (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
+                (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
 
                 (*itF)->setPositionAtTime(*it2, xF + dx, yF + dy);
                 (*itF)->setLeftBezierPointAtTime(*it2, leftXF + dx, leftYF + dy);
@@ -2362,9 +2389,9 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
     {
         QMutexLocker l(&itemMutex);
         Transform::Point3D cp,leftCp,rightCp;
-        point->getPositionAtTime(time, &cp.x, &cp.y);
-        point->getLeftBezierPointAtTime(time, &leftCp.x, &leftCp.y);
-        bool isonKeyframe = point->getRightBezierPointAtTime(time, &rightCp.x, &rightCp.y);
+        point->getPositionAtTime(time, &cp.x, &cp.y,true);
+        point->getLeftBezierPointAtTime(time, &leftCp.x, &leftCp.y,true);
+        bool isonKeyframe = point->getRightBezierPointAtTime(time, &rightCp.x, &rightCp.y,true);
 
 
         cp.z = 1.;
@@ -2415,8 +2442,8 @@ Bezier::moveLeftBezierPoint(int index,
         BezierCPs::iterator fp = _imp->featherPoints.begin();
         std::advance(fp, index);
         double x,y,xF,yF;
-        (*cp)->getLeftBezierPointAtTime(time, &x, &y);
-        bool isOnKeyframe = (*fp)->getLeftBezierPointAtTime(time, &xF, &yF);
+        (*cp)->getLeftBezierPointAtTime(time, &x, &y,true);
+        bool isOnKeyframe = (*fp)->getLeftBezierPointAtTime(time, &xF, &yF,true);
         bool moveFeather = featherLink || (x == xF && y == yF);
 
         if (autoKeying || isOnKeyframe) {
@@ -2445,10 +2472,10 @@ Bezier::moveLeftBezierPoint(int index,
                     continue;
                 }
 
-                (*cp)->getLeftBezierPointAtTime(*it2, &x, &y);
+                (*cp)->getLeftBezierPointAtTime(*it2, &x, &y,true);
                 (*cp)->setLeftBezierPointAtTime(*it2, x + dx, y + dy);
                 if (moveFeather) {
-                    (*fp)->getLeftBezierPointAtTime(*it2, &xF, &yF);
+                    (*fp)->getLeftBezierPointAtTime(*it2, &xF, &yF,true);
                     (*fp)->setLeftBezierPointAtTime(*it2, xF + dx, yF + dy);
                 }
             }
@@ -2483,8 +2510,8 @@ Bezier::moveRightBezierPoint(int index,
         BezierCPs::iterator fp = _imp->featherPoints.begin();
         std::advance(fp, index);
         double x,y,xF,yF;
-        (*cp)->getRightBezierPointAtTime(time, &x, &y);
-        bool isOnKeyframe = (*fp)->getRightBezierPointAtTime(time, &xF, &yF);
+        (*cp)->getRightBezierPointAtTime(time, &x, &y,true);
+        bool isOnKeyframe = (*fp)->getRightBezierPointAtTime(time, &xF, &yF,true);
         bool moveFeather = featherLink || (x == xF && y == yF);
 
         if (autoKeying || isOnKeyframe) {
@@ -2514,10 +2541,10 @@ Bezier::moveRightBezierPoint(int index,
                 }
 
 
-                (*cp)->getRightBezierPointAtTime(*it2, &x, &y);
+                (*cp)->getRightBezierPointAtTime(*it2, &x, &y,true);
                 (*cp)->setRightBezierPointAtTime(*it2, x + dx, y + dy);
                 if (moveFeather) {
-                    (*fp)->getRightBezierPointAtTime(*it2, &xF, &yF);
+                    (*fp)->getRightBezierPointAtTime(*it2, &xF, &yF,true);
                     (*fp)->setRightBezierPointAtTime(*it2, xF + dx, yF + dy);
                 }
             }
@@ -2704,8 +2731,8 @@ Bezier::movePointLeftAndRightIndex(BezierCP & p,
         QMutexLocker l(&itemMutex);
         bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
         double leftX,leftY,rightX,rightY;
-        p.getLeftBezierPointAtTime(time, &leftX, &leftY);
-        p.getRightBezierPointAtTime(time, &rightX, &rightY);
+        p.getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+        p.getRightBezierPointAtTime(time, &rightX, &rightY,true);
 
         if (autoKeying || isOnKeyframe) {
             p.setLeftBezierPointAtTime(time, leftX + lx,leftY +  ly);
@@ -2722,8 +2749,8 @@ Bezier::movePointLeftAndRightIndex(BezierCP & p,
                 if (*it2 == time) {
                     continue;
                 }
-                p.getLeftBezierPointAtTime(*it2, &leftX, &leftY);
-                p.getRightBezierPointAtTime(*it2, &rightX, &rightY);
+                p.getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
+                p.getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
                 p.setLeftBezierPointAtTime(*it2, leftX + lx,leftY +  ly);
                 p.setRightBezierPointAtTime(*it2, rightX + rx, rightY + ry);
             }
@@ -2842,21 +2869,21 @@ Bezier::setKeyframe(int time)
             double leftDerivX,rightDerivX,leftDerivY,rightDerivY;
 
             {
-                (*it)->getPositionAtTime(time, &x, &y);
+                (*it)->getPositionAtTime(time, &x, &y,true);
                 (*it)->setPositionAtTime(time, x, y);
 
-                (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-                (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
+                (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*it)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
             }
 
             {
-                (*itF)->getPositionAtTime(time, &x, &y);
+                (*itF)->getPositionAtTime(time, &x, &y,true);
                 (*itF)->setPositionAtTime(time, x, y);
 
-                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
+                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*itF)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*itF)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
             }
@@ -2886,6 +2913,38 @@ Bezier::removeKeyframe(int time)
         }
     }
     emit keyframeRemoved(time);
+}
+
+void
+Bezier::moveKeyframe(int oldTime,int newTime)
+{
+    
+    BezierCPs::iterator fp = _imp->featherPoints.begin();
+    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+        double x,y,lx,ly,rx,ry;
+        (*it)->getPositionAtTime(oldTime, &x, &y);
+        (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
+        (*it)->getRightBezierPointAtTime(oldTime, &rx, &ry);
+        
+        (*it)->removeKeyframe(oldTime);
+        
+        (*it)->setPositionAtTime(newTime, x, y);
+        (*it)->setLeftBezierPointAtTime(newTime, lx, ly);
+        (*it)->setRightBezierPointAtTime(newTime, rx, ry);
+        
+        (*fp)->getPositionAtTime(oldTime, &x, &y);
+        (*fp)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
+        (*fp)->getRightBezierPointAtTime(oldTime, &rx, &ry);
+        
+        (*fp)->removeKeyframe(oldTime);
+        
+        (*fp)->setPositionAtTime(newTime, x, y);
+        (*fp)->setLeftBezierPointAtTime(newTime, lx, ly);
+        (*fp)->setRightBezierPointAtTime(newTime, rx, ry);
+        
+    }
+    emit keyframeRemoved(oldTime);
+    emit keyframeSet(newTime);
 }
 
 int
@@ -2977,7 +3036,15 @@ Bezier::getBoundingBox(int time) const
 #pragma message WARN("TODO: use featherPointsAtDistance")
     // BUG https://github.com/MrKepzie/Natron/issues/145 : the feather Bezier must be moved by featherdistance before RoD computation!
     bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
-
+    
+    
+    // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
+    // enclosing the real bbox and close enough
+    double featherDistance = getFeatherDistance(time);
+    bbox.x1 -= featherDistance;
+    bbox.x2 += featherDistance;
+    bbox.y1 -= featherDistance;
+    bbox.y2 += featherDistance;
     return bbox;
 }
 
@@ -4198,37 +4265,42 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
         if ( !isBezier->isLockedRecursive() ) {
             ++nbUnlockedBeziers;
         }
-        ///first-off set the context knobs to the value of this bezier
-        boost::shared_ptr<KnobI> activated = isBezier->getActivatedKnob();
-        boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
-        boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
-        boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
-#ifdef NATRON_ROTO_INVERTIBLE
-        boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
-#endif
-        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
-        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
+        
+        const std::list<boost::shared_ptr<KnobI> >& bezierKnobs = isBezier->getKnobs();
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = bezierKnobs.begin(); it != bezierKnobs.end(); ++it) {
+            
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+                if ((*it2)->getName() == (*it)->getName()) {
+                    
+                    //Clone current state
+                    (*it2)->cloneAndUpdateGui(it->get());
+                    
+                    //Slave internal knobs of the bezier
+                    assert((*it)->getDimension() == (*it2)->getDimension());
+                    for (int i = 0; i < (*it)->getDimension(); ++i) {
+                        (*it)->slaveTo(i, (*it2), i);
+                    }
+                    
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(SequenceTime,int,int,bool)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(SequenceTime,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(SequenceTime,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
 
-        _imp->activated->clone( activated.get() );
-        _imp->feather->clone( feather.get() );
-        _imp->featherFallOff->clone( featherFallOff.get() );
-        _imp->opacity->clone( opacity.get() );
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->clone( inverted.get() );
-#endif
-        _imp->colorKnob->clone( colorknob.get() );
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(SequenceTime,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
 
-        ///link this bezier knobs to the context
-        activated->slaveTo(0, _imp->activated, 0);
-        feather->slaveTo(0, _imp->feather, 0);
-        featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
-        opacity->slaveTo(0, _imp->opacity, 0);
-#ifdef NATRON_ROTO_INVERTIBLE
-        inverted->slaveTo(0, _imp->inverted, 0);
-#endif
-        for (int i = 0; i < colorknob->getDimension(); ++i) {
-            colorknob->slaveTo(i, _imp->colorKnob, i);
+                    break;
+                }
+            }
+            
         }
+
     } else if (isLayer) {
         const RotoItems & children = isLayer->getItems();
         for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
@@ -4236,34 +4308,38 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
         }
     }
 
-    if (nbUnlockedBeziers > 0) {
         ///enable the knobs
-        _imp->activated->setAllDimensionsEnabled(true);
-        _imp->opacity->setAllDimensionsEnabled(true);
-        _imp->featherFallOff->setAllDimensionsEnabled(true);
-        _imp->feather->setAllDimensionsEnabled(true);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setAllDimensionsEnabled(true);
-#endif
-        _imp->colorKnob->setAllDimensionsEnabled(true);
-    }
-
-    ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
-    ///(maybe black or something)
-    if (nbUnlockedBeziers >= 2) {
-        _imp->activated->setDirty(true);
-        _imp->opacity->setDirty(true);
-        _imp->feather->setDirty(true);
-        _imp->featherFallOff->setDirty(true);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setDirty(true);
-#endif
-        _imp->colorKnob->setDirty(true);
-    }
-
+        
+        for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+            if (nbUnlockedBeziers > 0) {
+                (*it2)->setAllDimensionsEnabled(true);
+                
+                ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
+                ///(maybe black or something)
+                
+                if (nbUnlockedBeziers >= 2) {
+                    (*it2)->setDirty(true);
+                }
+            }
+        }
 
     _imp->selectedItems.push_back(item);
 } // selectInternal
+
+void
+RotoContext::onSelectedKnobCurveChanged()
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (handler) {
+        boost::shared_ptr<KnobI> knob = handler->getKnob();
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+            if ((*it)->getName() == knob->getName()) {
+                (*it)->clone(knob.get());
+                break;
+            }
+        }
+    }
+}
 
 void
 RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
@@ -4294,56 +4370,63 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>( b.get() );
     if (isBezier) {
         ///first-off set the context knobs to the value of this bezier
-        boost::shared_ptr<KnobI> activated = isBezier->getActivatedKnob();
-        boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
-        boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
-        boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
-#ifdef NATRON_ROTO_INVERTIBLE
-        boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
-#endif
-        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
-        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
-
-        activated->unSlave(0,notDirty);
-        feather->unSlave(0,notDirty);
-        featherFallOff->unSlave(0,notDirty);
-        opacity->unSlave(0,notDirty);
-#ifdef NATRON_ROTO_INVERTIBLE
-        inverted->unSlave(0,notDirty);
-#endif
-        for (int i = 0; i < colorknob->getDimension(); ++i) {
-            colorknob->unSlave(i, notDirty);
+        
+        const std::list<boost::shared_ptr<KnobI> >& bezierKnobs = isBezier->getKnobs();
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = bezierKnobs.begin(); it != bezierKnobs.end(); ++it) {
+            
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+                if ((*it2)->getName() == (*it)->getName()) {
+                    
+                    //Clone current state
+                    (*it2)->cloneAndUpdateGui(it->get());
+                    
+                    //Slave internal knobs of the bezier
+                    assert((*it)->getDimension() == (*it2)->getDimension());
+                    for (int i = 0; i < (*it)->getDimension(); ++i) {
+                        (*it)->unSlave(i,notDirty);
+                    }
+                    
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(SequenceTime,int,int,bool)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(SequenceTime,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(SequenceTime,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(SequenceTime,int)),
+                                     this, SLOT(onSelectedKnobCurveChanged()));
+                    break;
+                }
+            }
+            
         }
-        compOp->unSlave(0, notDirty);
+
+
     } else if (isLayer) {
         const RotoItems & children = isLayer->getItems();
         for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
             deselectInternal(*it);
         }
     }
-
-    if (notDirty) {
-        _imp->activated->setDirty(false);
-        _imp->opacity->setDirty(false);
-        _imp->feather->setDirty(false);
-        _imp->featherFallOff->setDirty(false);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setDirty(false);
-#endif
-        _imp->colorKnob->setDirty(false);
+    
+    
+    
+    for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+        if (notDirty) {
+            (*it2)->setDirty(false);
+        }
+        
+        ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
+        
+        if (nbBeziersUnLockedBezier == 0) {
+            (*it2)->setAllDimensionsEnabled(false);
+        }
     }
-
-    ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
-    if (nbBeziersUnLockedBezier == 0) {
-        _imp->activated->setAllDimensionsEnabled(false);
-        _imp->opacity->setAllDimensionsEnabled(false);
-        _imp->featherFallOff->setAllDimensionsEnabled(false);
-        _imp->feather->setAllDimensionsEnabled(false);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->setAllDimensionsEnabled(false);
-#endif
-        _imp->colorKnob->setAllDimensionsEnabled(false);
-    }
+    
 } // deselectInternal
 
 void
@@ -4479,7 +4562,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::PLAYBACK_SEEK);
+        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4508,7 +4591,7 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::PLAYBACK_SEEK);
+        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4668,7 +4751,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    _imp->node->getLiveInstance()->evaluate_public(NULL, true,Natron::USER_EDITED);
+    _imp->node->getLiveInstance()->evaluate_public(NULL, true,Natron::eValueChangedReasonUserEdited);
 }
 
 U64
@@ -4716,6 +4799,12 @@ RotoContext::onItemLockedChanged(RotoItem* item)
 #endif
 
     emit itemLockedChanged();
+}
+
+void
+RotoContext::onItemNameChanged(RotoItem* item)
+{
+    emit itemNameChanged(item);
 }
 
 std::string
@@ -4791,12 +4880,12 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMask(const RectI & roi,
-                        Natron::ImageComponents components,
+                        Natron::ImageComponentsEnum components,
                         U64 nodeHash,
                         U64 ageToRender,
                         const RectD & nodeRoD, //!< rod in canonical coordinates
                         SequenceTime time,
-                        Natron::ImageBitDepth depth,
+                        Natron::ImageBitDepthEnum depth,
                         int view,
                         unsigned int mipmapLevel,
                         bool byPassCache)
@@ -4882,13 +4971,13 @@ RotoContext::renderMask(const RectI & roi,
 
     cairo_format_t cairoImgFormat;
     switch (components) {
-    case Natron::ImageComponentAlpha:
+    case Natron::eImageComponentAlpha:
         cairoImgFormat = CAIRO_FORMAT_A8;
         break;
-    case Natron::ImageComponentRGB:
+    case Natron::eImageComponentRGB:
         cairoImgFormat = CAIRO_FORMAT_RGB24;
         break;
-    case Natron::ImageComponentRGBA:
+    case Natron::eImageComponentRGBA:
         cairoImgFormat = CAIRO_FORMAT_ARGB32;
         break;
     default:
@@ -4912,16 +5001,16 @@ RotoContext::renderMask(const RectI & roi,
     _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
 
     switch (depth) {
-    case Natron::IMAGE_FLOAT:
+    case Natron::eImageBitDepthFloat:
         convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod);
         break;
-    case Natron::IMAGE_BYTE:
+    case Natron::eImageBitDepthByte:
         convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod);
         break;
-    case Natron::IMAGE_SHORT:
+    case Natron::eImageBitDepthShort:
         convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod);
         break;
-    case Natron::IMAGE_NONE:
+    case Natron::eImageBitDepthNone:
         assert(false);
         break;
     }

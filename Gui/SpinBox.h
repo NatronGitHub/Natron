@@ -98,7 +98,7 @@ public slots:
 
 private:
 
-    void setValue_internal(double d, bool ignoreDecimals, bool reformat);
+    void setValue_internal(double d, bool reformat);
 
     void setText(const QString &str, int cursorPos);
 

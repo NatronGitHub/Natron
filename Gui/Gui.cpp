@@ -22,6 +22,8 @@
 #include <QSettings>
 #include <QDebug>
 #include <QThread>
+#include <QCheckBox>
+#include <QTextEdit>
 
 #if QT_VERSION >= 0x050000
 #include <QScreen>
@@ -93,6 +95,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/NodeBackDrop.h"
+#include "Gui/MessageBox.h"
+#include "Gui/MultiInstancePanel.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -173,7 +177,8 @@ struct GuiPrivate
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
     bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
-    Natron::StandardButton _lastQuestionDialogAnswer; //< stores the last question answer
+    Natron::StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
+    bool _lastStopAskingAnswer;
 
     ///ptrs to the undo/redo actions from the active stack.
     QAction* _currentUndoAction;
@@ -194,6 +199,7 @@ struct GuiPrivate
     ActionWithShortcut *actionClose_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
+    ActionWithShortcut *actionSaveAndIncrementVersion;
     ActionWithShortcut *actionPreferences;
     ActionWithShortcut *actionExit;
     ActionWithShortcut *actionProject_settings;
@@ -267,17 +273,16 @@ struct GuiPrivate
     ///a vector of all the toolbuttons
     std::vector<ToolButton*> _toolButtons;
 
-    ///the scrollarea holding the properties dock
-    QScrollArea *_propertiesScrollArea;
+    ///holds the properties dock
+    QWidget *_propertiesBin;
+    
+    QScrollArea* _propertiesScrollArea;
 
-    ///the main container of the properties
-    QWidget *_propertiesContainer;
 
     ///the vertical layout for the properties dock container.
     QVBoxLayout *_layoutPropertiesBin;
     Button* _clearAllPanelsButton;
     SpinBox* _maxPanelsOpenedSpinBox;
-    Button* _freezeUIButton;
     
     QMutex _isGUIFrozenMutex;
     bool _isGUIFrozen;
@@ -326,7 +331,6 @@ struct GuiPrivate
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
-    TabWidget* fullScreenWidgetDuringSave;
     ShortCutEditor* shortcutEditor;
 
     GuiPrivate(GuiAppInstance* app,
@@ -338,7 +342,8 @@ struct GuiPrivate
           , _uiUsingMainThreadCond()
           , _uiUsingMainThread(false)
           , _uiUsingMainThreadMutex()
-          , _lastQuestionDialogAnswer(Natron::No)
+          , _lastQuestionDialogAnswer(Natron::eStandardButtonNo)
+          , _lastStopAskingAnswer(false)
           , _currentUndoAction(0)
           , _currentRedoAction(0)
           , _undoStacksGroup(0)
@@ -349,6 +354,7 @@ struct GuiPrivate
           , actionClose_project(0)
           , actionSave_project(0)
           , actionSaveAs_project(0)
+          , actionSaveAndIncrementVersion(0)
           , actionPreferences(0)
           , actionExit(0)
           , actionProject_settings(0)
@@ -395,12 +401,11 @@ struct GuiPrivate
           , _nodeGraphArea(0)
           , _curveEditor(0)
           , _toolBox(0)
+          , _propertiesBin(0)
           , _propertiesScrollArea(0)
-          , _propertiesContainer(0)
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
-          , _freezeUIButton(0)
           , _isGUIFrozenMutex()
           , _isGUIFrozen(false)
           , menubar(0)
@@ -429,7 +434,6 @@ struct GuiPrivate
           , _toolButtonMenuOpened(NULL)
           , aboutToCloseMutex()
           , _aboutToClose(false)
-          , fullScreenWidgetDuringSave(0)
           , shortcutEditor(0)
     {
     }
@@ -474,6 +478,9 @@ Gui::Gui(GuiAppInstance* app,
 {
     QObject::connect( this,SIGNAL( doDialog(int,QString,QString,Natron::StandardButtons,int) ),this,
                       SLOT( onDoDialog(int,QString,QString,Natron::StandardButtons,int) ) );
+    QObject::connect( this,SIGNAL( doDialogWithStopAskingCheckbox(int,QString,QString,Natron::StandardButtons,int) ),this,
+                     SLOT( onDoDialogWithStopAskingCheckbox(int,QString,QString,Natron::StandardButtons,int) ) );
+
     QObject::connect( app,SIGNAL( pluginsPopulated() ),this,SLOT( addToolButttonsToToolBar() ) );
 }
 
@@ -618,11 +625,12 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool requestedByLoad,
                     double xPosHint,
                     double yPosHint,
-                    bool pushUndoRedoCommand)
+                    bool pushUndoRedoCommand,
+                    bool autoConnect)
 {
     assert(_imp->_nodeGraphArea);
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
-                                                                             xPosHint,yPosHint,pushUndoRedoCommand);
+                                                                             xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
     QObject::connect( nodeGui.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
@@ -727,6 +735,9 @@ Gui::createMenuActions()
     _imp->actionSaveAs_project->setIcon( get_icon("document-save-as") );
     QObject::connect( _imp->actionSaveAs_project, SIGNAL( triggered() ), this, SLOT( saveProjectAs() ) );
 
+    _imp->actionSaveAndIncrementVersion = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveAndIncrVersion,kShortcutDescActionSaveAndIncrVersion,this);
+    QObject::connect(_imp->actionSaveAndIncrementVersion, SIGNAL( triggered() ), this, SLOT( saveAndIncrVersion() ) );
+    
     _imp->actionPreferences = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionPreferences,kShortcutDescActionPreferences,this);
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
     QObject::connect( _imp->actionPreferences,SIGNAL( triggered() ),this,SLOT( showSettings() ) );
@@ -847,6 +858,7 @@ Gui::createMenuActions()
     _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);
     _imp->menuFile->addAction(_imp->actionSaveAs_project);
+    _imp->menuFile->addAction(_imp->actionSaveAndIncrementVersion);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionExit);
 
@@ -938,7 +950,7 @@ Gui::setupUi()
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(_imp->_appInstance->getProject(),
                               _imp->_layoutPropertiesBin,
-                              _imp->_propertiesContainer);
+                              this);
 
     initProjectGuiKnobs();
 
@@ -976,22 +988,27 @@ Gui::setupUi()
 void
 GuiPrivate::createPropertiesBinGui()
 {
-    _propertiesScrollArea = new QScrollArea(_gui);
-    assert(_nodeGraphArea);
-    _nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
-    _propertiesScrollArea->setObjectName(kPropertiesBinName);
+    _propertiesBin = new QWidget(_gui);
+    _propertiesBin->setObjectName(kPropertiesBinName);
 
-    _propertiesContainer = new QWidget(_propertiesScrollArea);
-    _propertiesContainer->setObjectName("_propertiesContainer");
-    _layoutPropertiesBin = new QVBoxLayout(_propertiesContainer);
+    QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
+    mainPropertiesLayout->setContentsMargins(0, 0, 0, 0);
+    mainPropertiesLayout->setSpacing(0);
+    
+    _propertiesScrollArea = new QScrollArea(_propertiesBin);
+    _propertiesScrollArea->setObjectName("Properties");
+    assert(_nodeGraphArea);
+
+    QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
+    propertiesContainer->setObjectName("_propertiesContainer");
+    _layoutPropertiesBin = new QVBoxLayout(propertiesContainer);
     _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
-    _propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
-    _propertiesContainer->setLayout(_layoutPropertiesBin);
-    _propertiesScrollArea->setWidget(_propertiesContainer);
+    propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+    _propertiesScrollArea->setWidget(propertiesContainer);
     _propertiesScrollArea->setWidgetResizable(true);
 
-    QWidget* propertiesAreaButtonsContainer = new QWidget(_propertiesContainer);
+    QWidget* propertiesAreaButtonsContainer = new QWidget(propertiesContainer);
     QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
     propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
     propertiesAreaButtonsLayout->setSpacing(5);
@@ -1001,6 +1018,7 @@ GuiPrivate::createPropertiesBinGui()
     _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _clearAllPanelsButton->setToolTip( Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
+    _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton,SIGNAL( clicked(bool) ),_gui,SLOT( clearAllVisiblePanels() ) );
 
 
@@ -1014,30 +1032,15 @@ GuiPrivate::createPropertiesBinGui()
                                                                   Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox,SIGNAL( valueChanged(double) ),_gui,SLOT( onMaxPanelsSpinBoxValueChanged(double) ) );
-
-    QPixmap pixFreezeEnabled,pixFreezeDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
-    QIcon icFreeze;
-    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
-    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
-    _freezeUIButton = new Button(icFreeze,"",propertiesAreaButtonsContainer);
-    _freezeUIButton->setCheckable(true);
-    _freezeUIButton->setChecked(false);
-    _freezeUIButton->setDown(false);
-    _freezeUIButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _freezeUIButton->setToolTip("<p><b>" + _gui->tr("Turbo mode:") + "</p></b><p>" + _gui->tr("When checked, everything besides the viewer will not be refreshed in the user interface "
-                                         "for maximum efficiency during playback.") + "</p>");
-    QObject::connect( _freezeUIButton, SIGNAL (clicked(bool)), _gui, SLOT(onFreezeUIButtonClicked(bool) ) );
     
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
-    propertiesAreaButtonsLayout->addWidget(_freezeUIButton);
     propertiesAreaButtonsLayout->addStretch();
+    
+    mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
+    mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
-    _layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
-
-    _gui->registerTab(_propertiesScrollArea);
+    _gui->registerTab(_propertiesBin);
 } // createPropertiesBinGui
 
 void
@@ -1137,7 +1140,7 @@ Gui::createDefaultLayout1()
 
     TabWidget::moveTab(_imp->_nodeGraphArea, workshopPane);
     TabWidget::moveTab(_imp->_curveEditor,workshopPane);
-    TabWidget::moveTab(_imp->_propertiesScrollArea,propertiesPane);
+    TabWidget::moveTab(_imp->_propertiesBin,propertiesPane);
 
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -1184,13 +1187,13 @@ restoreSplitterRecursive(Gui* gui,
                          const SplitterSerialization & serialization)
 {
     Qt::Orientation qO;
-    Natron::Orientation nO = (Natron::Orientation)serialization.orientation;
+    Natron::OrientationEnum nO = (Natron::OrientationEnum)serialization.orientation;
 
     switch (nO) {
-    case Natron::Horizontal:
+    case Natron::eOrientationHorizontal:
         qO = Qt::Horizontal;
         break;
-    case Natron::Vertical:
+    case Natron::eOrientationVertical:
         qO = Qt::Vertical;
         break;
     default:
@@ -1625,8 +1628,25 @@ void
 Gui::putSettingsPanelFirst(DockablePanel* panel)
 {
     _imp->_layoutPropertiesBin->removeWidget(panel);
-    _imp->_layoutPropertiesBin->insertWidget(1, panel);
+    _imp->_layoutPropertiesBin->insertWidget(0, panel);
     _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+    buildTabFocusOrderPropertiesBin();
+}
+
+void
+Gui::buildTabFocusOrderPropertiesBin()
+{
+    int next = 1;
+    for (int i = 0; i < _imp->_layoutPropertiesBin->count(); ++i,++next) {
+        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
+        QWidget* w = item->widget();
+        QWidget* nextWidget = next >= _imp->_layoutPropertiesBin->count() ? _imp->_layoutPropertiesBin->itemAt(0)->widget()
+        : _imp->_layoutPropertiesBin->itemAt(next)->widget();
+        
+        if (w && nextWidget) {
+            setTabOrder(w,nextWidget);
+        }
+    }
 }
 
 void
@@ -1867,7 +1887,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             if ( it != _imp->_viewerTabs.end() ) {
                 _imp->_viewerTabs.erase(it);
             }
-            delete tab;
+            tab->deleteLater();
         }
     }
     emit viewersChanged();
@@ -2219,6 +2239,7 @@ public:
           , _menuOpened(false)
     {
         setMouseTracking(true);
+        setFocusPolicy(Qt::StrongFocus);
     }
 
 private:
@@ -2227,6 +2248,7 @@ private:
     {
         _menuOpened = !_menuOpened;
         if (_menuOpened) {
+            setFocus();
             _gui->setToolButtonMenuOpened(this);
         } else {
             _gui->setToolButtonMenuOpened(NULL);
@@ -2239,6 +2261,29 @@ private:
         _gui->setToolButtonMenuOpened(NULL);
         QToolButton::mouseReleaseEvent(e);
     }
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL
+    {
+        if (e->key() == Qt::Key_Right) {
+            QMenu* m = menu();
+            if (m) {
+                QList<QAction*> actions = m->actions();
+                if (!actions.isEmpty()) {
+                    m->setActiveAction(actions[0]);
+                }
+            }
+            showMenu();
+        } else if (e->key() == Qt::Key_Left) {
+            //This code won't work because the menu is active and modal
+            //But at least it deactivate the focus tabbing when pressing the left key
+            QMenu* m = menu();
+            if (m && m->isVisible()) {
+                m->hide();
+            }
+        } else {
+            QToolButton::keyPressEvent(e);
+        }
+    }
 
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL
     {
@@ -2247,6 +2292,7 @@ private:
         if ( btn && (btn != this) && btn->menu()->isActiveWindow() ) {
             btn->menu()->close();
             btn->_menuOpened = false;
+            setFocus();
             _gui->setToolButtonMenuOpened(this);
             _menuOpened = true;
             showMenu();
@@ -2349,60 +2395,33 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     appPTR->updateAllRecentFileMenus();
 }
 
-void
-Gui::aboutToSave()
-{
-    assert( QThread::currentThread() == qApp->thread() );
 
-    ///If a tab is fullscreen, minimize it otherwise the splitter's state wouldn't be saved correctly
-    std::list<TabWidget*> panesCpy;
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        panesCpy = _imp->_panes;
-    }
-    for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
-        if ( (*it)->isFullScreen() ) {
-            _imp->fullScreenWidgetDuringSave = *it;
-            minimize();
-            QCoreApplication::processEvents();
-            break;
-        }
-    }
-}
 
-void
-Gui::saveFinished()
+static void updateRecentFiles(const QString& filename)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    ///fullscreen again the tab
-    if (_imp->fullScreenWidgetDuringSave) {
-        maximize(_imp->fullScreenWidgetDuringSave);
-        _imp->fullScreenWidgetDuringSave = 0;
+    QSettings settings;
+    QStringList recentFiles = settings.value("recentFileList").toStringList();
+    recentFiles.removeAll(filename);
+    recentFiles.prepend(filename);
+    while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
+        recentFiles.removeLast();
     }
+    
+    settings.setValue("recentFileList", recentFiles);
+    appPTR->updateAllRecentFileMenus();
 }
 
 bool
 Gui::saveProject()
 {
     if ( _imp->_appInstance->getProject()->hasProjectBeenSavedByUser() ) {
-        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
                                                       _imp->_appInstance->getProject()->getProjectName(),false);
-        saveFinished();
 
 
         ///update the open recents
         QString file = _imp->_appInstance->getProject()->getProjectPath() + _imp->_appInstance->getProject()->getProjectName();
-        QSettings settings;
-        QStringList recentFiles = settings.value("recentFileList").toStringList();
-        recentFiles.removeAll(file);
-        recentFiles.prepend(file);
-        while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
-            recentFiles.removeLast();
-        }
-
-        settings.setValue("recentFileList", recentFiles);
-        appPTR->updateAllRecentFileMenus();
+        updateRecentFiles(file);
 
         return true;
     } else {
@@ -2422,26 +2441,86 @@ Gui::saveProjectAs()
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         std::string path = SequenceParsing::removePath(outFile);
-        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(path.c_str(),outFile.c_str(),false);
-        saveFinished();
 
-        std::string filePath = path + outFile;
-        QSettings settings;
-        QStringList recentFiles = settings.value("recentFileList").toStringList();
-        recentFiles.removeAll( filePath.c_str() );
-        recentFiles.prepend( filePath.c_str() );
-        while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
-            recentFiles.removeLast();
-        }
-
-        settings.setValue("recentFileList", recentFiles);
-        appPTR->updateAllRecentFileMenus();
-
+        QString filePath = QString(path.c_str()) + QString(outFile.c_str());
+        updateRecentFiles(filePath);
         return true;
     }
 
     return false;
+}
+
+void
+Gui::saveAndIncrVersion()
+{
+    QString path = _imp->_appInstance->getProject()->getProjectPath();
+    QString name = _imp->_appInstance->getProject()->getProjectName();
+    
+    int currentVersion = 0;
+    
+    int positionToInsertVersion;
+    bool mustAppendFileExtension = false;
+    
+    // extension is everything after the last '.'
+    int lastDotPos = name.lastIndexOf('.');
+    if (lastDotPos == - 1) {
+        positionToInsertVersion = name.size();
+        mustAppendFileExtension = true;
+    } else {
+        
+        //Extract the current version number if any
+        QString versionStr;
+        int i = lastDotPos - 1;
+        while (i >= 0 && name.at(i).isDigit()) {
+            versionStr.prepend(name.at(i));
+            --i;
+        }
+        
+        ++i; //move back the head to the first digit
+        
+        if (!versionStr.isEmpty()) {
+            name.remove(i,versionStr.size());
+            --i; //move 1 char backward, if the char is a '_' remove it
+            if (i >= 0 && name.at(i) == QChar('_')) {
+                name.remove(i,1);
+            }
+            currentVersion = versionStr.toInt();
+
+        }
+        
+        positionToInsertVersion = i;
+    }
+    
+    //Incr version
+    ++currentVersion;
+    
+    QString newVersionStr = QString::number(currentVersion);
+    
+    //Add enough 0s in the beginning of the version number to have at least 3 digits
+    int nb0s = 3 - newVersionStr.size();
+    nb0s = std::max(0,nb0s);
+    
+    QString toInsert("_");
+    for (int c = 0; c < nb0s; ++c) {
+        toInsert.append('0');
+    }
+    toInsert.append(newVersionStr);
+    if (mustAppendFileExtension) {
+        toInsert.append("." NATRON_PROJECT_FILE_EXT);
+    }
+    
+    if (positionToInsertVersion >= name.size()) {
+        name.append(toInsert);
+    } else {
+        name.insert(positionToInsertVersion,toInsert);
+    }
+    
+    _imp->_appInstance->getProject()->saveProject(path,name,false);
+    
+    QString filename = path = name;
+    updateRecentFiles(filename);
+    
 }
 
 void
@@ -2602,12 +2681,12 @@ int
 Gui::saveWarning()
 {
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
-        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
+        Natron::StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                                              _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
-                                                             Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);
-        if ( (ret == Natron::Escape) || (ret == Natron::Cancel) ) {
+                                                             Natron::StandardButtons(Natron::eStandardButtonSave | Natron::eStandardButtonDiscard | Natron::eStandardButtonCancel), Natron::eStandardButtonSave);
+        if ( (ret == Natron::eStandardButtonEscape) || (ret == Natron::eStandardButtonCancel) ) {
             return 2;
-        } else if (ret == Natron::Discard) {
+        } else if (ret == Natron::eStandardButtonDiscard) {
             return 1;
         } else {
             return 0;
@@ -2644,19 +2723,49 @@ Gui::errorDialog(const std::string & title,
     }
 
 
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
     }
+}
+
+void
+Gui::errorDialog(const std::string & title,
+                 const std::string & text,
+                 bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    
+    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,
+                                            QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+    }
+    *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
 void
@@ -2671,19 +2780,49 @@ Gui::warningDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
     }
+}
+
+void
+Gui::warningDialog(const std::string & title,
+                   const std::string & text,
+                   bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    
+    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,
+                                            QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+    }
+    *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
 void
@@ -2698,19 +2837,48 @@ Gui::informationDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::Yes);
+        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
     }
+}
+
+void
+Gui::informationDialog(const std::string & title,
+                       const std::string & message,
+                       bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    
+    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+    }
+    *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
 void
@@ -2731,13 +2899,21 @@ Gui::onDoDialog(int type,
         warning.setTextFormat(Qt::RichText);
         warning.exec();
     } else if (type == 2) {
-        QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
+        if (msg.count() > 1000) {
+            QGridLayout *layout = qobject_cast<QGridLayout *>(info.layout());
+            if (layout) {
+                QTextEdit *edit = new QTextEdit(msg);
+                edit->setReadOnly(true);
+                layout->addWidget(edit, 0, 1);
+            }
+        }
         info.exec();
     } else {
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-        ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButton)defaultB ) );
+        ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButtonEnum)defaultB ) );
         if ( ques.exec() ) {
             _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( ques.standardButton( ques.clickedButton() ) );
         }
@@ -2748,17 +2924,17 @@ Gui::onDoDialog(int type,
     _imp->_uiUsingMainThreadCond.wakeOne();
 }
 
-Natron::StandardButton
+Natron::StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
                     Natron::StandardButtons buttons,
-                    Natron::StandardButton defaultButton)
+                    Natron::StandardButtonEnum defaultButton)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
         QMutexLocker l(&_imp->aboutToCloseMutex);
         if (_imp->_aboutToClose) {
-            return Natron::No;
+            return Natron::eStandardButtonNo;
         }
     }
 
@@ -2776,6 +2952,55 @@ Gui::questionDialog(const std::string & title,
     }
 
     return _imp->_lastQuestionDialogAnswer;
+}
+
+Natron::StandardButtonEnum
+Gui::questionDialog(const std::string & title,
+                    const std::string & message,
+                    Natron::StandardButtons buttons,
+                    Natron::StandardButtonEnum defaultButton,
+                    bool* stopAsking)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return Natron::eStandardButtonNo;
+        }
+    }
+    
+    if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
+                                              QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
+                                              QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+    }
+    
+    *stopAsking = _imp->_lastStopAskingAnswer;
+    return _imp->_lastQuestionDialogAnswer;
+}
+
+
+void
+Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB)
+{
+    
+    Natron::MessageBox dialog(title,content,(Natron::MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
+    
+    QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
+    dialog.setCheckBox(stopAskingCheckbox);
+    if ( dialog.exec() ) {
+        _imp->_lastQuestionDialogAnswer = dialog.getReply();
+        _imp->_lastStopAskingAnswer = stopAskingCheckbox->isChecked();
+    }
 }
 
 void
@@ -3006,10 +3231,17 @@ void
 Gui::removeUndoStack(QUndoStack* stack)
 {
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
+    
+    if (_imp->_currentUndoAction == it->second.first) {
+        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
+    }
+    if (_imp->_currentRedoAction == it->second.second) {
+        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
+    }
     if ( it != _imp->_undoStacksActions.end() ) {
         _imp->_undoStacksActions.erase(it);
     }
+   
 }
 
 void
@@ -3402,8 +3634,8 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
-QScrollArea*
-Gui::getPropertiesScrollArea() const
+QWidget*
+Gui::getPropertiesBin() const
 {
     return _imp->_propertiesScrollArea;
 }
@@ -3454,7 +3686,7 @@ void
 Gui::debugImage(const Natron::Image* image,
                 const QString & filename )
 {
-    if (image->getBitDepth() != Natron::IMAGE_FLOAT) {
+    if (image->getBitDepth() != Natron::eImageBitDepthFloat) {
         qDebug() << "Debug image only works on float images.";
 
         return;
@@ -3835,6 +4067,7 @@ Gui::clearAllVisiblePanels()
             break;
         }
     }
+	getApp()->redrawAllViewers();
 }
 
 NodeBackDrop*
@@ -3882,6 +4115,56 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize( width(), height() );
 }
 
+void
+Gui::keyPressEvent(QKeyEvent* e)
+{
+    QWidget* w = qApp->widgetAt(QCursor::pos());
+    if (w && w->objectName() == QString("SettingsPanel") && e->key() == Qt::Key_Escape) {
+        RightClickableWidget* panel = dynamic_cast<RightClickableWidget*>(w);
+        assert(panel);
+        panel->getPanel()->closePanel();
+    }
+    
+    Qt::Key key = (Qt::Key)e->key();
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    
+    if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->firstFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->lastFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousIncrement();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextIncrement();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
+        getApp()->getTimeLine()->goToPreviousKeyframe();
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
+        getApp()->getTimeLine()->goToNextKeyframe();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
+        _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+        _imp->_nodeGraphArea->popFindDialog();  
+    } else {
+        QMainWindow::keyPressEvent(e);
+    }
+}
+
 TabWidget*
 Gui::getAnchor() const
 {
@@ -3910,7 +4193,12 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         QMutexLocker k(&_imp->_isGUIFrozenMutex);
         _imp->_isGUIFrozen = clicked;
     }
-    _imp->_freezeUIButton->setDown(clicked);
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+            (*it)->setTurboButtonDown(clicked);
+        }
+    }
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
 }
 
@@ -4027,5 +4315,39 @@ FloatingWidget::closeEvent(QCloseEvent* e)
     removeEmbeddedWidget();
     _gui->unregisterFloatingWindow(this);
     QWidget::closeEvent(e);
+}
+
+
+void
+Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
+{
+    int layoutItemsCount = _imp->_layoutPropertiesBin->count();
+    for (int i = 0; i < layoutItemsCount; ++i) {
+        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
+        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(item->widget());
+        if (panel) {
+            boost::shared_ptr<NodeGui> node = panel->getNode();
+            if (node) {
+                boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
+                if (multiInstance) {
+                    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+                    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                        if (it->first->isActivated()) {
+                            nodes.push_back(it->first);
+                        }
+                    }
+                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+                    if (!internalNode->isNodeDisabled() && node->isSettingsPanelVisible()) {
+                        nodes.push_back(node->getNode());
+                    }
+                } else {
+                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+                    if (!internalNode->isNodeDisabled() && internalNode->isActivated() && node->isSettingsPanelVisible()) {
+                        nodes.push_back(node->getNode());
+                    }
+                }
+            }
+        }
+    }
 }
 

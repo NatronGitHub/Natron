@@ -82,6 +82,7 @@ CLANG_DIAG_ON(uninitialized)
  **/
 #define registerMouseShortcut(group,id,description, modifiers,button) ( _imp->addMouseShortcut(group,id,description, modifiers,button) )
 
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 1
 
 using namespace Natron;
 
@@ -109,6 +110,7 @@ struct GuiApplicationManagerPrivate
     QString _openFileRequest;
     AppShortcuts _actionShortcuts;
 
+    bool _shortcutsChangedVersion;
     
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
         :   _publicInterface(publicInterface)
@@ -119,6 +121,7 @@ struct GuiApplicationManagerPrivate
           , _splashScreen(NULL)
           , _openFileRequest()
           , _actionShortcuts()
+          , _shortcutsChangedVersion(false)
     {
     }
 
@@ -319,6 +322,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             break;
         case NATRON_PIXMAP_VIEWER_REFRESH:
             img.load(NATRON_IMAGES_PATH "refresh.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE:
+            img.load(NATRON_IMAGES_PATH "refreshActive.png");
             *pix = QPixmap::fromImage(img);
             break;
         case NATRON_PIXMAP_VIEWER_ROI_ENABLED:
@@ -710,23 +717,22 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     }
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
-    bool hasShortcut = false;
+    bool hasShortcut = true;
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
     if (pluginID == "TransformOFX  [Transform]") {
         symbol = Qt::Key_T;
-        hasShortcut = true;
     } else if (pluginID == "RotoOFX  [Draw]") {
         symbol = Qt::Key_O;
-        hasShortcut = true;
     } else if (pluginID == "MergeOFX  [Merge]") {
         symbol = Qt::Key_M;
-        hasShortcut = true;
     } else if (pluginID == "GradeOFX  [Color]") {
         symbol = Qt::Key_G;
-        hasShortcut = true;
     } else if (pluginID == "ColorCorrectOFX  [Color]") {
         symbol = Qt::Key_C;
-        hasShortcut = true;
+    } else if (pluginID == "BlurCImg  [Filter]") {
+        symbol = Qt::Key_B;
+    } else {
+        hasShortcut = false;
     }
     plugin->setHasShortcut(hasShortcut);
     _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
@@ -1210,7 +1216,7 @@ void
 GuiApplicationManager::saveShortcuts() const
 {
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-
+    
     for (AppShortcuts::const_iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         settings.beginGroup(it->first);
         for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1230,8 +1236,23 @@ GuiApplicationManager::saveShortcuts() const
 void
 GuiApplicationManager::loadShortcuts()
 {
+    
+    bool settingsExistd = getCurrentSettings()->didSettingsExistOnStartup();
+    
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
 
+    int settingsVersion = -1;
+    if (settings.contains("NATRON_SHORTCUTS_DEFAULT_VERSION")) {
+        settingsVersion = settings.value("NATRON_SHORTCUTS_DEFAULT_VERSION").toInt();
+    }
+    
+    if (settingsExistd && settingsVersion != NATRON_SHORTCUTS_DEFAULT_VERSION) {
+        _imp->_shortcutsChangedVersion = true;
+    }
+    
+    settings.setValue("NATRON_SHORTCUTS_DEFAULT_VERSION", NATRON_SHORTCUTS_DEFAULT_VERSION);
+
+    
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         settings.beginGroup(it->first);
         for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1245,7 +1266,10 @@ GuiApplicationManager::loadShortcuts()
                 mAction->button = (Qt::MouseButton)settings.value(it2->first + "_Button").toInt();
             }
             if ( kAction && settings.contains(it2->first + "_Symbol") ) {
-                kAction->currentShortcut = (Qt::Key)settings.value(it2->first + "_Symbol").toInt();
+                
+                Qt::Key newShortcut = (Qt::Key)settings.value(it2->first + "_Symbol").toInt();
+                kAction->currentShortcut = newShortcut;
+                
 
                 //If this is a node shortcut, notify the Plugin object that it has a shortcut.
                 if ( (kAction->currentShortcut != (Qt::Key)0) &&
@@ -1262,6 +1286,12 @@ GuiApplicationManager::loadShortcuts()
         }
         settings.endGroup();
     }
+}
+
+bool
+GuiApplicationManager::isShorcutVersionUpToDate() const
+{
+    return !_imp->_shortcutsChangedVersion;
 }
 
 void
@@ -1292,6 +1322,9 @@ GuiApplicationManager::populateShortcuts()
     registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences,QKeySequence::Preferences);
     registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit);
 
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAndIncrVersion, kShortcutDescActionSaveAndIncrVersion, Qt::ControlModifier | Qt::ShiftModifier |
+                    Qt::AltModifier, Qt::Key_S);
+    
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowAbout, kShortcutDescActionShowAbout, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, Qt::NoModifier, (Qt::Key)0);
@@ -1303,7 +1336,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, Qt::ControlModifier, Qt::Key_I);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::ControlModifier | Qt::MetaModifier, Qt::Key_F);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::ControlModifier | Qt::AltModifier, Qt::Key_F);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearDiskCache, kShortcutDescActionClearDiskCache, Qt::NoModifier,(Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPlaybackCache, kShortcutDescActionClearPlaybackCache, Qt::NoModifier,(Qt::Key)0);
@@ -1354,6 +1387,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, kShortcutDescActionHideInfobar, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, kShortcutDescActionShowAll, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1);
     
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);
@@ -1418,11 +1452,14 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDeclone, kShortcutDescActionGraphDeclone, Qt::AltModifier | Qt::ShiftModifier, Qt::Key_K);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate, kShortcutDescActionGraphDuplicate, Qt::AltModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, kShortcutDescActionGraphForcePreview, Qt::NoModifier, Qt::Key_P);
-    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, kShortcutDescActionGraphToggleAutoPreview, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, kShortcutDescActionGraphToggleAutoPreview, Qt::AltModifier, Qt::Key_P);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoPreview, kShortcutDescActionGraphToggleAutoPreview, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, kShortcutDescActionGraphFrameNodes, Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowCacheSize, kShortcutDescActionGraphShowCacheSize, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, kShortcutDescActionGraphFindNode, Qt::ControlModifier, Qt::Key_F);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, kShortcutDescActionGraphRenameNode, Qt::NoModifier, Qt::Key_N);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, kShortcutDescActionGraphExtractNode, Qt::ControlModifier | Qt::ShiftModifier,
+                    Qt::Key_X);
 
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);

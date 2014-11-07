@@ -46,7 +46,7 @@ public:
         : _path()
           , _buffer()
           , _backingFile()
-          , _storageMode(RAM)
+          , _storageMode(eStorageModeRAM)
     {
     }
 
@@ -56,7 +56,7 @@ public:
     }
 
     void allocate( U64 count,
-                   Natron::StorageMode storage,
+                   Natron::StorageModeEnum storage,
                    std::string path = std::string() )
     {
         /*allocate should be called only once.*/
@@ -67,8 +67,8 @@ public:
         }
 
 
-        if (storage == Natron::DISK) {
-            _storageMode = DISK;
+        if (storage == Natron::eStorageModeDisk) {
+            _storageMode = eStorageModeDisk;
             _path = path;
             try {
                 _backingFile.reset( new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create) );
@@ -78,7 +78,7 @@ public:
                 ///if opening the file mapping failed, just call allocate again, but this time on RA%!
                 _backingFile.reset();
                 _path.clear();
-                allocate(count,Natron::RAM,path);
+                allocate(count,Natron::eStorageModeRAM, path);
 
                 return;
             }
@@ -87,8 +87,8 @@ public:
                 //if the backing file has already the good size and we just wanted to re-open the mapping
                 _backingFile->resize( count * sizeof(DataType) );
             }
-        } else if (storage == Natron::RAM) {
-            _storageMode = RAM;
+        } else if (storage == Natron::eStorageModeRAM) {
+            _storageMode = eStorageModeRAM;
             _buffer.resize(count);
         }
     }
@@ -101,10 +101,10 @@ public:
      **/
     void reallocate(U64 count)
     {
-        if (_storageMode == RAM) {
+        if (_storageMode == eStorageModeRAM) {
             assert(_buffer.size() > 0); // could be 0 if we allocate 0...
             _buffer.resize(count);
-        } else if (_storageMode == DISK) {
+        } else if (_storageMode == eStorageModeDisk) {
             assert(_backingFile);
             _backingFile->resize( count * sizeof(DataType) );
         }
@@ -112,7 +112,7 @@ public:
 
     void reOpenFileMapping() const
     {
-        assert(!_backingFile && _storageMode == DISK);
+        assert(!_backingFile && _storageMode == eStorageModeDisk);
         try{
             _backingFile.reset( new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create) );
         } catch (const std::exception & e) {
@@ -131,12 +131,12 @@ public:
         }
 
         _path = path;
-        _storageMode = DISK;
+        _storageMode = eStorageModeDisk;
     }
 
     void deallocate()
     {
-        if (_storageMode == RAM) {
+        if (_storageMode == eStorageModeRAM) {
             _buffer.clear();
         } else {
             if (_backingFile) {
@@ -151,7 +151,7 @@ public:
 
     bool removeAnyBackingFile() const
     {
-        if (_storageMode == DISK) {
+        if (_storageMode == eStorageModeDisk) {
             if (_backingFile) {
                 _backingFile->remove();
                 _backingFile.reset();
@@ -169,7 +169,7 @@ public:
      **/
     size_t size() const
     {
-        if (_storageMode == RAM) {
+        if (_storageMode == eStorageModeRAM) {
             return _buffer.size() * sizeof(DataType);
         } else {
             return _backingFile ? _backingFile->size() : 0;
@@ -183,7 +183,7 @@ public:
 
     DataType* writable()
     {
-        if (_storageMode == DISK) {
+        if (_storageMode == eStorageModeDisk) {
             if (_backingFile) {
                 return (DataType*)_backingFile->data();
             } else {
@@ -196,14 +196,14 @@ public:
 
     const DataType* readable() const
     {
-        if (_storageMode == DISK) {
+        if (_storageMode == eStorageModeDisk) {
             return (const DataType*)_backingFile->data();
         } else {
             return &_buffer.front();
         }
     }
 
-    Natron::StorageMode getStorageMode() const
+    Natron::StorageModeEnum getStorageMode() const
     {
         return _storageMode;
     }
@@ -216,7 +216,7 @@ private:
     /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
        change the underlying data*/
     mutable boost::scoped_ptr<MemoryFile> _backingFile;
-    Natron::StorageMode _storageMode;
+    Natron::StorageModeEnum _storageMode;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -238,12 +238,12 @@ public:
     /**
      * @brief To be called by a CacheEntry on allocation.
      **/
-    virtual void notifyEntryAllocated(int time,size_t size,Natron::StorageMode storage) const = 0;
+    virtual void notifyEntryAllocated(int time, size_t size, Natron::StorageModeEnum storage) const = 0;
 
     /**
      * @brief To be called by a CacheEntry on destruction.
      **/
-    virtual void notifyEntryDestroyed(int time,size_t size,Natron::StorageMode storage) const = 0;
+    virtual void notifyEntryDestroyed(int time, size_t size, Natron::StorageModeEnum storage) const = 0;
 
     /**
      * @brief To be called when a backing file has been closed
@@ -254,7 +254,7 @@ public:
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
      * it is reallocated in the RAM.
      **/
-    virtual void notifyEntryStorageChanged(Natron::StorageMode oldStorage,Natron::StorageMode newStorage,
+    virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,Natron::StorageModeEnum newStorage,
                                            int time,size_t size) const = 0;
 };
 
@@ -322,7 +322,7 @@ public:
     CacheEntryHelper(const KeyType & key,
                      const boost::shared_ptr<ParamsType> & params,
                      const CacheAPI* cache,
-                     Natron::StorageMode storage,
+                     Natron::StorageModeEnum storage,
                      const std::string & path)
         : _key(key)
           , _params(params)
@@ -345,7 +345,7 @@ public:
     void setCacheEntry(const KeyType & key,
                        const boost::shared_ptr<ParamsType> & params,
                        const CacheAPI* cache,
-                       Natron::StorageMode storage,
+                       Natron::StorageModeEnum storage,
                        const std::string & path)
     {
         assert(!_params && _cache == NULL);
@@ -363,7 +363,7 @@ public:
      **/
     void allocateMemory()
     {
-        if (_requestedStorage == Natron::NO_STORAGE) {
+        if (_requestedStorage == Natron::eStorageModeNone) {
             return;
         }
 
@@ -382,7 +382,7 @@ public:
      **/
     void restoreMemory()
     {
-        if (_requestedStorage == Natron::NO_STORAGE) {
+        if (_requestedStorage == Natron::eStorageModeNone) {
             return;
         }
         
@@ -448,7 +448,7 @@ public:
     {
         _data.reOpenFileMapping();
         if (_cache) {
-            _cache->notifyEntryStorageChanged( Natron::DISK, Natron::RAM,getTime(), size() );
+            _cache->notifyEntryStorageChanged( Natron::eStorageModeDisk, Natron::eStorageModeRAM,getTime(), size() );
         }
     }
 
@@ -460,11 +460,11 @@ public:
         if (_cache) {
             if ( isStoredOnDisk() ) {
                 if ( _data.isAllocated() ) {
-                    _cache->notifyEntryStorageChanged( Natron::RAM, Natron::DISK,getTime(), size() );
+                    _cache->notifyEntryStorageChanged( Natron::eStorageModeRAM, Natron::eStorageModeDisk, getTime(), size() );
                 }
             } else {
                 if ( _data.isAllocated() ) {
-                    _cache->notifyEntryDestroyed(getTime(),size(),Natron::RAM);
+                    _cache->notifyEntryDestroyed(getTime(), size(), Natron::eStorageModeRAM);
                 }
             }
         }
@@ -493,7 +493,7 @@ public:
 
     bool isStoredOnDisk() const
     {
-        return _data.getStorageMode() == Natron::DISK;
+        return _data.getStorageMode() == Natron::eStorageModeDisk;
     }
 
     /**
@@ -511,10 +511,10 @@ public:
             _cache->backingFileClosed();
         }
         if ( isAlloc ) {
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::RAM);
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::eStorageModeRAM);
         } else {
             ///size() will return 0 at this point, we have to recompute it
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::DISK);
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::eStorageModeDisk);
         }
     }
     
@@ -555,12 +555,12 @@ private:
      * it is private.
      **/
     void allocate( U64 count,
-                   Natron::StorageMode storage,
+                   Natron::StorageModeEnum storage,
                    std::string path = std::string() )
     {
         std::string fileName;
 
-        if (storage == Natron::DISK) {
+        if (storage == Natron::eStorageModeDisk) {
             try {
                 fileName = generateStringFromHash(path);
             } catch (const std::invalid_argument & e) {
@@ -599,7 +599,7 @@ protected:
     const CacheAPI* _cache;
     bool _removeBackingFileBeforeDestruction;
     std::string _requestedPath;
-    Natron::StorageMode _requestedStorage;
+    Natron::StorageModeEnum _requestedStorage;
 };
 }
 

@@ -98,7 +98,8 @@ public:
                                              bool requestedByLoad,
                                              double xPosHint,
                                              double yPosHint,
-                                             bool pushUndoRedoCommand);
+                                             bool pushUndoRedoCommand,
+                                             bool autoConnect);
 
     void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
 
@@ -161,15 +162,39 @@ public:
      * @brief An error dialog with title and text customizable
      **/
     void errorDialog(const std::string & title,const std::string & text);
+    
+    void errorDialog(const std::string & title,
+                     const std::string & text,
+                     bool* stopAsking);
+    
+    
 
     void warningDialog(const std::string & title,const std::string & text);
+    
+    void warningDialog(const std::string & title,
+                       const std::string & text,
+                       bool* stopAsking);
 
     void informationDialog(const std::string & title,const std::string & text);
+    
+    void informationDialog(const std::string & title,
+                           const std::string & message,
+                           bool* stopAsking);
 
-    Natron::StandardButton questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
-                                              Natron::StandardButtons(Natron::Yes | Natron::No),
-                                          Natron::StandardButton defaultButton = Natron::NoButton);
-
+    Natron::StandardButtonEnum questionDialog(const std::string & title,
+                                              const std::string & message,
+                                              Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                              Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+    
+    Natron::StandardButtonEnum questionDialog(const std::string & title,
+                                              const std::string & message,
+                                              Natron::StandardButtons buttons,
+                                              Natron::StandardButtonEnum defaultButton,
+                                              bool* stopAsking);
+    
+    
+    
+    
     /**
      * @brief Selects the given node on the node graph, wiping any previous selection.
      **/
@@ -189,7 +214,7 @@ public:
 
     ///Make the layout according to the serialization.
     ///@param enableOldProjectCompatibility When true, the default Gui layout will be created
-    ///prior to restoring. This is because older projects didn't have as much infos to recreate the entire layout.
+    ///prior to restoring. This is because older projects didn't have as much info to recreate the entire layout.
     void restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,
                        const GuiLayoutSerialization & layoutSerialization);
 
@@ -308,7 +333,7 @@ public:
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
     QVBoxLayout* getPropertiesLayout() const;
-    QScrollArea* getPropertiesScrollArea() const;
+    QWidget* getPropertiesBin() const;
     const std::map<std::string,QWidget*> & getRegisteredTabs() const;
 
     void updateLastSequenceOpenedPath(const QString & path);
@@ -383,9 +408,6 @@ public:
     ///Close the application instance, asking questions to the user
     bool closeInstance();
 
-    void aboutToSave();
-    void saveFinished();
-    
     void checkNumberOfNonFloatingPanes();
 
     void openProject(const std::string& filename);
@@ -402,9 +424,18 @@ public:
     const QString& getLastLoadProjectDirectory() const;
     
     const QString& getLastSaveProjectDirectory() const;
+    
+    
+    /**
+     * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
+     **/
+    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
+
 signals:
 
     void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
+    
+    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
 
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
@@ -419,6 +450,8 @@ public slots:
     void openProject();
     bool saveProject();
     bool saveProjectAs();
+    void saveAndIncrVersion();
+    
     void autoSave();
 
     void createNewViewer();
@@ -447,6 +480,7 @@ public slots:
 
     void onDoDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
 
+    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save
@@ -458,6 +492,8 @@ public slots:
     void setVisibleProjectSettingsPanel();
 
     void putSettingsPanelFirst(DockablePanel* panel);
+    
+    void buildTabFocusOrderPropertiesBin();
 
     void addToolButttonsToToolBar();
 
@@ -521,6 +557,8 @@ private:
 
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 

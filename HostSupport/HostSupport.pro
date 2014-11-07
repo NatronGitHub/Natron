@@ -58,23 +58,24 @@ HEADERS += \
     ../libs/OpenFX/HostSupport/include/ofxhUtilities.h \
     ../libs/OpenFX/HostSupport/include/ofxhXml.h \
     ../libs/OpenFX/include/ofxCore.h \
+    ../libs/OpenFX/include/ofxDialog.h \
     ../libs/OpenFX/include/ofxImageEffect.h \
     ../libs/OpenFX/include/ofxInteract.h \
     ../libs/OpenFX/include/ofxKeySyms.h \
     ../libs/OpenFX/include/ofxMemory.h \
     ../libs/OpenFX/include/ofxMessage.h \
     ../libs/OpenFX/include/ofxMultiThread.h \
+    ../libs/OpenFX/include/ofxNatron.h \
     ../libs/OpenFX/include/ofxOpenGLRender.h \
     ../libs/OpenFX/include/ofxParam.h \
     ../libs/OpenFX/include/ofxParametricParam.h \
     ../libs/OpenFX/include/ofxPixels.h \
     ../libs/OpenFX/include/ofxProgress.h \
     ../libs/OpenFX/include/ofxProperty.h \
+    ../libs/OpenFX/include/ofxSonyVegas.h \
     ../libs/OpenFX/include/ofxTimeLine.h \
-    ../libs/OpenFX_extensions/tuttle/ofxGraphAPI.h \
-    ../libs/OpenFX_extensions/tuttle/ofxMetadata.h \
-    ../libs/OpenFX_extensions/tuttle/ofxParam.h \
-    ../libs/OpenFX_extensions/tuttle/ofxParamAPI.h \
-    ../libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
-    ../libs/OpenFX_extensions/ofxhParametricParam.h \
-    ../libs/OpenFX/include/natron/IOExtensions.h
+    ../libs/OpenFX/include/nuke/camera.h \
+    ../libs/OpenFX/include/nuke/fnOfxExtensions.h \
+    ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
+    ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
+    ../libs/OpenFX_extensions/ofxhParametricParam.h

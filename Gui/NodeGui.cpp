@@ -99,6 +99,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _persistentMessage(NULL)
       , _lastPersistentMessageType(0)
       , _stateIndicator(NULL)
+      , _mergeHintActive(false)
       , _bitDepthWarning(NULL)
       , _disabledTopLeftBtmRight(NULL)
       , _disabledBtmLeftTopRight(NULL)
@@ -179,6 +180,10 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect (isOutput->getRenderEngine(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()));
     }
 
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isOutput);
+    if (isViewer) {
+        QObject::connect(isViewer,SIGNAL(refreshOptionalState()),this,SLOT(refreshOptionalStateOfEdges()));
+    }
 
     createGui();
 
@@ -369,16 +374,7 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         return;
     }
     if ( _internalNode->isPreviewEnabled() ) {
-        if (!_previewPixmap) {
-            QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
-            prev.fill(Qt::black);
-            QPixmap prev_pixmap = QPixmap::fromImage(prev);
-            _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
-            _previewPixmap->setZValue(1);
-        }
-        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
-        _previewPixmap->stackBefore(_nameItem);
-        _previewPixmap->show();
+        ensurePreviewCreated();
         if (refreshPreview) {
             _internalNode->computePreviewImage( _graph->getGui()->getApp()->getTimeLine()->currentFrame() );
         }
@@ -388,6 +384,27 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         }
         updateShape(NODE_WIDTH,NODE_HEIGHT);
     }
+}
+
+void
+NodeGui::ensurePreviewCreated()
+{
+    if (!_previewPixmap) {
+        QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
+        prev.fill(Qt::black);
+        QPixmap prev_pixmap = QPixmap::fromImage(prev);
+        _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
+        _previewPixmap->setZValue(1);
+        
+    }
+    QSize size = getSize();
+    if (size.width() < NODE_WITH_PREVIEW_WIDTH ||
+        size.height() < NODE_WITH_PREVIEW_HEIGHT) {
+        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
+        _previewPixmap->stackBefore(_nameItem);
+        _previewPixmap->show();
+    }
+
 }
 
 void
@@ -642,10 +659,36 @@ NodeGui::changePosition(double dx,
 }
 
 void
+NodeGui::refreshOptionalStateOfEdges()
+{
+    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+    if (viewer) {
+        int activeInputs[2];
+        viewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+        
+        int nbInputsConnected = 0;
+        
+        for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
+            if (i->first == activeInputs[0] || i->first == activeInputs[1]) {
+                i->second->setOptional(false);
+            } else {
+                i->second->setOptional(true);
+            }
+            if (i->second->getSource()) {
+                ++nbInputsConnected;
+            }
+        }
+        if (nbInputsConnected == 0) {
+            _inputEdges[0]->setOptional(false);
+        }
+    }
+}
+
+void
 NodeGui::refreshEdges()
 {
     const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = _internalNode->getInputs_mt_safe();
-
+    
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
         assert(i->first < (int)nodeInputs.size() && i->first >= 0);
         boost::shared_ptr<NodeGui> nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
@@ -701,6 +744,8 @@ NodeGui::updatePreviewImage(int time)
             return;
         }
         
+        ensurePreviewCreated();
+
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -716,6 +761,8 @@ NodeGui::forceComputePreview(int time)
             return;
         }
         
+        ensurePreviewCreated();
+
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -726,6 +773,7 @@ NodeGui::computePreviewImage(int time)
     if ( _internalNode->isRenderingPreview() ) {
         return;
     }
+    
 
     int w = NATRON_PREVIEW_WIDTH;
     int h = NATRON_PREVIEW_HEIGHT;
@@ -902,7 +950,7 @@ NodeGui::onInternalNameChanged(const QString & s)
     setNameItemHtml(s,_nodeLabel);
 
     if (_settingsPanel) {
-        _settingsPanel->onNameChanged(s);
+        _settingsPanel->setName(s);
     }
     scene()->update();
 }
@@ -1346,7 +1394,7 @@ NodeGui::onPersistentMessageChanged(int type,
                                     const QString & message)
 {
     //keep type in synch with this enum:
-    //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
+    //enum MessageTypeEnum{eMessageTypeInfo = 0,eMessageTypeError = 1,eMessageTypeWarning = 2,eMessageTypeQuestion = 3};
 
     ///don't do anything if the last persistent message is the same
     if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui() ) {
@@ -1505,6 +1553,26 @@ void
 NodeGui::onRenderingFinished()
 {
     _stateIndicator->hide();
+}
+
+void
+NodeGui::setMergeHintActive(bool active)
+{
+    if (active == _mergeHintActive) {
+        return;
+    }
+    _mergeHintActive = active;
+    if (active) {
+        _stateIndicator->setBrush(Qt::green);
+        if (!_stateIndicator->isVisible()) {
+            _stateIndicator->show();
+        }
+    } else {
+        if (_stateIndicator->isVisible()) {
+            _stateIndicator->hide();
+        }
+    }
+    
 }
 
 void
@@ -2006,8 +2074,9 @@ NodeGui::setNameItemHtml(const QString & name,
 
 
     QFont f;
+    QColor color;
     if (hasFontData) {
-        String_KnobGui::parseFont(textLabel, f);
+        String_KnobGui::parseFont(textLabel, f, color);
     }
     _nameItem->setFont(f);
 
@@ -2182,26 +2251,7 @@ boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
     }
 }
 
-bool
-NodeGui::shouldDrawOverlay() const
-{
-    if ( _internalNode->isNodeDisabled() ) {
-        return false;
-    }
 
-    if ( _internalNode->isTrackerNode() ) {
-        ///Tracker overlays are handled in the TrackerGui by Natron so we can have more control over them
-
-        ///This also allows us to have control with the selection in the settings panel
-        return false;
-    }
-
-    if (_parentMultiInstance) {
-        return _parentMultiInstance->isSettingsPanelVisible();
-    } else {
-        return _internalNode->isActivated() && isSettingsPanelVisible();
-    }
-}
 
 void
 NodeGui::setParentMultiInstance(const boost::shared_ptr<NodeGui> & node)
@@ -2281,4 +2331,34 @@ DotGui::shape() const
     return diskShape->shape();
 }
 
+void
+NodeGui::trySetName(const QString& newName)
+{
+    bool mustRestoreOldName = false;
+    QString oldName;
+    
+    if ( newName.isEmpty() ) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
+        mustRestoreOldName = true;
+    } else {
+        if ( _graph->checkIfNodeNameExists( newName.toStdString(), this ) ) {
+            mustRestoreOldName = true;
+            Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString() );
+            oldName = _internalNode->getLiveInstance()->getName().c_str();
+        }
+        
+    }
+    
+    DockablePanel* panel = getSettingPanel();
+    if (mustRestoreOldName) {
+        if (panel) {
+            panel->setName(oldName);
+        }
+    } else {
+        if (panel) {
+            panel->setName(newName);
+        }
+        emit nameChanged(newName);
+    }
 
+}

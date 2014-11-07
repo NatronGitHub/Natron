@@ -56,7 +56,7 @@ public:
 
     void setBoundaries(SequenceTime leftBound,SequenceTime rightBound);
 
-    void seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller, Natron::TIMELINE_CHANGE_REASON reason);
+    void seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller, Natron::TimelineChangeReasonEnum reason);
 
     void incrementCurrentFrame(Natron::OutputEffectInstance* caller);
 
@@ -109,7 +109,7 @@ signals:
 
     void frameRangeChanged(SequenceTime,SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime,int reason);
-    //reason being a Natron::TIMELINE_CHANGE_REASON
+    //reason being a Natron::TimelineChangeReasonEnum
     void frameChanged(SequenceTime,int reason);
 
     void keyframeIndicatorsChanged();

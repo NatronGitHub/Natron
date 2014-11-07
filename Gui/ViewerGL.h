@@ -126,7 +126,7 @@ public:
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & imageRoD,const double par,unsigned int mipMapLevel) OVERRIDE FINAL;
-
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      * of the ViewerGL.
@@ -164,7 +164,7 @@ public:
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double offset, int lut, int pboIndex,
-                                            unsigned int mipMapLevel,Natron::ImagePremultiplication premult,
+                                            unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
                                             int textureIndex) OVERRIDE FINAL;
     
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
@@ -175,7 +175,7 @@ public:
 
     /**
      *@brief Disconnects the viewer.
-     * Clears out the viewer and reset the viewer infos. Note that calling this
+     * Clears out the viewer and reset the viewer info. Note that calling this
      * function while the engine is processing will abort the engine.
      **/
     void disconnectViewer();
@@ -242,9 +242,9 @@ public:
 
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
 
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     void setUserRoIEnabled(bool b);
 
@@ -294,7 +294,7 @@ public:
 
     bool getZoomOrPannedSinceLastFit() const;
 
-    virtual Natron::ViewerCompositingOperator getCompositingOperator() const OVERRIDE FINAL;
+    virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
     virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
 
     ///Not MT-Safe

@@ -279,8 +279,6 @@ public:
 
     boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
 
-    bool shouldDrawOverlay() const;
-
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
 
 
@@ -293,6 +291,10 @@ public:
     void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const;
     void restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
+    
+    void trySetName(const QString& newName);
+    
+    void setMergeHintActive(bool active);
     
 public slots:
 
@@ -330,6 +332,8 @@ public slots:
 
     void refreshEdges();
 
+    void refreshOptionalStateOfEdges();
+    
     void refreshKnobLinks();
 
     /*initialises the input edges*/
@@ -411,6 +415,8 @@ private:
 
     void togglePreview_internal(bool refreshPreview = true);
 
+    void ensurePreviewCreated();
+    
     void setAboveItem(QGraphicsItem* item);
 
     void computePreviewImage(int time);
@@ -447,6 +453,7 @@ private:
     QString _lastPersistentMessage;
     int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
+    bool _mergeHintActive;
     NodeGuiIndicator* _bitDepthWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;

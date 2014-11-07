@@ -95,6 +95,8 @@ struct ViewerTabPrivate
     Button* _clipToProjectFormatButton;
     Button* _enableViewerRoI;
     Button* _refreshButton;
+    QIcon _iconRefreshOff,_iconRefreshOn;
+    
     Button* _activateRenderScale;
     bool _renderScaleActive;
     ComboBox* _renderScaleCombo;
@@ -114,8 +116,8 @@ struct ViewerTabPrivate
     ComboBox* _viewsComboBox;
     int _currentViewIndex;
     QMutex _currentViewMutex;
-    /*Infos*/
-    InfoViewerWidget* _infosWidget[2];
+    /*Info*/
+    InfoViewerWidget* _infoWidget[2];
 
 
     /*TimeLine buttons*/
@@ -141,6 +143,7 @@ struct ViewerTabPrivate
     bool frameRangeLocked;
     QLabel* fpsName;
     SpinBox* fpsBox;
+    Button* turboButton;
 
     /*frame seeker*/
     TimeLineGui* _timeLineGui;
@@ -150,7 +153,7 @@ struct ViewerTabPrivate
     std::pair<NodeGui*,TrackerGui*> _currentTracker;
     InputNamesMap _inputNamesMap;
     mutable QMutex compOperatorMutex;
-    ViewerCompositingOperator _compOperator;
+    ViewerCompositingOperatorEnum _compOperator;
     Gui* _gui;
     ViewerInstance* _viewerNode; // < pointer to the internal node
     
@@ -178,7 +181,7 @@ struct ViewerTabPrivate
           , _playerButtonsContainer(0)
           , frameRangeLocked(true)
           , _timeLineGui(NULL)
-          , _compOperator(OPERATOR_NONE)
+          , _compOperator(eViewerCompositingOperatorNone)
           , _gui(gui)
           , _viewerNode(node)
           , _infobarVisible(true)
@@ -256,7 +259,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_zoomCombobox->addItem("25%");
     _imp->_zoomCombobox->addItem("50%");
     _imp->_zoomCombobox->addItem("75%");
-    _imp->_zoomCombobox->addItem("100%");
+    ActionWithShortcut* level100Action = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionZoomLevel100,kShortcutDescActionZoomLevel100,this);
+    _imp->_zoomCombobox->addAction(level100Action);
     _imp->_zoomCombobox->addItem("125%");
     _imp->_zoomCombobox->addItem("150%");
     _imp->_zoomCombobox->addItem("200%");
@@ -382,7 +386,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_secondRowLayout->addWidget(_imp->_gainBox);
 
 
-    _imp->_gainSlider = new ScaleSliderQWidget(0, 64,1.0,Natron::LINEAR_SCALE,_imp->_secondSettingsRow);
+    _imp->_gainSlider = new ScaleSliderQWidget(0, 64,1.0,Natron::eScaleTypeLinear,_imp->_secondSettingsRow);
     _imp->_gainSlider->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
                                        "Multiplies the image by \nthis amount before display.") );
     _imp->_secondRowLayout->addWidget(_imp->_gainSlider);
@@ -448,25 +452,27 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_viewerLayout->setSpacing(0);
 
     _imp->_viewerSubContainer = new QWidget(_imp->_viewerContainer);
-    _imp->_viewerSubContainer->setStyleSheet("background-color:black");
+    //_imp->_viewerSubContainer->setStyleSheet("background-color:black");
     _imp->_viewerSubContainerLayout = new QVBoxLayout(_imp->_viewerSubContainer);
     _imp->_viewerSubContainerLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->_viewerSubContainerLayout->setSpacing(0);
+    _imp->_viewerSubContainerLayout->setSpacing(1);
+
 
     _imp->viewer = new ViewerGL(this);
 
     _imp->_viewerSubContainerLayout->addWidget(_imp->viewer);
 
+    
     /*info bbox & color*/
     QString inputNames[2] = {
         "A:", "B:"
     };
     for (int i = 0; i < 2; ++i) {
-        _imp->_infosWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
-        _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget[i]);
-        _imp->viewer->setInfoViewer(_imp->_infosWidget[i],i);
+        _imp->_infoWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
+        _imp->_viewerSubContainerLayout->addWidget(_imp->_infoWidget[i]);
+        _imp->viewer->setInfoViewer(_imp->_infoWidget[i],i);
         if (i == 1) {
-            _imp->_infosWidget[i]->hide();
+            _imp->_infoWidget[i]->hide();
         }
     }
 
@@ -692,8 +698,26 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->fpsBox->setIncrement(0.1);
     _imp->fpsBox->setToolTip( "<p><b>" + tr("fps") + ": \n</b></p>" + tr(
                                   "Enter here the desired playback rate.") );
+    
     _imp->_playerLayout->addWidget(_imp->fpsBox);
-
+    
+    QPixmap pixFreezeEnabled,pixFreezeDisabled;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
+    QIcon icFreeze;
+    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
+    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
+    _imp->turboButton = new Button(icFreeze,"",_imp->_playerButtonsContainer);
+    _imp->turboButton->setCheckable(true);
+    _imp->turboButton->setChecked(false);
+    _imp->turboButton->setDown(false);
+    _imp->turboButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->turboButton->setToolTip("<p><b>" + tr("Turbo mode:") + "</p></b><p>" +
+                                  tr("When checked, everything besides the viewer will not be refreshed in the user interface "
+                                                                                              "for maximum efficiency during playback.") + "</p>");
+    _imp->turboButton->setFocusPolicy(Qt::NoFocus);
+    QObject::connect( _imp->turboButton, SIGNAL (clicked(bool)), getGui(), SLOT(onFreezeUIButtonClicked(bool) ) );
+    _imp->_playerLayout->addWidget(_imp->turboButton);
 
     QPixmap pixFirst;
     QPixmap pixPrevKF;
@@ -709,6 +733,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QPixmap pixPrevIncr;
     QPixmap pixNextIncr;
     QPixmap pixRefresh;
+    QPixmap pixRefreshActive;
     QPixmap pixCenterViewer;
     QPixmap pixLoopMode;
     QPixmap pixClipToProjectEnabled;
@@ -732,6 +757,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_INCR,&pixPrevIncr);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_INCR,&pixNextIncr);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH,&pixRefresh);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE,&pixRefreshActive);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenterViewer);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_ENABLED,&pixClipToProjectEnabled);
@@ -760,7 +786,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->lastFrame_Button->setIcon( QIcon(pixLast) );
     _imp->previousIncrement_Button->setIcon( QIcon(pixPrevIncr) );
     _imp->nextIncrement_Button->setIcon( QIcon(pixNextIncr) );
-    _imp->_refreshButton->setIcon( QIcon(pixRefresh) );
+    _imp->_iconRefreshOff = QIcon(pixRefresh);
+    _imp->_iconRefreshOn = QIcon(pixRefreshActive);
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOff);
     _imp->_centerViewerButton->setIcon( QIcon(pixCenterViewer) );
     _imp->playbackMode_Button->setIcon( QIcon(pixLoopMode) );
 
@@ -850,6 +878,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->_autoConstrastLabel,SIGNAL( clicked(bool) ),_imp->_autoContrast,SLOT( setChecked(bool) ) );
     QObject::connect( _imp->_renderScaleCombo,SIGNAL( currentIndexChanged(int) ),this,SLOT( onRenderScaleComboIndexChanged(int) ) );
     QObject::connect( _imp->_activateRenderScale,SIGNAL( toggled(bool) ),this,SLOT( onRenderScaleButtonClicked(bool) ) );
+    
+    QObject::connect( _imp->_viewerNode, SIGNAL( viewerRenderingStarted() ), this, SLOT( onViewerRenderingStarted() ) );
+    QObject::connect( _imp->_viewerNode, SIGNAL( viewerRenderingEnded() ), this, SLOT( onViewerRenderingStopped() ) );
 
     connectToViewerCache();
 
@@ -873,14 +904,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 void
 ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
-    Natron::ViewerColorSpace colorspace;
+    Natron::ViewerColorSpaceEnum colorspace;
 
     if (v == 0) {
-        colorspace = Natron::Linear;
+        colorspace = Natron::eViewerColorSpaceLinear;
     } else if (1) {
-        colorspace = Natron::sRGB;
+        colorspace = Natron::eViewerColorSpaceSRGB;
     } else if (2) {
-        colorspace = Natron::Rec709;
+        colorspace = Natron::eViewerColorSpaceRec709;
     } else {
         assert(false);
     }
@@ -939,17 +970,17 @@ ViewerTab::getCurrentView() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    Natron::PlaybackMode mode = _imp->_viewerNode->getRenderEngine()->getPlaybackMode();
-    mode = (Natron::PlaybackMode)(((int)mode + 1) % 3);
+    Natron::PlaybackModeEnum mode = _imp->_viewerNode->getRenderEngine()->getPlaybackMode();
+    mode = (Natron::PlaybackModeEnum)(((int)mode + 1) % 3);
     QPixmap pix;
     switch (mode) {
-        case Natron::PLAYBACK_LOOP:
+        case Natron::ePlaybackModeLoop:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
             break;
-        case Natron::PLAYBACK_BOUNCE:
+        case Natron::ePlaybackModeBounce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
             break;
-        case Natron::PLAYBACK_ONCE:
+        case Natron::ePlaybackModeOnce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
             break;
         default:
@@ -1117,7 +1148,9 @@ ViewerTab::refresh()
 ViewerTab::~ViewerTab()
 {
     if (_imp->_gui) {
-        _imp->_viewerNode->invalidateUiContext();
+        if (_imp->_viewerNode) {
+            _imp->_viewerNode->invalidateUiContext();
+        }
         if ( _imp->app && !_imp->app->isClosing() && (_imp->_gui->getLastSelectedViewer() == this) ) {
             assert(_imp->_gui);
             _imp->_gui->setLastSelectedViewer(NULL);
@@ -1225,6 +1258,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         _imp->_renderScaleCombo->setCurrentIndex(3);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, modifiers, key) ) {
         _imp->_renderScaleCombo->setCurrentIndex(4);
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
+        _imp->viewer->zoomSlot(100);
+        _imp->_zoomCombobox->setCurrentIndex_no_emit(4);
     }
 } // keyPressEvent
 
@@ -1323,18 +1359,23 @@ ViewerTab::drawOverlays(double scaleX,
         return;
     }
 
-    if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-        _imp->_currentRoto.second->drawOverlays(scaleX, scaleY);
-    }
-
-    if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-        _imp->_currentTracker.second->drawOverlays(scaleX, scaleY);
-    }
-
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    
+    ///Draw overlays in reverse order of appearance
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                _imp->_currentRoto.second->drawOverlays(scaleX, scaleY);
+            }
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                _imp->_currentTracker.second->drawOverlays(scaleX, scaleY);
+            }
+        } else {
+            
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
             effect->drawOverlay_public(scaleX,scaleY);
@@ -1355,35 +1396,43 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
         return false;
     }
 
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+       
+        
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
+                    return true;
+                }
+            }
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentTracker.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
+                    return true;
+                }
+            }
+        } else {
+            
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
-
             effect->setCurrentViewportForOverlays(_imp->viewer);
             bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
+                
                 // to any other interactive object it may own that shares the same view.
                 return true;
             }
         }
     }
 
-    if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentTracker.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
-            return true;
-        }
-    }
 
-    if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
-            didSomething  = true;
-        }
-    }
+
+ 
 
     return didSomething;
 }
@@ -1426,35 +1475,42 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     if ( !_imp->app || _imp->app->isClosing() ) {
         return false;
     }
-
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+    
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
+                    return true;
+                }
+            }
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
+                    return true;
+                }
+            }
+        } else {
+            
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
             bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
+                
                 // to any other interactive object it may own that shares the same view.
                 return true;
             }
         }
     }
 
-    if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
-            return true;
-        }
-    }
+   
 
-    if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
-            didSomething = true;
-        }
-    }
+   
 
     return didSomething;
 }
@@ -1471,35 +1527,44 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     if ( !_imp->app || _imp->app->isClosing() ) {
         return false;
     }
-
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+    
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
+            
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
+                    return true;
+                }
+            }
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
+                    return true;
+                }
+            }
+        } else {
+            
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
             bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
+                
                 // to any other interactive object it may own that shares the same view.
                 return true;
             }
         }
+        
     }
 
-    if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
-            return true;
-        }
-    }
+   
 
-    if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
-            didSomething  =  true;
-        }
-    }
+    
 
     return didSomething;
 }
@@ -1517,35 +1582,40 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
 
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();
+    
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin();
          it != nodes.end();
          ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+        
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
+            
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentRoto.second->keyDown(scaleX, scaleY, e) ) {
+                    return true;
+                }
+            }
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentTracker.second->keyDown(scaleX, scaleY, e) ) {
+                    return true;
+                }
+            }
+            
+        } else {
+            
+            Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
             bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,natronKey,natronMod);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
+                
                 // to any other interactive object it may own that shares the same view.
                 return true;
             }
-        }
-    }
-
-    if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentTracker.second->keyDown(scaleX, scaleY, e) ) {
-            return true;
-        }
-    }
-
-
-    if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentRoto.second->keyDown(scaleX, scaleY, e) ) {
-            didSomething = true;
         }
     }
 
@@ -1565,36 +1635,42 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     }
 
 
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
-            assert(effect);
-
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        assert(effect);
+        
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentRoto.second->keyUp(scaleX, scaleY, e) ) {
+                    return true;
+                }
+            }
+        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentTracker.second->keyUp(scaleX, scaleY, e) ) {
+                    return true;
+                }
+            }
+        } else {
+            
             effect->setCurrentViewportForOverlays(_imp->viewer);
             bool didSmthing = effect->onOverlayKeyUp_public( scaleX,scaleY,
-                                                             QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+                                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
+                
                 // to any other interactive object it may own that shares the same view.
                 return true;
             }
         }
     }
 
-    if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentTracker.second->keyUp(scaleX, scaleY, e) ) {
-            return true;
-        }
-    }
+   
 
-    if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentRoto.second->keyUp(scaleX, scaleY, e) ) {
-            didSomething = true;
-        }
-    }
+    
 
     return didSomething;
 }
@@ -1607,36 +1683,43 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
     if ( !_imp->app || _imp->app->isClosing() ) {
         return false;
     }
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
-            assert(effect);
-
+    
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        assert(effect);
+        
+        if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
+            
+            if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentRoto.second->keyRepeat(scaleX, scaleY, e) ) {
+                    return true;
+                }
+            }
+        } else {
+            //if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+            //    if (_imp->_currentTracker.second->loseFocus(scaleX, scaleY,e)) {
+            //        return true;
+            //    }
+            //}
+            
             effect->setCurrentViewportForOverlays(_imp->viewer);
             bool didSmthing = effect->onOverlayKeyRepeat_public( scaleX,scaleY,
-                                                                 QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+                                                                QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
+                
                 // to any other interactive object it may own that shares the same view.
                 return true;
             }
         }
+        
     }
 
-    //if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-    //    if (_imp->_currentTracker.second->loseFocus(scaleX, scaleY,e)) {
-    //        return true;
-    //    }
-    //}
+   
 
-    if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentRoto.second->keyRepeat(scaleX, scaleY, e) ) {
-            return true;
-        }
-    }
 
     return false;
 }
@@ -1649,31 +1732,19 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
         return false;
     }
     bool ret = false;
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
-            assert(effect);
-
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayFocusGained_public(scaleX,scaleY);
-            if (didSmthing) {
-                ret = true;
-            }
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        assert(effect);
+        
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        bool didSmthing = effect->onOverlayFocusGained_public(scaleX,scaleY);
+        if (didSmthing) {
+            ret = true;
         }
+        
     }
-
-    //if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-    //    if (_imp->_currentTracker.second->gainFocus(scaleX, scaleY)) {
-    //        ret = true;
-    //    }
-    //}
-
-    //if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-    //    if (_imp->_currentRoto.second->gainFocus(scaleX, scaleY)) {
-    //        ret = true;
-    //    }
-    //}
 
     return ret;
 }
@@ -1686,31 +1757,30 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
         return false;
     }
     bool ret = false;
-    const std::list<boost::shared_ptr<NodeGui> > & nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->shouldDrawOverlay() ) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
-            assert(effect);
-
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayFocusLost_public(scaleX,scaleY);
-            if (didSmthing) {
-                ret = true;
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        
+        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->_currentTracker.second->loseFocus(scaleX, scaleY) ) {
+                    return true;
+                }
             }
         }
-    }
-
-    if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-        if ( _imp->_currentTracker.second->loseFocus(scaleX, scaleY) ) {
-            return true;
+        
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        assert(effect);
+        
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        bool didSmthing = effect->onOverlayFocusLost_public(scaleX,scaleY);
+        if (didSmthing) {
+            ret = true;
         }
     }
+    
+    
 
-    //if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-    //    if (_imp->_currentRoto.second->loseFocus(scaleX, scaleY)) {
-    //        didSomething = true;
-    //    }
-    //}
 
     return ret;
 }
@@ -1724,18 +1794,18 @@ ViewerTab::isClippedToProject() const
 std::string
 ViewerTab::getColorSpace() const
 {
-    Natron::ViewerColorSpace lut = (Natron::ViewerColorSpace)_imp->_viewerNode->getLutType();
+    Natron::ViewerColorSpaceEnum lut = (Natron::ViewerColorSpaceEnum)_imp->_viewerNode->getLutType();
 
     switch (lut) {
-    case Natron::Linear:
+    case Natron::eViewerColorSpaceLinear:
 
         return "Linear(None)";
         break;
-    case Natron::sRGB:
+    case Natron::eViewerColorSpaceSRGB:
 
         return "sRGB";
         break;
-    case Natron::Rec709:
+    case Natron::eViewerColorSpaceRec709:
 
         return "Rec.709";
         break;
@@ -1896,6 +1966,12 @@ ViewerTab::getInternalNode() const
     return _imp->_viewerNode;
 }
 
+void
+ViewerTab::discardInternalNodePointer()
+{
+    _imp->_viewerNode = 0;
+}
+
 Gui*
 ViewerTab::getGui() const
 {
@@ -1941,8 +2017,8 @@ ViewerTab::onRenderScaleButtonClicked(bool checked)
 void
 ViewerTab::setInfoBarResolution(const Format & f)
 {
-    _imp->_infosWidget[0]->setResolution(f);
-    _imp->_infosWidget[1]->setResolution(f);
+    _imp->_infoWidget[0]->setResolution(f);
+    _imp->_infoWidget[1]->setResolution(f);
 }
 
 void
@@ -2297,28 +2373,28 @@ ViewerTab::notifyAppClosing()
 void
 ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
-    ViewerCompositingOperator newOp,oldOp;
+    ViewerCompositingOperatorEnum newOp,oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
         oldOp = _imp->_compOperator;
         switch (index) {
         case 0:
-            _imp->_compOperator = OPERATOR_NONE;
+            _imp->_compOperator = eViewerCompositingOperatorNone;
             _imp->_secondInputImage->setEnabled_natron(false);
             manageSlotsForInfoWidget(1, false);
-            _imp->_infosWidget[1]->hide();
+            _imp->_infoWidget[1]->hide();
             break;
         case 1:
-            _imp->_compOperator = OPERATOR_OVER;
+            _imp->_compOperator = eViewerCompositingOperatorOver;
             break;
         case 2:
-            _imp->_compOperator = OPERATOR_UNDER;
+            _imp->_compOperator = eViewerCompositingOperatorUnder;
             break;
         case 3:
-            _imp->_compOperator = OPERATOR_MINUS;
+            _imp->_compOperator = eViewerCompositingOperatorMinus;
             break;
         case 4:
-            _imp->_compOperator = OPERATOR_WIPE;
+            _imp->_compOperator = eViewerCompositingOperatorWipe;
             break;
         default:
             break;
@@ -2326,18 +2402,20 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
         newOp = _imp->_compOperator;
     }
 
-    if ( (oldOp == OPERATOR_NONE) && (newOp != OPERATOR_NONE) ) {
+    if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
     }
 
-    if ( (_imp->_compOperator != OPERATOR_NONE) && !_imp->_secondInputImage->isEnabled() ) {
+    if ( (_imp->_compOperator != eViewerCompositingOperatorNone) && !_imp->_secondInputImage->isEnabled() ) {
         _imp->_secondInputImage->setEnabled_natron(true);
         manageSlotsForInfoWidget(1, true);
-        _imp->_infosWidget[1]->show();
-    } else if (_imp->_compOperator == OPERATOR_NONE) {
+        _imp->_infoWidget[1]->show();
+    } else if (_imp->_compOperator == eViewerCompositingOperatorNone) {
         _imp->_secondInputImage->setEnabled_natron(false);
         manageSlotsForInfoWidget(1, false);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
+    } else {
+        _imp->_secondInputImage->setEnabled_natron(true);
     }
 
 
@@ -2345,24 +2423,24 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
 }
 
 void
-ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
+ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
 {
     int comboIndex;
 
     switch (op) {
-    case Natron::OPERATOR_NONE:
+    case Natron::eViewerCompositingOperatorNone:
         comboIndex = 0;
         break;
-    case Natron::OPERATOR_OVER:
+    case Natron::eViewerCompositingOperatorOver:
         comboIndex = 1;
         break;
-    case Natron::OPERATOR_UNDER:
+    case Natron::eViewerCompositingOperatorUnder:
         comboIndex = 2;
         break;
-    case Natron::OPERATOR_MINUS:
+    case Natron::eViewerCompositingOperatorMinus:
         comboIndex = 3;
         break;
-    case Natron::OPERATOR_WIPE:
+    case Natron::eViewerCompositingOperatorWipe:
         comboIndex = 4;
         break;
     default:
@@ -2376,7 +2454,7 @@ ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
     _imp->viewer->updateGL();
 }
 
-ViewerCompositingOperator
+ViewerCompositingOperatorEnum
 ViewerTab::getCompositingOperator() const
 {
     QMutexLocker l(&_imp->compOperatorMutex);
@@ -2415,16 +2493,16 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
     _imp->_viewerNode->setInputB(inputIndex);
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
-        //setCompositingOperator(Natron::OPERATOR_NONE);
-        _imp->_infosWidget[1]->hide();
+        //setCompositingOperator(Natron::eViewerCompositingOperatorNone);
+        _imp->_infoWidget[1]->hide();
     } else {
-        if ( !_imp->_infosWidget[1]->isVisible() ) {
-            _imp->_infosWidget[1]->show();
+        if ( !_imp->_infoWidget[1]->isVisible() ) {
+            _imp->_infoWidget[1]->show();
             manageSlotsForInfoWidget(1, true);
             _imp->_secondInputImage->setEnabled_natron(true);
-            if (_imp->_compOperator == Natron::OPERATOR_NONE) {
+            if (_imp->_compOperator == Natron::eViewerCompositingOperatorNone) {
                 _imp->viewer->resetWipeControls();
-                setCompositingOperator(Natron::OPERATOR_WIPE);
+                setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
             }
         }
     }
@@ -2453,29 +2531,29 @@ ViewerTab::onActiveInputsChanged()
 
         assert(indexInB != -1);
         _imp->_secondInputImage->setCurrentIndex_no_emit(indexInB);
-        if ( !_imp->_infosWidget[1]->isVisible() ) {
-            _imp->_infosWidget[1]->show();
+        if ( !_imp->_infoWidget[1]->isVisible() ) {
+            _imp->_infoWidget[1]->show();
             _imp->_secondInputImage->setEnabled_natron(true);
             manageSlotsForInfoWidget(1, true);
         }
     } else {
         _imp->_secondInputImage->setCurrentIndex_no_emit(0);
-        //setCompositingOperator(Natron::OPERATOR_NONE);
+        setCompositingOperator(Natron::eViewerCompositingOperatorNone);
         manageSlotsForInfoWidget(1, false);
-        _imp->_infosWidget[1]->hide();
+        _imp->_infoWidget[1]->hide();
         //_imp->_secondInputImage->setEnabled_natron(false);
     }
 
     if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
-         && ( getCompositingOperator() != OPERATOR_NONE) ) {
-        //setCompositingOperator(OPERATOR_NONE);
-        _imp->_infosWidget[1]->hide();
+         && ( getCompositingOperator() != eViewerCompositingOperatorNone) ) {
+        //setCompositingOperator(eViewerCompositingOperatorNone);
+        _imp->_infoWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->_secondInputImage->setEnabled_natron(false);
     } else if ( (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
-                && ( getCompositingOperator() == OPERATOR_NONE) ) {
+                && ( getCompositingOperator() == eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
-        setCompositingOperator(Natron::OPERATOR_WIPE);
+        setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
     }
 }
 
@@ -2544,19 +2622,19 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
     RenderEngine* engine = _imp->_viewerNode->getRenderEngine();
     assert(engine);
     if (connect) {
-        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infoWidget[textureIndex], SLOT( setFps(double,double) ) );
+        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->_infoWidget[textureIndex],SLOT( hideFps() ) );
     } else {
-        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infosWidget[textureIndex],
+        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->_infoWidget[textureIndex],
                             SLOT( setFps(double,double) ) );
-        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->_infosWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->_infoWidget[textureIndex],SLOT( hideFps() ) );
     }
 }
 
 void
-ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponents components,Natron::ImageBitDepth depth)
+ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth)
 {
-    _imp->_infosWidget[textureIndex]->setImageFormat(components,depth);
+    _imp->_infoWidget[textureIndex]->setImageFormat(components,depth);
 }
 
 void
@@ -2796,12 +2874,12 @@ ViewerTab::setInfobarVisible(bool visible)
                     break;
                 }
             }
-            if (getCompositingOperator() == OPERATOR_NONE || inputIndex == -1) {
+            if (getCompositingOperator() == eViewerCompositingOperatorNone || inputIndex == -1) {
                 continue;
             }
         }
         
-        _imp->_infosWidget[i]->setVisible(_imp->_infobarVisible);
+        _imp->_infoWidget[i]->setVisible(_imp->_infobarVisible);
     }
 
 }
@@ -3005,3 +3083,21 @@ ViewerTab::setDesiredFps(double fps)
     _imp->_viewerNode->getRenderEngine()->setDesiredFPS(fps);
 }
 
+void
+ViewerTab::onViewerRenderingStarted()
+{
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOn);
+}
+
+void
+ViewerTab::onViewerRenderingStopped()
+{
+    _imp->_refreshButton->setIcon(_imp->_iconRefreshOff);
+}
+
+void
+ViewerTab::setTurboButtonDown(bool down)
+{
+    _imp->turboButton->setDown(down);
+    _imp->turboButton->setChecked(down);
+}

@@ -19,6 +19,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QDebug>
 #include <QApplication>
 #include <QMenu>
+#include <QToolButton>
 #include <QActionGroup>
 
 #include "Engine/Image.h"
@@ -45,7 +46,7 @@ CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
 namespace { // protext local classes in anonymous namespace
-enum EventState
+enum EventStateEnum
 {
     DRAGGING_VIEW = 0,
     NONE = 1
@@ -150,7 +151,7 @@ struct HistogramPrivate
     ZoomContext zoomCtx;
     bool supportsGLSL;
     bool hasOpenGLVAOSupport;
-    EventState state;
+    EventStateEnum state;
     bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
     QColor _baseAxisColor;
     QColor _scaleColor;
@@ -1264,10 +1265,10 @@ Histogram::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
-        par = _imp->zoomCtx.par() / scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() / scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
@@ -1275,10 +1276,10 @@ Histogram::wheelEvent(QWheelEvent* e)
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         // Alt + Wheel: zoom time only, keep point under mouse
-        par = _imp->zoomCtx.par() * scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() * scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
@@ -1315,6 +1316,8 @@ Histogram::keyPressEvent(QKeyEvent* e)
         _imp->hasBeenModifiedSinceResize = false;
         _imp->zoomCtx.fill(0., 1., 0., 10.);
         computeHistogramAndRefresh();
+    } else {
+        QGLWidget::keyPressEvent(e);
     }
 }
 
@@ -1327,7 +1330,9 @@ Histogram::enterEvent(QEvent* e) {
     dynamic_cast<CurveWidget*>(currentFocus) ||
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
-    currentFocus->objectName() == "Properties";
+    dynamic_cast<QToolButton*>(currentFocus) ||
+    currentFocus->objectName() == "Properties" ||
+    currentFocus->objectName() == "SettingsPanel";
     
     if (canSetFocus) {
         setFocus();

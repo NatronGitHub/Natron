@@ -67,7 +67,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getDescription() const OVERRIDE;
-    virtual Natron::Status getRegionOfDefinition(U64 hash,SequenceTime time,
+    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,SequenceTime time,
                                                  const RenderScale & scale,
                                                  int view,
                                                  RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
@@ -92,21 +92,21 @@ public:
         return false;
     }
 
-    virtual Natron::Status render(SequenceTime time,
+    virtual Natron::StatusEnum render(SequenceTime time,
                                   const RenderScale & scale,
                                   const RectI & roi
                                   ,int view,
                                   bool /*isSequentialRender*/,
                                   bool /*isRenderResponseToUserInteraction*/,
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, int view, SequenceTime time) OVERRIDE FINAL;
-    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE FINAL;
+    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::EffectInstance::INSTANCE_SAFE;
+        return Natron::EffectInstance::eRenderSafetyInstanceSafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 private:
 

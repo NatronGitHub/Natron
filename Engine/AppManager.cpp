@@ -56,7 +56,7 @@ using namespace Natron;
 AppManager* AppManager::_instance = 0;
 struct AppManagerPrivate
 {
-    AppManager::AppType _appType; //< the type of app
+    AppManager::AppTypeEnum _appType; //< the type of app
     std::map<int,AppInstanceRef> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
@@ -104,33 +104,33 @@ struct AppManagerPrivate
     QAtomicInt runningThreadsCount;
     
     AppManagerPrivate()
-        : _appType(AppManager::APP_BACKGROUND)
-          , _appInstances()
-          , _availableID(0)
-          , _topLevelInstanceID(0)
-          , _settings( new Settings(NULL) )
-          , _formats()
-          , _plugins()
-          , ofxHost( new Natron::OfxHost() )
-          , _knobFactory( new KnobFactory() )
-          , _nodeCache()
-          , _viewerCache()
-          ,_backgroundIPC(0)
-          ,_loaded(false)
-          ,_binaryPath()
-          ,_wasAbortAnyProcessingCalled(false)
-          ,_nodesGlobalMemoryUse(0)
-          ,_ofxLogMutex()
-          ,_ofxLog()
-          ,maxCacheFiles(0)
-          ,currentCacheFilesCount(0)
-          ,currentCacheFilesCountMutex()
-          ,idealThreadCount(0)
-          ,nThreadsToRender(0)
-          ,nThreadsPerEffect(0)
-          ,useThreadPool(true)
-          ,nThreadsMutex()
-          ,runningThreadsCount()
+        : _appType(AppManager::eAppTypeBackground)
+        , _appInstances()
+        , _availableID(0)
+        , _topLevelInstanceID(0)
+        , _settings( new Settings(NULL) )
+        , _formats()
+        , _plugins()
+        , ofxHost( new Natron::OfxHost() )
+        , _knobFactory( new KnobFactory() )
+        , _nodeCache()
+        , _viewerCache()
+        ,_backgroundIPC(0)
+        ,_loaded(false)
+        ,_binaryPath()
+        ,_wasAbortAnyProcessingCalled(false)
+        ,_nodesGlobalMemoryUse(0)
+        ,_ofxLogMutex()
+        ,_ofxLog()
+        ,maxCacheFiles(0)
+        ,currentCacheFilesCount(0)
+        ,currentCacheFilesCountMutex()
+        ,idealThreadCount(0)
+        ,nThreadsToRender(0)
+        ,nThreadsPerEffect(0)
+        ,useThreadPool(true)
+        ,nThreadsMutex()
+        ,runningThreadsCount()
     {
         setMaxCacheFiles();
         
@@ -332,7 +332,7 @@ AppManager::parseCmdLineArgs(int argc,
 
 AppManager::AppManager()
     : QObject()
-      , _imp( new AppManagerPrivate() )
+    , _imp( new AppManagerPrivate() )
 {
     assert(!_instance);
     _instance = this;
@@ -417,7 +417,7 @@ AppManager::quit(AppInstance* instance)
     instance->aboutToQuit();
     std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
     assert( found != _imp->_appInstances.end() );
-    found->second.status = APP_INACTIVE;
+    found->second.status = eAppInstanceStatusInactive;
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.
     if (_imp->_appInstances.size() == 1) {
@@ -505,15 +505,15 @@ AppManager::loadInternal(const QString & projectFilename,
     if ( isBackground() ) {
         if ( !projectFilename.isEmpty() ) {
             if (!mainProcessServerName.isEmpty()) {
-                _imp->_appType = APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI;
+                _imp->_appType = eAppTypeBackgroundAutoRunLaunchedFromGui;
             } else {
-                _imp->_appType = APP_BACKGROUND_AUTO_RUN;
+                _imp->_appType = eAppTypeBackgroundAutoRun;
             }
         } else {
-            _imp->_appType = APP_BACKGROUND;
+            _imp->_appType = eAppTypeBackground;
         }
     } else {
-        _imp->_appType = APP_GUI;
+        _imp->_appType = eAppTypeGui;
     }
 
     AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
@@ -526,8 +526,8 @@ AppManager::loadInternal(const QString & projectFilename,
         onLoadCompleted();
 
         ///In background project auto-run the rendering is finished at this point, just exit the instance
-        if ( (_imp->_appType == APP_BACKGROUND_AUTO_RUN ||
-              _imp->_appType == APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI) && mainInstance ) {
+        if ( (_imp->_appType == eAppTypeBackgroundAutoRun ||
+              _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui) && mainInstance ) {
             mainInstance->quit();
         }
 
@@ -603,7 +603,7 @@ AppManager::removeInstance(int appID)
     }
 }
 
-AppManager::AppType
+AppManager::AppTypeEnum
 AppManager::getAppType() const
 {
     return _imp->_appType;
@@ -768,7 +768,7 @@ AppManager::registerAppInstance(AppInstance* app)
     AppInstanceRef ref;
 
     ref.app = app;
-    ref.status = Natron::APP_ACTIVE;
+    ref.status = Natron::eAppInstanceStatusActive;
     _imp->_appInstances.insert( std::make_pair(app->getAppID(),ref) );
 }
 
@@ -1041,9 +1041,9 @@ AppManager::getPluginBinary(const QString & pluginId,
 
     if ( matches.empty() ) {
         QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
-                      .arg(pluginId)
-                      .arg(majorVersion)
-                      .arg(minorVersion);
+                .arg(pluginId)
+                .arg(majorVersion)
+                .arg(minorVersion);
         throw std::invalid_argument( exc.toStdString() );
     } else {
         std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
@@ -1130,8 +1130,8 @@ AppManager::getImageOrCreate(const Natron::ImageKey & key,
 
 void
 AppManager::createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                        ImageLocker* imageLocker,
-                        boost::shared_ptr<Natron::Image>* returnValue) const
+                               ImageLocker* imageLocker,
+                               boost::shared_ptr<Natron::Image>* returnValue) const
 {
     _imp->_nodeCache->create(key, params, imageLocker, returnValue);
 }
@@ -1230,111 +1230,110 @@ AppManager::registerEngineMetaTypes() const
 void
 AppManagerPrivate::saveCaches()
 {
-    if (!appPTR->isBackground()) {
-        std::ofstream ofile;
-        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
-        try {
-            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-        } catch (const std::ofstream::failure & e) {
-            qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": " << e.what();
-
-            return;
-        }
-
-        if ( !ofile.good() ) {
-            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
-
-            return;
-        }
-
-        Natron::Cache<FrameEntry>::CacheTOC toc;
-        _viewerCache->save(&toc);
-
-        try {
-            boost::archive::binary_oarchive oArchive(ofile);
-            oArchive << toc;
-        } catch (const std::exception & e) {
-            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
-        }
-
-        ofile.close();
+    std::ofstream ofile;
+    ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
+    try {
+        ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
+    } catch (const std::ofstream::failure & e) {
+        qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": " << e.what();
+        
+        return;
     }
+    
+    if ( !ofile.good() ) {
+        qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+        
+        return;
+    }
+    
+    Natron::Cache<FrameEntry>::CacheTOC toc;
+    _viewerCache->save(&toc);
+    
+    try {
+        boost::archive::binary_oarchive oArchive(ofile);
+        oArchive << toc;
+    } catch (const std::exception & e) {
+        qDebug() << "Failed to serialize the cache table of contents: " << e.what();
+    }
+    
+    ofile.close();
+    
 
-//
-//    {
-//        std::ofstream ofile;
-//        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-//        std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
-//        try {
-//            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-//        } catch (const std::ofstream::failure & e) {
-//            qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
-//
-//            return;
-//        }
-//
-//        if ( !ofile.good() ) {
-//            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
-//
-//            return;
-//        }
-//
-//        Natron::Cache<Image>::CacheTOC toc;
-//        _nodeCache->save(&toc);
-//
-//        try {
-//            boost::archive::binary_oarchive oArchive(ofile);
-//            oArchive << toc;
-//            ofile.close();
-//        } catch (const std::exception & e) {
-//            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
-//        }
-//    }
+    //
+    //    {
+    //        std::ofstream ofile;
+    //        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    //        std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
+    //        try {
+    //            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
+    //        } catch (const std::ofstream::failure & e) {
+    //            qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
+    //
+    //            return;
+    //        }
+    //
+    //        if ( !ofile.good() ) {
+    //            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+    //
+    //            return;
+    //        }
+    //
+    //        Natron::Cache<Image>::CacheTOC toc;
+    //        _nodeCache->save(&toc);
+    //
+    //        try {
+    //            boost::archive::binary_oarchive oArchive(ofile);
+    //            oArchive << toc;
+    //            ofile.close();
+    //        } catch (const std::exception & e) {
+    //            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
+    //        }
+    //    }
 } // saveCaches
 
 void
 AppManagerPrivate::restoreCaches()
 {
-//    {
-//        if ( checkForCacheDiskStructure( _nodeCache->getCachePath() ) ) {
-//            std::ifstream ifile;
-//            std::string settingsFilePath = _nodeCache->getRestoreFilePath();
-//            try {
-//                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-//                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-//            } catch (const std::ifstream::failure & e) {
-//                qDebug() << "Failed to open the cache restoration file: " << e.what();
-//
-//                return;
-//            }
-//
-//            if ( !ifile.good() ) {
-//                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
-//                ifile.close();
-//
-//                return;
-//            }
-//
-//            Natron::Cache<Image>::CacheTOC tableOfContents;
-//            try {
-//                boost::archive::binary_iarchive iArchive(ifile);
-//                iArchive >> tableOfContents;
-//            } catch (const std::exception & e) {
-//                qDebug() << e.what();
-//                ifile.close();
-//
-//                return;
-//            }
-//
-//            ifile.close();
-//
-//            QFile restoreFile( settingsFilePath.c_str() );
-//            restoreFile.remove();
-//
-//            _nodeCache->restore(tableOfContents);
-//        }
-//    }
+    //    {
+    //        if ( checkForCacheDiskStructure( _nodeCache->getCachePath() ) ) {
+    //            std::ifstream ifile;
+    //            std::string settingsFilePath = _nodeCache->getRestoreFilePath();
+    //            try {
+    //                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    //                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
+    //            } catch (const std::ifstream::failure & e) {
+    //                qDebug() << "Failed to open the cache restoration file: " << e.what();
+    //
+    //                return;
+    //            }
+    //
+    //            if ( !ifile.good() ) {
+    //                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+    //                ifile.close();
+    //
+    //                return;
+    //            }
+    //
+    //            Natron::Cache<Image>::CacheTOC tableOfContents;
+    //            try {
+    //                boost::archive::binary_iarchive iArchive(ifile);
+    //                iArchive >> tableOfContents;
+    //            } catch (const std::exception & e) {
+    //                qDebug() << e.what();
+    //                ifile.close();
+    //
+    //                return;
+    //            }
+    //
+    //            ifile.close();
+    //
+    //            QFile restoreFile( settingsFilePath.c_str() );
+    //            restoreFile.remove();
+    //
+    //            _nodeCache->restore(tableOfContents);
+    //        }
+    //    }
     if (!appPTR->isBackground()) {
         if ( checkForCacheDiskStructure( _viewerCache->getCachePath() ) ) {
             std::ifstream ifile;
@@ -1490,7 +1489,7 @@ AppManagerPrivate::setMaxCacheFiles()
             }
         }
     }
-//#elif defined(Q_OS_WIN)
+    //#elif defined(Q_OS_WIN)
     // The following code sets the limit for stdio-based calls only.
     // Note that low-level calls (CreateFile(), WriteFile(), ReadFile(), CloseHandle()...) are not affected by this limit.
     // References:
@@ -1723,7 +1722,7 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
         if (nodeCacheSize == 0 || (viewerRamCacheSize / (double)nodeCacheSize) > playbackRAMPercent) {
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)
-            << ", clearing last recently used ViewerCache texture...";
+                     << ", clearing last recently used ViewerCache texture...";
 #endif
             
             if (!_imp->_viewerCache->evictLRUInMemoryEntry()) {
@@ -1734,7 +1733,7 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
         } else {
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)
-            << ", clearing last recently used NodeCache image...";
+                     << ", clearing last recently used NodeCache image...";
 #endif
             if (!_imp->_nodeCache->evictLRUInMemoryEntry()) {
                 break;
@@ -1833,6 +1832,20 @@ errorDialog(const std::string & title,
 }
 
 void
+errorDialog(const std::string & title,
+            const std::string & message,
+            bool* stopAsking)
+{
+    appPTR->hideSplashScreen();
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    if ( topLvlInstance && !appPTR->isBackground() ) {
+        topLvlInstance->errorDialog(title,message,stopAsking);
+    } else {
+        std::cout << "ERROR: " << title << " :" <<  message << std::endl;
+    }
+}
+
+void
 warningDialog(const std::string & title,
               const std::string & message)
 {
@@ -1844,6 +1857,20 @@ warningDialog(const std::string & title,
         std::cout << "WARNING: " << title << " :" << message << std::endl;
     }
 }
+void
+warningDialog(const std::string & title,
+              const std::string & message,
+              bool* stopAsking)
+{
+    appPTR->hideSplashScreen();
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    if ( topLvlInstance && !appPTR->isBackground() ) {
+        topLvlInstance->warningDialog(title,message, stopAsking);
+    } else {
+        std::cout << "WARNING: " << title << " :" << message << std::endl;
+    }
+}
+
 
 void
 informationDialog(const std::string & title,
@@ -1858,11 +1885,26 @@ informationDialog(const std::string & title,
     }
 }
 
-Natron::StandardButton
+void
+informationDialog(const std::string & title,
+                  const std::string & message,
+                  bool* stopAsking)
+{
+    appPTR->hideSplashScreen();
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    if ( topLvlInstance && !appPTR->isBackground() ) {
+        topLvlInstance->informationDialog(title,message,stopAsking);
+    } else {
+        std::cout << "INFO: " << title << " :" << message << std::endl;
+    }
+}
+
+
+Natron::StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
                Natron::StandardButtons buttons,
-               Natron::StandardButton defaultButton)
+               Natron::StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
@@ -1872,7 +1914,26 @@ questionDialog(const std::string & title,
         std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
 
-        return Natron::Yes;
+        return Natron::eStandardButtonYes;
+    }
+}
+
+Natron::StandardButtonEnum
+questionDialog(const std::string & title,
+               const std::string & message,
+               Natron::StandardButtons buttons,
+               Natron::StandardButtonEnum defaultButton,
+               bool* stopAsking)
+{
+    appPTR->hideSplashScreen();
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    if ( topLvlInstance && !appPTR->isBackground() ) {
+        return topLvlInstance->questionDialog(title,message,buttons,defaultButton,stopAsking);
+    } else {
+        std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
+        std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
+
+        return Natron::eStandardButtonYes;
     }
 }
 } //Namespace Natron

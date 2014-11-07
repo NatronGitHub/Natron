@@ -91,7 +91,7 @@ TimeLine::setFrameRange(SequenceTime first,
 void
 TimeLine::seekFrame(SequenceTime frame,
                     Natron::OutputEffectInstance* caller,
-                    Natron::TIMELINE_CHANGE_REASON reason)
+                    Natron::TimelineChangeReasonEnum reason)
 {
     bool changed = false;
     {
@@ -122,7 +122,7 @@ TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller)
     if (_project) {
         _project->setLastTimelineSeekCaller(caller);
     }
-    emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
+    emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -137,7 +137,7 @@ TimeLine::decrementCurrentFrame(Natron::OutputEffectInstance* caller)
     if (_project) {
         _project->setLastTimelineSeekCaller(caller);
     }
-    emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
+    emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -155,7 +155,7 @@ TimeLine::onFrameChanged(SequenceTime frame)
     if (changed) {
         /*This function is called in response to a signal emitted by a single timeline gui, but we also
            need to sync all the other timelines potentially existing.*/
-        emit frameChanged(frame, (int)Natron::USER_SEEK);
+        emit frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
     }
 }
 
@@ -174,7 +174,7 @@ TimeLine::setBoundaries(SequenceTime leftBound,
     }
 
     if (changed) {
-        emit boundariesChanged(leftBound, rightBound, Natron::PLUGIN_EDITED);
+        emit boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonPluginEdited);
     }
 }
 
@@ -194,7 +194,7 @@ TimeLine::onBoundariesChanged(SequenceTime leftBound,
     }
 
     if (changed) {
-        emit boundariesChanged(leftBound, rightBound, Natron::USER_EDITED);
+        emit boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonUserEdited);
     }
 }
 
@@ -328,7 +328,7 @@ TimeLine::goToPreviousKeyframe()
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if ( lowerBound != _keyframes.begin() ) {
         --lowerBound;
-        seekFrame(*lowerBound,NULL,Natron::PLAYBACK_SEEK);
+        seekFrame(*lowerBound,NULL,Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -341,7 +341,7 @@ TimeLine::goToNextKeyframe()
     _keyframes.sort();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if ( upperBound != _keyframes.end() ) {
-        seekFrame(*upperBound,NULL,Natron::PLAYBACK_SEEK);
+        seekFrame(*upperBound,NULL,Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 

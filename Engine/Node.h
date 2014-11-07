@@ -232,13 +232,13 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb,Natron::ImageComponents comp) const;
+    bool isSupportedComponent(int inputNb,Natron::ImageComponentsEnum comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    Natron::ImageComponents findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const;
+    Natron::ImageComponentsEnum findClosestSupportedComponents(int inputNb,Natron::ImageComponentsEnum comp) const;
 
     /**
      * @brief Returns the index of the channel to use to produce the mask.
@@ -323,6 +323,21 @@ public:
      * represented as empty strings.
      **/
     void getInputNames(std::vector<std::string> & inputNames) const;
+    
+    enum CanConnectInputReturnValue
+    {
+        eCanConnectInput_ok = 0,
+        eCanConnectInput_indexOutOfRange,
+        eCanConnectInput_inputAlreadyConnected,
+        eCanConnectInput_givenNodeNotConnectable,
+        eCanConnectInput_graphCycles,
+        eCanConnectInput_differentPars
+    };
+    /**
+     * @brief Returns true if a connection is possible for the given input number of the current node 
+     * to the given input.
+     **/
+    Node::CanConnectInputReturnValue canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const;
 
     /** @brief Adds the node parent to the input inputNumber of the
      * node. Returns true if it succeeded, false otherwise.
@@ -474,24 +489,24 @@ public:
      * @brief Use this function to post a transient message to the user. It will be displayed using
      * a dialog. The message can be of 4 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
-     * WARNING_MESSAGE : you want to inform the user that something important happened.
-     * ERROR_MESSAGE : you want to inform the user an error occured.
-     * QUESTION_MESSAGE : you want to ask the user about something.
-     * The function will return true always except for a message of type QUESTION_MESSAGE, in which
+     * eMessageTypeWarning : you want to inform the user that something important happened.
+     * eMessageTypeError : you want to inform the user an error occured.
+     * eMessageTypeQuestion : you want to ask the user about something.
+     * The function will return true always except for a message of type eMessageTypeQuestion, in which
      * case the function may return false if the user pressed the 'No' button.
      * @param content The message you want to pass.
      **/
-    bool message(Natron::MessageType type,const std::string & content) const;
+    bool message(Natron::MessageTypeEnum type,const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
      * node's graphical interface and on any connected viewer. The message can be of 3 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
-     * WARNING_MESSAGE : you want to inform the user that something important happened.
-     * ERROR_MESSAGE : you want to inform the user an error occured.
+     * eMessageTypeWarning : you want to inform the user that something important happened.
+     * eMessageTypeError : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(Natron::MessageType type,const std::string & content);
+    void setPersistentMessage(Natron::MessageTypeEnum type,const std::string & content);
 
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
@@ -521,7 +536,7 @@ public:
     ///called by EffectInstance
     void unregisterPluginMemory(size_t nBytes);
 
-    //see INSTANCE_SAFE in EffectInstance::renderRoI
+    //see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     QMutex & getRenderInstancesSharedMutex();
 
@@ -559,15 +574,15 @@ public:
 
     void onMultipleInputChanged();
 
-    void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reason);
+    void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;
 
     void setNodeDisabled(bool disabled);
 
-    Natron::ImageBitDepth getBitDepth() const;
+    Natron::ImageBitDepthEnum getBitDepth() const;
 
-    bool isSupportedBitDepth(Natron::ImageBitDepth depth) const;
+    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
 
     void toggleBitDepthWarning(bool on,
                                const QString & tooltip)
@@ -602,7 +617,7 @@ public:
 
     /**
      * @brief Returns whether this node or one of its inputs (recursively) is marked as
-     * Natron::EFFECT_ONLY_SEQUENTIAL
+     * Natron::eSequentialPreferenceOnlySequential
      *
      * @param nodeName If the return value is true, this will be set to the name of the node
      * which is sequential.
@@ -737,6 +752,7 @@ public slots:
     
     void dequeueActions();
 
+    void onParentMultiInstanceInputChanged(int input);
 
 signals:
 
@@ -819,6 +835,8 @@ protected:
     void computeHash();
 
 private:
+    
+    std::string makeInfoForInput(int inputNumber) const;
 
     void invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes);
     
@@ -855,6 +873,8 @@ private:
 class InspectorNode
     : public Natron::Node
 {
+    Q_OBJECT
+    
     int _inputsCount;
     int _activeInput;
     mutable QMutex _activeInputMutex;

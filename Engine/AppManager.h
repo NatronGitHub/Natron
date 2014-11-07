@@ -52,17 +52,17 @@ class FrameEntry;
 class Plugin;
 class CacheSignalEmitter;
 
-enum AppInstanceStatus
+enum AppInstanceStatusEnum
 {
-    APP_INACTIVE = 0,     //< the app has not been loaded yet or has been closed already
-    APP_ACTIVE     //< the app is active and can be used
+    eAppInstanceStatusInactive = 0,     //< the app has not been loaded yet or has been closed already
+    eAppInstanceStatusActive     //< the app is active and can be used
 };
 }
 
 struct AppInstanceRef
 {
     AppInstance* app;
-    Natron::AppInstanceStatus status;
+    Natron::AppInstanceStatusEnum status;
 };
 
 struct AppManagerPrivate;
@@ -73,17 +73,17 @@ class AppManager
 
 public:
 
-    enum AppType
+    enum AppTypeEnum
     {
-        APP_BACKGROUND = 0, //< a background AppInstance which will not do anything but instantiate the class making it ready for use.
+        eAppTypeBackground = 0, //< a background AppInstance which will not do anything but instantiate the class making it ready for use.
                             //this is used by the unit tests
 
-        APP_BACKGROUND_AUTO_RUN, //< a background AppInstance that will launch a project and render it. If projectName is empty or
+        eAppTypeBackgroundAutoRun, //< a background AppInstance that will launch a project and render it. If projectName is empty or
                                  //writers is empty, it doesn't make sense to call AppInstance with this parameter.
         
-        APP_BACKGROUND_AUTO_RUN_LAUNCHED_FROM_GUI, //same as APP_BACKGROUND_AUTO_RUN but a bg process launched by GUI of a main process
+        eAppTypeBackgroundAutoRunLaunchedFromGui, //same as eAppTypeBackgroundAutoRun but a bg process launched by GUI of a main process
 
-        APP_GUI //< a GUI AppInstance, the end-user can interact with it.
+        eAppTypeGui //< a GUI AppInstance, the end-user can interact with it.
     };
 
 
@@ -91,7 +91,7 @@ public:
 
     /**
      * @brief This function initializes the QCoreApplication (or QApplication) object and the AppManager object (load plugins etc...)
-     * It must be called right away after the constructor. It cannot be put in the constructor as this function relies on RTTI infos.
+     * It must be called right away after the constructor. It cannot be put in the constructor as this function relies on RTTI info.
      * @param argc The number of arguments passed to the main function.
      * @param argv An array of strings passed to the main function.
      * @param projectFilename The project absolute filename that the application's main instance should try to load.
@@ -117,7 +117,7 @@ public:
         return true;
     }
 
-    AppManager::AppType getAppType() const;
+    AppManager::AppTypeEnum getAppType() const;
     static void printBackGroundWelcomeMessage();
     static void printUsage(const std::string& programName);
 
@@ -407,14 +407,21 @@ private:
 
 namespace Natron {
 void errorDialog(const std::string & title,const std::string & message);
+void errorDialog(const std::string & title,const std::string & message,bool* stopAsking);
 
 void warningDialog(const std::string & title,const std::string & message);
+void warningDialog(const std::string & title,const std::string & message,bool* stopAsking);
 
 void informationDialog(const std::string & title,const std::string & message);
+void informationDialog(const std::string & title,const std::string & message,bool* stopAsking);
 
-Natron::StandardButton questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
-                                          Natron::StandardButtons(Natron::Yes | Natron::No),
-                                      Natron::StandardButton defaultButton = Natron::NoButton);
+Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
+                                          Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                      Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+    
+Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons,
+                                          Natron::StandardButtonEnum defaultButton,
+                                          bool* stopAsking);
 
 template <class K>
 boost::shared_ptr<K> createKnob(KnobHolder*  holder,

@@ -144,6 +144,7 @@ private:
     virtual QSize minimumSizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     void growMaximumWidthFromText(const QString & str);
     void createMenu();

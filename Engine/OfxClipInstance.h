@@ -145,6 +145,9 @@ public:
     /// If view is -1, guess it (e.g. from the last renderargs)
     virtual OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    /// given the colour component, find the nearest set of supported colour components
+    /// override this for extra wierd custom component depths
+    virtual const std::string &findSupportedComp(const std::string &s) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// override this to set the view to be returned by getImage()
     /// This is called by Instance::renderAction() for each clip, before calling
@@ -171,10 +174,10 @@ public:
     int getInputNb() const WARN_UNUSED_RETURN;
 
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
-    static std::string natronsComponentsToOfxComponents(Natron::ImageComponents comp);
-    static Natron::ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
-    static Natron::ImageBitDepth ofxDepthToNatronDepth(const std::string & depth);
-    static std::string natronsDepthToOfxDepth(Natron::ImageBitDepth depth);
+    static std::string natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp);
+    static Natron::ImageComponentsEnum ofxComponentsToNatronComponents(const std::string & comp);
+    static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
+    static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
 
 private:
 

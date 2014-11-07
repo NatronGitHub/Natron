@@ -122,9 +122,9 @@ RenderingProgressDialog::onProcessFinished(int retCode)
         bool showLog = false;
         if (retCode == 0) {
             if (_imp->_process) {
-                Natron::StandardButton reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
+                Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
                                                                                                      "Would you like to see the log ?").toStdString() );
-                if (reply == Natron::Yes) {
+                if (reply == Natron::eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
@@ -132,10 +132,10 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             }
         } else if (retCode == 1) {
             if (_imp->_process) {
-                Natron::StandardButton reply = Natron::questionDialog( tr("Render").toStdString(),
+                Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),
                                                                        tr("The render ended with a return code of 1, a problem occured.\n"
                                                                           "Would you like to see the log ?").toStdString() );
-                if (reply == Natron::Yes) {
+                if (reply == Natron::eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
@@ -143,9 +143,9 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             }
         } else {
             if (_imp->_process) {
-                Natron::StandardButton reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
+                Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
                                                                                                      "Would you like to see the log ?").toStdString() );
-                if (reply == Natron::Yes) {
+                if (reply == Natron::eStandardButtonYes) {
                     showLog = true;
                 }
             } else {

@@ -41,6 +41,17 @@ AnimatedCheckBox::setDirty(bool b)
 }
 
 void
+AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Space) {
+        setChecked(!isChecked());
+    } else {
+        QCheckBox::keyPressEvent(e);
+    }
+    
+}
+
+void
 AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 {
     if ( readOnly && buttonDownIsLeft(e) ) {

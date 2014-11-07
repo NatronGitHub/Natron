@@ -41,6 +41,9 @@
 #define kShortcutIDActionSaveAsProject "saveAsProject"
 #define kShortcutDescActionSaveAsProject "Save as project"
 
+#define kShortcutIDActionSaveAndIncrVersion "saveAndIncr"
+#define kShortcutDescActionSaveAndIncrVersion "Version project"
+
 #define kShortcutIDActionPreferences "preferences"
 #define kShortcutDescActionPreferences "Preferences"
 
@@ -177,6 +180,9 @@
 #define kShortcutIDActionProxyLevel32 "proxy32"
 #define kShortcutDescActionProxyLevel32 "32"
 
+#define kShortcutIDActionZoomLevel100 "100%"
+#define kShortcutDescActionZoomLevel100 "100%"
+
 #define kShortcutIDActionHideOverlays "hideOverlays"
 #define kShortcutDescActionHideOverlays "Show/Hide overlays"
 
@@ -195,8 +201,8 @@
 #define kShortcutIDActionHideTop "hideTop"
 #define kShortcutDescActionHideTop "Show/Hide top toolbar"
 
-#define kShortcutIDActionHideInfobar "hideInfos"
-#define kShortcutDescActionHideInfobar "Show/Hide infos bar"
+#define kShortcutIDActionHideInfobar "hideInfo"
+#define kShortcutDescActionHideInfobar "Show/Hide info bar"
 
 #define kShortcutIDActionHideAll "hideAll"
 #define kShortcutDescActionHideAll "Hide all"
@@ -388,6 +394,11 @@
 #define kShortcutIDActionGraphFindNode "findNode"
 #define kShortcutDescActionGraphFindNode "Find"
 
+#define kShortcutIDActionGraphRenameNode "renameNode"
+#define kShortcutDescActionGraphRenameNode "Rename node"
+
+#define kShortcutIDActionGraphExtractNode "extractNode"
+#define kShortcutDescActionGraphExtractNode "Extract node"
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
 #define kShortcutDescActionCurveEditorRemoveKeys "Delete keyframes"

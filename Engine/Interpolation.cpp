@@ -339,8 +339,8 @@ Natron::interpolate(double tcur,
                     double tnext,
                     const double vnext,                      //end control point
                     double currentTime,
-                    Natron::KeyframeType interp,
-                    Natron::KeyframeType interpNext)
+                    Natron::KeyframeTypeEnum interp,
+                    Natron::KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -348,20 +348,20 @@ Natron::interpolate(double tcur,
     double P0pr = vcurDerivRight * (tnext - tcur); // normalize for x \in [0,1]
     double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]
 
-    // if the following is true, this makes the special case for KEYFRAME_CONSTANT at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
-    assert( ( (interp == KEYFRAME_NONE) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == KEYFRAME_NONE) ) );
+    // if the following is true, this makes the special case for eKeyframeTypeConstant at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
+    assert( ( (interp == eKeyframeTypeNone) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == eKeyframeTypeNone) ) );
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
-    if (interp == KEYFRAME_NONE) {
+    if (interp == eKeyframeTypeNone) {
         // virtual previous frame at t-1
         P0 = P3 - P3pl;
         P0pr = P3pl;
         tcur = tnext - 1.;
-    } else if (interp == KEYFRAME_CONSTANT) {
+    } else if (interp == eKeyframeTypeConstant) {
         P0pr = 0.;
         P3pl = 0.;
         P3 = P0;
     }
-    if (interpNext == KEYFRAME_NONE) {
+    if (interpNext == eKeyframeTypeNone) {
         // virtual next frame at t+1
         P3pl = P0pr;
         P3 = P0 + P0pr;
@@ -388,8 +388,8 @@ Natron::derive(double tcur,
                double tnext,
                const double vnext,                           //end control point
                double currentTime,
-               Natron::KeyframeType interp,
-               Natron::KeyframeType interpNext)
+               Natron::KeyframeTypeEnum interp,
+               Natron::KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -397,20 +397,20 @@ Natron::derive(double tcur,
     double P0pr = vcurDerivRight * (tnext - tcur); // normalize for x \in [0,1]
     double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]
 
-    // if the following is true, this makes the special case for KEYFRAME_CONSTANT at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
-    assert( ( (interp == KEYFRAME_NONE) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == KEYFRAME_NONE) ) );
+    // if the following is true, this makes the special case for eKeyframeTypeConstant at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
+    assert( ( (interp == eKeyframeTypeNone) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == eKeyframeTypeNone) ) );
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
-    if (interp == KEYFRAME_NONE) {
+    if (interp == eKeyframeTypeNone) {
         // virtual previous frame at t-1
         P0 = P3 - P3pl;
         P0pr = P3pl;
         tcur = tnext - 1.;
-    } else if (interp == KEYFRAME_CONSTANT) {
+    } else if (interp == eKeyframeTypeConstant) {
         P0pr = 0.;
         P3pl = 0.;
         P3 = P0;
     }
-    if (interpNext == KEYFRAME_NONE) {
+    if (interpNext == eKeyframeTypeNone) {
         // virtual next frame at t+1
         P3pl = P0pr;
         P3 = P0 + P0pr;
@@ -439,8 +439,8 @@ Natron::derive_clamp(double tcur,
                      double currentTime,
                      double vmin,
                      double vmax,
-                     KeyframeType interp,
-                     KeyframeType interpNext)
+                     KeyframeTypeEnum interp,
+                     KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -448,20 +448,20 @@ Natron::derive_clamp(double tcur,
     double P0pr = vcurDerivRight * (tnext - tcur); // normalize for x \in [0,1]
     double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]
 
-    // if the following is true, this makes the special case for KEYFRAME_CONSTANT at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
-    assert( ( (interp == KEYFRAME_NONE) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == KEYFRAME_NONE) ) );
+    // if the following is true, this makes the special case for eKeyframeTypeConstant at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
+    assert( ( (interp == eKeyframeTypeNone) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == eKeyframeTypeNone) ) );
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
-    if (interp == KEYFRAME_NONE) {
+    if (interp == eKeyframeTypeNone) {
         // virtual previous frame at t-1
         P0 = P3 - P3pl;
         P0pr = P3pl;
         tcur = tnext - 1.;
-    } else if (interp == KEYFRAME_CONSTANT) {
+    } else if (interp == eKeyframeTypeConstant) {
         P0pr = 0.;
         P3pl = 0.;
         P3 = P0;
     }
-    if (interpNext == KEYFRAME_NONE) {
+    if (interpNext == eKeyframeTypeNone) {
         // virtual next frame at t+1
         P3pl = P0pr;
         P3 = P0 + P0pr;
@@ -491,8 +491,8 @@ Natron::integrate(double tcur,
                   const double vnext,                      //end control point
                   double time1,
                   double time2,
-                  Natron::KeyframeType interp,
-                  Natron::KeyframeType interpNext)
+                  Natron::KeyframeTypeEnum interp,
+                  Natron::KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -501,19 +501,19 @@ Natron::integrate(double tcur,
     double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]
 
     // in the next expression, the correct test is t2 <= tnext (not <), in order to integrate from tcur to tnext
-    assert( ( (interp == KEYFRAME_NONE) || (tcur <= time1) ) && (time1 <= time2) && ( (time2 <= tnext) || (interpNext == KEYFRAME_NONE) ) );
+    assert( ( (interp == eKeyframeTypeNone) || (tcur <= time1) ) && (time1 <= time2) && ( (time2 <= tnext) || (interpNext == eKeyframeTypeNone) ) );
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
-    if (interp == KEYFRAME_NONE) {
+    if (interp == eKeyframeTypeNone) {
         // virtual previous frame at t-1
         P0 = P3 - P3pl;
         P0pr = P3pl;
         tcur = tnext - 1.;
-    } else if (interp == KEYFRAME_CONSTANT) {
+    } else if (interp == eKeyframeTypeConstant) {
         P0pr = 0.;
         P3pl = 0.;
         P3 = P0;
     }
-    if (interpNext == KEYFRAME_NONE) {
+    if (interpNext == eKeyframeTypeNone) {
         // virtual next frame at t+1
         P3pl = P0pr;
         P3 = P0 + P0pr;
@@ -627,8 +627,8 @@ Natron::integrate_clamp(double tcur,
                         double time2,
                         double vmin,
                         double vmax,
-                        Natron::KeyframeType interp,
-                        Natron::KeyframeType interpNext)
+                        Natron::KeyframeTypeEnum interp,
+                        Natron::KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -637,19 +637,19 @@ Natron::integrate_clamp(double tcur,
     double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]
 
     // in the next expression, the correct test is t2 <= tnext (not <), in order to integrate from tcur to tnext
-    assert( ( (interp == KEYFRAME_NONE) || (tcur <= time1) ) && (time1 <= time2) && ( (time2 <= tnext) || (interpNext == KEYFRAME_NONE) ) );
+    assert( ( (interp == eKeyframeTypeNone) || (tcur <= time1) ) && (time1 <= time2) && ( (time2 <= tnext) || (interpNext == eKeyframeTypeNone) ) );
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
-    if (interp == KEYFRAME_NONE) {
+    if (interp == eKeyframeTypeNone) {
         // virtual previous frame at t-1
         P0 = P3 - P3pl;
         P0pr = P3pl;
         tcur = tnext - 1.;
-    } else if (interp == KEYFRAME_CONSTANT) {
+    } else if (interp == eKeyframeTypeConstant) {
         P0pr = 0.;
         P3pl = 0.;
         P3 = P0;
     }
-    if (interpNext == KEYFRAME_NONE) {
+    if (interpNext == eKeyframeTypeNone) {
         // virtual next frame at t+1
         P3pl = P0pr;
         P3 = P0 + P0pr;
@@ -835,9 +835,9 @@ Natron::integrate_clamp(double tcur,
 
  */
 void
-Natron::autoComputeDerivatives(Natron::KeyframeType interpPrev,
-                               Natron::KeyframeType interp,
-                               Natron::KeyframeType interpNext,
+Natron::autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
+                               Natron::KeyframeTypeEnum interp,
+                               Natron::KeyframeTypeEnum interpNext,
                                double tprev,
                                const double vprev,                    // vprev = Q0
                                double tcur,
@@ -855,10 +855,10 @@ Natron::autoComputeDerivatives(Natron::KeyframeType interpPrev,
     const double P3 = vnext;
 
     // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
-    if (interpPrev == KEYFRAME_NONE) {
+    if (interpPrev == eKeyframeTypeNone) {
         tprev = tcur - 1.;
     }
-    if (interpNext == KEYFRAME_NONE) {
+    if (interpNext == eKeyframeTypeNone) {
         tnext = tcur + 1.;
     }
     const double Q0pr = vprevDerivRight * (tcur - tprev); // normalize for x \in [0,1]
@@ -867,7 +867,7 @@ Natron::autoComputeDerivatives(Natron::KeyframeType interpPrev,
     double Q3pl = double();
 
     // if there are no keyframes before and after, the derivatives are zero
-    if ( (interpPrev == KEYFRAME_NONE) && (interpNext == KEYFRAME_NONE) ) {
+    if ( (interpPrev == eKeyframeTypeNone) && (interpNext == eKeyframeTypeNone) ) {
         *vcurDerivRight = 0.;
         *vcurDerivLeft = 0.;
     }
@@ -876,41 +876,41 @@ Natron::autoComputeDerivatives(Natron::KeyframeType interpPrev,
     bool keyframe_none_same_derivative = false;
 
     // if there is no next/previous keyframe, use LINEAR interpolation, and set keyframe_none_same_derivative
-    if ( (interpPrev == KEYFRAME_NONE) || (interpNext == KEYFRAME_NONE) ) {
+    if ( (interpPrev == eKeyframeTypeNone) || (interpNext == eKeyframeTypeNone) ) {
         // Do this before modifying interp (next line)
-        keyframe_none_same_derivative = (interp == KEYFRAME_CATMULL_ROM || interp == KEYFRAME_CUBIC);
-        interp = KEYFRAME_LINEAR;
+        keyframe_none_same_derivative = (interp == eKeyframeTypeCatmullRom || interp == eKeyframeTypeCubic);
+        interp = eKeyframeTypeLinear;
     }
 
     switch (interp) {
-    case KEYFRAME_LINEAR:
+    case eKeyframeTypeLinear:
         /* Linear means the the 2nd derivative of the cubic curve at the point 'cur' is zero. */
-        if (interpNext == KEYFRAME_NONE) {
+        if (interpNext == eKeyframeTypeNone) {
             P0pr = 0.;
-        } else if (interpNext == KEYFRAME_LINEAR) {
+        } else if (interpNext == eKeyframeTypeLinear) {
             P0pr = -P0 + P3;
         } else {
             P0pr = -0.3e1 / 0.2e1 * P0 + 0.3e1 / 0.2e1 * P3 - P3pl / 0.2e1;
         }
 
-        if (interpPrev == KEYFRAME_NONE) {
+        if (interpPrev == eKeyframeTypeNone) {
             Q3pl = 0.;
-        } else if (interpPrev == KEYFRAME_LINEAR) {
+        } else if (interpPrev == eKeyframeTypeLinear) {
             Q3pl = -Q0 + P0;
         } else {
             Q3pl = -0.3e1 / 0.2e1 * Q0 - Q0pr / 0.2e1 + 0.3e1 / 0.2e1 * P0;
         }
 
         if (keyframe_none_same_derivative) {
-            if (interpNext == KEYFRAME_NONE) {
+            if (interpNext == eKeyframeTypeNone) {
                 P0pr = Q3pl / (tcur - tprev);
-            } else if (interpPrev == KEYFRAME_NONE) {
+            } else if (interpPrev == eKeyframeTypeNone) {
                 Q3pl = P0pr / (tnext - tcur);
             }
         }
         break;
 
-    case KEYFRAME_CATMULL_ROM: {
+    case eKeyframeTypeCatmullRom: {
         /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the derivatives*/
         double deriv = (vnext - vprev) / (tnext - tprev);
         P0pr = deriv * (tnext - tcur);
@@ -918,7 +918,7 @@ Natron::autoComputeDerivatives(Natron::KeyframeType interpPrev,
         break;
     }
 
-    case KEYFRAME_SMOOTH:
+    case eKeyframeTypeSmooth:
 
         // If vcur is outside of the range [vprev,vnext], then interpolation is horizontal
         if ( ( ( vprev > vcur) && ( vcur < vnext) ) || ( ( vprev < vcur) && ( vcur > vnext) ) ) {
@@ -962,22 +962,22 @@ Natron::autoComputeDerivatives(Natron::KeyframeType interpPrev,
         }
         break;
 
-    case KEYFRAME_HORIZONTAL:
-    case KEYFRAME_CONSTANT:
+    case eKeyframeTypeHorizontal:
+    case eKeyframeTypeConstant:
         /*The values are the same than the keyframe they belong. */
         P0pr = 0.;
         Q3pl = 0.;
         break;
 
-    case KEYFRAME_CUBIC:
+    case eKeyframeTypeCubic:
         /* Cubic means the the 2nd derivative of the cubic curve at the point 'cur' are equal. */
-        if ( ( interpPrev == KEYFRAME_LINEAR) && ( interpNext == KEYFRAME_LINEAR) ) {
+        if ( ( interpPrev == eKeyframeTypeLinear) && ( interpNext == eKeyframeTypeLinear) ) {
             P0pr = -(double)( (Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (tcur - tprev) ) / 0.2e1;
             Q3pl = (double)( (Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (-tnext + tcur) ) / 0.2e1;
-        } else if (interpPrev == KEYFRAME_LINEAR) {
+        } else if (interpPrev == eKeyframeTypeLinear) {
             P0pr = -(double)( (-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev) ) / 0.7e1;
             Q3pl = (double)( (-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur) ) / 0.7e1;
-        } else if (interpNext == KEYFRAME_LINEAR) {
+        } else if (interpNext == eKeyframeTypeLinear) {
             P0pr = -(double)( (-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev) ) / 0.7e1;
             Q3pl = (double)( (-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur) ) / 0.7e1;
         } else {
@@ -987,10 +987,10 @@ Natron::autoComputeDerivatives(Natron::KeyframeType interpPrev,
         }
         break;
 
-    case KEYFRAME_NONE:
-    case KEYFRAME_FREE:
-    case KEYFRAME_BROKEN:
-        throw std::runtime_error("Cannot compute derivatives at KEYFRAME_NONE, KEYFRAME_FREE or KEYFRAME_BROKEN");
+    case eKeyframeTypeNone:
+    case eKeyframeTypeFree:
+    case eKeyframeTypeBroken:
+        throw std::runtime_error("Cannot compute derivatives at eKeyframeTypeNone, eKeyframeTypeFree or eKeyframeTypeBroken");
     } // switch
 
     *vcurDerivRight = P0pr / (tnext - tcur); // denormalize for t \in [tcur,tnext]

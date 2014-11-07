@@ -48,6 +48,7 @@ struct NodeBackDropPrivate
     NodeBackDrop* master;
     DockablePanel* settingsPanel;
     boost::shared_ptr<String_Knob> knobLabel;
+    boost::shared_ptr<Int_Knob> headerFontSize;
     mutable QMutex positionMutex;
     mutable QMutex bboxMutex;
     mutable QMutex selectedMutex;
@@ -67,6 +68,7 @@ struct NodeBackDropPrivate
           , master(0)
           , settingsPanel(0)
           , knobLabel()
+          , headerFontSize()
           , positionMutex()
           , selectedMutex()
           , isSelected(false)
@@ -165,11 +167,20 @@ NodeBackDrop::~NodeBackDrop()
 void
 NodeBackDrop::initializeKnobs()
 {
-    _imp->knobLabel = Natron::createKnob<String_Knob>( this, tr("Label").toStdString() );
+    _imp->knobLabel = Natron::createKnob<String_Knob>( this, "Label");
     _imp->knobLabel->setAnimationEnabled(false);
     _imp->knobLabel->setAsMultiLine();
     _imp->knobLabel->setUsesRichText(true);
     _imp->knobLabel->setHintToolTip( tr("Text to display on the backdrop.").toStdString() );
+    
+    _imp->headerFontSize = Natron::createKnob<Int_Knob>(this, "Header font size");
+    _imp->headerFontSize->setName("headerFontSize");
+    _imp->headerFontSize->setAnimationEnabled(false);
+    _imp->headerFontSize->setMinimum(1);
+    _imp->headerFontSize->setMaximum(100);
+    _imp->headerFontSize->disableSlider();
+    _imp->headerFontSize->setHintToolTip(tr("Controls the size of the font of the header text (name of the backdrop)").toStdString());
+    _imp->headerFontSize->setDefaultValue(6);
 }
 
 void
@@ -179,11 +190,26 @@ NodeBackDropPrivate::setNameInternal(const QString & n)
         QMutexLocker l(&nameStringMutex);
         nameString = n;
     }
-    QString textLabel = n;
+    QString nameLabel = n;
 
-    textLabel.prepend("<div align=\"center\"><font size = 6>");
-    textLabel.append("</font></div>");
-    name->setHtml(textLabel);
+    QFont f;
+    QColor color;
+    
+    int fontSize = headerFontSize->getValue();
+    
+    QString labelText(knobLabel->getValue().c_str());
+    if (!labelText.isEmpty()) {
+        String_KnobGui::parseFont(labelText, f, color);
+        f.setPixelSize(fontSize);
+        nameLabel = String_KnobGui::decorateTextWithFontTag(f.family(), fontSize, color,nameLabel);
+        name->setFont(f);
+    } else {
+        QString toPrepend = QString("<div align=\"center\"><font size =%1>").arg(fontSize);
+        nameLabel.prepend(toPrepend);
+        nameLabel.append("</font></div>");
+
+    }
+    name->setHtml(nameLabel);
     name->adjustSize();
     QRectF bbox = _publicInterface->boundingRect();
     _publicInterface->resize( bbox.width(), bbox.height() );
@@ -252,7 +278,34 @@ NodeBackDrop::setName(const QString & str)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->setNameInternal(str);
-    _imp->settingsPanel->onNameChanged(str);
+    _imp->settingsPanel->setName(str);
+}
+
+void
+NodeBackDrop::trySetName(const QString& newName)
+{
+    bool mustRestoreOldName = false;
+    QString oldName;
+    
+    
+
+    if ( newName.isEmpty() ) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
+        mustRestoreOldName = true;
+    } else {
+        if ( _imp->graph->checkIfBackDropNameExists(newName,this) ) {
+            mustRestoreOldName = true;
+            Natron::errorDialog( tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString() );
+            oldName = getName();
+        }
+    }
+
+    if (mustRestoreOldName) {
+        setName(oldName);
+    } else {
+        setName(newName);
+    }
+
 }
 
 void
@@ -359,12 +412,15 @@ NodeBackDrop::getSize(int & w,
 
 void
 NodeBackDrop::onKnobValueChanged(KnobI* k,
-                                 Natron::ValueChangedReason /*reason*/,
+                                 Natron::ValueChangedReasonEnum /*reason*/,
                                  SequenceTime /*time*/)
 {
     if ( k == _imp->knobLabel.get() ) {
         QString text( _imp->knobLabel->getValue().c_str() );
         _imp->refreshLabelText(text);
+        _imp->setNameInternal(_imp->nameString);
+    } else if (k == _imp->headerFontSize.get() ) {
+        _imp->setNameInternal(_imp->nameString);
     }
 }
 
@@ -384,7 +440,8 @@ NodeBackDropPrivate::refreshLabelText(const QString &text)
     textLabel.prepend("<div align=\"left\">");
     textLabel.append("</div>");
     QFont f;
-    String_KnobGui::parseFont(textLabel, f);
+    QColor color;
+    String_KnobGui::parseFont(textLabel, f, color);
     label->setFont(f);
 
     label->setHtml(textLabel);
@@ -531,10 +588,11 @@ NodeBackDropPrivate::restoreFromSerialization(const NodeBackDropSerialization &s
     QColor color;
     color.setRgbF(r, g, b);
     _publicInterface->setCurrentColor(color);
-    _publicInterface->setName( serialization.getName().c_str() );
+    
     boost::shared_ptr<String_Knob> labelKnob = _publicInterface->getLabelKnob();
     assert(labelKnob);
     labelKnob->clone( serialization.getLabelSerialization().get() );
+    _publicInterface->setName( serialization.getName().c_str() );
     _publicInterface->refreshTextLabelFromKnob();
 }
 

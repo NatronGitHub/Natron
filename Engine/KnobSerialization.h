@@ -120,8 +120,7 @@ struct ValueSerialization
         ar & boost::serialization::make_nvp("HasAnimation",hasAnimation);
 
         if (hasAnimation) {
-            Curve c = *( _knob->getCurve(_dimension) );
-            ar & boost::serialization::make_nvp("Curve",c);
+            ar & boost::serialization::make_nvp("Curve",*( _knob->getCurve(_dimension,true) ));
         }
 
         if (isInt) {

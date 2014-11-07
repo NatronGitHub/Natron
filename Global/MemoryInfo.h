@@ -11,7 +11,7 @@
 #ifndef NATRON_GLOBAL_MEMORYINFO_H_
 #define NATRON_GLOBAL_MEMORYINFO_H_
 
-// Memory utility functions ( infos about RAM etc...)
+// Memory utility functions ( info about RAM etc...)
 
 /*
  * Author:  David Robert Nadeau

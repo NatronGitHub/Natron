@@ -116,6 +116,8 @@ public:
     {
         _defaultColor = color;
     }
+    
+    void setOptional(bool optional);
 
     void setBendPointVisible(bool visible);
 

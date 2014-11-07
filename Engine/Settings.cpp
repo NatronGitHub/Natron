@@ -37,6 +37,8 @@ Settings::Settings(AppInstance* appInstance)
     : KnobHolder(appInstance)
       , _wereChangesMadeSinceLastSave(false)
       , _restoringSettings(false)
+      , _ocioRestored(false)
+      , _settingsExisted(false)
 {
 }
 
@@ -74,6 +76,12 @@ Settings::initializeKnobs()
 {
     _generalTab = Natron::createKnob<Page_Knob>(this, "General");
 
+    _natronSettingsExist = Natron::createKnob<Bool_Knob>(this, "Existing settings");
+    _natronSettingsExist->setAnimationEnabled(false);
+    _natronSettingsExist->setName("existingSettings");
+    _natronSettingsExist->setSecret(true);
+    _generalTab->addKnob(_natronSettingsExist);
+    
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setAnimationEnabled(false);
@@ -312,7 +320,7 @@ Settings::initializeKnobs()
         if ( ocioConfigsDir.exists() ) {
             QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
             for (int j = 0; j < entries.size(); ++j) {
-                if ( entries[j].contains("nuke-default") ) {
+                if ( entries[j].contains(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
                     defaultIndex = j;
                 }
                 configs.push_back( entries[j].toStdString() );
@@ -336,9 +344,21 @@ Settings::initializeKnobs()
     _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setName("ocioCustomConfigFile");
     _customOcioConfigFile->setAllDimensionsEnabled(false);
+    _customOcioConfigFile->setAnimationEnabled(false);
     _customOcioConfigFile->setHintToolTip("OpenColorIO configuration file (*.ocio) to use when \"" NATRON_CUSTOM_OCIO_CONFIG_NAME "\" "
                                           "is selected as the OpenColorIO config.");
     ocioTab->addKnob(_customOcioConfigFile);
+    
+    _warnOcioConfigKnobChanged = Natron::createKnob<Bool_Knob>(this, "Warn on OpenColorIO config change");
+    _warnOcioConfigKnobChanged->setName("warnOCIOChanged"); 
+    _warnOcioConfigKnobChanged->setHintToolTip("Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.");
+    _warnOcioConfigKnobChanged->setAnimationEnabled(false);
+    ocioTab->addKnob(_warnOcioConfigKnobChanged);
+    
+    _ocioStartupCheck = Natron::createKnob<Bool_Knob>(this, "Warn on startup if OpenColorIO config is not the default");
+    _ocioStartupCheck->setName("startupCheckOCIO");
+    _ocioStartupCheck->setAnimationEnabled(false);
+    ocioTab->addKnob(_ocioStartupCheck);
 
     _viewersTab = Natron::createKnob<Page_Knob>(this, "Viewers");
 
@@ -392,6 +412,13 @@ Settings::initializeKnobs()
     _checkerboardColor2->setHintToolTip("The second color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor2);
     
+    _autoWipe = Natron::createKnob<Bool_Knob>(this, "Automatically enable wipe");
+    _autoWipe->setName("autoWipe");
+    _autoWipe->setHintToolTip("When checked, the wipe tool of all viewers will be automatic, that is, when changing "
+                              "an input of a viewer, it will be set to the input B of the viewer. When unchecked it will instead "
+                              "change the input A of the viewer, leaving the input B intact.");
+    _autoWipe->setAnimationEnabled(false);
+    _viewersTab->addKnob(_autoWipe);
     
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
@@ -438,6 +465,13 @@ Settings::initializeKnobs()
     _disconnectedArrowLength->disableSlider();
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
+    
+    _useInputAForMergeAutoConnect = Natron::createKnob<Bool_Knob>(this,"Merge node connect to A input");
+    _useInputAForMergeAutoConnect->setName("mergeConnectToA");
+    _useInputAForMergeAutoConnect->setAnimationEnabled(false);
+    _useInputAForMergeAutoConnect->setHintToolTip("If checked, upon creation of a new Merge node, the input A will be preferred "
+                                                  "for auto-connection with another node instead of the input B.");
+    _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
@@ -646,8 +680,9 @@ Settings::setCachingLabels()
 void
 Settings::setDefaultValues()
 {
-    beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+    _natronSettingsExist->setDefaultValue(false);
     _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
@@ -660,7 +695,7 @@ Settings::setDefaultValues()
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(false,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10,0);
@@ -681,6 +716,10 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
+    _autoWipe->setDefaultValue(true);
+    
+    _warnOcioConfigKnobChanged->setDefaultValue(true);
+    _ocioStartupCheck->setDefaultValue(true);
 
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
@@ -697,6 +736,7 @@ Settings::setDefaultValues()
     _defaultBackdropColor->setDefaultValue(0.5,1);
     _defaultBackdropColor->setDefaultValue(0.2,2);
     _disconnectedArrowLength->setDefaultValue(30);
+    _useInputAForMergeAutoConnect->setDefaultValue(true);
 
     _defaultGeneratorColor->setDefaultValue(0.3,0);
     _defaultGeneratorColor->setDefaultValue(0.5,1);
@@ -751,7 +791,7 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
 
 
-    endKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
 } // setDefaultValues
 
 void
@@ -760,7 +800,6 @@ Settings::saveSettings()
     _wereChangesMadeSinceLastSave = false;
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
@@ -803,7 +842,7 @@ Settings::restoreSettings()
     _restoringSettings = true;
     _wereChangesMadeSinceLastSave = false;
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-
+    
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
@@ -868,10 +907,16 @@ Settings::restoreSettings()
     }
     
 
-    ///Load even though there's no settings!
-    tryLoadOpenColorIOConfig();
+    if (!_ocioRestored) {
+        ///Load even though there's no settings!
+        tryLoadOpenColorIOConfig();
+    }
     
-
+    _settingsExisted = _natronSettingsExist->getValue();
+    if (!_settingsExisted) {
+        _natronSettingsExist->setValue(true, 0);
+        saveSettings();
+    }
     
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
     appPTR->setNThreadsToRender(getNumberOfThreads());
@@ -879,7 +924,7 @@ Settings::restoreSettings()
     bool useTP = _useThreadPool->getValue();
     appPTR->setUseThreadPool(useTP);
 
-
+    
     _restoringSettings = false;
 } // restoreSettings
 
@@ -935,6 +980,7 @@ Settings::tryLoadOpenColorIOConfig()
             return false;
         }
     }
+    _ocioRestored = true;
     qDebug() << "setting OCIO=" << configFile;
     qputenv( NATRON_OCIO_ENV_VAR_NAME, configFile.toUtf8() );
 
@@ -949,7 +995,7 @@ Settings::tryLoadOpenColorIOConfig()
 
 void
 Settings::onKnobValueChanged(KnobI* k,
-                             Natron::ValueChangedReason /*reason*/,
+                             Natron::ValueChangedReasonEnum /*reason*/,
                              SequenceTime /*time*/)
 {
     _wereChangesMadeSinceLastSave = true;
@@ -961,9 +1007,8 @@ Settings::onKnobValueChanged(KnobI* k,
             const std::vector<boost::shared_ptr<Node> > nodes = it->second.app->getProject()->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
-                if (nodes[i]->getPluginID() == "Viewer") {
-                    ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-                    assert(n);
+                ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
+                if (n) {
                     if (isFirstViewer) {
                         if ( !n->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
                             Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
@@ -1011,11 +1056,36 @@ Settings::onKnobValueChanged(KnobI* k,
             _customOcioConfigFile->setAllDimensionsEnabled(false);
         }
         tryLoadOpenColorIOConfig();
+        
+        bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
+        if (warnOcioChanged && appPTR->getTopLevelInstance()) {
+            bool stopAsking;
+            Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
+                                  QObject::tr("The OpenColorIO config change requires a restart of "
+                                              NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
+            if (stopAsking) {
+                _warnOcioConfigKnobChanged->setValue(false,0);
+            }
+        }
+        
     } else if ( k == _useThreadPool.get() ) {
         bool useTP = _useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
     } else if ( k == _customOcioConfigFile.get() ) {
-        tryLoadOpenColorIOConfig();
+        if (_customOcioConfigFile->isEnabled(0)) {
+            tryLoadOpenColorIOConfig();
+            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
+            if (warnOcioChanged && appPTR->getTopLevelInstance()) {
+                bool stopAsking;
+                Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
+                                      QObject::tr("The OpenColorIO config change requires a restart of "
+                                                  NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
+                if (stopAsking) {
+                    _warnOcioConfigKnobChanged->setValue(false,0);
+                }
+            }
+
+        }
     } else if ( k == _maxUndoRedoNodeGraph.get() ) {
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
     } else if ( k == _maxPanelsOpened.get() ) {
@@ -1222,7 +1292,7 @@ Settings::restoreDefault()
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
 
-    beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1230,7 +1300,7 @@ Settings::restoreDefault()
         }
     }
     setCachingLabels();
-    endKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
 }
 
 bool
@@ -1566,4 +1636,83 @@ void
 Settings::setUseGlobalThreadPool(bool use)
 {
     _useThreadPool->setValue(use,0);
+}
+
+bool
+Settings::isMergeAutoConnectingToAInput() const
+{
+    return _useInputAForMergeAutoConnect->getValue();
+}
+
+void
+Settings::doOCIOStartupCheckIfNeeded()
+{
+    bool docheck = _ocioStartupCheck->getValue();
+    AppInstance* mainInstance = appPTR->getTopLevelInstance();
+    
+    if (!mainInstance) {
+        qDebug() << "WARNING: doOCIOStartupCheckIfNeeded() called without a AppInstance";
+        return;
+    }
+    
+    if (docheck && mainInstance) {
+        int entry_i = _ocioConfigKnob->getValue();
+        std::vector<std::string> entries = _ocioConfigKnob->getEntries_mt_safe();
+        
+        std::string warnText;
+        if (entry_i < 0 || entry_i >= (int)entries.size()) {
+            warnText = "The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (" NATRON_DEFAULT_OCIO_CONFIG_NAME ") ?";
+        } else if (entries[entry_i] != std::string(NATRON_DEFAULT_OCIO_CONFIG_NAME)) {
+            warnText = "The current OCIO config selected in the preferences is not the default one (" NATRON_DEFAULT_OCIO_CONFIG_NAME "),"
+            " would you like to set it to the default config ?";
+        } else {
+            return;
+        }
+        
+        bool stopAsking;
+        Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),
+                                     Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                     Natron::eStandardButtonYes,
+                                    &stopAsking);
+        bool mustSaveSettings = false;
+		if (stopAsking != !docheck) {
+			_ocioStartupCheck->setValue(!stopAsking,0);
+			mustSaveSettings = true;
+		}
+        
+        if (reply == Natron::eStandardButtonYes) {
+            
+            int defaultIndex = -1;
+            for (int i = 0; i < (int)entries.size(); ++i) {
+                if ( entries[i].find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos ) {
+                    defaultIndex = i;
+                    break;
+                }
+            }
+            if (defaultIndex != -1) {
+                _ocioConfigKnob->setValue(defaultIndex,0);
+				mustSaveSettings = true;
+            } else {
+                Natron::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
+                                                                 "This is probably because you're not using the OpenColorIO-Configs folder that should "
+                                                                 "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
+            }
+        }
+        if (mustSaveSettings) {
+			saveSettings();
+
+		}
+    }
+}
+
+bool
+Settings::didSettingsExistOnStartup() const
+{
+    return _settingsExisted;
+}
+
+bool
+Settings::isAutoWipeEnabled() const
+{
+    return _autoWipe->getValue();
 }

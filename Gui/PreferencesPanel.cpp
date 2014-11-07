@@ -74,10 +74,10 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 void
 PreferencesPanel::restoreDefaults()
 {
-    Natron::StandardButton reply = Natron::questionDialog( tr("Preferences").toStdString(),
+    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Preferences").toStdString(),
                                                            tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString() );
 
-    if (reply == Natron::Yes) {
+    if (reply == Natron::eStandardButtonYes) {
         _settings->restoreDefault();
     }
 }

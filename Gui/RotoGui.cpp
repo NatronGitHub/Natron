@@ -68,7 +68,7 @@ typedef std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > Sele
 typedef std::list< SelectedCP > SelectedCPs;
 typedef std::list< boost::shared_ptr<Bezier> > SelectedBeziers;
 
-enum EventState
+enum EventStateEnum
 {
     NONE = 0,
     DRAGGING_CP,
@@ -90,18 +90,18 @@ enum EventState
     DRAGGING_BBOX_MID_LEFT
 };
 
-enum HoveredState
+enum HoverStateEnum
 {
-    HOVERING_NOTHING = 0,
-    HOVERING_BBOX_TOP_LEFT,
-    HOVERING_BBOX_TOP_RIGHT,
-    HOVERING_BBOX_BTM_RIGHT,
-    HOVERING_BBOX_BTM_LEFT,
-    HOVERING_BBOX_MID_TOP,
-    HOVERING_BBOX_MID_RIGHT,
-    HOVERING_BBOX_MID_BTM,
-    HOVERING_BBOX_MID_LEFT,
-    HOVERING_BBOX
+    eHoverStateNothing = 0,
+    eHoverStateBboxTopLeft,
+    eHoverStateBboxTopRight,
+    eHoverStateBboxBtmRight,
+    eHoverStateBboxBtmLeft,
+    eHoverStateBboxMidTop,
+    eHoverStateBboxMidRight,
+    eHoverStateBboxMidBtm,
+    eHoverStateBboxMidLeft,
+    eHoverStateBbox
 };
 
 enum SelectedCpsTransformMode
@@ -169,14 +169,16 @@ struct RotoGui::RotoGuiPrivate
     QAction* selectAllAction;
     Roto_Tool selectedTool;
     QToolButton* selectedRole;
-    EventState state;
-    HoveredState hoverState;
+    EventStateEnum state;
+    HoverStateEnum hoverState;
     QPointF lastClickPos;
     QPointF lastMousePos;
     boost::shared_ptr< RotoGuiSharedData > rotoData;
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
     bool evaluateOnKeyUp;  //< if true the next key up will call context->evaluateChange()
     bool iSelectingwithCtrlA;
+    bool shiftDown;
+    bool ctrlDown;
 
     RotoGuiPrivate(RotoGui* pub,
                    NodeGui* n,
@@ -197,13 +199,15 @@ struct RotoGui::RotoGuiPrivate
           , selectedTool(SELECT_ALL)
           , selectedRole(0)
           , state(NONE)
-          , hoverState(HOVERING_NOTHING)
+          , hoverState(eHoverStateNothing)
           , lastClickPos()
           , lastMousePos()
           , rotoData(sharedData)
           , evaluateOnPenUp(false)
           , evaluateOnKeyUp(false)
           , iSelectingwithCtrlA(false)
+          , shiftDown(false)
+          , ctrlDown(false)
     {
         if ( n->getNode()->isRotoPaintingNode() ) {
             type = ROTOPAINTING;
@@ -1114,7 +1118,7 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
 
         glLineWidth(1.5);
 
-        if (hoverState == HOVERING_BBOX) {
+        if (hoverState == eHoverStateBbox) {
             glColor4f(0.9,0.5,0,1.);
         } else {
             glColor4f(0.8,0.8,0.8,1.);
@@ -1176,38 +1180,38 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
             double halfOffset = offset / 2.;
             if (rotoData->transformMode == TRANSLATE_AND_SCALE) {
                 ///draw mid top arrow vertical
-                drawArrow(midTop.x(), midTop.y() + offset, 0., hoverState == HOVERING_BBOX_MID_TOP, pixelScale);
+                drawArrow(midTop.x(), midTop.y() + offset, 0., hoverState == eHoverStateBboxMidTop, pixelScale);
                 ///draw mid right arrow horizontal
-                drawArrow(midRight.x() + offset, midRight.y(), 90., hoverState == HOVERING_BBOX_MID_RIGHT, pixelScale);
+                drawArrow(midRight.x() + offset, midRight.y(), 90., hoverState == eHoverStateBboxMidRight, pixelScale);
                 ///draw mid btm arrow vertical
-                drawArrow(midBtm.x(), midBtm.y() - offset, 0., hoverState == HOVERING_BBOX_MID_BTM, pixelScale);
+                drawArrow(midBtm.x(), midBtm.y() - offset, 0., hoverState == eHoverStateBboxMidBtm, pixelScale);
                 ///draw mid left arrow horizontal
-                drawArrow(midLeft.x() - offset, midLeft.y(), 90., hoverState == HOVERING_BBOX_MID_LEFT, pixelScale);
+                drawArrow(midLeft.x() - offset, midLeft.y(), 90., hoverState == eHoverStateBboxMidLeft, pixelScale);
                 ///draw top left arrow rotated
-                drawArrow(topLeft.x() - halfOffset, topLeft.y() + halfOffset, -45., hoverState == HOVERING_BBOX_TOP_LEFT, pixelScale);
+                drawArrow(topLeft.x() - halfOffset, topLeft.y() + halfOffset, -45., hoverState == eHoverStateBboxTopLeft, pixelScale);
                 ///draw top right arrow rotated
-                drawArrow(btmRight.x() + halfOffset, topLeft.y() + halfOffset, 45., hoverState == HOVERING_BBOX_TOP_RIGHT, pixelScale);
+                drawArrow(btmRight.x() + halfOffset, topLeft.y() + halfOffset, 45., hoverState == eHoverStateBboxTopRight, pixelScale);
                 ///draw btm right arrow rotated
-                drawArrow(btmRight.x() + halfOffset, btmRight.y() - halfOffset, -45., hoverState == HOVERING_BBOX_BTM_RIGHT, pixelScale);
+                drawArrow(btmRight.x() + halfOffset, btmRight.y() - halfOffset, -45., hoverState == eHoverStateBboxBtmRight, pixelScale);
                 ///draw btm left arrow rotated
-                drawArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 45., hoverState == HOVERING_BBOX_BTM_LEFT, pixelScale);
+                drawArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 45., hoverState == eHoverStateBboxBtmLeft, pixelScale);
             } else {
                 ///draw mid top arrow horizontal
-                drawArrow(midTop.x(), midTop.y() + offset, 90., hoverState == HOVERING_BBOX_MID_TOP, pixelScale);
+                drawArrow(midTop.x(), midTop.y() + offset, 90., hoverState == eHoverStateBboxMidTop, pixelScale);
                 ///draw mid right arrow vertical
-                drawArrow(midRight.x() + offset, midRight.y(), 0., hoverState == HOVERING_BBOX_MID_RIGHT, pixelScale);
+                drawArrow(midRight.x() + offset, midRight.y(), 0., hoverState == eHoverStateBboxMidRight, pixelScale);
                 ///draw mid btm arrow horizontal
-                drawArrow(midBtm.x(), midBtm.y() - offset, 90., hoverState == HOVERING_BBOX_MID_BTM, pixelScale);
+                drawArrow(midBtm.x(), midBtm.y() - offset, 90., hoverState == eHoverStateBboxMidBtm, pixelScale);
                 ///draw mid left arrow vertical
-                drawArrow(midLeft.x() - offset, midLeft.y(),0., hoverState == HOVERING_BBOX_MID_LEFT, pixelScale);
+                drawArrow(midLeft.x() - offset, midLeft.y(),0., hoverState == eHoverStateBboxMidLeft, pixelScale);
                 ///draw the top left bended
-                drawBendedArrow(topLeft.x() - halfOffset, topLeft.y() + halfOffset, 0., hoverState == HOVERING_BBOX_TOP_LEFT, pixelScale);
+                drawBendedArrow(topLeft.x() - halfOffset, topLeft.y() + halfOffset, 0., hoverState == eHoverStateBboxTopLeft, pixelScale);
                 ///draw the top right bended
-                drawBendedArrow(btmRight.x() + halfOffset, topLeft.y() + halfOffset, -90, hoverState == HOVERING_BBOX_TOP_RIGHT, pixelScale);
+                drawBendedArrow(btmRight.x() + halfOffset, topLeft.y() + halfOffset, -90, hoverState == eHoverStateBboxTopRight, pixelScale);
                 ///draw the btm right bended
-                drawBendedArrow(btmRight.x() + halfOffset, btmRight.y() - halfOffset, -180, hoverState == HOVERING_BBOX_BTM_RIGHT, pixelScale);
+                drawBendedArrow(btmRight.x() + halfOffset, btmRight.y() - halfOffset, -180, hoverState == eHoverStateBboxBtmRight, pixelScale);
                 ///draw the btm left bended
-                drawBendedArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 90, hoverState == HOVERING_BBOX_BTM_LEFT, pixelScale);
+                drawBendedArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 90, hoverState == eHoverStateBboxBtmLeft, pixelScale);
             }
         }
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
@@ -1216,8 +1220,8 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
 void
 RotoGui::onSelectionCleared()
 {
-    if ( !isStickySelectionEnabled() ) {
-        _imp->clearSelection();
+    if ( !isStickySelectionEnabled()  && !_imp->shiftDown ) {
+        _imp->clearCPSSelection();
     }
 }
 
@@ -1228,8 +1232,9 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
         return;
     }
 
-    if ( !isStickySelectionEnabled() ) {
-        _imp->clearSelection();
+    bool stickySel = isStickySelectionEnabled();
+    if ( !stickySel && !_imp->shiftDown) {
+        _imp->clearCPSSelection();
     }
 
     int selectionMode = -1;
@@ -1241,22 +1246,44 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
         selectionMode = 2;
     }
 
+    bool mustAddToBezierSelection = _imp->rotoData->selectedBeziers.empty();
+    
     double l,r,b,t;
     _imp->viewer->getSelectionRectangle(l, r, b, t);
     std::list<boost::shared_ptr<Bezier> > curves = _imp->context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        if ( !(*it)->isLockedRecursive() ) {
+        
+        SelectedBeziers::iterator isSelected = std::find(_imp->rotoData->selectedBeziers.begin(),
+                                                               _imp->rotoData->selectedBeziers.end(),
+                                                               *it);
+        
+        if ( !(*it)->isLockedRecursive() && (isSelected != _imp->rotoData->selectedBeziers.end() || mustAddToBezierSelection)) {
             SelectedCPs points  = (*it)->controlPointsWithinRect(l, r, b, t, 0,selectionMode);
             if (_imp->selectedTool != SELECT_CURVES) {
                 for (SelectedCPs::iterator ptIt = points.begin(); ptIt != points.end(); ++ptIt) {
                     if ( !isFeatherVisible() && ptIt->first->isFeatherPoint() ) {
                         continue;
                     }
-                    _imp->rotoData->selectedCps.push_back(*ptIt);
+                    SelectedCPs::iterator foundCP = std::find(_imp->rotoData->selectedCps.begin(),_imp->rotoData->selectedCps.end(),*ptIt);
+                    if (foundCP == _imp->rotoData->selectedCps.end()) {
+                        if (!_imp->shiftDown || !_imp->ctrlDown) {
+                            _imp->rotoData->selectedCps.push_back(*ptIt);
+                        }
+                    } else {
+                        if (_imp->shiftDown && _imp->ctrlDown) {
+                            _imp->rotoData->selectedCps.erase(foundCP);
+                        }
+                    }
                 }
             }
-            if ( !points.empty() ) {
-                _imp->rotoData->selectedBeziers.push_back(*it);
+            if ( !points.empty()) {
+                if (mustAddToBezierSelection) {
+                    _imp->rotoData->selectedBeziers.push_back(*it);
+                }
+            } else {
+                if (!stickySel && !_imp->shiftDown && isSelected != _imp->rotoData->selectedBeziers.end()) {
+                    _imp->rotoData->selectedBeziers.erase(isSelected);
+                }
             }
         }
     }
@@ -1398,9 +1425,9 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
                                                      QMouseEvent* e)
 {
     ///find out if the cp is already selected.
-    SelectedCPs::const_iterator foundCP = rotoData->selectedCps.end();
+    SelectedCPs::iterator foundCP = rotoData->selectedCps.end();
 
-    for (SelectedCPs::const_iterator it = rotoData->selectedCps.begin(); it != rotoData->selectedCps.end(); ++it) {
+    for (SelectedCPs::iterator it = rotoData->selectedCps.begin(); it != rotoData->selectedCps.end(); ++it) {
         if (p.first == it->first) {
             foundCP = it;
             break;
@@ -1414,6 +1441,13 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
         }
         rotoData->selectedCps.push_back(p);
         computeSelectedCpsBBOX();
+    } else {
+        
+        ///Erase the point from the selection to allow the user to toggle the selection
+        if (modCASIsShift(e)) {
+            rotoData->selectedCps.erase(foundCP);
+            computeSelectedCpsBBOX();
+        }
     }
 
     rotoData->cpBeingDragged = p;
@@ -1463,7 +1497,7 @@ RotoGui::penDown(double /*scaleX*/,
 
     ////////////////// TANGENT SELECTION
     ///in all cases except cusp/smooth if a control point is selected, check if the user clicked on a tangent handle
-    ///in which case we go into DRAGGING_TANGENT mode
+    ///in which case we go into eEventStateDraggingTangent mode
     if ( (_imp->selectedTool != CUSP_POINTS) && (_imp->selectedTool != SMOOTH_POINTS) && (_imp->selectedTool != SELECT_CURVES) ) {
         for (SelectedCPs::iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             if ( (_imp->selectedTool == SELECT_ALL) ||
@@ -1619,6 +1653,7 @@ RotoGui::penDown(double /*scaleX*/,
             if ( buttonDownIsRight(e) ) {
                 showMenuForCurve(nearbyBezier);
             }
+            didSomething = true;
         }
         break;
     case ADD_POINTS:
@@ -1822,7 +1857,7 @@ RotoGui::penMotion(double /*scaleX*/,
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
 
     bool didSomething = false;
-    HoveredState lastHoverState = _imp->hoverState;
+    HoverStateEnum lastHoverState = _imp->hoverState;
     int time = _imp->context->getTimelineCurrentTime();
     ///Set the cursor to the appropriate case
     bool cursorSet = false;
@@ -1838,35 +1873,35 @@ RotoGui::penMotion(double /*scaleX*/,
              ( _imp->state != DRAGGING_RIGHT_TANGENT) ) {
             double bboxTol = cpTol;
             if ( _imp->isNearbyBBoxBtmLeft(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_BTM_LEFT;
+                _imp->hoverState = eHoverStateBboxBtmLeft;
                 didSomething = true;
             } else if ( _imp->isNearbyBBoxBtmRight(pos,bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_BTM_RIGHT;
+                _imp->hoverState = eHoverStateBboxBtmRight;
                 didSomething = true;
             } else if ( _imp->isNearbyBBoxTopRight(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_TOP_RIGHT;
+                _imp->hoverState = eHoverStateBboxTopRight;
                 didSomething = true;
             } else if ( _imp->isNearbyBBoxTopLeft(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_TOP_LEFT;
+                _imp->hoverState = eHoverStateBboxTopLeft;
                 didSomething = true;
             } else if ( _imp->isNearbyBBoxMidTop(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_MID_TOP;
+                _imp->hoverState = eHoverStateBboxMidTop;
                 didSomething = true;
             } else if ( _imp->isNearbyBBoxMidRight(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_MID_RIGHT;
+                _imp->hoverState = eHoverStateBboxMidRight;
                 didSomething = true;
             } else if ( _imp->isNearbyBBoxMidBtm(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_MID_BTM;
+                _imp->hoverState = eHoverStateBboxMidBtm;
                 didSomething = true;
             } else if ( _imp->isNearbyBBoxMidLeft(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = HOVERING_BBOX_MID_LEFT;
+                _imp->hoverState = eHoverStateBboxMidLeft;
                 didSomething = true;
             } else {
-                _imp->hoverState = HOVERING_NOTHING;
+                _imp->hoverState = eHoverStateNothing;
                 didSomething = true;
             }
         }
-        if (_imp->hoverState == HOVERING_NOTHING) {
+        if (_imp->hoverState == eHoverStateNothing) {
             if ( (_imp->state != DRAGGING_CP) && (_imp->state != DRAGGING_SELECTED_CPS) ) {
                 for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin(); it != _imp->rotoData->selectedBeziers.end(); ++it) {
                     int index = -1;
@@ -1917,7 +1952,7 @@ RotoGui::penMotion(double /*scaleX*/,
                 _imp->rotoData->featherBarBeingHovered.first.reset();
                 _imp->rotoData->featherBarBeingHovered.second.reset();
             }
-            if ( (_imp->state != NONE) || _imp->rotoData->featherBarBeingHovered.first || cursorSet || (lastHoverState != HOVERING_NOTHING) ) {
+            if ( (_imp->state != NONE) || _imp->rotoData->featherBarBeingHovered.first || cursorSet || (lastHoverState != eHoverStateNothing) ) {
                 didSomething = true;
             }
         }
@@ -2170,6 +2205,12 @@ RotoGui::keyDown(double /*scaleX*/,
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 
+    if (key == Qt::Key_Shift) {
+        _imp->shiftDown = true;
+    } else if (key == Qt::Key_Control) {
+        _imp->ctrlDown = true;
+    }
+    
     if ( modCASIsControl(e) ) {
         if ( !_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && (e->key() == Qt::Key_Control) ) {
             _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
@@ -2284,6 +2325,13 @@ RotoGui::keyUp(double /*scaleX*/,
 {
     bool didSomething = false;
 
+    if (e->key() == Qt::Key_Shift) {
+        _imp->shiftDown = false;
+    } else if (e->key() == Qt::Key_Control) {
+        _imp->ctrlDown = false;
+    }
+
+    
     if ( !modCASIsControl(e) ) {
         if ( !_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && (e->key() == Qt::Key_Control) ) {
             _imp->rotoData->transformMode = (_imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?

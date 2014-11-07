@@ -365,7 +365,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if ( found != viewersProjections.end() ) {
                 ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
-                tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, found->second.zoomPAR);
+                tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, found->second.zoomAspectRatio);
                 tab->setChannels(found->second.channels);
                 tab->setColorSpace(found->second.colorSpace);
                 tab->setGain(found->second.gain);
@@ -375,7 +375,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setClipToProject(found->second.isClippedToProject);
                 tab->setRenderScaleActivated(found->second.renderScaleActivated);
                 tab->setMipMapLevel(found->second.mipMapLevel);
-                tab->setCompositingOperator( (Natron::ViewerCompositingOperator)found->second.wipeCompositingOp );
+                tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
                 tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
                 tab->setFrameRangeLocked(found->second.frameRangeLocked);
                 tab->setTopToolbarVisible(found->second.topToolbarVisible);

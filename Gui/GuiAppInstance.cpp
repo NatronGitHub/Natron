@@ -79,22 +79,27 @@ GuiAppInstance::aboutToQuit()
     /**
      Kill the nodes used to make the previews in the file dialogs
      **/
-    if (_imp->_previewProvider->viewerNode) {
-        _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-        _imp->_previewProvider->viewerNode->getNode()->deactivate(std::list< Natron::Node* > (),false,false,true,false);
-        _imp->_previewProvider->viewerNode->getNode()->removeReferences();
-        _imp->_previewProvider->viewerNode->deleteReferences();
+    if (_imp->_previewProvider) {
+        if (_imp->_previewProvider->viewerNode) {
+            _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
+            boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
+            ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+            assert(liveInstance);
+            node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
+            liveInstance->invalidateUiContext();
+            node->removeReferences();
+            _imp->_previewProvider->viewerNode->deleteReferences();
+        }
+        
+        for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
+             it != _imp->_previewProvider->readerNodes.end(); ++it) {
+            it->second->getNode()->removeReferences();
+            it->second->deleteReferences();
+        }
+        _imp->_previewProvider->readerNodes.clear();
+        
+        _imp->_previewProvider.reset();
     }
-    
-    for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
-         it != _imp->_previewProvider->readerNodes.end(); ++it) {
-        it->second->getNode()->removeReferences();
-        it->second->deleteReferences();
-    }
-    _imp->_previewProvider->readerNodes.clear();
-    
-    _imp->_previewProvider.reset();
-
     
     _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
@@ -161,6 +166,23 @@ GuiAppInstance::load(const QString & projectName,
     dir.mkpath(".");
 
 
+    if (getAppID() == 0) {
+        appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        
+        if (!appPTR->isShorcutVersionUpToDate()) {
+            Natron::StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
+                                                              tr("Default shortcuts for " NATRON_APPLICATION_NAME " have changed, "
+                                                                 "would you like to set them to their defaults ? "
+                                                                 "Clicking no will keep the old shortcuts hence if a new shortcut has been "
+                                                                 "set to something else than an empty shortcut you won't benefit of it.").toStdString(),
+                                                              Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                              Natron::eStandardButtonNo);
+            if (reply == Natron::eStandardButtonYes) {
+                appPTR->restoreDefaultShortcuts();
+            }
+        }
+    }
+    
     /// If this is the first instance of the software, try to load an autosave
     if ( (getAppID() == 0) && projectName.isEmpty() ) {
         if ( getProject()->findAndTryLoadAutoSave() ) {
@@ -168,6 +190,8 @@ GuiAppInstance::load(const QString & projectName,
             return;
         }
     }
+    
+   
 
     if ( projectName.isEmpty() ) {
         ///if the user didn't specify a projects name in the launch args just create a viewer node.
@@ -183,9 +207,9 @@ GuiAppInstance::load(const QString & projectName,
                                    CreateNodeArgs::DefaultValuesList()) );
     } else {
         ///Otherwise just load the project specified.
-        QFileInfo infos(projectName);
-        QString name = infos.fileName();
-        QString path = infos.path();
+        QFileInfo info(projectName);
+        QString name = info.fileName();
+        QString path = info.path();
         path += QDir::separator();
         appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
         getProject()->loadProject(path,name);
@@ -203,7 +227,10 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
                               double yPosHint,
                               bool pushUndoRedoCommand)
 {
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand);
+    
+    std::list<boost::shared_ptr<NodeGui> >  selectedNodes = _imp->_gui->getSelectedNodes();
+
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
 
     assert(nodegui);
     if ( !multiInstanceParentName.empty() ) {
@@ -246,12 +273,14 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
 
 
     if ( !loadRequest && multiInstanceParentName.empty() ) {
-        const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = _imp->_gui->getSelectedNodes();
         if ( (selectedNodes.size() == 1) && autoConnect ) {
-            const boost::shared_ptr<Node> & selected = selectedNodes.front()->getNode();
-            getProject()->autoConnectNodes(selected, node);
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
+                if (*it != nodegui) {
+                    getProject()->autoConnectNodes((*it)->getNode(), node);
+                    break;
+                }
+            }
         }
-        _imp->_gui->selectNode(nodegui);
         
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
@@ -360,6 +389,23 @@ GuiAppInstance::errorDialog(const std::string & title,
 }
 
 void
+GuiAppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    _imp->_gui->errorDialog(title, message, stopAsking);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+}
+
+void
 GuiAppInstance::warningDialog(const std::string & title,
                               const std::string & message) const
 {
@@ -371,6 +417,25 @@ GuiAppInstance::warningDialog(const std::string & title,
         _imp->_showingDialog = true;
     }
     _imp->_gui->warningDialog(title, message);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+}
+
+void
+GuiAppInstance::warningDialog(const std::string & title,
+                              const std::string & message,
+                              bool* stopAsking) const
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    _imp->_gui->warningDialog(title, message, stopAsking);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -395,11 +460,10 @@ GuiAppInstance::informationDialog(const std::string & title,
     }
 }
 
-Natron::StandardButton
-GuiAppInstance::questionDialog(const std::string & title,
-                               const std::string & message,
-                               Natron::StandardButtons buttons,
-                               Natron::StandardButton defaultButton) const
+void
+GuiAppInstance::informationDialog(const std::string & title,
+                                  const std::string & message,
+                                  bool* stopAsking) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -408,12 +472,55 @@ GuiAppInstance::questionDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    Natron::StandardButton ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton);
+    _imp->_gui->informationDialog(title, message, stopAsking);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+}
+
+Natron::StandardButtonEnum
+GuiAppInstance::questionDialog(const std::string & title,
+                               const std::string & message,
+                               Natron::StandardButtons buttons,
+                               Natron::StandardButtonEnum defaultButton) const
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
     }
 
+    return ret;
+}
+
+Natron::StandardButtonEnum
+GuiAppInstance::questionDialog(const std::string & title,
+                               const std::string & message,
+                               Natron::StandardButtons buttons,
+                               Natron::StandardButtonEnum defaultButton,
+                               bool* stopAsking)
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton,stopAsking);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+    
     return ret;
 }
 
@@ -610,18 +717,6 @@ void
 GuiAppInstance::disconnectViewersFromViewerCache()
 {
     _imp->_gui->disconnectViewersFromViewerCache();
-}
-
-void
-GuiAppInstance::aboutToAutoSave()
-{
-    _imp->_gui->aboutToSave();
-}
-
-void
-GuiAppInstance::autoSaveFinished()
-{
-    _imp->_gui->saveFinished();
 }
 
 

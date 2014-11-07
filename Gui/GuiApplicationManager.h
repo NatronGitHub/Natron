@@ -132,6 +132,8 @@ public:
 
     void notifyShortcutChanged(KeyBoundAction* action);
     
+    bool isShorcutVersionUpToDate() const;
+    
     virtual void showOfxLog() OVERRIDE FINAL;
 public slots:
 

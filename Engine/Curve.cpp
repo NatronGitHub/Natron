@@ -56,7 +56,7 @@ KeyFrame::KeyFrame()
       , _value(0.)
       , _leftDerivative(0.)
       , _rightDerivative(0.)
-      , _interpolation(Natron::KEYFRAME_SMOOTH)
+      , _interpolation(Natron::eKeyframeTypeSmooth)
 {
 }
 
@@ -64,7 +64,7 @@ KeyFrame::KeyFrame(double time,
                    double initialValue,
                    double leftDerivative,
                    double rightDerivative,
-                   Natron::KeyframeType interpolation)
+                   Natron::KeyframeTypeEnum interpolation)
     : _time(time)
       , _value(initialValue)
       , _leftDerivative(leftDerivative)
@@ -137,12 +137,12 @@ KeyFrame::setTime(double time)
 }
 
 void
-KeyFrame::setInterpolation(Natron::KeyframeType interp)
+KeyFrame::setInterpolation(Natron::KeyframeTypeEnum interp)
 {
     _interpolation = interp;
 }
 
-Natron::KeyframeType
+Natron::KeyframeTypeEnum
 KeyFrame::getInterpolation() const
 {
     return _interpolation;
@@ -186,49 +186,49 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
     _imp->owner = owner;
     _imp->dimensionInOwner = dimensionInOwner;
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
-    _imp->type = CurvePrivate::DOUBLE_CURVE;
+    _imp->type = CurvePrivate::eCurveTypeDouble;
     // use RTTI to guess curve type
-    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
         try {
             Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
             if (k) {
-                _imp->type = CurvePrivate::INT_CURVE;
+                _imp->type = CurvePrivate::eCurveTypeInt;
             }
         } catch (const std::bad_cast & e) {
         }
     }
-    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
         try {
             Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
             if (k) {
-                _imp->type = CurvePrivate::INT_CURVE_CONSTANT_INTERP;
+                _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
             }
         } catch (const std::bad_cast & e) {
         }
     }
-    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
         try {
             String_Knob* k = dynamic_cast<String_Knob*>(owner);
             if (k) {
-                _imp->type = CurvePrivate::STRING_CURVE;
+                _imp->type = CurvePrivate::eCurveTypeString;
             }
         } catch (const std::bad_cast & e) {
         }
     }
-    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
         try {
             File_Knob* k = dynamic_cast<File_Knob*>(owner);
             if (k) {
-                _imp->type = CurvePrivate::STRING_CURVE;
+                _imp->type = CurvePrivate::eCurveTypeString;
             }
         } catch (const std::bad_cast & e) {
         }
     }
-    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
         try {
             Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
             if (k) {
-                _imp->type = CurvePrivate::BOOL_CURVE;
+                _imp->type = CurvePrivate::eCurveTypeBool;
             }
         } catch (const std::bad_cast & e) {
         }
@@ -332,15 +332,15 @@ Curve::addKeyFrame(KeyFrame key)
 {
     QWriteLocker l(&_imp->_lock);
 
-    if ( (_imp->type == CurvePrivate::BOOL_CURVE) || (_imp->type == CurvePrivate::STRING_CURVE) ||
-         ( _imp->type == CurvePrivate::INT_CURVE_CONSTANT_INTERP) ) {
-        key.setInterpolation(Natron::KEYFRAME_CONSTANT);
+    if ( (_imp->type == CurvePrivate::eCurveTypeBool) || (_imp->type == CurvePrivate::eCurveTypeString) ||
+         ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) {
+        key.setInterpolation(Natron::eKeyframeTypeConstant);
     }
 
 
     std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
 
-    it.first = evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
+    it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
     l.unlock();
 
     return it.second;
@@ -391,26 +391,26 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
         KeyFrameSet::iterator prev = it;
         --prev;
         prevKey = *prev;
-        mustRefreshPrev = prevKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
-                          prevKey.getInterpolation() != Natron::KEYFRAME_FREE &&
-                          prevKey.getInterpolation() != Natron::KEYFRAME_NONE;
+        mustRefreshPrev = prevKey.getInterpolation() != Natron::eKeyframeTypeBroken &&
+                          prevKey.getInterpolation() != Natron::eKeyframeTypeFree &&
+                          prevKey.getInterpolation() != Natron::eKeyframeTypeNone;
     }
     KeyFrameSet::iterator next = it;
     ++next;
     if ( next != _imp->keyFrames.end() ) {
         nextKey = *next;
-        mustRefreshNext = nextKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
-                          nextKey.getInterpolation() != Natron::KEYFRAME_FREE &&
-                          nextKey.getInterpolation() != Natron::KEYFRAME_NONE;
+        mustRefreshNext = nextKey.getInterpolation() != Natron::eKeyframeTypeBroken &&
+                          nextKey.getInterpolation() != Natron::eKeyframeTypeFree &&
+                          nextKey.getInterpolation() != Natron::eKeyframeTypeNone;
     }
 
     _imp->keyFrames.erase(it);
 
     if (mustRefreshPrev) {
-        refreshDerivatives( DERIVATIVES_CHANGED,find( prevKey.getTime() ) );
+        refreshDerivatives( eCurveChangedReasonDerivativesChanged,find( prevKey.getTime() ) );
     }
     if (mustRefreshNext) {
-        refreshDerivatives( DERIVATIVES_CHANGED,find( nextKey.getTime() ) );
+        refreshDerivatives( eCurveChangedReasonDerivativesChanged,find( nextKey.getTime() ) );
     }
 }
 
@@ -592,11 +592,11 @@ interParams(const KeyFrameSet &keyFrames,
             double *tcur,
             double *vcur,
             double *vcurDerivRight,
-            Natron::KeyframeType *interp,
+            Natron::KeyframeTypeEnum *interp,
             double *tnext,
             double *vnext,
             double *vnextDerivLeft,
-            Natron::KeyframeType *interpNext)
+            Natron::KeyframeTypeEnum *interpNext)
 {
 //#pragma message WARN("Unused parameter 't'") //the parameter is good enough for asserts
     assert( itup == keyFrames.end() || t < itup->getTime() );
@@ -610,7 +610,7 @@ interParams(const KeyFrameSet &keyFrames,
         *tcur = *tnext - 1.;
         *vcur = *vnext;
         *vcurDerivRight = 0.;
-        *interp = Natron::KEYFRAME_NONE;
+        *interp = Natron::eKeyframeTypeNone;
     } else if ( itup == keyFrames.end() ) {
         //if we found no key that has a greater time
         // get the last keyframe
@@ -622,7 +622,7 @@ interParams(const KeyFrameSet &keyFrames,
         *tnext = *tcur + 1.;
         *vnext = *vcur;
         *vnextDerivLeft = 0.;
-        *interpNext = Natron::KEYFRAME_NONE;
+        *interpNext = Natron::eKeyframeTypeNone;
     } else {
         // between two keyframes
         // get the last keyframe with time <= t
@@ -641,7 +641,7 @@ interParams(const KeyFrameSet &keyFrames,
 }
 
 double
-Curve::getValueAt(double t) const
+Curve::getValueAt(double t,bool doClamp) const
 {
     QReadLocker l(&_imp->_lock);
 
@@ -656,7 +656,7 @@ Curve::getValueAt(double t) const
     //}
     double tcur,tnext;
     double vcurDerivRight,vnextDerivLeft,vcur,vnext;
-    Natron::KeyframeType interp,interpNext;
+    Natron::KeyframeTypeEnum interp,interpNext;
     KeyFrame k(t,0.);
     // find the first keyframe with time greater than t
     KeyFrameSet::const_iterator itup;
@@ -681,19 +681,19 @@ Curve::getValueAt(double t) const
                                    interp,
                                    interpNext);
 
-    if ( mustClamp() ) {
+    if ( doClamp && mustClamp() ) {
         v = clampValueToCurveYRange(v);
     }
 
     switch (_imp->type) {
-    case CurvePrivate::STRING_CURVE:
-    case CurvePrivate::INT_CURVE:
+    case CurvePrivate::eCurveTypeString:
+    case CurvePrivate::eCurveTypeInt:
 
         return std::floor(v + 0.5);
-    case CurvePrivate::DOUBLE_CURVE:
+    case CurvePrivate::eCurveTypeDouble:
 
         return v;
-    case CurvePrivate::BOOL_CURVE:
+    case CurvePrivate::eCurveTypeBool:
 
         return v >= 0.5 ? 1. : 0.;
     default:
@@ -710,7 +710,7 @@ Curve::getDerivativeAt(double t) const
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->type == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
+    assert(_imp->type == CurvePrivate::eCurveTypeDouble); // only real-valued curves can be derived
 
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
@@ -719,7 +719,7 @@ Curve::getDerivativeAt(double t) const
     //}
     double tcur,tnext;
     double vcurDerivRight,vnextDerivLeft,vcur,vnext;
-    Natron::KeyframeType interp,interpNext;
+    Natron::KeyframeTypeEnum interp,interpNext;
     KeyFrame k(t,0.);
     // find the first keyframe with time greater than t
     KeyFrameSet::const_iterator itup;
@@ -777,7 +777,7 @@ Curve::getIntegrateFromTo(double t1,
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->type == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
+    assert(_imp->type == CurvePrivate::eCurveTypeDouble); // only real-valued curves can be derived
 
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
@@ -786,7 +786,7 @@ Curve::getIntegrateFromTo(double t1,
     //}
     double tcur,tnext;
     double vcurDerivRight,vnextDerivLeft,vcur,vnext;
-    Natron::KeyframeType interp,interpNext;
+    Natron::KeyframeTypeEnum interp,interpNext;
     KeyFrame k(t1,0.);
     // find the first keyframe with time strictly greater than t1
     KeyFrameSet::const_iterator itup;
@@ -876,12 +876,18 @@ std::pair<double,double>  Curve::getCurveYRange() const
         throw std::logic_error("Curve::getCurveYRange() called for a curve without owner or Y range");
     }
     if (_imp->owner) {
-        Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_imp->owner);
-        Int_Knob* isInt = dynamic_cast<Int_Knob*>(_imp->owner);
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
         if (isDouble) {
-            return isDouble->getMinMaxForCurve(_imp->dimensionInOwner);
+            std::pair<double, double> ret;
+            ret.first = isDouble->getMinimum(_imp->dimensionInOwner);
+            ret.second = isDouble->getMaximum(_imp->dimensionInOwner);
+            return ret;
         } else if (isInt) {
-            return isInt->getMinMaxForCurve(_imp->dimensionInOwner);
+            std::pair<double, double> ret;
+            ret.first = isInt->getMinimum(_imp->dimensionInOwner);
+            ret.second = isInt->getMaximum(_imp->dimensionInOwner);
+            return ret;
         } else {
             return std::make_pair( (double)INT_MIN, (double)INT_MAX );
         }
@@ -985,7 +991,7 @@ Curve::setKeyFrameValueAndTime(double time,
 
         if (setTime || setValue) {
             it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
-            it = evaluateCurveChanged(KEYFRAME_CHANGED,it);
+            it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1010,7 +1016,7 @@ Curve::setKeyFrameLeftDerivative(double value,
             KeyFrame newKey(*it);
             newKey.setLeftDerivative(value);
             it = addKeyFrameNoUpdate(newKey).first;
-            it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
+            it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged,it);
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1035,7 +1041,7 @@ Curve::setKeyFrameRightDerivative(double value,
             KeyFrame newKey(*it);
             newKey.setRightDerivative(value);
             it = addKeyFrameNoUpdate(newKey).first;
-            it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
+            it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged,it);
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1062,7 +1068,7 @@ Curve::setKeyFrameDerivatives(double left,
             newKey.setLeftDerivative(left);
             newKey.setRightDerivative(right);
             it = addKeyFrameNoUpdate(newKey).first;
-            it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
+            it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged,it);
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -1074,7 +1080,7 @@ Curve::setKeyFrameDerivatives(double left,
 }
 
 KeyFrame
-Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,
+Curve::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,
                                 int index,
                                 int* newIndex)
 {
@@ -1085,8 +1091,8 @@ Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,
         assert( it != _imp->keyFrames.end() );
 
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == CurvePrivate::STRING_CURVE) || (_imp->type == CurvePrivate::BOOL_CURVE) ||
-               ( _imp->type == CurvePrivate::INT_CURVE_CONSTANT_INTERP) ) && ( interp != Natron::KEYFRAME_CONSTANT) ) {
+        if ( ( (_imp->type == CurvePrivate::eCurveTypeString) || (_imp->type == CurvePrivate::eCurveTypeBool) ||
+               ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) && ( interp != Natron::eKeyframeTypeConstant) ) {
             return *it;
         }
 
@@ -1105,14 +1111,14 @@ Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,
 }
 
 void
-Curve::setCurveInterpolation(Natron::KeyframeType interp)
+Curve::setCurveInterpolation(Natron::KeyframeTypeEnum interp)
 {
 
     {
         QWriteLocker l(&_imp->_lock);
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == CurvePrivate::STRING_CURVE) || (_imp->type == CurvePrivate::BOOL_CURVE) ||
-               ( _imp->type == CurvePrivate::INT_CURVE_CONSTANT_INTERP) ) && ( interp != Natron::KEYFRAME_CONSTANT) ) {
+        if ( ( (_imp->type == CurvePrivate::eCurveTypeString) || (_imp->type == CurvePrivate::eCurveTypeBool) ||
+               ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) && ( interp != Natron::eKeyframeTypeConstant) ) {
             return;
         }
         for (int i = 0; i < (int)_imp->keyFrames.size(); ++i) {
@@ -1128,33 +1134,33 @@ Curve::setCurveInterpolation(Natron::KeyframeType interp)
 
 KeyFrameSet::iterator
 Curve::setKeyframeInterpolation_internal(KeyFrameSet::iterator it,
-                                         Natron::KeyframeType interp)
+                                         Natron::KeyframeTypeEnum interp)
 {
     ///private should not be locked
     assert( it != _imp->keyFrames.end() );
     KeyFrame newKey(*it);
     newKey.setInterpolation(interp);
     it = addKeyFrameNoUpdate(newKey).first;
-    it = evaluateCurveChanged(KEYFRAME_CHANGED,it);
+    it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
 
     return it;
 }
 
 KeyFrameSet::iterator
-Curve::refreshDerivatives(Curve::CurveChangedReason reason,
+Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
                           KeyFrameSet::iterator key)
 {
     // PRIVATE - should not lock
     double tcur = key->getTime();
     double vcur = key->getValue();
     double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
-    Natron::KeyframeType prevType, nextType;
+    Natron::KeyframeTypeEnum prevType, nextType;
 
     if ( key == _imp->keyFrames.begin() ) {
         tprev = tcur;
         vprev = vcur;
         vprevDerivRight = 0.;
-        prevType = Natron::KEYFRAME_NONE;
+        prevType = Natron::eKeyframeTypeNone;
     } else {
         KeyFrameSet::const_iterator prev = key;
         --prev;
@@ -1164,9 +1170,9 @@ Curve::refreshDerivatives(Curve::CurveChangedReason reason,
         prevType = prev->getInterpolation();
 
         //if prev is the first keyframe, and not edited by the user then interpolate linearly
-        if ( ( prev == _imp->keyFrames.begin() ) && (prevType != Natron::KEYFRAME_FREE) &&
-             ( prevType != Natron::KEYFRAME_BROKEN) ) {
-            prevType = Natron::KEYFRAME_LINEAR;
+        if ( ( prev == _imp->keyFrames.begin() ) && (prevType != Natron::eKeyframeTypeFree) &&
+             ( prevType != Natron::eKeyframeTypeBroken) ) {
+            prevType = Natron::eKeyframeTypeLinear;
         }
     }
 
@@ -1176,7 +1182,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReason reason,
         tnext = tcur;
         vnext = vcur;
         vnextDerivLeft = 0.;
-        nextType = Natron::KEYFRAME_NONE;
+        nextType = Natron::eKeyframeTypeNone;
     } else {
         tnext = next->getTime();
         vnext = next->getValue();
@@ -1186,17 +1192,17 @@ Curve::refreshDerivatives(Curve::CurveChangedReason reason,
         KeyFrameSet::const_iterator nextnext = next;
         ++nextnext;
         //if next is thelast keyframe, and not edited by the user then interpolate linearly
-        if ( ( nextnext == _imp->keyFrames.end() ) && (nextType != Natron::KEYFRAME_FREE) &&
-             ( nextType != Natron::KEYFRAME_BROKEN) ) {
-            nextType = Natron::KEYFRAME_LINEAR;
+        if ( ( nextnext == _imp->keyFrames.end() ) && (nextType != Natron::eKeyframeTypeFree) &&
+             ( nextType != Natron::eKeyframeTypeBroken) ) {
+            nextType = Natron::eKeyframeTypeLinear;
         }
     }
 
     double vcurDerivLeft,vcurDerivRight;
 
-    assert(key->getInterpolation() != Natron::KEYFRAME_NONE &&
-           key->getInterpolation() != Natron::KEYFRAME_BROKEN &&
-           key->getInterpolation() != Natron::KEYFRAME_FREE);
+    assert(key->getInterpolation() != Natron::eKeyframeTypeNone &&
+           key->getInterpolation() != Natron::eKeyframeTypeBroken &&
+           key->getInterpolation() != Natron::eKeyframeTypeFree);
     Natron::autoComputeDerivatives(prevType,
                                    key->getInterpolation(),
                                    nextType,
@@ -1220,40 +1226,40 @@ Curve::refreshDerivatives(Curve::CurveChangedReason reason,
     }
     key = newKeyIt.first;
 
-    if (reason != DERIVATIVES_CHANGED) {
-        key = evaluateCurveChanged(DERIVATIVES_CHANGED,key);
+    if (reason != eCurveChangedReasonDerivativesChanged) {
+        key = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged,key);
     }
 
     return key;
 } // refreshDerivatives
 
 KeyFrameSet::iterator
-Curve::evaluateCurveChanged(CurveChangedReason reason,
+Curve::evaluateCurveChanged(CurveChangedReasonEnum reason,
                             KeyFrameSet::iterator key)
 {
     // PRIVATE - should not lock
     assert( key != _imp->keyFrames.end() );
 
-    if ( (key->getInterpolation() != Natron::KEYFRAME_BROKEN) && (key->getInterpolation() != Natron::KEYFRAME_FREE)
-         && ( reason != DERIVATIVES_CHANGED) ) {
-        key = refreshDerivatives(DERIVATIVES_CHANGED,key);
+    if ( (key->getInterpolation() != Natron::eKeyframeTypeBroken) && (key->getInterpolation() != Natron::eKeyframeTypeFree)
+         && ( reason != eCurveChangedReasonDerivativesChanged) ) {
+        key = refreshDerivatives(eCurveChangedReasonDerivativesChanged,key);
     }
     KeyFrameSet::iterator prev = key;
     if ( key != _imp->keyFrames.begin() ) {
         --prev;
-        if ( (prev->getInterpolation() != Natron::KEYFRAME_BROKEN) &&
-             ( prev->getInterpolation() != Natron::KEYFRAME_FREE) &&
-             ( prev->getInterpolation() != Natron::KEYFRAME_NONE) ) {
-            prev = refreshDerivatives(DERIVATIVES_CHANGED,prev);
+        if ( (prev->getInterpolation() != Natron::eKeyframeTypeBroken) &&
+             ( prev->getInterpolation() != Natron::eKeyframeTypeFree) &&
+             ( prev->getInterpolation() != Natron::eKeyframeTypeNone) ) {
+            prev = refreshDerivatives(eCurveChangedReasonDerivativesChanged,prev);
         }
     }
     KeyFrameSet::iterator next = key;
     ++next;
     if ( next != _imp->keyFrames.end() ) {
-        if ( (next->getInterpolation() != Natron::KEYFRAME_BROKEN) &&
-             ( next->getInterpolation() != Natron::KEYFRAME_FREE) &&
-             ( next->getInterpolation() != Natron::KEYFRAME_NONE) ) {
-            next = refreshDerivatives(DERIVATIVES_CHANGED,next);
+        if ( (next->getInterpolation() != Natron::eKeyframeTypeBroken) &&
+             ( next->getInterpolation() != Natron::eKeyframeTypeFree) &&
+             ( next->getInterpolation() != Natron::eKeyframeTypeNone) ) {
+            next = refreshDerivatives(eCurveChangedReasonDerivativesChanged,next);
         }
     }
 
@@ -1261,10 +1267,16 @@ Curve::evaluateCurveChanged(CurveChangedReason reason,
 }
 
 KeyFrameSet::const_iterator
+Curve::findWithTime(const KeyFrameSet& keys,double time)
+{
+    return std::find_if( keys.begin(), keys.end(), KeyFrameTimePredicate(time) );
+}
+
+KeyFrameSet::const_iterator
 Curve::find(double time) const
 {
     // PRIVATE - should not lock
-    return std::find_if( _imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time) );
+    return findWithTime(_imp->keyFrames, time);
 }
 
 KeyFrameSet::const_iterator
@@ -1323,7 +1335,7 @@ Curve::isYComponentMovable() const
 {
     QReadLocker l(&_imp->_lock);
 
-    return _imp->type != CurvePrivate::STRING_CURVE;
+    return _imp->type != CurvePrivate::eCurveTypeString;
 }
 
 bool
@@ -1331,7 +1343,7 @@ Curve::areKeyFramesValuesClampedToIntegers() const
 {
     QReadLocker l(&_imp->_lock);
 
-    return _imp->type == CurvePrivate::INT_CURVE;
+    return _imp->type == CurvePrivate::eCurveTypeInt;
 }
 
 bool
@@ -1339,7 +1351,7 @@ Curve::areKeyFramesValuesClampedToBooleans() const
 {
     QReadLocker l(&_imp->_lock);
 
-    return _imp->type == CurvePrivate::BOOL_CURVE;
+    return _imp->type == CurvePrivate::eCurveTypeBool;
 }
 
 void
@@ -1367,21 +1379,4 @@ Curve::mustClamp() const
     return _imp->owner || hasYRange();
 }
 
-void
-Curve::getKeyFramesWithinRect(double l,
-                              double b,
-                              double r,
-                              double t,
-                              std::vector<KeyFrame>* ret) const
-{
-    QReadLocker locker(&_imp->_lock);
-
-    for (KeyFrameSet::const_iterator it2 = _imp->keyFrames.begin(); it2 != _imp->keyFrames.end(); ++it2) {
-        double y = it2->getValue();
-        double x = it2->getTime();
-        if ( (x <= r) && (x >= l) && (y <= t) && (y >= b) ) {
-            ret->push_back(*it2);
-        }
-    }
-}
 

@@ -27,6 +27,10 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EffectInstance.h"
 
+#ifdef DEBUG
+#include "Engine/ThreadStorage.h"
+#endif
+
 class QReadWriteLock;
 class OfxClipInstance;
 class Button_Knob;
@@ -154,7 +158,7 @@ public:
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputRotoBrush(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getRotoBrushInputIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::Status getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
     virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time,int view, const RenderScale & scale, RectD *rod)  OVERRIDE;
@@ -178,11 +182,11 @@ public:
     virtual bool onOverlayFocusGained(double scaleX, double scaleY) OVERRIDE FINAL;
     virtual bool onOverlayFocusLost(double scaleX, double scaleY) OVERRIDE FINAL;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, int view, SequenceTime time) OVERRIDE;
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
-    virtual Natron::Status render(SequenceTime time,
+    virtual Natron::StatusEnum render(SequenceTime time,
                                   const RenderScale & scale,
                                   const RectI & roi, //!< renderWindow in pixel coordinates
                                   int view,
@@ -196,7 +200,7 @@ public:
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE;
-    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;
 
     /**
@@ -215,10 +219,11 @@ public:
      * input and output images can be offset from the origin
      **/
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void onMultipleInputsChanged() OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
-    virtual Natron::Status beginSequenceRender(SequenceTime first,
+    virtual Natron::StatusEnum beginSequenceRender(SequenceTime first,
                                                SequenceTime last,
                                                SequenceTime step,
                                                bool interactive,
@@ -226,7 +231,7 @@ public:
                                                bool isSequentialRender,
                                                bool isRenderResponseToUserInteraction,
                                                int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::Status endSequenceRender(SequenceTime first,
+    virtual Natron::StatusEnum endSequenceRender(SequenceTime first,
                                              SequenceTime last,
                                              SequenceTime step,
                                              bool interactive,
@@ -234,11 +239,11 @@ public:
                                              bool isSequentialRender,
                                              bool isRenderResponseToUserInteraction,
                                              int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
-    virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponents* comp, Natron::ImageBitDepth* depth) const OVERRIDE FINAL;
-    virtual Natron::SequentialPreference getSequentialPreference() const OVERRIDE FINAL;
-    virtual Natron::ImagePremultiplication getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponentsEnum* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
+    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL;
+    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
@@ -279,6 +284,72 @@ private:
 
     void initializeContextDependentParams();
 
+#ifdef DEBUG
+/*
+    Debug helper to track plug-in that do setValue calls that are forbidden
+ 
+ http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#SettingParams
+ Officially, setValue calls are allowed during the following actions:
+ 
+ The Create Instance Action
+ The The Begin Instance Changed Action
+ The The Instance Changed Action
+ The The End Instance Changed Action
+ The The Sync Private Data Action
+
+ 
+ */
+
+    void setCanSetValue(bool can)
+    {
+        _canSetValue.localData() = can;
+    }
+
+    void invalidateCanSetValueFlag()
+    {
+        _canSetValue.localData() = true;
+    }
+
+
+    bool isDuringActionThatCanSetValue() const
+    {
+        if (_canSetValue.hasLocalData()) {
+            return _canSetValue.localData();
+        } else {
+            ///Not during an action
+            return true;
+        }
+    }
+
+    class CanSetSetValueFlag_RAII
+    {
+        OfxEffectInstance* effect;
+        
+        public:
+        
+        CanSetSetValueFlag_RAII(OfxEffectInstance* effect,bool canSetValue)
+        : effect(effect)
+        {
+            effect->setCanSetValue(canSetValue);
+        }
+        
+        ~CanSetSetValueFlag_RAII()
+        {
+            effect->invalidateCanSetValueFlag();
+        }
+    };
+
+    virtual bool checkCanSetValue() const { return isDuringActionThatCanSetValue(); }
+
+#define SET_CAN_SET_VALUE(canSetValue) OfxEffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this,canSetValue)
+
+#else
+
+#define SET_CAN_SET_VALUE(canSetValue) ( (void)0 )
+
+#endif
+
+
 private:
     Natron::OfxImageEffectInstance* _effect;
     std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
@@ -288,11 +359,14 @@ private:
     bool _created; // true after the call to createInstance
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
-    mutable EffectInstance::RenderSafety _renderSafety;
+    mutable EffectInstance::RenderSafetyEnum _renderSafety;
     mutable bool _wasRenderSafetySet;
     mutable QReadWriteLock* _renderSafetyLock;
     ContextEnum _context;
     mutable QReadWriteLock* _preferencesLock;
+#ifdef DEBUG
+    Natron::ThreadStorage<bool> _canSetValue;
+#endif
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_

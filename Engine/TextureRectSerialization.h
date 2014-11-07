@@ -13,9 +13,12 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
 
 #include "Engine/TextureRect.h"
 
+#define TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR 2
+#define TEXTURE_RECT_VERSION TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR
 namespace boost {
 namespace serialization {
 template<class Archive>
@@ -24,10 +27,15 @@ serialize(Archive & ar,
           TextureRect &t,
           const unsigned int version)
 {
-    (void)version;
+
     ar & t.x1 & t.x2 & t.y1 & t.y2 & t.w & t.h & t.closestPo2;
+    if (version >= TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR) {
+        ar & t.par;
+    }
 }
 }
 }
+
+BOOST_CLASS_VERSION(TextureRect, TEXTURE_RECT_VERSION);
 
 #endif // NATRON_ENGINE_TEXTURERECTSERIALIZATION_H_

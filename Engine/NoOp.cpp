@@ -15,19 +15,19 @@ NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
 
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<Natron::ImageComponentsEnum>* comps)
 {
-    comps->push_back(Natron::ImageComponentRGB);
-    comps->push_back(Natron::ImageComponentRGBA);
-    comps->push_back(Natron::ImageComponentAlpha);
+    comps->push_back(Natron::eImageComponentRGB);
+    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(Natron::eImageComponentAlpha);
 }
 
 void
-NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::IMAGE_BYTE);
-    depths->push_back(Natron::IMAGE_SHORT);
-    depths->push_back(Natron::IMAGE_FLOAT);
+    depths->push_back(Natron::eImageBitDepthByte);
+    depths->push_back(Natron::eImageBitDepthShort);
+    depths->push_back(Natron::eImageBitDepthFloat);
 }
 
 bool
