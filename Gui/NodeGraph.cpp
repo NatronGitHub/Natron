@@ -3439,11 +3439,12 @@ NodeGraph::createBackDrop(QVBoxLayout *dockContainer,
     bd->initialize(name, requestedByLoad,serialization, dockContainer);
     _imp->_backdrops.push_back(bd);
     if (!requestedByLoad) {
+        std::list<boost::shared_ptr<NodeGui> > selectedNodes = _imp->_selection.nodes;
         pushUndoCommand( new AddMultipleNodesCommand(this,bd) );
-        if ( !_imp->_selection.nodes.empty() ) {
+        if ( !selectedNodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
                 QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
                 bbox = bbox.united(nodeBbox);
             }
