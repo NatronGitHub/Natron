@@ -132,13 +132,22 @@ struct MultiInstancePanelPrivate
         Button_Knob* isButton = dynamic_cast<Button_Knob*>( ref.get() );
         Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( ref.get() );
         String_Knob* isString = dynamic_cast<String_Knob*>( ref.get() );
+        Double_Knob* isDouble = dynamic_cast<Double_Knob*>( ref.get() );
+        Int_Knob* isInt = dynamic_cast<Int_Knob*>( ref.get() );
+        
         boost::shared_ptr<KnobHelper> ret;
-        if ( dynamic_cast<Int_Knob*>( ref.get() ) ) {
-            ret = Natron::createKnob<Int_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+        if ( isInt  ) {
+            boost::shared_ptr<Int_Knob> intKnb = Natron::createKnob<Int_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+            intKnb->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
+            intKnb->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(), isInt->getDisplayMaximums());
+            ret = intKnb;
         } else if ( dynamic_cast<Bool_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Bool_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
-        } else if ( dynamic_cast<Double_Knob*>( ref.get() ) ) {
-            ret = Natron::createKnob<Double_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+        } else if ( isDouble ) {
+            boost::shared_ptr<Double_Knob> dblKnob = Natron::createKnob<Double_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+            dblKnob->setMinimumsAndMaximums(isDouble->getMinimums(), isDouble->getMaximums());
+            dblKnob->setDisplayMinimumsAndMaximums(isDouble->getDisplayMinimums(), isDouble->getDisplayMaximums());
+            ret = dblKnob;
         } else if (isChoice) {
             boost::shared_ptr<Choice_Knob> choice = Natron::createKnob<Choice_Knob>(publicInterface,
                                                                                     ref->getDescription(),ref->getDimension(),declaredByPlugin);

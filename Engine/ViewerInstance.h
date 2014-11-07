@@ -109,6 +109,11 @@ public:
      * it returns false, true otherwise. @see Settings::onKnobValueChanged
      **/
     bool supportsGLSL() const WARN_UNUSED_RETURN;
+    
+    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
 
 
     void setDisplayChannels(DisplayChannels channels);

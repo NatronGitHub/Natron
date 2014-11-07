@@ -177,6 +177,8 @@ struct RotoGui::RotoGuiPrivate
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
     bool evaluateOnKeyUp;  //< if true the next key up will call context->evaluateChange()
     bool iSelectingwithCtrlA;
+    bool shiftDown;
+    bool ctrlDown;
 
     RotoGuiPrivate(RotoGui* pub,
                    NodeGui* n,
@@ -204,6 +206,8 @@ struct RotoGui::RotoGuiPrivate
           , evaluateOnPenUp(false)
           , evaluateOnKeyUp(false)
           , iSelectingwithCtrlA(false)
+          , shiftDown(false)
+          , ctrlDown(false)
     {
         if ( n->getNode()->isRotoPaintingNode() ) {
             type = ROTOPAINTING;
@@ -1216,8 +1220,8 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
 void
 RotoGui::onSelectionCleared()
 {
-    if ( !isStickySelectionEnabled() ) {
-        _imp->clearSelection();
+    if ( !isStickySelectionEnabled()  && !_imp->shiftDown ) {
+        _imp->clearCPSSelection();
     }
 }
 
@@ -1228,8 +1232,9 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
         return;
     }
 
-    if ( !isStickySelectionEnabled() ) {
-        _imp->clearSelection();
+    bool stickySel = isStickySelectionEnabled();
+    if ( !stickySel && !_imp->shiftDown) {
+        _imp->clearCPSSelection();
     }
 
     int selectionMode = -1;
@@ -1241,22 +1246,44 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
         selectionMode = 2;
     }
 
+    bool mustAddToBezierSelection = _imp->rotoData->selectedBeziers.empty();
+    
     double l,r,b,t;
     _imp->viewer->getSelectionRectangle(l, r, b, t);
     std::list<boost::shared_ptr<Bezier> > curves = _imp->context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        if ( !(*it)->isLockedRecursive() ) {
+        
+        SelectedBeziers::iterator isSelected = std::find(_imp->rotoData->selectedBeziers.begin(),
+                                                               _imp->rotoData->selectedBeziers.end(),
+                                                               *it);
+        
+        if ( !(*it)->isLockedRecursive() && (isSelected != _imp->rotoData->selectedBeziers.end() || mustAddToBezierSelection)) {
             SelectedCPs points  = (*it)->controlPointsWithinRect(l, r, b, t, 0,selectionMode);
             if (_imp->selectedTool != SELECT_CURVES) {
                 for (SelectedCPs::iterator ptIt = points.begin(); ptIt != points.end(); ++ptIt) {
                     if ( !isFeatherVisible() && ptIt->first->isFeatherPoint() ) {
                         continue;
                     }
-                    _imp->rotoData->selectedCps.push_back(*ptIt);
+                    SelectedCPs::iterator foundCP = std::find(_imp->rotoData->selectedCps.begin(),_imp->rotoData->selectedCps.end(),*ptIt);
+                    if (foundCP == _imp->rotoData->selectedCps.end()) {
+                        if (!_imp->shiftDown || !_imp->ctrlDown) {
+                            _imp->rotoData->selectedCps.push_back(*ptIt);
+                        }
+                    } else {
+                        if (_imp->shiftDown && _imp->ctrlDown) {
+                            _imp->rotoData->selectedCps.erase(foundCP);
+                        }
+                    }
                 }
             }
-            if ( !points.empty() ) {
-                _imp->rotoData->selectedBeziers.push_back(*it);
+            if ( !points.empty()) {
+                if (mustAddToBezierSelection) {
+                    _imp->rotoData->selectedBeziers.push_back(*it);
+                }
+            } else {
+                if (!stickySel && !_imp->shiftDown && isSelected != _imp->rotoData->selectedBeziers.end()) {
+                    _imp->rotoData->selectedBeziers.erase(isSelected);
+                }
             }
         }
     }
@@ -1398,9 +1425,9 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
                                                      QMouseEvent* e)
 {
     ///find out if the cp is already selected.
-    SelectedCPs::const_iterator foundCP = rotoData->selectedCps.end();
+    SelectedCPs::iterator foundCP = rotoData->selectedCps.end();
 
-    for (SelectedCPs::const_iterator it = rotoData->selectedCps.begin(); it != rotoData->selectedCps.end(); ++it) {
+    for (SelectedCPs::iterator it = rotoData->selectedCps.begin(); it != rotoData->selectedCps.end(); ++it) {
         if (p.first == it->first) {
             foundCP = it;
             break;
@@ -1414,6 +1441,13 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
         }
         rotoData->selectedCps.push_back(p);
         computeSelectedCpsBBOX();
+    } else {
+        
+        ///Erase the point from the selection to allow the user to toggle the selection
+        if (modCASIsShift(e)) {
+            rotoData->selectedCps.erase(foundCP);
+            computeSelectedCpsBBOX();
+        }
     }
 
     rotoData->cpBeingDragged = p;
@@ -2171,6 +2205,12 @@ RotoGui::keyDown(double /*scaleX*/,
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 
+    if (key == Qt::Key_Shift) {
+        _imp->shiftDown = true;
+    } else if (key == Qt::Key_Control) {
+        _imp->ctrlDown = true;
+    }
+    
     if ( modCASIsControl(e) ) {
         if ( !_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && (e->key() == Qt::Key_Control) ) {
             _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
@@ -2285,6 +2325,13 @@ RotoGui::keyUp(double /*scaleX*/,
 {
     bool didSomething = false;
 
+    if (e->key() == Qt::Key_Shift) {
+        _imp->shiftDown = false;
+    } else if (e->key() == Qt::Key_Control) {
+        _imp->ctrlDown = false;
+    }
+
+    
     if ( !modCASIsControl(e) ) {
         if ( !_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && (e->key() == Qt::Key_Control) ) {
             _imp->rotoData->transformMode = (_imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?

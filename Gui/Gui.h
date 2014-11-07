@@ -98,7 +98,8 @@ public:
                                              bool requestedByLoad,
                                              double xPosHint,
                                              double yPosHint,
-                                             bool pushUndoRedoCommand);
+                                             bool pushUndoRedoCommand,
+                                             bool autoConnect);
 
     void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
 
@@ -428,7 +429,7 @@ public:
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
-    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<NodeGui> >& nodes) const;
+    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
 
 signals:
 
@@ -491,6 +492,8 @@ public slots:
     void setVisibleProjectSettingsPanel();
 
     void putSettingsPanelFirst(DockablePanel* panel);
+    
+    void buildTabFocusOrderPropertiesBin();
 
     void addToolButttonsToToolBar();
 

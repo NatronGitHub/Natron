@@ -218,6 +218,8 @@ public slots:
 
     void onCenterButtonClicked();
 
+    void onHideUnmodifiedButtonClicked(bool checked);
+    
 signals:
 
     /*emitted when the panel is clicked*/

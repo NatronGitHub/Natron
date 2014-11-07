@@ -145,6 +145,9 @@ public:
     /// If view is -1, guess it (e.g. from the last renderargs)
     virtual OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    /// given the colour component, find the nearest set of supported colour components
+    /// override this for extra wierd custom component depths
+    virtual const std::string &findSupportedComp(const std::string &s) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// override this to set the view to be returned by getImage()
     /// This is called by Instance::renderAction() for each clip, before calling

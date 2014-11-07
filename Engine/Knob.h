@@ -87,15 +87,17 @@ public:
     
     void s_keyFrameSet(SequenceTime time,
                        int dimension,
+                       int reason,
                        bool added)
     {
-        emit keyFrameSet(time,dimension,added);
+        emit keyFrameSet(time,dimension,reason,added);
     }
     
     void s_keyFrameRemoved(SequenceTime time,
-                           int dimension)
+                           int dimension,
+                           int reason)
     {
-        emit keyFrameRemoved(time,dimension);
+        emit keyFrameRemoved(time,dimension,reason);
     }
     
     void s_animationAboutToBeRemoved(int dimension)
@@ -164,6 +166,15 @@ public:
         emit displayMinMaxChanged(mini,maxi,index);
     }
     
+    void s_derivativeMoved(SequenceTime time,int dimension)
+    {
+        emit derivativeMoved(time,dimension);
+    }
+    
+    void s_keyFrameInterpolationChanged(SequenceTime time,int dimension)
+    {
+        emit keyFrameInterpolationChanged(time,dimension);
+    }
 public slots:
 
     /**
@@ -175,6 +186,14 @@ public slots:
      * @brief Calls KnobI::evaluateValueChange with a reason of Natron::eValueChangedReasonPluginEdited
      **/
     void onMasterChanged(int);
+    
+    void onMasterKeyFrameSet(SequenceTime time,int dimension,int reason,bool added);
+    
+    void onMasterKeyFrameRemoved(SequenceTime time,int dimension,int reason);
+    
+    void onMasterKeyFrameMoved(int dimension,int oldTime,int newTime);
+    
+    void onMasterAnimationRemoved(int dimension);
     
     /**
      * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
@@ -210,15 +229,19 @@ signals:
     
     ///Emitted whenever a keyframe is set with a reason different of eValueChangedReasonUserEdited
     ///@param added True if this is the first time that the keyframe was set
-    void keyFrameSet(SequenceTime time,int dimension,bool added);
+    void keyFrameSet(SequenceTime time,int dimension,int reason,bool added);
     
-    void refreshGuiCurve(int dimension);
-
     
     ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
-    void keyFrameRemoved(SequenceTime,int);
+    void keyFrameRemoved(SequenceTime,int dimension,int reason);
     
     void keyFrameMoved(int dimension,int oldTime,int newTime);
+    
+    void derivativeMoved(SequenceTime time,int dimension);
+    
+    void keyFrameInterpolationChanged(SequenceTime time,int dimension);
+    
+    void refreshGuiCurve(int dimension);
     
     ///Emitted whenever all keyframes of a dimension are about removed with a reason different of eValueChangedReasonUserEdited
     void animationAboutToBeRemoved(int);
@@ -288,6 +311,11 @@ public:
      * Some parameters cannot animate, for example a file selector.
      **/
     virtual bool canAnimate() const = 0;
+    
+    /**
+     * @brief Returns true if the knob has had modifications
+     **/
+    virtual bool hasModifications() const = 0;
 
     /**
      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
@@ -320,18 +348,20 @@ public:
      * The evaluateValueChange function will not be called as a result of the clone.
      * However a valueChanged signal will be emitted by the KnobSignalSlotHandler if there's any.
      *
+     * @param dimension If -1 all dimensions will be cloned, otherwise you can clone only a specific dimension
+     *
      * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
-    virtual void clone(KnobI* other) = 0;
-    virtual void clone(const boost::shared_ptr<KnobI> & other)
+    virtual void clone(KnobI* other,int dimension = -1) = 0;
+    virtual void clone(const boost::shared_ptr<KnobI> & other,int dimension = -1)
     {
-        clone( other.get() );
+        clone( other.get(), dimension );
     }
 
     /**
      * @brief Performs the same as clone but also refresh any gui it has.
      **/
-    virtual void cloneAndUpdateGui(KnobI* other) = 0;
+    virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) = 0;
 
     /**
      * @brief Performs the same as cloneAndUpdateGui, but also copies the properties of the knob such as whether it is enabled, secret,
@@ -348,16 +378,23 @@ public:
      * with different dimensions, but only the intersection of the dimension of the 2 parameters will be copied.
      * The restriction on types still apply.
      **/
-    virtual void clone(KnobI* other, SequenceTime offset, const RangeD* range) = 0;
+    virtual void clone(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) = 0;
     virtual void clone(const boost::shared_ptr<KnobI> & other,
                        SequenceTime offset,
-                       const RangeD* range)
+                       const RangeD* range,
+                       int dimension = -1)
     {
-        clone(other.get(),offset,range);
+        clone(other.get(),offset,range,dimension);
     }
+    
+    /**
+     * @brief Must return the curve used by the GUI of the parameter
+     **/
+    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
 
 protected:
 
+    
     /**
      * @brief Removes all the keyframes in the given dimension.
      **/
@@ -486,7 +523,7 @@ public:
      * @brief Returns a pointer to the curve in the given dimension.
      * It cannot be a null pointer.
      **/
-    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const = 0;
+    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0,bool byPassMaster = false) const = 0;
 
     /**
      * @brief Returns true if the dimension is animated with keyframes.
@@ -889,7 +926,7 @@ public:
     virtual int getKeyFramesCount(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getKeyFrameIndex(int dimension, double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0,bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -978,14 +1015,17 @@ protected:
      * @brief Called when you must copy any extra data you maintain from the other knob.
      * The other knob is guaranteed to be of the same type.
      **/
-    virtual void cloneExtraData(KnobI* /*other*/)
+    virtual void cloneExtraData(KnobI* /*other*/,int dimension = -1)
     {
+        (void)dimension;
     }
 
     virtual void cloneExtraData(KnobI* /*other*/,
                                 SequenceTime /*offset*/,
-                                const RangeD* /*range*/)
+                                const RangeD* /*range*/,
+                                int dimension = -1)
     {
+        (void)dimension;
     }
 
     /**
@@ -1018,7 +1058,7 @@ protected:
     
     void guiCurveCloneInternalCurve(int dimension);
     
-    boost::shared_ptr<Curve> getGuiCurve(int dimension) const;
+    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const OVERRIDE FINAL;
     
     void setGuiCurveHasChanged(int dimension,bool changed);
 
@@ -1056,7 +1096,9 @@ public:
 
     virtual ~Knob();
 
-public:
+    
+    virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 
     /**
      * @brief Get the current value of the knob for the given dimension.
@@ -1071,7 +1113,7 @@ public:
      * This function is overloaded by the String_Knob which can have its custom interpolation
      * but this should be the only knob which should ever need to overload it.
      **/
-    T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
+    T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true,bool byPassMaster = false) const WARN_UNUSED_RETURN;
 
 private:
 
@@ -1187,9 +1229,9 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
-    virtual void clone(KnobI* other)  OVERRIDE FINAL;
-    virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
-    virtual void cloneAndUpdateGui(KnobI* other) OVERRIDE FINAL;
+    virtual void clone(KnobI* other,int dimension = -1)  OVERRIDE FINAL;
+    virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual void deepClone(KnobI* other)  OVERRIDE FINAL;
     
     virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
@@ -1281,7 +1323,7 @@ private:
 
     ///Here is all the stuff we couldn't get rid of the template parameter
 
-    mutable QReadWriteLock _valueMutex; //< protects _values
+    mutable QReadWriteLock _valueMutex; //< protects _values & _defaultValues
     std::vector<T> _values;
     std::vector<T> _defaultValues;
     
@@ -1335,8 +1377,8 @@ public:
 
 protected:
 
-    virtual void cloneExtraData(KnobI* other) OVERRIDE;
-    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE;
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;
 

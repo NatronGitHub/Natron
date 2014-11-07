@@ -263,8 +263,8 @@ public:
     /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
     void setYRange(double yMin, double yMax);
 
-    void getKeyFramesWithinRect(double l,double b,double r,double t,std::vector<KeyFrame>* ret) const;
-
+    static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys,double time);
+    
 private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);

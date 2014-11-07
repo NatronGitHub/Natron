@@ -46,12 +46,14 @@ class access;
 
 class RectI;
 class RectD;
+class KnobI;
 class Bool_Knob;
 class Double_Knob;
 class Int_Knob;
 class Choice_Knob;
 class Color_Knob;
 
+class Curve;
 class Bezier;
 class RotoItemSerialization;
 class BezierSerialization;
@@ -92,6 +94,13 @@ public:
     BezierCP(Bezier* curve);
 
     virtual ~BezierCP();
+    
+    boost::shared_ptr<Curve> getXCurve() const;
+    boost::shared_ptr<Curve> getYCurve() const;
+    boost::shared_ptr<Curve> getLeftXCurve() const;
+    boost::shared_ptr<Curve> getLeftYCurve() const;
+    boost::shared_ptr<Curve> getRightXCurve() const;
+    boost::shared_ptr<Curve> getRightYCurve() const;
 
     void clone(const BezierCP & other);
 
@@ -382,6 +391,8 @@ public:
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     boost::shared_ptr<Color_Knob> getColorKnob() const;
 
+    const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
+    
 signals:
 
 #ifdef NATRON_ROTO_INVERTIBLE
@@ -632,6 +643,11 @@ public:
      * @brief Removes a keyframe at the given time if any.
      **/
     void removeKeyframe(int time);
+    
+    /**
+     * @brief Moves a keyframe
+     **/
+    void moveKeyframe(int oldTime,int newTime);
 
 
     /**
@@ -810,6 +826,10 @@ signals:
     void keyframeSet(int time);
 
     void keyframeRemoved(int time);
+    
+    void controlPointAdded();
+    
+    void controlPointRemoved();
 
 private:
 
@@ -1015,6 +1035,8 @@ public:
      * @brief Returns the name of the node holding this item
      **/
     std::string getRotoNodeName() const;
+    
+    void onItemNameChanged(RotoItem* item);
 
 signals:
 
@@ -1033,6 +1055,8 @@ signals:
     void refreshViewerOverlays();
 
     void itemLockedChanged();
+    
+    void itemNameChanged(RotoItem*);
 
 public slots:
 
@@ -1041,6 +1065,8 @@ public slots:
     void onFeatherLinkChanged(bool enabled);
 
     void onRippleEditChanged(bool enabled);
+    
+    void onSelectedKnobCurveChanged();
 
 private:
 

@@ -279,8 +279,6 @@ public:
 
     boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
 
-    bool shouldDrawOverlay() const;
-
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
 
 
@@ -417,6 +415,8 @@ private:
 
     void togglePreview_internal(bool refreshPreview = true);
 
+    void ensurePreviewCreated();
+    
     void setAboveItem(QGraphicsItem* item);
 
     void computePreviewImage(int time);

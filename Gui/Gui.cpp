@@ -96,6 +96,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ShortCutEditor.h"
 #include "Gui/NodeBackDrop.h"
 #include "Gui/MessageBox.h"
+#include "Gui/MultiInstancePanel.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -282,7 +283,6 @@ struct GuiPrivate
     QVBoxLayout *_layoutPropertiesBin;
     Button* _clearAllPanelsButton;
     SpinBox* _maxPanelsOpenedSpinBox;
-    Button* _freezeUIButton;
     
     QMutex _isGUIFrozenMutex;
     bool _isGUIFrozen;
@@ -406,7 +406,6 @@ struct GuiPrivate
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
-          , _freezeUIButton(0)
           , _isGUIFrozenMutex()
           , _isGUIFrozen(false)
           , menubar(0)
@@ -626,11 +625,12 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool requestedByLoad,
                     double xPosHint,
                     double yPosHint,
-                    bool pushUndoRedoCommand)
+                    bool pushUndoRedoCommand,
+                    bool autoConnect)
 {
     assert(_imp->_nodeGraphArea);
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
-                                                                             xPosHint,yPosHint,pushUndoRedoCommand);
+                                                                             xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
     QObject::connect( nodeGui.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
@@ -996,7 +996,7 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
     
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
-    _propertiesScrollArea->setObjectName("PropertiesBinScrollArea");
+    _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);
 
     QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
@@ -1032,26 +1032,9 @@ GuiPrivate::createPropertiesBinGui()
                                                                   Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox,SIGNAL( valueChanged(double) ),_gui,SLOT( onMaxPanelsSpinBoxValueChanged(double) ) );
-
-    QPixmap pixFreezeEnabled,pixFreezeDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
-    QIcon icFreeze;
-    icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
-    icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);
-    _freezeUIButton = new Button(icFreeze,"",propertiesAreaButtonsContainer);
-    _freezeUIButton->setCheckable(true);
-    _freezeUIButton->setChecked(false);
-    _freezeUIButton->setDown(false);
-    _freezeUIButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _freezeUIButton->setToolTip("<p><b>" + _gui->tr("Turbo mode:") + "</p></b><p>" + _gui->tr("When checked, everything besides the viewer will not be refreshed in the user interface "
-                                         "for maximum efficiency during playback.") + "</p>");
-    _freezeUIButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _freezeUIButton, SIGNAL (clicked(bool)), _gui, SLOT(onFreezeUIButtonClicked(bool) ) );
     
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
-    propertiesAreaButtonsLayout->addWidget(_freezeUIButton);
     propertiesAreaButtonsLayout->addStretch();
     
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
@@ -1647,6 +1630,23 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
     _imp->_layoutPropertiesBin->removeWidget(panel);
     _imp->_layoutPropertiesBin->insertWidget(0, panel);
     _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+    buildTabFocusOrderPropertiesBin();
+}
+
+void
+Gui::buildTabFocusOrderPropertiesBin()
+{
+    int next = 1;
+    for (int i = 0; i < _imp->_layoutPropertiesBin->count(); ++i,++next) {
+        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
+        QWidget* w = item->widget();
+        QWidget* nextWidget = next >= _imp->_layoutPropertiesBin->count() ? _imp->_layoutPropertiesBin->itemAt(0)->widget()
+        : _imp->_layoutPropertiesBin->itemAt(next)->widget();
+        
+        if (w && nextWidget) {
+            setTabOrder(w,nextWidget);
+        }
+    }
 }
 
 void
@@ -3231,10 +3231,17 @@ void
 Gui::removeUndoStack(QUndoStack* stack)
 {
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
+    
+    if (_imp->_currentUndoAction == it->second.first) {
+        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
+    }
+    if (_imp->_currentRedoAction == it->second.second) {
+        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
+    }
     if ( it != _imp->_undoStacksActions.end() ) {
         _imp->_undoStacksActions.erase(it);
     }
+   
 }
 
 void
@@ -4149,6 +4156,10 @@ Gui::keyPressEvent(QKeyEvent* e)
         getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         getApp()->getTimeLine()->goToNextKeyframe();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
+        _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+        _imp->_nodeGraphArea->popFindDialog();  
     } else {
         QMainWindow::keyPressEvent(e);
     }
@@ -4182,7 +4193,12 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         QMutexLocker k(&_imp->_isGUIFrozenMutex);
         _imp->_isGUIFrozen = clicked;
     }
-    _imp->_freezeUIButton->setDown(clicked);
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+            (*it)->setTurboButtonDown(clicked);
+        }
+    }
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
 }
 
@@ -4303,14 +4319,34 @@ FloatingWidget::closeEvent(QCloseEvent* e)
 
 
 void
-Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<NodeGui> >& nodes) const
+Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
 {
     int layoutItemsCount = _imp->_layoutPropertiesBin->count();
     for (int i = 0; i < layoutItemsCount; ++i) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(item->widget());
-        if (panel && panel->getNode() && panel->getNode()->shouldDrawOverlay()) {
-            nodes.push_back(panel->getNode());
+        if (panel) {
+            boost::shared_ptr<NodeGui> node = panel->getNode();
+            if (node) {
+                boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
+                if (multiInstance) {
+                    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+                    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                        if (it->first->isActivated()) {
+                            nodes.push_back(it->first);
+                        }
+                    }
+                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+                    if (!internalNode->isNodeDisabled() && node->isSettingsPanelVisible()) {
+                        nodes.push_back(node->getNode());
+                    }
+                } else {
+                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+                    if (!internalNode->isNodeDisabled() && internalNode->isActivated() && node->isSettingsPanelVisible()) {
+                        nodes.push_back(node->getNode());
+                    }
+                }
+            }
         }
     }
 }

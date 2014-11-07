@@ -152,6 +152,7 @@ Double_Knob::Double_Knob(KnobHolder* holder,
                          int dimension,
                          bool declaredByPlugin)
 : Knob<double>(holder, description, dimension,declaredByPlugin)
+, _spatial(false)
 , _increments(dimension)
 , _decimals(dimension)
 , _disableSlider(false)
@@ -402,6 +403,17 @@ getInputRoD(EffectInstance* effect,
 #endif
 }
 
+void
+Double_Knob::setSpatial(bool spatial)
+{
+    _spatial = spatial;
+}
+
+bool
+Double_Knob::getIsSpatial() const
+{
+    return _spatial;
+}
 
 void
 Double_Knob::setDefaultValuesNormalized(int dims,
@@ -1144,14 +1156,16 @@ Parametric_Knob::deleteAllControlPoints(int dimension)
 }
 
 void
-Parametric_Knob::cloneExtraData(KnobI* other)
+Parametric_Knob::cloneExtraData(KnobI* other,int dimension )
 {
     ///Mt-safe as Curve is MT-safe
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
     
     if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
         for (int i = 0; i < getDimension(); ++i) {
-            _curves[i]->clone( *isParametric->getParametricCurve(i) );
+            if (i == dimension || dimension == -1) {
+                _curves[i]->clone( *isParametric->getParametricCurve(i) );
+            }
         }
     }
 }
@@ -1159,14 +1173,17 @@ Parametric_Knob::cloneExtraData(KnobI* other)
 void
 Parametric_Knob::cloneExtraData(KnobI* other,
                                 SequenceTime offset,
-                                const RangeD* range)
+                                const RangeD* range,
+                                int dimension)
 {
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
     
     if (isParametric) {
         int dimMin = std::min( getDimension(), isParametric->getDimension() );
         for (int i = 0; i < dimMin; ++i) {
-            _curves[i]->clone(*isParametric->getParametricCurve(i), offset, range);
+            if (i == dimension || dimension == -1) {
+                _curves[i]->clone(*isParametric->getParametricCurve(i), offset, range);
+            }
         }
     }
 }

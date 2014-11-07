@@ -11,6 +11,8 @@
 
 #include "ScaleSliderQWidget.h"
 
+#include <vector>
+#include <cmath> // for std::pow()
 #include <cassert>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -21,60 +23,123 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QStyleOption>
 
 #include "Gui/ticks.h"
+#include "Gui/ZoomContext.h"
 
 #define TICK_HEIGHT 7
 #define SLIDER_WIDTH 4
-#define SLIDER_HEIGHT 20
+#define SLIDER_HEIGHT 15
 
-ScaleSliderQWidget::ScaleSliderQWidget(double bottom,
-                                       double top,
+
+struct ScaleSliderQWidgetPrivate
+{
+    
+    ZoomContext zoomCtx;
+    QPointF oldClick;
+    double minimum,maximum;
+    Natron::ScaleTypeEnum type;
+    double value;
+    bool dragging;
+    QFont* font;
+    QColor textColor;
+    QColor scaleColor;
+    QColor sliderColor;
+    bool initialized;
+    bool mustInitializeSliderPosition;
+    bool readOnly;
+    bool ctrlDown;
+    bool shiftDown;
+    double currentZoom;
+    
+    ScaleSliderQWidgetPrivate(double min,
+                              double max,
+                              double initialPos,
+                              Natron::ScaleTypeEnum type)
+    : zoomCtx()
+    , oldClick()
+    , minimum(min)
+    , maximum(max)
+    , type(type)
+    , value(initialPos)
+    , dragging(false)
+    , font(new QFont(NATRON_FONT_ALT, NATRON_FONT_SIZE_8))
+    , textColor(200,200,200,255)
+    , scaleColor(100,100,100,255)
+    , sliderColor(97,83,30,255)
+    , initialized(false)
+    , mustInitializeSliderPosition(true)
+    , readOnly(false)
+    , ctrlDown(false)
+    , shiftDown(false)
+    , currentZoom(1.)
+    {
+        
+    }
+};
+
+ScaleSliderQWidget::ScaleSliderQWidget(double min,
+                                       double max,
                                        double initialPos,
                                        Natron::ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
-      , _zoomCtx()
-      , _oldClick()
-      , _minimum(bottom)
-      , _maximum(top)
-      , _type(type)
-      , _value(initialPos)
-      , _dragging(false)
-      , _font( new QFont(NATRON_FONT_ALT, NATRON_FONT_SIZE_8) )
-      , _textColor(200,200,200,255)
-      , _scaleColor(100,100,100,255)
-      , _sliderColor(97,83,30,255)
-      , _initialized(false)
-      , _mustInitializeSliderPosition(true)
-      , _readOnly(false)
-      , _ctrlDown(false)
-      , _shiftDown(false)
-      , _currentZoom(1.)
+    , _imp(new ScaleSliderQWidgetPrivate(min,max,initialPos,type))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
-    _zoomCtx.setScreenSize(sizeh.width(), sizeh.height());
+    _imp->zoomCtx.setScreenSize(sizeh.width(), sizeh.height());
     setFocusPolicy(Qt::ClickFocus);
 }
 
 QSize
 ScaleSliderQWidget::sizeHint() const
 {
-    return QSize(150,30);
+    return QSize(150,20);
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
 {
-    delete _font;
+    delete _imp->font;
 }
+
+Natron::ScaleTypeEnum
+ScaleSliderQWidget::type() const
+{
+    return _imp->type;
+}
+
+double
+ScaleSliderQWidget::minimum() const
+{
+    return _imp->minimum;
+}
+
+double
+ScaleSliderQWidget::maximum() const
+{
+    return _imp->maximum;
+}
+
+double
+ScaleSliderQWidget::getPosition() const
+{
+    return _imp->value;
+}
+
+bool
+ScaleSliderQWidget::isReadOnly() const
+{
+    return _imp->readOnly;
+}
+
 
 void
 ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 {
-    if (!_readOnly) {
+    if (!_imp->readOnly) {
         QPoint newClick =  e->pos();
 
-        _oldClick = newClick;
-        QPointF newClick_opengl = _zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
+        _imp->oldClick = newClick;
+        QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
 
         seekInternal( newClick_opengl.x() );
     }
@@ -84,9 +149,9 @@ ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 void
 ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!_readOnly) {
+    if (!_imp->readOnly) {
         QPoint newClick =  e->pos();
-        QPointF newClick_opengl = _zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
+        QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
 
         seekInternal( newClick_opengl.x() );
     }
@@ -103,16 +168,16 @@ void
 ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
-        _ctrlDown = true;
-        double scale = _shiftDown ? 100. : 10.;
-        _currentZoom = scale;
-        _zoomCtx.zoomx(_value, 0, scale);
+        _imp->ctrlDown = true;
+        double scale = _imp->shiftDown ? 100. : 10.;
+        _imp->currentZoom = scale;
+        _imp->zoomCtx.zoomx(_imp->value, 0, scale);
         update();
     } else if (e->key() == Qt::Key_Shift) {
-        _shiftDown = true;
-        if (_ctrlDown) {
-            _zoomCtx.zoomx(_value, 0, 10.);
-            _currentZoom = 100.;
+        _imp->shiftDown = true;
+        if (_imp->ctrlDown) {
+            _imp->zoomCtx.zoomx(_imp->value, 0, 10.);
+            _imp->currentZoom = 100.;
         }
         update();
     }
@@ -123,20 +188,20 @@ void
 ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
-        _ctrlDown = false;
-        _zoomCtx.zoomx(_value, 0, 1. / _currentZoom);
-        _currentZoom = 1.;
-        centerOn(_minimum, _maximum);
+        _imp->ctrlDown = false;
+        _imp->zoomCtx.zoomx(_imp->value, 0, 1. / _imp->currentZoom);
+        _imp->currentZoom = 1.;
+        centerOn(_imp->minimum, _imp->maximum);
         return;
     } else if (e->key() == Qt::Key_Shift) {
-        _shiftDown = false;
-        if (_ctrlDown) {
-            _zoomCtx.zoomx(_value, 0, 1. / 10.);
-            _currentZoom = 10.;
+        _imp->shiftDown = false;
+        if (_imp->ctrlDown) {
+            _imp->zoomCtx.zoomx(_imp->value, 0, 1. / 10.);
+            _imp->currentZoom = 10.;
         } else {
-            _zoomCtx.zoomx(_value, 0, 1. / _currentZoom);
-            centerOn(_minimum, _maximum);
-            _currentZoom = 1.;
+            _imp->zoomCtx.zoomx(_imp->value, 0, 1. / _imp->currentZoom);
+            centerOn(_imp->minimum, _imp->maximum);
+            _imp->currentZoom = 1.;
             return;
         }
         update();
@@ -148,19 +213,19 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 void
 ScaleSliderQWidget::seekScalePosition(double v)
 {
-    if (v < _minimum) {
-        v = _minimum;
+    if (v < _imp->minimum) {
+        v = _imp->minimum;
     }
-    if (v > _maximum) {
-        v = _maximum;
+    if (v > _imp->maximum) {
+        v = _imp->maximum;
     }
 
 
-    if ( (v == _value) && _initialized ) {
+    if ( (v == _imp->value) && _imp->initialized ) {
         return;
     }
-    _value = v;
-    if (_initialized) {
+    _imp->value = v;
+    if (_imp->initialized) {
         update();
     }
 }
@@ -168,17 +233,17 @@ ScaleSliderQWidget::seekScalePosition(double v)
 void
 ScaleSliderQWidget::seekInternal(double v)
 {
-    if (v < _minimum) {
-        v = _minimum;
+    if (v < _imp->minimum) {
+        v = _imp->minimum;
     }
-    if (v > _maximum) {
-        v = _maximum;
+    if (v > _imp->maximum) {
+        v = _imp->maximum;
     }
-    if (v == _value) {
+    if (v == _imp->value) {
         return;
     }
-    _value = v;
-    if (_initialized) {
+    _imp->value = v;
+    if (_imp->initialized) {
         update();
     }
     emit positionChanged(v);
@@ -190,9 +255,9 @@ void
 ScaleSliderQWidget::setMinimumAndMaximum(double min,
                                          double max)
 {
-    _minimum = min;
-    _maximum = max;
-    centerOn(_minimum, _maximum);
+    _imp->minimum = min;
+    _imp->maximum = max;
+    centerOn(_imp->minimum, _imp->maximum);
 }
 
 void
@@ -201,7 +266,7 @@ ScaleSliderQWidget::centerOn(double left,
 {
 
     double w = right - left;
-    _zoomCtx.fill(left - w * 0.05, right + w * 0.05, _zoomCtx.bottom(), _zoomCtx.top());
+    _imp->zoomCtx.fill(left - w * 0.05, right + w * 0.05, _imp->zoomCtx.bottom(), _imp->zoomCtx.top());
 
     update();
 }
@@ -209,18 +274,18 @@ ScaleSliderQWidget::centerOn(double left,
 void
 ScaleSliderQWidget::resizeEvent(QResizeEvent* e)
 {
-    _zoomCtx.setScreenSize(e->size().width(), e->size().height());
+    _imp->zoomCtx.setScreenSize(e->size().width(), e->size().height());
     QWidget::resizeEvent(e);
 }
 
 void
 ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 {
-    if (_mustInitializeSliderPosition) {
-        centerOn(_minimum, _maximum);
-        _mustInitializeSliderPosition = false;
-        seekScalePosition(_value);
-        _initialized = true;
+    if (_imp->mustInitializeSliderPosition) {
+        centerOn(_imp->minimum, _imp->maximum);
+        _imp->mustInitializeSliderPosition = false;
+        seekScalePosition(_imp->value);
+        _imp->initialized = true;
     }
 
     ///fill the background with the appropriate style color
@@ -229,11 +294,11 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
-    QFontMetrics fontM(*_font);
-    p.setPen(_scaleColor);
+    QFontMetrics fontM(*_imp->font);
+    p.setPen(_imp->scaleColor);
 
-    QPointF btmLeft = _zoomCtx.toZoomCoordinates(0,height() - 1);
-    QPointF topRight = _zoomCtx.toZoomCoordinates(width() - 1, 0);
+    QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height() - 1);
+    QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
 
     if ( btmLeft.x() == topRight.x() ) {
         return;
@@ -243,8 +308,8 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     double lineYpos = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
     p.drawLine(0, lineYpos, width() - 1, lineYpos);
 
-    double tickBottom = _zoomCtx.toZoomCoordinates( 0,height() - 1 - fontM.height() ).y();
-    double tickTop = _zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
+    double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0,height() - 1 - fontM.height() ).y();
+    double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     std::vector<double> acceptedDistances;
@@ -273,14 +338,14 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         double value = i * smallTickSize + offset;
         const double tickSize = ticks[i - m1] * smallTickSize;
         const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
-        QColor color(_textColor);
+        QColor color(_imp->textColor);
         color.setAlphaF(alpha);
         QPen pen(color);
         pen.setWidthF(1.9);
         p.setPen(pen);
 
-        QPointF tickBottomPos = _zoomCtx.toWidgetCoordinates(value, tickBottom);
-        QPointF tickTopPos = _zoomCtx.toWidgetCoordinates(value, tickTop);
+        QPointF tickBottomPos = _imp->zoomCtx.toWidgetCoordinates(value, tickBottom);
+        QPointF tickTopPos = _imp->zoomCtx.toWidgetCoordinates(value, tickTop);
 
         p.drawLine(tickBottomPos,tickTopPos);
 
@@ -297,24 +362,24 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                 }
-                QColor c = _readOnly || !isEnabled() ? Qt::black : _textColor;
+                QColor c = _imp->readOnly || !isEnabled() ? Qt::black : _imp->textColor;
                 c.setAlphaF(alphaText);
-                p.setFont(*_font);
+                p.setFont(*_imp->font);
                 p.setPen(c);
 
-                QPointF textPos = _zoomCtx.toWidgetCoordinates( value, btmLeft.y() );
+                QPointF textPos = _imp->zoomCtx.toWidgetCoordinates( value, btmLeft.y() );
 
                 p.drawText(textPos, s);
             }
         }
     }
-    double positionValue = _zoomCtx.toWidgetCoordinates(_value,0).x();
+    double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value,0).x();
     QPointF sliderBottomLeft(positionValue - SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2);
     QPointF sliderTopRight(positionValue + SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2 - SLIDER_HEIGHT);
 
     /*draw the slider*/
-    p.setPen(_sliderColor);
-    p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(),_sliderColor);
+    p.setPen(_imp->sliderColor);
+    p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(),_imp->sliderColor);
 
     /*draw a black rect around the slider for contrast*/
     p.setPen(Qt::black);
@@ -328,7 +393,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 void
 ScaleSliderQWidget::setReadOnly(bool ro)
 {
-    _readOnly = ro;
+    _imp->readOnly = ro;
     update();
 }
 

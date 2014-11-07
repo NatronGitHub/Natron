@@ -181,6 +181,11 @@ public:
     
     virtual boost::shared_ptr<Curve> getCurve(int dimension) const OVERRIDE FINAL;
 
+    /**
+     * @brief Check if the knob is secret by also checking the parent group visibility
+     **/
+    bool isSecretRecursive() const;
+    
 public slots:
 
     void onRefreshGuiCurve(int dimension);
@@ -190,9 +195,9 @@ public slots:
      **/
     void onInternalValueChanged(int dimension,int reason);
 
-    void onInternalKeySet(SequenceTime time,int dimension,bool added);
+    void onInternalKeySet(SequenceTime time,int dimension,int reason,bool added);
 
-    void onInternalKeyRemoved(SequenceTime time,int dimension);
+    void onInternalKeyRemoved(SequenceTime time,int dimension,int reason);
 
     void onInternalAnimationAboutToBeRemoved();
     
@@ -246,7 +251,7 @@ public slots:
     void onPasteAnimationActionTriggered();
 
     void onLinkToActionTriggered();
-    void linkTo();
+    void linkTo(int dimension);
 
     void onUnlinkActionTriggered();
     void unlink();

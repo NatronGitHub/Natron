@@ -214,16 +214,18 @@ OfxClipInstance::getPremult() const
 double
 OfxClipInstance::getAspectRatio() const
 {
-  //  if (isOutput()) {
+    if (isOutput()) {
         return _aspectRatio;
-//    }
-//    
-//    EffectInstance* input = getAssociatedNode();
-//    if (input) {
-//        return input->getPreferredAspectRatio();
-//    } else {
-//        return 1.;
-//    }
+    }
+    
+    EffectInstance* input = getAssociatedNode();
+    if (input) {
+        return input->getPreferredAspectRatio();
+    } else {
+        Format f;
+        _nodeInstance->getRenderFormat(&f);
+        return f.getPixelAspectRatio();
+    }
 }
 
 void
@@ -362,11 +364,9 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             if (args.isMipmapLevelValid) {
                 mipmapLevel = args.mipMapLevel;
             } else {
-                 qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
                 mipmapLevel = 0;
             }
         } else {
-            qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
             mipmapLevel = 0;
             view = 0;
         }
@@ -771,4 +771,56 @@ OfxClipInstance::discardMipMapLevel()
 {
     assert( _lastActionData.hasLocalData() );
     _lastActionData.localData().isMipmapLevelValid = false;
+}
+
+const std::string &
+OfxClipInstance::findSupportedComp(const std::string &s) const
+{
+    static const std::string none(kOfxImageComponentNone);
+    static const std::string rgba(kOfxImageComponentRGBA);
+    static const std::string rgb(kOfxImageComponentRGB);
+    static const std::string alpha(kOfxImageComponentAlpha);
+    
+    /// is it there
+    if(isSupportedComponent(s))
+        return s;
+    
+    /// were we fed some custom non chromatic component by getUnmappedComponents? Return it.
+    /// we should never be here mind, so a bit weird
+    if(!_effectInstance->isChromaticComponent(s))
+        return s;
+    
+    /// Means we have RGBA or Alpha being passed in and the clip
+    /// only supports the other one, so return that
+    if(s == rgba) {
+        if (isSupportedComponent(rgb)) {
+            return rgb;
+        }
+        if (isSupportedComponent(alpha)) {
+            return alpha;
+        }
+    } else if(s == alpha) {
+        if (isSupportedComponent(rgba)) {
+            return rgba;
+        }
+        if (isSupportedComponent(rgb)) {
+            return rgb;
+        }
+    } else if (s == rgb) {
+        if (isSupportedComponent(rgba)) {
+            return rgba;
+        }
+        if (isSupportedComponent(alpha)) {
+            return rgb;
+        }
+    }
+    
+    /// wierd, must be some custom bit , if only one, choose that, otherwise no idea
+    /// how to map, you need to derive to do so.
+    const std::vector<std::string> &supportedComps = getSupportedComponents();
+    if(supportedComps.size() == 1)
+        return supportedComps[0];
+    
+    return none;
+
 }

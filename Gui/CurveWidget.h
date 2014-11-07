@@ -30,6 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Gui/CurveEditorUndoRedo.h"
 #include "Engine/OverlaySupport.h"
+#include "Engine/Curve.h"
 
 class QFont;
 class Variant;
@@ -40,6 +41,8 @@ class Button;
 class LineEdit;
 class SpinBox;
 class Gui;
+class Bezier;
+class RotoContext;
 class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
@@ -53,8 +56,6 @@ public:
   
     CurveGui(const CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
-             KnobGui* knob,
-             int dimension,
              const QString & name,
              const QColor & color,
              int thickness = 1);
@@ -113,21 +114,13 @@ public:
         _selected = s;
     }
 
-    KnobGui* getKnob() const
-    {
-        return _knob;
-    }
-
-    int getDimension() const
-    {
-        return _dimension;
-    }
 
     /**
      * @brief Evaluates the curve and returns the y position corresponding to the given x.
      * The coordinates are those of the curve, not of the widget.
      **/
-    double evaluate(double x) const;
+    virtual double evaluate(double x) const;
+    
     boost::shared_ptr<Curve>  getInternalCurve() const
     {
         return _internalCurve;
@@ -135,9 +128,19 @@ public:
 
     void drawCurve(int curveIndex,int curvesCount);
 
+    virtual std::pair<double,double> getCurveYRange() const;
+
+    virtual bool areKeyFramesTimeClampedToIntegers() const;
+    virtual bool areKeyFramesValuesClampedToBooleans() const;
+    virtual bool areKeyFramesValuesClampedToIntegers() const;
+    virtual bool isYComponentMovable() const;
+    virtual KeyFrameSet getKeyFrames() const;
+    
 signals:
 
     void curveChanged();
+    
+    
 
 private:
 
@@ -149,10 +152,88 @@ private:
     bool _visible; /// should we draw this curve ?
     bool _selected; /// is this curve selected
     const CurveWidget* _curveWidget;
+   
+};
+
+class KnobCurveGui : public CurveGui
+{
+    
+public:
+    
+    
+    KnobCurveGui(const CurveWidget *curveWidget,
+             boost::shared_ptr<Curve>  curve,
+             KnobGui* knob,
+             int dimension,
+             const QString & name,
+             const QColor & color,
+             int thickness = 1);
+    
+    
+    KnobCurveGui(const CurveWidget *curveWidget,
+                 boost::shared_ptr<Curve>  curve,
+                 const boost::shared_ptr<KnobI>& knob,
+                 const boost::shared_ptr<RotoContext>& roto,
+                 int dimension,
+                 const QString & name,
+                 const QColor & color,
+                 int thickness = 1);
+    
+    virtual ~KnobCurveGui();
+    
+    KnobGui* getKnobGui() const
+    {
+        return _knob;
+    }
+    
+    boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
+    
+    boost::shared_ptr<KnobI> getInternalKnob() const;
+    
+    int getDimension() const
+    {
+        return _dimension;
+    }
+    
+private:
+    
+    boost::shared_ptr<RotoContext> _roto;
+    boost::shared_ptr<KnobI> _internalKnob;
     KnobGui* _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
 
+class BezierCPCurveGui : public CurveGui
+{
+public:
+    
+    BezierCPCurveGui(const CurveWidget *curveWidget,
+                 Bezier* bezier,
+                 const boost::shared_ptr<RotoContext>& roto,
+                 const QString & name,
+                 const QColor & color,
+                 int thickness = 1);
+    
+    virtual ~BezierCPCurveGui();
+    
+    boost::shared_ptr<RotoContext> getRotoContext() const { return _rotoContext; }
+    
+    Bezier* getBezier() const ;
+    
+    virtual double evaluate(double x) const;
+    virtual std::pair<double,double> getCurveYRange() const;
+
+    virtual bool areKeyFramesTimeClampedToIntegers() const { return true; }
+    virtual bool areKeyFramesValuesClampedToBooleans() const { return false; }
+    virtual bool areKeyFramesValuesClampedToIntegers() const { return true; }
+    virtual bool isYComponentMovable() const { return false; }
+    virtual KeyFrameSet getKeyFrames() const;
+private:
+    
+    
+    Bezier* _bezier;
+    boost::shared_ptr<RotoContext> _rotoContext;
+};
 
 class QMenu;
 class CurveWidgetPrivate;
@@ -179,7 +260,7 @@ public:
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    CurveGui * createCurve(boost::shared_ptr<Curve> curve,KnobGui* knob,int dimension, const QString &name);
+    void addCurveAndSetColor(CurveGui* curve);
 
     void removeCurve(CurveGui* curve);
 
@@ -189,17 +270,15 @@ public:
 
     void getVisibleCurves(std::vector<CurveGui*>* curves) const;
 
-    void addKeyFrame(CurveGui* curve, const KeyFrame & key);
-
     void setSelectedKeys(const SelectedKeys & keys);
 
     void refreshSelectedKeys();
 
     double getZoomFactor() const;
 
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     /**
      * @brief Swap the OpenGL buffers.

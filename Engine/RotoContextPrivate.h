@@ -41,19 +41,23 @@
 
 #define kRotoNameHint "Name of the layer or curve"
 
-#define kRotoOpacityParamName "Opacity"
+#define kRotoOpacityParam "opacity"
+#define kRotoOpacityParamLabel "Opacity"
 #define kRotoOpacityHint \
     "Controls the opacity of the selected shape(s)."
 
-#define kRotoFeatherParamName "Feather"
+#define kRotoFeatherParam "feather"
+#define kRotoFeatherParamLabel "Feather"
 #define kRotoFeatherHint \
     "Controls the distance of feather (in pixels) to add around the selected shape(s)"
 
-#define kRotoFeatherFallOffParamName "Feather fall-off"
+#define kRotoFeatherFallOffParam "featherFallOff"
+#define kRotoFeatherFallOffParamLabel "Feather fall-off"
 #define kRotoFeatherFallOffHint \
     "Controls the rate at which the feather is applied on the selected shape(s)."
 
-#define kRotoActivatedParamName "Activated"
+#define kRotoActivatedParam "activated"
+#define kRotoActivatedParamLabel "Activated"
 #define kRotoActivatedHint \
     "Controls whether the selected shape(s) should be visible and rendered or not." \
     "Note that you can animate this parameter so you can activate/deactive the shape " \
@@ -63,7 +67,9 @@
     "Control whether the layer/curve is editable or locked."
 
 #ifdef NATRON_ROTO_INVERTIBLE
-#define kRotoInvertedParamName "Inverted"
+#define kRotoInvertedParam "inverted"
+#define kRotoInvertedParamLabel "Inverted"
+
 #define kRotoInvertedHint \
     "Controls whether the selected shape(s) should be inverted. When inverted everything " \
     "outside the shape will be set to 1 and everything inside the shape will be set to 0."
@@ -71,11 +77,13 @@
 
 #define kRotoOverlayHint "Color of the display overlay for this curve. Doesn't affect output."
 
-#define kRotoColorParamName "Color"
+#define kRotoColorParam "color"
+#define kRotoColorParamLabel "Color"
 #define kRotoColorHint \
     "The color of the shape. This parameter is used when the output components are set to RGBA."
 
-#define kRotoCompOperatorParamName "Operator"
+#define kRotoCompOperatorParam "operator"
+#define kRotoCompOperatorParamLabel "Operator"
 #define kRotoCompOperatorHint \
     "The compositing operator controls how this shape is merged with the shapes that have already been rendered.\n" \
     "The roto mask is initialised as black and transparent, then each shape is drawn in the selected order, with the selected color and operator.\n" \
@@ -89,12 +97,12 @@ struct BezierCPPrivate
     Bezier* holder;
 
     ///the animation curves for the position in the 2D plane
-    Curve curveX,curveY;
+    boost::shared_ptr<Curve> curveX,curveY;
     double x,y; //< used when there is no keyframe
 
     ///the animation curves for the derivatives
     ///They do not need to be protected as Curve is a thread-safe class.
-    Curve curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
+    boost::shared_ptr<Curve> curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
     mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
     double leftX,rightX,leftY,rightY; //< used when there is no keyframe
     mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
@@ -103,14 +111,14 @@ struct BezierCPPrivate
 
     BezierCPPrivate(Bezier* curve)
         : holder(curve)
-          , curveX()
-          , curveY()
+          , curveX(new Curve)
+          , curveY(new Curve)
           , x(0)
           , y(0)
-          , curveLeftBezierX()
-          , curveRightBezierX()
-          , curveLeftBezierY()
-          , curveRightBezierY()
+          , curveLeftBezierX(new Curve)
+          , curveRightBezierX(new Curve)
+          , curveLeftBezierY(new Curve)
+          , curveRightBezierY(new Curve)
           , staticPositionMutex()
           , leftX(0)
           , rightX(0)
@@ -425,61 +433,77 @@ struct RotoDrawableItemPrivate
 #endif
     boost::shared_ptr<Color_Knob> color;
     boost::shared_ptr<Choice_Knob> compOperator;
+    
+    std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
     RotoDrawableItemPrivate()
-        : opacity( new Double_Knob(NULL, kRotoOpacityParamName, 1, false) )
-          , feather( new Double_Knob(NULL, kRotoFeatherParamName, 1, false) )
-          , featherFallOff( new Double_Knob(NULL, kRotoFeatherFallOffParamName, 1, false) )
-          , activated( new Bool_Knob(NULL, kRotoActivatedParamName, 1, false) )
+        : opacity( new Double_Knob(NULL, kRotoOpacityParamLabel, 1, false) )
+          , feather( new Double_Knob(NULL, kRotoFeatherParamLabel, 1, false) )
+          , featherFallOff( new Double_Knob(NULL, kRotoFeatherFallOffParamLabel, 1, false) )
+          , activated( new Bool_Knob(NULL, kRotoActivatedParamLabel, 1, false) )
 #ifdef NATRON_ROTO_INVERTIBLE
-          , inverted( new Bool_Knob(NULL, kRotoInvertedParamName, 1, false) )
+          , inverted( new Bool_Knob(NULL, kRotoInvertedParamLable, 1, false) )
 #endif
-          , color( new Color_Knob(NULL, kRotoColorParamName, 3, false) )
-          , compOperator( new Choice_Knob(NULL, kRotoCompOperatorParamName, 1, false) )
+          , color( new Color_Knob(NULL, kRotoColorParamLabel, 3, false) )
+          , compOperator( new Choice_Knob(NULL, kRotoCompOperatorParamLabel, 1, false) )
+          , knobs()
     {
         opacity->setHintToolTip(kRotoOpacityHint);
+        opacity->setName(kRotoOpacityParam);
         opacity->populate();
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(opacity) );
             opacity->setSignalSlotHandler(handler);
         }
+        knobs.push_back(opacity);
 
         feather->setHintToolTip(kRotoFeatherHint);
+        feather->setName(kRotoFeatherParam);
         feather->populate();
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(feather) );
             feather->setSignalSlotHandler(handler);
         }
+        knobs.push_back(feather);
 
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
+        featherFallOff->setName(kRotoFeatherFallOffParam);
         featherFallOff->populate();
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(featherFallOff) );
             featherFallOff->setSignalSlotHandler(handler);
         }
+        
+        knobs.push_back(featherFallOff);
 
         activated->setHintToolTip(kRotoActivatedHint);
+        activated->setName(kRotoActivatedParam);
         activated->populate();
         activated->setDefaultValue(true);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(activated) );
             activated->setSignalSlotHandler(handler);
         }
+        knobs.push_back(activated);
 
 #ifdef NATRON_ROTO_INVERTIBLE
         inverted->setHintToolTip(kRotoInvertedHint);
+        inverted->setName(kRotoInvertedParam);
         inverted->populate();
         inverted->setDefaultValue(false);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(inverted) );
             inverted->setSignalSlotHandler(handler);
         }
+        knobs.push_back(inverted);
 #endif
+        
 
         color->setHintToolTip(kRotoColorHint);
+        color->setName(kRotoColorParam);
         color->populate();
         color->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
         color->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
@@ -488,8 +512,10 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(color) );
             color->setSignalSlotHandler(handler);
         }
+        knobs.push_back(color);
 
         compOperator->setHintToolTip(kRotoCompOperatorHint);
+        compOperator->setName(kRotoCompOperatorParam);
         compOperator->populate();
         std::vector<std::string> operators;
         std::vector<std::string> tooltips;
@@ -500,6 +526,7 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(compOperator) );
             compOperator->setSignalSlotHandler(handler);
         }
+        knobs.push_back(compOperator);
 
         overlayColor[0] = 0.85164;
         overlayColor[1] = 0.196936;
@@ -533,6 +560,8 @@ struct RotoContextPrivate
 #endif
     boost::shared_ptr<Color_Knob> colorKnob;
 
+    std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
+    
     ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
     ////to give a unique default name to each shape
     std::map<std::string, int> itemCounters;
@@ -557,8 +586,9 @@ struct RotoContextPrivate
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
-        opacity = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamName, 1, false);
+        opacity = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamLabel, 1, false);
         opacity->setHintToolTip(kRotoOpacityHint);
+        opacity->setName(kRotoOpacityParam);
         opacity->setMinimum(0.);
         opacity->setMaximum(1.);
         opacity->setDisplayMinimum(0.);
@@ -566,8 +596,11 @@ struct RotoContextPrivate
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         opacity->setAllDimensionsEnabled(false);
         opacity->setIsPersistant(false);
-        feather = Natron::createKnob<Double_Knob>(effect, kRotoFeatherParamName, 1, false);
+        knobs.push_back(opacity);
+        
+        feather = Natron::createKnob<Double_Knob>(effect, kRotoFeatherParamLabel, 1, false);
         feather->setHintToolTip(kRotoFeatherHint);
+        feather->setName(kRotoFeatherParam);
         feather->setMinimum(-100);
         feather->setMaximum(100);
         feather->setDisplayMinimum(-100);
@@ -575,8 +608,11 @@ struct RotoContextPrivate
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         feather->setAllDimensionsEnabled(false);
         feather->setIsPersistant(false);
-        featherFallOff = Natron::createKnob<Double_Knob>(effect, kRotoFeatherFallOffParamName, 1, false);
+        knobs.push_back(feather);
+        
+        featherFallOff = Natron::createKnob<Double_Knob>(effect, kRotoFeatherFallOffParamLabel, 1, false);
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
+        featherFallOff->setName(kRotoFeatherFallOffParam);
         featherFallOff->setMinimum(0.001);
         featherFallOff->setMaximum(5.);
         featherFallOff->setDisplayMinimum(0.2);
@@ -584,27 +620,36 @@ struct RotoContextPrivate
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOff->setAllDimensionsEnabled(false);
         featherFallOff->setIsPersistant(false);
-        activated = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamName, 1, false);
+        knobs.push_back(featherFallOff);
+        
+        activated = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamLabel, 1, false);
         activated->setHintToolTip(kRotoActivatedHint);
+        activated->setName(kRotoActivatedParam);
         activated->turnOffNewLine();
         activated->setDefaultValue(true);
         activated->setAllDimensionsEnabled(false);
         activated->setIsPersistant(false);
+        knobs.push_back(activated);
+        
 #ifdef NATRON_ROTO_INVERTIBLE
-        inverted = Natron::createKnob<Bool_Knob>(effect, kRotoInvertedParamName, 1, false);
+        inverted = Natron::createKnob<Bool_Knob>(effect, kRotoInvertedParamLabel, 1, false);
         inverted->setHintToolTip(kRotoInvertedHint);
+        inverted->setName(kRotoInvertedParam);
         inverted->setDefaultValue(false);
         inverted->setAllDimensionsEnabled(false);
         inverted->setIsPersistant(false);
+        knobs.push_back(inverted);
 #endif
 
-        colorKnob = Natron::createKnob<Color_Knob>(effect, kRotoColorParamName, 3, false);
+        colorKnob = Natron::createKnob<Color_Knob>(effect, kRotoColorParamLabel, 3, false);
         colorKnob->setHintToolTip(kRotoColorHint);
+        colorKnob->setName(kRotoColorParam);
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         colorKnob->setAllDimensionsEnabled(false);
         colorKnob->setIsPersistant(false);
+        knobs.push_back(colorKnob);
     }
 
     /**

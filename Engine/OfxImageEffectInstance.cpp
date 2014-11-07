@@ -700,7 +700,34 @@ OfxImageEffectInstance::setupClipPreferencesArgs(OFX::Host::Property::Set &outAr
         {
             OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,        "1"};
             outArgs.createProperty(specPAR);
-			outArgs.setDoubleProperty(parParamName, clip->getAspectRatio());
+            
+            ///If the clip is output we should propagate the pixel aspect ratio of the inputs unless it does support multiple clip PARs
+            ///in which case the plug-in should implement the action getClipPreferences() and set the PAR explicitly on the output clip.
+            if (clip->isOutput() && !supportsMultipleClipPARs()) {
+                double inputPar = 1.;
+                bool inputParSet = false;
+                for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it2=_clips.begin();
+                      it2!=_clips.end();
+                      ++it2) {
+                    if (!it2->second->isOutput() && it2->second->getConnected()) {
+                        if (!inputParSet) {
+                            inputPar = it2->second->getAspectRatio();
+                        } else {
+                            if (inputPar != it2->second->getAspectRatio()) {
+                                ///We have several inputs with different aspect ratio, we should have caught this earlier, we can't deal with it
+                                ///properly.
+                                qDebug() << "WARNING: getClipPreferences() for " << _ofxEffectInstance->getName_mt_safe().c_str() << ": "
+                                << "This node has several input clips with different pixel aspect ratio but it does not support multiple input clips PAR. "
+                                << "Your script or the GUI should have handled this earlier (before connecting the node @see Node::canConnectInput) .";
+                                break;
+                            }
+                        }
+                    }
+                }
+                outArgs.setDoubleProperty(parParamName, inputPar);
+            } else {
+                outArgs.setDoubleProperty(parParamName, clip->getAspectRatio());
+            }
         }
     }
 

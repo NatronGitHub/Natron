@@ -61,9 +61,13 @@ public:
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
-                                             double xPosHint,double yPosHint,bool pushUndoRedoCommand);
+                                             double xPosHint,double yPosHint,bool pushUndoRedoCommand,bool autoConnect);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
+    
+    void setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes);
+    
+    void clearSelection();
 
     void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
 
@@ -160,6 +164,8 @@ public:
     void togglePreviewsForSelectedNodes();
 
     void toggleAutoPreview();
+    
+    void toggleSelectedNodesEnabled();
 
     void forceRefreshAllPreviews();
 
@@ -187,8 +193,6 @@ public:
 
     void toggleConnectionHints();
     
-    void toggleSelectedNodesEnabled();
-
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
     
@@ -216,7 +220,7 @@ private:
      * It will move the inputs / outputs slightly to fit this node into the nodegraph
      * so they do not overlap.
      **/
-    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n);
+    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
     
     bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
 

@@ -37,6 +37,11 @@ class CurveGui;
 class QHBoxLayout;
 class QSplitter;
 class KnobGui;
+class KnobI;
+class BezierCP;
+class Bezier;
+class RotoItem;
+class RotoContext;
 class KeyFrame;
 class Variant;
 class Gui;
@@ -60,6 +65,13 @@ public:
     NodeCurveEditorElement(QTreeWidget* tree,
                            CurveWidget* curveWidget,
                            KnobGui* knob,
+                           int dimension,
+                           QTreeWidgetItem* item,
+                           CurveGui* curve);
+    
+    NodeCurveEditorElement(QTreeWidget* tree,
+                           CurveWidget* curveWidget,
+                           const boost::shared_ptr<KnobI>& internalKnob,
                            int dimension,
                            QTreeWidgetItem* item,
                            CurveGui* curve);
@@ -91,11 +103,12 @@ public:
         return _dimension;
     }
 
-    KnobGui* getKnob() const WARN_UNUSED_RETURN
+    KnobGui* getKnobGui() const WARN_UNUSED_RETURN
     {
         return _knob;
     }
-
+    
+    boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
 public slots:
 
     /**
@@ -113,6 +126,7 @@ private:
     CurveWidget* _curveWidget;
     QTreeWidget* _treeWidget;
     KnobGui* _knob;
+    boost::shared_ptr<KnobI> _internalKnob;
     int _dimension;
 };
 
@@ -123,11 +137,11 @@ class NodeCurveEditorContext
 
 public:
 
-    typedef std::vector< NodeCurveEditorElement* > Elements;
+    typedef std::list< NodeCurveEditorElement* > Elements;
 
     NodeCurveEditorContext(QTreeWidget *tree,
                            CurveWidget* curveWidget,
-                           boost::shared_ptr<NodeGui> node);
+                           const boost::shared_ptr<NodeGui> &node);
 
     virtual ~NodeCurveEditorContext() OVERRIDE;
 
@@ -156,6 +170,90 @@ private:
     QTreeWidgetItem* _nameItem;
 };
 
+
+class RotoCurveEditorContext;
+struct BezierEditorContextPrivate;
+class BezierEditorContext
+: public QObject
+{
+    Q_OBJECT
+    
+public:
+    
+    BezierEditorContext(QTreeWidget* tree,
+                        CurveWidget* widget,
+                        Bezier* curve,
+                        RotoCurveEditorContext* context);
+    
+    virtual ~BezierEditorContext() OVERRIDE;
+    
+    //Called when the destr. of RotoCurveEditorContext is called to prevent
+    //the tree items to be deleted twice due to Qt's parenting
+    void preventItemDeletion();
+    
+    Bezier* getBezier() const;
+    
+    QTreeWidgetItem* getItem() const;
+    
+    boost::shared_ptr<RotoContext> getContext() const;
+    
+    void recursiveSelectBezier(QTreeWidgetItem* cur,bool mustSelect,
+                             std::vector<CurveGui*> *curves);
+    
+    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
+public slots:
+    
+    void onNameChanged(const QString & name);
+    
+    void onKeyframeAdded();
+    
+    void onKeyframeRemoved();
+private:
+       
+    boost::scoped_ptr<BezierEditorContextPrivate> _imp;
+    
+};
+
+
+struct RotoCurveEditorContextPrivate;
+class RotoCurveEditorContext
+: public QObject
+{
+    Q_OBJECT
+    
+public:
+    
+    RotoCurveEditorContext(CurveWidget* widget,
+                           QTreeWidget *tree,
+                           const boost::shared_ptr<NodeGui> &node);
+    
+    virtual ~RotoCurveEditorContext() OVERRIDE;
+    
+    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN;
+    
+    QTreeWidgetItem* getItem() const;
+    
+    void recursiveSelectRoto(QTreeWidgetItem* cur,
+                             std::vector<CurveGui*> *curves);
+
+    std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
+    
+public slots:
+    
+    void onNameChanged(const QString & name);
+    
+    void onItemNameChanged(RotoItem* item);
+    
+    void itemInserted(int);
+    
+    void onItemRemoved(RotoItem* item,int);
+
+private:
+
+    boost::scoped_ptr<RotoCurveEditorContextPrivate> _imp;
+    
+};
+
 class CurveEditor
     : public QWidget
 {
@@ -179,7 +277,7 @@ public:
     void centerOn(const std::vector<boost::shared_ptr<Curve> > & curves);
 
     std::pair<QAction*,QAction*> getUndoRedoActions() const WARN_UNUSED_RETURN;
-    CurveGui* findCurve(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
+    std::list<CurveGui*> findCurve(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
 
     void hideCurves(KnobGui* knob);
 
@@ -199,9 +297,10 @@ private:
 
 
     // FIXME: PIMPL
-    void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
+    void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves,bool inspectRotos = true);
 
     std::list<NodeCurveEditorContext*> _nodes;
+    std::list<RotoCurveEditorContext*> _rotos;
     QHBoxLayout* _mainLayout;
     QSplitter* _splitter;
     CurveWidget* _curveWidget;

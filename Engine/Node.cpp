@@ -1421,6 +1421,59 @@ Node::isNodeUpstream(const Natron::Node* input,
     }
 }
 
+Node::CanConnectInputReturnValue
+Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const
+{
+   
+    
+    
+    ///No-one is allowed to connect to the other node
+    if (!input->canOthersConnectToThisNode()) {
+        return eCanConnectInput_givenNodeNotConnectable;
+    }
+    
+    ///Applying this connection would create cycles in the graph
+    if (!checkIfConnectingInputIsOk(input.get())) {
+        return eCanConnectInput_graphCycles;
+    }
+    
+    {
+        ///Check for invalid index
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() )) {
+            return eCanConnectInput_indexOutOfRange;
+        }
+        if (_imp->inputs[inputNumber]) {
+            return eCanConnectInput_inputAlreadyConnected;
+        }
+        
+        ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
+        if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
+            
+            bool inputPARSet = false;
+            double inputPAR = 1.;
+            for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+                if (*it) {
+                    if (!inputPARSet) {
+                        inputPAR = (*it)->getLiveInstance()->getPreferredAspectRatio();
+                        inputPARSet = true;
+                    } else {
+                        if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                            return eCanConnectInput_differentPars;
+                        }
+                    }
+                }
+            }
+            
+            if (inputPARSet && inputPAR != input->getLiveInstance()->getPreferredAspectRatio()) {
+                return eCanConnectInput_differentPars;
+            }
+        }
+    }
+    
+    return eCanConnectInput_ok;
+}
+
 bool
 Node::connectInput(boost::shared_ptr<Node> input,
                    int inputNumber)
@@ -2485,35 +2538,61 @@ Node::getRenderInstancesSharedMutex()
     return _imp->renderInstancesSharedMutex;
 }
 
+static void refreshPreviewsRecursivelyUpstreamInternal(int time,Node* node,std::list<Node*>& marked)
+{
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
+    }
+
+    if ( node->isPreviewEnabled() ) {
+        node->refreshPreviewImage( time );
+    }
+    
+    marked.push_back(node);
+    
+    std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
+    
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if (inputs[i]) {
+            inputs[i]->refreshPreviewsRecursivelyUpstream(time);
+        }
+    }
+
+}
+
 void
 Node::refreshPreviewsRecursivelyUpstream(int time)
 {
-    if ( isPreviewEnabled() ) {
-        refreshPreviewImage( time );
+    std::list<Node*> marked;
+    refreshPreviewsRecursivelyUpstreamInternal(time,this,marked);
+}
+
+static void refreshPreviewsRecursivelyDownstreamInternal(int time,Node* node,std::list<Node*>& marked)
+{
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
     }
     
-    QMutexLocker l (&_imp->inputsMutex);
-    
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->refreshPreviewsRecursivelyUpstream(time);
-        }
+    if ( node->isPreviewEnabled() ) {
+        node->refreshPreviewImage( time );
     }
+    
+    marked.push_back(node);
+    
+    std::list<Node*> outputs;
+    node->getOutputs_mt_safe(outputs);
+    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        assert(*it);
+        (*it)->refreshPreviewsRecursivelyDownstream(time);
+    }
+
 }
 
 void
 Node::refreshPreviewsRecursivelyDownstream(int time)
 {
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    if ( isPreviewEnabled() ) {
-        refreshPreviewImage( time );
-    }
-    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        assert(*it);
-        (*it)->refreshPreviewsRecursivelyDownstream(time);
-    }
+    std::list<Node*> marked;
+    refreshPreviewsRecursivelyDownstreamInternal(time,this,marked);
 }
 
 void

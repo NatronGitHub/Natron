@@ -374,16 +374,7 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         return;
     }
     if ( _internalNode->isPreviewEnabled() ) {
-        if (!_previewPixmap) {
-            QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
-            prev.fill(Qt::black);
-            QPixmap prev_pixmap = QPixmap::fromImage(prev);
-            _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
-            _previewPixmap->setZValue(1);
-        }
-        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
-        _previewPixmap->stackBefore(_nameItem);
-        _previewPixmap->show();
+        ensurePreviewCreated();
         if (refreshPreview) {
             _internalNode->computePreviewImage( _graph->getGui()->getApp()->getTimeLine()->currentFrame() );
         }
@@ -393,6 +384,27 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         }
         updateShape(NODE_WIDTH,NODE_HEIGHT);
     }
+}
+
+void
+NodeGui::ensurePreviewCreated()
+{
+    if (!_previewPixmap) {
+        QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
+        prev.fill(Qt::black);
+        QPixmap prev_pixmap = QPixmap::fromImage(prev);
+        _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
+        _previewPixmap->setZValue(1);
+        
+    }
+    QSize size = getSize();
+    if (size.width() < NODE_WITH_PREVIEW_WIDTH ||
+        size.height() < NODE_WITH_PREVIEW_HEIGHT) {
+        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
+        _previewPixmap->stackBefore(_nameItem);
+        _previewPixmap->show();
+    }
+
 }
 
 void
@@ -732,6 +744,8 @@ NodeGui::updatePreviewImage(int time)
             return;
         }
         
+        ensurePreviewCreated();
+
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -747,6 +761,8 @@ NodeGui::forceComputePreview(int time)
             return;
         }
         
+        ensurePreviewCreated();
+
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -757,6 +773,7 @@ NodeGui::computePreviewImage(int time)
     if ( _internalNode->isRenderingPreview() ) {
         return;
     }
+    
 
     int w = NATRON_PREVIEW_WIDTH;
     int h = NATRON_PREVIEW_HEIGHT;
@@ -2234,26 +2251,7 @@ boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
     }
 }
 
-bool
-NodeGui::shouldDrawOverlay() const
-{
-    if ( _internalNode->isNodeDisabled() ) {
-        return false;
-    }
 
-    if ( _internalNode->isTrackerNode() ) {
-        ///Tracker overlays are handled in the TrackerGui by Natron so we can have more control over them
-
-        ///This also allows us to have control with the selection in the settings panel
-        return false;
-    }
-
-    if (_parentMultiInstance) {
-        return _parentMultiInstance->isSettingsPanelVisible();
-    } else {
-        return _internalNode->isActivated() && isSettingsPanelVisible();
-    }
-}
 
 void
 NodeGui::setParentMultiInstance(const boost::shared_ptr<NodeGui> & node)
