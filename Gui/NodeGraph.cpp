@@ -1604,7 +1604,7 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 }
 
 void
-NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
+NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
     std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
 
@@ -1626,11 +1626,28 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
 
     for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
         if ( (*it)->isNearbyHeader(_imp->_lastScenePosClick) ) {
-            if ( (*it)->isSettingsPanelClosed() ) {
-                (*it)->setSettingsPanelClosed(false);
+            
+            if (e->modifiers().testFlag(Qt::ControlModifier)) {
+                ///Clear all visible panels and open the panels of all nodes in the backdrop
+                _imp->_gui->clearAllVisiblePanels();
+                
+                int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
+                std::list<boost::shared_ptr<NodeGui> > containedNodes = getNodesWithinBackDrop(*it);
+                int count = 0;
+                for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = containedNodes.begin(); it2 != containedNodes.end(); ++it2,++count) {
+                    if (count >= maxPanels) {
+                        break;
+                    }
+                    (*it2)->setVisibleSettingsPanel(true);
+                }
+                
+                
+            } else {
+                if ( (*it)->isSettingsPanelClosed() ) {
+                    (*it)->setSettingsPanelClosed(false);
+                }
+                _imp->_gui->putSettingsPanelFirst( (*it)->getSettingsPanel() );
             }
-            _imp->_gui->putSettingsPanelFirst( (*it)->getSettingsPanel() );
-
             return;
         }
     }
