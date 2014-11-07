@@ -117,6 +117,7 @@ struct DockablePanelPrivate
     Button* _centerNodeButton;
     Button* _helpButton;
     Button* _minimize;
+    Button* _hideUnmodifiedButton;
     Button* _floatButton;
     Button* _cross;
     mutable QMutex _currentColorMutex; //< protects _currentColor
@@ -132,6 +133,10 @@ struct DockablePanelPrivate
 
     /*a map storing for each knob a pointer to their GUI.*/
     std::map<boost::shared_ptr<KnobI>,KnobGui*> _knobs;
+    
+    ///THe visibility of the knobs before the hide/show unmodified button is clicked
+    ///to show only the knobs that need to afterwards
+    std::map<KnobGui*,bool> _knobsVisibilityBeforeHideModif;
     KnobHolder* _holder;
 
     /* map<tab name, pair<tab , row count> >*/
@@ -167,6 +172,7 @@ struct DockablePanelPrivate
           , _centerNodeButton(NULL)
           ,_helpButton(NULL)
           ,_minimize(NULL)
+          ,_hideUnmodifiedButton(NULL)
           ,_floatButton(NULL)
           ,_cross(NULL)
           , _currentColor()
@@ -179,6 +185,7 @@ struct DockablePanelPrivate
           ,_floating(false)
           ,_floatingWidget(NULL)
           ,_knobs()
+          ,_knobsVisibilityBeforeHideModif()
           ,_holder(holder)
           ,_pages()
           ,_defaultPageName(defaultPageName)
@@ -268,6 +275,22 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_helpButton->setToolTip( Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal) );
         }
         QObject::connect( _imp->_helpButton, SIGNAL( clicked() ), this, SLOT( showHelp() ) );
+        
+        if (!_imp->_holder->isProject()) {
+            QPixmap pixHide,pixShow;
+            appPTR->getIcon(NATRON_PIXMAP_VISIBLE, &pixShow);
+            appPTR->getIcon(NATRON_PIXMAP_UNVISIBLE,&pixHide);
+            QIcon icHideShow;
+            icHideShow.addPixmap(pixShow,QIcon::Normal,QIcon::Off);
+            icHideShow.addPixmap(pixHide,QIcon::Normal,QIcon::On);
+            _imp->_hideUnmodifiedButton = new Button(icHideShow,"",_imp->_headerWidget);
+            _imp->_hideUnmodifiedButton->setToolTip(tr("Show/Hide all parameters without modifications"));
+            _imp->_hideUnmodifiedButton->setFocusPolicy(Qt::NoFocus);
+            _imp->_hideUnmodifiedButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+            _imp->_hideUnmodifiedButton->setCheckable(true);
+            _imp->_hideUnmodifiedButton->setChecked(false);
+            QObject::connect(_imp->_hideUnmodifiedButton,SIGNAL(clicked(bool)),this,SLOT(onHideUnmodifiedButtonClicked(bool)));
+        }
         QPixmap pixM;
         appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET,&pixM);
 
@@ -424,6 +447,9 @@ DockablePanel::DockablePanel(Gui* gui
 
         _imp->_headerLayout->addStretch();
         _imp->_headerLayout->addWidget(_imp->_helpButton);
+        if (_imp->_hideUnmodifiedButton) {
+            _imp->_headerLayout->addWidget(_imp->_hideUnmodifiedButton);
+        }
         _imp->_headerLayout->addWidget(_imp->_minimize);
         _imp->_headerLayout->addWidget(_imp->_floatButton);
         _imp->_headerLayout->addWidget(_imp->_cross);
@@ -1442,6 +1468,31 @@ void
 DockablePanel::onCenterButtonClicked()
 {
     centerOnItem();
+}
+
+void
+DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
+{
+    if (checked) {
+        _imp->_knobsVisibilityBeforeHideModif.clear();
+        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->first.get());
+            Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(it->first.get());
+            if (!isGroup && !isParametric) {
+                _imp->_knobsVisibilityBeforeHideModif.insert(std::make_pair(it->second,it->second->isSecretRecursive()));
+                if (!it->first->hasModifications()) {
+                    it->second->hide();
+                }
+            }
+        }
+    } else {
+        for (std::map<KnobGui*,bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
+             it != _imp->_knobsVisibilityBeforeHideModif.end(); ++it) {
+            if (!it->second) {
+                it->first->show();
+            }
+        }
+    }
 }
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,

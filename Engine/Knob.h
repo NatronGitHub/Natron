@@ -311,6 +311,11 @@ public:
      * Some parameters cannot animate, for example a file selector.
      **/
     virtual bool canAnimate() const = 0;
+    
+    /**
+     * @brief Returns true if the knob has had modifications
+     **/
+    virtual bool hasModifications() const = 0;
 
     /**
      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
@@ -1091,7 +1096,9 @@ public:
 
     virtual ~Knob();
 
-public:
+    
+    virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 
     /**
      * @brief Get the current value of the knob for the given dimension.
@@ -1316,7 +1323,7 @@ private:
 
     ///Here is all the stuff we couldn't get rid of the template parameter
 
-    mutable QReadWriteLock _valueMutex; //< protects _values
+    mutable QReadWriteLock _valueMutex; //< protects _values & _defaultValues
     std::vector<T> _values;
     std::vector<T> _defaultValues;
     

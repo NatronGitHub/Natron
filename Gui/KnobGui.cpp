@@ -564,6 +564,17 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 void
 KnobGui::setSecret()
 {
+    bool showit = !isSecretRecursive();
+    if (showit) {
+        show(); //
+    } else {
+        hide();
+    }
+}
+
+bool
+KnobGui::isSecretRecursive() const
+{
     // If the Knob is within a group, only show it if the group is unfolded!
     // To test it:
     // try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
@@ -572,7 +583,7 @@ KnobGui::setSecret()
     boost::shared_ptr<KnobI> knob = getKnob();
     bool showit = !knob->getIsSecret();
     boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
-
+    
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
         Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>( _imp->container->getKnobGui(parentKnob) );
         assert(parentGui);
@@ -583,11 +594,7 @@ KnobGui::setSecret()
         // prepare for next loop iteration
         parentKnob = parentKnob->getParentKnob();
     }
-    if (showit) {
-        show(); //
-    } else {
-        hide();
-    }
+    return !showit;
 }
 
 void

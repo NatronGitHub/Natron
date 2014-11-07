@@ -2235,7 +2235,9 @@ CurveWidget::paintGL()
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
-        assert( 0. < _imp->zoomCtx.factor() );
+        if (_imp->zoomCtx.factor() <= 0) {
+            return;
+        }
         double zoomLeft, zoomRight, zoomBottom, zoomTop;
         zoomLeft = _imp->zoomCtx.left();
         zoomRight = _imp->zoomCtx.right();

@@ -1611,4 +1611,23 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     
 }
 
+template <typename T>
+bool Knob<T>::hasModifications() const
+{
+    for (int i = 0; i < getDimension(); ++i) {
+        boost::shared_ptr<Curve> c = getCurve(i);
+        if (c->isAnimated()) {
+            return true;
+        }
+        
+        ///Check expressions too in the future
+        
+        QReadLocker k(&_valueMutex);
+        if (_values[i] != _defaultValues[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // KNOBIMPL_H

@@ -3361,9 +3361,9 @@ Group_KnobGui::_hide()
 void
 Group_KnobGui::_show()
 {
-    if ( _knob->getIsSecret() ) {
-        return;
-    }
+//    if ( _knob->getIsSecret() ) {
+//        return;
+//    }
     if (_button) {
         _button->show();
     }
