@@ -1097,12 +1097,17 @@ DockablePanel::closePanel()
         if (panel) {
             const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            ++next;
+			if (!childrenInstances.empty()) {
+				++next;
+			}
             for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end(); ++it,++next) {
                 if ( it->second && (it->first != internalNode) ) {
                     it->first->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 }
+				if (next == childrenInstances.end()) {
+					--next;
+				}
             }
         }
     }
