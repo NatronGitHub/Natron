@@ -31,6 +31,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QPainter>
 #include <QImage>
+#include <QToolButton>
 #include <QMenu>
 
 #include <ofxNatron.h>
@@ -54,6 +55,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
+#include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiTypes.h" // for Group_KnobGui
 #include "Gui/KnobGuiFactory.h"
@@ -956,7 +958,22 @@ RightClickableWidget::keyPressEvent(QKeyEvent* e)
 void
 RightClickableWidget::enterEvent(QEvent* e)
 {
-    //setFocus();
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    dynamic_cast<QToolButton*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
+        setFocus();
+    }
     QWidget::enterEvent(e);
 }
 
