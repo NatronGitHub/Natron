@@ -22,6 +22,8 @@
 #include <QtGui/QImage>
 #include <QToolButton>
 #include <QApplication>
+#include <QDesktopWidget>
+#include <QScreen>
 #include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtGui/QPainter>
@@ -198,6 +200,7 @@ struct ViewerGL::Implementation
           , lastRenderedImageMutex()
           , lastRenderedImage()
           , memoryHeldByLastRenderedImages()
+          , sizeH()
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -210,6 +213,10 @@ struct ViewerGL::Implementation
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         assert( qApp && qApp->thread() == QThread::currentThread() );
         menu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+        
+        QDesktopWidget* desktop = QApplication::desktop();
+        QRect r = desktop->screenGeometry();
+        sizeH = r.size();
 
     }
 
@@ -295,6 +302,8 @@ struct ViewerGL::Implementation
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
     boost::shared_ptr<Natron::Image> lastRenderedImage[2]; //<  last image passed to transferRAMBuffer
     U64 memoryHeldByLastRenderedImages[2];
+    
+    QSize sizeH;
     
     bool isNearbyWipeCenter(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
@@ -934,7 +943,7 @@ ViewerGL::sizeHint() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return QSize(1920,1080);
+    return _imp->sizeH;
 }
 
 const QFont &
