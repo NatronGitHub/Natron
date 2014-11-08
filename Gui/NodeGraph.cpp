@@ -1590,6 +1590,12 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
+            
+            std::list<boost::shared_ptr<NodeGui> >::iterator foundInSel = std::find(_selection.nodes.begin(),_selection.nodes.end(),*it);
+            if (foundInSel != _selection.nodes.end()) {
+                continue;
+            }
+            
             _selection.nodes.push_back(*it);
             (*it)->setUserSelected(true);
         }
@@ -1597,6 +1603,12 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it != _backdrops.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
+            
+            std::list<NodeBackDrop* >::iterator foundInSel = std::find(_selection.bds.begin(),_selection.bds.end(),*it);
+            if (foundInSel != _selection.bds.end()) {
+                continue;
+            }
+            
             _selection.bds.push_back(*it);
             (*it)->setUserSelected(true);
         }
