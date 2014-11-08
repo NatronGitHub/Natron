@@ -4332,7 +4332,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                 if (multiInstance) {
                     const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
                     for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        if (it->first->isActivated()) {
+                        if (node->isSettingsPanelVisible() && it->first->isActivated()) {
                             nodes.push_back(it->first);
                         }
                     }
