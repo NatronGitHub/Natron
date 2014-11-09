@@ -12,9 +12,10 @@
 #ifndef NATRON_ENGINE_EFFECTINSTANCE_H_
 #define NATRON_ENGINE_EFFECTINSTANCE_H_
 #include <list>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
 #include "Engine/Knob.h" // for KnobHolder

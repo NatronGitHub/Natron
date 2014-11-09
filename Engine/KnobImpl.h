@@ -17,7 +17,9 @@
 #include <cfloat>
 #include <stdexcept>
 #include <string>
+#ifndef Q_MOC_RUN
 #include <boost/math/special_functions/fpclassify.hpp>
+#endif
 #include <QString>
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
