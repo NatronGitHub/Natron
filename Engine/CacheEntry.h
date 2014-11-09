@@ -8,11 +8,11 @@
 
 #include <QtCore/QFile>
 #include <QtCore/QDir>
-
+#ifndef Q_MOC_RUN
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include "Engine/Hash64.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"

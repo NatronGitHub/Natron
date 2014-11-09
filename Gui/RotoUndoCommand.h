@@ -17,8 +17,9 @@
 #include <map>
 #include <QUndoCommand>
 #include <QList>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include "Global/Macros.h"
 class Bezier;
 class BezierCP;

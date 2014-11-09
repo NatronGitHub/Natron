@@ -15,8 +15,11 @@
 #include <list>
 #include <set>
 #include <string>
+
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#endif
 
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated-declarations)

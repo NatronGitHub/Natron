@@ -10,9 +10,9 @@
 
 #ifndef PREFERENCESPANEL_H
 #define PREFERENCESPANEL_H
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

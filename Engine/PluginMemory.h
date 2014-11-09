@@ -13,8 +13,9 @@
 #define PLUGINMEMORY_H
 
 #include <cstddef>
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
-
+#endif
 namespace Natron {
 class EffectInstance;
 }

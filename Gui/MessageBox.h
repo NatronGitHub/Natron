@@ -6,8 +6,9 @@
 
 #ifndef QUESTIONDIALOG_H
 #define MESSAGE_BOX_H
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
+#endif
 #include <QDialog>
 
 #include "Global/GlobalDefines.h"

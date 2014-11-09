@@ -11,8 +11,9 @@
 
 #ifndef OPENGLVIEWERI_H
 #define OPENGLVIEWERI_H
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/Rect.h"
 class Format;

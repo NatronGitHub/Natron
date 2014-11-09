@@ -12,8 +12,9 @@
 #define NATRON_ENGINE_OFXHOST_H_
 
 #include <list>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 

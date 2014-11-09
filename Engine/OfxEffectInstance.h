@@ -15,7 +15,9 @@
 #include "Global/Macros.h"
 #include <map>
 #include <string>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QString>

@@ -13,6 +13,7 @@
 #define PROJECTSERIALIZATION_H
 
 #include "Global/Macros.h"
+#ifndef Q_MOC_RUN
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -24,6 +25,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/scoped_ptr.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+#endif
 
 #include "Global/GitVersion.h"
 #include "Global/GlobalDefines.h"

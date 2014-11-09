@@ -14,6 +14,7 @@
 #include <list>
 #include <string>
 #include "Global/Macros.h"
+#ifndef Q_MOC_RUN
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -23,6 +24,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
+#endif
 #include "Engine/Rect.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeBackDropSerialization.h"

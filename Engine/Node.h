@@ -23,9 +23,10 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QMutex>
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 

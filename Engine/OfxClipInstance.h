@@ -19,7 +19,9 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif
 //ofx
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>

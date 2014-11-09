@@ -19,9 +19,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"

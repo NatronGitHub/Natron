@@ -14,12 +14,14 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
 
+#ifndef Q_MOC_RUN
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/map.hpp>
+#endif
 
 #include "Engine/KnobSerialization.h"
 

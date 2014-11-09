@@ -14,8 +14,9 @@
 
 #include <vector>
 #include <utility>
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

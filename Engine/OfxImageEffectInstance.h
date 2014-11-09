@@ -12,7 +12,9 @@
 
 #include <string>
 #include <cstdarg>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif
 #include <ofxhImageEffect.h>
 
 #include "Global/GlobalDefines.h"

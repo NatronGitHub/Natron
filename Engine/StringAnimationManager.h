@@ -12,8 +12,9 @@
 
 #ifndef STRINGANIMATIONMANAGER_H
 #define STRINGANIMATIONMANAGER_H
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
+#endif
 #include <string>
 #include "Global/GlobalDefines.h"
 
