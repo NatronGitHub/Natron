@@ -76,7 +76,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiMacros.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
-
+#define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 using std::make_pair;
 using namespace Natron;
 
@@ -828,9 +828,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 ///if new line is not turned off, create a new line
                 fieldContainer = new QWidget(page->second.tab);
                 fieldLayout = new QHBoxLayout(fieldContainer);
-                fieldLayout->setContentsMargins(3,0,0,3);
+                fieldLayout->setContentsMargins(3,0,0,NATRON_SETTINGS_VERTICAL_SPACING_PIXELS);
                 fieldLayout->setSpacing(2);
-                fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+                fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
             } else {
                 ///otherwise re-use the last row's widget and layout
                 assert(lastRowWidget);
@@ -843,7 +843,10 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             assert(fieldContainer);
             assert(fieldLayout);
             ClickableLabel* label = new ClickableLabel("",page->second.tab);
-
+            
+            ///FIXME: QFormLayout seems to ignore royally the alignment between the label and the field.
+            ///The only way to have both the label and the field at the same height is to hardcode the height of the label...
+            label->setFixedHeight(27);
 
             if (ret->showDescriptionLabel() && !knob->getDescription().empty() && label) {
                 label->setText_overload( QString(QString( ret->getKnob()->getDescription().c_str() ) + ":") );
@@ -984,8 +987,9 @@ DockablePanelPrivate::addPage(const QString & name)
     layoutContainer->setLayout(tabLayout);
     tabLayout->setContentsMargins(3, 0, 0, 0);
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
-    tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
-    tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
+    tabLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    tabLayout->setAlignment(Qt::AlignVCenter);
     tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     _tabWidget->addTab(newTab,name);
     Page p;

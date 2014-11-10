@@ -543,12 +543,6 @@ Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
 void
 Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
-//    _descriptionLabel = new ClickableLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-//    if(hasToolTip()) {
-//        _descriptionLabel->setToolTip(toolTip());
-//    }
-//    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
-//
     _checkBox = new AnimatedCheckBox( layout->parentWidget() );
     if ( hasToolTip() ) {
         _checkBox->setToolTip( toolTip() );
@@ -2412,8 +2406,8 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         _mainLayout->addWidget(_textEdit);
 
         QObject::connect( _textEdit, SIGNAL( textChanged() ), this, SLOT( onTextChanged() ) );
-        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+       // layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_textEdit,0);
@@ -2496,7 +2490,6 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _lineEdit->setToolTip( toolTip() );
         }
-        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
         layout->addWidget(_lineEdit);
@@ -3288,6 +3281,7 @@ Group_KnobGui::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
+    _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
     QObject::connect( _button, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
     layout->addWidget(_button);
@@ -3426,7 +3420,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
 {
     QObject::connect( _knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
 
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QWidget* treeColumn = new QWidget( layout->parentWidget() );
     QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
     treeColumnLayout->setContentsMargins(0, 0, 0, 0);
