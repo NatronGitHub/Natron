@@ -1305,6 +1305,9 @@ static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
         ofxPluginID == "tuttle.inputbuffer" ||
         ofxPluginID == "tuttle.outputbuffer" ||
         ofxPluginID == "tuttle.ramp" ||
+        ofxPluginID == "tuttle.lut" ||
+        ofxPluginID == "tuttle.print" ||
+        ofxPluginID == "tuttle.colorgradient" ||
         ofxPluginID == "tuttle.component" ||
         ofxPluginID == "tuttle.merge" ||
         ofxPluginID == "tuttle.crop" ||

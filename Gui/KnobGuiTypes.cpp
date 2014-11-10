@@ -3289,14 +3289,8 @@ Group_KnobGui::createWidget(QHBoxLayout* layout)
         _button->setToolTip( toolTip() );
     }
     _button->setChecked(_checked);
-    QWidget *header = new QWidget( layout->parentWidget() );
-    QHBoxLayout *headerLay = new QHBoxLayout(header);
-    header->setLayout(headerLay);
     QObject::connect( _button, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
-    headerLay->addWidget(_button);
-    headerLay->setSpacing(1);
-
-    layout->addWidget(header);
+    layout->addWidget(_button);
 }
 
 void
