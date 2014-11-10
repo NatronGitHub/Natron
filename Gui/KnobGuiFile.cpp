@@ -76,6 +76,7 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime, int)));
     }
     _lineEdit = new LineEdit( layout->parentWidget() );
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     _lineEdit->setPlaceholderText( tr("File path...") );
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -365,6 +366,7 @@ void
 OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _lineEdit = new LineEdit( layout->parentWidget() );
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
 
     _lineEdit->setPlaceholderText( tr("File path...") );
@@ -650,6 +652,7 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         mainLayout->setContentsMargins(0, 0, 0, 0);
         
         _table = new TableView( _mainContainer );
+        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         //    QObject::connect( _table, SIGNAL( editingFinished() ), this, SLOT( onReturnPressed() ) );
         if ( hasToolTip() ) {
             _table->setToolTip( toolTip() );
