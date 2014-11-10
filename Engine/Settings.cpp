@@ -836,28 +836,24 @@ Settings::saveSettings()
     }
 } // saveSettings
 
-void
-Settings::restoreSettings()
-{
-    _restoringSettings = true;
-    _wereChangesMadeSinceLastSave = false;
+static void restoreKnobsSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs) {
+    
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i].get());
         Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i].get());
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i].get());
         Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i].get());
-
+        
         const std::string& name = knobs[i]->getName();
         
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             
             std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
             QString qDimName(dimensionName.c_str());
-
+            
             if (settings.contains(qDimName)) {
                 
                 if (isString) {
@@ -871,7 +867,7 @@ Settings::restoreSettings()
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
                         const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-
+                        
                         int found = -1;
                         
                         for (U32 k = 0; k < entries.size(); ++k) {
@@ -901,11 +897,21 @@ Settings::restoreSettings()
                 } else {
                     assert(false);
                 }
-
+                
             }
         }
     }
+
+}
+
+void
+Settings::restoreSettings()
+{
+    _restoringSettings = true;
+    _wereChangesMadeSinceLastSave = false;
     
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    restoreKnobsSettings(knobs);
 
     if (!_ocioRestored) {
         ///Load even though there's no settings!
@@ -1194,8 +1200,10 @@ Settings::getWriterPluginIDForFileType(const std::string & extension)
 void
 Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
+    std::vector<boost::shared_ptr<KnobI> > knobs;
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        k->setName("Reader." + it->first);
         k->setAnimationEnabled(false);
         
         std::vector<std::string> entries;
@@ -1217,14 +1225,20 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
         k->populateChoices(entries);
         _readersMapping.push_back(k);
         _readersTab->addKnob(k);
+        knobs.push_back(k);
     }
+    restoreKnobsSettings(knobs);
+
 }
 
 void
 Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
+    std::vector<boost::shared_ptr<KnobI> > knobs;
+
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        k->setName("Writer." + it->first);
         k->setAnimationEnabled(false);
         
         std::vector<std::string> entries;
@@ -1246,7 +1260,10 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
         k->populateChoices(entries);
         _writersMapping.push_back(k);
         _writersTab->addKnob(k);
+        knobs.push_back(k);
+
     }
+    restoreKnobsSettings(knobs);
 }
 
 void
@@ -1257,8 +1274,11 @@ Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* f
         int index = _readersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );
-
-        formats->insert( std::make_pair(_readersMapping[i]->getDescription(),entries[index]) );
+        std::string name = _readersMapping[i]->getName();
+        std::size_t prefix = name.find("Reader.");
+        assert(prefix != std::string::npos);
+        name.erase(prefix,7);
+        formats->insert( std::make_pair(name,entries[index]) );
     }
 }
 
@@ -1270,8 +1290,11 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
         int index = _writersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );
-
-        formats->insert( std::make_pair(_writersMapping[i]->getDescription(),entries[index]) );
+        std::string name = _writersMapping[i]->getName();
+        std::size_t prefix = name.find("Writer.");
+        assert(prefix != std::string::npos);
+        name.erase(prefix,7);
+        formats->insert( std::make_pair(name,entries[index]) );
     }
 }
 
