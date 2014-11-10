@@ -693,7 +693,7 @@ public:
 
     virtual ~Group_KnobGui() OVERRIDE;
 
-    void addKnob(KnobGui *child, int row, int column);
+    void addKnob(KnobGui *child, int row);
 
     bool isChecked() const;
 
@@ -721,7 +721,7 @@ private:
 private:
     bool _checked;
     GroupBoxLabel *_button;
-    std::vector< std::pair< KnobGui *, std::pair<int, int> > > _children;
+    std::vector< std::pair< KnobGui *, int> > _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     //enabled too
     boost::shared_ptr<Group_Knob> _knob;

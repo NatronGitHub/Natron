@@ -1772,7 +1772,7 @@ EffectInstance::renderRoI(SequenceTime time,
 #ifdef DEBUG
     if (renderRetCode != eRenderRoIStatusRenderFailed && !aborted()) {
         // Kindly check that everything we asked for is rendered!
-        std::list<RectI> restToRender = image->getRestToRender(renderWindow);
+        std::list<RectI> restToRender = downscaledImage->getRestToRender(renderWindow);
         assert(restToRender.empty());
     }
 #endif

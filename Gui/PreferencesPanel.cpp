@@ -42,6 +42,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 
     _panel = new DockablePanel(_gui,_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
                                "","",false,"",this);
+    _panel->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
     _buttonBox = new QDialogButtonBox(Qt::Horizontal);
@@ -58,7 +59,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
     _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
     _buttonBox->addButton(_okB, QDialogButtonBox::AcceptRole);
 
-    _mainLayout->addStretch();
+   // _mainLayout->addStretch();
     _mainLayout->addWidget(_buttonBox);
 
     QObject::connect( _restoreDefaultsB, SIGNAL( clicked() ), this, SLOT( restoreDefaults() ) );

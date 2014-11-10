@@ -3270,10 +3270,9 @@ Group_KnobGui::~Group_KnobGui()
 
 void
 Group_KnobGui::addKnob(KnobGui *child,
-                       int row,
-                       int column)
+                       int row)
 {
-    _children.push_back( std::make_pair( child, std::make_pair(row, column) ) );
+    _children.push_back( std::make_pair( child, row ) );
 }
 
 bool

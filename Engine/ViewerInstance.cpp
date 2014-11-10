@@ -775,6 +775,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                         ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                         ///cache lookup things because we already did it ourselves.
                         activeInputToRender->renderRoI(time, scale, mipMapLevel, view, roi, rod, cachedImgParams, inputImage,downscaledImage);
+                        inputImage = downscaledImage;
+                        if (isInputImgCached) {
+                            params->image = inputImage;
+                        }
                     } else {
                         params->image = activeInputToRender->renderRoI(
                                                                        EffectInstance::RenderRoIArgs(time,

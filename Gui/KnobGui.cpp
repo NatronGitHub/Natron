@@ -931,7 +931,8 @@ KnobGui::hide()
     ////are hidden.
     bool shouldRemoveWidget = true;
     for (U32 i = 0; i < _imp->knobsOnSameLine.size(); ++i) {
-        if ( !_imp->knobsOnSameLine[i]->getIsSecret() ) {
+        KnobGui* sibling = _imp->container->getKnobGui(_imp->knobsOnSameLine[i]);
+        if ( sibling && !sibling->isSecretRecursive() ) {
             shouldRemoveWidget = false;
         }
     }

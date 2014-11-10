@@ -142,10 +142,10 @@ GuiAppInstance::load(const QString & projectName,
 
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::vector<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
-    for (U32 i = 0; i < _toolButtons.size(); ++i) {
-        assert(_toolButtons[i]);
-        _imp->_gui->findOrCreateToolButton(_toolButtons[i]);
+    const std::list<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
+    for (std::list<PluginGroupNode*>::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+        assert(*it);
+        _imp->_gui->findOrCreateToolButton(*it);
     }
     emit pluginsPopulated();
 

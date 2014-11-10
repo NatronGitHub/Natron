@@ -877,7 +877,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     tab = new QWidget(page->second.tabWidget);
                     tabLayout = new QFormLayout(tab);
                     tabLayout->setContentsMargins(0, 0, 0, 0);
-                    tabLayout->setSpacing(0); // unfortunately, this leaves extra space when parameters are hidden
+                    tabLayout->setSpacing(3); // unfortunately, this leaves extra space when parameters are hidden
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
 
@@ -889,36 +889,12 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
             ///increment the row count
             ++page->second.currentRow;
-
-            /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
+            
             if (parentIsGroup) {
                 assert(parentGui);
-                ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
-                ///to work fine without it.
-                int offsetColumn = knob->determineHierarchySize();
-                parentGui->addKnob(ret,page->second.currentRow,offsetColumn);
-
-                bool showit = !ret->getKnob()->getIsSecret();
-                // see KnobGui::setSecret() for a very similar code
-                while (showit && parentIsGroup) {
-                    assert(parentGui);
-                    // check for secretness and visibility of the group
-                    if ( parentKnob->getIsSecret() || ( parentGui && !parentGui->isChecked() ) ) {
-                        showit = false; // one of the including groups is folded, so this item is hidden
-                    }
-                    // prepare for next loop iteration
-                    parentKnob = parentKnob->getParentKnob();
-                    parentIsGroup =  boost::dynamic_pointer_cast<Group_Knob>(parentKnob);
-                    if (parentKnob) {
-                        parentGui = dynamic_cast<Group_KnobGui*>( findKnobGuiOrCreate(parentKnob,true,NULL) );
-                    }
-                }
-                if (showit) {
-                    ret->show();
-                } else {
-                    //ret->hide(); // already hidden? please comment if it's not.
-                }
+                parentGui->addKnob(ret,page->second.currentRow);
             }
+
         }
     } // !isPage
 

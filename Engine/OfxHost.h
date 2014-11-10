@@ -102,7 +102,8 @@ public:
     AbstractOfxEffectInstance* createOfxEffect(const std::string & name,boost::shared_ptr<Node> node,
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                                bool allowFileDialogs);
+                                                bool allowFileDialogs,
+                                                bool disableRenderScaleSupport);
 
     void addPathToLoadOFXPlugins(const std::string path);
 

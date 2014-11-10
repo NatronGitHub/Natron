@@ -62,7 +62,8 @@ public:
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               const std::string & context,const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                              bool allowFileDialogs) = 0;
+                                              bool allowFileDialogs,
+                                              bool disableRenderScaleSupport) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -92,7 +93,8 @@ public:
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       const std::string & context,const NodeSerialization* serialization,
                                        const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                      bool allowFileDialogs) OVERRIDE FINAL;
+                                      bool allowFileDialogs,
+                                      bool disableRenderScaleSupport) OVERRIDE FINAL;
 
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN
     {

@@ -1826,14 +1826,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 }
             }
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->previousFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->nextFrame();
-        }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
         if ( getGui()->getLastSelectedViewer() ) {
             getGui()->getLastSelectedViewer()->firstFrame();
