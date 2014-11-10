@@ -75,6 +75,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/GuiMacros.h"
 
+#define NATRON_FORM_LAYOUT_LINES_SPACING 0
+
 using std::make_pair;
 using namespace Natron;
 
@@ -826,8 +828,8 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 ///if new line is not turned off, create a new line
                 fieldContainer = new QWidget(page->second.tab);
                 fieldLayout = new QHBoxLayout(fieldContainer);
-                fieldLayout->setContentsMargins(3,0,0,0);
-                fieldLayout->setSpacing(0);
+                fieldLayout->setContentsMargins(3,0,0,3);
+                fieldLayout->setSpacing(2);
                 fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
             } else {
                 ///otherwise re-use the last row's widget and layout
@@ -877,7 +879,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     tab = new QWidget(page->second.tabWidget);
                     tabLayout = new QFormLayout(tab);
                     tabLayout->setContentsMargins(0, 0, 0, 0);
-                    tabLayout->setSpacing(3); // unfortunately, this leaves extra space when parameters are hidden
+                    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
 
@@ -981,7 +983,7 @@ DockablePanelPrivate::addPage(const QString & name)
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
     tabLayout->setContentsMargins(3, 0, 0, 0);
-    tabLayout->setSpacing(3); // unfortunately, this leaves extra space when parameters are hidden
+    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
     tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
     tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
