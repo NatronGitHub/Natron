@@ -3637,7 +3637,7 @@ Gui::getCurveEditor() const
 QWidget*
 Gui::getPropertiesBin() const
 {
-    return _imp->_propertiesScrollArea;
+    return _imp->_propertiesBin;
 }
 
 QVBoxLayout*
