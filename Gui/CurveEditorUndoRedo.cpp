@@ -576,13 +576,13 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     bool isLeft;
     if (deriv == LEFT_TANGENT) {
         //if dx is not of the good sign it would make the curve uncontrollable
-        if (dx < 0) {
+        if (dx <= 0) {
             dx = 0.0001;
         }
         isLeft = true;
     } else {
         //if dx is not of the good sign it would make the curve uncontrollable
-        if (dx > 0) {
+        if (dx >= 0) {
             dx = -0.0001;
         }
         isLeft = false;
