@@ -238,11 +238,11 @@ Settings::initializeKnobs()
 
     _hostName = Natron::createKnob<String_Knob>(this, "Host name");
     _hostName->setName("hostName");
-    _hostName->setHintToolTip("This is the name of the OpenFX host as it appears to the OpenFX plugins. "
+    _hostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                               "Changing it to the name of another application can help loading some plugins which "
                               "restrict their usage to specific OpenFX hosts. You shoud leave "
-                              "this to its default value, unless you a specific plugin refuses to load or run. "
-                              "Changing this takes effect on the next application launch, and requires clearing "
+                              "this to its default value, unless a specific plugin refuses to load or run. "
+                              "Changing this takes effect upon the next application launch, and requires clearing "
                               "the OpenFX plugins cache from the Cache menu. "
                               "Here is a list of known OpenFX hosts: \n"
                               "uk.co.thefoundry.nuke \n"
