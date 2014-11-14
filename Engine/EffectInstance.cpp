@@ -1671,26 +1671,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         downscaledImage = image;
 
         if (renderFullScaleThenDownscale) {
-            
             ///Allocate the upscaled image
             assert(renderMappedMipMapLevel == 0);
-            
-            ImageLocker upscaledImageLock(this);
-            
-            image.reset();
-            boost::shared_ptr<Natron::ImageParams> upscaledImageParams = Natron::Image::makeParams(cost,
-                                                        rod,
-                                                        downscaledImage->getPixelAspectRatio(),
-                                                        renderMappedMipMapLevel,
-                                                        isProjectFormat,
-                                                        args.components,
-                                                        args.bitdepth,
-                                                        inputNbIdentity,
-                                                        inputTimeIdentity,
-                                                        framesNeeded);
-            appPTR->createImageInCache(key, upscaledImageParams, &upscaledImageLock, &image);
-            image->allocateMemory();
-
+            RectI bounds;
+            rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
+            image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, downscaledImage->getPixelAspectRatio(), args.bitdepth) );
         }
 
 
