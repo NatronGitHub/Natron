@@ -424,21 +424,6 @@ public:
      **/
     boost::shared_ptr<Image> renderRoI(const RenderRoIArgs & args) WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Same as renderRoI(...) but takes in parameter
-     * the outputImage where to render instead. This is used by the Viewer which already did
-     * a cache look-up for optimization purposes.
-     **/
-    void renderRoI(SequenceTime time,
-                   const RenderScale & scale,
-                   unsigned int mipMapLevel,
-                   int view,
-                   const RectI & renderWindow,
-                   const RectD & rod, //!< effect rod in canonical coords
-                   const boost::shared_ptr<ImageParams> & cachedImgParams,
-                   const boost::shared_ptr<Image> & image,
-                   const boost::shared_ptr<Image> & downscaledImage);
-
 
     void getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
@@ -535,12 +520,13 @@ protected:
      * rois, depending on the threading-affinity of the plug-in.
      **/
     virtual Natron::StatusEnum render(SequenceTime /*time*/,
-                                  const RenderScale & /*scale*/,
-                                  const RectI & /*roi*/,
-                                  int /*view*/,
-                                  bool /*isSequentialRender*/,
-                                  bool /*isRenderResponseToUserInteraction*/,
-                                  boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN
+                                      const RenderScale & /*originalScale*/,
+                                      const RenderScale & /*mappedScale*/,
+                                      const RectI & /*roi*/,
+                                      int /*view*/,
+                                      bool /*isSequentialRender*/,
+                                      bool /*isRenderResponseToUserInteraction*/,
+                                      boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN
     {
         return Natron::eStatusOK;
     }
@@ -548,7 +534,8 @@ protected:
 public:
 
     Natron::StatusEnum render_public(SequenceTime time,
-                                 const RenderScale & scale,
+                                 const RenderScale& originalScale,
+                                 const RenderScale & mappedScale,
                                  const RectI & roi,
                                  int view,
                                  bool isSequentialRender,
@@ -556,7 +543,7 @@ public:
                                  boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN;
 
 protected:
-    /**
+/**
      * @brief Can be overloaded to indicates whether the effect is an identity, i.e it doesn't produce
      * any change in output.
      * @param time The time of interest
@@ -1142,7 +1129,7 @@ private:
      * @param scale The scale at which to render
      * @param mipMapLevel Redundant with scale
      * @param view The view on which to render
-     * @param renderWindow The rectangle to render of the image, in pixel coordinates (downscaled then)
+     * @param renderWindow The rectangle to render of the image, in pixel coordinates
      * @param cachedImgParams The parameters of the image to render as they are in the cache.
      * @param image This is the "full-scale" image, if the effect does support the render scale, then
      * image and downscaledImage are pointing to the SAME image.
@@ -1161,22 +1148,24 @@ private:
      * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
+RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
                                       const RenderScale & scale,
                                       unsigned int mipMapLevel,
                                       int view,
-                                      const RectI & renderWindow, //< renderWindow in pixel coordinates
+                                      const RectI & renderWindow,
                                       const RectD & rod, //!< rod in canonical coordinates
                                       const double par,
-                                      const boost::shared_ptr<ImageParams> & cachedImgParams,
+                                      const FramesNeededMap &framesNeeded,
                                       const boost::shared_ptr<Image> & image,
                                       const boost::shared_ptr<Image> & downscaledImage,
+                                      bool outputUseImage,
                                       bool isSequentialRender,
                                       bool isRenderMadeInResponseToUserInteraction,
                                       bool byPassCache,
                                       U64 nodeHash,
                                       int channelForAlpha,
-                                      bool renderFullScaleThenDownscale);
+                                      bool renderFullScaleThenDownscale,
+                                      bool useScaleOneInputImages);
 
     /**
      * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not
@@ -1211,6 +1200,7 @@ private:
     {
         const RenderArgs* args;
         bool renderFullScaleThenDownscale;
+        bool renderUseScaleOneInputs;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         double par;
@@ -1250,6 +1240,7 @@ private:
                                     const ParallelRenderArgs& frameArgs,
                                      bool setThreadLocalStorage,
                                      bool renderFullScaleThenDownscale,
+                                     bool renderUseScaleOneInputs,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      const RectI & roi,

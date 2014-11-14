@@ -191,12 +191,13 @@ public:
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::StatusEnum render(SequenceTime time,
-                                  const RenderScale & scale,
-                                  const RectI & roi, //!< renderWindow in pixel coordinates
-                                  int view,
-                                  bool isSequentialRender,
-                                  bool isRenderResponseToUserInteraction,
-                                  boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
+                                      const RenderScale& originalScale,
+                                      const RenderScale & mappedScale,
+                                      const RectI & roi, //!< renderWindow in pixel coordinates
+                                      int view,
+                                      bool isSequentialRender,
+                                      bool isRenderResponseToUserInteraction,
+                                      boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale & scale,
                             const RectD & rod, //!< image rod in canonical coordinates

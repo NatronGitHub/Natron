@@ -450,7 +450,8 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
 
 Natron::StatusEnum
 QtReader::render(SequenceTime /*time*/,
-                 const RenderScale & /*scale*/,
+                 const RenderScale& /*originalScale*/,
+                 const RenderScale & /*mappedScale*/,
                  const RectI & roi,
                  int /*view*/,
                  bool /*isSequentialRender*/,

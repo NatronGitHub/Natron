@@ -663,8 +663,11 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(const NodeSerialization & serialization);
+    void initializeKnobs(const NodeSerialization & serialization,int renderScaleSupportPref);
 
+    void onSetSupportRenderScaleMaybeSet(int support);
+    
+    bool useScaleOneImagesWhenRenderScaleSupportIsDisabled() const;
     
     /**
      * @brief Fills keyframes with all different keyframes time that all parameters of this

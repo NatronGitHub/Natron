@@ -993,6 +993,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         const PIX * const srcLineStart = src;
         PIX * const dstLineBatchStart = dst;
         ycount = scale + yo - yi * scale; // how many lines should be filled
+        ycount = std::min(ycount, dstRoi.y2 - yo);
         assert(0 < ycount && ycount <= scale);
         int xi = srcRoi.x1;
         int xcount = 0; // how many pixels should be filled
