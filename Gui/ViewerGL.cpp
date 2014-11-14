@@ -3258,11 +3258,12 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     if ( !loadingProject ) {
         fitImageToFormat();
+        if ( _imp->viewerTab->getInternalNode()) {
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        }
     }
 
-    if ( _imp->viewerTab->getInternalNode()) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
-    }
+  
 
     if (!_imp->isUserRoISet) {
         {

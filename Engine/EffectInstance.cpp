@@ -960,7 +960,7 @@ EffectInstance::getImage(int inputNb,
     }
     
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
-    ///Note that we do NOT cache it
+    ///Note that we do NOT cache it because it is really low def!
     if ( !dontUpscale && (inputImgMipMapLevel != 0) && !supportsRenderScale() ) {
         
         ///Resize the image according to the requested scale
@@ -1493,7 +1493,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
 
     boost::shared_ptr<ImageParams> cachedImgParams;
-    getImageFromCacheAndConvertIfNeeded(key, args.mipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
+    getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
     
     if (args.byPassCache) {
         if (image) {
@@ -1832,9 +1832,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///Subsequently the image and downscaled image are different only if the plug-in
     ///does not support the render scale and the proxy mode is turned on.
     assert( (image == downscaledImage && !renderFullScaleThenDownscale) ||
-            (image != downscaledImage && renderFullScaleThenDownscale) );
-
-
+           ((image != downscaledImage || image->getMipMapLevel() == downscaledImage->getMipMapLevel()) && renderFullScaleThenDownscale) );
+    
     ///Add the window to the project's available formats if the effect is a reader
     ///This is the only reliable place where I could put these lines...which don't seem to feel right here.
     ///Plus setOrAddProjectFormat will actually set the project format the first time we read an image in the project

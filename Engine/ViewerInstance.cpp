@@ -423,8 +423,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     ///
     ///Note that we can't yet use the texture cache because we would need the TextureRect identifyin
     ///the texture in order to retrieve from the cache, but to make the TextureRect we need the RoD!
-    boost::shared_ptr<ImageParams> cachedImgParams;
-    boost::shared_ptr<Image> inputImage;
     RenderScale scale;
     int mipMapLevel;
     {
@@ -454,57 +452,44 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     ImagePremultiplicationEnum srcPremult = activeInputToRender->getOutputPremultiplication();
 
-        
+    
+    //The hash of the node to render
     U64 inputNodeHash = activeInputToRender->getHash();
-    Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time,view);
+    
+    //The RoD returned by the plug-in
     RectD rod;
+    
+    //The bounds of the image in pixel coords.
     RectI bounds;
+    
+    //Is this image originated from a generator which is dependent of the size of the project ? If true we should then discard the image from the cache
+    //when the project's format changes.
     bool isRodProjectFormat = false;
     
-    bool isInputImgCached = false;
     
-    activeInputToRender->getImageFromCacheAndConvertIfNeeded(inputImageKey, mipMapLevel, imageDepth, components, 3, &inputImage);
-    if (forceRender) {
-        appPTR->removeFromNodeCache(inputImage);
-        inputImage.reset();
-    }
-    
-    if (inputImage) {
-        isInputImgCached = true;
-        cachedImgParams = inputImage->getParams();
-    }
-    
-    
-
     const double par = activeInputToRender->getPreferredAspectRatio();
-
-    if (isInputImgCached) {
-
-
-        rod = inputImage->getRoD();
-        bounds = inputImage->getBounds();
-        isRodProjectFormat = cachedImgParams->isRodProjectFormat();
-      
-    }  else {
-        StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time,
+    
+    ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
+    StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(inputNodeHash,time,
                                                                         supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                         view, &rod, &isRodProjectFormat);
-        if (stat == eStatusFailed) {
-            return stat;
-        }
-        // update scale after the first call to getRegionOfDefinition
-        if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
-            supportsRS = activeInputToRender->supportsRenderScaleMaybe();
-            if (supportsRS == eSupportsNo) {
-                scale.x = scale.y = 1.;
-            }
-        }
-        isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
-
-        // For the viewer, we need the enclosing rectangle to avoid black borders.
-        // Do this here to avoid infinity values.
-        rod.toPixelEnclosing(mipMapLevel, par, &bounds);
+    if (stat == eStatusFailed) {
+        return stat;
     }
+    // update scale after the first call to getRegionOfDefinition
+    if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
+        supportsRS = activeInputToRender->supportsRenderScaleMaybe();
+        if (supportsRS == eSupportsNo) {
+            scale.x = scale.y = 1.;
+        }
+    }
+    
+    isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
+    
+    // For the viewer, we need the enclosing rectangle to avoid black borders.
+    // Do this here to avoid infinity values.
+    rod.toPixelEnclosing(mipMapLevel, par, &bounds);
+    
 
 
     assert(_imp->uiContext);
@@ -569,10 +554,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     boost::shared_ptr<UpdateViewerParams> params(new UpdateViewerParams);
     bool isCached = false;
 
-    if (isInputImgCached) {
-        params->image = inputImage;
-    }
-    
     ///we never use the texture cache when the user RoI is enabled, otherwise we would have
     ///zillions of textures in the cache, each a few pixels different.
     assert(_imp->uiContext);
@@ -717,39 +698,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///intersect the image render window to the actual image region of definition.
         roi.intersect(bounds, &roi);
 
-        bool renderedCompletely = false;
-        boost::shared_ptr<Natron::Image> downscaledImage = inputImage;
 
-        ///If the plug-in doesn't support the render scale and we found an image cached but which still
-        ///contains some stuff to render we don't want to use it, instead we need to upscale the image
-        if ( isInputImgCached && (mipMapLevel != 0) && !activeInputToRender->supportsRenderScale() ) {
-            /// If the list is empty then we already rendered it all
-            /// Otherwise we have to upscale the found image, render what we need and downscale it again
-            std::list<RectI> rectsToRender = inputImage->getRestToRender(roi);
-            RectI bounds;
-            unsigned int mipMapLevel = 0;
-            rod.toPixelEnclosing(mipMapLevel, par, &bounds);
-            if ( !rectsToRender.empty() ) {
-                boost::shared_ptr<Natron::Image> upscaledImage( new Natron::Image( components,
-                                                                                   rod,
-                                                                                   bounds,
-                                                                                   mipMapLevel,
-                                                                                   par,
-                                                                                   downscaledImage->getBitDepth() ) );
-                downscaledImage->scaleBox( downscaledImage->getBounds(), upscaledImage.get() );
-                inputImage = upscaledImage;
-                if (isInputImgCached) {
-                    params->image = downscaledImage;
-                }
-            } else {
-                renderedCompletely = true;
-            }
-        } else {
-            if (isInputImgCached) {
-                params->image = inputImage;
-            }
-        }
-        
         {
             
             EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
@@ -764,51 +713,40 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             
             
             
-            if (!renderedCompletely) {
+            // If an exception occurs here it is probably fatal, since
+            // it comes from Natron itself. All exceptions from plugins are already caught
+            // by the HostSupport library.
+            // We catch it  and rethrow it just to notify the rendering is done.
+            try {
                 
-                // If an exception occurs here it is probably fatal, since
-                // it comes from Natron itself. All exceptions from plugins are already caught
-                // by the HostSupport library.
-                // We catch it  and rethrow it just to notify the rendering is done.
-                try {
-                    if (isInputImgCached) {
-                        ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
-                        ///cache lookup things because we already did it ourselves.
-                        activeInputToRender->renderRoI(time, scale, mipMapLevel, view, roi, rod, cachedImgParams, inputImage,downscaledImage);
-                        inputImage = downscaledImage;
-                        if (isInputImgCached) {
-                            params->image = inputImage;
-                        }
-                    } else {
-                        params->image = activeInputToRender->renderRoI(
-                                                                       EffectInstance::RenderRoIArgs(time,
-                                                                                                     scale,
-                                                                                                     mipMapLevel,
-                                                                                                     view,
-                                                                                                     forceRender,
-                                                                                                     roi,
-                                                                                                     rod,
-                                                                                                     components,
-                                                                                                     imageDepth) );
-                        
-                        if (!params->image) {
-                            if (params->cachedFrame) {
-                                params->cachedFrame->setAborted(true);
-                                appPTR->removeFromViewerCache(params->cachedFrame);
-                            }
-                            return eStatusOK;
-                        }
-                        
+                params->image = activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(time,
+                                                                                             scale,
+                                                                                             mipMapLevel,
+                                                                                             view,
+                                                                                             forceRender,
+                                                                                             roi,
+                                                                                             rod,
+                                                                                             components,
+                                                                                             imageDepth) );
+                
+                if (!params->image) {
+                    if (params->cachedFrame) {
+                        params->cachedFrame->setAborted(true);
+                        appPTR->removeFromViewerCache(params->cachedFrame);
                     }
-                } catch (...) {
-                    ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
-                    ///Don't forward the exception in that case.
-                    abortCheck(activeInputToRender);
-                    throw;
+                    return eStatusOK;
                 }
+                
+                
+            } catch (...) {
+                ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
+                ///Don't forward the exception in that case.
+                abortCheck(activeInputToRender);
+                throw;
             }
             
             
+        
         } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
         
         
