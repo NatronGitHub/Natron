@@ -463,7 +463,19 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     
     bool isInputImgCached = false;
     
+#ifdef RENDERFULLSCALEUPSTREAM
+    bool renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
+    unsigned int renderMappedMipMapLevel;
+    if (renderFullScaleThenDownscale) {
+        renderMappedMipMapLevel = 0;
+    } else {
+        renderMappedMipMapLevel = mipMapLevel;
+    }
+    // TODO: use args.mipMapLevel instead of renderMappedMipMapLevel if user doesn not want to render upstream nodes at full scale when renderFullScaleThenDownscale
+    activeInputToRender->getImageFromCacheAndConvertIfNeeded(inputImageKey, renderMappedMipMapLevel, imageDepth, components, 3, &inputImage);
+#else
     activeInputToRender->getImageFromCacheAndConvertIfNeeded(inputImageKey, mipMapLevel, imageDepth, components, 3, &inputImage);
+#endif
     if (forceRender) {
         appPTR->removeFromNodeCache(inputImage);
         inputImage.reset();

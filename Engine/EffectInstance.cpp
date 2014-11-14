@@ -1493,7 +1493,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
 
     boost::shared_ptr<ImageParams> cachedImgParams;
+#ifdef RENDERFULLSCALEUPSTREAM
+    // TODO: use args.mipMapLevel instead of renderMappedMipMapLevel if user doesn not want to render upstream nodes at full scale when renderFullScaleThenDownscale
+    getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
+#else
     getImageFromCacheAndConvertIfNeeded(key, args.mipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
+#endif
     
     if (args.byPassCache) {
         if (image) {
@@ -2058,6 +2063,21 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                             getPreferredDepthAndComponents(it2->first, &inputPrefComps, &inputPrefDepth);
                             
                             int channelForAlphaInput = inputIsMask ? getMaskChannel(it2->first) : 3;
+#ifdef RENDERFULLSCALEUPSTREAM
+                            RenderScale scaleOne;
+                            scaleOne.x = scaleOne.y = 1.;
+                            boost::shared_ptr<Natron::Image> inputImg =
+                            inputEffect->renderRoI( RenderRoIArgs(f, //< time
+                                                                  renderFullScaleThenDownscale ? scaleOne : scale, //< scale
+                                                                  renderFullScaleThenDownscale ? 0 : mipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                  view, //< view
+                                                                  byPassCache,
+                                                                  inputRoIPixelCoords, //< roi in pixel coordinates
+                                                                  RectD(), // < did we precompute any RoD to speed-up the call ?
+                                                                  inputPrefComps, //< requested comps
+                                                                  inputPrefDepth,
+                                                                  channelForAlphaInput) ); //< requested bitdepth
+#else
                             boost::shared_ptr<Natron::Image> inputImg =
                             inputEffect->renderRoI( RenderRoIArgs(f, //< time
                                                                   scale, //< scale
@@ -2069,6 +2089,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                   inputPrefComps, //< requested comps
                                                                   inputPrefDepth,
                                                                   channelForAlphaInput) ); //< requested bitdepth
+#endif
                             
                             if (inputImg) {
                                 inputImages.push_back(inputImg);
@@ -2117,7 +2138,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImages.begin();
              it != inputImages.end();
              ++it) {
+#ifdef RENDERFULLSCALEUPSTREAM
+            assert(renderFullScaleThenDownscale || (*it)->getMipMapLevel() == mipMapLevel);
+#else
             assert((*it)->getMipMapLevel() == mipMapLevel);
+#endif
             const RectD & srcRodCanonical = (*it)->getRoD();
             RectI srcRod;
             srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspectRatio(), &srcRod); // compute srcRod at level 0
@@ -2410,17 +2435,34 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
     boost::shared_ptr<Node::ParallelRenderArgsSetter> scopedFrameArgs;
     
-    if (setThreadLocalStorage) {
-        
+    if (!setThreadLocalStorage) {
+        renderRectToRender = args._renderWindowPixel;
+    } else {
+
         ///At this point if we're in eRenderSafetyFullySafeFrame mode, we are a thread that might have been launched way after
         ///the time renderRectToRender was computed. We recompute it to update the portion to render
         
         // check the bitmap!
+#ifdef RENDERFULLSCALEUPSTREAM
+        if (!renderFullScaleThenDownscale) {
+            renderRectToRender = downscaledRectToRender;
+        } else {
+            RectD canonicalrenderRectToRender;
+            downscaledRectToRender.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
+            canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
+            renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
+        }
+
+        renderRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
+
+        assert(renderBounds.x1 <= renderRectToRender.x1 && renderRectToRender.x2 <= renderBounds.x2 &&
+               renderBounds.y1 <= renderRectToRender.y1 && renderRectToRender.y2 <= renderBounds.y2);
+#else
         const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
-        
+
         assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
                renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
-        
+
         if (renderFullScaleThenDownscale) {
             RectD canonicalrenderRectToRender;
             downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
@@ -2429,7 +2471,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         } else {
             renderRectToRender = downscaledRectToRenderMinimal;
         }
-        
+#endif
         
         
         RenderArgs argsCpy = args;
@@ -2444,11 +2486,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                                   frameArgs.isSequentialRender,
                                                                   frameArgs.canAbort,
                                                                   frameArgs.nodeHash) );
-        
-    } else {
-        renderRectToRender = args._renderWindowPixel;
     }
-    
     if ( renderRectToRender.isNull() ) {
         ///We've got nothing to do
         return eStatusOK;
