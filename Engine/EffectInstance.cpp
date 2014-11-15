@@ -1807,7 +1807,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     //We have to return the downscale image, so make sure it has been computed
     if (renderRetCode != eRenderRoIStatusRenderFailed && renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
         assert(image->getMipMapLevel() == 0);
-        image->downscaleMipMap( image->getBounds(), 0, args.mipMapLevel, false, downscaledImage.get() );
+        roi.intersect(image->getBounds(), &roi);
+        image->downscaleMipMap(roi, 0, args.mipMapLevel, false, downscaledImage.get() );
     }
 
     if ( aborted() && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
