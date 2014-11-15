@@ -2324,6 +2324,22 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 }
 
 void
+ViewerGL::clearLastRenderedImage()
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    ViewerInstance* internalNode = getInternalNode();
+
+    for (int i = 0; i < 2; ++i) {
+        _imp->lastRenderedImage[i].reset();
+        if (_imp->memoryHeldByLastRenderedImages[i] > 0) {
+            internalNode->unregisterPluginMemory(_imp->memoryHeldByLastRenderedImages[i]);
+            _imp->memoryHeldByLastRenderedImages[i] = 0;
+        }
+    }
+}
+
+void
 ViewerGL::disconnectInputTexture(int textureIndex)
 {
     // always running in the main thread

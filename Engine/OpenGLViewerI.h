@@ -173,6 +173,11 @@ public:
      **/
     virtual void restoreOpenGLContext() = 0;
     
+    /**
+     * @brief Clears pointers to images that may be left
+     **/
+    virtual void clearLastRenderedImage() = 0;
+    
 };
 
 

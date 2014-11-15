@@ -430,6 +430,7 @@ public:
                                              Natron::ImageBitDepthEnum bitdepth,
                                              Natron::ImageComponentsEnum components,
                                              int channelForAlpha,
+                                             const RectD& rod,
                                              boost::shared_ptr<Natron::Image>* image);
 
 
@@ -770,7 +771,7 @@ public:
     {
     };
 
-    void clearLastRenderedImage();
+    virtual void clearLastRenderedImage();
 
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using

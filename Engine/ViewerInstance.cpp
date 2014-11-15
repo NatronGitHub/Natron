@@ -209,6 +209,15 @@ ViewerInstance::forceFullComputationOnNextFrame()
 }
 
 void
+ViewerInstance::clearLastRenderedImage()
+{
+    EffectInstance::clearLastRenderedImage();
+    if (_imp->uiContext) {
+        _imp->uiContext->clearLastRenderedImage();
+    }
+}
+
+void
 ViewerInstance::setUiContext(OpenGLViewerI* viewer)
 {
     // always running in the main thread

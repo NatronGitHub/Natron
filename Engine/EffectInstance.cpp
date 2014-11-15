@@ -484,20 +484,12 @@ public:
     
     void addInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img)
     {
-        if ( inputImages.hasLocalData() ) {
-            inputImages.localData().push_back(img);
-        } else {
-            std::list< boost::shared_ptr<Natron::Image> > newList;
-            newList.push_back(img);
-            inputImages.localData() = newList;
-        }
+        inputImages.localData().push_back(img);
     }
 
     void clearInputImagePointers()
     {
-        if ( inputImages.hasLocalData() ) {
-            inputImages.localData().clear();
-        }
+        inputImages.localData().clear();
     }
 };
 
@@ -1246,6 +1238,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                                                     Natron::ImageBitDepthEnum bitdepth,
                                                     Natron::ImageComponentsEnum components,
                                                     int channelForAlpha,
+                                                    const RectD& rod,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
     ImageList cachedImages;
@@ -1362,7 +1355,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
                 
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
-                                                                               oldParams->getRoD(),
+                                                                               rod,
                                                                                oldParams->getPixelAspectRatio(),
                                                                                mipMapLevel,
                                                                                oldParams->isRodProjectFormat(),
@@ -1515,7 +1508,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
 
     boost::shared_ptr<ImageParams> cachedImgParams;
-    getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha, &image);
+    getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod, &image);
 
     
     if (args.byPassCache) {
@@ -1799,7 +1792,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 #ifdef DEBUG
     if (renderRetCode != eRenderRoIStatusRenderFailed && !aborted()) {
         // Kindly check that everything we asked for is rendered!
-        std::list<RectI> restToRender = image->getRestToRender(args.roi);
+        std::list<RectI> restToRender = useImageAsOutput ? image->getRestToRender(roi) : downscaledImage->getRestToRender(roi);
         assert(restToRender.empty());
     }
 #endif
@@ -2479,36 +2472,33 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         ///the time renderRectToRender was computed. We recompute it to update the portion to render
         
         // check the bitmap!
-#ifdef RENDERFULLSCALEUPSTREAM
-        if (!renderFullScaleThenDownscale) {
-            renderRectToRender = downscaledRectToRender;
-        } else {
+        if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
+            //The renderMappedImage is cached , read bitmap from it
             RectD canonicalrenderRectToRender;
             downscaledRectToRender.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
             canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
             renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
-        }
-
-        renderRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
-
-        assert(renderBounds.x1 <= renderRectToRender.x1 && renderRectToRender.x2 <= renderBounds.x2 &&
-               renderBounds.y1 <= renderRectToRender.y1 && renderRectToRender.y2 <= renderBounds.y2);
-#else
-        const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
-
-        assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
-               renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
-
-        if (renderFullScaleThenDownscale) {
-            RectD canonicalrenderRectToRender;
-            downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
-            canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
-            renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
+            
+            renderRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
+            
+            assert(renderBounds.x1 <= renderRectToRender.x1 && renderRectToRender.x2 <= renderBounds.x2 &&
+                   renderBounds.y1 <= renderRectToRender.y1 && renderRectToRender.y2 <= renderBounds.y2);
         } else {
-            renderRectToRender = downscaledRectToRenderMinimal;
+            //THe downscaled image is cached, read bitmap from it
+            const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
+            
+            assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
+                   renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
+            
+            if (renderFullScaleThenDownscale) {
+                RectD canonicalrenderRectToRender;
+                downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
+                canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
+                renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
+            } else {
+                renderRectToRender = downscaledRectToRenderMinimal;
+            }
         }
-#endif
-        
         
         RenderArgs argsCpy = args;
         ///Update the renderWindow which might have changed
