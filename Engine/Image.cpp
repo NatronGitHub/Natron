@@ -745,10 +745,10 @@ Image::halveRoIForDepth(const RectI & roi,
              dst += (components) - components, // one pixel minus what was done on previous iteration
              ++srcBm) {
             
-            if (x * 2 >= srcRoI.width() ) {
-                //Replicate previous pixel, we are out of src roi
+            if (x * 2 > srcRoI.width() -1) {
+
                 for (int k = 0; k < components; ++k, ++dst,++src) {
-                    *dst = *(dst - components);
+                    *dst = 0;
                 }
                 continue;
             }
@@ -818,7 +818,7 @@ Image::halveRoIForDepth(const RectI & roi,
                 }
             } else if (y * 2 > (srcRoI.height() - 1)) {
                 //Copy the previous line
-                for (int k = 0; k < components; ++k, ++dst) {
+                for (int k = 0; k < components; ++k, ++dst,++src) {
                     *dst = *(dst - dstRowSize);
                     
                 }
