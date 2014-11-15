@@ -99,7 +99,7 @@ struct KnobsClipBoard
 struct GuiApplicationManagerPrivate
 {
     GuiApplicationManager* _publicInterface;
-    std::vector<PluginGroupNode*> _toolButtons;
+    std::list<PluginGroupNode*> _toolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
     QCursor* _colorPickerCursor;
@@ -126,6 +126,8 @@ struct GuiApplicationManagerPrivate
     }
 
     void createColorPickerCursor();
+    
+    void removePluginToolButton(const QString& pluginID);
 
     void addStandardKeybind(const QString & grouping,const QString & id,
                             const QString & description,QKeySequence::StandardKey key);
@@ -133,6 +135,8 @@ struct GuiApplicationManagerPrivate
     void addKeybind(const QString & grouping,const QString & id,
                     const QString & description,
                     const Qt::KeyboardModifiers & modifiers,Qt::Key symbol);
+    
+    void removeKeybind(const QString& grouping,const QString& id);
 
     void addMouseShortcut(const QString & grouping,const QString & id,
                           const QString & description,
@@ -147,8 +151,8 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-    for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
-        delete _imp->_toolButtons[i];
+    for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin() ; it!=_imp->_toolButtons.end();++it) {
+        delete *it;
     }
     delete _imp->_colorPickerCursor;
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
@@ -648,7 +652,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
     }
 } // getIcon
 
-const std::vector<PluginGroupNode*> &
+const std::list<PluginGroupNode*> &
 GuiApplicationManager::getPluginsToolButtons() const
 {
     return _imp->_toolButtons;
@@ -738,14 +742,56 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
 }
 
+void
+GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
+{
+    _imp->removePluginToolButton(plugin->getPluginID());
+    _imp->removeKeybind(kShortcutGroupNodes, plugin->getPluginID());
+}
+
+static void removeChildRecursively(PluginGroupNode* plugin,PluginGroupNode* parent,std::list<PluginGroupNode*>* toDelete)
+{
+    parent->tryRemoveChild(plugin);
+    if (parent->getChildren().empty()) {
+        toDelete->push_back(parent);
+        if (parent->getParent()) {
+            removeChildRecursively(parent, parent->getParent(), toDelete);
+        }
+    }
+}
+
+void
+GuiApplicationManagerPrivate::removePluginToolButton(const QString& pluginID)
+{
+    std::list<PluginGroupNode*> toDelete;
+    for (std::list<PluginGroupNode*>::iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+        if ((*it)->getID() == pluginID) {
+            if ((*it)->getParent()) {
+                removeChildRecursively(*it,(*it)->getParent(),&toDelete);
+            }
+            delete *it;
+            _toolButtons.erase(it);
+            break;
+        }
+    }
+    
+    for (std::list<PluginGroupNode*>::iterator it = toDelete.begin(); it != toDelete.end(); ++it) {
+        std::list<PluginGroupNode*>::iterator found = std::find(_toolButtons.begin(),_toolButtons.end(),*it);
+        if (found != _toolButtons.end()) {
+            delete *found;
+            _toolButtons.erase(found);
+        }
+    }
+}
+
 PluginGroupNode*
 GuiApplicationManager::findPluginToolButtonOrCreate(const QString & pluginID,
                                                     const QString & name,
                                                     const QString & iconPath)
 {
-    for (std::size_t i = 0; i < _imp->_toolButtons.size(); ++i) {
-        if (_imp->_toolButtons[i]->getID() == pluginID) {
-            return _imp->_toolButtons[i];
+    for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin(); it != _imp->_toolButtons.end(); ++it) {
+        if ((*it)->getID() == pluginID) {
+            return *it;
         }
     }
     PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath);
@@ -857,7 +903,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin( readerPlugin,reader->getPluginID().c_str(),reader->getPluginLabel().c_str(),
-                                                     "","",grouping,(QMutex*)NULL,reader->getMajorVersion(),reader->getMinorVersion() );
+                                                     "","",grouping,"",(QMutex*)NULL,reader->getMajorVersion(),reader->getMinorVersion() ,
+                                                    true,false);
         plugins->push_back(plugin);
         onPluginLoaded(plugin);
 
@@ -884,7 +931,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin( writerPlugin,writer->getPluginID().c_str(),writer->getPluginLabel().c_str(),
-                                                     "","",grouping,(QMutex*)NULL,writer->getMajorVersion(),writer->getMinorVersion() );
+                                                     "","",grouping,"",(QMutex*)NULL,writer->getMajorVersion(),writer->getMinorVersion(),
+                                                    false,true);
         plugins->push_back(plugin);
         onPluginLoaded(plugin);
 
@@ -915,8 +963,9 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin( viewerPlugin,viewer->getPluginID().c_str(),viewer->getPluginLabel().c_str(),
-                                                     NATRON_IMAGES_PATH "viewer_icon.png","",grouping,(QMutex*)NULL,
-                                                    viewer->getMajorVersion(),viewer->getMinorVersion() );
+                                                     NATRON_IMAGES_PATH "viewer_icon.png","",grouping,"",(QMutex*)NULL,
+                                                    viewer->getMajorVersion(),viewer->getMinorVersion(),
+                                                    false,false);
         plugins->push_back(plugin);
         onPluginLoaded(plugin);
     }
@@ -924,7 +973,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
     {
         QString label(NATRON_BACKDROP_NODE_NAME);
         QStringList backdropGrouping(PLUGIN_GROUP_OTHER);
-        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,"","",backdropGrouping,NULL,1,0);
+        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,"","",backdropGrouping,"",NULL,1,0,false,false);
         plugins->push_back(plugin);
         onPluginLoaded(plugin);
     }
@@ -1452,7 +1501,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDeclone, kShortcutDescActionGraphDeclone, Qt::AltModifier | Qt::ShiftModifier, Qt::Key_K);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate, kShortcutDescActionGraphDuplicate, Qt::AltModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, kShortcutDescActionGraphForcePreview, Qt::NoModifier, Qt::Key_P);
-    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, kShortcutDescActionGraphToggleAutoPreview, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, kShortcutDescActionGraphToggleAutoPreview, Qt::AltModifier, Qt::Key_P);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoPreview, kShortcutDescActionGraphToggleAutoPreview, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, kShortcutDescActionGraphFrameNodes, Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowCacheSize, kShortcutDescActionGraphShowCacheSize, Qt::NoModifier, (Qt::Key)0);
@@ -1511,6 +1560,21 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(_publicInterface->getTopLevelInstance());
     if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
         app->getGui()->addShortcut(kA);
+    }
+}
+
+void
+GuiApplicationManagerPrivate::removeKeybind(const QString& grouping,const QString& id)
+{
+    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
+    if ( foundGroup != _actionShortcuts.end() ) {
+        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
+        if ( foundAction != foundGroup->second.end() ) {
+            foundGroup->second.erase(foundAction);
+        }
+        if (foundGroup->second.empty()) {
+            _actionShortcuts.erase(foundGroup);
+        }
     }
 }
 

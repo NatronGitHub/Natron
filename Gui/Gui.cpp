@@ -96,6 +96,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ShortCutEditor.h"
 #include "Gui/NodeBackDrop.h"
 #include "Gui/MessageBox.h"
+#include "Gui/MultiInstancePanel.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -624,11 +625,12 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool requestedByLoad,
                     double xPosHint,
                     double yPosHint,
-                    bool pushUndoRedoCommand)
+                    bool pushUndoRedoCommand,
+                    bool autoConnect)
 {
     assert(_imp->_nodeGraphArea);
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
-                                                                             xPosHint,yPosHint,pushUndoRedoCommand);
+                                                                             xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
     QObject::connect( nodeGui.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
@@ -994,7 +996,7 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
     
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
-    _propertiesScrollArea->setObjectName("PropertiesBinScrollArea");
+    _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);
 
     QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
@@ -1628,6 +1630,23 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
     _imp->_layoutPropertiesBin->removeWidget(panel);
     _imp->_layoutPropertiesBin->insertWidget(0, panel);
     _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+    buildTabFocusOrderPropertiesBin();
+}
+
+void
+Gui::buildTabFocusOrderPropertiesBin()
+{
+    int next = 1;
+    for (int i = 0; i < _imp->_layoutPropertiesBin->count(); ++i,++next) {
+        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
+        QWidget* w = item->widget();
+        QWidget* nextWidget = next >= _imp->_layoutPropertiesBin->count() ? _imp->_layoutPropertiesBin->itemAt(0)->widget()
+        : _imp->_layoutPropertiesBin->itemAt(next)->widget();
+        
+        if (w && nextWidget) {
+            setTabOrder(w,nextWidget);
+        }
+    }
 }
 
 void
@@ -3213,10 +3232,17 @@ void
 Gui::removeUndoStack(QUndoStack* stack)
 {
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
+    
+    if (_imp->_currentUndoAction == it->second.first) {
+        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
+    }
+    if (_imp->_currentRedoAction == it->second.second) {
+        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
+    }
     if ( it != _imp->_undoStacksActions.end() ) {
         _imp->_undoStacksActions.erase(it);
     }
+   
 }
 
 void
@@ -3612,7 +3638,7 @@ Gui::getCurveEditor() const
 QWidget*
 Gui::getPropertiesBin() const
 {
-    return _imp->_propertiesScrollArea;
+    return _imp->_propertiesBin;
 }
 
 QVBoxLayout*
@@ -4294,14 +4320,34 @@ FloatingWidget::closeEvent(QCloseEvent* e)
 
 
 void
-Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<NodeGui> >& nodes) const
+Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
 {
     int layoutItemsCount = _imp->_layoutPropertiesBin->count();
     for (int i = 0; i < layoutItemsCount; ++i) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(item->widget());
-        if (panel && panel->getNode() && panel->getNode()->shouldDrawOverlay()) {
-            nodes.push_back(panel->getNode());
+        if (panel) {
+            boost::shared_ptr<NodeGui> node = panel->getNode();
+            if (node) {
+                boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
+                if (multiInstance) {
+                    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+                    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                        if (node->isSettingsPanelVisible() && it->first->isActivated()&& it->second) {
+                            nodes.push_back(it->first);
+                        }
+                    }
+                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+                    if (!internalNode->isNodeDisabled() && node->isSettingsPanelVisible()) {
+                        nodes.push_back(node->getNode());
+                    }
+                } else {
+                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+                    if (!internalNode->isNodeDisabled() && internalNode->isActivated() && node->isSettingsPanelVisible()) {
+                        nodes.push_back(node->getNode());
+                    }
+                }
+            }
         }
     }
 }

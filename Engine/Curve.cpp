@@ -1267,10 +1267,16 @@ Curve::evaluateCurveChanged(CurveChangedReasonEnum reason,
 }
 
 KeyFrameSet::const_iterator
+Curve::findWithTime(const KeyFrameSet& keys,double time)
+{
+    return std::find_if( keys.begin(), keys.end(), KeyFrameTimePredicate(time) );
+}
+
+KeyFrameSet::const_iterator
 Curve::find(double time) const
 {
     // PRIVATE - should not lock
-    return std::find_if( _imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time) );
+    return findWithTime(_imp->keyFrames, time);
 }
 
 KeyFrameSet::const_iterator
@@ -1373,21 +1379,4 @@ Curve::mustClamp() const
     return _imp->owner || hasYRange();
 }
 
-void
-Curve::getKeyFramesWithinRect(double l,
-                              double b,
-                              double r,
-                              double t,
-                              std::vector<KeyFrame>* ret) const
-{
-    QReadLocker locker(&_imp->_lock);
-
-    for (KeyFrameSet::const_iterator it2 = _imp->keyFrames.begin(); it2 != _imp->keyFrames.end(); ++it2) {
-        double y = it2->getValue();
-        double x = it2->getTime();
-        if ( (x <= r) && (x >= l) && (y <= t) && (y >= b) ) {
-            ret->push_back(*it2);
-        }
-    }
-}
 

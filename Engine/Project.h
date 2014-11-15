@@ -13,7 +13,9 @@
 
 #include <map>
 #include <vector>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
+#endif
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)

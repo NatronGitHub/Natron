@@ -72,6 +72,8 @@ public:
     }
 
     void tryAddChild(PluginGroupNode* plugin);
+    void tryRemoveChild(PluginGroupNode* plugin);
+    
     PluginGroupNode* getParent() const
     {
         return _parent;
@@ -97,11 +99,12 @@ class Plugin
     QString _iconFilePath;
     QString _groupIconFilePath;
     QStringList _grouping;
+    QString _ofxPluginID;
     QMutex* _lock;
     int _majorVersion;
     int _minorVersion;
     bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
-
+    bool _isReader,_isWriter;
 public:
 
     Plugin()
@@ -111,10 +114,13 @@ public:
           , _iconFilePath()
           , _groupIconFilePath()
           , _grouping()
+          , _ofxPluginID()
           , _lock()
           , _majorVersion(0)
           , _minorVersion(0)
           , _hasShortcutSet(false)
+          , _isReader(false)
+          , _isWriter(false)
     {
     }
 
@@ -124,19 +130,25 @@ public:
            const QString & iconFilePath,
            const QString & groupIconFilePath,
            const QStringList & grouping,
+           const QString & ofxPluginID,
            QMutex* lock,
            int majorVersion,
-           int minorVersion)
+           int minorVersion,
+           bool isReader,
+           bool isWriter)
         : _binary(binary)
           , _id(id)
           , _label(label)
           , _iconFilePath(iconFilePath)
           , _groupIconFilePath(groupIconFilePath)
           , _grouping(grouping)
+          , _ofxPluginID(ofxPluginID)
           , _lock(lock)
           , _majorVersion(majorVersion)
           , _minorVersion(minorVersion)
           , _hasShortcutSet(false)
+          , _isReader(isReader)
+          , _isWriter(isWriter)
     {
     }
 
@@ -151,6 +163,14 @@ public:
     {
         return _id;
     }
+    
+    bool isReader() const {
+        return _isReader;
+    }
+    
+    bool isWriter() const {
+        return _isWriter;
+    }
 
     void setPluginLabel(const QString & label)
     {
@@ -160,6 +180,11 @@ public:
     const QString & getPluginLabel() const
     {
         return _label;
+    }
+    
+    const QString & getPluginOFXID() const
+    {
+        return _ofxPluginID;
     }
 
     const QString & getIconFilePath() const

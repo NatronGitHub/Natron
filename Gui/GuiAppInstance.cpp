@@ -79,26 +79,27 @@ GuiAppInstance::aboutToQuit()
     /**
      Kill the nodes used to make the previews in the file dialogs
      **/
-    if (_imp->_previewProvider->viewerNode) {
-        _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-		boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
-		ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
-		assert(liveInstance);
-        node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
-		liveInstance->invalidateUiContext();
-        node->removeReferences();
-        _imp->_previewProvider->viewerNode->deleteReferences();
+    if (_imp->_previewProvider) {
+        if (_imp->_previewProvider->viewerNode) {
+            _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
+            boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
+            ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+            assert(liveInstance);
+            node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
+            liveInstance->invalidateUiContext();
+            node->removeReferences();
+            _imp->_previewProvider->viewerNode->deleteReferences();
+        }
+        
+        for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
+             it != _imp->_previewProvider->readerNodes.end(); ++it) {
+            it->second->getNode()->removeReferences();
+            it->second->deleteReferences();
+        }
+        _imp->_previewProvider->readerNodes.clear();
+        
+        _imp->_previewProvider.reset();
     }
-    
-    for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
-         it != _imp->_previewProvider->readerNodes.end(); ++it) {
-        it->second->getNode()->removeReferences();
-        it->second->deleteReferences();
-    }
-    _imp->_previewProvider->readerNodes.clear();
-    
-    _imp->_previewProvider.reset();
-
     
     _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
@@ -141,10 +142,10 @@ GuiAppInstance::load(const QString & projectName,
 
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::vector<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
-    for (U32 i = 0; i < _toolButtons.size(); ++i) {
-        assert(_toolButtons[i]);
-        _imp->_gui->findOrCreateToolButton(_toolButtons[i]);
+    const std::list<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
+    for (std::list<PluginGroupNode*>::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+        assert(*it);
+        _imp->_gui->findOrCreateToolButton(*it);
     }
     emit pluginsPopulated();
 
@@ -226,7 +227,10 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
                               double yPosHint,
                               bool pushUndoRedoCommand)
 {
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand);
+    
+    std::list<boost::shared_ptr<NodeGui> >  selectedNodes = _imp->_gui->getSelectedNodes();
+
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
 
     assert(nodegui);
     if ( !multiInstanceParentName.empty() ) {
@@ -269,12 +273,14 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
 
 
     if ( !loadRequest && multiInstanceParentName.empty() ) {
-        const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = _imp->_gui->getSelectedNodes();
         if ( (selectedNodes.size() == 1) && autoConnect ) {
-            const boost::shared_ptr<Node> & selected = selectedNodes.front()->getNode();
-            getProject()->autoConnectNodes(selected, node);
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
+                if (*it != nodegui) {
+                    getProject()->autoConnectNodes((*it)->getNode(), node);
+                    break;
+                }
+            }
         }
-        _imp->_gui->selectNode(nodegui);
         
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );

@@ -14,8 +14,9 @@
 
 #include <vector>
 #include <utility>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -167,6 +168,8 @@ public:
                                             unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
                                             int textureIndex) OVERRIDE FINAL;
     
+    virtual void clearLastRenderedImage() OVERRIDE FINAL;
+    
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
      *@returns Returns true if the graphic card supports GLSL.
@@ -242,9 +245,9 @@ public:
 
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
 
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     void setUserRoIEnabled(bool b);
 

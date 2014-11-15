@@ -12,8 +12,9 @@
 #ifndef NATRON_ENGINE_FRAMEENTRY_H_
 #define NATRON_ENGINE_FRAMEENTRY_H_
 #include <string>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include <QtCore/QObject>
 #include <QtCore/QMutex>
 

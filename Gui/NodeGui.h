@@ -13,8 +13,10 @@
 #define NATRON_GUI_NODEGUI_H_
 
 #include <map>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -278,8 +280,6 @@ public:
     void onGuiFrozenChanged(bool frozen);
 
     boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
-
-    bool shouldDrawOverlay() const;
 
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
 

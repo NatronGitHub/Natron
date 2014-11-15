@@ -709,37 +709,10 @@ Image::halveRoIForDepth(const RectI & roi,
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
 
-#if 0
-    srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
-    dstRoI.x1 = srcRoI.x1 / 2;
-    dstRoI.y1 = srcRoI.y1 / 2;
-    dstRoI.x2 = srcRoI.x2 / 2;
-    dstRoI.y2 = srcRoI.y2 / 2;
-
-    // a few checks...
-    // srcRoI must be inside srcBounds
-    assert(srcRoI.x1 >= srcBounds.x1);
-    assert(srcRoI.x2 <= srcBounds.x2);
-    assert(srcRoI.y1 >= srcBounds.y1);
-    assert(srcRoI.y2 <= srcBounds.y2);
-    // srcRoI must be inside dstBounds*2
-    assert(srcRoI.x1 >= dstBounds.x1 * 2);
-    assert(srcRoI.x2 <= dstBounds.x2 * 2);
-    assert(srcRoI.y1 >= dstBounds.y1 * 2);
-    assert(srcRoI.y2 <= dstBounds.y2 * 2);
-    // srcRoI must be equal to dstRoI*2
-    assert(srcRoI.x1 == dstRoI.x1 * 2);
-    assert(srcRoI.x2 == dstRoI.x2 * 2);
-    assert(srcRoI.y1 == dstRoI.y1 * 2);
-    assert(srcRoI.y2 == dstRoI.y2 * 2);
-    assert(srcRoI.width() == dstRoI.width() * 2);
-    assert(srcRoI.height() == dstRoI.height() * 2);
-#else
     dstRoI.x1 = std::floor(srcRoI.x1 / 2.);
     dstRoI.y1 = std::floor(srcRoI.y1 / 2.);
     dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
-#endif
 
     int dstRoIWidth = dstRoI.width();
     int dstRoIHeight = dstRoI.height();
@@ -770,49 +743,87 @@ Image::halveRoIForDepth(const RectI & roi,
              ++x,
              src += (components + components) - components, // two pixels minus what was done on previous iteration
              dst += (components) - components, // one pixel minus what was done on previous iteration
-             srcBm += (1 + 1) - 1,
-             dstBm += (1) - 1) {
-#if 0
-            assert(dstBounds.x1 <= dstRoI.x1 + x && dstRoI.x1 + x < dstBounds.x2);
-            assert(dstBounds.y1 <= dstRoI.y1 + y && dstRoI.y1 + y < dstBounds.y2);
-            assert( dst == (PIX*)output->pixelAt(dstRoI.x1 + x, dstRoI.y1 + y) );
-            assert(srcBounds.x1 <= srcRoI.x1 + 2 * x && srcRoI.x1 + 2 * x < srcBounds.x2);
-            assert(srcBounds.y1 <= srcRoI.y1 + 2 * y && srcRoI.y1 + 2 * y < srcBounds.y2);
-            assert( src == (const PIX*)pixelAt(srcRoI.x1 + 2 * x, srcRoI.y1 + 2 * y) );
-
-#endif
+             ++srcBm) {
             
+            if (x * 2 > srcRoI.width() -1) {
+
+                for (int k = 0; k < components; ++k, ++dst,++src) {
+                    *dst = 0;
+                }
+                continue;
+            }
+            
+            bool useNextPixel = x * 2 < srcRoI.width() - 1;
+
             //The src image can be in this implementation smaller than dstBounds * 2
-            if (y * 2 + 1 < srcRoI.height()) {
+            if (y * 2  < (srcRoI.height() - 1)) {
                 
                 for (int k = 0; k < components; ++k, ++dst, ++src) {
-                    *dst = PIX( (float)( *src +
-                                        *(src + components) +
-                                        *(src + srcRowSize) +
-                                        *(src + srcRowSize  + components) ) / 4. );
+                    
+                    if (!useNextPixel) {
+                        *dst = PIX( (float)( *src + *(src + srcRowSize) ) / 2. );
+                    } else {
+                        *dst = PIX( (float)( *src +
+                                            *(src + components) +
+                                            *(src + srcRowSize) +
+                                            *(src + srcRowSize  + components) ) / 4. );
+                    }
                 }
                 if (copyBitMap) {
-                    if (*srcBm != 0 && *(srcBm + 1) != 0 && *(srcBm + srcBounds.width()) != 0 && *(srcBm + srcBounds.width() + 1) != 0) {
-                        *dstBm = 1;
+                    if (!useNextPixel) {
+                        if (*srcBm != 0  && *(srcBm + srcBounds.width()) != 0) {
+                            *dstBm = 1;
+                        } else {
+                            *dstBm = 0;
+                        }
                     } else {
-                        *dstBm = 0;
+                        if (*srcBm != 0 && *(srcBm + 1) != 0 && *(srcBm + srcBounds.width()) != 0 && *(srcBm + srcBounds.width() + 1) != 0) {
+                            *dstBm = 1;
+                        } else {
+                            *dstBm = 0;
+                        }
                     }
+                    
                     ++srcBm;
                     ++dstBm;
                 }
-            } else if (y == srcRoI.height() - 1) {
-                for (int k = 0; k < components; ++k, ++dst, ++src) {
-                    *dst = PIX( (float)( *src +
-                                        *(src + components) ) / 2. );
+            } else if (y * 2 == (srcRoI.height() - 1)) {
+                
+                if (!useNextPixel) {
+                    for (int k = 0; k < components; ++k, ++dst, ++src) {
+                        *dst = *src;
+                        
+                    }
+                } else {
+                    for (int k = 0; k < components; ++k, ++dst, ++src) {
+                        *dst = PIX( (float)( *src +
+                                            *(src + components) ) / 2. );
+                        
+                    }
+                }
+                
+                if (copyBitMap) {
+                    if (!useNextPixel) {
+                        *dstBm = *srcBm;
+                    } else {
+                        if (*srcBm != 0 && *(srcBm + 1) != 0) {
+                            *dstBm = 1;
+                        } else {
+                            *dstBm = 0;
+                        }
+                    }
+                   
+                    ++srcBm;
+                    ++dstBm;
+                }
+            } else if (y * 2 > (srcRoI.height() - 1)) {
+                //Copy the previous line
+                for (int k = 0; k < components; ++k, ++dst,++src) {
+                    *dst = *(dst - dstRowSize);
                     
                 }
                 if (copyBitMap) {
-                    if (*srcBm != 0 && *(srcBm + 1) != 0) {
-                        *dstBm = 1;
-                    } else {
-                        *dstBm = 0;
-                    }
-                    ++srcBm;
+                    *dstBm = *(dstBm - dstBounds.width());
                     ++dstBm;
                 }
             }
@@ -854,12 +865,12 @@ Image::halve1DImageForDepth(const RectI & roi,
     assert( output->getComponents() == getComponents() );
     const RectI & srcBounds = getBounds();
     const RectI & dstBounds = output->getBounds();
-    assert(dstBounds.x1 * 2 == roi.x1 &&
-           dstBounds.y1 * 2 == roi.y1 &&
-           (
-               dstBounds.x2 * 2 == roi.x2 || // we halve in only 1 dimension
-               dstBounds.y2 * 2 == roi.y2)
-           );
+//    assert(dstBounds.x1 * 2 == roi.x1 &&
+//           dstBounds.y1 * 2 == roi.y1 &&
+//           (
+//               dstBounds.x2 * 2 == roi.x2 || // we halve in only 1 dimension
+//               dstBounds.y2 * 2 == roi.y2)
+//           );
 
     int components = getElementsCountForComponents( getComponents() );
     int halfWidth = width / 2;
@@ -993,6 +1004,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         const PIX * const srcLineStart = src;
         PIX * const dstLineBatchStart = dst;
         ycount = scale + yo - yi * scale; // how many lines should be filled
+        ycount = std::min(ycount, dstRoi.y2 - yo);
         assert(0 < ycount && ycount <= scale);
         int xi = srcRoi.x1;
         int xcount = 0; // how many pixels should be filled
@@ -1001,7 +1013,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         // fill the first line
         for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += components, xo += xcount, dstPixFirst += xcount * components) {
             xcount = scale + xo - xi * scale;
-            assert(0 < xcount && xcount <= scale);
+            //assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary
             PIX * dstPix = dstPixFirst;
             //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);

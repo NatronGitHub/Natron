@@ -17,6 +17,7 @@
 #include <set>
 
 #include "Global/Macros.h"
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 CLANG_DIAG_OFF(unused-parameter)
@@ -24,7 +25,7 @@ CLANG_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
-
+#endif
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
@@ -263,8 +264,8 @@ public:
     /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
     void setYRange(double yMin, double yMax);
 
-    void getKeyFramesWithinRect(double l,double b,double r,double t,std::vector<KeyFrame>* ret) const;
-
+    static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys,double time);
+    
 private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);

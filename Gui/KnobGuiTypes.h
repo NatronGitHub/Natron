@@ -67,7 +67,7 @@ class ComboBox;
 class ScaleSliderQWidget;
 class GroupBoxLabel;
 class CurveWidget;
-class CurveGui;
+class KnobCurveGui;
 
 // private classes, defined in KnobGuiTypes.cpp
 class ClickableLabel;
@@ -113,8 +113,14 @@ public slots:
     void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
 
     void onIncrementChanged(int incr, int index = 0);
-
+    
+    void onDimensionSwitchClicked();
+    
 private:
+    void expandAllDimensions();
+    void foldAllDimensions();
+    
+    void sliderEditingEnd(double d);
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
@@ -135,6 +141,7 @@ private:
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     ScaleSliderQWidget *_slider;
+    Button *_dimensionSwitchButton;
     boost::shared_ptr<Int_Knob> _knob;
 };
 
@@ -215,8 +222,13 @@ public slots:
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
 
-private:
+    void onDimensionSwitchClicked();
 
+private:
+    void expandAllDimensions();
+    void foldAllDimensions();
+
+    void sliderEditingEnd(double d);
     /**
      * @brief Normalized parameters handling. It converts from project format
      * to normailzed coords or from project format to normalized coords.
@@ -244,6 +256,7 @@ private:
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     ScaleSliderQWidget *_slider;
+    Button *_dimensionSwitchButton;
     boost::shared_ptr<Double_Knob> _knob;
     int _digits;
 };
@@ -341,6 +354,8 @@ private:
     ComboBox *_comboBox;
     boost::shared_ptr<Choice_Knob> _knob;
 };
+
+//=========================
 
 class Separator_KnobGui
     : public KnobGui
@@ -690,7 +705,7 @@ public:
 
     virtual ~Group_KnobGui() OVERRIDE;
 
-    void addKnob(KnobGui *child, int row, int column);
+    void addKnob(KnobGui *child, int row);
 
     bool isChecked() const;
 
@@ -718,7 +733,7 @@ private:
 private:
     bool _checked;
     GroupBoxLabel *_button;
-    std::vector< std::pair< KnobGui *, std::pair<int, int> > > _children;
+    std::vector< std::pair< KnobGui *, int> > _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     //enabled too
     boost::shared_ptr<Group_Knob> _knob;
@@ -778,7 +793,7 @@ private:
     Button* _resetButton;
     struct CurveDescriptor
     {
-        CurveGui* curve;
+        KnobCurveGui* curve;
         QTreeWidgetItem* treeItem;
     };
 

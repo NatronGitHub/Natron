@@ -15,7 +15,9 @@
 #include <map>
 #include <string>
 #include <vector>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#endif
 CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
 CLANG_DIAG_ON(deprecated)

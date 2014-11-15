@@ -38,3 +38,13 @@ PluginGroupNode::tryAddChild(PluginGroupNode* plugin)
     _children.push_back(plugin);
 }
 
+void
+PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
+{
+    for (std::vector<PluginGroupNode*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+        if (*it == plugin) {
+            _children.erase(it);
+            return;
+        }
+    }
+}

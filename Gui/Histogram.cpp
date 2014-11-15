@@ -11,6 +11,7 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QSplitter>
+#include <QDesktopWidget>
 #include <QGLShaderProgram>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -99,6 +100,7 @@ struct HistogramPrivate
           , vmax(0)
           , binsCount(0)
 #endif
+         , sizeH()
     {
     }
 
@@ -231,6 +233,8 @@ struct HistogramPrivate
     double vmin,vmax; //< the x range of the histogram
     unsigned int binsCount;
 #endif // !NATRON_HISTOGRAM_USING_OPENGL
+    
+    QSize sizeH;
 };
 
 Histogram::Histogram(Gui* gui,
@@ -247,7 +251,9 @@ Histogram::Histogram(Gui* gui,
     QObject::connect( &_imp->histogramThread, SIGNAL( histogramProduced() ), this, SLOT( onCPUHistogramComputed() ) );
 #endif
 
-
+    QDesktopWidget* desktop = QApplication::desktop();
+    _imp->sizeH = desktop->screenGeometry().size();
+    
     _imp->rightClickMenu = new QMenu(this);
     _imp->rightClickMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
 
@@ -574,7 +580,7 @@ Histogram::sizeHint() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return QSize(500,1000);
+    return _imp->sizeH;
 }
 
 void
@@ -1265,10 +1271,10 @@ Histogram::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
-        par = _imp->zoomCtx.par() / scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() / scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
@@ -1276,10 +1282,10 @@ Histogram::wheelEvent(QWheelEvent* e)
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         // Alt + Wheel: zoom time only, keep point under mouse
-        par = _imp->zoomCtx.par() * scaleFactor;
+        par = _imp->zoomCtx.aspectRatio() * scaleFactor;
         if (par <= par_min) {
             par = par_min;
-            scaleFactor = par / _imp->zoomCtx.par();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
@@ -1331,7 +1337,7 @@ Histogram::enterEvent(QEvent* e) {
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "PropertiesBinScrollArea" ||
+    currentFocus->objectName() == "Properties" ||
     currentFocus->objectName() == "SettingsPanel";
     
     if (canSetFocus) {

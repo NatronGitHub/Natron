@@ -15,7 +15,9 @@
 #include "Global/Macros.h"
 #include <map>
 #include <string>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#endif
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QString>
@@ -60,7 +62,8 @@ public:
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               const std::string & context,const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                              bool allowFileDialogs) = 0;
+                                              bool allowFileDialogs,
+                                              bool disableRenderScaleSupport) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -90,7 +93,8 @@ public:
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       const std::string & context,const NodeSerialization* serialization,
                                        const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                      bool allowFileDialogs) OVERRIDE FINAL;
+                                      bool allowFileDialogs,
+                                      bool disableRenderScaleSupport) OVERRIDE FINAL;
 
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN
     {
@@ -187,12 +191,13 @@ public:
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::StatusEnum render(SequenceTime time,
-                                  const RenderScale & scale,
-                                  const RectI & roi, //!< renderWindow in pixel coordinates
-                                  int view,
-                                  bool isSequentialRender,
-                                  bool isRenderResponseToUserInteraction,
-                                  boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
+                                      const RenderScale& originalScale,
+                                      const RenderScale & mappedScale,
+                                      const RectI & roi, //!< renderWindow in pixel coordinates
+                                      int view,
+                                      bool isSequentialRender,
+                                      bool isRenderResponseToUserInteraction,
+                                      boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale & scale,
                             const RectD & rod, //!< image rod in canonical coordinates

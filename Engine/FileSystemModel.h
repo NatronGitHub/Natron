@@ -10,10 +10,10 @@
 
 #ifndef FILESYSTEMMODEL_H
 #define FILESYSTEMMODEL_H
-
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include <QThread>
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QDir>

@@ -12,7 +12,7 @@
 #include "Hash64.h"
 
 #include <algorithm>  // for std::for_each
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/crc.hpp>
 #endif
 #include <QtCore/QString>

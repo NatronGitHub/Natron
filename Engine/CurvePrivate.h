@@ -11,7 +11,9 @@
 #ifndef NATRON_ENGINE_CURVEPRIVATE_H_
 #define NATRON_ENGINE_CURVEPRIVATE_H_
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#endif
 #include <QReadWriteLock>
 
 #include "Engine/Rect.h"

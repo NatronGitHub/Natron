@@ -31,6 +31,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QPainter>
 #include <QImage>
+#include <QToolButton>
 #include <QMenu>
 
 #include <ofxNatron.h>
@@ -54,6 +55,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
+#include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiTypes.h" // for Group_KnobGui
 #include "Gui/KnobGuiFactory.h"
@@ -73,6 +75,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/GuiMacros.h"
 
+#define NATRON_FORM_LAYOUT_LINES_SPACING 0
+#define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 using std::make_pair;
 using namespace Natron;
 
@@ -117,6 +121,7 @@ struct DockablePanelPrivate
     Button* _centerNodeButton;
     Button* _helpButton;
     Button* _minimize;
+    Button* _hideUnmodifiedButton;
     Button* _floatButton;
     Button* _cross;
     mutable QMutex _currentColorMutex; //< protects _currentColor
@@ -132,6 +137,10 @@ struct DockablePanelPrivate
 
     /*a map storing for each knob a pointer to their GUI.*/
     std::map<boost::shared_ptr<KnobI>,KnobGui*> _knobs;
+    
+    ///THe visibility of the knobs before the hide/show unmodified button is clicked
+    ///to show only the knobs that need to afterwards
+    std::map<KnobGui*,bool> _knobsVisibilityBeforeHideModif;
     KnobHolder* _holder;
 
     /* map<tab name, pair<tab , row count> >*/
@@ -167,6 +176,7 @@ struct DockablePanelPrivate
           , _centerNodeButton(NULL)
           ,_helpButton(NULL)
           ,_minimize(NULL)
+          ,_hideUnmodifiedButton(NULL)
           ,_floatButton(NULL)
           ,_cross(NULL)
           , _currentColor()
@@ -179,6 +189,7 @@ struct DockablePanelPrivate
           ,_floating(false)
           ,_floatingWidget(NULL)
           ,_knobs()
+          ,_knobsVisibilityBeforeHideModif()
           ,_holder(holder)
           ,_pages()
           ,_defaultPageName(defaultPageName)
@@ -238,6 +249,7 @@ DockablePanel::DockablePanel(Gui* gui
     setLayout(_imp->_mainLayout);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFrameShape(QFrame::Box);
+    setFocusPolicy(Qt::TabFocus);
 
     if (headerMode != NO_HEADER) {
         _imp->_headerWidget = new QFrame(this);
@@ -267,6 +279,22 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_helpButton->setToolTip( Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal) );
         }
         QObject::connect( _imp->_helpButton, SIGNAL( clicked() ), this, SLOT( showHelp() ) );
+        
+        if (!_imp->_holder->isProject()) {
+            QPixmap pixHide,pixShow;
+            appPTR->getIcon(NATRON_PIXMAP_VISIBLE, &pixShow);
+            appPTR->getIcon(NATRON_PIXMAP_UNVISIBLE,&pixHide);
+            QIcon icHideShow;
+            icHideShow.addPixmap(pixShow,QIcon::Normal,QIcon::Off);
+            icHideShow.addPixmap(pixHide,QIcon::Normal,QIcon::On);
+            _imp->_hideUnmodifiedButton = new Button(icHideShow,"",_imp->_headerWidget);
+            _imp->_hideUnmodifiedButton->setToolTip(tr("Show/Hide all parameters without modifications"));
+            _imp->_hideUnmodifiedButton->setFocusPolicy(Qt::NoFocus);
+            _imp->_hideUnmodifiedButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+            _imp->_hideUnmodifiedButton->setCheckable(true);
+            _imp->_hideUnmodifiedButton->setChecked(false);
+            QObject::connect(_imp->_hideUnmodifiedButton,SIGNAL(clicked(bool)),this,SLOT(onHideUnmodifiedButtonClicked(bool)));
+        }
         QPixmap pixM;
         appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET,&pixM);
 
@@ -408,6 +436,7 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
             _imp->_nameLabel = new QLabel(initialName,_imp->_headerWidget);
+            _imp->_nameLabel->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
             _imp->_headerLayout->addWidget(_imp->_nameLabel);
         }
 
@@ -422,6 +451,9 @@ DockablePanel::DockablePanel(Gui* gui
 
         _imp->_headerLayout->addStretch();
         _imp->_headerLayout->addWidget(_imp->_helpButton);
+        if (_imp->_hideUnmodifiedButton) {
+            _imp->_headerLayout->addWidget(_imp->_hideUnmodifiedButton);
+        }
         _imp->_headerLayout->addWidget(_imp->_minimize);
         _imp->_headerLayout->addWidget(_imp->_floatButton);
         _imp->_headerLayout->addWidget(_imp->_cross);
@@ -804,9 +836,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 ///if new line is not turned off, create a new line
                 fieldContainer = new QWidget(page->second.tab);
                 fieldLayout = new QHBoxLayout(fieldContainer);
-                fieldLayout->setContentsMargins(3,0,0,0);
-                fieldLayout->setSpacing(0);
-                fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+                fieldLayout->setContentsMargins(3,0,0,NATRON_SETTINGS_VERTICAL_SPACING_PIXELS);
+                fieldLayout->setSpacing(2);
+                fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
             } else {
                 ///otherwise re-use the last row's widget and layout
                 assert(lastRowWidget);
@@ -819,7 +851,10 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             assert(fieldContainer);
             assert(fieldLayout);
             ClickableLabel* label = new ClickableLabel("",page->second.tab);
-
+            
+            ///FIXME: QFormLayout seems to ignore royally the alignment between the label and the field.
+            ///The only way to have both the label and the field at the same height is to hardcode the height of the label...
+            label->setFixedHeight(27);
 
             if (ret->showDescriptionLabel() && !knob->getDescription().empty() && label) {
                 label->setText_overload( QString(QString( ret->getKnob()->getDescription().c_str() ) + ":") );
@@ -855,7 +890,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     tab = new QWidget(page->second.tabWidget);
                     tabLayout = new QFormLayout(tab);
                     tabLayout->setContentsMargins(0, 0, 0, 0);
-                    tabLayout->setSpacing(0); // unfortunately, this leaves extra space when parameters are hidden
+                    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
 
@@ -867,36 +902,12 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
             ///increment the row count
             ++page->second.currentRow;
-
-            /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
+            
             if (parentIsGroup) {
                 assert(parentGui);
-                ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
-                ///to work fine without it.
-                int offsetColumn = knob->determineHierarchySize();
-                parentGui->addKnob(ret,page->second.currentRow,offsetColumn);
-
-                bool showit = !ret->getKnob()->getIsSecret();
-                // see KnobGui::setSecret() for a very similar code
-                while (showit && parentIsGroup) {
-                    assert(parentGui);
-                    // check for secretness and visibility of the group
-                    if ( parentKnob->getIsSecret() || ( parentGui && !parentGui->isChecked() ) ) {
-                        showit = false; // one of the including groups is folded, so this item is hidden
-                    }
-                    // prepare for next loop iteration
-                    parentKnob = parentKnob->getParentKnob();
-                    parentIsGroup =  boost::dynamic_pointer_cast<Group_Knob>(parentKnob);
-                    if (parentKnob) {
-                        parentGui = dynamic_cast<Group_KnobGui*>( findKnobGuiOrCreate(parentKnob,true,NULL) );
-                    }
-                }
-                if (showit) {
-                    ret->show();
-                } else {
-                    //ret->hide(); // already hidden? please comment if it's not.
-                }
+                parentGui->addKnob(ret,page->second.currentRow);
             }
+
         }
     } // !isPage
 
@@ -936,7 +947,22 @@ RightClickableWidget::keyPressEvent(QKeyEvent* e)
 void
 RightClickableWidget::enterEvent(QEvent* e)
 {
-    //setFocus();
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    dynamic_cast<QToolButton*>(currentFocus) ||
+    currentFocus->objectName() == "Properties";
+    
+    if (canSetFocus) {
+        setFocus();
+    }
     QWidget::enterEvent(e);
 }
 
@@ -968,9 +994,10 @@ DockablePanelPrivate::addPage(const QString & name)
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
     tabLayout->setContentsMargins(3, 0, 0, 0);
-    tabLayout->setSpacing(3); // unfortunately, this leaves extra space when parameters are hidden
-    tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
-    tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
+    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
+    tabLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    tabLayout->setAlignment(Qt::AlignVCenter);
     tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     _tabWidget->addTab(newTab,name);
     Page p;
@@ -1096,6 +1123,7 @@ DockablePanel::closePanel()
     }
     emit closeChanged(true);
     _imp->_gui->removeVisibleDockablePanel(this);
+    _imp->_gui->buildTabFocusOrderPropertiesBin();
 
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
@@ -1105,12 +1133,17 @@ DockablePanel::closePanel()
         if (panel) {
             const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            ++next;
+			if (!childrenInstances.empty()) {
+				++next;
+			}
             for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end(); ++it,++next) {
                 if ( it->second && (it->first != internalNode) ) {
                     it->first->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 }
+				if (next == childrenInstances.end()) {
+					--next;
+				}
             }
         }
     }
@@ -1148,6 +1181,7 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     for (U32 i = 0; i < _panels.size(); ++i) {
         _imp->_container->addWidget(_panels[i]);
     }
+    getGui()->buildTabFocusOrderPropertiesBin();
     update();
 }
 
@@ -1171,6 +1205,7 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }
+    getGui()->buildTabFocusOrderPropertiesBin();
 }
 
 void
@@ -1380,37 +1415,38 @@ DockablePanel::setKeyOnAllParameters()
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->first->isAnimationEnabled()) {
             for (int i = 0; i < it->first->getDimension(); ++i) {
-                CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
-                if (!curve) {
-                    continue;
+                std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
+                for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                    boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
+                    curveKeys->curve = *it2;
+                    
+                    std::vector<KeyFrame> kVec;
+                    KeyFrame kf;
+                    kf.setTime(time);
+                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
+                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
+                    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
+                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
+                    
+                    if (isInt) {
+                        kf.setValue( isInt->getValueAtTime(time,i) );
+                    } else if (isBool) {
+                        kf.setValue( isBool->getValueAtTime(time,i) );
+                    } else if (isDouble) {
+                        kf.setValue( isDouble->getValueAtTime(time,i) );
+                    } else if (isString) {
+                        std::string v = isString->getValueAtTime(time,i);
+                        double dv;
+                        isString->stringToKeyFrameValue(time, v, &dv);
+                        kf.setValue(dv);
+                    }
+                    
+                    kVec.push_back(kf);
+                    curveKeys->keys = kVec;
+                    keys.push_back(curveKeys);
                 }
-                boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
-                curveKeys->curve = curve;
                 
-                std::vector<KeyFrame> kVec;
-                KeyFrame kf;
-                kf.setTime(time);
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
-                AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
-                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
                 
-                if (isInt) {
-                    kf.setValue( isInt->getValueAtTime(time,i) );
-                } else if (isBool) {
-                    kf.setValue( isBool->getValueAtTime(time,i) );
-                } else if (isDouble) {
-                    kf.setValue( isDouble->getValueAtTime(time,i) );
-                } else if (isString) {
-                    std::string v = isString->getValueAtTime(time,i);
-                    double dv;
-                    isString->stringToKeyFrameValue(time, v, &dv);
-                    kf.setValue(dv);
-                }
-                
-                kVec.push_back(kf);
-                curveKeys->keys = kVec;
-                keys.push_back(curveKeys);
             }
         }
     }
@@ -1425,13 +1461,13 @@ DockablePanel::removeAnimationOnAllParameters()
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->first->isAnimationEnabled()) {
             for (int i = 0; i < it->first->getDimension(); ++i) {
-                CurveGui* curve = getGui()->getCurveEditor()->findCurve(it->second,i);
-                if (!curve) {
-                    continue;
-                }
-                KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
-                for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                    keysToRemove.push_back( std::make_pair(curve,*it) );
+                std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
+                
+                for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                    KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
+                    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+                        keysToRemove.push_back( std::make_pair(*it2,*it) );
+                    }
                 }
             }
         }
@@ -1444,6 +1480,31 @@ void
 DockablePanel::onCenterButtonClicked()
 {
     centerOnItem();
+}
+
+void
+DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
+{
+    if (checked) {
+        _imp->_knobsVisibilityBeforeHideModif.clear();
+        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->first.get());
+            Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(it->first.get());
+            if (!isGroup && !isParametric) {
+                _imp->_knobsVisibilityBeforeHideModif.insert(std::make_pair(it->second,it->second->isSecretRecursive()));
+                if (!it->first->hasModifications()) {
+                    it->second->hide();
+                }
+            }
+        }
+    } else {
+        for (std::map<KnobGui*,bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
+             it != _imp->_knobsVisibilityBeforeHideModif.end(); ++it) {
+            if (!it->second) {
+                it->first->show();
+            }
+        }
+    }
 }
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,

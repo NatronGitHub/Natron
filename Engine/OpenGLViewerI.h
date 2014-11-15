@@ -11,8 +11,9 @@
 
 #ifndef OPENGLVIEWERI_H
 #define OPENGLVIEWERI_H
-
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/Rect.h"
 class Format;
@@ -171,6 +172,11 @@ public:
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() = 0;
+    
+    /**
+     * @brief Clears pointers to images that may be left
+     **/
+    virtual void clearLastRenderedImage() = 0;
     
 };
 

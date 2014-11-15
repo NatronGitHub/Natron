@@ -13,8 +13,9 @@
 #define NATRON_ENGINE_HASH64_H_
 
 #include <vector>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/static_assert.hpp>
-
+#endif
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 

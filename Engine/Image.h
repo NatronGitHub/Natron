@@ -180,6 +180,11 @@ namespace Natron {
         {
             return this->_params->getMipMapLevel();
         }
+        
+        double getScale() const
+        {
+            return getScaleFromMipMapLevel(getMipMapLevel());
+        }
 
         unsigned int getComponentsCount() const;
 

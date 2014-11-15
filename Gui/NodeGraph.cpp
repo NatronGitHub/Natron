@@ -592,7 +592,8 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
                          bool requestedByLoad,
                          double xPosHint,
                          double yPosHint,
-                         bool pushUndoRedoCommand)
+                         bool pushUndoRedoCommand,
+                         bool autoConnect)
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
@@ -606,11 +607,11 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (_imp->_selection.nodes.size() != 1) ) {
+        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             node_ui->refreshPosition( pos.x(),pos.y() );
         } else {
-            moveNodesForIdealPosition(node_ui);
+            moveNodesForIdealPosition(node_ui,autoConnect);
         }
     }
 
@@ -632,7 +633,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 }
 
 void
-NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node)
+NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoConnect)
 {
     QRectF viewPos = visibleSceneRect();
 
@@ -647,7 +648,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node)
         selected = _imp->_selection.nodes.front();
     }
 
-    if (!selected) {
+    if (!selected || !autoConnect) {
         behavior = 0;
     } else {
         ///this function is redundant with Project::autoConnect, depending on the node selected
@@ -1589,6 +1590,12 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
+            
+            std::list<boost::shared_ptr<NodeGui> >::iterator foundInSel = std::find(_selection.nodes.begin(),_selection.nodes.end(),*it);
+            if (foundInSel != _selection.nodes.end()) {
+                continue;
+            }
+            
             _selection.nodes.push_back(*it);
             (*it)->setUserSelected(true);
         }
@@ -1596,6 +1603,12 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it != _backdrops.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
+            
+            std::list<NodeBackDrop* >::iterator foundInSel = std::find(_selection.bds.begin(),_selection.bds.end(),*it);
+            if (foundInSel != _selection.bds.end()) {
+                continue;
+            }
+            
             _selection.bds.push_back(*it);
             (*it)->setUserSelected(true);
         }
@@ -1603,7 +1616,7 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 }
 
 void
-NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
+NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
     std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
 
@@ -1625,11 +1638,28 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
 
     for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
         if ( (*it)->isNearbyHeader(_imp->_lastScenePosClick) ) {
-            if ( (*it)->isSettingsPanelClosed() ) {
-                (*it)->setSettingsPanelClosed(false);
+            
+            if (e->modifiers().testFlag(Qt::ControlModifier)) {
+                ///Clear all visible panels and open the panels of all nodes in the backdrop
+                _imp->_gui->clearAllVisiblePanels();
+                
+                int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
+                std::list<boost::shared_ptr<NodeGui> > containedNodes = getNodesWithinBackDrop(*it);
+                int count = 0;
+                for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = containedNodes.begin(); it2 != containedNodes.end(); ++it2,++count) {
+                    if (count >= maxPanels) {
+                        break;
+                    }
+                    (*it2)->setVisibleSettingsPanel(true);
+                }
+                
+                
+            } else {
+                if ( (*it)->isSettingsPanelClosed() ) {
+                    (*it)->setSettingsPanelClosed(false);
+                }
+                _imp->_gui->putSettingsPanelFirst( (*it)->getSettingsPanel() );
             }
-            _imp->_gui->putSettingsPanelFirst( (*it)->getSettingsPanel() );
-
             return;
         }
     }
@@ -1796,14 +1826,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 }
             }
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->previousFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->nextFrame();
-        }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
         if ( getGui()->getLastSelectedViewer() ) {
             getGui()->getLastSelectedViewer()->firstFrame();
@@ -1836,6 +1858,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         popRenameDialog(QCursor::pos());
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
         pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
+        togglePreviewsForSelectedNodes();
     } else {
         bool intercepted = false;
         
@@ -2017,7 +2041,7 @@ NodeGraph::enterEvent(QEvent* e)
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "PropertiesBinScrollArea" ||
+    currentFocus->objectName() == "Properties" ||
     currentFocus->objectName() == "SettingsPanel";
     
     if (canSetFocus) {
@@ -2217,17 +2241,7 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
     if (addToSelection && !alreadyInSelection) {
         _imp->_selection.nodes.push_back(n);
     } else if (!addToSelection) {
-        {
-            QMutexLocker l(&_imp->_nodesMutex);
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
-                (*it)->setUserSelected(false);
-            }
-        }
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-            (*it)->setUserSelected(false);
-        }
-        _imp->_selection.nodes.clear();
-        _imp->_selection.bds.clear();
+        clearSelection();
         _imp->_selection.nodes.push_back(n);
     }
 
@@ -2253,6 +2267,32 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
         _imp->_magnifOn = false;
         _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
+}
+
+void
+NodeGraph::setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes)
+{
+    clearSelection();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        selectNode(*it, true);
+    }
+}
+
+void
+NodeGraph::clearSelection()
+{
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+            (*it)->setUserSelected(false);
+        }
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
+        (*it)->setUserSelected(false);
+    }
+    _imp->_selection.nodes.clear();
+    _imp->_selection.bds.clear();
+
 }
 
 void
@@ -2306,9 +2346,11 @@ NodeGraph::areAllNodesVisible()
         }
     }
     for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-        if ( !rect.contains(bbox) ) {
-            return false;
+        if ((*it)->isVisible()) {
+            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+            if ( !rect.contains(bbox) ) {
+                return false;
+            }
         }
     }
 
@@ -3401,11 +3443,12 @@ NodeGraph::createBackDrop(QVBoxLayout *dockContainer,
     bd->initialize(name, requestedByLoad,serialization, dockContainer);
     _imp->_backdrops.push_back(bd);
     if (!requestedByLoad) {
+        std::list<boost::shared_ptr<NodeGui> > selectedNodes = _imp->_selection.nodes;
         pushUndoCommand( new AddMultipleNodesCommand(this,bd) );
-        if ( !_imp->_selection.nodes.empty() ) {
+        if ( !selectedNodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
                 QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
                 bbox = bbox.united(nodeBbox);
             }

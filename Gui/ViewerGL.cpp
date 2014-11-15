@@ -22,6 +22,8 @@
 #include <QtGui/QImage>
 #include <QToolButton>
 #include <QApplication>
+#include <QDesktopWidget>
+#include <QScreen>
 #include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtGui/QPainter>
@@ -198,6 +200,7 @@ struct ViewerGL::Implementation
           , lastRenderedImageMutex()
           , lastRenderedImage()
           , memoryHeldByLastRenderedImages()
+          , sizeH()
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -210,6 +213,10 @@ struct ViewerGL::Implementation
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         assert( qApp && qApp->thread() == QThread::currentThread() );
         menu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+        
+        QDesktopWidget* desktop = QApplication::desktop();
+        QRect r = desktop->screenGeometry();
+        sizeH = r.size();
 
     }
 
@@ -296,11 +303,13 @@ struct ViewerGL::Implementation
     boost::shared_ptr<Natron::Image> lastRenderedImage[2]; //<  last image passed to transferRAMBuffer
     U64 memoryHeldByLastRenderedImages[2];
     
-    bool isNearbyWipeCenter(const QPointF & pos,double tolerance) const;
-    bool isNearbyWipeRotateBar(const QPointF & pos,double tolerance) const;
-    bool isNearbyWipeMixHandle(const QPointF & pos,double tolerance) const;
+    QSize sizeH;
+    
+    bool isNearbyWipeCenter(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
+    bool isNearbyWipeRotateBar(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
+    bool isNearbyWipeMixHandle(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
 
-    void drawArcOfCircle(const QPointF & center,double radius,double startAngle,double endAngle);
+    void drawArcOfCircle(const QPointF & center,double radiusX,double radiusY,double startAngle,double endAngle);
 
     void bindTextureAndActivateShader(int i,
                                       bool useShader)
@@ -471,7 +480,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
 
-    const double par = _imp->currentViewerInfo[textureIndex].getDisplayWindow().getPixelAspectRatio();
+    const double par = r.par;
 
 
     ///the RoD of the image in canonical coords.
@@ -934,7 +943,7 @@ ViewerGL::sizeHint() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return QSize(1920,1080);
+    return _imp->sizeH;
 }
 
 const QFont &
@@ -1506,33 +1515,41 @@ ViewerGL::drawWipeControl()
     alphaMix0 = wipeAngle + 3. * mpi8;
     alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
     QPointF mix0Pos,mixPos,mix1Pos;
-    double mixLength,rotateLenght,rotateOffset,zoomFactor;
+    
+    double mixX,mixY,rotateW,rotateH,rotateOffsetX,rotateOffsetY;
+    
+    double zoomScreenPixelWidth, zoomScreenPixelHeight;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        zoomFactor = _imp->zoomCtx.factor();
+        zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
+        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
-    mixLength = WIPE_MIX_HANDLE_LENGTH / zoomFactor;
-    rotateLenght = WIPE_ROTATE_HANDLE_LENGTH / zoomFactor,
-    rotateOffset = WIPE_ROTATE_OFFSET / zoomFactor;
+
+    mixX = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelWidth;
+    mixY = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelHeight;
+    rotateW = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelWidth;
+    rotateH = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelHeight;
+    rotateOffsetX = WIPE_ROTATE_OFFSET * zoomScreenPixelWidth;
+    rotateOffsetY = WIPE_ROTATE_OFFSET * zoomScreenPixelHeight;
 
 
-    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixLength);
-    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixLength);
-    mix0Pos.setX(wipeCenter.x() + std::cos(alphaMix0) * mixLength);
-    mix0Pos.setY(wipeCenter.y() + std::sin(alphaMix0) * mixLength);
-    mix1Pos.setX(wipeCenter.x() + std::cos(alphaMix1) * mixLength);
-    mix1Pos.setY(wipeCenter.y() + std::sin(alphaMix1) * mixLength);
+    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixX);
+    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixY);
+    mix0Pos.setX(wipeCenter.x() + std::cos(alphaMix0) * mixX);
+    mix0Pos.setY(wipeCenter.y() + std::sin(alphaMix0) * mixY);
+    mix1Pos.setX(wipeCenter.x() + std::cos(alphaMix1) * mixX);
+    mix1Pos.setY(wipeCenter.y() + std::sin(alphaMix1) * mixY);
 
     QPointF oppositeAxisBottom,oppositeAxisTop,rotateAxisLeft,rotateAxisRight;
-    rotateAxisRight.setX( wipeCenter.x() + std::cos(wipeAngle) * (rotateLenght - rotateOffset) );
-    rotateAxisRight.setY( wipeCenter.y() + std::sin(wipeAngle) * (rotateLenght - rotateOffset) );
-    rotateAxisLeft.setX(wipeCenter.x() - std::cos(wipeAngle) * rotateOffset);
-    rotateAxisLeft.setY( wipeCenter.y() - (std::sin(wipeAngle) * rotateOffset) );
+    rotateAxisRight.setX( wipeCenter.x() + std::cos(wipeAngle) * (rotateW - rotateOffsetX) );
+    rotateAxisRight.setY( wipeCenter.y() + std::sin(wipeAngle) * (rotateH - rotateOffsetY) );
+    rotateAxisLeft.setX(wipeCenter.x() - std::cos(wipeAngle) * rotateOffsetX);
+    rotateAxisLeft.setY( wipeCenter.y() - (std::sin(wipeAngle) * rotateOffsetY) );
 
-    oppositeAxisTop.setX( wipeCenter.x() + std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
-    oppositeAxisTop.setY( wipeCenter.y() + std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
-    oppositeAxisBottom.setX( wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
-    oppositeAxisBottom.setY( wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.) );
+    oppositeAxisTop.setX( wipeCenter.x() + std::cos(wipeAngle + M_PI / 2.) * (rotateW / 2.) );
+    oppositeAxisTop.setY( wipeCenter.y() + std::sin(wipeAngle + M_PI / 2.) * (rotateH / 2.) );
+    oppositeAxisBottom.setX( wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateW / 2.) );
+    oppositeAxisBottom.setY( wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateH / 2.) );
 
     {
         GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
@@ -1548,7 +1565,7 @@ ViewerGL::drawWipeControl()
                 // shift by (1,1) pixel
                 glMatrixMode(GL_PROJECTION);
                 glPushMatrix();
-                glTranslated(1. / zoomFactor, -1. / zoomFactor, 0);
+                glTranslated(1 * zoomScreenPixelWidth, -1. * zoomScreenPixelHeight, 0);
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.;
             } else {
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
@@ -1561,7 +1578,7 @@ ViewerGL::drawWipeControl()
             glLineWidth(1.5);
             glBegin(GL_LINES);
             if ( (_imp->hs == eHoverStateWipeRotateHandle) || (_imp->ms == eMouseStateRotatingWipeHandle) ) {
-                glColor4f(0., 1., 0., 1.);
+                glColor4f(0., 1. * l, 0., 1.);
             }
             glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
             glVertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
@@ -1577,12 +1594,12 @@ ViewerGL::drawWipeControl()
             if ( (_imp->hs == eHoverStateWipeRotateHandle) || (_imp->ms == eMouseStateRotatingWipeHandle) ) {
                 GLProtectMatrix p(GL_PROJECTION);
 
-                glColor4f(0., 1., 0., 1.);
-                double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
+                glColor4f(0., 1. * l, 0., 1.);
+                double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelWidth / 2;
                 ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
                 OfxPointD arrowRadius;
-                arrowRadius.x = 5. / zoomFactor;
-                arrowRadius.y = 10. / zoomFactor;
+                arrowRadius.x = 5. * zoomScreenPixelWidth;
+                arrowRadius.y = 10. * zoomScreenPixelHeight;
 
                 glMatrixMode(GL_PROJECTION);
                 glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
@@ -1603,14 +1620,14 @@ ViewerGL::drawWipeControl()
                 glVertex2f(0., arrowRadius.y -  arrowRadius.x );
 
                 glVertex2f(0., arrowRadius.y);
-                glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
+                glVertex2f(4. * zoomScreenPixelWidth, arrowRadius.y - 3. * zoomScreenPixelHeight); // 5^2 = 3^2+4^2
 
                 ///draw the bottom head
                 glVertex2f(0., -arrowRadius.y);
-                glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
+                glVertex2f(0., -arrowRadius.y + 5. * zoomScreenPixelHeight);
 
                 glVertex2f(0., -arrowRadius.y);
-                glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
+                glVertex2f(4. * zoomScreenPixelWidth, -arrowRadius.y + 3. * zoomScreenPixelHeight); // 5^2 = 3^2+4^2
 
                 glEnd();
 
@@ -1622,13 +1639,13 @@ ViewerGL::drawWipeControl()
             glBegin(GL_POINTS);
             glVertex2d( wipeCenter.x(), wipeCenter.y() );
             if ( ( (_imp->hs == eHoverStateWipeMix) && (_imp->ms != eMouseStateRotatingWipeHandle) ) || (_imp->ms == eMouseStateDraggingWipeMixHandle) ) {
-                glColor4f(0., 1., 0., 1.);
+                glColor4f(0., 1. * l, 0., 1.);
             }
             glVertex2d( mixPos.x(), mixPos.y() );
             glEnd();
             glPointSize(1.);
             
-            _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+            _imp->drawArcOfCircle(wipeCenter, mixX, mixY, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
             if (l == 0) {
                 glMatrixMode(GL_PROJECTION);
                 glPopMatrix();
@@ -1639,7 +1656,8 @@ ViewerGL::drawWipeControl()
 
 void
 ViewerGL::Implementation::drawArcOfCircle(const QPointF & center,
-                                          double radius,
+                                          double radiusX,
+                                          double radiusY,
                                           double startAngle,
                                           double endAngle)
 {
@@ -1654,8 +1672,8 @@ ViewerGL::Implementation::drawArcOfCircle(const QPointF & center,
         }
         glBegin(GL_POINTS);
         while (alpha <= endAngle) {
-            x = center.x()  + radius * std::cos(alpha);
-            y = center.y()  + radius * std::sin(alpha);
+            x = center.x()  + radiusX * std::cos(alpha);
+            y = center.y()  + radiusY * std::sin(alpha);
             glVertex2d(x, y);
             alpha += 0.01;
         }
@@ -2300,9 +2318,25 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
     }
-    setRegionOfDefinition(rod, textureIndex);
+    setRegionOfDefinition(rod,textureIndex);
 
     emit imageChanged(textureIndex);
+}
+
+void
+ViewerGL::clearLastRenderedImage()
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    ViewerInstance* internalNode = getInternalNode();
+
+    for (int i = 0; i < 2; ++i) {
+        _imp->lastRenderedImage[i].reset();
+        if (_imp->memoryHeldByLastRenderedImages[i] > 0) {
+            internalNode->unregisterPluginMemory(_imp->memoryHeldByLastRenderedImages[i]);
+            _imp->memoryHeldByLastRenderedImages[i] = 0;
+        }
+    }
 }
 
 void
@@ -2387,11 +2421,6 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     }
     bool overlaysCaught = false;
     bool mustRedraw = false;
-    double wipeSelectionTol;
-    {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        wipeSelectionTol = 8. / _imp->zoomCtx.factor();
-    }
 
     if ( (buttonDownIsMiddle(e) || ( (e)->buttons() == Qt::RightButton   && buttonControlAlt(e) == Qt::AltModifier )) && !modifierHasControl(e) ) {
         // middle (or Alt + left) or Alt + right = pan
@@ -2481,15 +2510,15 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             _imp->ms = eMouseStateDraggingRoiBottomRight;
             overlaysCaught = true;
         } else if ( _imp->overlay && isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol) ) {
+                    buttonDownIsLeft(e) && _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             _imp->ms = eMouseStateDraggingWipeCenter;
             overlaysCaught = true;
         } else if ( _imp->overlay &&  isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol) ) {
+                    buttonDownIsLeft(e) && _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             _imp->ms = eMouseStateDraggingWipeMixHandle;
             overlaysCaught = true;
         } else if ( _imp->overlay &&  isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol) ) {
+                    buttonDownIsLeft(e) && _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth ,zoomScreenPixelHeight) ) {
             _imp->ms = eMouseStateRotatingWipeHandle;
             overlaysCaught = true;
         }
@@ -2595,19 +2624,14 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     bool wasHovering = _imp->hs != eHoverStateNothing;
 
     if ( (_imp->ms != eMouseStateDraggingImage) && _imp->overlay ) {
-        double wipeSelectionTol;
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            wipeSelectionTol = 8 / _imp->zoomCtx.factor();
-        }
 
         _imp->hs = eHoverStateNothing;
-        if ( isWipeHandleVisible() && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol) ) {
+        if ( isWipeHandleVisible() && _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             setCursor( QCursor(Qt::SizeAllCursor) );
-        } else if ( isWipeHandleVisible() && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol) ) {
+        } else if ( isWipeHandleVisible() && _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             _imp->hs = eHoverStateWipeMix;
             mustRedraw = true;
-        } else if ( isWipeHandleVisible() && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol) ) {
+        } else if ( isWipeHandleVisible() && _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             _imp->hs = eHoverStateWipeRotateHandle;
             mustRedraw = true;
         } else if (userRoIEnabled) {
@@ -3089,10 +3113,9 @@ ViewerGL::fitImageToFormat()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    double w,h,zoomPAR;
-    h = _imp->projectFormat.height();
-    w = _imp->projectFormat.width();
-    zoomPAR = _imp->projectFormat.getPixelAspectRatio();
+    // size in Canonical = Zoom coordinates !
+    double h = _imp->projectFormat.height();
+    double w = _imp->projectFormat.width() * _imp->projectFormat.getPixelAspectRatio();
 
     assert(h > 0. && w > 0.);
 
@@ -3102,7 +3125,7 @@ ViewerGL::fitImageToFormat()
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
         // set the PAR first
-        _imp->zoomCtx.setZoom(0., 0., 1., zoomPAR);
+        //_imp->zoomCtx.setZoom(0., 0., 1., 1.);
         // leave 4% of margin around
         _imp->zoomCtx.fit(-0.02 * w, 1.02 * w, -0.02 * h, 1.02 * h);
         zoomFactor = _imp->zoomCtx.factor();
@@ -3200,17 +3223,26 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
     if (_imp->infoViewer[textureIndex] && !_imp->viewerTab->getGui()->isGUIFrozen()) {
         _imp->infoViewer[textureIndex]->setDataWindow(rod);
     }
+    
+    QString left,btm,right,top;
+    left.setNum(rod.left(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(left);
+    btm.setNum(rod.bottom(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(btm);
+    right.setNum(rod.right(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(right);
+    top.setNum(rod.top(),'f',1);
+    InfoViewerWidget::removeTrailingZeroes(top);
 
-    RectI rodPixel;
-    rod.toPixelEnclosing(0, _imp->currentViewerInfo[textureIndex].getDisplayWindow().getPixelAspectRatio(), &rodPixel);
+
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QString::number(rodPixel.left() ) );
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(left);
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QString::number(rodPixel.bottom() ) );
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(btm);
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QString::number(rodPixel.right() ) );
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(right);
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QString::number(rodPixel.top() ) );
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(top);
 }
 
 void
@@ -3239,14 +3271,15 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     _imp->currentViewerInfo_resolutionOverlay.append("x");
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.height()) ) );
 
-
-    if ( !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
+    bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
+    if ( !loadingProject ) {
         fitImageToFormat();
+        if ( _imp->viewerTab->getInternalNode()) {
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        }
     }
 
-    if ( displayingImage() && _imp->viewerTab->getInternalNode()) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
-    }
+  
 
     if (!_imp->isUserRoISet) {
         {
@@ -3254,6 +3287,9 @@ ViewerGL::onProjectFormatChanged(const Format & format)
             _imp->userRoI = format;
         }
         _imp->isUserRoISet = true;
+    }
+    if (!loadingProject) {
+        updateGL();
     }
 }
 
@@ -3341,7 +3377,7 @@ ViewerGL::enterEvent(QEvent* e)
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "PropertiesBinScrollArea" ||
+    currentFocus->objectName() == "Properties" ||
     currentFocus->objectName() == "SettingsPanel";
     
     if (canSetFocus) {
@@ -3594,7 +3630,7 @@ void
 ViewerGL::getProjection(double *zoomLeft,
                         double *zoomBottom,
                         double *zoomFactor,
-                        double *zoomPAR) const
+                        double *zoomAspectRatio) const
 {
     // MT-SAFE
     QMutexLocker l(&_imp->zoomCtxMutex);
@@ -3602,19 +3638,19 @@ ViewerGL::getProjection(double *zoomLeft,
     *zoomLeft = _imp->zoomCtx.left();
     *zoomBottom = _imp->zoomCtx.bottom();
     *zoomFactor = _imp->zoomCtx.factor();
-    *zoomPAR = _imp->zoomCtx.par();
+    *zoomAspectRatio = _imp->zoomCtx.aspectRatio();
 }
 
 void
 ViewerGL::setProjection(double zoomLeft,
                         double zoomBottom,
                         double zoomFactor,
-                        double zoomPAR)
+                        double zoomAspectRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QMutexLocker l(&_imp->zoomCtxMutex);
-    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
+    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
 }
 
 void
@@ -4017,12 +4053,14 @@ ViewerGL::resetWipeControls()
 
 bool
 ViewerGL::Implementation::isNearbyWipeCenter(const QPointF & pos,
-                                             double tolerance) const
+                                             double zoomScreenPixelWidth, double zoomScreenPixelHeight) const
 {
+    double toleranceX = zoomScreenPixelWidth * 8.;
+    double toleranceY = zoomScreenPixelHeight * 8.;
     QMutexLocker l(&wipeControlsMutex);
 
-    if ( ( pos.x() >= (wipeCenter.x() - tolerance) ) && ( pos.x() <= (wipeCenter.x() + tolerance) ) &&
-         ( pos.y() >= (wipeCenter.y() - tolerance) ) && ( pos.y() <= (wipeCenter.y() + tolerance) ) ) {
+    if ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) &&
+         ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) {
         return true;
     }
 
@@ -4031,23 +4069,28 @@ ViewerGL::Implementation::isNearbyWipeCenter(const QPointF & pos,
 
 bool
 ViewerGL::Implementation::isNearbyWipeRotateBar(const QPointF & pos,
-                                                double tolerance) const
+                                                double zoomScreenPixelWidth, double zoomScreenPixelHeight) const
 {
-    double rotateLenght,rotateOffset;
-    {
-        QMutexLocker l(&zoomCtxMutex);
-        rotateLenght = WIPE_ROTATE_HANDLE_LENGTH / zoomCtx.factor();
-        rotateOffset = WIPE_ROTATE_OFFSET / zoomCtx.factor();
-    }
+    double toleranceX = zoomScreenPixelWidth * 8.;
+    double toleranceY = zoomScreenPixelHeight * 8.;
+
+    
+    double rotateX,rotateY,rotateOffsetX,rotateOffsetY;
+   
+    rotateX = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelWidth;
+    rotateY = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelHeight;
+    rotateOffsetX = WIPE_ROTATE_OFFSET * zoomScreenPixelWidth;
+    rotateOffsetY = WIPE_ROTATE_OFFSET * zoomScreenPixelHeight;
+    
     QMutexLocker l(&wipeControlsMutex);
     QPointF outterPoint;
 
-    outterPoint.setX( wipeCenter.x() + std::cos(wipeAngle) * (rotateLenght - rotateOffset) );
-    outterPoint.setY( wipeCenter.y() + std::sin(wipeAngle) * (rotateLenght - rotateOffset) );
-    if ( ( ( ( pos.y() >= (wipeCenter.y() - tolerance) ) && ( pos.y() <= (outterPoint.y() + tolerance) ) ) ||
-           ( ( pos.y() >= (outterPoint.y() - tolerance) ) && ( pos.y() <= (wipeCenter.y() + tolerance) ) ) ) &&
-         ( ( ( pos.x() >= (wipeCenter.x() - tolerance) ) && ( pos.x() <= (outterPoint.x() + tolerance) ) ) ||
-           ( ( pos.x() >= (outterPoint.x() - tolerance) ) && ( pos.x() <= (wipeCenter.x() + tolerance) ) ) ) ) {
+    outterPoint.setX( wipeCenter.x() + std::cos(wipeAngle) * (rotateX - rotateOffsetX) );
+    outterPoint.setY( wipeCenter.y() + std::sin(wipeAngle) * (rotateY - rotateOffsetY) );
+    if ( ( ( ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (outterPoint.y() + toleranceY) ) ) ||
+           ( ( pos.y() >= (outterPoint.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) ) &&
+         ( ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (outterPoint.x() + toleranceX) ) ) ||
+           ( ( pos.x() >= (outterPoint.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) ) ) ) {
         Point a;
         a.x = ( outterPoint.x() - wipeCenter.x() );
         a.y = ( outterPoint.y() - wipeCenter.y() );
@@ -4082,8 +4125,11 @@ ViewerGL::Implementation::isNearbyWipeRotateBar(const QPointF & pos,
 
 bool
 ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF & pos,
-                                                double tolerance) const
+                                                double zoomScreenPixelWidth, double zoomScreenPixelHeight) const
 {
+    double toleranceX = zoomScreenPixelWidth * 8.;
+    double toleranceY = zoomScreenPixelHeight * 8.;
+    
     QMutexLocker l(&wipeControlsMutex);
     ///mix 1 is at rotation bar + pi / 8
     ///mix 0 is at rotation bar + 3pi / 8
@@ -4094,16 +4140,13 @@ ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF & pos,
     alphaMix0 = wipeAngle + 3. * mpi8;
     alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
     QPointF mixPos;
-    double mixLength;
-    {
-        QMutexLocker l(&zoomCtxMutex);
-        mixLength = WIPE_MIX_HANDLE_LENGTH / zoomCtx.factor();
-    }
+    double mixX = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelWidth;
+    double mixY = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelHeight;
 
-    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixLength);
-    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixLength);
-    if ( ( pos.x() >= (mixPos.x() - tolerance) ) && ( pos.x() <= (mixPos.x() + tolerance) ) &&
-         ( pos.y() >= (mixPos.y() - tolerance) ) && ( pos.y() <= (mixPos.y() + tolerance) ) ) {
+    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixX);
+    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixY);
+    if ( ( pos.x() >= (mixPos.x() - toleranceX) ) && ( pos.x() <= (mixPos.x() + toleranceX) ) &&
+         ( pos.y() >= (mixPos.y() - toleranceY) ) && ( pos.y() <= (mixPos.y() + toleranceY) ) ) {
         return true;
     }
 

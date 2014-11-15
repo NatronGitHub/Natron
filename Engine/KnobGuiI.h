@@ -12,7 +12,9 @@
 #ifndef KNOBGUII_H
 #define KNOBGUII_H
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#endif
 #include "Engine/OverlaySupport.h"
 
 class Curve;

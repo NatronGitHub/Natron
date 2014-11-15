@@ -27,6 +27,7 @@
 
 namespace Natron {
 class LibraryBinary;
+class Plugin;
 }
 
 class File_Knob;
@@ -90,6 +91,8 @@ public:
     void populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
 
     void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
+    
+    void populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore);
 
     void getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats);
 
@@ -198,6 +201,14 @@ public:
     bool didSettingsExistOnStartup() const;
     
     bool isAutoWipeEnabled() const;
+    
+    /**
+     * @brief Return whether the render scale support is set to its default value (0)  or deactivated (1)
+     * for the given plug-in.
+     * If the plug-in ID is not valid, -1 is returned.
+     **/
+    int getRenderScaleSupportPreference(const std::string& pluginID) const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -226,9 +237,6 @@ private:
     boost::shared_ptr<File_Knob> _defaultLayoutFile;
     boost::shared_ptr<Bool_Knob> _renderOnEditingFinished;
     boost::shared_ptr<Bool_Knob> _activateRGBSupport;
-    boost::shared_ptr<Path_Knob> _extraPluginPaths;
-    boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
-    boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     boost::shared_ptr<String_Knob> _hostName;
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
     boost::shared_ptr<Bool_Knob> _warnOcioConfigKnobChanged;
@@ -290,6 +298,13 @@ private:
     std::vector< boost::shared_ptr<Choice_Knob> > _readersMapping;
     boost::shared_ptr<Page_Knob> _writersTab;
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
+    
+    boost::shared_ptr<Path_Knob> _extraPluginPaths;
+    boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
+    boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
+    boost::shared_ptr<Page_Knob> _pluginsTab;
+    
+    std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
     bool _wereChangesMadeSinceLastSave;
     bool _restoringSettings;
     bool _ocioRestored;

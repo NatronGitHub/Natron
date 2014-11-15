@@ -11,8 +11,9 @@
 
 #ifndef NATRON_GUI_FEEDBACKSPINBOX_H_
 #define NATRON_GUI_FEEDBACKSPINBOX_H_
-
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#endif
 #include "Gui/LineEdit.h"
 
 class QMenu;

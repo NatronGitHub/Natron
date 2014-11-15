@@ -154,7 +154,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                 const std::string & context,
                                                 const NodeSerialization* serialization,
                                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                                bool allowFileDialogs)
+                                                bool allowFileDialogs,
+                                                bool disableRenderScaleSupport)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
@@ -169,7 +170,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     assert( QThread::currentThread() == qApp->thread() );
     ContextEnum ctx = mapToContextEnum(context);
 
-    if (ctx == eContextWriter) {
+    if (disableRenderScaleSupport || ctx == eContextWriter) {
         setAsOutputNode();
         // Writers don't support render scale (full-resolution images are written to disk)
         setSupportsRenderScaleMaybe(eSupportsNo);
@@ -233,7 +234,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->createRotoContextConditionnally();
             
             getNode()->initializeInputs();
-            getNode()->initializeKnobs( serialization ? *serialization : NodeSerialization( getApp() ) );
+            getNode()->initializeKnobs( serialization ? *serialization : NodeSerialization( getApp() ), disableRenderScaleSupport ? 1 : 0 );
             
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
@@ -1806,7 +1807,8 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
 
 Natron::StatusEnum
 OfxEffectInstance::render(SequenceTime time,
-                          const RenderScale & scale,
+                          const RenderScale& originalScale,
+                          const RenderScale & mappedScale,
                           const RectI & roi,
                           int view,
                           bool isSequentialRender,
@@ -1817,11 +1819,6 @@ OfxEffectInstance::render(SequenceTime time,
         return Natron::eStatusFailed;
     }
 
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-    }
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
@@ -1837,7 +1834,7 @@ OfxEffectInstance::render(SequenceTime time,
         const RectI & dstBounds = output->getBounds();
         const RectD & dstRodCanonical = output->getRoD();
         RectI dstRod;
-        dstRodCanonical.toPixelEnclosing(scale, output->getPixelAspectRatio(), &dstRod);
+        dstRodCanonical.toPixelEnclosing(mappedScale, output->getPixelAspectRatio(), &dstRod);
 
         if ( !supportsTiles() ) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -1872,7 +1869,7 @@ OfxEffectInstance::render(SequenceTime time,
                                             true, //< setView ?
                                             view,
                                             true,//< set mipmaplevel ?
-                                            mipMapLevel);
+                                            Natron::Image::getLevelFromScale(originalScale.x));
 
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
@@ -1880,7 +1877,7 @@ OfxEffectInstance::render(SequenceTime time,
         stat = _effect->renderAction( (OfxTime)time,
                                       field,
                                       ofxRoI,
-                                      scale,
+                                      mappedScale,
                                       isSequentialRender,
                                       isRenderResponseToUserInteraction,
                                       view,

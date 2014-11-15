@@ -12,10 +12,12 @@
 #ifndef SCALESLIDERQWIDGET_H
 #define SCALESLIDERQWIDGET_H
 
-#include <vector>
-#include <cmath> // for std::pow()
+
 
 #include "Global/Macros.h"
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -23,9 +25,10 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-#include "Gui/ZoomContext.h"
+
 using Natron::ScaleTypeEnum;
 
+struct ScaleSliderQWidgetPrivate;
 class QFont;
 class ScaleSliderQWidget
     : public QWidget
@@ -44,38 +47,20 @@ public:
 
     void setMinimumAndMaximum(double min,double max);
 
-    void changeScale(Natron::ScaleTypeEnum type)
-    {
-        _type = type;
-    }
 
-    Natron::ScaleTypeEnum type() const
-    {
-        return _type;
-    }
+    Natron::ScaleTypeEnum type() const;
 
-    double minimum() const
-    {
-        return _minimum;
-    }
+    double minimum() const;
 
-    double maximum() const
-    {
-        return _maximum;
-    }
+    double maximum() const;
 
+    double getPosition() const;
+
+    bool isReadOnly() const;
+    
     void setReadOnly(bool ro);
 
-    bool isReadOnly() const
-    {
-        return _readOnly;
-    }
-
-    double getPosition() const
-    {
-        return _value;
-    }
-
+    
 signals:
     void editingFinished();
     void positionChanged(double);
@@ -100,22 +85,8 @@ private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 
-    ZoomContext _zoomCtx;
-    QPointF _oldClick;
-    double _minimum,_maximum;
-    Natron::ScaleTypeEnum _type;
-    double _value;
-    bool _dragging;
-    QFont* _font;
-    QColor _textColor;
-    QColor _scaleColor;
-    QColor _sliderColor;
-    bool _initialized;
-    bool _mustInitializeSliderPosition;
-    bool _readOnly;
-    bool _ctrlDown;
-    bool _shiftDown;
-    double _currentZoom;
+    boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
+    
 };
 
 #endif // SCALESLIDERQWIDGET_H

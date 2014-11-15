@@ -834,6 +834,45 @@ AppManager::loadAllPlugins()
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
 
+    std::vector<Natron::Plugin*> ignoredPlugins;
+    _imp->_settings->populatePluginsTab(_imp->_plugins, ignoredPlugins);
+    
+    ///Remove from the plug-ins the ignore plug-ins
+    for (std::vector<Natron::Plugin*>::iterator it = ignoredPlugins.begin(); it != ignoredPlugins.end(); ++it) {
+        std::vector<Natron::Plugin*>::iterator found = std::find(_imp->_plugins.begin(),_imp->_plugins.end(),*it);
+        
+        if (found != _imp->_plugins.end()) {
+            
+            ignorePlugin(*it);
+            ///Remove it from the readersMap and writersMap
+            
+            std::string pluginId = (*it)->getPluginID().toStdString();
+            if ((*it)->isReader()) {
+                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = readersMap.begin(); it2 != readersMap.end(); ++it2) {
+                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                        if (it3->first == pluginId) {
+                            it2->second.erase(it3);
+                            break;
+                        }
+                    }
+                }
+            }
+            if ((*it)->isWriter()) {
+                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = writersMap.begin(); it2 != writersMap.end(); ++it2) {
+                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                        if (it3->first == pluginId) {
+                            it2->second.erase(it3);
+                            break;
+                        }
+                    }
+                }
+
+            }
+            delete *found;
+            _imp->_plugins.erase(found);
+        }
+    }
+    
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
 
@@ -861,7 +900,8 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         }
 
         Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
-                                                     "","",qgrouping,NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion() );
+                                                     "","",qgrouping,"",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion(),
+                                                    false,false);
         plugins->push_back(plugin);
 
 
@@ -875,6 +915,9 @@ AppManager::registerPlugin(const QStringList & groups,
                            const QString & pluginLabel,
                            const QString & pluginIconPath,
                            const QString & groupIconPath,
+                           const QString & ofxPluginID,
+                           bool isReader,
+                           bool isWriter,
                            Natron::LibraryBinary* binary,
                            bool mustCreateMutex,
                            int major,
@@ -885,7 +928,8 @@ AppManager::registerPlugin(const QStringList & groups,
     if (mustCreateMutex) {
         pluginMutex = new QMutex(QMutex::Recursive);
     }
-    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,pluginMutex,major,minor);
+    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,ofxPluginID,pluginMutex,major,minor,
+                                                isReader,isWriter);
     _imp->_plugins.push_back(plugin);
     onPluginLoaded(plugin);
 }
@@ -1069,9 +1113,10 @@ AppManager::createOFXEffect(const std::string & pluginID,
                             boost::shared_ptr<Natron::Node> node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                            bool allowFileDialogs) const
+                            bool allowFileDialogs,
+                            bool disableRenderScaleSupport) const
 {
-    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues,allowFileDialogs);
+    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
 }
 
 void

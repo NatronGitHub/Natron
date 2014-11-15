@@ -179,7 +179,7 @@ Param::_addAsDependencyOf(int fromExprDimension,Param* param)
 void
 Param::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
 {
-    _knob->setExpression(dimension,expr,hasRetVariable);
+    (void)_knob->setExpression(dimension,expr,hasRetVariable);
 }
 ///////////// IntParam
 

@@ -484,20 +484,12 @@ public:
     
     void addInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img)
     {
-        if ( inputImages.hasLocalData() ) {
-            inputImages.localData().push_back(img);
-        } else {
-            std::list< boost::shared_ptr<Natron::Image> > newList;
-            newList.push_back(img);
-            inputImages.localData() = newList;
-        }
+        inputImages.localData().push_back(img);
     }
 
     void clearInputImagePointers()
     {
-        if ( inputImages.hasLocalData() ) {
-            inputImages.localData().clear();
-        }
+        inputImages.localData().clear();
     }
 };
 
@@ -906,10 +898,21 @@ EffectInstance::getImage(int inputNb,
     }
 
 
+    bool renderFullScaleThenDownscale = (!supportsRenderScale() && mipMapLevel != 0);
+    ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
+    bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
+    unsigned int renderMappedMipMapLevel = mipMapLevel;
+    if (renderFullScaleThenDownscale) {
+        renderScaleOneUpstreamIfRenderScaleSupportDisabled = _node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+        if (renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+            renderMappedMipMapLevel = 0;
+        }
+    }
+
     ///Both the result of getRegionsOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates
     RectI pixelRoI;
-    roi.toPixelEnclosing(scale, par, &pixelRoI);
+    roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par, &pixelRoI);
 
     int channelForAlpha = !isMask ? -1 : getMaskChannel(inputNb);
 
@@ -933,10 +936,10 @@ EffectInstance::getImage(int inputNb,
         return boost::shared_ptr<Natron::Image>();
     }
 
-
+  
     boost::shared_ptr<Image > inputImg = n->renderRoI( RenderRoIArgs(time,
                                                                     scale,
-                                                                    mipMapLevel,
+                                                                    renderMappedMipMapLevel,
                                                                     view,
                                                                     byPassCache,
                                                                     pixelRoI,
@@ -960,17 +963,22 @@ EffectInstance::getImage(int inputNb,
     }
     
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
-    ///Note that we do NOT cache it
-    if ( !dontUpscale && (inputImgMipMapLevel != 0) && !supportsRenderScale() ) {
-        
+    ///Note that we do NOT cache it because it is really low def!
+    if ( !dontUpscale  && renderFullScaleThenDownscale && !renderScaleOneUpstreamIfRenderScaleSupportDisabled ) {
+        assert(inputImgMipMapLevel != 0);
         ///Resize the image according to the requested scale
         Natron::ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
         RectI bounds;
-        inputImg->getRoD().toPixelEnclosing(mipMapLevel, par, &bounds);
+        inputImg->getRoD().toPixelEnclosing(0, par, &bounds);
         boost::shared_ptr<Natron::Image> rescaledImg( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
-                                                                           bounds, mipMapLevel, par, bitdepth) );
-        //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
-        inputImg->scaleBox( inputImg->getBounds(), rescaledImg.get() );
+                                                                           bounds, 0, par, bitdepth) );
+        inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get());
+        if (roiPixel) {
+            RectD canonicalPixelRoI;
+            pixelRoI.toCanonical(inputImgMipMapLevel, par, rod, &canonicalPixelRoI);
+            canonicalPixelRoI.toPixelEnclosing(0, par, roiPixel);
+        }
+        //inputImg->scaleBox( inputImg->getBounds(), rescaledImg.get() );
         return rescaledImg;
 
         
@@ -1230,6 +1238,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                                                     Natron::ImageBitDepthEnum bitdepth,
                                                     Natron::ImageComponentsEnum components,
                                                     int channelForAlpha,
+                                                    const RectD& rod,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
     ImageList cachedImages;
@@ -1346,7 +1355,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
                 
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
-                                                                               oldParams->getRoD(),
+                                                                               rod,
                                                                                oldParams->getPixelAspectRatio(),
                                                                                mipMapLevel,
                                                                                oldParams->isRodProjectFormat(),
@@ -1444,6 +1453,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
     assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
 
+    ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
+    bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
+    if (renderFullScaleThenDownscale) {
+        renderScaleOneUpstreamIfRenderScaleSupportDisabled = _node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+    }
+    
     ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
     if ( !args.preComputedRoD.isNull() ) {
         rod = args.preComputedRoD;
@@ -1493,7 +1508,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
 
     boost::shared_ptr<ImageParams> cachedImgParams;
-    getImageFromCacheAndConvertIfNeeded(key, args.mipMapLevel, args.bitdepth, args.components, args.channelForAlpha, &image);
+    getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod, &image);
+
     
     if (args.byPassCache) {
         if (image) {
@@ -1508,6 +1524,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
     boost::shared_ptr<Natron::Image> downscaledImage = image;
 
+    FramesNeededMap framesNeeded ;
+    
     if (!image) {
         ///The image is not cached
         
@@ -1515,7 +1533,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         /// to cache anything or render anything for this effect.
         SequenceTime inputTimeIdentity = 0.;
         int inputNbIdentity;
-        FramesNeededMap framesNeeded;
 
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         bool identity;
@@ -1597,7 +1614,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             if (byPassCache) {
                 return image;
             }
-        } else {
+        } else { //if (identity) {
             ///set it to -1 so the cache knows it's not an identity
             inputNbIdentity = -1;
 
@@ -1617,26 +1634,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (identity) {
             cost = -1;
         }
-
-
-        ///Cache the image with the requested components instead of the remapped ones
-        cachedImgParams = Natron::Image::makeParams(cost,
-                                                    rod,
-                                                    par,
-                                                    args.mipMapLevel,
-                                                    isProjectFormat,
-                                                    args.components,
-                                                    args.bitdepth,
-                                                    inputNbIdentity,
-                                                    inputTimeIdentity,
-                                                    framesNeeded);
-
-        //Take the lock after getting the image from the cache or while allocating it
-        ///to make sure a thread will not attempt to write to the image while its being allocated.
-        ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-        ///so taking this lock now ensures the image will be allocated completetly
-        
-        ImageLocker imageLock(this);
         
         ///even though we called getImage before and it returned false, it may now
         ///return true if another thread created the image in the cache, so we can't
@@ -1644,71 +1641,168 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ///
         ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
         
-        ImagePtr newImage;
-    
-        appPTR->createImageInCache(key, cachedImgParams, &imageLock, &newImage);
-        
-        if (!newImage) {
-            std::stringstream ss;
-            ss << "Failed to allocate an image of ";
-            ss << printAsRAM( cachedImgParams->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-            Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+        //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
+        //recreate, instead cache the full-scale image
+        if (renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+            
+            RectI bounds;
+            rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
+            downscaledImage.reset( new Natron::Image(args.components, rod, bounds, args.mipMapLevel, par, args.bitdepth) );
+            
+        } else {
+            
+            
+            ///Cache the image with the requested components instead of the remapped ones
+            cachedImgParams = Natron::Image::makeParams(cost,
+                                                        rod,
+                                                        par,
+                                                        args.mipMapLevel,
+                                                        isProjectFormat,
+                                                        args.components,
+                                                        args.bitdepth,
+                                                        inputNbIdentity,
+                                                        inputTimeIdentity,
+                                                        framesNeeded);
+            
+            //Take the lock after getting the image from the cache or while allocating it
+            ///to make sure a thread will not attempt to write to the image while its being allocated.
+            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
+            ///so taking this lock now ensures the image will be allocated completetly
+            
+            ImageLocker imageLock(this);
 
-            return newImage;
+            ImagePtr newImage;
+            
+            appPTR->createImageInCache(key, cachedImgParams, &imageLock, &newImage);
+            
+            if (!newImage) {
+                std::stringstream ss;
+                ss << "Failed to allocate an image of ";
+                ss << printAsRAM( cachedImgParams->getElementsCount() * sizeof(Image::data_t) ).toStdString();
+                Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+                
+                return newImage;
+            }
+            
+            assert(newImage);
+            assert(newImage->getRoD() == rod);
+            
+            newImage->allocateMemory();
+            
+            ///if the plugin is an identity we just inserted in the cache the identity params, we can now return.
+            if (identity) {
+                ///don't return the empty allocated image but the input effect image instead!
+                return image;
+            }
+            image = newImage;
+            downscaledImage = image;
+
         }
         
-        assert(newImage);
-        assert(newImage->getRoD() == rod);
-        
-        newImage->allocateMemory();
-
-        ///if the plugin is an identity we just inserted in the cache the identity params, we can now return.
-        if (identity) {
-            ///don't return the empty allocated image but the input effect image instead!
-            return image;
-        }
-        image = newImage;
-        downscaledImage = image;
-
         if (renderFullScaleThenDownscale) {
+            
             ///Allocate the upscaled image
             assert(renderMappedMipMapLevel == 0);
-            RectI bounds;
-            rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
-            image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, downscaledImage->getPixelAspectRatio(), args.bitdepth) );
+
+            if (!renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+                
+                ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
+                RectI bounds;
+                rod.toPixelEnclosing(renderMappedMipMapLevel, par, &bounds);
+                image.reset( new Natron::Image(args.components, rod, bounds, renderMappedMipMapLevel, downscaledImage->getPixelAspectRatio(), args.bitdepth) );
+                
+            } else {
+                //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
+                ImageLocker upscaledImageLock(this);
+                
+                image.reset();
+                boost::shared_ptr<Natron::ImageParams> upscaledImageParams = Natron::Image::makeParams(cost,
+                                                                                                       rod,
+                                                                                                       downscaledImage->getPixelAspectRatio(),
+                                                                                                       renderMappedMipMapLevel,
+                                                                                                       isProjectFormat,
+                                                                                                       args.components,
+                                                                                                       args.bitdepth,
+                                                                                                       inputNbIdentity,
+                                                                                                       inputTimeIdentity,
+                                                                                                       framesNeeded);
+                appPTR->createImageInCache(key, upscaledImageParams, &upscaledImageLock, &image);
+                image->allocateMemory();
+            }
+            
         }
 
-
-        assert(cachedImgParams);
+    } // if (!image) (the image is not cached)
+    else {
+        if (renderFullScaleThenDownscale && image->getMipMapLevel() == 0) {
+            //Allocate a downscale image that will be cheap to create
+            ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
+            RectI bounds;
+            rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
+            downscaledImage.reset( new Natron::Image(args.components, rod, bounds, args.mipMapLevel, image->getPixelAspectRatio(), args.bitdepth) );
+        }
+        framesNeeded = cachedImgParams->getFramesNeeded();
     }
-
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
+    /*We pass the 2 images (image & downscaledImage). Depending on the context we want to render in one or the other one:
+     If (renderFullScaleThenDownscale and renderScaleOneUpstreamIfRenderScaleSupportDisabled)
+     the image that is held by the cache will be 'image' and it will then be downscaled if needed.
+     However if the render scale is not supported but input images are not rendered at full-scale  ,
+     we don't want to cache the full-scale image because it will be low res. Instead in that case we cache the downscaled image
+    */
+    bool useImageAsOutput;
+    RectI roi;
+    if (renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+        
+        //We cache 'image', hence the RoI should be expressed in its coordinates
+        //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
+        RectD canonicalRoI;
+        args.roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+        canonicalRoI.toPixelEnclosing(0, par, &roi);
+        useImageAsOutput = true;
+    } else {
+        
+        //In that case the plug-in either supports render scale or doesn't support render scale but uses downscaled inputs
+        //renderRoIInternal should check the bitmap of downscaledImage and not 'image'!
+        roi = args.roi;
+        useImageAsOutput = false;
+    }
+    
     EffectInstance::RenderRoIStatusEnum renderRetCode = renderRoIInternal(args.time,
-                                                                      args.scale,
-                                                                      args.mipMapLevel,
-                                                                      args.view,
-                                                                      args.roi,
-                                                                      rod,
-                                                                      par,
-                                                                      cachedImgParams,
-                                                                      image,
-                                                                      downscaledImage,
-                                                                      frameRenderArgs.isSequentialRender,
-                                                                      frameRenderArgs.isRenderResponseToUserInteraction,
-                                                                      byPassCache,
-                                                                      nodeHash,
-                                                                      args.channelForAlpha,
-                                                                      renderFullScaleThenDownscale);
+                                                                          args.scale,
+                                                                          args.mipMapLevel,
+                                                                          args.view,
+                                                                          roi,
+                                                                          rod,
+                                                                          par,
+                                                                          framesNeeded,
+                                                                          image,
+                                                                          downscaledImage,
+                                                                          useImageAsOutput,
+                                                                          frameRenderArgs.isSequentialRender,
+                                                                          frameRenderArgs.isRenderResponseToUserInteraction,
+                                                                          byPassCache,
+                                                                          nodeHash,
+                                                                          args.channelForAlpha,
+                                                                          renderFullScaleThenDownscale,
+                                                                          renderScaleOneUpstreamIfRenderScaleSupportDisabled);
     
 #ifdef DEBUG
     if (renderRetCode != eRenderRoIStatusRenderFailed && !aborted()) {
         // Kindly check that everything we asked for is rendered!
-        std::list<RectI> restToRender = image->getRestToRender(args.roi);
+        std::list<RectI> restToRender = useImageAsOutput ? image->getRestToRender(roi) : downscaledImage->getRestToRender(roi);
         assert(restToRender.empty());
     }
 #endif
+    
+    //We have to return the downscale image, so make sure it has been computed
+    if (renderRetCode != eRenderRoIStatusRenderFailed && renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+        assert(image->getMipMapLevel() == 0);
+        roi.intersect(image->getBounds(), &roi);
+        image->downscaleMipMap(roi, 0, args.mipMapLevel, false, downscaledImage.get() );
+    }
 
     if ( aborted() && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
         
@@ -1732,74 +1826,26 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 } // renderRoI
 
 
-void
-EffectInstance::renderRoI(SequenceTime time,
-                          const RenderScale & scale,
-                          unsigned int mipMapLevel,
-                          int view,
-                          const RectI & renderWindow,
-                          const RectD & rod, //!< effect rod in canonical coords
-                          const boost::shared_ptr<ImageParams> & cachedImgParams,
-                          const boost::shared_ptr<Image> & image,
-                          const boost::shared_ptr<Image> & downscaledImage)
-{
-    
-    assert(_imp->frameRenderArgs.hasLocalData());
-    ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
-    
-    SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
-    ///wether the plug-in should render in the full scale image, and then we downscale afterwards or
-    ///if the plug-in can just use the downscaled image to render.
-    bool renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
-    EffectInstance::RenderRoIStatusEnum renderRetCode = renderRoIInternal(time,
-                                                                      scale,
-                                                                      mipMapLevel,
-                                                                      view,
-                                                                      renderWindow,
-                                                                      rod,
-                                                                      getPreferredAspectRatio(),
-                                                                      cachedImgParams,
-                                                                      image,
-                                                                      downscaledImage,
-                                                                      frameRenderArgs.isSequentialRender,
-                                                                      frameRenderArgs.isRenderResponseToUserInteraction,
-                                                                      false,
-                                                                      frameRenderArgs.nodeHash,
-                                                                      3,
-                                                                      renderFullScaleThenDownscale);
-
-#ifdef DEBUG
-    if (renderRetCode != eRenderRoIStatusRenderFailed && !aborted()) {
-        // Kindly check that everything we asked for is rendered!
-        std::list<RectI> restToRender = image->getRestToRender(renderWindow);
-        assert(restToRender.empty());
-    }
-#endif
-    
-    if ( (renderRetCode == eRenderRoIStatusRenderFailed) && !aborted() ) {
-        throw std::runtime_error("Rendering Failed");
-    }
-}
-
 
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(SequenceTime time,
                                   const RenderScale & scale,
                                   unsigned int mipMapLevel,
                                   int view,
-                                  const RectI & renderWindow, //!<   in downscaledImage's pixel coordinates
+                                  const RectI & roi,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
-                                  const boost::shared_ptr<ImageParams> & cachedImgParams,
+                                  const FramesNeededMap &framesNeeded,
                                   const boost::shared_ptr<Image> & image,
                                   const boost::shared_ptr<Image> & downscaledImage,
+                                  bool outputUseImage, //< whether we output to image or downscaledImage
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
                                   bool byPassCache,
                                   U64 nodeHash,
                                   int channelForAlpha,
-                                  bool renderFullScaleThenDownscale)
+                                  bool renderFullScaleThenDownscale,
+                                  bool useScaleOneInputImages)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
     
@@ -1832,9 +1878,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///Subsequently the image and downscaled image are different only if the plug-in
     ///does not support the render scale and the proxy mode is turned on.
     assert( (image == downscaledImage && !renderFullScaleThenDownscale) ||
-            (image != downscaledImage && renderFullScaleThenDownscale) );
-
-
+           ((image != downscaledImage || image->getMipMapLevel() == downscaledImage->getMipMapLevel()) && renderFullScaleThenDownscale) );
+    
     ///Add the window to the project's available formats if the effect is a reader
     ///This is the only reliable place where I could put these lines...which don't seem to feel right here.
     ///Plus setOrAddProjectFormat will actually set the project format the first time we read an image in the project
@@ -1842,8 +1887,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///Any solution how to work around this ?
     if ( isReader() ) {
         Format frmt;
-        frmt.set( cachedImgParams->getRoD() );
-        ///FIXME: what about the pixel aspect ratio ?
+        frmt.set(rod);
+        frmt.setPixelAspectRatio(par);
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
 
@@ -1857,11 +1902,15 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     RectI intersection;
 
     // make sure the renderWindow falls within the image bounds
-    renderWindow.intersect(image->getBounds(), &intersection);
+    if (outputUseImage) {
+        roi.intersect(image->getBounds(), &intersection);
+    } else {
+        roi.intersect(downscaledImage->getBounds(), &intersection);
+    }
 
     /// If the list is empty then we already rendered it all
     /// Each rect in this list is in pixel coordinate (downscaled)
-    std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);
+    std::list<RectI> rectsToRender = outputUseImage ? image->getRestToRender(intersection) : downscaledImage->getRestToRender(intersection);
 
     ///if the effect doesn't support tiles and it has something left to render, just render the rod again
     ///note that it should NEVER happen because if it doesn't support tiles in the first place, it would
@@ -1956,11 +2005,12 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
 
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+        
         const RectI & downscaledRectToRender = *it; // please leave it as const, copy it if necessary
 
         ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
         RectD canonicalRectToRender;
-        downscaledRectToRender.toCanonical(mipMapLevel, par, rod, &canonicalRectToRender);
+        downscaledRectToRender.toCanonical(outputUseImage ? image->getMipMapLevel() : downscaledImage->getMipMapLevel(), par, rod, &canonicalRectToRender);
 
         ///the getRegionsOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
@@ -2012,16 +2062,12 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         scopedArgs.setArgs_secondPass(inputsRoi,firstFrame,lastFrame);
         const RenderArgs & args = scopedArgs.getArgs();
 
-
-        ///Get the frames needed.
-        const FramesNeededMap & framesNeeeded = cachedImgParams->getFramesNeeded();
-
         ///We render each input first and stash their image in the inputImages list
         ///in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
         ///to remove them.
         std::list< boost::shared_ptr<Natron::Image> > inputImages;
 
-        for (FramesNeededMap::const_iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
+        for (FramesNeededMap::const_iterator it2 = framesNeeded.begin(); it2 != framesNeeded.end(); ++it2) {
             ///We have to do this here because the enabledness of a mask is a feature added by Natron.
             bool inputIsMask = isInputMask(it2->first);
             if ( inputIsMask && !isMaskEnabled(it2->first) ) {
@@ -2042,7 +2088,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 const double inputPar = inputEffect->getPreferredAspectRatio();
 
                 RectI inputRoIPixelCoords;
-                foundInputRoI->second.toPixelEnclosing(scale, inputPar, &inputRoIPixelCoords);
+                foundInputRoI->second.toPixelEnclosing(useScaleOneInputImages ? 0 : mipMapLevel, inputPar, &inputRoIPixelCoords);
 
                 ///Notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
@@ -2058,10 +2104,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                             getPreferredDepthAndComponents(it2->first, &inputPrefComps, &inputPrefDepth);
                             
                             int channelForAlphaInput = inputIsMask ? getMaskChannel(it2->first) : 3;
+                            RenderScale scaleOne;
+                            scaleOne.x = scaleOne.y = 1.;
+
                             boost::shared_ptr<Natron::Image> inputImg =
                             inputEffect->renderRoI( RenderRoIArgs(f, //< time
-                                                                  scale, //< scale
-                                                                  mipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                  useScaleOneInputImages ? scaleOne : scale, //< scale
+                                                                  useScaleOneInputImages ? 0 : mipMapLevel, //< mipmapLevel (redundant with the scale)
                                                                   view, //< view
                                                                   byPassCache,
                                                                   inputRoIPixelCoords, //< roi in pixel coordinates
@@ -2117,7 +2166,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImages.begin();
              it != inputImages.end();
              ++it) {
-            assert((*it)->getMipMapLevel() == mipMapLevel);
+
+            assert(useScaleOneInputImages || (*it)->getMipMapLevel() == mipMapLevel);
             const RectD & srcRodCanonical = (*it)->getRoD();
             RectI srcRod;
             srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspectRatio(), &srcRod); // compute srcRod at level 0
@@ -2241,6 +2291,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             TiledRenderingFunctorArgs tiledArgs;
             tiledArgs.args = &args;
             tiledArgs.isSequentialRender = isSequentialRender;
+            tiledArgs.renderUseScaleOneInputs = useScaleOneInputImages;
             tiledArgs.isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
             tiledArgs.downscaledImage = downscaledImage;
             tiledArgs.downscaledMappedImage = downscaledMappedImage;
@@ -2307,6 +2358,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                  frameArgs,
                                                  false,
                                                  renderFullScaleThenDownscale,
+                                                 useScaleOneInputImages,
                                                  isSequentialRender,
                                                  isRenderMadeInResponseToUserInteraction,
                                                  downscaledRectToRender,
@@ -2346,6 +2398,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  frameArgs,
                                  setThreadLocalStorage,
                                  args.renderFullScaleThenDownscale,
+                                 args.renderUseScaleOneInputs,
                                  args.isSequentialRender,
                                  args.isRenderResponseToUserInteraction,
                                  roi,
@@ -2362,6 +2415,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       const ParallelRenderArgs& frameArgs,
                                       bool setThreadLocalStorage,
                                       bool renderFullScaleThenDownscale,
+                                      bool renderUseScaleOneInputs,
                                       bool isSequentialRender,
                                       bool isRenderResponseToUserInteraction,
                                       const RectI & downscaledRectToRender,
@@ -2410,27 +2464,41 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
     boost::shared_ptr<Node::ParallelRenderArgsSetter> scopedFrameArgs;
     
-    if (setThreadLocalStorage) {
-        
+    if (!setThreadLocalStorage) {
+        renderRectToRender = args._renderWindowPixel;
+    } else {
+
         ///At this point if we're in eRenderSafetyFullySafeFrame mode, we are a thread that might have been launched way after
         ///the time renderRectToRender was computed. We recompute it to update the portion to render
         
         // check the bitmap!
-        const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
-        
-        assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
-               renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
-        
-        if (renderFullScaleThenDownscale) {
+        if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
+            //The renderMappedImage is cached , read bitmap from it
             RectD canonicalrenderRectToRender;
-            downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
+            downscaledRectToRender.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
             canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
             renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
+            
+            renderRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
+            
+            assert(renderBounds.x1 <= renderRectToRender.x1 && renderRectToRender.x2 <= renderBounds.x2 &&
+                   renderBounds.y1 <= renderRectToRender.y1 && renderRectToRender.y2 <= renderBounds.y2);
         } else {
-            renderRectToRender = downscaledRectToRenderMinimal;
+            //THe downscaled image is cached, read bitmap from it
+            const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
+            
+            assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
+                   renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
+            
+            if (renderFullScaleThenDownscale) {
+                RectD canonicalrenderRectToRender;
+                downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
+                canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
+                renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
+            } else {
+                renderRectToRender = downscaledRectToRenderMinimal;
+            }
         }
-        
-        
         
         RenderArgs argsCpy = args;
         ///Update the renderWindow which might have changed
@@ -2444,20 +2512,23 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                                   frameArgs.isSequentialRender,
                                                                   frameArgs.canAbort,
                                                                   frameArgs.nodeHash) );
-        
-    } else {
-        renderRectToRender = args._renderWindowPixel;
     }
-    
     if ( renderRectToRender.isNull() ) {
         ///We've got nothing to do
         return eStatusOK;
     }
     
-    Natron::StatusEnum st = render_public(time, renderMappedScale, renderRectToRender, view,
-                                      isSequentialRender,
-                                      isRenderResponseToUserInteraction,
-                                      renderMappedImage);
+    RenderScale originalScale;
+    originalScale.x = downscaledImage->getScale();
+    originalScale.y = originalScale.x;
+    
+    Natron::StatusEnum st = render_public(time,
+                                          originalScale,
+                                          renderMappedScale,
+                                          renderRectToRender, view,
+                                          isSequentialRender,
+                                          isRenderResponseToUserInteraction,
+                                          renderMappedImage);
     if (st != eStatusOK) {
         return st;
     }
@@ -2477,7 +2548,12 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                    channelForAlpha, false, true,unPremultIfNeeded,
                                                    fullScaleImage.get() );
             }
-            if (mipMapLevel != 0) {
+            
+            ///If we're using renderUseScaleOneInputs, the full scale image is cached, hence we're not sure that the whole part of the image will be downscaled.
+            ///Instead we do all the downscale at once at the end of renderRoI().
+            ///If !renderUseScaleOneInputs the image is not cached and we know it will be rendered completly so it is safe to do this here and take advantage
+            ///of the multi-threading.
+            if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                 assert(fullScaleImage != downscaledImage);
                 fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false, downscaledImage.get() );
                 downscaledImage->markForRendered(downscaledRectToRender);
@@ -2674,9 +2750,14 @@ EffectInstance::supportsRenderScaleMaybe() const
 void
 EffectInstance::setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const
 {
-    QMutexLocker l(&_imp->supportsRenderScaleMutex);
-
-    _imp->supportsRenderScale = s;
+    {
+        QMutexLocker l(&_imp->supportsRenderScaleMutex);
+        
+        _imp->supportsRenderScale = s;
+    }
+    if (_node) {
+        _node->onSetSupportRenderScaleMaybeSet((int)s);
+    }
 }
 
 void
@@ -2952,7 +3033,8 @@ EffectInstance::isDoingInteractAction() const
 
 Natron::StatusEnum
 EffectInstance::render_public(SequenceTime time,
-                              const RenderScale & scale,
+                              const RenderScale& originalScale,
+                              const RenderScale & mappedScale,
                               const RectI & roi,
                               int view,
                               bool isSequentialRender,
@@ -2967,7 +3049,7 @@ EffectInstance::render_public(SequenceTime time,
     Natron::StatusEnum stat;
 
     try {
-        stat = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
+        stat = render(time, originalScale, mappedScale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
     } catch (const std::exception & e) {
         ///Also clear images when catching an exception
         _imp->clearInputImagePointers();
