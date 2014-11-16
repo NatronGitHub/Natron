@@ -844,10 +844,6 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             assert(fieldLayout);
             ClickableLabel* label = new ClickableLabel("",page->second.tab);
             
-            ///FIXME: QFormLayout seems to ignore royally the alignment between the label and the field.
-            ///The only way to have both the label and the field at the same height is to hardcode the height of the label...
-            label->setFixedHeight(27);
-
             if (ret->showDescriptionLabel() && !knob->getDescription().empty() && label) {
                 label->setText_overload( QString(QString( ret->getKnob()->getDescription().c_str() ) + ":") );
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
@@ -891,6 +887,14 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 ///fill the fieldLayout with the widgets
                 ret->createGUI(layout,fieldContainer,label,fieldLayout,page->second.currentRow,makeNewLine,knobsOnSameLine);
             }
+            
+            //layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            ///FIXME: QFormLayout seems to ignore royally the alignment between the label and the field.
+            ///The only way to have both the label and the field at the same height is to hardcode the height of the label...
+            //int labelHeight =  20;//fieldContainer->sizeHint().height();
+            //label->setFixedHeight(labelHeight);
+            
+
 
             ///increment the row count
             ++page->second.currentRow;
