@@ -265,6 +265,23 @@ struct EffectInstance::RenderArgs
           , _lastFrame(0)
     {
     }
+    
+    RenderArgs(const RenderArgs& o)
+    : _rod(o._rod)
+    , _regionOfInterestResults(o._regionOfInterestResults)
+    , _renderWindowPixel(o._renderWindowPixel)
+    , _time(o._time)
+    , _view(o._view)
+    , _validArgs(o._validArgs)
+    , _channelForAlpha(o._channelForAlpha)
+    , _isIdentity(o._isIdentity)
+    , _identityTime(o._identityTime)
+    , _identityInputNb(o._identityInputNb)
+    , _outputImage(o._outputImage)
+    , _firstFrame(o._firstFrame)
+    , _lastFrame(o._lastFrame)
+    {
+    }
 };
 
 
@@ -2500,11 +2517,11 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             }
         }
         
-        RenderArgs argsCpy = args;
+        RenderArgs argsCpy(args);
         ///Update the renderWindow which might have changed
         argsCpy._renderWindowPixel = renderRectToRender;
         
-        scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,args) );
+        scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,argsCpy) );
         scopedFrameArgs.reset( new Node::ParallelRenderArgsSetter(_node.get(),
                                                                   frameArgs.time,
                                                                   frameArgs.view,

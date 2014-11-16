@@ -3101,3 +3101,10 @@ ViewerTab::setTurboButtonDown(bool down)
     _imp->turboButton->setDown(down);
     _imp->turboButton->setChecked(down);
 }
+
+void 
+ViewerTab::redrawGLWidgets()
+{
+	_imp->viewer->updateGL();
+	_imp->_timeLineGui->updateGL();
+}
