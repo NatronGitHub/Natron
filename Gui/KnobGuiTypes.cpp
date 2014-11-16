@@ -547,6 +547,7 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _checkBox->setToolTip( toolTip() );
     }
+    _checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
 
