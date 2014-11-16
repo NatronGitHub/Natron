@@ -74,6 +74,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/AboutWindow.h"
 #include "Gui/ProjectGui.h"
@@ -164,7 +165,6 @@ getPixmapForGrouping(QPixmap* pixmap,
     }
 }
 }
-
 
 struct GuiPrivate
 {
@@ -277,7 +277,7 @@ struct GuiPrivate
     QWidget *_propertiesBin;
     
     QScrollArea* _propertiesScrollArea;
-
+	QWidget* _propertiesContainer;
 
     ///the vertical layout for the properties dock container.
     QVBoxLayout *_layoutPropertiesBin;
@@ -403,6 +403,7 @@ struct GuiPrivate
           , _toolBox(0)
           , _propertiesBin(0)
           , _propertiesScrollArea(0)
+		  , _propertiesContainer(0)
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
@@ -494,6 +495,7 @@ Gui::~Gui()
         delete _imp->_toolButtons[i];
     }
 }
+
 
 void
 GuiPrivate::notifyGuiClosing()
@@ -996,19 +998,20 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
     
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
+	QObject::connect(_propertiesScrollArea->verticalScrollBar(),SIGNAL(valueChanged(int)),_gui,SLOT(onPropertiesScrolled()));
     _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);
 
-    QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
-    propertiesContainer->setObjectName("_propertiesContainer");
-    _layoutPropertiesBin = new QVBoxLayout(propertiesContainer);
+    _propertiesContainer = new QWidget(_propertiesScrollArea);
+    _propertiesContainer->setObjectName("_propertiesContainer");
+    _layoutPropertiesBin = new QVBoxLayout(_propertiesContainer);
     _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
-    propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
-    _propertiesScrollArea->setWidget(propertiesContainer);
+    _propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+    _propertiesScrollArea->setWidget(_propertiesContainer);
     _propertiesScrollArea->setWidgetResizable(true);
 
-    QWidget* propertiesAreaButtonsContainer = new QWidget(propertiesContainer);
+    QWidget* propertiesAreaButtonsContainer = new QWidget(_propertiesBin);
     QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
     propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
     propertiesAreaButtonsLayout->setSpacing(5);
@@ -1042,6 +1045,31 @@ GuiPrivate::createPropertiesBinGui()
 
     _gui->registerTab(_propertiesBin);
 } // createPropertiesBinGui
+
+void Gui::onPropertiesScrolled()
+{
+#ifdef __NATRON_WIN32__
+	//On Windows Qt 4.8.6 has a bug where the viewport of the scrollarea gets scrolled outside the bounding rect of the QScrollArea and overlaps all widgets inheriting QGLWidget.
+	//The only thing I could think of was to repaint all GL widgets manually...
+
+	{
+		QMutexLocker k(&_imp->_viewerTabsMutex);
+		for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it)
+		{
+			(*it)->redrawGLWidgets();
+		}
+	}
+	_imp->_curveEditor->getCurveWidget()->updateGL();
+
+	{
+		QMutexLocker k (&_imp->_histogramsMutex);
+		for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it)
+		{
+			(*it)->updateGL();
+		}
+	}
+#endif
+}
 
 void
 GuiPrivate::createNodeGraphGui()
