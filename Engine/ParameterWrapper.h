@@ -192,14 +192,53 @@ protected:
 
 };
 
+/**
+ * @brief Small helper struct that is returned by the get() function of all params type
+ * so the user can write stuff like myParam.get().x
+ **/
+struct Int2DTuple
+{
+    int x,y;
+};
+struct Int3DTuple
+{
+    int x,y,z;
+};
+struct Double2DTuple
+{
+    double x,y;
+};
+struct Double3DTuple
+{
+    double x,y,z;
+};
+struct ColorTuple
+{
+    double r,g,b,a; //< Color params are 4-dimensional
+};
+
 class IntParam : public Param
 {
+    
+protected:
     boost::shared_ptr<Int_Knob> _intKnob;
 public:
     
     IntParam(const boost::shared_ptr<Int_Knob>& knob);
     
     virtual ~IntParam();
+    
+    /**
+     * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
+     **/
+    int get() const;
+    int getAt(int frame) const;
+    
+    /**
+     * @brief Convenience functions for multi-dimensional setting of values
+     **/
+    void set(int x);
+    void setAt(int x, int frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -293,15 +332,58 @@ public:
 
 };
 
+class Int2DParam : public IntParam
+{
+public:
+    
+    Int2DParam(const boost::shared_ptr<Int_Knob>& knob) : IntParam(knob) {}
+    
+    virtual ~Int2DParam() {}
+    
+    void get(Int2DTuple& ret) const;
+    void getAt(int frame, Int2DTuple& ret) const;
+    void set(int x, int y);
+    void setAt(int x, int y, int frame);
+};
+
+class Int3DParam : public Int2DParam
+{
+public:
+    
+    Int3DParam(const boost::shared_ptr<Int_Knob>& knob) : Int2DParam(knob) {}
+    
+    virtual ~Int3DParam() {}
+    
+    void get(Int3DTuple& ret) const;
+    void getAt(int frame, Int3DTuple& ret) const;
+    void set(int x, int y, int z);
+    void setAt(int x, int y, int z, int frame);
+};
+
+
 
 class DoubleParam : public Param
 {
+    
+protected:
     boost::shared_ptr<Double_Knob> _doubleKnob;
 public:
     
     DoubleParam(const boost::shared_ptr<Double_Knob>& knob);
     
     virtual ~DoubleParam();
+    
+    /**
+     * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
+     **/
+    double get() const;
+    double getAt(int frame) const;
+    
+    /**
+     * @brief Convenience functions for multi-dimensional setting of values
+     **/
+    void set(double x);
+    void setAt(double x, int frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -394,5 +476,34 @@ public:
     double addAsDependencyOf(int fromExprDimension,Param* param);
 
 };
+
+class Double2DParam : public DoubleParam
+{
+public:
+    
+    Double2DParam(const boost::shared_ptr<Double_Knob>& knob) : DoubleParam(knob) {}
+    
+    virtual ~Double2DParam() {}
+    
+    void get(Double2DTuple& ret) const;
+    void getAt(int frame, Double2DTuple& ret) const;
+    void set(double x, double y);
+    void setAt(double x, double y, int frame);
+};
+
+class Double3DParam : public Double2DParam
+{
+public:
+    
+    Double3DParam(const boost::shared_ptr<Double_Knob>& knob) : Double2DParam(knob) {}
+    
+    virtual ~Double3DParam() {}
+    
+    void get(Double3DTuple& ret) const;
+    void getAt(int frame, Double3DTuple& ret) const;
+    void set(double x, double y, double z);
+    void setAt(double x, double y, double z, int frame);
+};
+
 
 #endif // PARAMETERWRAPPER_H

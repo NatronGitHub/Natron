@@ -411,6 +411,7 @@ public slots:
     
     void onUseRetButtonClicked(bool useRet);
     void onTextEditChanged();
+    void onHelpRequested();
     
 private:
     

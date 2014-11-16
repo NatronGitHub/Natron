@@ -196,6 +196,100 @@ IntParam::~IntParam()
 }
 
 int
+IntParam::get() const
+{
+    return _intKnob->getValue(0);
+}
+
+void
+Int2DParam::get(Int2DTuple& ret) const
+{
+    ret.x = _intKnob->getValue(0);
+    ret.y = _intKnob->getValue(1);
+}
+
+void
+Int3DParam::get(Int3DTuple& ret) const
+{
+    ret.x = _intKnob->getValue(0);
+    ret.y = _intKnob->getValue(1);
+    ret.z = _intKnob->getValue(2);
+}
+
+int
+IntParam::getAt(int frame) const
+{
+    return _intKnob->getValueAtTime(frame,0);
+}
+
+void
+Int2DParam::getAt(int frame,Int2DTuple &ret) const
+{
+    ret.x = _intKnob->getValueAtTime(frame,0);
+    ret.y = _intKnob->getValueAtTime(frame,1);
+}
+
+
+void
+Int3DParam::getAt(int frame, Int3DTuple& ret) const
+{
+    ret.x = _intKnob->getValueAtTime(frame,0);
+    ret.y = _intKnob->getValueAtTime(frame,1);
+    ret.z = _intKnob->getValueAtTime(frame,2);
+}
+
+
+void
+IntParam::set(int x)
+{
+    _intKnob->setValue(x, 0);
+}
+
+void
+Int2DParam::set(int x, int y)
+{
+    _intKnob->blockEvaluation();
+    _intKnob->setValue(x, 0);
+    _intKnob->unblockEvaluation();
+    _intKnob->setValue(y, 1);
+}
+
+void
+Int3DParam::set(int x, int y, int z)
+{
+    _intKnob->blockEvaluation();
+    _intKnob->setValue(x, 0);
+    _intKnob->setValue(y, 1);
+    _intKnob->unblockEvaluation();
+    _intKnob->setValue(z, 2);
+}
+
+void
+IntParam::setAt(int x, int frame)
+{
+    _intKnob->setValueAtTime(frame, x, 0);
+}
+
+void
+Int2DParam::setAt(int x, int y, int frame)
+{
+    _intKnob->blockEvaluation();
+    _intKnob->setValueAtTime(frame,x, 0);
+    _intKnob->unblockEvaluation();
+    _intKnob->setValueAtTime(frame,y, 1);
+}
+
+void
+Int3DParam::setAt(int x, int y, int z, int frame)
+{
+    _intKnob->blockEvaluation();
+    _intKnob->setValueAtTime(frame,x, 0);
+    _intKnob->setValueAtTime(frame,y, 1);
+    _intKnob->unblockEvaluation();
+    _intKnob->setValueAtTime(frame,z, 2);
+}
+
+int
 IntParam::getValue(int dimension) const
 {
     return _intKnob->getValue(dimension);
@@ -305,6 +399,100 @@ DoubleParam::DoubleParam(const boost::shared_ptr<Double_Knob>& knob)
 DoubleParam::~DoubleParam()
 {
     
+}
+
+double
+DoubleParam::get() const
+{
+    return _doubleKnob->getValue(0);
+}
+
+void
+Double2DParam::get(Double2DTuple& ret) const
+{
+    ret.x = _doubleKnob->getValue(0);
+    ret.y = _doubleKnob->getValue(1);
+}
+
+void
+Double3DParam::get(Double3DTuple & ret) const
+{
+    ret.x = _doubleKnob->getValue(0);
+    ret.y = _doubleKnob->getValue(1);
+    ret.z = _doubleKnob->getValue(2);
+}
+
+double
+DoubleParam::getAt(int frame) const
+{
+    return _doubleKnob->getValueAtTime(frame, 0);
+}
+
+void
+Double2DParam::getAt(int frame, Double2DTuple& ret) const
+{
+    ret.x = _doubleKnob->getValueAtTime(frame, 0);
+    ret.y = _doubleKnob->getValueAtTime(frame, 1);
+}
+
+void
+Double3DParam::getAt(int frame, Double3DTuple &ret) const
+{
+
+    ret.x = _doubleKnob->getValueAtTime(frame, 0);
+    ret.y = _doubleKnob->getValueAtTime(frame, 1);
+    ret.z = _doubleKnob->getValueAtTime(frame, 2);
+}
+
+void
+DoubleParam::set(double x)
+{
+    _doubleKnob->setValue(x, 0);
+}
+
+void
+Double2DParam::set(double x, double y)
+{
+    _doubleKnob->blockEvaluation();
+    _doubleKnob->setValue(x, 0);
+    _doubleKnob->unblockEvaluation();
+    _doubleKnob->setValue(y, 1);
+
+}
+
+void
+Double3DParam::set(double x, double y, double z)
+{
+    _doubleKnob->blockEvaluation();
+    _doubleKnob->setValue(x, 0);
+    _doubleKnob->setValue(y, 1);
+    _doubleKnob->unblockEvaluation();
+    _doubleKnob->setValue(z, 2);
+}
+
+void
+DoubleParam::setAt(double x, int frame)
+{
+     _doubleKnob->setValueAtTime(frame, x, 0);
+}
+
+void
+Double2DParam::setAt(double x, double y, int frame)
+{
+    _doubleKnob->blockEvaluation();
+    _doubleKnob->setValueAtTime(frame,x, 0);
+    _doubleKnob->unblockEvaluation();
+    _doubleKnob->setValueAtTime(frame,y, 1);
+}
+
+void
+Double3DParam::setAt(double x, double y, double z, int frame)
+{
+    _doubleKnob->blockEvaluation();
+    _doubleKnob->setValueAtTime(frame,x, 0);
+    _doubleKnob->setValueAtTime(frame,y, 1);
+    _doubleKnob->unblockEvaluation();
+    _doubleKnob->setValueAtTime(frame,z, 2);
 }
 
 double

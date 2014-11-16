@@ -520,11 +520,11 @@ getNumInstances()
 }
 
 /**
- * @brief Ensures that the given Python script as imported the Engine module compiled into Natron
+ * @brief Ensures that the given Python script as imported the given module
  * and returns the position of the start of the next line after the imports. Note that this position
  * can be the first character after the last one in the script.
  **/
-std::size_t ensureScriptHasEngineImport(std::string& script);
+std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script);
 
 /**
  * @brief Evaluates the given python script*

@@ -2032,10 +2032,10 @@ questionDialog(const std::string & title,
     }
 }
     
-std::size_t ensureScriptHasEngineImport(std::string& script)
+std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
 {
-    /// import NATRON_ENGINE_PYTHON_MODULE_NAME
-    script = "from " NATRON_ENGINE_PYTHON_MODULE_NAME " import * \n" + script;
+    /// import module
+    script = "from " + moduleName + " import * \n" + script;
     
     
     ///Find position of the last import
@@ -2104,7 +2104,7 @@ bool interpretPythonScript(const std::string& script,std::string* error)
     
 static void runScriptWithEngineImport(std::string& script)
 {
-    ensureScriptHasEngineImport(script);
+    ensureScriptHasModuleImport(NATRON_ENGINE_PYTHON_MODULE_NAME,script);
     std::string error;
     interpretPythonScript(script,&error);
 #ifdef DEBUG

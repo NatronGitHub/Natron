@@ -110,7 +110,16 @@ SOURCES += \
     NatronEngine/effect_wrapper.cpp \
     NatronEngine/intparam_wrapper.cpp \
     NatronEngine/param_wrapper.cpp \
-    NatronEngine/doubleparam_wrapper.cpp
+    NatronEngine/doubleparam_wrapper.cpp \
+    NatronEngine/colortuple_wrapper.cpp \
+    NatronEngine/double2dparam_wrapper.cpp \
+    NatronEngine/double2dtuple_wrapper.cpp \
+    NatronEngine/double3dparam_wrapper.cpp \
+    NatronEngine/double3dtuple_wrapper.cpp \
+    NatronEngine/int2dparam_wrapper.cpp \
+    NatronEngine/int2dtuple_wrapper.cpp \
+    NatronEngine/int3dparam_wrapper.cpp \
+    NatronEngine/int3dtuple_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -234,7 +243,16 @@ HEADERS += \
     NatronEngine/effect_wrapper.h \
     NatronEngine/intparam_wrapper.h \
     NatronEngine/param_wrapper.h \
-    NatronEngine/doubleparam_wrapper.h
+    NatronEngine/doubleparam_wrapper.h \
+    NatronEngine/colortuple_wrapper.h \
+    NatronEngine/double2dparam_wrapper.h \
+    NatronEngine/double2dtuple_wrapper.h \
+    NatronEngine/double3dparam_wrapper.h \
+    NatronEngine/double3dtuple_wrapper.h \
+    NatronEngine/int2dparam_wrapper.h \
+    NatronEngine/int2dtuple_wrapper.h \
+    NatronEngine/int3dparam_wrapper.h \
+    NatronEngine/int3dtuple_wrapper.h
 
 
 OTHER_FILES += \

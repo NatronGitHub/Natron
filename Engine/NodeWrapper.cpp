@@ -95,12 +95,31 @@ Effect::getPluginID() const
 
 Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
 {
+    int dims = knob->getDimension();
     boost::shared_ptr<Int_Knob> isInt = boost::dynamic_pointer_cast<Int_Knob>(knob);
     boost::shared_ptr<Double_Knob> isDouble = boost::dynamic_pointer_cast<Double_Knob>(knob);
     if (isInt) {
-        return new IntParam(isInt);
+        switch (dims) {
+            case 1:
+                return new IntParam(isInt);
+            case 2:
+                return new Int2DParam(isInt);
+            case 3:
+                return new Int3DParam(isInt);
+            default:
+                break;
+        }
     } else if (isDouble) {
-        return new DoubleParam(isDouble);
+        switch (dims) {
+            case 1:
+                return new DoubleParam(isDouble);
+            case 2:
+                return new Double2DParam(isDouble);
+            case 3:
+                return new Double3DParam(isDouble);
+            default:
+                break;
+        }
     }
     return NULL;
 }

@@ -87,6 +87,81 @@ static PyObject* Sbk_IntParamFunc_addAsDependencyOf(PyObject* self, PyObject* ar
         return 0;
 }
 
+static PyObject* Sbk_IntParamFunc_get(PyObject* self)
+{
+    ::IntParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // get()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->get();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_IntParamFunc_getAt(PyObject* self, PyObject* pyArg)
+{
+    ::IntParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getAt(int)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // getAt(int)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_IntParamFunc_getAt_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getAt(int)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getAt(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_IntParamFunc_getAt_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.IntParam.getAt", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_IntParamFunc_getDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::IntParam* cppSelf = 0;
@@ -620,6 +695,107 @@ static PyObject* Sbk_IntParamFunc_restoreDefaultValue(PyObject* self, PyObject* 
     Sbk_IntParamFunc_restoreDefaultValue_TypeError:
         const char* overloads[] = {"int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.IntParam.restoreDefaultValue", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_IntParamFunc_set(PyObject* self, PyObject* pyArg)
+{
+    ::IntParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: set(int)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // set(int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_IntParamFunc_set_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // set(int)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->set(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_IntParamFunc_set_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.IntParam.set", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_IntParamFunc_setAt(PyObject* self, PyObject* args)
+{
+    ::IntParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "setAt", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: setAt(int,int)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+        overloadId = 0; // setAt(int,int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_IntParamFunc_setAt_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // setAt(int,int)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setAt(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_IntParamFunc_setAt_TypeError:
+        const char* overloads[] = {"int, int", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.IntParam.setAt", overloads);
         return 0;
 }
 
@@ -1168,6 +1344,8 @@ static PyObject* Sbk_IntParamFunc_setValueAtTime(PyObject* self, PyObject* args,
 
 static PyMethodDef Sbk_IntParam_methods[] = {
     {"addAsDependencyOf", (PyCFunction)Sbk_IntParamFunc_addAsDependencyOf, METH_VARARGS},
+    {"get", (PyCFunction)Sbk_IntParamFunc_get, METH_NOARGS},
+    {"getAt", (PyCFunction)Sbk_IntParamFunc_getAt, METH_O},
     {"getDefaultValue", (PyCFunction)Sbk_IntParamFunc_getDefaultValue, METH_VARARGS|METH_KEYWORDS},
     {"getDisplayMaximum", (PyCFunction)Sbk_IntParamFunc_getDisplayMaximum, METH_O},
     {"getDisplayMinimum", (PyCFunction)Sbk_IntParamFunc_getDisplayMinimum, METH_O},
@@ -1176,6 +1354,8 @@ static PyMethodDef Sbk_IntParam_methods[] = {
     {"getValue", (PyCFunction)Sbk_IntParamFunc_getValue, METH_VARARGS|METH_KEYWORDS},
     {"getValueAtTime", (PyCFunction)Sbk_IntParamFunc_getValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"restoreDefaultValue", (PyCFunction)Sbk_IntParamFunc_restoreDefaultValue, METH_VARARGS|METH_KEYWORDS},
+    {"set", (PyCFunction)Sbk_IntParamFunc_set, METH_O},
+    {"setAt", (PyCFunction)Sbk_IntParamFunc_setAt, METH_VARARGS},
     {"setDefaultValue", (PyCFunction)Sbk_IntParamFunc_setDefaultValue, METH_VARARGS|METH_KEYWORDS},
     {"setDisplayMaximum", (PyCFunction)Sbk_IntParamFunc_setDisplayMaximum, METH_VARARGS|METH_KEYWORDS},
     {"setDisplayMinimum", (PyCFunction)Sbk_IntParamFunc_setDisplayMinimum, METH_VARARGS|METH_KEYWORDS},

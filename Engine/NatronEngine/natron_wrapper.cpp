@@ -972,6 +972,9 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_REFRESH", (long) Natron::NATRON_PIXMAP_VIEWER_REFRESH))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE", (long) Natron::NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_ROI_ENABLED", (long) Natron::NATRON_PIXMAP_VIEWER_ROI_ENABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],

@@ -49,26 +49,35 @@
 #include <set>
 
 // Type indices
-#define SBK_NATRON_IDX                                               4
-#define SBK_NATRON_STANDARDBUTTONENUM_IDX                            13
-#define SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX                    18
-#define SBK_NATRON_IMAGECOMPONENTSENUM_IDX                           7
-#define SBK_NATRON_IMAGEBITDEPTHENUM_IDX                             6
-#define SBK_NATRON_KEYFRAMETYPEENUM_IDX                              9
-#define SBK_NATRON_VALUECHANGEDREASONENUM_IDX                        14
-#define SBK_NATRON_ANIMATIONLEVELENUM_IDX                            5
-#define SBK_NATRON_ORIENTATIONENUM_IDX                               10
-#define SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX                    8
-#define SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX                 16
-#define SBK_NATRON_PLAYBACKMODEENUM_IDX                              12
-#define SBK_NATRON_PIXMAPENUM_IDX                                    11
-#define SBK_NATRON_VIEWERCOLORSPACEENUM_IDX                          15
-#define SBK_PARAM_IDX                                                17
-#define SBK_DOUBLEPARAM_IDX                                          1
-#define SBK_INTPARAM_IDX                                             3
-#define SBK_EFFECT_IDX                                               2
+#define SBK_NATRON_IDX                                               13
+#define SBK_NATRON_STANDARDBUTTONENUM_IDX                            22
+#define SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX                    27
+#define SBK_NATRON_IMAGECOMPONENTSENUM_IDX                           16
+#define SBK_NATRON_IMAGEBITDEPTHENUM_IDX                             15
+#define SBK_NATRON_KEYFRAMETYPEENUM_IDX                              18
+#define SBK_NATRON_VALUECHANGEDREASONENUM_IDX                        23
+#define SBK_NATRON_ANIMATIONLEVELENUM_IDX                            14
+#define SBK_NATRON_ORIENTATIONENUM_IDX                               19
+#define SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX                    17
+#define SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX                 25
+#define SBK_NATRON_PLAYBACKMODEENUM_IDX                              21
+#define SBK_NATRON_PIXMAPENUM_IDX                                    20
+#define SBK_NATRON_VIEWERCOLORSPACEENUM_IDX                          24
+#define SBK_COLORTUPLE_IDX                                           1
+#define SBK_DOUBLE3DTUPLE_IDX                                        5
+#define SBK_DOUBLE2DTUPLE_IDX                                        3
+#define SBK_INT3DTUPLE_IDX                                           11
+#define SBK_INT2DTUPLE_IDX                                           9
+#define SBK_PARAM_IDX                                                26
+#define SBK_INTPARAM_IDX                                             12
+#define SBK_INT2DPARAM_IDX                                           8
+#define SBK_INT3DPARAM_IDX                                           10
+#define SBK_DOUBLEPARAM_IDX                                          6
+#define SBK_DOUBLE2DPARAM_IDX                                        2
+#define SBK_DOUBLE3DPARAM_IDX                                        4
+#define SBK_EFFECT_IDX                                               7
 #define SBK_APP_IDX                                                  0
-#define SBK_NatronEngine_IDX_COUNT                                   19
+#define SBK_NatronEngine_IDX_COUNT                                   28
 
 // This variable stores all Python types exported by this module.
 extern PyTypeObject** SbkNatronEngineTypes;
@@ -105,9 +114,18 @@ template<> inline PyTypeObject* SbkType< ::Natron::ViewerCompositingOperatorEnum
 template<> inline PyTypeObject* SbkType< ::Natron::PlaybackModeEnum >() { return SbkNatronEngineTypes[SBK_NATRON_PLAYBACKMODEENUM_IDX]; }
 template<> inline PyTypeObject* SbkType< ::Natron::PixmapEnum >() { return SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX]; }
 template<> inline PyTypeObject* SbkType< ::Natron::ViewerColorSpaceEnum >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOLORSPACEENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::ColorTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_COLORTUPLE_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Double3DTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Double2DTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Int3DTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Int2DTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT2DTUPLE_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Param >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PARAM_IDX]); }
-template<> inline PyTypeObject* SbkType< ::DoubleParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::IntParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INTPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Int2DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Int3DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::DoubleParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Double2DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::Double3DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLE3DPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Effect >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_EFFECT_IDX]); }
 template<> inline PyTypeObject* SbkType< ::App >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_APP_IDX]); }
 

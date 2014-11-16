@@ -1905,6 +1905,7 @@ struct EditExpressionDialogPrivate
     QHBoxLayout* midButtonsLayout;
     
     Button* useRetButton;
+    Button* helpButton;
     
     QLabel* resultLabel;
     QTextEdit* resultEdit;
@@ -1920,6 +1921,7 @@ struct EditExpressionDialogPrivate
     , midButtonsContainer(0)
     , midButtonsLayout(0)
     , useRetButton(0)
+    , helpButton(0)
     , resultLabel(0)
     , resultEdit(0)
     , buttons(0)
@@ -1946,7 +1948,20 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     
     _imp->mainLayout = new QVBoxLayout(this);
     
-    _imp->expressionLabel = new QLabel(tr("Python Expression:"),this);
+    QString labelHtml(tr("<br><b>Python</b> expression: </br>"
+                         "<br>For convenience the following module(s) have been imported: </br>"
+                         "<br/>"
+                         "<br><i><font color=orange>from math import *</font></i></br>"
+                         "<br/>"
+                         "<br>Also the following variables have been declared: </br>"
+                         "<br/>"
+                         "<br><b>thisNode</b> which references the current node</br>"
+                         "<br><b>thisParam</b> which references the current param which expression is being edited</br>"
+                         "<br><b>dimension</b> Defined only if the parameter is multi-dimensional, it references the dimension of the parameter "
+                         "which is being edited (0-based index)</br>"
+                         "<br><b>frame</b> which references the current time on the timeline</br>"));
+    
+    _imp->expressionLabel = new QLabel(labelHtml,this);
     _imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
@@ -1961,7 +1976,7 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     bool hasRetVariable = k->isExpressionUsingRetVariable(dimension == -1 ? 0 : dimension);
     
     
-    _imp->useRetButton = new Button(tr("Ret"),_imp->midButtonsContainer);
+    _imp->useRetButton = new Button(tr("Multi-line"),_imp->midButtonsContainer);
     _imp->useRetButton->setToolTip(Qt::convertFromPlainText(tr("When checked the Python expression will be interpreted "
                                                                "as series of statement. The return value should be then assigned to the "
                                                                "\"ret\" variable. When unchecked the expression must not contain "
@@ -1974,6 +1989,10 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     QObject::connect(_imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)));
     
     _imp->midButtonsLayout->addWidget(_imp->useRetButton);
+    
+    _imp->helpButton = new Button(tr("Help"),_imp->midButtonsContainer);
+    QObject::connect(_imp->helpButton, SIGNAL(clicked(bool)), this, SLOT(onHelpRequested()));
+    _imp->midButtonsLayout->addWidget(_imp->helpButton);
     _imp->midButtonsLayout->addStretch();
     
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
@@ -1997,6 +2016,38 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     }
     QObject::connect(_imp->expressionEdit, SIGNAL(textChanged()), this, SLOT(onTextEditChanged()));
     _imp->expressionEdit->setFocus();
+}
+
+void
+EditExpressionDialog::onHelpRequested()
+{
+    QString msg(tr("<br>Each node in the current project already has a variable declared with its name, e.g if you have a node named "
+                   "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.</br>"
+                   "<br>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</br>"
+                   "<br/>"
+                   "<br>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:</br>"
+                   "<br>Transform1.rotate</br>"
+                   "<br>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
+                   "identifies a parameter internally.</br>"
+                   "<br/>"
+                   "<br>The <i>thisParam</i> variable has been defined for convenience when editing an expression. It refers to the current parameter. "
+                   "In the same way the <i>dimension</i> variable has been defined and references the current dimension of the parameter which expression is being set"
+                   ".</br>"
+                   "<br/>"
+                   "<br>The <i>dimension</i> is a 0-based index identifying a specific field of a parameter. For instance if we're editing the expression of the y "
+                   "field of the translate parameter of Transform1, the <i>dimension</i> would be 1. </br>"
+                   "<br/>"
+                   "<br>To access values of a parameter several functions are made accessible: </br>"
+                   "<br/>"
+                   "<br>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
+                   "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</br>"
+                   "<br/>"
+                   "<br>Transform1.center.get().x</br>"
+                   "<br/>"
+                   "<br>The <b>getAt(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
+                   "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters which have an animation "
+                   "it would then return their value at the corresponding timeline position.</br>"));
+    Natron::informationDialog(tr("Help").toStdString(), msg.toStdString());
 }
 
 void

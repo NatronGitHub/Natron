@@ -2889,7 +2889,13 @@ Gui::onDoDialog(int type,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
-    QString msg = Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
+    QString msg;
+    if (msg.contains("\n")) {
+        msg = Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);;
+    } else {
+        msg = content;
+    }
+
 
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -2905,8 +2911,10 @@ Gui::onDoDialog(int type,
         if (msg.count() > 1000) {
             QGridLayout *layout = qobject_cast<QGridLayout *>(info.layout());
             if (layout) {
-                QTextEdit *edit = new QTextEdit(msg);
+                QTextEdit *edit = new QTextEdit();
                 edit->setReadOnly(true);
+                edit->setAcceptRichText(true);
+                edit->setHtml(msg);
                 layout->addWidget(edit, 0, 1);
             }
         }

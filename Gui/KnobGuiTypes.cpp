@@ -1938,17 +1938,7 @@ Color_KnobGui::updateGUI(int dimension)
     }
     updateLabel(r, g, b, a);
 
-//    bool colorsEqual = true;
-//    if (_dimension == 3) {
-//        colorsEqual = (r == g && r == b);
-//    } else {
-//        colorsEqual = (r == g && r == b && r == a);
-//    }
-//    if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
-//        expandAllDimensions();
-//    } else if (_knob->areAllDimensionsEnabled() && colorsEqual) {
-//        foldAllDimensions();
-//    }
+
 } // updateGUI
 
 void
@@ -1957,9 +1947,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
 {
     switch (level) {
         case Natron::eAnimationLevelNone: {
-            if (_rBox->getAnimation() == 0) {
-                return;
-            }
             switch (dimension) {
                 case 0:
                     _rBox->setAnimation(0);
@@ -1980,9 +1967,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
         }  break;
         case Natron::eAnimationLevelInterpolatedValue: {
             switch (dimension) {
-                    if (_rBox->getAnimation() == 1) {
-                        return;
-                    }
                 case 0:
                     _rBox->setAnimation(1);
                     break;
@@ -2002,9 +1986,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
         }    break;
         case Natron::eAnimationLevelOnKeyframe: {
             switch (dimension) {
-                    if (_rBox->getAnimation() == 2) {
-                        return;
-                    }
                 case 0:
                     _rBox->setAnimation(2);
                     break;

@@ -591,7 +591,7 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
 std::size_t
 AppInstance::declareCurrentAppVariable_Python(std::string& script)
 {
-    size_t firstLine = ensureScriptHasEngineImport(script);
+    size_t firstLine = ensureScriptHasModuleImport(NATRON_ENGINE_PYTHON_MODULE_NAME,script);
     
     ///Now define the app variable
     std::stringstream ss;

@@ -114,8 +114,17 @@ static PyMethodDef NatronEngine_methods[] = {
 void init_App(PyObject* module);
 void init_Effect(PyObject* module);
 void init_Param(PyObject* module);
-void init_IntParam(PyObject* module);
 void init_DoubleParam(PyObject* module);
+void init_Double2DParam(PyObject* module);
+void init_Double3DParam(PyObject* module);
+void init_IntParam(PyObject* module);
+void init_Int2DParam(PyObject* module);
+void init_Int3DParam(PyObject* module);
+void init_Int2DTuple(PyObject* module);
+void init_Int3DTuple(PyObject* module);
+void init_Double2DTuple(PyObject* module);
+void init_Double3DTuple(PyObject* module);
+void init_ColorTuple(PyObject* module);
 void init_Natron(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -411,8 +420,17 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_App(module);
     init_Effect(module);
     init_Param(module);
-    init_IntParam(module);
     init_DoubleParam(module);
+    init_Double2DParam(module);
+    init_Double3DParam(module);
+    init_IntParam(module);
+    init_Int2DParam(module);
+    init_Int3DParam(module);
+    init_Int2DTuple(module);
+    init_Int3DTuple(module);
+    init_Double2DTuple(module);
+    init_Double3DTuple(module);
+    init_ColorTuple(module);
     init_Natron(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.

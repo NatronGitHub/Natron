@@ -292,7 +292,132 @@
         </modify-function>
     </object-type>
     <object-type name="IntParam"/>
+    <value-type name="Int2DTuple"/>
+    <object-type name="Int2DParam">
+        <modify-function signature="get(Int2DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getAt(int,Int2DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <value-type name="Int3DTuple"/>
+    <object-type name="Int3DParam">
+        <modify-function signature="get(Int3DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getAt(int,Int3DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="DoubleParam"/>
+    <value-type name="Double2DTuple"/>
+    <object-type name="Double2DParam">
+        <modify-function signature="get(Double2DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getAt(int,Double2DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <value-type name="Double3DTuple"/>
+    <object-type name="Double3DParam">
+        <modify-function signature="get(Double3DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getAt(int,Double3DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="ColorTuple"/>
     
     <rejection class="App" field-name="_instance"/>
     <rejection class="Effect" field-name="_node"/>
