@@ -1376,6 +1376,9 @@ handleControlPointMaximum(int time,
 void
 RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
 {
+    if (!node->getNode()->isActivated()) {
+        return;
+    }
     int time = context->getTimelineCurrentTime();
     std::pair<double, double> pixelScale;
 
