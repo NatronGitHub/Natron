@@ -455,6 +455,20 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {0} // Sentinel
 };
 
+static int Sbk_Effect___nb_bool(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return -1;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int result;
+    PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+    result = !cppSelf->isNull();
+    PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+    return result;
+}
+
 } // extern "C"
 
 static int Sbk_Effect_traverse(PyObject* self, visitproc visit, void* arg)
@@ -467,6 +481,8 @@ static int Sbk_Effect_clear(PyObject* self)
 }
 // Class Definition -----------------------------------------------
 extern "C" {
+static PyNumberMethods Sbk_Effect_TypeAsNumber;
+
 static SbkObjectType Sbk_Effect_Type = { { {
     PyVarObject_HEAD_INIT(&SbkObjectType_Type, 0)
     /*tp_name*/             "NatronEngine.Effect",
@@ -546,6 +562,11 @@ static PyObject* Effect_PTR_CppToPython_Effect(const void* cppIn) {
 
 void init_Effect(PyObject* module)
 {
+    // type has number operators
+    memset(&Sbk_Effect_TypeAsNumber, 0, sizeof(PyNumberMethods));
+    SBK_NB_BOOL(Sbk_Effect_TypeAsNumber) = Sbk_Effect___nb_bool;
+    Sbk_Effect_Type.super.ht_type.tp_as_number = &Sbk_Effect_TypeAsNumber;
+
     SbkNatronEngineTypes[SBK_EFFECT_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_Effect_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "Effect", "Effect*",

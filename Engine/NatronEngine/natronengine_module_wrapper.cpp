@@ -117,6 +117,7 @@ void init_Param(PyObject* module);
 void init_DoubleParam(PyObject* module);
 void init_Double2DParam(PyObject* module);
 void init_Double3DParam(PyObject* module);
+void init_ColorParam(PyObject* module);
 void init_IntParam(PyObject* module);
 void init_Int2DParam(PyObject* module);
 void init_Int3DParam(PyObject* module);
@@ -423,6 +424,7 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_DoubleParam(module);
     init_Double2DParam(module);
     init_Double3DParam(module);
+    init_ColorParam(module);
     init_IntParam(module);
     init_Int2DParam(module);
     init_Int3DParam(module);

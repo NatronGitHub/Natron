@@ -217,13 +217,13 @@ Int3DParam::get(Int3DTuple& ret) const
 }
 
 int
-IntParam::getAt(int frame) const
+IntParam::get(int frame) const
 {
     return _intKnob->getValueAtTime(frame,0);
 }
 
 void
-Int2DParam::getAt(int frame,Int2DTuple &ret) const
+Int2DParam::get(int frame,Int2DTuple &ret) const
 {
     ret.x = _intKnob->getValueAtTime(frame,0);
     ret.y = _intKnob->getValueAtTime(frame,1);
@@ -231,7 +231,7 @@ Int2DParam::getAt(int frame,Int2DTuple &ret) const
 
 
 void
-Int3DParam::getAt(int frame, Int3DTuple& ret) const
+Int3DParam::get(int frame, Int3DTuple& ret) const
 {
     ret.x = _intKnob->getValueAtTime(frame,0);
     ret.y = _intKnob->getValueAtTime(frame,1);
@@ -265,13 +265,13 @@ Int3DParam::set(int x, int y, int z)
 }
 
 void
-IntParam::setAt(int x, int frame)
+IntParam::set(int x, int frame)
 {
     _intKnob->setValueAtTime(frame, x, 0);
 }
 
 void
-Int2DParam::setAt(int x, int y, int frame)
+Int2DParam::set(int x, int y, int frame)
 {
     _intKnob->blockEvaluation();
     _intKnob->setValueAtTime(frame,x, 0);
@@ -280,7 +280,7 @@ Int2DParam::setAt(int x, int y, int frame)
 }
 
 void
-Int3DParam::setAt(int x, int y, int z, int frame)
+Int3DParam::set(int x, int y, int z, int frame)
 {
     _intKnob->blockEvaluation();
     _intKnob->setValueAtTime(frame,x, 0);
@@ -423,20 +423,20 @@ Double3DParam::get(Double3DTuple & ret) const
 }
 
 double
-DoubleParam::getAt(int frame) const
+DoubleParam::get(int frame) const
 {
     return _doubleKnob->getValueAtTime(frame, 0);
 }
 
 void
-Double2DParam::getAt(int frame, Double2DTuple& ret) const
+Double2DParam::get(int frame, Double2DTuple& ret) const
 {
     ret.x = _doubleKnob->getValueAtTime(frame, 0);
     ret.y = _doubleKnob->getValueAtTime(frame, 1);
 }
 
 void
-Double3DParam::getAt(int frame, Double3DTuple &ret) const
+Double3DParam::get(int frame, Double3DTuple &ret) const
 {
 
     ret.x = _doubleKnob->getValueAtTime(frame, 0);
@@ -471,13 +471,13 @@ Double3DParam::set(double x, double y, double z)
 }
 
 void
-DoubleParam::setAt(double x, int frame)
+DoubleParam::set(double x, int frame)
 {
      _doubleKnob->setValueAtTime(frame, x, 0);
 }
 
 void
-Double2DParam::setAt(double x, double y, int frame)
+Double2DParam::set(double x, double y, int frame)
 {
     _doubleKnob->blockEvaluation();
     _doubleKnob->setValueAtTime(frame,x, 0);
@@ -486,7 +486,7 @@ Double2DParam::setAt(double x, double y, int frame)
 }
 
 void
-Double3DParam::setAt(double x, double y, double z, int frame)
+Double3DParam::set(double x, double y, double z, int frame)
 {
     _doubleKnob->blockEvaluation();
     _doubleKnob->setValueAtTime(frame,x, 0);
@@ -592,3 +592,174 @@ DoubleParam::addAsDependencyOf(int fromExprDimension,Param* param)
     _addAsDependencyOf(fromExprDimension, param);
     return _doubleKnob->getValue();
 }
+
+
+////////ColorParam
+
+ColorParam::ColorParam(const boost::shared_ptr<Color_Knob>& knob)
+: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+, _colorKnob(knob)
+{
+    
+}
+
+ColorParam::~ColorParam()
+{
+    
+}
+
+
+void
+ColorParam::get(ColorTuple & ret) const
+{
+    ret.r = _colorKnob->getValue(0);
+    ret.g = _colorKnob->getValue(1);
+    ret.b = _colorKnob->getValue(2);
+    ret.a = _colorKnob->getDimension() == 4 ? _colorKnob->getValue(3) : 1.;
+}
+
+
+void
+ColorParam::get(int frame, ColorTuple &ret) const
+{
+    
+    ret.r = _colorKnob->getValueAtTime(frame, 0);
+    ret.g = _colorKnob->getValueAtTime(frame, 1);
+    ret.b = _colorKnob->getValueAtTime(frame, 2);
+    ret.a = _colorKnob->getDimension() == 4 ? _colorKnob->getValueAtTime(frame, 2) : 1.;
+}
+
+void
+ColorParam::set(double r, double g, double b, double a)
+{
+    _colorKnob->blockEvaluation();
+    _colorKnob->setValue(r, 0);
+    _colorKnob->setValue(g, 1);
+    int dims = _colorKnob->getDimension();
+    if (dims == 3) {
+        _colorKnob->unblockEvaluation();
+    }
+    _colorKnob->setValue(b, 2);
+    if (dims == 4) {
+        _colorKnob->unblockEvaluation();
+        _colorKnob->setValue(a, 3);
+    }
+}
+
+void
+ColorParam::set(double r, double g, double b, double a, int frame)
+{
+    _colorKnob->blockEvaluation();
+    _colorKnob->setValueAtTime(frame, r, 0);
+    _colorKnob->setValueAtTime(frame,g, 1);
+    int dims = _colorKnob->getDimension();
+    if (dims == 3) {
+        _colorKnob->unblockEvaluation();
+    }
+    _colorKnob->setValueAtTime(frame,b, 2);
+    if (dims == 4) {
+        _colorKnob->unblockEvaluation();
+        _colorKnob->setValueAtTime(frame,a, 3);
+    }
+
+}
+
+
+double
+ColorParam::getValue(int dimension) const
+{
+    return _colorKnob->getValue(dimension);
+}
+
+void
+ColorParam::setValue(double value,int dimension)
+{
+    _colorKnob->setValue(value, dimension);
+}
+
+double
+ColorParam::getValueAtTime(int time,int dimension) const
+{
+    return _colorKnob->getValueAtTime(time,dimension);
+}
+
+void
+ColorParam::setValueAtTime(double value,int time,int dimension)
+{
+    _colorKnob->setValueAtTime(time, value, dimension);
+}
+
+void
+ColorParam::setDefaultValue(double value,int dimension)
+{
+    _colorKnob->setDefaultValue(value,dimension);
+}
+
+double
+ColorParam::getDefaultValue(int dimension) const
+{
+    return _colorKnob->getDefaultValues_mt_safe()[dimension];
+}
+
+void
+ColorParam::restoreDefaultValue(int dimension)
+{
+    _colorKnob->resetToDefaultValue(dimension);
+}
+
+void
+ColorParam::setMinimum(double minimum,int dimension)
+{
+    _colorKnob->setMinimum(minimum,dimension);
+}
+
+double
+ColorParam::getMinimum(int dimension) const
+{
+    return _colorKnob->getMinimum(dimension);
+}
+
+void
+ColorParam::setMaximum(double maximum,int dimension)
+{
+    _colorKnob->setMaximum(maximum,dimension);
+}
+
+double
+ColorParam::getMaximum(int dimension) const
+{
+    return _colorKnob->getMaximum(dimension);
+}
+
+void
+ColorParam::setDisplayMinimum(double minimum,int dimension)
+{
+    return _colorKnob->setDisplayMinimum(minimum,dimension);
+}
+
+double
+ColorParam::getDisplayMinimum(int dimension) const
+{
+    return _colorKnob->getDisplayMinimum(dimension);
+}
+
+void
+ColorParam::setDisplayMaximum(double maximum,int dimension)
+{
+    _colorKnob->setDisplayMaximum(maximum,dimension);
+}
+
+
+double
+ColorParam::getDisplayMaximum(int dimension) const
+{
+    return _colorKnob->getDisplayMaximum(dimension);
+}
+
+double
+ColorParam::addAsDependencyOf(int fromExprDimension,Param* param)
+{
+    _addAsDependencyOf(fromExprDimension, param);
+    return _colorKnob->getValue();
+}
+

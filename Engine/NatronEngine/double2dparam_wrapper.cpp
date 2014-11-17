@@ -25,41 +25,7 @@ Double2DParamWrapper::~Double2DParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_Double2DParamFunc_get(PyObject* self)
-{
-    ::Double2DParam* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // get(Double2DTuple&)const
-            // Begin code injection
-
-            Double2DTuple t;
-            cppSelf->get(t);
-            pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], &t);
-            return pyResult;
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_Double2DParamFunc_getAt(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 {
     ::Double2DParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -68,108 +34,86 @@ static PyObject* Sbk_Double2DParamFunc_getAt(PyObject* self, PyObject* pyArg)
     cppSelf = ((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getAt(int,Double2DTuple&)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getAt(int,Double2DTuple&)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_Double2DParamFunc_getAt_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getAt(int,Double2DTuple&)const
-            // Begin code injection
-
-            Double2DTuple t;
-            cppSelf->getAt(cppArg0,t);
-            pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], &t);
-            return pyResult;
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_Double2DParamFunc_getAt_TypeError:
-        const char* overloads[] = {"int, NatronEngine.Double2DTuple", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Double2DParam.getAt", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
-{
-    ::Double2DParam* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "set", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_UnpackTuple(args, "get", 0, 1, &(pyArgs[0])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: set(double,double)
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // set(double,double)
+    // 0: get(Double2DTuple&)const
+    // 1: get(int,Double2DTuple&)const
+    if (numArgs == 0) {
+        overloadId = 0; // get(Double2DTuple&)const
+    } else if (numArgs == 1
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+        overloadId = 1; // get(int,Double2DTuple&)const
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_Double2DParamFunc_set_TypeError;
+    if (overloadId == -1) goto Sbk_Double2DParamFunc_get_TypeError;
 
     // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
+    switch (overloadId) {
+        case 0: // get(Double2DTuple & ret) const
+        {
 
-        if (!PyErr_Occurred()) {
-            // set(double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->set(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            if (!PyErr_Occurred()) {
+                // get(Double2DTuple&)const
+                // Begin code injection
+
+                Double2DTuple t;
+                cppSelf->get(t);
+                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], &t);
+                return pyResult;
+
+                // End of code injection
+
+
+            }
+            break;
+        }
+        case 1: // get(int frame, Double2DTuple & ret) const
+        {
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // get(int,Double2DTuple&)const
+                // Begin code injection
+
+                Double2DTuple t;
+                cppSelf->get(cppArg0,t);
+                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], &t);
+                return pyResult;
+
+                // End of code injection
+
+
+            }
+            break;
         }
     }
 
-    if (PyErr_Occurred()) {
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
         return 0;
     }
-    Py_RETURN_NONE;
+    return pyResult;
 
-    Sbk_Double2DParamFunc_set_TypeError:
-        const char* overloads[] = {"float, float", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.set", overloads);
+    Sbk_Double2DParamFunc_get_TypeError:
+        const char* overloads[] = {"NatronEngine.Double2DTuple", "int, NatronEngine.Double2DTuple", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.get", overloads);
         return 0;
 }
 
-static PyObject* Sbk_Double2DParamFunc_setAt(PyObject* self, PyObject* args)
+static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 {
     ::Double2DParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -185,36 +129,60 @@ static PyObject* Sbk_Double2DParamFunc_setAt(PyObject* self, PyObject* args)
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "setAt", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_UnpackTuple(args, "set", 2, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setAt(double,double,int)
-    if (numArgs == 3
+    // 0: set(double,double)
+    // 1: set(double,double,int)
+    if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-        overloadId = 0; // setAt(double,double,int)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        if (numArgs == 2) {
+            overloadId = 0; // set(double,double)
+        } else if (numArgs == 3
+            && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+            overloadId = 1; // set(double,double,int)
+        }
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_Double2DParamFunc_setAt_TypeError;
+    if (overloadId == -1) goto Sbk_Double2DParamFunc_set_TypeError;
 
     // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-        int cppArg2;
-        pythonToCpp[2](pyArgs[2], &cppArg2);
+    switch (overloadId) {
+        case 0: // set(double x, double y)
+        {
+            double cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            double cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
 
-        if (!PyErr_Occurred()) {
-            // setAt(double,double,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setAt(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            if (!PyErr_Occurred()) {
+                // set(double,double)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
+        }
+        case 1: // set(double x, double y, int frame)
+        {
+            double cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            double cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            int cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+
+            if (!PyErr_Occurred()) {
+                // set(double,double,int)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
         }
     }
 
@@ -223,17 +191,15 @@ static PyObject* Sbk_Double2DParamFunc_setAt(PyObject* self, PyObject* args)
     }
     Py_RETURN_NONE;
 
-    Sbk_Double2DParamFunc_setAt_TypeError:
-        const char* overloads[] = {"float, float, int", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.setAt", overloads);
+    Sbk_Double2DParamFunc_set_TypeError:
+        const char* overloads[] = {"float, float", "float, float, int", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.set", overloads);
         return 0;
 }
 
 static PyMethodDef Sbk_Double2DParam_methods[] = {
-    {"get", (PyCFunction)Sbk_Double2DParamFunc_get, METH_NOARGS},
-    {"getAt", (PyCFunction)Sbk_Double2DParamFunc_getAt, METH_O},
+    {"get", (PyCFunction)Sbk_Double2DParamFunc_get, METH_VARARGS},
     {"set", (PyCFunction)Sbk_Double2DParamFunc_set, METH_VARARGS},
-    {"setAt", (PyCFunction)Sbk_Double2DParamFunc_setAt, METH_VARARGS},
 
     {0} // Sentinel
 };

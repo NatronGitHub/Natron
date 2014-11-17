@@ -25,41 +25,7 @@ Int3DParamWrapper::~Int3DParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_Int3DParamFunc_get(PyObject* self)
-{
-    ::Int3DParam* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Int3DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // get(Int3DTuple&)const
-            // Begin code injection
-
-            Int3DTuple t;
-            cppSelf->get(t);
-            pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], &t);
-            return pyResult;
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_Int3DParamFunc_getAt(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_Int3DParamFunc_get(PyObject* self, PyObject* args)
 {
     ::Int3DParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -68,111 +34,86 @@ static PyObject* Sbk_Int3DParamFunc_getAt(PyObject* self, PyObject* pyArg)
     cppSelf = ((::Int3DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getAt(int,Int3DTuple&)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getAt(int,Int3DTuple&)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_Int3DParamFunc_getAt_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getAt(int,Int3DTuple&)const
-            // Begin code injection
-
-            Int3DTuple t;
-            cppSelf->getAt(cppArg0,t);
-            pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], &t);
-            return pyResult;
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_Int3DParamFunc_getAt_TypeError:
-        const char* overloads[] = {"int, NatronEngine.Int3DTuple", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Int3DParam.getAt", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_Int3DParamFunc_set(PyObject* self, PyObject* args)
-{
-    ::Int3DParam* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Int3DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "set", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_UnpackTuple(args, "get", 0, 1, &(pyArgs[0])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: set(int,int,int)
-    if (numArgs == 3
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-        overloadId = 0; // set(int,int,int)
+    // 0: get(Int3DTuple&)const
+    // 1: get(int,Int3DTuple&)const
+    if (numArgs == 0) {
+        overloadId = 0; // get(Int3DTuple&)const
+    } else if (numArgs == 1
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+        overloadId = 1; // get(int,Int3DTuple&)const
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_Int3DParamFunc_set_TypeError;
+    if (overloadId == -1) goto Sbk_Int3DParamFunc_get_TypeError;
 
     // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-        int cppArg2;
-        pythonToCpp[2](pyArgs[2], &cppArg2);
+    switch (overloadId) {
+        case 0: // get(Int3DTuple & ret) const
+        {
 
-        if (!PyErr_Occurred()) {
-            // set(int,int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->set(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            if (!PyErr_Occurred()) {
+                // get(Int3DTuple&)const
+                // Begin code injection
+
+                Int3DTuple t;
+                cppSelf->get(t);
+                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], &t);
+                return pyResult;
+
+                // End of code injection
+
+
+            }
+            break;
+        }
+        case 1: // get(int frame, Int3DTuple & ret) const
+        {
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // get(int,Int3DTuple&)const
+                // Begin code injection
+
+                Int3DTuple t;
+                cppSelf->get(cppArg0,t);
+                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], &t);
+                return pyResult;
+
+                // End of code injection
+
+
+            }
+            break;
         }
     }
 
-    if (PyErr_Occurred()) {
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
         return 0;
     }
-    Py_RETURN_NONE;
+    return pyResult;
 
-    Sbk_Int3DParamFunc_set_TypeError:
-        const char* overloads[] = {"int, int, int", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int3DParam.set", overloads);
+    Sbk_Int3DParamFunc_get_TypeError:
+        const char* overloads[] = {"NatronEngine.Int3DTuple", "int, NatronEngine.Int3DTuple", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int3DParam.get", overloads);
         return 0;
 }
 
-static PyObject* Sbk_Int3DParamFunc_setAt(PyObject* self, PyObject* args)
+static PyObject* Sbk_Int3DParamFunc_set(PyObject* self, PyObject* args)
 {
     ::Int3DParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -188,39 +129,65 @@ static PyObject* Sbk_Int3DParamFunc_setAt(PyObject* self, PyObject* args)
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "setAt", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_UnpackTuple(args, "set", 3, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setAt(int,int,int,int)
-    if (numArgs == 4
+    // 0: set(int,int,int)
+    // 1: set(int,int,int,int)
+    if (numArgs >= 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))
-        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
-        overloadId = 0; // setAt(int,int,int,int)
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+        if (numArgs == 3) {
+            overloadId = 0; // set(int,int,int)
+        } else if (numArgs == 4
+            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
+            overloadId = 1; // set(int,int,int,int)
+        }
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_Int3DParamFunc_setAt_TypeError;
+    if (overloadId == -1) goto Sbk_Int3DParamFunc_set_TypeError;
 
     // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-        int cppArg2;
-        pythonToCpp[2](pyArgs[2], &cppArg2);
-        int cppArg3;
-        pythonToCpp[3](pyArgs[3], &cppArg3);
+    switch (overloadId) {
+        case 0: // set(int x, int y, int z)
+        {
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            int cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
 
-        if (!PyErr_Occurred()) {
-            // setAt(int,int,int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setAt(cppArg0, cppArg1, cppArg2, cppArg3);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            if (!PyErr_Occurred()) {
+                // set(int,int,int)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
+        }
+        case 1: // set(int x, int y, int z, int frame)
+        {
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            int cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+            int cppArg3;
+            pythonToCpp[3](pyArgs[3], &cppArg3);
+
+            if (!PyErr_Occurred()) {
+                // set(int,int,int,int)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
         }
     }
 
@@ -229,17 +196,15 @@ static PyObject* Sbk_Int3DParamFunc_setAt(PyObject* self, PyObject* args)
     }
     Py_RETURN_NONE;
 
-    Sbk_Int3DParamFunc_setAt_TypeError:
-        const char* overloads[] = {"int, int, int, int", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int3DParam.setAt", overloads);
+    Sbk_Int3DParamFunc_set_TypeError:
+        const char* overloads[] = {"int, int, int", "int, int, int, int", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int3DParam.set", overloads);
         return 0;
 }
 
 static PyMethodDef Sbk_Int3DParam_methods[] = {
-    {"get", (PyCFunction)Sbk_Int3DParamFunc_get, METH_NOARGS},
-    {"getAt", (PyCFunction)Sbk_Int3DParamFunc_getAt, METH_O},
+    {"get", (PyCFunction)Sbk_Int3DParamFunc_get, METH_VARARGS},
     {"set", (PyCFunction)Sbk_Int3DParamFunc_set, METH_VARARGS},
-    {"setAt", (PyCFunction)Sbk_Int3DParamFunc_setAt, METH_VARARGS},
 
     {0} // Sentinel
 };

@@ -232,13 +232,13 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     int get() const;
-    int getAt(int frame) const;
+    int get(int frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(int x);
-    void setAt(int x, int frame);
+    void set(int x, int frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -341,9 +341,9 @@ public:
     virtual ~Int2DParam() {}
     
     void get(Int2DTuple& ret) const;
-    void getAt(int frame, Int2DTuple& ret) const;
+    void get(int frame, Int2DTuple& ret) const;
     void set(int x, int y);
-    void setAt(int x, int y, int frame);
+    void set(int x, int y, int frame);
 };
 
 class Int3DParam : public Int2DParam
@@ -355,9 +355,9 @@ public:
     virtual ~Int3DParam() {}
     
     void get(Int3DTuple& ret) const;
-    void getAt(int frame, Int3DTuple& ret) const;
+    void get(int frame, Int3DTuple& ret) const;
     void set(int x, int y, int z);
-    void setAt(int x, int y, int z, int frame);
+    void set(int x, int y, int z, int frame);
 };
 
 
@@ -377,13 +377,13 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     double get() const;
-    double getAt(int frame) const;
+    double get(int frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(double x);
-    void setAt(double x, int frame);
+    void set(double x, int frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -486,9 +486,9 @@ public:
     virtual ~Double2DParam() {}
     
     void get(Double2DTuple& ret) const;
-    void getAt(int frame, Double2DTuple& ret) const;
+    void get(int frame, Double2DTuple& ret) const;
     void set(double x, double y);
-    void setAt(double x, double y, int frame);
+    void set(double x, double y, int frame);
 };
 
 class Double3DParam : public Double2DParam
@@ -500,10 +500,125 @@ public:
     virtual ~Double3DParam() {}
     
     void get(Double3DTuple& ret) const;
-    void getAt(int frame, Double3DTuple& ret) const;
+    void get(int frame, Double3DTuple& ret) const;
     void set(double x, double y, double z);
-    void setAt(double x, double y, double z, int frame);
+    void set(double x, double y, double z, int frame);
 };
 
+
+class ColorParam : public Param
+{
+    
+protected:
+    boost::shared_ptr<Color_Knob> _colorKnob;
+public:
+    
+    ColorParam(const boost::shared_ptr<Color_Knob>& knob);
+    
+    virtual ~ColorParam();
+    
+    /**
+     * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
+     **/
+    void get(ColorTuple& ret) const;
+    void get(int frame,ColorTuple& ret) const;
+    
+    /**
+     * @brief Convenience functions for multi-dimensional setting of values
+     **/
+    void set(double r, double g, double b, double a);
+    void set(double r, double g, double b, double a, int frame);
+    
+    /**
+     * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
+     * will be called instead at the current's timeline position.
+     **/
+    double getValue(int dimension = 0) const;
+    
+    /**
+     * @brief Set the value held by the parameter. If it is animated
+     * this function will either add a new keyframe or modify a keyframe already existing at the current time.
+     **/
+    void setValue(double value,int dimension = 0);
+    
+    /**
+     * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
+     * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
+     * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
+     **/
+    double getValueAtTime(int time,int dimension = 0) const;
+    
+    /**
+     * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
+     **/
+    void setValueAtTime(double value,int time,int dimension = 0);
+    
+    /**
+     * @brief Set the default value for the given dimension
+     **/
+    void setDefaultValue(double value,int dimension = 0);
+    
+    /**
+     * @brief Return the default value for the given dimension
+     **/
+    double getDefaultValue(int dimension = 0) const;
+    
+    /**
+     * @brief Restores the default value for the given dimension
+     **/
+    void restoreDefaultValue(int dimension = 0);
+    
+    /**
+     * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
+     * will still be able to input values smaller than the minimum, but values returned by getValue() or getValueAtTime() will
+     * return a value clamped to it.
+     **/
+    void setMinimum(double minimum,int dimension = 0);
+    
+    /**
+     * @brief Get the minimum for the given dimension.
+     **/
+    double getMinimum(int dimension = 0) const;
+    
+    /**
+     * @brief Set the maximum possible value for the given dimension. The maximum will not limit the user on the GUI, i.e: he/she
+     * will still be able to input values greater than the maximum, but values returned by getValue() or getValueAtTime() will
+     * return a value clamped to it.
+     **/
+    void setMaximum(double maximum,int dimension = 0);
+    
+    /**
+     * @brief Get the minimum for the given dimension.
+     **/
+    double getMaximum(int dimension = 0) const;
+    
+    /**
+     * @brief Set the minimum to be displayed on a slider if this parameter has a slider.
+     **/
+    void setDisplayMinimum(double minimum,int dimension = 0);
+    
+    /**
+     * @brief Get the display minimum for the given dimension
+     **/
+    double getDisplayMinimum(int dimension) const;
+    
+    /**
+     * @brief Set the maximum to be displayed on a slider if this parameter has a slider.
+     **/
+    void setDisplayMaximum(double maximum,int dimension = 0);
+    
+    /**
+     * @brief Get the display maximum for the given dimension
+     **/
+    double getDisplayMaximum(int dimension) const;
+    
+    /**
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    double addAsDependencyOf(int fromExprDimension,Param* param);
+    
+};
 
 #endif // PARAMETERWRAPPER_H
