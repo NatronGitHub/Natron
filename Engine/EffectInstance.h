@@ -29,7 +29,9 @@ class PluginMemory;
 class BlockingBackgroundRender;
 class RenderEngine;
 class BufferableObject;
-
+namespace Transform {
+struct Matrix3x3;
+}
 
 /**
  * @brief Thread-local arguments given to render a frame by the tree.
@@ -511,6 +513,17 @@ public:
 
     virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool getCanTransform() const { return false; }
+
+    virtual bool getCanApplyTransform(Natron::EffectInstance** /*effect*/) const { return false; }
+
+    virtual void rerouteInputAndSetTransform(int /*inputNb*/,Natron::EffectInstance* /*newInput*/,
+                                             int /*newInputNb*/,const Transform::Matrix3x3& /*m*/) {}
+
+    virtual void clearTransform(int /*inputNb*/) {}
+
+    bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
+
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -532,6 +545,17 @@ protected:
         return Natron::eStatusOK;
     }
 
+    virtual Natron::StatusEnum getTransform(SequenceTime /*time*/,
+                                            const RenderScale& /*renderScale*/,
+                                            int /*view*/,
+                                            Natron::EffectInstance** /*inputToTransform*/,
+                                            Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
+    {
+        return Natron::eStatusReplyDefault;
+    }
+
+
+
 public:
 
     Natron::StatusEnum render_public(SequenceTime time,
@@ -542,6 +566,12 @@ public:
                                  bool isSequentialRender,
                                  bool isRenderResponseToUserInteraction,
                                  boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN;
+
+    Natron::StatusEnum getTransform_public(SequenceTime time,
+                                           const RenderScale& renderScale,
+                                           int view,
+                                           Natron::EffectInstance** inputToTransform,
+                                           Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
 protected:
 /**
@@ -634,6 +664,9 @@ public:
                                       const double par,
                                       const bool dontUpscale,
                                       RectI* roiPixel) WARN_UNUSED_RETURN;
+
+
+
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
 
 protected:
@@ -668,11 +701,12 @@ protected:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual RoIMap getRegionsOfInterest(SequenceTime time,
+    virtual void getRegionsOfInterest(SequenceTime time,
                                         const RenderScale & scale,
                                         const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                        int view) WARN_UNUSED_RETURN;
+                                        int view,
+                                        EffectInstance::RoIMap* ret);
 
     /**
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
@@ -697,11 +731,12 @@ public:
                                                 RectD* rod,
                                                 bool* isProjectFormat) WARN_UNUSED_RETURN;
 
-    RoIMap getRegionsOfInterest_public(SequenceTime time,
+    void getRegionsOfInterest_public(SequenceTime time,
                                        const RenderScale & scale,
                                        const RectD & outputRoD,
                                        const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                       int view) WARN_UNUSED_RETURN;
+                                       int view,
+                                      RoIMap* ret) WARN_UNUSED_RETURN;
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 
@@ -1114,6 +1149,7 @@ protected:
     boost::shared_ptr<Node> _node; //< the node holding this effect
 
 private:
+
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
     struct RenderArgs;
@@ -1149,24 +1185,43 @@ private:
      * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
-RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
-                                      const RenderScale & scale,
-                                      unsigned int mipMapLevel,
-                                      int view,
-                                      const RectI & renderWindow,
-                                      const RectD & rod, //!< rod in canonical coordinates
-                                      const double par,
-                                      const FramesNeededMap &framesNeeded,
-                                      const boost::shared_ptr<Image> & image,
-                                      const boost::shared_ptr<Image> & downscaledImage,
-                                      bool outputUseImage,
-                                      bool isSequentialRender,
-                                      bool isRenderMadeInResponseToUserInteraction,
-                                      bool byPassCache,
-                                      U64 nodeHash,
-                                      int channelForAlpha,
-                                      bool renderFullScaleThenDownscale,
-                                      bool useScaleOneInputImages);
+    RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
+                                          const RenderScale & scale,
+                                          unsigned int mipMapLevel,
+                                          int view,
+                                          const RectI & renderWindow,
+                                          const RectD & rod, //!< rod in canonical coordinates
+                                          const double par,
+                                          const FramesNeededMap &framesNeeded,
+                                          const boost::shared_ptr<Image> & image,
+                                          const boost::shared_ptr<Image> & downscaledImage,
+                                          bool outputUseImage,
+                                          bool isSequentialRender,
+                                          bool isRenderMadeInResponseToUserInteraction,
+                                          bool byPassCache,
+                                          U64 nodeHash,
+                                          int channelForAlpha,
+                                          bool renderFullScaleThenDownscale,
+                                          bool useScaleOneInputImages,
+                                          const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
+                                          int transformInputNb,
+                                          int newTransformedInputNb,
+                                          Natron::EffectInstance* transformRerouteInput);
+
+    /**
+     * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
+     * @param inputTransformNb[out] if this node can concatenate, then it will be set to the input number concatenated
+     * @param newInputEffect[out] will be set to the new input upstream replacing the original main input.
+     * @param cat[out] the concatenation matrix of all transforms
+     * @param isResultIdentity[out] if true then the result of all the transforms upstream plus the one of this node is an identity matrix
+     * @return True if the nodes has concatenated nodes, false otherwise.
+     **/
+    bool tryConcatenateTransforms(const RenderRoIArgs& args,
+                                  int* inputTransformNb,
+                                  Natron::EffectInstance** newInputEffect,
+                                  int *newInputNbToFetchFrom,
+                                  boost::shared_ptr<Transform::Matrix3x3>* cat,
+                                  bool* isResultIdentity);
 
     /**
      * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not
@@ -1180,6 +1235,7 @@ RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
                                          U64* nodeHash_p,
                                          U64* rotoAge_p,
                                          bool* isIdentity_p,
+                                         int* identityTime,
                                          int* identityInputNb_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL

@@ -34,6 +34,10 @@ CLANG_DIAG_ON(deprecated)
 
 class OfxImage;
 class OfxEffectInstance;
+namespace Transform
+{
+struct Matrix3x3;
+}
 namespace Natron {
 class EffectInstance;
 class OfxImageEffectInstance;
@@ -181,6 +185,9 @@ public:
     static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
     static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
 
+    void setTransformAndReRouteInput(const Transform::Matrix3x3& m,Natron::EffectInstance* rerouteInput,int newInputNb);
+    void clearTransform();
+    
 private:
 
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds);
@@ -212,6 +219,11 @@ private:
     };
 
     Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
+    
+    mutable QMutex _transformMutex; //< protects _matrix & _rerouteNode
+    boost::shared_ptr<Transform::Matrix3x3> _matrix; //< if the clip is associated to a node that can transform
+    Natron::EffectInstance* _rerouteNode; //< if the associated node is a concatenated transform, this is the effect from which to fetch images from
+    int _rerouteInputNb;
 };
 
 class OfxImage
@@ -241,6 +253,7 @@ public:
 
     explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,
                       const RectI& renderWindow,
+                      const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       OfxClipInstance &clip);
 
     virtual ~OfxImage()

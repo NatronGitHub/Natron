@@ -811,3 +811,20 @@ OfxImageEffectInstance::updatePreferences_safe(double frameRate,const std::strin
     _continuousSamples = continuous;
     _frameVarying = frameVarying;
 }
+
+bool
+OfxImageEffectInstance::getCanApplyTransform(OfxClipInstance** clip) const
+{
+    
+    for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        if (it->second->canTransform()) {
+            assert(!it->second->isOutput());
+            if (it->second->isOutput()) {
+                return false;
+            }
+            *clip = dynamic_cast<OfxClipInstance*>(it->second);
+            return true;
+        }
+    }
+    return false;
+}

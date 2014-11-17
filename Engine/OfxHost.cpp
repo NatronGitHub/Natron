@@ -148,7 +148,7 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
 
     ///Nuke transform suite
-    _properties.setIntProperty(kFnOfxImageEffectCanTransform, 0);
+    _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
 }
 
 OFX::Host::ImageEffect::Instance*

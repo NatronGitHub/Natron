@@ -43,10 +43,13 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "Engine/Rect.h"
+
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
+using namespace Transform;
 namespace Transform {
 double
 toDegrees(double rad)
@@ -294,26 +297,26 @@ matApply(const Matrix4x4 & m,
     return ret;
 }
 
-#if 0
-static
-Matrix4x4
-matrix4x4FromMatrix3x3(const Matrix3x3 & m)
-{
-    Matrix4x4 ret;
 
-    ret(0,0) = m.a; ret(0,1) = m.b; ret(0,2) = m.c; ret(0,3) = 0.;
-    ret(1,0) = m.d; ret(1,1) = m.e; ret(1,2) = m.f; ret(1,3) = 0.;
-    ret(2,0) = m.g; ret(2,1) = m.h; ret(2,2) = m.i; ret(2,3) = 0.;
-    ret(3,0) = 0.;  ret(3,1) = 0.;  ret(3,2) = 0.;  ret(3,3) = 1.;
-
-    return ret;
-}
+//static
+//Matrix4x4
+//matrix4x4FromMatrix3x3(const Matrix3x3 & m)
+//{
+//    Matrix4x4 ret;
+//
+//    ret(0,0) = m.a; ret(0,1) = m.b; ret(0,2) = m.c; ret(0,3) = 0.;
+//    ret(1,0) = m.d; ret(1,1) = m.e; ret(1,2) = m.f; ret(1,3) = 0.;
+//    ret(2,0) = m.g; ret(2,1) = m.h; ret(2,2) = m.i; ret(2,3) = 0.;
+//    ret(3,0) = 0.;  ret(3,1) = 0.;  ret(3,2) = 0.;  ret(3,3) = 1.;
+//
+//    return ret;
+//}
 
 ////////////////////
 // IMPLEMENTATION //
 ////////////////////
 
-static
+
 double
 matDeterminant(const Matrix3x3 & M)
 {
@@ -322,7 +325,7 @@ matDeterminant(const Matrix3x3 & M)
            + M.c * (M.d * M.h - M.g * M.e);
 }
 
-static
+
 Matrix3x3
 matScaleAdjoint(const Matrix3x3 & M,
                 double s)
@@ -344,14 +347,14 @@ matScaleAdjoint(const Matrix3x3 & M,
     return ret;
 }
 
-static
+
 Matrix3x3
 matInverse(const Matrix3x3 & M)
 {
     return matScaleAdjoint( M, 1. / matDeterminant(M) );
 }
 
-static
+
 Matrix3x3
 matInverse(const Matrix3x3 & M,
            double det)
@@ -359,7 +362,6 @@ matInverse(const Matrix3x3 & M,
     return matScaleAdjoint(M, 1. / det);
 }
 
-#endif // if 0
 
 static
 Matrix3x3
@@ -498,9 +500,8 @@ matTransformCanonical(double translateX,
 // The transforms between pixel and canonical coordinated
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#MappingCoordinates
 
-#if 0
+
 /// transform from pixel coordinates to canonical coordinates
-static
 Matrix3x3
 matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
                     double renderscaleX,     //!< 0.5 for a half-resolution image
@@ -518,8 +519,8 @@ matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 p
     return matScale( pixelaspectratio / renderscaleX, 1. / ( renderscaleY * (fielded ? 0.5 : 1.0) ) );
 }
 
+
 /// transform from canonical coordinates to pixel coordinates
-static
 Matrix3x3
 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
                     double renderscaleX,     //!< 0.5 for a half-resolution image
@@ -537,6 +538,8 @@ matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 p
     return matScale( renderscaleX / pixelaspectratio, renderscaleY * (fielded ? 0.5 : 1.0) );
 }
 
+    
+ #if 0
 // matrix transform from destination to source
 static
 Matrix3x3
@@ -592,4 +595,79 @@ matTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pix
 }
 
 #endif // if 0
+    
+    
+// compute the bounding box of the transform of four points
+static void
+transformRegionFromPoints(const Point3D p[4], RectD &rod)
+{
+    // extract the x/y bounds
+    double x1, y1, x2, y2;
+    
+    // if all z's have the same sign, we can compute a reasonable ROI, else we give the whole image (the line at infinity crosses the rectangle)
+    bool allpositive = true;
+    bool allnegative = true;
+    for (int i = 0; i < 4; ++i) {
+        allnegative = allnegative && (p[i].z < 0.);
+        allpositive = allpositive && (p[i].z > 0.);
+    }
+    
+    if (!allpositive && !allnegative) {
+        // the line at infinity crosses the source RoD
+        x1 = kOfxFlagInfiniteMin;
+        x2 = kOfxFlagInfiniteMax;
+        y1 = kOfxFlagInfiniteMin;
+        y2 = kOfxFlagInfiniteMax;
+    } else {
+        OfxPointD q[4];
+        for (int i = 0; i < 4; ++i) {
+            q[i].x = p[i].x / p[i].z;
+            q[i].y = p[i].y / p[i].z;
+        }
+        
+        x1 = x2 = q[0].x;
+        y1 = y2 = q[0].y;
+        for (int i = 1; i < 4; ++i) {
+            if (q[i].x < x1) {
+                x1 = q[i].x;
+            } else if (q[i].x > x2) {
+                x2 = q[i].x;
+            }
+            if (q[i].y < y1) {
+                y1 = q[i].y;
+            } else if (q[i].y > y2) {
+                y2 = q[i].y;
+            }
+        }
+    }
+    
+    // GENERIC
+    rod.x1 = x1;
+    rod.x2 = x2;
+    rod.y1 = y1;
+    rod.y2 = y2;
+    assert(rod.x1 <= rod.x2 && rod.y1 <= rod.y2);
 }
+    
+// compute the bounding box of the transform of a rectangle
+void
+transformRegionFromRoD(const RectD &srcRect, const Matrix3x3 &transform, RectD &dstRect)
+{
+    /// now transform the 4 corners of the source clip to the output image
+    Point3D p[4];
+    p[0] = matApply(transform, Point3D(srcRect.x1,srcRect.y1,1));
+    p[1] = matApply(transform, Point3D(srcRect.x1,srcRect.y2,1));
+    p[2] = matApply(transform, Point3D(srcRect.x2,srcRect.y2,1));
+    p[3] = matApply(transform, Point3D(srcRect.x2,srcRect.y1,1));
+    
+    
+    transformRegionFromPoints(p, dstRect);
+}
+
+    
+    
+} //namespace Transform
+
+
+
+

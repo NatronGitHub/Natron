@@ -45,6 +45,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Node.h"
+#include "Engine/Transform.h"
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -1404,18 +1405,18 @@ rectToOfxRectD(const RectD & b,
     out->y2 = b.top();
 }
 
-EffectInstance::RoIMap
+void
 OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
                                         const RenderScale & scale,
                                         const RectD & outputRoD,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                        int view)
+                                        int view,
+                                        EffectInstance::RoIMap* ret)
 {
     assert(_context != eContextNone);
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
-    EffectInstance::RoIMap ret;
     if (!_initialized) {
-        return ret;
+        return;
     }
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
@@ -1469,16 +1470,15 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
             ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
             ///infinite rod.
             ifInfiniteclipRectToProjectDefault(&inputRoi);
-            ret.insert( std::make_pair(inputNode,inputRoi) );
+            ret->insert( std::make_pair(inputNode,inputRoi) );
         }
     } else if (stat == kOfxStatReplyDefault) {
         for (int i = 0; i < effectInstance()->getNClips(); ++i) {
             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>( effectInstance()->getNthClip(i) )->getAssociatedNode();
-            ret.insert( std::make_pair(inputNode, renderWindow) );
+            ret->insert( std::make_pair(inputNode, renderWindow) );
         }
     }
 
-    return ret;
 } // getRegionsOfInterest
 
 Natron::EffectInstance::FramesNeededMap
@@ -2676,4 +2676,98 @@ OfxEffectInstance::getPreferredAspectRatio() const
         return clip->getAspectRatio();
 
     }
+}
+
+bool
+OfxEffectInstance::getCanTransform() const
+{   //use OFX_EXTENSIONS_NUKE
+    return effectInstance()->canTransform();
+}
+
+bool
+OfxEffectInstance::getCanApplyTransform(Natron::EffectInstance** effect) const
+{
+    OfxClipInstance* transformClip = 0;
+    bool canApply = effectInstance()->getCanApplyTransform(&transformClip);
+    if (!transformClip || !canApply) {
+        return false;
+    }
+    
+    *effect = transformClip->getAssociatedNode();
+    return true;
+}
+
+Natron::StatusEnum
+OfxEffectInstance::getTransform(SequenceTime time,
+                                const RenderScale& renderScale, //< the plug-in accepted scale
+                                int view,
+                                Natron::EffectInstance** inputToTransform,
+                                Transform::Matrix3x3* transform)
+{
+    const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
+    
+    std::string clipName;
+    double tmpTransform[9];
+    
+    OfxStatus stat ;
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            qDebug() << "renderAction cannot be called recursively as an action. Please check this.";
+            skipDiscarding = true;
+        }
+        
+        SET_CAN_SET_VALUE(false);
+        
+        
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                            skipDiscarding,
+                                            true, //< setView ?
+                                            view,
+                                            true,//< set mipmaplevel ?
+                                            Natron::Image::getLevelFromScale(renderScale.x));
+        
+        
+        stat = effectInstance()->getTransformAction((OfxTime)time, field, renderScale, view, clipName, tmpTransform);
+        if (stat == kOfxStatReplyDefault) {
+            return Natron::eStatusReplyDefault;
+        } else if (stat == kOfxStatFailed) {
+            return Natron::eStatusFailed;
+        }
+
+    }
+
+    
+    assert(stat == kOfxStatOK);
+    
+    transform->a = tmpTransform[0]; transform->b = tmpTransform[1]; transform->c = tmpTransform[2];
+    transform->d = tmpTransform[3]; transform->e = tmpTransform[4]; transform->f = tmpTransform[5];
+    transform->g = tmpTransform[6]; transform->h = tmpTransform[7]; transform->i = tmpTransform[8];
+    
+    
+    
+    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
+    assert(clip);
+    OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
+    
+    *inputToTransform = natronClip->getAssociatedNode();
+    
+    return Natron::eStatusOK;
+}
+
+void
+OfxEffectInstance::rerouteInputAndSetTransform(int inputNb,Natron::EffectInstance* newInput,
+                                               int newInputNb,const Transform::Matrix3x3& m)
+{
+    OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
+    assert(clip);
+    clip->setTransformAndReRouteInput(m, newInput, newInputNb);
+}
+
+void
+OfxEffectInstance::clearTransform(int inputNb)
+{
+    OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
+    assert(clip);
+    clip->clearTransform();
 }

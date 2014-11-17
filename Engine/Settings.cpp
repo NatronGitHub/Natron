@@ -236,6 +236,16 @@ Settings::initializeKnobs()
     _generalTab->addKnob(_activateRGBSupport);
 
 
+    _activateTransformConcatenationSupport = Natron::createKnob<Bool_Knob>(this, "Transforms concatenation support");
+    _activateTransformConcatenationSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to concatenate transform effects "
+                                                           "when they are chained in the compositing tree. This yields better results and faster "
+                                                           "render times because the image is only filtered once instead of as many times as there are "
+                                                           "transformations.");
+    _activateTransformConcatenationSupport->setAnimationEnabled(false);
+    _activateTransformConcatenationSupport->setName("transformCatSupport");
+    _generalTab->addKnob(_activateTransformConcatenationSupport);
+    
+    
     _hostName = Natron::createKnob<String_Knob>(this, "Host name");
     _hostName->setName("hostName");
     _hostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
@@ -706,6 +716,7 @@ Settings::setDefaultValues()
     _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);
     _activateRGBSupport->setDefaultValue(true);
+    _activateTransformConcatenationSupport->setDefaultValue(true);
     _extraPluginPaths->setDefaultValue("",0);
     _preferBundledPlugins->setDefaultValue(true);
     _loadBundledPlugins->setDefaultValue(true);
@@ -1870,6 +1881,12 @@ bool
 Settings::areRGBPixelComponentsSupported() const
 {
     return _activateRGBSupport->getValue();
+}
+
+bool
+Settings::isTransformConcatenationEnabled() const
+{
+    return _activateTransformConcatenationSupport->getValue();
 }
 
 bool

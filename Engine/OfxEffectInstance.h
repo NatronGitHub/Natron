@@ -166,11 +166,12 @@ public:
 
     /// calculate the default rod for this effect instance
     virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time,int view, const RenderScale & scale, RectD *rod)  OVERRIDE;
-    virtual Natron::EffectInstance::RoIMap getRegionsOfInterest(SequenceTime time,
-                                                                const RenderScale & scale,
-                                                                const RectD & outputRoD, //!< full RoD in canonical coordinates
-                                                                const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                                                int view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual void getRegionsOfInterest(SequenceTime time,
+                                  const RenderScale & scale,
+                                  const RectD & outputRoD, //!< full RoD in canonical coordinates
+                                  const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                  int view,
+                                Natron::EffectInstance::RoIMap* ret) OVERRIDE WARN_UNUSED_RETURN;
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
@@ -247,13 +248,24 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponentsEnum* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL;
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
                                      bool forceGetClipPrefAction) OVERRIDE FINAL;
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
+    virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getCanApplyTransform(Natron::EffectInstance** effect) const  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum getTransform(SequenceTime time,
+                                            const RenderScale& renderScale,
+                                            int view,
+                                            Natron::EffectInstance** inputToTransform,
+                                            Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void rerouteInputAndSetTransform(int inputNb,Natron::EffectInstance* newInput,
+                                             int newInputNb,const Transform::Matrix3x3& m) OVERRIDE FINAL;
+    virtual void clearTransform(int inputNb) OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
