@@ -267,7 +267,7 @@ struct ViewerGL::Implementation
     /////// currentViewerInfo
     ImageInfo currentViewerInfo[2]; /*!< Pointer to the ViewerInfo  used for rendering*/
     
-    QMutex projectFormatMutex;
+    mutable QMutex projectFormatMutex;
     Format projectFormat;
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
     QString currentViewerInfo_topRightBBOXoverlay[2]; /*!< The string holding the top right corner coordinates of the dataWindow*/
@@ -365,6 +365,17 @@ struct ViewerGL::Implementation
     void initializeCheckerboardTexture(bool mustCreateTexture);
     
     void drawCheckerboardTexture(const RectD& rod);
+    
+    void getProjectFormatCanonical(RectD& canonicalProjectFormat) const
+    {
+        QMutexLocker k(&projectFormatMutex);
+        RectI pixelF;
+        pixelF.x1 = projectFormat.x1;
+        pixelF.y1 = projectFormat.y1;
+        pixelF.x2 = projectFormat.x2;
+        pixelF.y2 = projectFormat.y2;
+        pixelF.toCanonical_noClipping(0, projectFormat.getPixelAspectRatio(), &canonicalProjectFormat);
+    }
 };
 
 #if 0
@@ -487,8 +498,8 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     RectD rod = getRoD(textureIndex);
     
     
-    RectI pixelRod;
-    rod.toPixelEnclosing(0, 1., &pixelRod);
+//    RectI pixelRod;
+//    rod.toPixelEnclosing(0, par, &pixelRod);
    
     
     bool clipToDisplayWindow;
@@ -497,22 +508,29 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         clipToDisplayWindow = _imp->clipToDisplayWindow;
     }
     if (clipToDisplayWindow) {
-        ///clip the RoD to the project format.
-        RectI pixelProjectFormat;
-        _imp->projectFormat.toPixelEnclosing(0, _imp->projectFormat.getPixelAspectRatio(), &pixelProjectFormat);
-        if ( !pixelRod.intersect(pixelProjectFormat,&pixelRod) ) {
-            return;
-        }
+        RectD canonicalProjectFormat;
+        _imp->getProjectFormatCanonical(canonicalProjectFormat);
+        rod.intersect(canonicalProjectFormat, &rod);
+        
+//        ///clip the RoD to the project format.
+//        RectI pixelProjectFormat;
+//        pixelProjectFormat.x1 = _imp->projectFormat.x1;
+//        pixelProjectFormat.x2 = _imp->projectFormat.x2;
+//        pixelProjectFormat.y1 = _imp->projectFormat.y1;
+//        pixelProjectFormat.y2 = _imp->projectFormat.y2;
+//        if ( !pixelRod.intersect(pixelProjectFormat,&pixelRod) ) {
+//            return;
+//        }
     }
 
     
     RectD canonicalTexRect;
-    texRect.toCanonical_noClipping(mipMapLevel,par, &canonicalTexRect);
+    texRect.toCanonical(mipMapLevel,par, rod, &canonicalTexRect);
     
-    RectI pixelTexRect_scale1;
-    canonicalTexRect.toPixelEnclosing(0, 1., &pixelTexRect_scale1);
-    
-    pixelTexRect_scale1.intersect(pixelRod,&pixelTexRect_scale1);
+//    RectI pixelTexRect_scale1;
+//    canonicalTexRect.toPixelEnclosing(0, par, &pixelTexRect_scale1);
+//    
+//    pixelTexRect_scale1.intersect(pixelRod,&pixelTexRect_scale1);
     
     
     //if user RoI is enabled, clip the rod to that roi
@@ -535,19 +553,18 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
     GLfloat texLeft = 0;
     GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
-    RectI rectClippedToRoI(pixelTexRect_scale1);
+    RectD rectClippedToRoI(canonicalTexRect);
     if (userRoiEnabled) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
-            RectI pixelUserRoi;
-            _imp->userRoI.toPixelEnclosing(0, 1., &pixelUserRoi);
+            //_imp->userRoI.toPixelEnclosing(0, 1., &pixelUserRoi);
             //if the userRoI isn't intersecting the rod, just don't render anything
-            if ( !pixelRod.intersect(pixelUserRoi,&pixelRod) ) {
+            if ( !rod.intersect(_imp->userRoI,&rod) ) {
                 return;
             }
         }
-        rectClippedToRoI.intersect(pixelRod, &rectClippedToRoI);
-        clipTexCoords<RectI>(pixelTexRect_scale1,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
+        rectClippedToRoI.intersect(rod, &rectClippedToRoI);
+        clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
 
     if (polygonMode != ALL_PLANE) {
@@ -588,22 +605,22 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     if (polygonMode == ALL_PLANE) {
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
-            (GLfloat)pixelRod.left(),(GLfloat)pixelRod.top(),    //0
-            (GLfloat)rectClippedToRoI.x1, (GLfloat)pixelRod.top(),          //1
-            (GLfloat)rectClippedToRoI.x2, (GLfloat)pixelRod.top(),    //2
-            (GLfloat)pixelRod.right(),(GLfloat)pixelRod.top(),   //3
-            (GLfloat)pixelRod.left(), (GLfloat)rectClippedToRoI.y2, //4
+            (GLfloat)rod.left(),(GLfloat)rod.top(),    //0
+            (GLfloat)rectClippedToRoI.x1, (GLfloat)rod.top(),          //1
+            (GLfloat)rectClippedToRoI.x2, (GLfloat)rod.top(),    //2
+            (GLfloat)rod.right(),(GLfloat)rod.top(),   //3
+            (GLfloat)rod.left(), (GLfloat)rectClippedToRoI.y2, //4
             (GLfloat)rectClippedToRoI.x1,  (GLfloat)rectClippedToRoI.y2,       //5
             (GLfloat)rectClippedToRoI.x2,  (GLfloat)rectClippedToRoI.y2, //6
-            (GLfloat)pixelRod.right(),(GLfloat)rectClippedToRoI.y2, //7
-            (GLfloat)pixelRod.left(),(GLfloat)rectClippedToRoI.y1,        //8
+            (GLfloat)rod.right(),(GLfloat)rectClippedToRoI.y2, //7
+            (GLfloat)rod.left(),(GLfloat)rectClippedToRoI.y1,        //8
             (GLfloat)rectClippedToRoI.x1,  (GLfloat)rectClippedToRoI.y1,             //9
             (GLfloat)rectClippedToRoI.x2,  (GLfloat)rectClippedToRoI.y1,       //10
-            (GLfloat)pixelRod.right(),(GLfloat)rectClippedToRoI.y1,       //11
-            (GLfloat)pixelRod.left(), (GLfloat)pixelRod.bottom(), //12
-            (GLfloat)rectClippedToRoI.x1,  (GLfloat)pixelRod.bottom(),       //13
-            (GLfloat)rectClippedToRoI.x2,  (GLfloat)pixelRod.bottom(), //14
-            (GLfloat)pixelRod.right(),(GLfloat)pixelRod.bottom() //15
+            (GLfloat)rod.right(),(GLfloat)rectClippedToRoI.y1,       //11
+            (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
+            (GLfloat)rectClippedToRoI.x1,  (GLfloat)rod.bottom(),       //13
+            (GLfloat)rectClippedToRoI.x2,  (GLfloat)rod.bottom(), //14
+            (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
         };
         GLfloat renderingTextureCoordinates[32] = {
             texLeft, texTop,   //0
@@ -1255,15 +1272,15 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
     glCheckError();
     
-    RectI pixelProjectFormat;
-    _imp->projectFormat.toPixelEnclosing(0, _imp->projectFormat.getPixelAspectRatio(), &pixelProjectFormat);
-    renderText(pixelProjectFormat.right(),pixelProjectFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
+    RectD projectFormatCanonical;
+    _imp->getProjectFormatCanonical(projectFormatCanonical);
+    renderText(projectFormatCanonical.right(),projectFormatCanonical.bottom(), _imp->currentViewerInfo_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
 
 
-    QPoint topRight( pixelProjectFormat.right(),pixelProjectFormat.top() );
-    QPoint topLeft( pixelProjectFormat.left(),pixelProjectFormat.top() );
-    QPoint btmLeft( pixelProjectFormat.left(),pixelProjectFormat.bottom() );
-    QPoint btmRight( pixelProjectFormat.right(),pixelProjectFormat.bottom() );
+    QPoint topRight( projectFormatCanonical.right(),projectFormatCanonical.top() );
+    QPoint topLeft( projectFormatCanonical.left(),projectFormatCanonical.top() );
+    QPoint btmLeft( projectFormatCanonical.left(),projectFormatCanonical.bottom() );
+    QPoint btmRight( projectFormatCanonical.right(),projectFormatCanonical.bottom() );
 
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
@@ -2093,14 +2110,8 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const do
     RectD clippedRod;
     
     if (clipToProject) {
-        QMutexLocker k(&_imp->projectFormatMutex);
         RectD projectFormatCanonical;
-        RectI projectFormatPixel;
-        projectFormatPixel.x1 = _imp->projectFormat.x1;
-        projectFormatPixel.x2 = _imp->projectFormat.x2;
-        projectFormatPixel.y1 = _imp->projectFormat.y1;
-        projectFormatPixel.y2 = _imp->projectFormat.y2;
-        projectFormatPixel.toCanonical_noClipping(0, _imp->projectFormat.getPixelAspectRatio(), &projectFormatCanonical);
+        _imp->getProjectFormatCanonical(projectFormatCanonical);
         rod.intersect(projectFormatCanonical,&clippedRod);
     } else {
         clippedRod = rod;
@@ -3240,10 +3251,10 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
     
 
     QString left,btm,right,top;
-    left.setNum(rod.left());
-    btm.setNum(rod.bottom());
-    right.setNum(rod.right());
-    top.setNum(rod.top());
+    left.setNum(pixelRoD.left());
+    btm.setNum(pixelRoD.bottom());
+    right.setNum(pixelRoD.right());
+    top.setNum(pixelRoD.top());
 
 
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
