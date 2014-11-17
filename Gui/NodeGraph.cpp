@@ -1842,7 +1842,15 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( getGui()->getLastSelectedViewer() ) {
             getGui()->getLastSelectedViewer()->nextIncrement();
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
+    }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+        if ( getGui()->getLastSelectedViewer() ) {
+            getGui()->getLastSelectedViewer()->nextFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+        if ( getGui()->getLastSelectedViewer() ) {
+            getGui()->getLastSelectedViewer()->previousFrame();
+        }
+    }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
