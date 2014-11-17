@@ -30,6 +30,7 @@ CLANG_DIAG_ON(deprecated)
  * Some formats have a name , e.g : 1920*1080 is full HD, etc...
  * It also holds a pixel aspect ratio so the viewer can display the
  * frame accordingly*/
+#pragma message WARN("Format should inherit RectI instead because it is everywhere in pixel coords!")
 class Format
     : public RectD            //!< project format is in canonical coordinates
 

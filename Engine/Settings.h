@@ -186,6 +186,8 @@ public:
     
     bool areRGBPixelComponentsSupported() const;
     
+    bool isTransformConcatenationEnabled() const;
+    
     bool isMergeAutoConnectingToAInput() const;
     
     /**
@@ -237,6 +239,7 @@ private:
     boost::shared_ptr<File_Knob> _defaultLayoutFile;
     boost::shared_ptr<Bool_Knob> _renderOnEditingFinished;
     boost::shared_ptr<Bool_Knob> _activateRGBSupport;
+    boost::shared_ptr<Bool_Knob> _activateTransformConcatenationSupport;
     boost::shared_ptr<String_Knob> _hostName;
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
     boost::shared_ptr<Bool_Knob> _warnOcioConfigKnobChanged;

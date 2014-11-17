@@ -28,6 +28,9 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/RotoContext.h"
+#include "Engine/Transform.h"
+
+#include "fnOfxExtensions.h"
 
 using namespace Natron;
 
@@ -42,6 +45,11 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
       , _nodeInstance(nodeInstance)
       , _effect(effect)
       , _aspectRatio(1.)
+      , _lastActionData()
+      , _transformMutex()
+      , _matrix()
+      , _rerouteNode(0)
+      , _rerouteInputNb(-1)
 {
     assert(_nodeInstance);
     assert(_effect);
@@ -447,20 +455,91 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.y2 = optionalBounds->y2;
     }
 
+    bool usingReroute ;
+    int rerouteInputNb;
+    Natron::EffectInstance* node ;
+    {
+        QMutexLocker k(&_transformMutex);
+        if (_rerouteNode) {
+            node = _rerouteNode;
+            rerouteInputNb = _rerouteInputNb;
+            usingReroute = true;
+        } else {
+            node = _nodeInstance;
+            rerouteInputNb = -1;
+            usingReroute = false;
+        }
+    }
+    
+
+    
     Natron::ImageComponentsEnum comps =  ofxComponentsToNatronComponents( getComponents() );
     Natron::ImageBitDepthEnum bitDepth = ofxDepthToNatronDepth( getPixelDepth() );
     double par = getAspectRatio();
     RectI renderWindow;
-    boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
-                                                                     optionalBounds ? &bounds : NULL,
-                                                                     comps,
-                                                                     bitDepth,
-                                                                     par,
-                                                                     false,&renderWindow);
+    boost::shared_ptr<Natron::Image> image;
+    
+    if (usingReroute) {
+        assert(rerouteInputNb != -1);
+        
+        unsigned int mipMapLevel = Image::getLevelFromScale(renderScale.x);
+        
+        EffectInstance::RoIMap regionsOfInterests;
+        bool gotit = _nodeInstance->getThreadLocalRegionsOfInterests(regionsOfInterests);
+        
+        
+        if (!gotit) {
+            qDebug() << "Bug in transform concatenations: thread-storage has not been set on the new upstream input.";
+            
+            RectD rod;
+            if (optionalBounds) {
+                rod = bounds;
+            } else {
+                bool isProjectFormat;
+                StatusEnum stat = node->getRegionOfDefinition_public(node->getHash(), time, renderScale, view, &rod, &isProjectFormat);
+                assert(stat == Natron::eStatusOK);
+            }
+            node->getRegionsOfInterest_public(time, renderScale, rod, rod, 0,&regionsOfInterests);
+        }
+        
+        EffectInstance* inputNode = node->getInput(rerouteInputNb);
+        if (!inputNode) {
+            return NULL;
+        }
+        
+        RectD roi;
+        if (!optionalBounds) {
+            
+            EffectInstance::RoIMap::iterator found = regionsOfInterests.find(inputNode);
+            assert(found != regionsOfInterests.end());
+            ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
+            roi = found->second;
+            
+        } else {
+            roi = bounds;
+        }
+        
+        RectI pixelRoI;
+        roi.toPixelEnclosing(mipMapLevel, par, &pixelRoI);
+        
+        EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
+                                           view,false,pixelRoI,RectD(),comps,bitDepth,3,true);
+        image = inputNode->renderRoI(args);
+        renderWindow = pixelRoI;
+        
+    } else {
+        image = node->getImage(getInputNb(), time, renderScale, view,
+                               optionalBounds ? &bounds : NULL,
+                               comps,
+                               bitDepth,
+                               par,
+                               false,&renderWindow);
+    }
     if (!image) {
         return NULL;
     } else {
-        return new OfxImage(image,renderWindow,*this);
+        QMutexLocker k(&_transformMutex);
+        return new OfxImage(image,renderWindow,_matrix,*this);
     }
 }
 
@@ -544,8 +623,27 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
     }
 }
 
+void
+OfxClipInstance::setTransformAndReRouteInput(const Transform::Matrix3x3& m,Natron::EffectInstance* rerouteInput,int newInputNb)
+{
+    QMutexLocker k(&_transformMutex);
+    _matrix.reset(new Transform::Matrix3x3(m));
+    _rerouteNode = rerouteInput;
+    _rerouteInputNb = newInputNb;
+}
+
+void
+OfxClipInstance::clearTransform()
+{
+    QMutexLocker k(&_transformMutex);
+    _matrix.reset();
+    _rerouteNode = 0;
+    _rerouteInputNb = -1;
+}
+
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
                    const RectI& renderWindow,
+                   const boost::shared_ptr<Transform::Matrix3x3>& mat,
                    OfxClipInstance &clip)
     : OFX::Host::ImageEffect::Image(clip)
       , _bitDepth(OfxImage::eBitDepthFloat)
@@ -600,6 +698,26 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
     setStringProperty( kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey(), 16).toStdString() );
     setDoubleProperty( kOfxImagePropPixelAspectRatio, clip.getAspectRatio() );
+    
+    //Attach the transform matrix if any
+    if (mat) {
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
+        
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
+        
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
+    } else {
+        for (int i = 0; i < 9; ++i) {
+            setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
+        }
+    }
+    
 }
 
 OfxRGBAColourF*
@@ -676,10 +794,10 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
         if (!ok) {
             return NULL;
         }
-
-        return new OfxImage(outputImage,renderWindow,*this);
+        //The output clip doesn't have any transform matrix
+        return new OfxImage(outputImage,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
     }
-
+    
     unsigned int mipMapLevel;
     if (hasLocalData) {
         const ActionLocalData& args = _lastActionData.localData();

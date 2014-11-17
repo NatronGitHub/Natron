@@ -1355,6 +1355,7 @@ void
 ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
 {
+
     if ( !_imp->app || !_imp->viewer || _imp->app->isClosing() || isFileDialogViewer() || _imp->_gui->isGUIFrozen()) {
         return;
     }
@@ -3100,4 +3101,11 @@ ViewerTab::setTurboButtonDown(bool down)
 {
     _imp->turboButton->setDown(down);
     _imp->turboButton->setChecked(down);
+}
+
+void 
+ViewerTab::redrawGLWidgets()
+{
+	_imp->viewer->updateGL();
+	_imp->_timeLineGui->updateGL();
 }

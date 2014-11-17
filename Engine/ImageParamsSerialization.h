@@ -39,8 +39,6 @@ ImageParams::serialize(Archive & ar,
     ar & boost::serialization::make_nvp("RoD",_rod);
     ar & boost::serialization::make_nvp("Bounds",_bounds);
     ar & boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
-    ar & boost::serialization::make_nvp("InputNbIdentity",_inputNbIdentity);
-    ar & boost::serialization::make_nvp("InputTimeIdentity",_inputTimeIdentity);
     ar & boost::serialization::make_nvp("FramesNeeded",_framesNeeded);
     ar & boost::serialization::make_nvp("Components",_components);
     ar & boost::serialization::make_nvp("MMLevel",_mipMapLevel);

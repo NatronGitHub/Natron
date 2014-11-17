@@ -34,7 +34,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY 4
 #define VIEWER_DATA_INTRODUCES_CHECKERBOARD 5
 #define VIEWER_DATA_INTRODUCES_FPS 6
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FPS
+#define VIEWER_DATA_REMOVES_ASPECT_RATIO 7
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_REMOVES_ASPECT_RATIO
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -67,7 +68,6 @@ struct ViewerData
     double zoomLeft;
     double zoomBottom;
     double zoomFactor;
-    double zoomAspectRatio;
     bool userRoIenabled;
     RectD userRoI; // in canonical coordinates
     bool isClippedToProject;
@@ -100,7 +100,10 @@ struct ViewerData
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
         ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
-        ar & boost::serialization::make_nvp("zoomPAR",zoomAspectRatio);
+        if (version <  VIEWER_DATA_REMOVES_ASPECT_RATIO) {
+            double zoomPar;
+            ar & boost::serialization::make_nvp("zoomPAR",zoomPar);
+        }
         ar & boost::serialization::make_nvp("UserRoIEnabled",userRoIenabled);
         ar & boost::serialization::make_nvp("UserRoI",userRoI);
         ar & boost::serialization::make_nvp("ClippedToProject",isClippedToProject);

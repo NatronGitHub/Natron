@@ -37,6 +37,8 @@ public:
     {
         return 1;
     }
+    
+    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
     virtual std::string getPluginID() const WARN_UNUSED_RETURN = 0;
     virtual std::string getPluginLabel() const WARN_UNUSED_RETURN = 0;
@@ -60,6 +62,13 @@ public:
         return EffectInstance::eRenderSafetyFullySafeFrame;
     }
 
+    virtual Natron::StatusEnum getTransform(SequenceTime time,
+                                            const RenderScale& renderScale,
+                                            int view,
+                                            Natron::EffectInstance** inputToTransform,
+                                            Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    
 private:
 
     /**

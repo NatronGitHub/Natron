@@ -337,19 +337,15 @@ InfoViewerWidget::setResolution(const Format & f)
 }
 
 void
-InfoViewerWidget::setDataWindow(const RectD & r)
+InfoViewerWidget::setDataWindow(const RectI & r)
 {
     QString bbox;
     const QFont& font = coordDispWindow->font();
     QString left,btm,right,top;
-    left.setNum(r.left(),'f',1);
-    removeTrailingZeroes(left);
-    btm.setNum(r.bottom(),'f',1);
-    removeTrailingZeroes(btm);
-    right.setNum(r.right(),'f',1);
-    removeTrailingZeroes(right);
-    top.setNum(r.top(),'f',1);
-    removeTrailingZeroes(top);
+    left.setNum(r.left());
+    btm.setNum(r.bottom());
+    right.setNum(r.right());
+    top.setNum(r.top());
     
     bbox = QString("<font color=\"#DBE0E0\" face=\"%5\" size=%6>RoD: %1 %2 %3 %4</font>")
     .arg(left)

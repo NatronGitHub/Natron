@@ -565,7 +565,8 @@ void
 Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _checkBox = new AnimatedCheckBox( layout->parentWidget() );
- 
+
+    _checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
 

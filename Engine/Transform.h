@@ -40,6 +40,8 @@
 
 #include <cmath>
 
+class RectD;
+
 namespace Transform {
 inline double toDegrees(double rad);
 inline double toRadians(double deg);
@@ -108,12 +110,12 @@ struct Matrix3x3
     void setIdentity();
 };
 
-// double matDeterminant(const Matrix3x3& M);
+ double matDeterminant(const Matrix3x3& M);
 
-// Matrix3x3 matScaleAdjoint(const Matrix3x3& M, double s);
+ Matrix3x3 matScaleAdjoint(const Matrix3x3& M, double s);
 
-// Matrix3x3 matInverse(const Matrix3x3& M);
-// Matrix3x3 matInverse(const Matrix3x3& M,double det);
+ Matrix3x3 matInverse(const Matrix3x3& M);
+ Matrix3x3 matInverse(const Matrix3x3& M,double det);
 
 // Matrix3x3 matRotation(double rads);
 // Matrix3x3 matRotationAroundPoint(double rads, double pointX, double pointY);
@@ -133,15 +135,15 @@ struct Matrix3x3
 Matrix3x3 matTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
 
 /// transform from pixel coordinates to canonical coordinates
-// Matrix3x3 matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
-//                                         double renderscaleX, //!< 0.5 for a half-resolution image
-//                                         double renderscaleY,
-//                                         bool fielded); //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5 field scale in Y
+Matrix3x3 matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
+                                         double renderscaleX, //!< 0.5 for a half-resolution image
+                                         double renderscaleY,
+                                         bool fielded); //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5 field scale in Y
 /// transform from canonical coordinates to pixel coordinates
-// Matrix3x3 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
-//                                         double renderscaleX, //!< 0.5 for a half-resolution image
-//                                         double renderscaleY,
-//                                         bool fielded); //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5 field scale in Y
+Matrix3x3 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
+                                double renderscaleX, //!< 0.5 for a half-resolution image
+                                double renderscaleY,
+                                bool fielded); //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5field scale in Y
 
 // matrix transform from destination to source, in pixel coordinates
 //Matrix3x3 matInverseTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
@@ -192,6 +194,9 @@ Matrix4x4 matMul(const Matrix4x4 & m1, const Matrix4x4 & m2);
 
 Point4D matApply(const Matrix4x4 & m,const Point4D & p);
 
+// compute the bounding box of the transform of a rectangle
+void transformRegionFromRoD(const RectD &srcRect, const Matrix3x3 &transform, RectD &dstRect);
+    
 // Matrix4x4 matrix4x4FromMatrix3x3(const Matrix3x3& m);
 }
 

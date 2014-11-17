@@ -537,6 +537,8 @@ public slots:
     void restoreDefaultLayout();
 
     void onFreezeUIButtonClicked(bool clicked);
+
+	void onPropertiesScrolled();
 private:
 
     /**

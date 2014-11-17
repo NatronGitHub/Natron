@@ -1195,7 +1195,9 @@ void
 Node::onSetSupportRenderScaleMaybeSet(int support)
 {
     if ((EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes) {
-        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+        if (_imp->useFullScaleImagesWhenRenderScaleUnsupported) {
+            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+        }
     }
 }
 
