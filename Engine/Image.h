@@ -136,8 +136,6 @@ namespace Natron {
                                                          bool isRoDProjectFormat,
                                                          ImageComponentsEnum components,
                                                          Natron::ImageBitDepthEnum bitdepth,
-                                                         int inputNbIdentity,
-                                                         int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> > & framesNeeded);
 
 

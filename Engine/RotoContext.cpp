@@ -4946,7 +4946,6 @@ RotoContext::renderMask(const RectI & roi,
                                            false,
                                            components,
                                            depth,
-                                           -1, time,
                                            std::map<int, std::vector<RangeD> >() );
         
         appPTR->createImageInCache(key, params, &imgLocker, &image);

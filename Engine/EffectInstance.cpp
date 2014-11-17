@@ -1304,11 +1304,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                     appPTR->removeFromNodeCache(*it);
                     continue;
                 }
-            } else if ((*it)->getParams()->getInputNbIdentity() != -1) {
-                ///Image is identity, nothing to do
-                continue;
-            }
-
+            } 
             
             if (imgMMlevel == mipMapLevel && imgComps == components && imgDepth == bitdepth) {
                 
@@ -1400,8 +1396,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                                                                                oldParams->isRodProjectFormat(),
                                                                                oldParams->getComponents(),
                                                                                oldParams->getBitDepth(),
-                                                                               oldParams->getInputNbIdentity(),
-                                                                               oldParams->getInputTimeIdentity(),
                                                                                oldParams->getFramesNeeded());
                 
                 imageParams->setMipMapLevel(mipMapLevel);
@@ -1465,7 +1459,6 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
         assert(inputTransformEffect);
         
         std::list<Transform::Matrix3x3> matricesByOrder; // from downstream to upstream
-        Natron::StatusEnum stat;
         
         Natron::EffectInstance* inputToTransform = 0;
         
@@ -1482,37 +1475,30 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
        
         // recursion upstream
         
-        bool inputCanTransform = inputTransformEffect->getCanTransform();
-        SequenceTime inputIdentityTime;
-        int inputIdentityNb;
-        U64 inputHash;
-        RectD inputRod;
-        bool isProjectFormat;
-        bool inputIsIdentity = false;
-        bool inputIsDisabled  = false;
-        double par;
+        bool inputCanTransform = false;
+        bool inputIsDisabled  =  inputTransformEffect->getNode()->isNodeDisabled();
         
-        if (!inputCanTransform) {
-            inputHash = inputTransformEffect->getHash();
-            stat = inputTransformEffect->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
-            if (stat == eStatusOK) {
-                par = inputTransformEffect->getPreferredAspectRatio();
-                inputIsIdentity = inputTransformEffect->isIdentity_public(inputHash, args.time, args.scale, inputRod, par, args.view,
-                                                                          &inputIdentityTime, &inputIdentityNb);
-                if (inputIdentityNb == -2) {
-                    inputIsIdentity = false;
-                }
-            }
-            if (!inputIsIdentity) {
-                inputIsDisabled = inputTransformEffect->getNode()->isNodeDisabled();
-            }
+        if (!inputIsDisabled) {
+            inputCanTransform = inputTransformEffect->getCanTransform();
         }
         
         
-        while (inputTransformEffect && (inputCanTransform || inputIsIdentity  || inputIsDisabled)) {
+        while (inputTransformEffect && (inputCanTransform || inputIsDisabled)) {
             //input is either disabled, or identity or can concatenate a transform too
             
-            if (inputCanTransform) {
+            if (inputIsDisabled) {
+                
+                int prefInput;
+                inputTransformEffect = inputTransformEffect->getNearestNonDisabledPrevious(&prefInput);
+                if (prefInput == -1) {
+                    return false;
+                }
+                
+                *newInputEffect = inputTransformEffect;
+                *newInputNbToFetchFrom = prefInput;
+                inputTransformEffect = inputTransformEffect->getInput(prefInput);
+                            
+            } else if (inputCanTransform) {
                 Transform::Matrix3x3 m;
                 inputToTransform = 0;
                 Natron::StatusEnum stat = inputTransformEffect->getTransform_public(args.time, args.scale, args.view, &inputToTransform, &m);
@@ -1524,35 +1510,15 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                 } else {
                     break;
                 }
-            } else if (inputIsIdentity) {
-                inputTransformEffect = inputTransformEffect->getInput(inputIdentityNb);
-                *newInputNbToFetchFrom = inputIdentityNb;
-                *newInputEffect = inputTransformEffect;
-            } else if (inputIsDisabled) {
-                int prefInput = inputTransformEffect->getNode()->getPreferredInputForConnection();
-                inputTransformEffect = inputTransformEffect->getInput(prefInput);
-                *newInputNbToFetchFrom = prefInput;
-                *newInputEffect = inputTransformEffect;
-            } else {
+            } else  {
                 assert(false);
             }
             
             
             if (inputTransformEffect) {
-                inputCanTransform = inputTransformEffect->getCanTransform();
-                if (!inputCanTransform) {
-                    inputHash = inputTransformEffect->getHash();
-                    stat = inputTransformEffect->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
-                    if (stat == eStatusOK) {
-                        par = inputTransformEffect->getPreferredAspectRatio();
-                        inputIsIdentity = inputTransformEffect->isIdentity_public(inputHash, args.time, args.scale, inputRod, par, args.view, &inputIdentityTime, &inputIdentityNb);
-                        if (inputIdentityNb == -2) {
-                            inputIsIdentity = false;
-                        }
-                    }
-                    if (!inputIsIdentity) {
-                        inputIsDisabled = inputTransformEffect->getNode()->isNodeDisabled();
-                    }
+                inputIsDisabled = inputTransformEffect->getNode()->isNodeDisabled();
+                if (!inputIsDisabled) {
+                    inputCanTransform = inputTransformEffect->getCanTransform();
                 }
             }
         }
@@ -1560,7 +1526,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
         
         if (inputTransformEffect && !matricesByOrder.empty()) {
             
-            assert(!inputCanTransform && !inputIsIdentity && !inputIsDisabled);
+            assert(!inputCanTransform && !inputIsDisabled);
             assert(*newInputEffect);
             
             ///Now actually concatenate matrices together
@@ -1667,42 +1633,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = _node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
     }
     
-    
+ 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
-    ///Try to concatenate transform effects
-    boost::shared_ptr<Transform::Matrix3x3> transformMatrix;
-    Natron::EffectInstance* newInputAfterConcat = 0;
-    int transformInputNb;
-    int newInputNb;
-    bool isResultingTransformIdentity;
-    bool hasConcat;
-    
-    if (appPTR->getCurrentSettings()->isTransformConcatenationEnabled()) {
-        hasConcat = tryConcatenateTransforms(args, &transformInputNb, &newInputAfterConcat, &newInputNb, &transformMatrix, &isResultingTransformIdentity);
-    } else {
-        hasConcat = false;
-    }
-    
-    
-    assert(!hasConcat || (transformMatrix && newInputAfterConcat));
-    
-    boost::shared_ptr<TransformReroute_RAII> transformConcatenationReroute;
-    
-    if (hasConcat) {
-        if (isResultingTransformIdentity) {
-            ///The transform matrix is identity! fetch directly the image from inputTransformEffect
-            return newInputAfterConcat->renderRoI(args);
-        }
-        ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
-        transformConcatenationReroute.reset(new TransformReroute_RAII(this, transformInputNb, newInputAfterConcat, newInputNb, transformMatrix));
-    } else {
-        transformInputNb = -1;
-        newInputNb = -1;
-    }
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////End transform concatenations//////////////////////////////////////////////////////////
-
+    ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
     
     ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
     if ( !args.preComputedRoD.isNull() ) {
@@ -1727,59 +1660,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             }
         }
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// End get RoD ///////////////////////////////////////////////////////////////
     
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Check if effect is identity ///////////////////////////////////////////////////////////////
 
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time, args.view);
     {
-        ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
-        ///just remove the old image from the cache to recycle memory.
-        ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
-        ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
-        ///in the cache since the ViewerCache already has it ready.
-        boost::shared_ptr<Image> lastRenderedImage;
-        U64 lastRenderHash;
-        {
-            QMutexLocker l(&_imp->lastRenderArgsMutex);
-            lastRenderedImage = _imp->lastImage;
-            lastRenderHash = _imp->lastRenderHash;
-        }
-        if ( lastRenderedImage && lastRenderHash != nodeHash ) {
-            ///once we got it remove it from the cache
-            appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
-            {
-                QMutexLocker l(&_imp->lastRenderArgsMutex);
-                _imp->lastImage.reset();
-            }
-        }
-    }
-
-    boost::shared_ptr<ImageParams> cachedImgParams;
-    getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod, &image);
-
-    
-    if (args.byPassCache) {
-        if (image) {
-            appPTR->removeFromNodeCache(key.getHash());
-            image.reset();
-        }
-    }
-    if (image) {
-        cachedImgParams = image->getParams();
-    }
-    
-
-    boost::shared_ptr<Natron::Image> downscaledImage = image;
-
-    FramesNeededMap framesNeeded ;
-    
-    if (!image) {
-        ///The image is not cached
-        
-        ///first-off check whether the effect is identity, in which case we don't want
-        /// to cache anything or render anything for this effect.
         SequenceTime inputTimeIdentity = 0.;
         int inputNbIdentity;
-
+        
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         bool identity;
         try {
@@ -1787,7 +1677,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         } catch (...) {
             return boost::shared_ptr<Natron::Image>();
         }
-
+        
         if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it
             supportsRS = supportsRenderScaleMaybe();
@@ -1797,7 +1687,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 renderMappedMipMapLevel = 0;
             }
         }
-
+        
         if (identity) {
             ///The effect is an identity but it has no inputs
             if (inputNbIdentity == -1) {
@@ -1809,7 +1699,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                     ///This special value of -2 indicates that the plugin is identity of itself at another time
                     RenderRoIArgs argCpy = args;
                     argCpy.time = inputTimeIdentity;
-
+                    
                     return renderRoI(argCpy);
                 }
             }
@@ -1852,35 +1742,117 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                  NULL);
                 ///Clear input images pointer because getImage has stored the image .
                 _imp->clearInputImagePointers();
-            } else {
-                return image;
             }
+            
+            return image;
+            
+        } // if (identity)
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// End identity check ///////////////////////////////////////////////////////////////
 
-            ///if we bypass the cache, don't cache the result of isIdentity
-            if (byPassCache) {
-                return image;
-            }
-        } else { //if (identity) {
-            ///set it to -1 so the cache knows it's not an identity
-            inputNbIdentity = -1;
-
-            // why should the rod be empty here?
-            assert( !rod.isNull() );
-
-            framesNeeded = getFramesNeeded_public(args.time);
-        }
-        
     
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
+    ///Try to concatenate transform effects
+    boost::shared_ptr<Transform::Matrix3x3> transformMatrix;
+    Natron::EffectInstance* newInputAfterConcat = 0;
+    int transformInputNb;
+    int newInputNb;
+    bool isResultingTransformIdentity;
+    bool hasConcat;
+    
+    if (appPTR->getCurrentSettings()->isTransformConcatenationEnabled()) {
+        hasConcat = tryConcatenateTransforms(args, &transformInputNb, &newInputAfterConcat, &newInputNb, &transformMatrix, &isResultingTransformIdentity);
+    } else {
+        hasConcat = false;
+    }
+    
+    
+    assert(!hasConcat || (transformMatrix && newInputAfterConcat));
+    
+    boost::shared_ptr<TransformReroute_RAII> transformConcatenationReroute;
+    
+    if (hasConcat) {
+        if (isResultingTransformIdentity) {
+            ///The transform matrix is identity! fetch directly the image from inputTransformEffect
+            return newInputAfterConcat->renderRoI(args);
+        }
+        ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
+        transformConcatenationReroute.reset(new TransformReroute_RAII(this, transformInputNb, newInputAfterConcat, newInputNb, transformMatrix));
+    } else {
+        transformInputNb = -1;
+        newInputNb = -1;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////End transform concatenations//////////////////////////////////////////////////////////
+    
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
+
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time, args.view);
+    {
+        ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
+        ///just remove the old image from the cache to recycle memory.
+        ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
+        ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
+        ///in the cache since the ViewerCache already has it ready.
+        boost::shared_ptr<Image> lastRenderedImage;
+        U64 lastRenderHash;
+        {
+            QMutexLocker l(&_imp->lastRenderArgsMutex);
+            lastRenderedImage = _imp->lastImage;
+            lastRenderHash = _imp->lastRenderHash;
+        }
+        if ( lastRenderedImage && lastRenderHash != nodeHash ) {
+            ///once we got it remove it from the cache
+            appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+            {
+                QMutexLocker l(&_imp->lastRenderArgsMutex);
+                _imp->lastImage.reset();
+            }
+        }
+    }
+
+    boost::shared_ptr<ImageParams> cachedImgParams;
+    getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod, &image);
+
+    
+    if (args.byPassCache) {
+        if (image) {
+            appPTR->removeFromNodeCache(key.getHash());
+            image.reset();
+        }
+    }
+    if (image) {
+        cachedImgParams = image->getParams();
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////End cache lookup//////////////////////////////////////////////////////////
+
+
+    boost::shared_ptr<Natron::Image> downscaledImage = image;
+    FramesNeededMap framesNeeded;
+    
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Allocate image in the cache ///////////////////////////////////////////////////////////////
+    if (!image) {
+        ///The image is not cached
+        
+        // why should the rod be empty here?
+        assert( !rod.isNull() );
+        
+        framesNeeded = getFramesNeeded_public(args.time);
+ 
         int cost = 0;
         /*should data be stored on a physical device ?*/
         if ( shouldRenderedDataBePersistent() ) {
             cost = 1;
         }
 
-        if (identity) {
-            cost = -1;
-        }
-        
         ///even though we called getImage before and it returned false, it may now
         ///return true if another thread created the image in the cache, so we can't
         ///make any assumption on the return value of this function call.
@@ -1896,8 +1868,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             downscaledImage.reset( new Natron::Image(args.components, rod, bounds, args.mipMapLevel, par, args.bitdepth) );
             
         } else {
-            
-            
+
             ///Cache the image with the requested components instead of the remapped ones
             cachedImgParams = Natron::Image::makeParams(cost,
                                                         rod,
@@ -1906,8 +1877,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                         isProjectFormat,
                                                         args.components,
                                                         args.bitdepth,
-                                                        inputNbIdentity,
-                                                        inputTimeIdentity,
                                                         framesNeeded);
             
             //Take the lock after getting the image from the cache or while allocating it
@@ -1935,11 +1904,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             
             newImage->allocateMemory();
             
-            ///if the plugin is an identity we just inserted in the cache the identity params, we can now return.
-            if (identity) {
-                ///don't return the empty allocated image but the input effect image instead!
-                return image;
-            }
             image = newImage;
             downscaledImage = image;
 
@@ -1969,15 +1933,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                                                                        isProjectFormat,
                                                                                                        args.components,
                                                                                                        args.bitdepth,
-                                                                                                       inputNbIdentity,
-                                                                                                       inputTimeIdentity,
                                                                                                        framesNeeded);
                 appPTR->createImageInCache(key, upscaledImageParams, &upscaledImageLock, &image);
                 image->allocateMemory();
             }
             
         }
-
+        
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////// End allocation of image in cache ///////////////////////////////////////////////////////////////
     } // if (!image) (the image is not cached)
     else {
         if (renderFullScaleThenDownscale && image->getMipMapLevel() == 0) {
@@ -3792,6 +3757,65 @@ EffectInstance::getNearestNonDisabled() const
         ///We didn't find anything upstream, return
         return NULL;
     }
+}
+
+Natron::EffectInstance*
+EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
+{
+    assert(_node->isNodeDisabled());
+    
+    ///Test all inputs recursively, going from last to first, preferring non optional inputs.
+    std::list<Natron::EffectInstance*> nonOptionalInputs;
+    std::list<Natron::EffectInstance*> optionalInputs;
+    int maxInp = getMaxInputCount();
+    
+    
+    int localPreferredInput = -1;
+    
+    ///We cycle in reverse by default. It should be a setting of the application.
+    ///In this case it will return input B instead of input A of a merge for example.
+    for (int i = maxInp - 1; i >= 0; --i) {
+        Natron::EffectInstance* inp = getInput(i);
+        bool optional = isInputOptional(i);
+        if (inp) {
+            if (optional) {
+                if (localPreferredInput == -1) {
+                    localPreferredInput = i;
+                }
+                optionalInputs.push_back(inp);
+            } else {
+                if (localPreferredInput == -1) {
+                    localPreferredInput = i;
+                }
+                nonOptionalInputs.push_back(inp);
+            }
+        }
+    }
+    
+    
+    ///Cycle through all non optional inputs first
+    for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+        if ((*it)->getNode()->isNodeDisabled()) {
+            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            if (inputRet) {
+                return inputRet;
+            }
+        }
+    }
+    
+    ///Cycle through optional inputs...
+    for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+        if ((*it)->getNode()->isNodeDisabled()) {
+            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            if (inputRet) {
+                return inputRet;
+            }
+        }
+    }
+    
+    *inputNb = localPreferredInput;
+    return this;
+    
 }
 
 Natron::EffectInstance*

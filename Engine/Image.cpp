@@ -311,8 +311,6 @@ Image::Image(ImageComponentsEnum components,
                                                                    bitdepth,
                                                                    false,
                                                                    components,
-                                                                   -1,
-                                                                   0,
                                                                    std::map<int,std::vector<RangeD> >() ) ),
                   NULL,
                   Natron::eStorageModeRAM,
@@ -358,8 +356,6 @@ Image::makeParams(int cost,
                   bool isRoDProjectFormat,
                   ImageComponentsEnum components,
                   Natron::ImageBitDepthEnum bitdepth,
-                  int inputNbIdentity,
-                  int inputTimeIdentity,
                   const std::map<int, std::vector<RangeD> > & framesNeeded)
 {
     RectI bounds;
@@ -374,8 +370,6 @@ Image::makeParams(int cost,
                                                            bitdepth,
                                                            isRoDProjectFormat,
                                                            components,
-                                                           inputNbIdentity,
-                                                           inputTimeIdentity,
                                                            framesNeeded) );
 }
 

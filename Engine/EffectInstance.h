@@ -486,6 +486,12 @@ public:
      * If this not is not disabled, it will return a pointer to this.
      **/
     Natron::EffectInstance* getNearestNonDisabled() const;
+
+    /**
+     * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
+     * @param inputNb[out] The inputNb of the node that is non disabled.
+     **/
+    Natron::EffectInstance* getNearestNonDisabledPrevious(int* inputNb);
     
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.

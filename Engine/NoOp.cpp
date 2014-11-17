@@ -5,7 +5,7 @@
 
 
 #include "NoOp.h"
-
+#include "Engine/Transform.h"
 
 NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
     : Natron::EffectInstance(n)
@@ -51,3 +51,16 @@ Dot::getDescription() const
     return "Doesn't do anything to the input image, this is used in the node graph to make bends in the links.";
 }
 
+Natron::StatusEnum
+NoOpBase::getTransform(SequenceTime /*time*/,
+                       const RenderScale& /*renderScale*/,
+                       int /*view*/,
+                       Natron::EffectInstance** inputToTransform,
+                       Transform::Matrix3x3* transform)
+{
+    *inputToTransform = getInput(0);
+    transform->a = 1.; transform->b = 0.; transform->c = 0.;
+    transform->d = 0.; transform->e = 1.; transform->f = 0.;
+    transform->g = 0.; transform->h = 0.; transform->i = 1.;
+    return Natron::eStatusOK;
+}
