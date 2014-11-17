@@ -212,7 +212,7 @@ public slots:
      **/
     void zoomSlot(QString);
 
-    void setRegionOfDefinition(const RectD & rod, int textureIndex);
+    void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
 
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
 

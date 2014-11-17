@@ -499,7 +499,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     if (clipToDisplayWindow) {
         ///clip the RoD to the project format.
         RectI pixelProjectFormat;
-        _imp->projectFormat.toPixelEnclosing(0, 1., &pixelProjectFormat);
+        _imp->projectFormat.toPixelEnclosing(0, _imp->projectFormat.getPixelAspectRatio(), &pixelProjectFormat);
         if ( !pixelRod.intersect(pixelProjectFormat,&pixelRod) ) {
             return;
         }
@@ -899,8 +899,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 
     _imp->blankViewerInfo.setRoD(projectFormat);
     _imp->blankViewerInfo.setDisplayWindow(projectFormat);
-    setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),0);
-    setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),1);
+    setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),0);
+    setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),1);
     onProjectFormatChanged(projectFormat);
     resetWipeControls();
     populateMenu();
@@ -1254,14 +1254,16 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
     assert( QGLContext::currentContext() == context() );
 
     glCheckError();
+    
+    RectI pixelProjectFormat;
+    _imp->projectFormat.toPixelEnclosing(0, _imp->projectFormat.getPixelAspectRatio(), &pixelProjectFormat);
+    renderText(pixelProjectFormat.right(),pixelProjectFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
 
-    renderText(_imp->projectFormat.right(),_imp->projectFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
 
-
-    QPoint topRight( _imp->projectFormat.right(),_imp->projectFormat.top() );
-    QPoint topLeft( _imp->projectFormat.left(),_imp->projectFormat.top() );
-    QPoint btmLeft( _imp->projectFormat.left(),_imp->projectFormat.bottom() );
-    QPoint btmRight( _imp->projectFormat.right(),_imp->projectFormat.bottom() );
+    QPoint topRight( pixelProjectFormat.right(),pixelProjectFormat.top() );
+    QPoint topLeft( pixelProjectFormat.left(),pixelProjectFormat.top() );
+    QPoint btmLeft( pixelProjectFormat.left(),pixelProjectFormat.bottom() );
+    QPoint btmRight( pixelProjectFormat.right(),pixelProjectFormat.bottom() );
 
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
@@ -2092,7 +2094,14 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const do
     
     if (clipToProject) {
         QMutexLocker k(&_imp->projectFormatMutex);
-        rod.intersect(_imp->projectFormat,&clippedRod);
+        RectD projectFormatCanonical;
+        RectI projectFormatPixel;
+        projectFormatPixel.x1 = _imp->projectFormat.x1;
+        projectFormatPixel.x2 = _imp->projectFormat.x2;
+        projectFormatPixel.y1 = _imp->projectFormat.y1;
+        projectFormatPixel.y2 = _imp->projectFormat.y2;
+        projectFormatPixel.toCanonical_noClipping(0, _imp->projectFormat.getPixelAspectRatio(), &projectFormatCanonical);
+        rod.intersect(projectFormatCanonical,&clippedRod);
     } else {
         clippedRod = rod;
     }
@@ -2307,7 +2316,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     }
     
 
-    
+
     if (image) {
         _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
         _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
@@ -2318,7 +2327,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
     }
-    setRegionOfDefinition(rod,textureIndex);
+    setRegionOfDefinition(rod,region.par,textureIndex);
 
     emit imageChanged(textureIndex);
 }
@@ -3182,8 +3191,8 @@ ViewerGL::disconnectViewer()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( displayingImage() ) {
-        setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),0);
-        setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),1);
+        setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),0);
+        setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),1);
     }
     resetWipeControls();
     clearViewer();
@@ -3212,6 +3221,7 @@ ViewerGL::getDisplayWindow() const
 
 void
 ViewerGL::setRegionOfDefinition(const RectD & rod,
+                                double par,
                                 int textureIndex)
 {
     // always running in the main thread
@@ -3219,20 +3229,21 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
     if (!_imp->viewerTab->getGui()) {
         return;
     }
+    
+    RectI pixelRoD;
+    rod.toPixelEnclosing(0, par, &pixelRoD);
+    
     _imp->currentViewerInfo[textureIndex].setRoD(rod);
     if (_imp->infoViewer[textureIndex] && !_imp->viewerTab->getGui()->isGUIFrozen()) {
-        _imp->infoViewer[textureIndex]->setDataWindow(rod);
+        _imp->infoViewer[textureIndex]->setDataWindow(pixelRoD);
     }
     
+
     QString left,btm,right,top;
-    left.setNum(rod.left(),'f',1);
-    InfoViewerWidget::removeTrailingZeroes(left);
-    btm.setNum(rod.bottom(),'f',1);
-    InfoViewerWidget::removeTrailingZeroes(btm);
-    right.setNum(rod.right(),'f',1);
-    InfoViewerWidget::removeTrailingZeroes(right);
-    top.setNum(rod.top(),'f',1);
-    InfoViewerWidget::removeTrailingZeroes(top);
+    left.setNum(rod.left());
+    btm.setNum(rod.bottom());
+    right.setNum(rod.right());
+    top.setNum(rod.top());
 
 
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
