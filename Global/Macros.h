@@ -459,5 +459,10 @@
    CLANG_DIAG_OFF(unused-parameter)
    CLANG_DIAG_OFF(uninitialized)
  */
+#if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
+// we want to use override & final, even if not compiling in c++11 mode
+CLANG_DIAG_OFF(c++11-extensions)
+GCC_DIAG_OFF(c++11-extensions)
+#endif
 
 #endif // ifndef NATRON_GLOBAL_MACROS_H
