@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
+# Exit immediately if a command exits with a non-zero status
 set -e
+# Print commands and their arguments as they are executed.
 set -x
 
 # enable testing locally or on forks without multi-os enabled
@@ -52,74 +54,46 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make -C openfx-io BITS=64 OIIO_HOME=/opt/oiio; fi
     if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 
-
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     sw_vers -productVersion
 
-    install_xquartz(){
-        XQUARTZ_VERSION=2.7.6
+    # See Travis OSX setup:
+    # http://docs.travis-ci.com/user/osx-ci-environment
 
-        wget --quiet http://xquartz.macosforge.org/downloads/SL/XQuartz-${XQUARTZ_VERSION}.dmg
-        hdiutil mount XQuartz-${XQUARTZ_VERSION}.dmg
-        sudo installer -store -pkg /Volumes/XQuartz-${XQUARTZ_VERSION}/XQuartz.pkg -target /
-        hdiutil unmount /Volumes/XQuartz-${XQUARTZ_VERSION}
-    }
+    # XQuartz already installed on Travis
+    # install_xquartz(){
+    #     echo "XQuartz start install"
+    #     XQUARTZ_VERSION=2.7.6
+    #     
+    #     echo "XQuartz download"
+    #     wget --quiet http://xquartz.macosforge.org/downloads/SL/XQuartz-${XQUARTZ_VERSION}.dmg
+    #     echo "XQuartz mount dmg"
+    #     hdiutil mount XQuartz-${XQUARTZ_VERSION}.dmg
+    #     echo "XQuartz installer"  # sudo
+    #     installer -store -pkg /Volumes/XQuartz-${XQUARTZ_VERSION}/XQuartz.pkg -target /
+    #     echo "XQuartz unmount"
+    #     hdiutil unmount /Volumes/XQuartz-${XQUARTZ_VERSION}
+    #     echo "XQuartz end"
+    # }
 
-    wget --quiet https://www.dropbox.com/s/7qwo3jzmdsugtis/bottles.tar &
-    WGETPID=$!
-
-    install_xquartz &
+    # sudo install_xquartz &
+    # XQ_INSTALL_PID=$!
 
     brew update
     brew tap homebrew/python
     brew tap homebrew/science
 
-    wait $WGETPID
-    tar -xvf bottles.tar
+    echo "Install Natron dependencies"
+    echo " - pip install numpy"
+    pip install numpy
+    # brew install numpy  # Compilation errors with gfortran
+    echo " - install brew packages"
+    # TuttleOFX's dependencies:
+    #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
+    # Natron's dependencies 
+    brew install qt ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
 
-    # official bottles
-    brew install bottles/ilmbase-2.1.0.mavericks.bottle.tar.gz
-    brew install bottles/openexr-2.1.0.mavericks.bottle.tar.gz
-    #brew install bottles/cmake-2.8.12.2.mavericks.bottle.2.tar.gz
-    brew install bottles/jasper-1.900.1.mavericks.bottle.tar.gz
-    brew install bottles/little-cms2-2.6.mavericks.bottle.tar.gz
-    #brew install bottles/doxygen-1.8.7.mavericks.bottle.tar.gz
-    #brew install bottles/gmp-6.0.0a.mavericks.bottle.tar.gz
-    #brew install bottles/mpfr-3.1.2-p8.mavericks.bottle.tar.gz
-    #brew install bottles/libmpc-1.0.2.mavericks.bottle.tar.gz
-    #brew install bottles/isl-0.12.2.mavericks.bottle.tar.gz
-    #brew install bottles/cloog-0.18.1.mavericks.bottle.1.tar.gz
-    brew install bottles/gcc-4.8.3_1.mavericks.bottle.tar.gz
-    #brew install bottles/webp-0.4.0_1.mavericks.bottle.tar.gz
-    brew install bottles/glew-1.10.0.mavericks.bottle.tar.gz
-    brew install bottles/qt-4.8.6.mavericks.bottle.5.tar.gz
-    brew install bottles/freetype-2.5.3_1.mavericks.bottle.1.tar.gz
-    #brew install bottles/pcre-8.35.mavericks.bottle.tar.gz
-    #brew install bottles/swig-3.0.2.mavericks.bottle.tar.gz
-    brew install bottles/x264-r2412.mavericks.bottle.1.tar.gz
-    brew install bottles/faac-1.28.mavericks.bottle.tar.gz
-    brew install bottles/lame-3.99.5.mavericks.bottle.tar.gz
-    brew install bottles/xvid-1.3.2.mavericks.bottle.tar.gz
-    brew install bottles/ffmpeg-2.2.3.mavericks.bottle.tar.gz
-    #brew install bottles/imagemagick-6.8.9-1.mavericks.bottle.tar.gz
-    brew install bottles/libcaca-0.99b19.mavericks.bottle.tar.gz
-    #brew install bottles/scons-2.3.1.mavericks.bottle.3.tar.gz
+    # wait $XQ_INSTALL_PID || true
 
-    # selfbuilt bottles
-    brew install bottles/boost-1.55.0_2.mavericks.bottle.4.tar.gz
-    brew install bottles/aces_container-1.0.mavericks.bottle.tar.gz
-    brew install bottles/ctl-1.5.2.mavericks.bottle.tar.gz
-    brew install bottles/jpeg-turbo-1.3.1.mavericks.bottle.tar.gz
-    brew install bottles/libraw-0.15.4.mavericks.bottle.tar.gz
-    #brew install bottles/seexpr-1.0.1.mavericks.bottle.tar.gz
-    #brew install bottles/tbb-4.2.4.mavericks.bottle.tar.gz
-    #brew install bottles/suite-sparse-4.2.1.mavericks.bottle.tar.gz
-    #brew install bottles/numpy-1.8.1.mavericks.bottle.tar.gz
-    brew install bottles/openjpeg-1.5.1_1.mavericks.bottle.tar.gz
-    brew install bottles/cfitsio-3.360.mavericks.bottle.tar.gz
-    #brew install bottles/szip-2.1.mavericks.bottle.tar.gz
-    #brew install bottles/hdf5-1.8.13.mavericks.bottle.tar.gz
-    brew install bottles/field3d-1.4.3.mavericks.bottle.tar.gz
-    brew install bottles/opencolorio-1.0.9.mavericks.bottle.tar.gz
-    brew install bottles/openimageio-1.4.8.mavericks.bottle.tar.gz
+    echo "End dependencies installation."
 fi
