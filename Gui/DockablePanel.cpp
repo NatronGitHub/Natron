@@ -282,8 +282,8 @@ DockablePanel::DockablePanel(Gui* gui
         
         if (!_imp->_holder->isProject()) {
             QPixmap pixHide,pixShow;
-            appPTR->getIcon(NATRON_PIXMAP_VISIBLE, &pixShow);
-            appPTR->getIcon(NATRON_PIXMAP_UNVISIBLE,&pixHide);
+            appPTR->getIcon(NATRON_PIXMAP_UNHIDE_UNMODIFIED, &pixShow);
+            appPTR->getIcon(NATRON_PIXMAP_HIDE_UNMODIFIED,&pixHide);
             QIcon icHideShow;
             icHideShow.addPixmap(pixShow,QIcon::Normal,QIcon::Off);
             icHideShow.addPixmap(pixHide,QIcon::Normal,QIcon::On);
