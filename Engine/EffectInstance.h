@@ -530,6 +530,8 @@ public:
 
     bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
 
+    void addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img);
+
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -742,7 +744,7 @@ public:
                                        const RectD & outputRoD,
                                        const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                        int view,
-                                      RoIMap* ret) WARN_UNUSED_RETURN;
+                                      RoIMap* ret);
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 

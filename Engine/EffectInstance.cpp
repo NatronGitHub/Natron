@@ -511,6 +511,12 @@ public:
     }
 };
 
+void
+EffectInstance::addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img)
+{
+    _imp->addInputImageTempPointer(img);
+}
+
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
     : NamedKnobHolder(node ? node->getApp() : NULL)
       , _node(node)
