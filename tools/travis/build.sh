@@ -16,7 +16,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $MAKEFLAGSPARALLEL
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
-    qmake -t CONFIG+="coverage debug"
+    if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug" -spec macx-g++; else qmake -spec unsupported/macx-clang; fi
     make $MAKEFLAGSPARALLEL
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 fi
