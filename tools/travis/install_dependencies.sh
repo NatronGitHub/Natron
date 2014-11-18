@@ -99,8 +99,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 
     echo "End dependencies installation."
     # config.pri
-    echo 'boost: INCLUDEPATH += /opt/local/include' > config.pri
-    echo 'boost: LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'boost: INCLUDEPATH += /usr/local/include' > config.pri
+    echo 'boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     echo 'expat: INCLUDEPATH += /usr/local/opt/expat/include' >> config.pri
     echo 'expat: LIBS += -L/usr/local/opt/expat/lib -lexpat' >> config.pri
