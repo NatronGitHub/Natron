@@ -27,10 +27,6 @@ include(../config.pri)
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/include
-INCLUDEPATH += $$PWD/../libs/OpenFX/include/nuke
-DEPENDPATH  += $$PWD/../libs/OpenFX/include/nuke
-INCLUDEPATH += $$PWD/../libs/OpenFX/include/tuttle
-DEPENDPATH  += $$PWD/../libs/OpenFX/include/tuttle
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 DEPENDPATH  += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
