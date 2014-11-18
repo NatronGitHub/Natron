@@ -59,6 +59,12 @@ Install libraries:
 
     brew install qt expat glew opencolorio
 
+also set the correct value for the pkg-config path (you can also put
+this in your .bash_profile):
+	
+	export
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
+	
 ## Add the config.pri file
 
 You have to define the locations of the required libraries.

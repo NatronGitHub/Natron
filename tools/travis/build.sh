@@ -26,9 +26,6 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # cairo requires xcb-shm, which has its pkg-config file in /opt/X11
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
-    type -a pkg-config
-    ls -lL /usr/local/lib/pkgconfig/cairo*
-    pkg-config --cflags --libs cairo
     if [ "$CC" = "gcc" ]; then qmake -r -spec macx-g++; else qmake -spec unsupported/macx-clang; fi
     make $MAKEFLAGSPARALLEL
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
