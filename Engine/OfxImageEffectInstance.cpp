@@ -172,10 +172,16 @@ OfxImageEffectInstance::getProjectSize(double & xSize,
                                        double & ySize) const
 {
     Format f;
-
     _ofxEffectInstance->getRenderFormat(&f);
-    xSize = f.width();
-    ySize = f.height();
+    RectI pixelF;
+    pixelF.x1 = f.x1;
+    pixelF.x2 = f.x2;
+    pixelF.y1 = f.y1;
+    pixelF.y2 = f.y2;
+    RectD canonicalF;
+    pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio(), &canonicalF);
+    xSize = canonicalF.width();
+    ySize = canonicalF.height();
 }
 
 // The offset of the current project in canonical coordinates.
@@ -188,10 +194,16 @@ OfxImageEffectInstance::getProjectOffset(double & xOffset,
                                          double & yOffset) const
 {
     Format f;
-
     _ofxEffectInstance->getRenderFormat(&f);
-    xOffset = f.left();
-    yOffset = f.bottom();
+    RectI pixelF;
+    pixelF.x1 = f.x1;
+    pixelF.x2 = f.x2;
+    pixelF.y1 = f.y1;
+    pixelF.y2 = f.y2;
+    RectD canonicalF;
+    pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio(), &canonicalF);
+    xOffset = canonicalF.left();
+    yOffset = canonicalF.bottom();
 }
 
 // The extent of the current project in canonical coordinates.
@@ -204,10 +216,16 @@ OfxImageEffectInstance::getProjectExtent(double & xSize,
                                          double & ySize) const
 {
     Format f;
-
     _ofxEffectInstance->getRenderFormat(&f);
-    xSize = f.right();
-    ySize = f.top();
+    RectI pixelF;
+    pixelF.x1 = f.x1;
+    pixelF.x2 = f.x2;
+    pixelF.y1 = f.y1;
+    pixelF.y2 = f.y2;
+    RectD canonicalF;
+    pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio(), &canonicalF);
+    xSize = canonicalF.right();
+    ySize = canonicalF.top();
 }
 
 // The pixel aspect ratio of the current project
