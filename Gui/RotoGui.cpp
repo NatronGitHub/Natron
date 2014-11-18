@@ -343,6 +343,9 @@ RotoGui::RotoGui(NodeGui* node,
     : _imp( new RotoGuiPrivate(this,node,parent,sharedData) )
 {
     assert(parent);
+    assert(_imp->context);
+    
+    bool hasShapes = _imp->context->getNCurves();
 
     QObject::connect( parent->getViewer(),SIGNAL( selectionRectangleChanged(bool) ),this,SLOT( updateSelectionFromSelectionRectangle(bool) ) );
     QObject::connect( parent->getViewer(), SIGNAL( selectionCleared() ), this, SLOT( onSelectionCleared() ) );
@@ -480,7 +483,7 @@ RotoGui::RotoGui(NodeGui* node,
                      tr("only the curves can be selected.")
                      ,selectShortCut,SELECT_CURVES);
     createToolAction(_imp->selectTool, QIcon(pixSelectFeather), tr("Select feather points"), tr("only the feather points can be selected."),selectShortCut,SELECT_FEATHER_POINTS);
-    _imp->selectTool->setDown(false);
+    _imp->selectTool->setDown(hasShapes);
     _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->toolbar->addWidget(_imp->selectTool);
 
@@ -506,6 +509,8 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->bezierEditionTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->bezierEditionTool->setText("Bezier");
+    _imp->bezierEditionTool->setDown(!hasShapes);
+    
     QKeySequence editBezierShortcut(Qt::Key_V);
     QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(pixBezier), tr("Bezier"),
                                               tr("Edit bezier paths. Click and drag the mouse to adjust tangents. Press enter to close the shape. ")
@@ -516,11 +521,12 @@ RotoGui::RotoGui(NodeGui* node,
 
     createToolAction(_imp->bezierEditionTool, QIcon(pixEllipse), tr("Ellipse"),tr("Hold control to draw the ellipse from its center"),editBezierShortcut, DRAW_ELLIPSE);
     createToolAction(_imp->bezierEditionTool, QIcon(pixRectangle), tr("Rectangle"),"", editBezierShortcut,DRAW_RECTANGLE);
+    _imp->bezierEditionTool->setDefaultAction(drawBezierAct);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
-
+    
     ////////////Default action is to make a new bezier
     _imp->selectedRole = _imp->selectTool;
-    onToolActionTriggered(drawBezierAct);
+    onToolActionTriggered(hasShapes ? _imp->selectAllAction : drawBezierAct);
 
     QObject::connect( _imp->node->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime,int) ),
                       this, SLOT( onCurrentFrameChanged(SequenceTime,int) ) );

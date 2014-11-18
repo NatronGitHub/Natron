@@ -609,7 +609,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     if ( node->getParentMultiInstanceName().empty() ) {
         if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
-            node_ui->refreshPosition( pos.x(),pos.y() );
+            node_ui->refreshPosition( pos.x(),pos.y(), true );
         } else {
             moveNodesForIdealPosition(node_ui,autoConnect);
         }

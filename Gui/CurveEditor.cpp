@@ -313,6 +313,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
             nameItem->setHidden(true);
         }
         _nameItem = nameItem;
+    } else {
+        nameItem->setHidden(true);
     }
 }
 

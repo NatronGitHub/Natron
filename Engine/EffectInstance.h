@@ -530,6 +530,20 @@ public:
 
     bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
 
+
+    void addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img);
+
+    /**
+     * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
+     **/
+    virtual bool isFrameVarying() const { return false; }
+
+    /**
+     * @brief Returns whether the current node and/or the tree upstream is frame varying or animated.
+     * It is frame varying/animated if at least one of the node is animated/varying
+     **/
+    bool isFrameVaryingOrAnimated_Recursive() const;
+
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -742,7 +756,11 @@ public:
                                        const RectD & outputRoD,
                                        const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                        int view,
+<<<<<<< HEAD
                                       RoIMap* ret) WARN_UNUSED_RETURN;
+=======
+                                      RoIMap* ret);
+>>>>>>> workshop
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 

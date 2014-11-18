@@ -179,5 +179,7 @@
         <file>Resources/Images/checkbox_animation3_checked.png</file>
         <file>Resources/Images/checkbox_animation3_unchecked_hovered.png</file>
         <file>Resources/Images/checkbox_animation3_unchecked.png</file>
+        <file>Resources/Images/hide_unmodified.png</file>
+        <file>Resources/Images/unhide_unmodified.png</file>
     </qresource>
 </RCC>

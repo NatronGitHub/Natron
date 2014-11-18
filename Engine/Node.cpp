@@ -3130,7 +3130,7 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->getIsSecret() ) {
+        if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistant()) {
             continue;
         }
         int dim = knobs[i]->getDimension();

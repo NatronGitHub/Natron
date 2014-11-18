@@ -1014,6 +1014,9 @@ public:
      * MT-safe
      **/
     std::list< boost::shared_ptr<Bezier> > getCurvesByRenderOrder() const;
+    
+    int getNCurves() const;
+    
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;

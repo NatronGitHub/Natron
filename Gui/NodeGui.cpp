@@ -655,7 +655,7 @@ NodeGui::changePosition(double dx,
 {
     QPointF p = pos();
 
-    refreshPosition(p.x() + dx, p.y() + dy);
+    refreshPosition(p.x() + dx, p.y() + dy,true);
 }
 
 void

@@ -190,7 +190,11 @@ public:
     
 private:
 
-    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds);
+    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
+                                                    bool usingReroute,
+                                                    int rerouteInputNb,
+                                                    Natron::EffectInstance* node,
+                                                    const boost::shared_ptr<Transform::Matrix3x3>& transform);
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
     double _aspectRatio;
@@ -209,21 +213,26 @@ private:
     
         bool isMipmapLevelValid;
         unsigned int mipMapLevel;
+        
+        bool isTransformDataValid;
+        boost::shared_ptr<Transform::Matrix3x3> matrix; //< if the clip is associated to a node that can transform
+        Natron::EffectInstance* rerouteNode; //< if the associated node is a concatenated transform, this is the effect from which to fetch images from
+        int rerouteInputNb;
+
         ActionLocalData()
             : isViewValid(false)
-              , view(0)
-              , isMipmapLevelValid(false)
-              , mipMapLevel(false)
+            , view(0)
+            , isMipmapLevelValid(false)
+            , mipMapLevel(false)
+            , isTransformDataValid(false)
+            , matrix()
+            , rerouteNode(0)
+            , rerouteInputNb(-1)
         {
         }
     };
 
     Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
-    
-    mutable QMutex _transformMutex; //< protects _matrix & _rerouteNode
-    boost::shared_ptr<Transform::Matrix3x3> _matrix; //< if the clip is associated to a node that can transform
-    Natron::EffectInstance* _rerouteNode; //< if the associated node is a concatenated transform, this is the effect from which to fetch images from
-    int _rerouteInputNb;
 };
 
 class OfxImage
