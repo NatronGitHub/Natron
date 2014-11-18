@@ -91,9 +91,9 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # TuttleOFX's dependencies:
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies for building all OpenFX plugins
-    #brew install qt ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
+    #brew install qt expat ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
     # Natron's dependencies only
-    brew install qt glew opencolorio
+    brew install qt expat glew opencolorio
 
     # wait $XQ_INSTALL_PID || true
 
@@ -101,4 +101,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # config.pri
     echo 'boost: INCLUDEPATH += /opt/local/include' > config.pri
     echo 'boost: LIBS += LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'expat: PKGCONFG -= expat' >> config.pri
+    echo 'expat: INCLUDEPATH += /usr/local/opt/expat/include' >> config.pri
+    echo 'expat: LIBS += -L/usr/local/opt/expat/lib -lexpat' >> config.pri
 fi
