@@ -4666,6 +4666,13 @@ RotoContext::getCurvesByRenderOrder() const
     return ret;
 }
 
+int
+RotoContext::getNCurves() const
+{
+    std::list< boost::shared_ptr<Bezier> > curves = getCurvesByRenderOrder();
+    return (int)curves.size();
+}
+
 boost::shared_ptr<RotoLayer>
 RotoContext::getLayerByName(const std::string & n) const
 {
