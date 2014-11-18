@@ -20,13 +20,13 @@ fi
 #CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
-    if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug"; else qmake -spec unsupported/linux-clang; fi
+    if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug c++11"; else qmake -spec unsupported/linux-clang; fi
     make $MAKEFLAGSPARALLEL
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # cairo requires xcb-shm, which has its pkg-config file in /opt/X11
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
-    if [ "$CC" = "gcc" ]; then qmake -r -spec macx-g++; else qmake -spec unsupported/macx-clang; fi
+    if [ "$CC" = "gcc" ]; then qmake -r -spec macx-g++ CONFIG+=c++11; else qmake -spec unsupported/macx-clang; fi
     make $MAKEFLAGSPARALLEL
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 fi
