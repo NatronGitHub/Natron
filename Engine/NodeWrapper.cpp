@@ -98,6 +98,17 @@ Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
     int dims = knob->getDimension();
     boost::shared_ptr<Int_Knob> isInt = boost::dynamic_pointer_cast<Int_Knob>(knob);
     boost::shared_ptr<Double_Knob> isDouble = boost::dynamic_pointer_cast<Double_Knob>(knob);
+    boost::shared_ptr<Bool_Knob> isBool = boost::dynamic_pointer_cast<Bool_Knob>(knob);
+    boost::shared_ptr<Choice_Knob> isChoice = boost::dynamic_pointer_cast<Choice_Knob>(knob);
+    boost::shared_ptr<Color_Knob> isColor = boost::dynamic_pointer_cast<Color_Knob>(knob);
+    boost::shared_ptr<String_Knob> isString = boost::dynamic_pointer_cast<String_Knob>(knob);
+    boost::shared_ptr<File_Knob> isFile = boost::dynamic_pointer_cast<File_Knob>(knob);
+    boost::shared_ptr<OutputFile_Knob> isOutputFile = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
+    boost::shared_ptr<Path_Knob> isPath = boost::dynamic_pointer_cast<Path_Knob>(knob);
+    boost::shared_ptr<Button_Knob> isButton = boost::dynamic_pointer_cast<Button_Knob>(knob);
+    boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knob);
+    boost::shared_ptr<Page_Knob> isPage = boost::dynamic_pointer_cast<Page_Knob>(knob);
+    
     if (isInt) {
         switch (dims) {
             case 1:
@@ -120,6 +131,24 @@ Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
             default:
                 break;
         }
+    } else if (isBool) {
+        return new BooleanParam(isBool);
+    } else if (isChoice) {
+        return new ChoiceParam(isChoice);
+    } else if (isColor) {
+        return new ColorParam(isColor);
+    } else if (isString) {
+        return new StringParam(isString);
+    } else if (isFile) {
+        return new FileParam(isFile);
+    } else if (isOutputFile) {
+        return new OutputFileParam(isOutputFile);
+    } else if (isPath) {
+        return new PathParam(isPath);
+    } else if (isGroup) {
+        return new GroupParam(isGroup);
+    } else if (isPage) {
+        return new PageParam(isPage);
     }
     return NULL;
 }
