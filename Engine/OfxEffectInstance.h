@@ -266,9 +266,13 @@ public:
     virtual void rerouteInputAndSetTransform(int inputNb,Natron::EffectInstance* newInput,
                                              int newInputNb,const Transform::Matrix3x3& m) OVERRIDE FINAL;
     virtual void clearTransform(int inputNb) OVERRIDE FINAL;
+
+    virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
+
+
 
 public slots:
 

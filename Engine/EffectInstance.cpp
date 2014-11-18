@@ -1796,8 +1796,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
-
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time, args.view);
+    bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, isFrameVaryingOrAnimated, args.time, args.view);
     {
         ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
@@ -3889,6 +3889,33 @@ EffectInstance::checkCanSetValueAndWarn() const
     }
 }
 #endif
+
+static
+void isFrameVaryingOrAnimated_impl(const Natron::EffectInstance* node,bool *ret)
+{
+    if (node->isFrameVarying() || node->getHasAnimation()) {
+        *ret = true;
+    } else {
+        int maxInputs = node->getMaxInputCount();
+        for (int i = 0; i < maxInputs; ++i) {
+            Natron::EffectInstance* input = node->getInput(i);
+            if (input) {
+                isFrameVaryingOrAnimated_impl(input,ret);
+                if (*ret) {
+                    return;
+                }
+            }
+        }
+    }
+}
+
+bool
+EffectInstance::isFrameVaryingOrAnimated_Recursive() const
+{
+    bool ret = false;
+    isFrameVaryingOrAnimated_impl(this,&ret);
+    return ret;
+}
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)

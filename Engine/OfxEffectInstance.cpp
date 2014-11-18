@@ -2771,3 +2771,10 @@ OfxEffectInstance::clearTransform(int inputNb)
     assert(clip);
     clip->clearTransform();
 }
+
+bool
+OfxEffectInstance::isFrameVarying() const
+{
+    return effectInstance()->isFrameVarying();
+}
+

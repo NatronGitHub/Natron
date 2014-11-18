@@ -13,12 +13,14 @@ ImageKey::ImageKey()
 }
 
 ImageKey::ImageKey(U64 nodeHashKey,
+                   bool frameVaryingOrAnimated,
                    SequenceTime time,
                    //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
                    int view,
                    double pixelAspect)
 : KeyHelper<U64>()
 , _nodeHashKey(nodeHashKey)
+, _frameVaryingOrAnimated(frameVaryingOrAnimated)
 , _time(time)
 //      , _mipMapLevel(mipMapLevel)
 , _view(view)
@@ -31,7 +33,9 @@ ImageKey::fillHash(Hash64* hash) const
 {
     hash->append(_nodeHashKey);
     //hash->append(_mipMapLevel); //< Store different mipmapLevels under the same key
-    hash->append(_time);
+    if (_frameVaryingOrAnimated) {
+        hash->append(_time);
+    }
     hash->append(_view);
     hash->append(_pixelAspect);
 }
@@ -39,9 +43,15 @@ ImageKey::fillHash(Hash64* hash) const
 bool
 ImageKey::operator==(const ImageKey & other) const
 {
-    return _nodeHashKey == other._nodeHashKey &&
-    //_mipMapLevel == other._mipMapLevel && //< Store different mipmapLevels under the same key
-    _time == other._time &&
-    _view == other._view &&
-    _pixelAspect == other._pixelAspect;
+    if (_frameVaryingOrAnimated) {
+        return _nodeHashKey == other._nodeHashKey &&
+        _time == other._time &&
+        _view == other._view &&
+        _pixelAspect == other._pixelAspect;
+    } else {
+        return _nodeHashKey == other._nodeHashKey &&
+        _view == other._view &&
+        _pixelAspect == other._pixelAspect;
+    }
+    
 }

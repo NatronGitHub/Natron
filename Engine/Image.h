@@ -127,6 +127,7 @@ namespace Natron {
         virtual void onMemoryAllocated() OVERRIDE FINAL;
 
         static ImageKey makeKey(U64 nodeHashKey,
+                                bool frameVaryingOrAnimated,
                                 SequenceTime time,
                                 int view);
         static boost::shared_ptr<ImageParams> makeParams(int cost,

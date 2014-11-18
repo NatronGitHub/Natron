@@ -814,7 +814,9 @@ Knob<T>::setValueAtTime(int time,
     
 
     bool ret = curve->addKeyFrame(*newKey);
-    
+    if (holder) {
+        holder->setHasAnimation(true);
+    }
     guiCurveCloneInternalCurve(dimension);
     
     if (_signalSlotHandler && ret) {
@@ -1456,6 +1458,9 @@ Knob<T>::clone(KnobI* other,
         }
     }
     cloneExtraData(other,dimension);
+    if (getHolder()) {
+        getHolder()->updateHasAnimation();
+    }
 }
 
 template<typename T>
@@ -1485,6 +1490,9 @@ Knob<T>::clone(KnobI* other,
         }
     }
     cloneExtraData(other,offset,range,dimension);
+    if (getHolder()) {
+        getHolder()->updateHasAnimation();
+    }
 }
 
 template<typename T>
@@ -1531,6 +1539,9 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
         }
     }
     cloneExtraData(other,dimension);
+    if (getHolder()) {
+        getHolder()->updateHasAnimation();
+    }
 }
 
 template <typename T>
@@ -1577,12 +1588,18 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 if ((*it)->_imp->useKey) {
                     boost::shared_ptr<Curve> curve = getCurve((*it)->_imp->dimension);
                     curve->addKeyFrame((*it)->_imp->key);
+                    if (getHolder()) {
+                        getHolder()->setHasAnimation(true);
+                    }
                 } else {
                     _values[(*it)->_imp->dimension] = (*it)->_imp->value;
                 }
             } else {
                 boost::shared_ptr<Curve> curve = getCurve((*it)->_imp->dimension);
                 curve->addKeyFrame((*it)->_imp->key);
+                if (getHolder()) {
+                    getHolder()->setHasAnimation(true);
+                }
             }
         }
         _setValuesQueue.clear();

@@ -302,7 +302,7 @@ Image::Image(ImageComponentsEnum components,
              Natron::ImageBitDepthEnum bitdepth)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
 {
-    setCacheEntry(makeKey(0,0,0),
+    setCacheEntry(makeKey(0,false,0,0),
                   boost::shared_ptr<ImageParams>( new ImageParams( 0,
                                                                    regionOfDefinition,
                                                                    1.,
@@ -342,10 +342,11 @@ Image::onMemoryAllocated()
 
 ImageKey  
 Image::makeKey(U64 nodeHashKey,
+               bool frameVaryingOrAnimated,
                SequenceTime time,
                int view)
 {
-    return ImageKey(nodeHashKey,time,view);
+    return ImageKey(nodeHashKey,frameVaryingOrAnimated,time,view);
 }
 
 boost::shared_ptr<ImageParams>

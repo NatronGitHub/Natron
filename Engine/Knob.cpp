@@ -465,6 +465,10 @@ KnobHelper::deleteValueAtTime(int time,
 
     //virtual portion
     keyframeRemoved_virtual(dimension, time);
+    
+    if (_imp->holder) {
+        _imp->holder->updateHasAnimation();
+    }
 
     if (!useGuiCurve) {
 
@@ -729,6 +733,10 @@ KnobHelper::removeAnimation(int dimension,
     
     animationRemoved_virtual(dimension);
 
+    if (_imp->holder) {
+        _imp->holder->updateHasAnimation();
+    }
+    
     
     if (!useGuiCurve) {
         //virtual portion
@@ -773,7 +781,9 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::set<int>& modifiedDimensions)
             modifiedDimensions.insert(i);
         }
     }
-    
+    if (_imp->holder) {
+        _imp->holder->updateHasAnimation();
+    }
 }
 
 void
@@ -990,6 +1000,7 @@ KnobHelper::isDescriptionVisible() const
 bool
 KnobHelper::hasAnimation() const
 {
+#pragma message WARN("Return true if the knob has an expression in Python branch")
     for (int i = 0; i < getDimension(); ++i) {
         if (getKeyFramesCount(i) > 0) {
             return true;
@@ -1610,6 +1621,9 @@ struct KnobHolder::KnobHolderPrivate
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
     
+    mutable QMutex hasAnimationMutex;
+    bool hasAnimation;
+    
     KnobHolderPrivate(AppInstance* appInstance_)
         : app(appInstance_)
           , knobs()
@@ -1622,6 +1636,8 @@ struct KnobHolder::KnobHolderPrivate
           , evaluationBlocked(0)
           , knobsFrozenMutex()
           , knobsFrozen(false)
+          , hasAnimationMutex()
+          , hasAnimation(false)
     {
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
@@ -2041,6 +2057,37 @@ void
 KnobHolder::discardAppPointer()
 {
     _imp->app = 0;
+}
+
+
+bool
+KnobHolder::getHasAnimation() const
+{
+    QMutexLocker k(&_imp->hasAnimationMutex);
+    return _imp->hasAnimation;
+}
+
+
+void
+KnobHolder::setHasAnimation(bool hasAnimation)
+{
+    QMutexLocker k(&_imp->hasAnimationMutex);
+    _imp->hasAnimation = hasAnimation;
+}
+
+
+void
+KnobHolder::updateHasAnimation()
+{
+    bool hasAnimation = false;
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        if ((*it)->hasAnimation()) {
+            hasAnimation = true;
+            break;
+        }
+    }
+    QMutexLocker k(&_imp->hasAnimationMutex);
+    _imp->hasAnimation = hasAnimation;
 }
 
 /***************************STRING ANIMATION******************************************/

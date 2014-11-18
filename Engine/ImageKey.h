@@ -22,6 +22,7 @@ class ImageKey
 public:
 
     U64 _nodeHashKey;
+    bool _frameVaryingOrAnimated;
     SequenceTime _time;
     //unsigned int _mipMapLevel;
     int _view;
@@ -30,6 +31,7 @@ public:
     ImageKey();
 
     ImageKey(U64 nodeHashKey,
+             bool frameVaryingOrAnimated,
              SequenceTime time,
              //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
              int view,
