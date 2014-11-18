@@ -260,6 +260,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             img.load(NATRON_IMAGES_PATH "closePanel.png");
             *pix = QPixmap::fromImage(img);
             break;
+        case NATRON_PIXMAP_HIDE_UNMODIFIED:
+            img.load(NATRON_IMAGES_PATH "hide_unmodified.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_UNHIDE_UNMODIFIED:
+            img.load(NATRON_IMAGES_PATH "unhide_unmodified.png");
+            *pix = QPixmap::fromImage(img);
+            break;
         case NATRON_PIXMAP_HELP_WIDGET:
             img.load(NATRON_IMAGES_PATH "help.png");
             *pix = QPixmap::fromImage(img);
