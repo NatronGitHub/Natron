@@ -30,7 +30,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 
-#include "fnOfxExtensions.h"
+#include <nuke/fnOfxExtensions.h>
 
 using namespace Natron;
 
