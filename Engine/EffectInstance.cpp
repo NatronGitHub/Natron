@@ -3893,7 +3893,7 @@ EffectInstance::checkCanSetValueAndWarn() const
 static
 void isFrameVaryingOrAnimated_impl(const Natron::EffectInstance* node,bool *ret)
 {
-    if (node->isFrameVarying() || node->getHasAnimation()) {
+    if (node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext()) {
         *ret = true;
     } else {
         int maxInputs = node->getMaxInputCount();
