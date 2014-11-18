@@ -93,7 +93,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Natron's dependencies for building all OpenFX plugins
     #brew install qt ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
     # Natron's dependencies only
-    brew install qt glew opencolorio boost
+    brew install qt glew opencolorio
 
     # wait $XQ_INSTALL_PID || true
 
