@@ -91,9 +91,9 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # TuttleOFX's dependencies:
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies for building all OpenFX plugins
-    #brew install qt expat ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
+    #brew install qt expat cairo ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
     # Natron's dependencies only
-    brew install qt expat glew opencolorio
+    brew install qt expat cairo glew opencolorio
 
     # wait $XQ_INSTALL_PID || true
 
