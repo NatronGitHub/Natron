@@ -18,6 +18,7 @@
 #include <functional>
 #include <list>
 #include <cstddef>
+#include <utility>
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
