@@ -105,3 +105,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     echo 'expat: INCLUDEPATH += /usr/local/opt/expat/include' >> config.pri
     echo 'expat: LIBS += -L/usr/local/opt/expat/lib -lexpat' >> config.pri
 fi
+#debug travis
+pwd
+ls
+cat config.pri
