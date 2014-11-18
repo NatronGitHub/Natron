@@ -90,10 +90,15 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     echo " - install brew packages"
     # TuttleOFX's dependencies:
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
-    # Natron's dependencies 
-    brew install qt ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
+    # Natron's dependencies for building all OpenFX plugins
+    #brew install qt ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
+    # Natron's dependencies only
+    brew install qt glew opencolorio boost
 
     # wait $XQ_INSTALL_PID || true
 
     echo "End dependencies installation."
+    # config.pri
+    echo 'boost: INCLUDEPATH += /opt/local/include' > config.pri
+    echo 'boost: LIBS += LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt' >> config.pri
 fi
