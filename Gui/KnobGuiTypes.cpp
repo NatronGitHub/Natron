@@ -3248,16 +3248,12 @@ String_KnobGui::reflectAnimationLevel(int /*dimension*/,
     
     if ( _knob->isMultiLine() ) {
         assert(_textEdit);
-        if (_textEdit->getAnimation() != value) {
-            _textEdit->setAnimation(value);
-        }
+        _textEdit->setAnimation(value);
     } else if ( _knob->isLabel() ) {
         assert(_label);
     } else {
         assert(_lineEdit);
-        if (_lineEdit->getAnimation() != value) {
-            _lineEdit->setAnimation(value);
-        }
+        _lineEdit->setAnimation(value);
     }
 }
 

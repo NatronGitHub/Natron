@@ -342,6 +342,11 @@ File_KnobGui::onSimplifyTriggered()
     }
 }
 
+void
+File_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+{
+    _lineEdit->setAnimation(0);
+}
 
 void
 File_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
@@ -577,6 +582,13 @@ OutputFile_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
     _lineEdit->setAnimation(3);
     _lineEdit->setReadOnly(hasExpr);
     _openFileButton->setEnabled(!hasExpr);
+}
+
+
+void
+OutputFile_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+{
+    _lineEdit->setAnimation(0);
 }
 
 void
@@ -1150,6 +1162,15 @@ Path_KnobGui::onSimplifyTriggered()
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
     }
 }
+
+void
+Path_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+{
+    if (!_knob->isMultiPath()) {
+        _lineEdit->setAnimation(0);
+    }
+}
+
 
 void
 Path_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)

@@ -49,36 +49,44 @@
 #include <set>
 
 // Type indices
-#define SBK_NATRON_IDX                                               14
-#define SBK_NATRON_STANDARDBUTTONENUM_IDX                            23
-#define SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX                    28
-#define SBK_NATRON_IMAGECOMPONENTSENUM_IDX                           17
-#define SBK_NATRON_IMAGEBITDEPTHENUM_IDX                             16
-#define SBK_NATRON_KEYFRAMETYPEENUM_IDX                              19
-#define SBK_NATRON_VALUECHANGEDREASONENUM_IDX                        24
-#define SBK_NATRON_ANIMATIONLEVELENUM_IDX                            15
-#define SBK_NATRON_ORIENTATIONENUM_IDX                               20
-#define SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX                    18
-#define SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX                 26
-#define SBK_NATRON_PLAYBACKMODEENUM_IDX                              22
-#define SBK_NATRON_PIXMAPENUM_IDX                                    21
-#define SBK_NATRON_VIEWERCOLORSPACEENUM_IDX                          25
-#define SBK_COLORTUPLE_IDX                                           2
-#define SBK_DOUBLE3DTUPLE_IDX                                        6
-#define SBK_DOUBLE2DTUPLE_IDX                                        4
-#define SBK_INT3DTUPLE_IDX                                           12
-#define SBK_INT2DTUPLE_IDX                                           10
-#define SBK_PARAM_IDX                                                27
-#define SBK_INTPARAM_IDX                                             13
-#define SBK_INT2DPARAM_IDX                                           9
-#define SBK_INT3DPARAM_IDX                                           11
-#define SBK_COLORPARAM_IDX                                           1
-#define SBK_DOUBLEPARAM_IDX                                          7
-#define SBK_DOUBLE2DPARAM_IDX                                        3
-#define SBK_DOUBLE3DPARAM_IDX                                        5
-#define SBK_EFFECT_IDX                                               8
+#define SBK_NATRON_IDX                                               18
+#define SBK_NATRON_STANDARDBUTTONENUM_IDX                            27
+#define SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX                    34
+#define SBK_NATRON_IMAGECOMPONENTSENUM_IDX                           21
+#define SBK_NATRON_IMAGEBITDEPTHENUM_IDX                             20
+#define SBK_NATRON_KEYFRAMETYPEENUM_IDX                              23
+#define SBK_NATRON_VALUECHANGEDREASONENUM_IDX                        28
+#define SBK_NATRON_ANIMATIONLEVELENUM_IDX                            19
+#define SBK_NATRON_ORIENTATIONENUM_IDX                               24
+#define SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX                    22
+#define SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX                 30
+#define SBK_NATRON_PLAYBACKMODEENUM_IDX                              26
+#define SBK_NATRON_PIXMAPENUM_IDX                                    25
+#define SBK_NATRON_VIEWERCOLORSPACEENUM_IDX                          29
+#define SBK_COLORTUPLE_IDX                                           5
+#define SBK_DOUBLE3DTUPLE_IDX                                        9
+#define SBK_DOUBLE2DTUPLE_IDX                                        7
+#define SBK_INT3DTUPLE_IDX                                           16
+#define SBK_INT2DTUPLE_IDX                                           14
+#define SBK_PARAM_IDX                                                32
+#define SBK_INTPARAM_IDX                                             17
+#define SBK_INT2DPARAM_IDX                                           13
+#define SBK_INT3DPARAM_IDX                                           15
+#define SBK_BUTTONPARAM_IDX                                          2
+#define SBK_STRINGPARAMBASE_IDX                                      36
+#define SBK_PATHPARAM_IDX                                            33
+#define SBK_OUTPUTFILEPARAM_IDX                                      31
+#define SBK_FILEPARAM_IDX                                            12
+#define SBK_STRINGPARAM_IDX                                          35
+#define SBK_BOOLEANPARAM_IDX                                         1
+#define SBK_CHOICEPARAM_IDX                                          3
+#define SBK_COLORPARAM_IDX                                           4
+#define SBK_DOUBLEPARAM_IDX                                          10
+#define SBK_DOUBLE2DPARAM_IDX                                        6
+#define SBK_DOUBLE3DPARAM_IDX                                        8
+#define SBK_EFFECT_IDX                                               11
 #define SBK_APP_IDX                                                  0
-#define SBK_NatronEngine_IDX_COUNT                                   29
+#define SBK_NatronEngine_IDX_COUNT                                   37
 
 // This variable stores all Python types exported by this module.
 extern PyTypeObject** SbkNatronEngineTypes;
@@ -124,6 +132,14 @@ template<> inline PyTypeObject* SbkType< ::Param >() { return reinterpret_cast<P
 template<> inline PyTypeObject* SbkType< ::IntParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INTPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Int2DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Int3DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::ButtonParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::StringParamBase >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX]); }
+template<> inline PyTypeObject* SbkType< ::PathParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PATHPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::OutputFileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::FileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_FILEPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::StringParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::BooleanParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::ChoiceParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ColorParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_COLORPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::DoubleParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Double2DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX]); }

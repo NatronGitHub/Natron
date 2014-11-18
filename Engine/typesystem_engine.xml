@@ -448,6 +448,14 @@
             </inject-code>
         </modify-function>
     </object-type>
+    <object-type name="BooleanParam"/>
+    <object-type name="ChoiceParam"/>
+    <object-type name="ButtonParam"/>
+    <object-type name="StringParamBase"/>
+    <object-type name="StringParam"/>
+    <object-type name="FileParam"/>
+    <object-type name="OutputFileParam"/>
+    <object-type name="PathParam"/>
     
     <rejection class="App" field-name="_instance"/>
     <rejection class="Effect" field-name="_node"/>

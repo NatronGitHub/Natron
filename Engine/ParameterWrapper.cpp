@@ -10,7 +10,6 @@
 
 #include "ParameterWrapper.h"
 
-#include "Engine/KnobTypes.h"
 
 Param::Param(const boost::shared_ptr<KnobI>& knob)
 : _knob(knob)
@@ -762,4 +761,473 @@ ColorParam::addAsDependencyOf(int fromExprDimension,Param* param)
     _addAsDependencyOf(fromExprDimension, param);
     return _colorKnob->getValue();
 }
+
+//////////////// ChoiceParam
+ChoiceParam::ChoiceParam(const boost::shared_ptr<Choice_Knob>& knob)
+: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+, _choiceKnob(knob)
+{
+    
+}
+
+ChoiceParam::~ChoiceParam()
+{
+    
+}
+
+int
+ChoiceParam::get() const
+{
+    return _choiceKnob->getValue(0);
+}
+
+int
+ChoiceParam::get(int frame) const
+{
+    return _choiceKnob->getValueAtTime(frame,0);
+}
+
+
+void
+ChoiceParam::set(int x)
+{
+    _choiceKnob->setValue(x, 0);
+}
+
+void
+ChoiceParam::set(int x, int frame)
+{
+    _choiceKnob->setValueAtTime(frame, x, 0);
+}
+
+int
+ChoiceParam::getValue(int dimension) const
+{
+    return _choiceKnob->getValue(dimension);
+}
+
+void
+ChoiceParam::setValue(int value,int dimension)
+{
+    _choiceKnob->setValue(value, dimension);
+}
+
+int
+ChoiceParam::getValueAtTime(int time,int dimension) const
+{
+    return _choiceKnob->getValueAtTime(time,dimension);
+}
+
+void
+ChoiceParam::setValueAtTime(int value,int time,int dimension)
+{
+    _choiceKnob->setValueAtTime(time, value, dimension);
+}
+
+void
+ChoiceParam::setDefaultValue(int value,int dimension)
+{
+    _choiceKnob->setDefaultValue(value,dimension);
+}
+
+int
+ChoiceParam::getDefaultValue(int dimension) const
+{
+    return _choiceKnob->getDefaultValues_mt_safe()[dimension];
+}
+
+void
+ChoiceParam::restoreDefaultValue(int dimension)
+{
+    _choiceKnob->resetToDefaultValue(dimension);
+}
+
+void
+ChoiceParam::addOption(const std::string& option,const std::string& help)
+{
+    std::vector<std::string> entries = _choiceKnob->getEntries_mt_safe();
+    std::vector<std::string> helps = _choiceKnob->getEntriesHelp_mt_safe();
+    entries.push_back(option);
+    if (!help.empty()) {
+        helps.push_back(help);
+    }
+    _choiceKnob->populateChoices(entries,helps);
+    
+}
+
+int
+ChoiceParam::addAsDependencyOf(int fromExprDimension,Param* param)
+{
+    _addAsDependencyOf(fromExprDimension, param);
+    return _choiceKnob->getValue();
+}
+
+////////////////BooleanParam
+
+
+BooleanParam::BooleanParam(const boost::shared_ptr<Bool_Knob>& knob)
+: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+, _boolKnob(knob)
+{
+    
+}
+
+BooleanParam::~BooleanParam()
+{
+    
+}
+
+bool
+BooleanParam::get() const
+{
+    return _boolKnob->getValue(0);
+}
+
+bool
+BooleanParam::get(int frame) const
+{
+    return _boolKnob->getValueAtTime(frame,0);
+}
+
+
+void
+BooleanParam::set(bool x)
+{
+    _boolKnob->setValue(x, 0);
+}
+
+void
+BooleanParam::set(bool x, int frame)
+{
+    _boolKnob->setValueAtTime(frame, x, 0);
+}
+
+bool
+BooleanParam::getValue() const
+{
+    return _boolKnob->getValue(0);
+}
+
+void
+BooleanParam::setValue(bool value)
+{
+    _boolKnob->setValue(value, 0);
+}
+
+bool
+BooleanParam::getValueAtTime(int time) const
+{
+    return _boolKnob->getValueAtTime(time,0);
+}
+
+void
+BooleanParam::setValueAtTime(bool value,int time)
+{
+    _boolKnob->setValueAtTime(time, value, 0);
+}
+
+void
+BooleanParam::setDefaultValue(bool value)
+{
+    _boolKnob->setDefaultValue(value,0);
+}
+
+bool
+BooleanParam::getDefaultValue() const
+{
+    return _boolKnob->getDefaultValues_mt_safe()[0];
+}
+
+void
+BooleanParam::restoreDefaultValue()
+{
+    _boolKnob->resetToDefaultValue(0);
+}
+
+
+bool
+BooleanParam::addAsDependencyOf(int fromExprDimension,Param* param)
+{
+    _addAsDependencyOf(fromExprDimension, param);
+    return _boolKnob->getValue();
+}
+
+////////////// StringParamBase
+
+
+StringParamBase::StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob)
+: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+, _stringKnob(knob)
+{
+    
+}
+
+StringParamBase::~StringParamBase()
+{
+    
+}
+
+
+std::string
+StringParamBase::get() const
+{
+    return _stringKnob->getValue(0);
+}
+
+std::string
+StringParamBase::get(int frame) const
+{
+    return _stringKnob->getValueAtTime(frame,0);
+}
+
+
+void
+StringParamBase::set(const std::string& x)
+{
+    _stringKnob->setValue(x, 0);
+}
+
+void
+StringParamBase::set(const std::string& x, int frame)
+{
+    _stringKnob->setValueAtTime(frame, x, 0);
+}
+
+std::string
+StringParamBase::getValue() const
+{
+    return _stringKnob->getValue(0);
+}
+
+void
+StringParamBase::setValue(const std::string& value)
+{
+    _stringKnob->setValue(value, 0);
+}
+
+std::string
+StringParamBase::getValueAtTime(int time) const
+{
+    return _stringKnob->getValueAtTime(time,0);
+}
+
+void
+StringParamBase::setValueAtTime(const std::string& value,int time)
+{
+    _stringKnob->setValueAtTime(time, value, 0);
+}
+
+void
+StringParamBase::setDefaultValue(const std::string& value)
+{
+    _stringKnob->setDefaultValue(value,0);
+}
+
+std::string
+StringParamBase::getDefaultValue() const
+{
+    return _stringKnob->getDefaultValues_mt_safe()[0];
+}
+
+void
+StringParamBase::restoreDefaultValue()
+{
+    _stringKnob->resetToDefaultValue(0);
+}
+
+
+std::string
+StringParamBase::addAsDependencyOf(int fromExprDimension,Param* param)
+{
+    _addAsDependencyOf(fromExprDimension, param);
+    return _stringKnob->getValue();
+}
+
+
+////////////////////StringParam
+
+StringParam::StringParam(const boost::shared_ptr<String_Knob>& knob)
+: StringParamBase(boost::dynamic_pointer_cast<Knob<std::string> >(knob))
+, _sKnob(knob)
+{
+    
+}
+
+StringParam::~StringParam()
+{
+    
+}
+
+void
+StringParam::setType(StringParam::TypeEnum type)
+{
+    switch (type) {
+        case eStringTypeLabel:
+            _sKnob->setAsLabel();
+            break;
+        case eStringTypeMultiLine:
+            _sKnob->setAsMultiLine();
+            break;
+        case eStringTypeRichTextMultiLine:
+            _sKnob->setAsMultiLine();
+            _sKnob->setUsesRichText(true);
+            break;
+        case eStringTypeCustom:
+            _sKnob->setAsCustom();
+            break;
+        case eStringTypeDefault:
+        default:
+            break;
+    }
+}
+
+/////////////////////FileParam
+
+FileParam::FileParam(const boost::shared_ptr<File_Knob>& knob)
+: StringParamBase(boost::dynamic_pointer_cast<Knob<std::string> >(knob))
+, _sKnob(knob)
+{
+    
+}
+
+FileParam::~FileParam()
+{
+    
+}
+
+void
+FileParam::setSequenceEnabled(bool enabled)
+{
+    if (enabled) {
+        _sKnob->setAsInputImage();
+    }
+}
+
+void
+FileParam::openFile()
+{
+    _sKnob->open_file();
+}
+
+/////////////////////OutputFileParam
+
+OutputFileParam::OutputFileParam(const boost::shared_ptr<OutputFile_Knob>& knob)
+: StringParamBase(boost::dynamic_pointer_cast<Knob<std::string> >(knob))
+, _sKnob(knob)
+{
+    
+}
+
+OutputFileParam::~OutputFileParam()
+{
+    
+}
+
+void
+OutputFileParam::setSequenceEnabled(bool enabled)
+{
+    if (enabled) {
+        _sKnob->setAsOutputImageFile();
+    } else {
+        _sKnob->turnOffSequences();
+    }
+}
+
+void
+OutputFileParam::openFile()
+{
+    _sKnob->open_file();
+}
+
+////////////////////PathParam
+
+PathParam::PathParam(const boost::shared_ptr<Path_Knob>& knob)
+: StringParamBase(boost::dynamic_pointer_cast<Knob<std::string> >(knob))
+, _sKnob(knob)
+{
+    
+}
+
+PathParam::~PathParam()
+{
+    
+}
+
+
+void
+PathParam::setAsMultiPathTable()
+{
+    _sKnob->setMultiPath(true);
+}
+
+////////////////////ButtonParam
+
+ButtonParam::ButtonParam(const boost::shared_ptr<Button_Knob>& knob)
+: Param(knob)
+, _buttonKnob(boost::dynamic_pointer_cast<Button_Knob>(knob))
+{
+    
+}
+
+ButtonParam::~ButtonParam()
+{
+    
+}
+
+void
+ButtonParam::setIconFilePath(const std::string& icon)
+{
+    _buttonKnob->setIconFilePath(icon);
+}
+
+///////////////////GroupParam
+
+GroupParam::GroupParam(const boost::shared_ptr<Group_Knob>& knob)
+: Param(knob)
+, _groupKnob(boost::dynamic_pointer_cast<Group_Knob>(knob))
+{
+    
+}
+
+GroupParam::~GroupParam()
+{
+    
+}
+
+
+void
+GroupParam::addParam(const Param* param)
+{
+    _groupKnob->addKnob(param->getInternalKnob());
+}
+
+
+void
+GroupParam::setAsTab()
+{
+    _groupKnob->setAsTab();
+}
+
+//////////////////////PageParam
+
+PageParam::PageParam(const boost::shared_ptr<Page_Knob>& knob)
+: Param(knob)
+, _pageKnob(boost::dynamic_pointer_cast<Page_Knob>(knob))
+{
+    
+}
+
+PageParam::~PageParam()
+{
+    
+}
+
+
+void
+PageParam::addParam(const Param* param)
+{
+    _pageKnob->addKnob(param->getInternalKnob());
+}
+
+
 

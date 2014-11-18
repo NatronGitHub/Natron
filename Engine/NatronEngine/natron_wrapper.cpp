@@ -924,6 +924,12 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_CLOSE_PANEL", (long) Natron::NATRON_PIXMAP_CLOSE_PANEL))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_HIDE_UNMODIFIED", (long) Natron::NATRON_PIXMAP_HIDE_UNMODIFIED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_UNHIDE_UNMODIFIED", (long) Natron::NATRON_PIXMAP_UNHIDE_UNMODIFIED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_GROUPBOX_FOLDED", (long) Natron::NATRON_PIXMAP_GROUPBOX_FOLDED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],

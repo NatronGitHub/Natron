@@ -20,30 +20,20 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-class Path_Knob;
-class String_Knob;
-class File_Knob;
-class OutputFile_Knob;
-class Button_Knob;
-class Color_Knob;
-class Int_Knob;
-class Double_Knob;
-class Bool_Knob;
-class Choice_Knob;
-class Group_Knob;
-class RichText_Knob;
-class Page_Knob;
-class Parametric_Knob;
-class KnobI;
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 
 class Param
 {
     boost::shared_ptr<KnobI> _knob;
+    
 public:
     
     Param(const boost::shared_ptr<KnobI>& knob);
     
     virtual ~Param();
+    
+    boost::shared_ptr<KnobI> getInternalKnob() const { return _knob; }
     
     /**
      * @brief Returns the number of dimensions that the parameter have.
@@ -620,5 +610,375 @@ public:
     double addAsDependencyOf(int fromExprDimension,Param* param);
     
 };
+
+class ChoiceParam : public Param
+{
+    
+protected:
+    boost::shared_ptr<Choice_Knob> _choiceKnob;
+public:
+    
+    ChoiceParam(const boost::shared_ptr<Choice_Knob>& knob);
+    
+    virtual ~ChoiceParam();
+    
+    /**
+     * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
+     **/
+    int get() const;
+    int get(int frame) const;
+    
+    /**
+     * @brief Convenience functions for multi-dimensional setting of values
+     **/
+    void set(int x);
+    void set(int x, int frame);
+    
+    /**
+     * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
+     * will be called instead at the current's timeline position.
+     **/
+    int getValue(int dimension = 0) const;
+    
+    /**
+     * @brief Set the value held by the parameter. If it is animated
+     * this function will either add a new keyframe or modify a keyframe already existing at the current time.
+     **/
+    void setValue(int value,int dimension = 0);
+    
+    /**
+     * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
+     * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
+     * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
+     **/
+    int getValueAtTime(int time,int dimension = 0) const;
+    
+    /**
+     * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
+     **/
+    void setValueAtTime(int value,int time,int dimension = 0);
+    
+    /**
+     * @brief Set the default value for the given dimension
+     **/
+    void setDefaultValue(int value,int dimension = 0);
+    
+    /**
+     * @brief Return the default value for the given dimension
+     **/
+    int getDefaultValue(int dimension = 0) const;
+    
+    /**
+     * @brief Restores the default value for the given dimension
+     **/
+    void restoreDefaultValue(int dimension = 0);
+    
+    /**
+     * @brief Add a new option to the drop-down menu
+     **/
+    void addOption(const std::string& option,const std::string& help);
+    
+    /**
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    int addAsDependencyOf(int fromExprDimension,Param* param);
+    
+};
+
+class BooleanParam : public Param
+{
+    
+protected:
+    boost::shared_ptr<Bool_Knob> _boolKnob;
+public:
+    
+    BooleanParam(const boost::shared_ptr<Bool_Knob>& knob);
+    
+    virtual ~BooleanParam();
+    
+    /**
+     * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
+     **/
+    bool get() const;
+    bool get(int frame) const;
+    
+    /**
+     * @brief Convenience functions for multi-dimensional setting of values
+     **/
+    void set(bool x);
+    void set(bool x, int frame);
+    
+    /**
+     * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
+     * will be called instead at the current's timeline position.
+     **/
+    bool getValue() const;
+    
+    /**
+     * @brief Set the value held by the parameter. If it is animated
+     * this function will either add a new keyframe or modify a keyframe already existing at the current time.
+     **/
+    void setValue(bool value);
+    
+    /**
+     * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
+     * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
+     * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
+     **/
+    bool getValueAtTime(int time) const;
+    
+    /**
+     * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
+     **/
+    void setValueAtTime(bool value,int time);
+    
+    /**
+     * @brief Set the default value for the given dimension
+     **/
+    void setDefaultValue(bool value);
+    
+    /**
+     * @brief Return the default value for the given dimension
+     **/
+    bool getDefaultValue() const;
+    
+    /**
+     * @brief Restores the default value for the given dimension
+     **/
+    void restoreDefaultValue();
+    
+    /**
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    bool addAsDependencyOf(int fromExprDimension,Param* param);
+    
+};
+
+/////////////StringParam
+
+class StringParamBase : public Param
+{
+    
+protected:
+    boost::shared_ptr<Knob<std::string> > _stringKnob;
+public:
+    
+    StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob);
+    
+    virtual ~StringParamBase();
+    
+    /**
+     * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
+     **/
+    std::string get() const;
+    std::string get(int frame) const;
+    
+    /**
+     * @brief Convenience functions for multi-dimensional setting of values
+     **/
+    void set(const std::string& x);
+    void set(const std::string& x, int frame);
+    
+    /**
+     * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
+     * will be called instead at the current's timeline position.
+     **/
+    std::string getValue() const;
+    
+    /**
+     * @brief Set the value held by the parameter. If it is animated
+     * this function will either add a new keyframe or modify a keyframe already existing at the current time.
+     **/
+    void setValue(const std::string& value);
+    
+    /**
+     * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
+     * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
+     * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
+     **/
+    std::string getValueAtTime(int time) const;
+    
+    /**
+     * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
+     **/
+    void setValueAtTime(const std::string& value,int time);
+    
+    /**
+     * @brief Set the default value for the given dimension
+     **/
+    void setDefaultValue(const std::string& value);
+    
+    /**
+     * @brief Return the default value for the given dimension
+     **/
+    std::string getDefaultValue() const;
+    
+    /**
+     * @brief Restores the default value for the given dimension
+     **/
+    void restoreDefaultValue();
+    
+    /**
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    std::string addAsDependencyOf(int fromExprDimension,Param* param);
+    
+   
+    
+};
+
+class StringParam : public StringParamBase
+{
+    boost::shared_ptr<String_Knob> _sKnob;
+public:
+    
+    enum TypeEnum {
+        eStringTypeLabel, //< A label shown on gui, cannot animate
+        eStringTypeMultiLine, //< A text area in plain text
+        eStringTypeRichTextMultiLine, //< A text area with Qt Html support
+        eStringTypeCustom, //< A custom string where anything can be passed, it animates but is not editable by the user
+        eStringTypeDefault, //< Same as custom except that it is editable
+    };
+    
+    StringParam(const boost::shared_ptr<String_Knob>& knob);
+    
+    virtual ~StringParam();
+    
+    /**
+     * @brief Set the type of the string, @see TypeEnum.
+     * This is not dynamic and has to be called right away after creating the parameter!
+     **/
+    void setType(TypeEnum type);
+    
+};
+
+class FileParam : public StringParamBase
+{
+    boost::shared_ptr<File_Knob> _sKnob;
+public:
+
+    
+    FileParam(const boost::shared_ptr<File_Knob>& knob);
+    
+    virtual ~FileParam();
+  
+    /**
+     * @brief If enabled is true then the dialog associated to this parameter will be able to display sequences.
+     * By default this is set to false. This property is not dynamic and should be set right away after parameter creation.
+     **/
+    void setSequenceEnabled(bool enabled);
+    
+    /**
+     * @brief Forces the GUI to pop-up the dialog
+     **/
+    void openFile();
+};
+
+class OutputFileParam : public StringParamBase
+{
+    boost::shared_ptr<OutputFile_Knob> _sKnob;
+public:
+    
+    
+    OutputFileParam(const boost::shared_ptr<OutputFile_Knob>& knob);
+    
+    virtual ~OutputFileParam();
+    
+    /**
+     * @brief If enabled is true then the dialog associated to this parameter will be able to display sequences.
+     * By default this is set to false. This property is not dynamic and should be set right away after parameter creation.
+     **/
+    void setSequenceEnabled(bool enabled);
+    
+    /**
+     * @brief Forces the GUI to pop-up the dialog
+     **/
+    void openFile();
+};
+
+class PathParam : public StringParamBase
+{
+    boost::shared_ptr<Path_Knob> _sKnob;
+public:
+    
+    
+    PathParam(const boost::shared_ptr<Path_Knob>& knob);
+    
+    virtual ~PathParam();
+    
+    /**
+     * @brief When set, instead of being a regular line-edit with a button to select a directory, the parameter will 
+     * be a table much like the Project paths table of the Project settings. This cannot animate.
+     **/
+    void setAsMultiPathTable();
+};
+
+/////////////////ButtonParam
+
+class ButtonParam : public Param
+{
+    
+protected:
+    boost::shared_ptr<Button_Knob> _buttonKnob;
+public:
+    
+    ButtonParam(const boost::shared_ptr<Button_Knob>& knob);
+    
+    virtual ~ButtonParam();
+    
+    /**
+     * @brief Set the icon file-path that should be used for the button.
+     * This can only be called right away after the parameter has been created.
+     **/
+    void setIconFilePath(const std::string& icon);
+};
+
+class GroupParam : public Param
+{
+    
+protected:
+    boost::shared_ptr<Group_Knob> _groupKnob;
+public:
+    
+    GroupParam(const boost::shared_ptr<Group_Knob>& knob);
+    
+    virtual ~GroupParam();
+    
+    /**
+     * @brief Add a param as a child of this group
+     **/
+    void addParam(const Param* param);
+    
+    /**
+     * @brief Set this group as a tab. If the holding node doesn't have a tab to contain this tab, it will create then a tab widget container.
+     **/
+    void setAsTab();
+};
+
+class PageParam : public Param
+{
+    
+protected:
+    boost::shared_ptr<Page_Knob> _pageKnob;
+public:
+    
+    PageParam(const boost::shared_ptr<Page_Knob>& knob);
+    
+    virtual ~PageParam();
+    
+    /**
+     * @brief Add a param as a child of this group. All params should belong to a page, otherwise they will end up in the default page.
+     * This is not dynamic and should be call at creation time of all parameters.
+     **/
+    void addParam(const Param* param);
+ 
+};
+
 
 #endif // PARAMETERWRAPPER_H

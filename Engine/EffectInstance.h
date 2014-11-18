@@ -756,11 +756,7 @@ public:
                                        const RectD & outputRoD,
                                        const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                        int view,
-<<<<<<< HEAD
-                                      RoIMap* ret) WARN_UNUSED_RETURN;
-=======
                                       RoIMap* ret);
->>>>>>> workshop
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 

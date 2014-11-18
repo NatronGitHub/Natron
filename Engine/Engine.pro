@@ -120,7 +120,14 @@ SOURCES += \
     NatronEngine/int2dtuple_wrapper.cpp \
     NatronEngine/int3dparam_wrapper.cpp \
     NatronEngine/int3dtuple_wrapper.cpp \
-    NatronEngine/colorparam_wrapper.cpp
+    NatronEngine/colorparam_wrapper.cpp \
+    NatronEngine/booleanparam_wrapper.cpp \
+    NatronEngine/buttonparam_wrapper.cpp \
+    NatronEngine/choiceparam_wrapper.cpp \
+    NatronEngine/fileparam_wrapper.cpp \
+    NatronEngine/outputfileparam_wrapper.cpp \
+    NatronEngine/stringparam_wrapper.cpp \
+    NatronEngine/stringparambase_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -254,7 +261,14 @@ HEADERS += \
     NatronEngine/int2dtuple_wrapper.h \
     NatronEngine/int3dparam_wrapper.h \
     NatronEngine/int3dtuple_wrapper.h \
-    NatronEngine/colorparam_wrapper.h
+    NatronEngine/colorparam_wrapper.h \
+    NatronEngine/booleanparam_wrapper.h \
+    NatronEngine/buttonparam_wrapper.h \
+    NatronEngine/choiceparam_wrapper.h \
+    NatronEngine/fileparam_wrapper.h \
+    NatronEngine/outputfileparam_wrapper.h \
+    NatronEngine/stringparam_wrapper.h \
+    NatronEngine/stringparambase_wrapper.h
 
 
 OTHER_FILES += \

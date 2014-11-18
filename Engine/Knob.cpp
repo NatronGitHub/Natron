@@ -1039,9 +1039,12 @@ KnobHelper::isDescriptionVisible() const
 bool
 KnobHelper::hasAnimation() const
 {
-#pragma message WARN("Return true if the knob has an expression in Python branch")
+    
     for (int i = 0; i < getDimension(); ++i) {
         if (getKeyFramesCount(i) > 0) {
+            return true;
+        }
+        if (!getExpression(i).empty()) {
             return true;
         }
     }
@@ -1482,6 +1485,7 @@ KnobHelper::clearExpression(int dimension)
             }
         }
     }
+    
     expressionChanged(dimension);
     
 }
@@ -1489,6 +1493,9 @@ KnobHelper::clearExpression(int dimension)
 void
 KnobHelper::expressionChanged(int dimension)
 {
+    if (_imp->holder) {
+        _imp->holder->updateHasAnimation();
+    }
     
     if (_signalSlotHandler) {
         _signalSlotHandler->s_expressionChanged(dimension);
