@@ -177,5 +177,6 @@
         <file>Resources/Images/refreshActive.png</file>
         <file>Resources/Images/hide_unmodified.png</file>
         <file>Resources/Images/unhide_unmodified.png</file>
+        <file>../CHANGELOG.md</file>
     </qresource>
 </RCC>
