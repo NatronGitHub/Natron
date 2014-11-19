@@ -24,9 +24,10 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $MAKEFLAGSPARALLEL
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
+    # on OSX, the tests are done on the clang configuration
     # cairo requires xcb-shm, which has its pkg-config file in /opt/X11
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
-    if [ "$CC" = "gcc" ]; then qmake -r -spec macx-g++; else qmake -spec unsupported/macx-clang; fi
+    if [ "$CC" = "gcc" ]; then qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++; else qmake -spec unsupported/macx-clang-libc++; fi
     make $MAKEFLAGSPARALLEL
-    if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
+    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 fi
