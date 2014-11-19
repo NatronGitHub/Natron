@@ -507,7 +507,9 @@ public:
 
     void clearInputImagePointers()
     {
-        inputImages.localData().clear();
+        if (inputImages.hasLocalData()) {
+            inputImages.localData().clear();
+        }
     }
 };
 
