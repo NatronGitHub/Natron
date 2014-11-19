@@ -123,6 +123,15 @@ AboutWindow::AboutWindow(Gui* gui,
     
     _aboutText->setText(aboutText);
     _tabWidget->addTab( _aboutText, QObject::tr("About") );
+    
+    _changelogText =  new QTextBrowser(_tabWidget);
+    _changelogText->setOpenExternalLinks(true);
+    {
+        QFile changelogFile(":CHANGELOG.md");
+        changelogFile.open(QIODevice::ReadOnly | QIODevice::Text);
+        _changelogText->setText(QTextCodec::codecForName("UTF-8")->toUnicode( changelogFile.readAll() ) );
+    }
+    _tabWidget->addTab(_changelogText, QObject::tr("Changelog"));
 
     _libsText = new QTextBrowser(_tabWidget);
     _libsText->setOpenExternalLinks(true);
@@ -145,17 +154,18 @@ AboutWindow::AboutWindow(Gui* gui,
         QFile team_file(":CONTRIBUTORS.txt");
         team_file.open(QIODevice::ReadOnly | QIODevice::Text);
         _teamText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( team_file.readAll() ) );
-        _tabWidget->addTab( _teamText, QObject::tr("Contributors") );
-
-        _licenseText = new QTextBrowser(_tabWidget);
-        _licenseText->setOpenExternalLinks(false);
     }
+    _tabWidget->addTab( _teamText, QObject::tr("Contributors") );
+
+    _licenseText = new QTextBrowser(_tabWidget);
+    _licenseText->setOpenExternalLinks(false);
     {
         QFile license(":LICENSE.txt");
         license.open(QIODevice::ReadOnly | QIODevice::Text);
         _licenseText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ) );
-        _tabWidget->addTab( _licenseText, QObject::tr("License") );
     }
+    _tabWidget->addTab( _licenseText, QObject::tr("License") );
+
 }
 
 void

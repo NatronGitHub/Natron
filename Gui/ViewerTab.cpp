@@ -1536,29 +1536,18 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
-                    return true;
-                }
+                _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e);
             }
         } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
-                    return true;
-                }
+                _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e)  ;
             }
         } else {
             
             Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
-                
-                // to any other interactive object it may own that shares the same view.
-                return true;
-            }
+            (void)effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
         }
         
     }
@@ -1644,28 +1633,17 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
         
         if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentRoto.second->keyUp(scaleX, scaleY, e) ) {
-                    return true;
-                }
+                _imp->_currentRoto.second->keyUp(scaleX, scaleY, e);
             }
         } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
             if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentTracker.second->keyUp(scaleX, scaleY, e) ) {
-                    return true;
-                }
+                _imp->_currentTracker.second->keyUp(scaleX, scaleY, e);
             }
         } else {
             
             effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayKeyUp_public( scaleX,scaleY,
-                                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
-                
-                // to any other interactive object it may own that shares the same view.
-                return true;
-            }
+            (void)effect->onOverlayKeyUp_public( scaleX,scaleY,
+                                          QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         }
     }
 
