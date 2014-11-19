@@ -1488,6 +1488,19 @@ private:
     StringAnimationManager* _animation;
 };
 
+class Int_Knob;
+class Double_Knob;
+class Bool_Knob;
+class Choice_Knob;
+class Color_Knob;
+class Button_Knob;
+class String_Knob;
+class File_Knob;
+class OutputFile_Knob;
+class Path_Knob;
+class Parametric_Knob;
+class Group_Knob;
+class Page_Knob;
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
@@ -1583,10 +1596,58 @@ public:
      **/
     void updateHasAnimation();
     
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * @brief These functions below are dynamic in a sense that they can be called at any time (on the main-thread)
+     * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
+     * created, you must call refreshKnobs() that will re-scan for new parameters
+     **/
+    boost::shared_ptr<Int_Knob> createIntKnob(const std::string& name, const std::string& label,const std::string& help,
+                                              bool startNewLine,bool persistent, bool evaluateOnChange, bool animates, int dimension,int min,int max);
+    
+    boost::shared_ptr<Double_Knob> createDoubleKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                    bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max);
+    
+    boost::shared_ptr<Color_Knob> createColorKnob(const std::string& name, const std::string& label,const std::string& help,
+                         bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max);
+    
+    boost::shared_ptr<Bool_Knob> createBoolKnob(const std::string& name, const std::string& label,const std::string& help,
+                        bool startNewLine,bool persistent, bool evaluateOnChange  , bool animates);
+    
+    boost::shared_ptr<Choice_Knob> createChoiceKnob(const std::string& name, const std::string& label,const std::string& help,
+                          bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,const std::vector<std::string>& entries,
+                          const std::vector<std::string>& entriesHelp);
+    
+    boost::shared_ptr<Button_Knob> createButtonKnob(const std::string& name, const std::string& label,const std::string& help,
+                          bool startNewLine);
+    
+    //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
+    boost::shared_ptr<String_Knob> createStringKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                    bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,
+                                                    int type);
+    
+    boost::shared_ptr<File_Knob> createFileKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                    bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences);
+    
+    boost::shared_ptr<OutputFile_Knob> createOuptutFileKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                  bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences);
+    
+    boost::shared_ptr<Path_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                  bool startNewLine,bool persistent, bool evaluateOnChange,bool multiPath);
+
+    boost::shared_ptr<Group_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help,bool setAsTab);
+    
+    boost::shared_ptr<Page_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help);
+    
+    boost::shared_ptr<Parametric_Knob> createParametricKnob(const std::string& name, const std::string& label,const std::string& help);
+    
+    void refreshKnobs();
+    //////////////////////////////////////////////////////////////////////////////////////////
 protected:
-
+    
+    virtual void notifyKnobsRefreshed() = 0;
+    
     bool isEvaluationBlocked() const;
-
 
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).

@@ -2378,7 +2378,8 @@ boost::shared_ptr<KnobI> KnobHolder::getKnobByName(const std::string & name) con
 const std::vector< boost::shared_ptr<KnobI> > &
 KnobHolder::getKnobs() const
 {
-    ///MT-safe since it never changes
+    
+    assert(QThread::currentThread() == qApp->thread());
     return _imp->knobs;
 }
 

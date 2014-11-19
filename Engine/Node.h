@@ -474,11 +474,6 @@ public:
      **/
     bool isRenderingPreview() const;
 
-    /**
-     * @brief
-     * You must call this in order to notify the GUI of any change (add/delete) for knobs
-     **/
-    void createKnobDynamically();
 
     /**
      * @brief Returns true if the node is active for use in the graph editor. MT-safe

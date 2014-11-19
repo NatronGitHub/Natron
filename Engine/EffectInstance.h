@@ -544,6 +544,7 @@ public:
      **/
     bool isFrameVaryingOrAnimated_Recursive() const;
 
+    
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -786,18 +787,6 @@ public:
      * @brief Called on generator effects upon creation if they have an image input file field.
      **/
     void openImageFileKnob();
-
-
-    /**
-     * @brief
-     * You must call this in order to notify the GUI of any change (add/delete) for knobs not made during
-     * initializeKnobs().
-     * For example you may want to remove some knobs in response to a value changed of another knob.
-     * This is something that OpenFX does not provide but we make it possible for Natron plugins.
-     * - To properly delete a knob just call the destructor of the knob.
-     * - To properly delete
-     **/
-    void createKnobDynamically();
 
 
     /**

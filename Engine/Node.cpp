@@ -1213,11 +1213,6 @@ Node::beginEditKnobs()
     _imp->liveInstance->beginEditKnobs();
 }
 
-void
-Node::createKnobDynamically()
-{
-    emit knobsInitialized();
-}
 
 void
 Node::setLiveInstance(Natron::EffectInstance* liveInstance)

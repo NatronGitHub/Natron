@@ -2870,11 +2870,6 @@ EffectInstance::openImageFileKnob()
     }
 }
 
-void
-EffectInstance::createKnobDynamically()
-{
-    _node->createKnobDynamically();
-}
 
 void
 EffectInstance::evaluate(KnobI* knob,
