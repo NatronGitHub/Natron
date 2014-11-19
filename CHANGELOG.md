@@ -18,6 +18,8 @@ to render images at lower resolution if the viewer is zoomed-out or if proxy mod
 This setting is set by the plug-in internally, but some plug-ins are known to be bugged (
 they flag that do support zoom levels but in fact they don't). 
 
+- A new changelog tab in the About window is now available
+
 - Roto: When restoring a project, the default tool will be "Select All" instead of "Bezier"
 to avoid creating new beziers by mistake
 
