@@ -1477,6 +1477,11 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         return eCanConnectInput_graphCycles;
     }
     
+    if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
+        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        return eCanConnectInput_indexOutOfRange;
+    }
+    
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
@@ -1527,8 +1532,10 @@ Node::connectInput(boost::shared_ptr<Node> input,
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
         return false;
     }
-    
-    
+    if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
+        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        return false;
+    }
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
