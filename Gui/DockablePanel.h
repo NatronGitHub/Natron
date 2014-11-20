@@ -25,6 +25,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 #include <QTabWidget>
+#include <QDialog>
 #include "Global/GlobalDefines.h"
 
 #include "Engine/DockablePanelI.h"
@@ -226,6 +227,8 @@ public slots:
 
     void onHideUnmodifiedButtonClicked(bool checked);
     
+    void onManageUserParametersActionTriggered();
+    
 signals:
 
     /*emitted when the panel is clicked*/
@@ -354,6 +357,23 @@ private:
     virtual void centerOnItem() OVERRIDE FINAL;
     
     NodeBackDrop* _backdrop;
+};
+
+
+struct ManageUserParamsDialogPrivate;
+class ManageUserParamsDialog : public QDialog
+{
+    
+public:
+    
+    
+    ManageUserParamsDialog(DockablePanel* panel,QWidget* parent);
+    
+    virtual ~ManageUserParamsDialog();
+    
+private:
+    
+    boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_SETTINGSPANEL_H_

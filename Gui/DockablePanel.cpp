@@ -23,6 +23,7 @@
 #include <QDebug>
 #include <QToolTip>
 #include <QMutex>
+#include <QTreeWidget>
 #include <QColorDialog>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -1442,6 +1443,10 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
         QMenu menu(this);
         menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+        
+        QAction* userParams = new QAction(tr("Manage user parameters..."),&menu);
+        menu.addAction(userParams);
+        
         QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
         menu.addAction(setKeys);
         QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
@@ -1457,9 +1462,17 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
             setKeyOnAllParameters();
         } else if (ret == removeAnimation) {
             removeAnimationOnAllParameters();
+        } else if (ret == userParams) {
+            onManageUserParametersActionTriggered();
         }
     }
 } // onRightClickMenuRequested
+
+void
+DockablePanel::onManageUserParametersActionTriggered()
+{
+    
+}
 
 void
 DockablePanel::setKeyOnAllParameters()
@@ -1659,6 +1672,10 @@ NodeSettingsPanel::onSettingsButtonClicked()
     menu.addAction(exportAsPresets);
     menu.addSeparator();
     
+    QAction* manageUserParams = new QAction(tr("Manage user parameters..."),&menu);
+    QObject::connect(manageUserParams,SIGNAL(triggered()),this,SLOT(onManageUserParametersActionTriggered()));
+    menu.addAction(manageUserParams);
+    
     QAction* setKeyOnAll = new QAction(tr("Set key on all parameters"),&menu);
     QObject::connect(setKeyOnAll,SIGNAL(triggered()),this,SLOT(setKeyOnAllParameters()));
     QAction* removeAnimationOnAll = new QAction(tr("Remove animation on all parameters"),&menu);
@@ -1806,3 +1823,78 @@ NodeBackDropSettingsPanel::centerOnItem()
 {
     _backdrop->centerOnIt();
 }
+
+struct ManageUserParamsDialogPrivate
+{
+    DockablePanel* panel;
+    
+    QHBoxLayout* mainLayout;
+    QTreeWidget* tree;
+    
+    QWidget* buttonsContainer;
+    QVBoxLayout* buttonsLayout;
+    
+    Button* addButton;
+    Button* editButton;
+    Button* removeButton;
+    Button* upButton;
+    Button* downButton;
+    Button* closeButton;
+
+    
+    ManageUserParamsDialogPrivate(DockablePanel* panel)
+    : panel(panel)
+    , mainLayout(0)
+    , tree(0)
+    , buttonsContainer(0)
+    , buttonsLayout(0)
+    , addButton(0)
+    , editButton(0)
+    , removeButton(0)
+    , upButton(0)
+    , downButton(0)
+    , closeButton(0)
+    {
+        
+    }
+};
+
+ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* parent)
+: QDialog(parent)
+, _imp(new ManageUserParamsDialogPrivate(panel))
+{
+    _imp->mainLayout = new QHBoxLayout(this);
+    
+    _imp->tree = new QTreeWidget(this);
+    
+    _imp->mainLayout->addWidget(_imp->tree);
+    
+    _imp->buttonsContainer = new QWidget(this);
+    _imp->buttonsLayout = new QVBoxLayout(_imp->buttonsContainer);
+    
+    _imp->addButton = new Button(tr("Add"),_imp->buttonsContainer);
+    _imp->buttonsLayout->addWidget(_imp->addButton);
+    
+    _imp->editButton = new Button(tr("Edit"),_imp->buttonsContainer);
+    _imp->buttonsLayout->addWidget(_imp->editButton);
+    
+    _imp->removeButton = new Button(tr("Delete"),_imp->buttonsContainer);
+    _imp->buttonsLayout->addWidget(_imp->removeButton);
+    
+    _imp->upButton = new Button(tr("Up"),_imp->buttonsContainer);
+    _imp->buttonsLayout->addWidget(_imp->upButton);
+    
+    _imp->downButton = new Button(tr("Down"),_imp->buttonsContainer);
+    _imp->buttonsLayout->addWidget(_imp->downButton);
+    
+    _imp->closeButton = new Button(tr("Close"),_imp->buttonsContainer);
+    _imp->buttonsLayout->addWidget(_imp->closeButton);
+    
+    _imp->mainLayout->addWidget(_imp->buttonsContainer);
+}
+
+ManageUserParamsDialog::~ManageUserParamsDialog()
+{
+    
+}
+
