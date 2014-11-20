@@ -83,7 +83,6 @@ public:
                    QWidget* fieldContainer,
                    QWidget* label,
                    QHBoxLayout* layout,
-                   int row,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
 

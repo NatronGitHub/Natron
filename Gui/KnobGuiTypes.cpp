@@ -3359,10 +3359,9 @@ Group_KnobGui::~Group_KnobGui()
 }
 
 void
-Group_KnobGui::addKnob(KnobGui *child,
-                       int row)
+Group_KnobGui::addKnob(KnobGui *child)
 {
-    _children.push_back( std::make_pair( child, row ) );
+    _children.push_back(child);
 }
 
 bool
@@ -3396,12 +3395,13 @@ Group_KnobGui::setChecked(bool b)
     ///the children back with an offset relative to the group.
     int realIndexInLayout = getActualIndexInLayout();
     int startChildIndex = realIndexInLayout + 1;
-    for (U32 i = 0; i < _children.size(); ++i) {
+    
+    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (!b) {
-            _children[i].first->hide();
-        } else if ( !_children[i].first->getKnob()->getIsSecret() ) {
-            _children[i].first->show(startChildIndex);
-            if ( !_children[i].first->getKnob()->isNewLineTurnedOff() ) {
+            (*it)->hide();
+        } else if ( !(*it)->getKnob()->getIsSecret() ) {
+            (*it)->show(startChildIndex);
+            if ( !(*it)->getKnob()->isNewLineTurnedOff() ) {
                 ++startChildIndex;
             }
         }
@@ -3437,8 +3437,8 @@ Group_KnobGui::_hide()
     if (_button) {
         _button->hide();
     }
-    for (U32 i = 0; i < _children.size(); ++i) {
-        _children[i].first->hide();
+    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+        (*it)->hide();
     }
 }
 
@@ -3453,8 +3453,8 @@ Group_KnobGui::_show()
     }
 
     if (_checked) {
-        for (U32 i = 0; i < _children.size(); ++i) {
-            _children[i].first->show();
+        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+            (*it)->show();
         }
     }
 }
@@ -3475,15 +3475,15 @@ Group_KnobGui::setEnabled()
         }
     } else {
         _childrenToEnable.clear();
-        for (U32 i = 0; i < _children.size(); ++i) {
+        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
             std::vector<int> dimensions;
-            for (int j = 0; j < _children[i].first->getKnob()->getDimension(); ++j) {
-                if ( _children[i].first->getKnob()->isEnabled(j) ) {
-                    _children[i].first->getKnob()->setEnabled(j, false);
+            for (int j = 0; j < (*it)->getKnob()->getDimension(); ++j) {
+                if ( (*it)->getKnob()->isEnabled(j) ) {
+                    (*it)->getKnob()->setEnabled(j, false);
                     dimensions.push_back(j);
                 }
             }
-            _childrenToEnable.push_back( std::make_pair(_children[i].first, dimensions) );
+            _childrenToEnable.push_back( std::make_pair(*it, dimensions) );
         }
     }
 }

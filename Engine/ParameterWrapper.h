@@ -25,6 +25,8 @@
 
 class Param
 {
+    
+protected:
     boost::shared_ptr<KnobI> _knob;
     
 public:
@@ -116,6 +118,28 @@ public:
      **/
     bool getIsAnimationEnabled() const;
     
+    
+protected:
+    
+    /**
+     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
+     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
+     * You should not call this directly.
+     **/
+    void _addAsDependencyOf(int fromExprDimension,Param* param);
+
+};
+
+
+class AnimatedParam : public Param
+{
+    
+public:
+    
+    AnimatedParam(const boost::shared_ptr<KnobI>& knob);
+    
+    virtual ~AnimatedParam();
+
     /**
      * @brief Returns whether the given dimension has animation or not. A dimension is considered to have an animation when it has
      * at least 1 keyframe.
@@ -170,16 +194,6 @@ public:
      * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
      **/
     void setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
-    
-protected:
-    
-    /**
-     * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
-     * when a dependency (through expressions) is destroyed (because the holding node has been removed).
-     * You should not call this directly.
-     **/
-    void _addAsDependencyOf(int fromExprDimension,Param* param);
-
 };
 
 /**
@@ -207,7 +221,7 @@ struct ColorTuple
     double r,g,b,a; //< Color params are 4-dimensional
 };
 
-class IntParam : public Param
+class IntParam : public AnimatedParam
 {
     
 protected:
@@ -352,7 +366,7 @@ public:
 
 
 
-class DoubleParam : public Param
+class DoubleParam : public AnimatedParam
 {
     
 protected:
@@ -496,7 +510,7 @@ public:
 };
 
 
-class ColorParam : public Param
+class ColorParam : public AnimatedParam
 {
     
 protected:
@@ -611,7 +625,7 @@ public:
     
 };
 
-class ChoiceParam : public Param
+class ChoiceParam : public AnimatedParam
 {
     
 protected:
@@ -687,7 +701,7 @@ public:
     
 };
 
-class BooleanParam : public Param
+class BooleanParam : public AnimatedParam
 {
     
 protected:
@@ -760,7 +774,7 @@ public:
 
 /////////////StringParam
 
-class StringParamBase : public Param
+class StringParamBase : public AnimatedParam
 {
     
 protected:
@@ -978,6 +992,43 @@ public:
      **/
     void addParam(const Param* param);
  
+};
+
+class ParametricParam : public Param
+{
+    
+protected:
+    boost::shared_ptr<Parametric_Knob> _parametricKnob;
+public:
+    
+    ParametricParam(const boost::shared_ptr<Parametric_Knob>& knob);
+    
+    virtual ~ParametricParam();
+   
+    void setCurveColor(int dimension,double r,double g,double b);
+    
+    void getCurveColor(int dimension, ColorTuple& ret) const;
+    
+    Natron::StatusEnum addControlPoint(int dimension,double key,double value);
+    
+    double getValue(int dimension,double parametricPosition) const;
+    
+    int getNControlPoints(int dimension) const ;
+    
+    Natron::StatusEnum getNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double *key,
+                                          double *value) const;
+    
+    Natron::StatusEnum setNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double key,
+                                          double value) ;
+    
+    Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) ;
+    
+    Natron::StatusEnum deleteAllControlPoints(int dimension) ;
+    
 };
 
 

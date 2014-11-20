@@ -1444,7 +1444,7 @@ void init_DoubleParam(PyObject* module)
     SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_DoubleParam_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "DoubleParam", "DoubleParam*",
-        &Sbk_DoubleParam_Type, &Shiboken::callCppDestructor< ::DoubleParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX])) {
+        &Sbk_DoubleParam_Type, &Shiboken::callCppDestructor< ::DoubleParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX])) {
         return;
     }
 

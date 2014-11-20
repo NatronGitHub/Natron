@@ -1472,7 +1472,7 @@ void init_ColorParam(PyObject* module)
     SbkNatronEngineTypes[SBK_COLORPARAM_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_ColorParam_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "ColorParam", "ColorParam*",
-        &Sbk_ColorParam_Type, &Shiboken::callCppDestructor< ::ColorParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX])) {
+        &Sbk_ColorParam_Type, &Shiboken::callCppDestructor< ::ColorParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX])) {
         return;
     }
 

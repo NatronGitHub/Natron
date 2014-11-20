@@ -360,6 +360,21 @@ static PyObject* Natron_ImagePremultiplicationEnum_CppToPython_Natron_ImagePremu
 
 }
 
+static void Natron_StatusEnum_PythonToCpp_Natron_StatusEnum(PyObject* pyIn, void* cppOut) {
+    *((::Natron::StatusEnum*)cppOut) = (::Natron::StatusEnum) Shiboken::Enum::getValue(pyIn);
+
+}
+static PythonToCppFunc is_Natron_StatusEnum_PythonToCpp_Natron_StatusEnum_Convertible(PyObject* pyIn) {
+    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]))
+        return Natron_StatusEnum_PythonToCpp_Natron_StatusEnum;
+    return 0;
+}
+static PyObject* Natron_StatusEnum_CppToPython_Natron_StatusEnum(const void* cppIn) {
+    int castCppIn = *((::Natron::StatusEnum*)cppIn);
+    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX], castCppIn);
+
+}
+
 static void Natron_ViewerCompositingOperatorEnum_PythonToCpp_Natron_ViewerCompositingOperatorEnum(PyObject* pyIn, void* cppOut) {
     *((::Natron::ViewerCompositingOperatorEnum*)cppOut) = (::Natron::ViewerCompositingOperatorEnum) Shiboken::Enum::getValue(pyIn);
 
@@ -783,6 +798,37 @@ void init_Natron(PyObject* module)
         Shiboken::Conversions::registerConverterName(converter, "ImagePremultiplicationEnum");
     }
     // End of 'ImagePremultiplicationEnum' enum.
+
+    // Initialization of enum 'StatusEnum'.
+    SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_Natron_Type,
+        "StatusEnum",
+        "NatronEngine.Natron.StatusEnum",
+        "Natron::StatusEnum");
+    if (!SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX])
+        return ;
+
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX],
+        &Sbk_Natron_Type, "eStatusOK", (long) Natron::eStatusOK))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX],
+        &Sbk_Natron_Type, "eStatusFailed", (long) Natron::eStatusFailed))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX],
+        &Sbk_Natron_Type, "eStatusReplyDefault", (long) Natron::eStatusReplyDefault))
+        return ;
+    // Register converter for enum 'Natron::StatusEnum'.
+    {
+        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX],
+            Natron_StatusEnum_CppToPython_Natron_StatusEnum);
+        Shiboken::Conversions::addPythonToCppValueConversion(converter,
+            Natron_StatusEnum_PythonToCpp_Natron_StatusEnum,
+            is_Natron_StatusEnum_PythonToCpp_Natron_StatusEnum_Convertible);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX], converter);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX], converter);
+        Shiboken::Conversions::registerConverterName(converter, "Natron::StatusEnum");
+        Shiboken::Conversions::registerConverterName(converter, "StatusEnum");
+    }
+    // End of 'StatusEnum' enum.
 
     // Initialization of enum 'ViewerCompositingOperatorEnum'.
     SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_Natron_Type,

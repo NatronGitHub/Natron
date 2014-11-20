@@ -88,7 +88,6 @@ struct KnobGui::KnobGuiPrivate
     AnimationButton* animationButton;
     QMenu* copyRightClickMenu;
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
-    int row;
 
     ////A vector of all other knobs on the same line.
     std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
@@ -109,7 +108,6 @@ struct KnobGui::KnobGuiPrivate
           , animationButton(NULL)
           , copyRightClickMenu( new MenuWithToolTips(container) )
           , fieldLayout(NULL)
-          , row(-1)
           , knobsOnSameLine()
           , containerLayout(NULL)
           , field(NULL)
@@ -187,7 +185,6 @@ KnobGui::createGUI(QFormLayout* containerLayout,
                    QWidget* fieldContainer,
                    QWidget* label,
                    QHBoxLayout* layout,
-                   int row,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
 {
@@ -195,7 +192,6 @@ KnobGui::createGUI(QFormLayout* containerLayout,
 
     _imp->containerLayout = containerLayout;
     _imp->fieldLayout = layout;
-    _imp->row = row;
     _imp->knobsOnSameLine = knobsOnSameLine;
     _imp->field = fieldContainer;
     _imp->descriptionLabel = label;
@@ -225,12 +221,6 @@ KnobGui::createGUI(QFormLayout* containerLayout,
         onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
     }
     
-
-    setEnabledSlot();
-    if (isOnNewLine) {
-        containerLayout->addRow(label, fieldContainer);
-    }
-    setSecret();
 }
 
 void
@@ -1093,11 +1083,15 @@ KnobGui::show(int index)
     }
 
     if (_imp->isOnNewLine) {
-        QLayoutItem* item = _imp->containerLayout->itemAt(_imp->row, QFormLayout::FieldRole);
-        if ( ( item && (item->widget() != _imp->field) ) || !item ) {
-            int indexToUse = index != -1 ? index : _imp->row;
-            _imp->containerLayout->setWidget(indexToUse, QFormLayout::LabelRole,_imp->descriptionLabel);
-            _imp->containerLayout->setWidget(indexToUse, QFormLayout::FieldRole, _imp->field);
+        
+        int row = getActualIndexInLayout();
+        if (row == -1) {
+            if (index == -1) {
+                _imp->containerLayout->addRow(_imp->descriptionLabel,_imp->field);
+            } else {
+                _imp->containerLayout->setWidget(index, QFormLayout::LabelRole,_imp->descriptionLabel);
+                _imp->containerLayout->setWidget(index, QFormLayout::FieldRole, _imp->field);
+            }
         }
         _imp->field->setParent( _imp->containerLayout->parentWidget() );
         _imp->field->show();

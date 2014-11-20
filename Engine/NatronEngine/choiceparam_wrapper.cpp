@@ -946,7 +946,7 @@ void init_ChoiceParam(PyObject* module)
     SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_ChoiceParam_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "ChoiceParam", "ChoiceParam*",
-        &Sbk_ChoiceParam_Type, &Shiboken::callCppDestructor< ::ChoiceParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX])) {
+        &Sbk_ChoiceParam_Type, &Shiboken::callCppDestructor< ::ChoiceParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX])) {
         return;
     }
 

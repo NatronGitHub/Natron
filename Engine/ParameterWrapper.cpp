@@ -112,56 +112,68 @@ Param::getIsAnimationEnabled() const
     return _knob->isAnimationEnabled();
 }
 
+AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
+: Param(knob)
+{
+    
+}
+
+
+AnimatedParam::~AnimatedParam()
+{
+    
+}
+
 bool
-Param::getIsAnimated(int dimension) const
+AnimatedParam::getIsAnimated(int dimension) const
 {
     return _knob->isAnimated(dimension);
 }
 
 int
-Param::getNumKeys(int dimension) const
+AnimatedParam::getNumKeys(int dimension) const
 {
     return _knob->getKeyFramesCount(dimension);
 }
 
 int
-Param::getKeyIndex(int time,int dimension) const
+AnimatedParam::getKeyIndex(int time,int dimension) const
 {
     return _knob->getKeyFrameIndex(dimension, time);
 }
 
 bool
-Param::getKeyTime(int index,int dimension,double* time) const
+AnimatedParam::getKeyTime(int index,int dimension,double* time) const
 {
     return _knob->getKeyFrameTime(index, dimension, time);
 }
 
 void
-Param::deleteValueAtTime(int time,int dimension)
+AnimatedParam::deleteValueAtTime(int time,int dimension)
 {
     _knob->deleteValueAtTime(time, dimension);
 }
 
 void
-Param::removeAnimation(int dimension)
+AnimatedParam::removeAnimation(int dimension)
 {
     _knob->removeAnimation(dimension);
 }
 
 double
-Param::getDerivativeAtTime(double time, int dimension) const
+AnimatedParam::getDerivativeAtTime(double time, int dimension) const
 {
     return _knob->getDerivativeAtTime(time, dimension);
 }
 
 double
-Param::getIntegrateFromTimeToTime(double time1, double time2, int dimension) const
+AnimatedParam::getIntegrateFromTimeToTime(double time1, double time2, int dimension) const
 {
     return _knob->getIntegrateFromTimeToTime(time1, time2, dimension);
 }
 
 int
-Param::getCurrentTime() const
+AnimatedParam::getCurrentTime() const
 {
     return _knob->getCurrentTime();
 }
@@ -176,14 +188,17 @@ Param::_addAsDependencyOf(int fromExprDimension,Param* param)
 }
 
 void
-Param::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
+AnimatedParam::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
 {
     (void)_knob->setExpression(dimension,expr,hasRetVariable);
 }
+
+
+
 ///////////// IntParam
 
 IntParam::IntParam(const boost::shared_ptr<Int_Knob>& knob)
-: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+: AnimatedParam(boost::dynamic_pointer_cast<KnobI>(knob))
 , _intKnob(knob)
 {
     
@@ -389,7 +404,7 @@ IntParam::addAsDependencyOf(int fromExprDimension,Param* param)
 //////////// DoubleParam
 
 DoubleParam::DoubleParam(const boost::shared_ptr<Double_Knob>& knob)
-: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+: AnimatedParam(boost::dynamic_pointer_cast<KnobI>(knob))
 , _doubleKnob(knob)
 {
     
@@ -596,7 +611,7 @@ DoubleParam::addAsDependencyOf(int fromExprDimension,Param* param)
 ////////ColorParam
 
 ColorParam::ColorParam(const boost::shared_ptr<Color_Knob>& knob)
-: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+: AnimatedParam(boost::dynamic_pointer_cast<KnobI>(knob))
 , _colorKnob(knob)
 {
     
@@ -764,7 +779,7 @@ ColorParam::addAsDependencyOf(int fromExprDimension,Param* param)
 
 //////////////// ChoiceParam
 ChoiceParam::ChoiceParam(const boost::shared_ptr<Choice_Knob>& knob)
-: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+: AnimatedParam(boost::dynamic_pointer_cast<KnobI>(knob))
 , _choiceKnob(knob)
 {
     
@@ -866,7 +881,7 @@ ChoiceParam::addAsDependencyOf(int fromExprDimension,Param* param)
 
 
 BooleanParam::BooleanParam(const boost::shared_ptr<Bool_Knob>& knob)
-: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+: AnimatedParam(boost::dynamic_pointer_cast<KnobI>(knob))
 , _boolKnob(knob)
 {
     
@@ -956,7 +971,7 @@ BooleanParam::addAsDependencyOf(int fromExprDimension,Param* param)
 
 
 StringParamBase::StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob)
-: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+: AnimatedParam(boost::dynamic_pointer_cast<KnobI>(knob))
 , _stringKnob(knob)
 {
     
@@ -1229,5 +1244,87 @@ PageParam::addParam(const Param* param)
     _pageKnob->addKnob(param->getInternalKnob());
 }
 
+////////////////////ParametricParam
+ParametricParam::ParametricParam(const boost::shared_ptr<Parametric_Knob>& knob)
+: Param(boost::dynamic_pointer_cast<KnobI>(knob))
+, _parametricKnob(knob)
+{
+    
+}
 
+ParametricParam::~ParametricParam()
+{
+    
+}
+
+void
+ParametricParam::setCurveColor(int dimension,double r,double g,double b)
+{
+    _parametricKnob->setCurveColor(dimension, r, g, b);
+}
+
+void
+ParametricParam::getCurveColor(int dimension, ColorTuple& ret) const
+{
+    _parametricKnob->getCurveColor(dimension, &ret.r, &ret.g, &ret.b);
+    ret.a = 1.;
+}
+
+Natron::StatusEnum
+ParametricParam::addControlPoint(int dimension,double key,double value)
+{
+    return _parametricKnob->addControlPoint(dimension, key, value);
+}
+
+double
+ParametricParam::getValue(int dimension,double parametricPosition) const
+{
+    double ret;
+    Natron::StatusEnum stat =  _parametricKnob->getValue(dimension, parametricPosition, &ret);
+    if (stat == Natron::eStatusFailed) {
+        ret =  0.;
+    }
+    return ret;
+}
+
+int
+ParametricParam::getNControlPoints(int dimension) const
+{
+    int ret;
+    Natron::StatusEnum stat =  _parametricKnob->getNControlPoints(dimension, &ret);
+    if (stat == Natron::eStatusFailed) {
+        ret = 0;
+    }
+    return ret;
+}
+
+Natron::StatusEnum
+ParametricParam::getNthControlPoint(int dimension,
+                                      int nthCtl,
+                                      double *key,
+                                      double *value) const
+{
+    return _parametricKnob->getNthControlPoint(dimension, nthCtl, key, value);
+}
+
+Natron::StatusEnum
+ParametricParam::setNthControlPoint(int dimension,
+                                      int nthCtl,
+                                      double key,
+                                      double value)
+{
+    return _parametricKnob->setNthControlPoint(dimension, nthCtl, key, value);
+}
+
+Natron::StatusEnum
+ParametricParam::deleteControlPoint(int dimension, int nthCtl)
+{
+    return _parametricKnob->deleteControlPoint(dimension, nthCtl);
+}
+
+Natron::StatusEnum
+ParametricParam::deleteAllControlPoints(int dimension)
+{
+    return _parametricKnob->deleteAllControlPoints(dimension);
+}
 

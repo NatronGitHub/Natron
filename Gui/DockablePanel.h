@@ -25,7 +25,10 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 #include <QTabWidget>
+#include <QDialog>
 #include "Global/GlobalDefines.h"
+
+#include "Engine/DockablePanelI.h"
 
 class KnobI;
 class KnobGui;
@@ -95,6 +98,7 @@ private:
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
+    , public DockablePanelI
 {
     Q_OBJECT
 
@@ -174,6 +178,8 @@ public:
 
     void onGuiClosing();
 
+    virtual void scanForNewKnobs() OVERRIDE FINAL;
+    
 public slots:
 
     /*Internal slot, not meant to be called externally.*/
@@ -220,6 +226,8 @@ public slots:
     void onCenterButtonClicked();
 
     void onHideUnmodifiedButtonClicked(bool checked);
+    
+    void onManageUserParametersActionTriggered();
     
 signals:
 
@@ -349,6 +357,23 @@ private:
     virtual void centerOnItem() OVERRIDE FINAL;
     
     NodeBackDrop* _backdrop;
+};
+
+
+struct ManageUserParamsDialogPrivate;
+class ManageUserParamsDialog : public QDialog
+{
+    
+public:
+    
+    
+    ManageUserParamsDialog(DockablePanel* panel,QWidget* parent);
+    
+    virtual ~ManageUserParamsDialog();
+    
+private:
+    
+    boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_SETTINGSPANEL_H_

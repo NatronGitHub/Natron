@@ -36,6 +36,7 @@ namespace Natron {
 class OfxParamOverlayInteract;
 }
 
+class DockablePanelI;
 
 class KnobI;
 class KnobSignalSlotHandler
@@ -318,6 +319,12 @@ public:
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     virtual bool isDeclaredByPlugin() const = 0;
+    
+    /**
+     * @brief Must flag that the knob was dynamically created to warn the gui it should handle it correctly
+     **/
+    virtual void setDynamicallyCreated() = 0;
+    virtual bool isDynamicallyCreated() const =0;
 
 
     /**
@@ -953,6 +960,9 @@ public:
     virtual void setAsInstanceSpecific() OVERRIDE FINAL;
     virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void setDynamicallyCreated() OVERRIDE FINAL;
+    virtual bool isDynamicallyCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     /**
      * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.
      * It is set by the factory, do not call it yourself.
@@ -1532,6 +1542,17 @@ public:
     KnobHolder(AppInstance* appInstance);
 
     virtual ~KnobHolder();
+    
+    void setPanelPointer(DockablePanelI* gui);
+    
+    void discardPanelPointer();
+    
+    void refreshKnobs();
+    
+    /**
+     * @brief Dynamically removes a knob (from the GUI also)
+     **/
+    void removeDynamicKnob(KnobI* knob);
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;

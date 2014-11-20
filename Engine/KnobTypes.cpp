@@ -1062,7 +1062,7 @@ Parametric_Knob::addControlPoint(int dimension,
 Natron::StatusEnum
 Parametric_Knob::getValue(int dimension,
                           double parametricPosition,
-                          double *returnValue)
+                          double *returnValue) const
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
@@ -1079,7 +1079,7 @@ Parametric_Knob::getValue(int dimension,
 
 Natron::StatusEnum
 Parametric_Knob::getNControlPoints(int dimension,
-                                   int *returnValue)
+                                   int *returnValue) const
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
@@ -1094,7 +1094,7 @@ Natron::StatusEnum
 Parametric_Knob::getNthControlPoint(int dimension,
                                     int nthCtl,
                                     double *key,
-                                    double *value)
+                                    double *value) const
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
