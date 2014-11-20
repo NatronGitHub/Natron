@@ -143,6 +143,7 @@ HEADERS += \
     CurveSerialization.h \
     CurvePrivate.h \
     ChannelSet.h \
+    DockablePanelI.h \
     EffectInstance.h \
     FileDownloader.h \
     FileSystemModel.h \

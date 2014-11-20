@@ -17,7 +17,9 @@
 #include <pyside_qtcore_python.h>
 
 // Binded library includes
+#include <Enums.h>
 #include <NodeWrapper.h>
+#include <GlobalDefines.h>
 #include <AppInstanceWrapper.h>
 #include <ParameterWrapper.h>
 // Conversion Includes - Primitive Types
@@ -48,20 +50,34 @@
 
 // Type indices
 #define SBK_NATRON_IDX                                               19
+#define SBK_NATRON_STANDARDBUTTONENUM_IDX                            28
+#define SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX                    37
+#define SBK_NATRON_IMAGECOMPONENTSENUM_IDX                           22
+#define SBK_NATRON_IMAGEBITDEPTHENUM_IDX                             21
+#define SBK_NATRON_KEYFRAMETYPEENUM_IDX                              24
+#define SBK_NATRON_VALUECHANGEDREASONENUM_IDX                        30
+#define SBK_NATRON_ANIMATIONLEVELENUM_IDX                            20
+#define SBK_NATRON_ORIENTATIONENUM_IDX                               25
+#define SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX                    23
+#define SBK_NATRON_STATUSENUM_IDX                                    29
+#define SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX                 32
+#define SBK_NATRON_PLAYBACKMODEENUM_IDX                              27
+#define SBK_NATRON_PIXMAPENUM_IDX                                    26
+#define SBK_NATRON_VIEWERCOLORSPACEENUM_IDX                          31
 #define SBK_COLORTUPLE_IDX                                           6
 #define SBK_DOUBLE3DTUPLE_IDX                                        10
 #define SBK_DOUBLE2DTUPLE_IDX                                        8
 #define SBK_INT3DTUPLE_IDX                                           17
 #define SBK_INT2DTUPLE_IDX                                           15
-#define SBK_PARAM_IDX                                                21
-#define SBK_PARAMETRICPARAM_IDX                                      22
+#define SBK_PARAM_IDX                                                34
+#define SBK_PARAMETRICPARAM_IDX                                      35
 #define SBK_BUTTONPARAM_IDX                                          3
 #define SBK_ANIMATEDPARAM_IDX                                        0
-#define SBK_STRINGPARAMBASE_IDX                                      26
-#define SBK_PATHPARAM_IDX                                            23
-#define SBK_OUTPUTFILEPARAM_IDX                                      20
+#define SBK_STRINGPARAMBASE_IDX                                      39
+#define SBK_PATHPARAM_IDX                                            36
+#define SBK_OUTPUTFILEPARAM_IDX                                      33
 #define SBK_FILEPARAM_IDX                                            13
-#define SBK_STRINGPARAM_IDX                                          25
+#define SBK_STRINGPARAM_IDX                                          38
 #define SBK_BOOLEANPARAM_IDX                                         2
 #define SBK_CHOICEPARAM_IDX                                          4
 #define SBK_COLORPARAM_IDX                                           5
@@ -73,7 +89,7 @@
 #define SBK_INT3DPARAM_IDX                                           16
 #define SBK_EFFECT_IDX                                               12
 #define SBK_APP_IDX                                                  1
-#define SBK_NatronEngine_IDX_COUNT                                   27
+#define SBK_NatronEngine_IDX_COUNT                                   40
 
 // This variable stores all Python types exported by this module.
 extern PyTypeObject** SbkNatronEngineTypes;
@@ -97,6 +113,20 @@ namespace Shiboken
 {
 
 // PyType functions, to get the PyObjectType for a type T
+template<> inline PyTypeObject* SbkType< ::Natron::StandardButtonEnum >() { return SbkNatronEngineTypes[SBK_NATRON_STANDARDBUTTONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::QFlags<Natron::StandardButtonEnum> >() { return SbkNatronEngineTypes[SBK_QFLAGS_NATRON_STANDARDBUTTONENUM__IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ImageComponentsEnum >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTSENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ImageBitDepthEnum >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGEBITDEPTHENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::KeyframeTypeEnum >() { return SbkNatronEngineTypes[SBK_NATRON_KEYFRAMETYPEENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ValueChangedReasonEnum >() { return SbkNatronEngineTypes[SBK_NATRON_VALUECHANGEDREASONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::AnimationLevelEnum >() { return SbkNatronEngineTypes[SBK_NATRON_ANIMATIONLEVELENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::OrientationEnum >() { return SbkNatronEngineTypes[SBK_NATRON_ORIENTATIONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ImagePremultiplicationEnum >() { return SbkNatronEngineTypes[SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::StatusEnum >() { return SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ViewerCompositingOperatorEnum >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::PlaybackModeEnum >() { return SbkNatronEngineTypes[SBK_NATRON_PLAYBACKMODEENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::PixmapEnum >() { return SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX]; }
+template<> inline PyTypeObject* SbkType< ::Natron::ViewerColorSpaceEnum >() { return SbkNatronEngineTypes[SBK_NATRON_VIEWERCOLORSPACEENUM_IDX]; }
 template<> inline PyTypeObject* SbkType< ::ColorTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_COLORTUPLE_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Double3DTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Double2DTuple >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX]); }

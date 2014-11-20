@@ -33,6 +33,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/Hash64.h"
 #include "Engine/StringAnimationManager.h"
+#include "Engine/DockablePanelI.h"
 
 
 using namespace Natron;
@@ -233,6 +234,7 @@ struct KnobHelperPrivate
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevelEnum> animationLevel; //< indicates for each dimension whether it is static/interpolated/onkeyframe
     bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
+    bool dynamicallyCreated; //< true if the knob was dynamically created by the user
     
     ///Pointer to the ofx param overlay interact
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
@@ -287,6 +289,7 @@ struct KnobHelperPrivate
     , animationLevelMutex()
     , animationLevel(dimension_)
     , declaredByPlugin(declaredByPlugin_)
+    , dynamicallyCreated(false)
     , customInteract()
     , gui(0)
     , mustCloneGuiCurvesMutex()
@@ -361,6 +364,18 @@ bool
 KnobHelper::isInstanceSpecific() const
 {
     return _imp->isInstanceSpecific;
+}
+
+void
+KnobHelper::setDynamicallyCreated()
+{
+    _imp->dynamicallyCreated = true;
+}
+
+bool
+KnobHelper::isDynamicallyCreated() const
+{
+    return _imp->dynamicallyCreated;
 }
 
 void
@@ -2221,6 +2236,8 @@ struct KnobHolder::KnobHolderPrivate
     mutable QMutex hasAnimationMutex;
     bool hasAnimation;
     
+    DockablePanelI* settingsPanel;
+    
     KnobHolderPrivate(AppInstance* appInstance_)
         : app(appInstance_)
           , knobs()
@@ -2235,6 +2252,7 @@ struct KnobHolder::KnobHolderPrivate
           , knobsFrozen(false)
           , hasAnimationMutex()
           , hasAnimation(false)
+          , settingsPanel(0)
     {
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
@@ -2255,6 +2273,40 @@ KnobHolder::~KnobHolder()
         KnobHelper* helper = dynamic_cast<KnobHelper*>( _imp->knobs[i].get() );
         assert(helper);
         helper->_imp->holder = 0;
+    }
+}
+
+void
+KnobHolder::setPanelPointer(DockablePanelI* gui)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->settingsPanel = gui;
+}
+
+void
+KnobHolder::discardPanelPointer()
+{
+     assert(QThread::currentThread() == qApp->thread());
+    _imp->settingsPanel = 0;
+}
+
+void
+KnobHolder::refreshKnobs()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (_imp->settingsPanel) {
+        _imp->settingsPanel->scanForNewKnobs();
+    }
+}
+
+void
+KnobHolder::removeDynamicKnob(KnobI* knob)
+{
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+        if (_imp->knobs[i].get() == knob && _imp->knobs[i]->isDynamicallyCreated()) {
+            _imp->knobs[i]->getSignalSlotHandler()->s_deleted();
+            break;
+        }
     }
 }
 

@@ -13,7 +13,7 @@
 #define NATRON_GUI_KNOBGUITYPES_H_
 
 #include <vector> // Int_KnobGui
-
+#include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -705,7 +705,9 @@ public:
 
     virtual ~Group_KnobGui() OVERRIDE;
 
-    void addKnob(KnobGui *child, int row);
+    void addKnob(KnobGui *child);
+    
+    const std::list<KnobGui*>& getChildren() const { return _children; }
 
     bool isChecked() const;
 
@@ -733,7 +735,7 @@ private:
 private:
     bool _checked;
     GroupBoxLabel *_button;
-    std::vector< std::pair< KnobGui *, int> > _children;
+    std::list<KnobGui*> _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     //enabled too
     boost::shared_ptr<Group_Knob> _knob;

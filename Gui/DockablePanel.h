@@ -27,6 +27,8 @@ CLANG_DIAG_ON(uninitialized)
 #include <QTabWidget>
 #include "Global/GlobalDefines.h"
 
+#include "Engine/DockablePanelI.h"
+
 class KnobI;
 class KnobGui;
 class KnobHolder;
@@ -95,6 +97,7 @@ private:
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
+    , public DockablePanelI
 {
     Q_OBJECT
 
@@ -174,6 +177,8 @@ public:
 
     void onGuiClosing();
 
+    virtual void scanForNewKnobs() OVERRIDE FINAL;
+    
 public slots:
 
     /*Internal slot, not meant to be called externally.*/

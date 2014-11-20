@@ -243,6 +243,9 @@ DockablePanel::DockablePanel(Gui* gui
       , _imp( new DockablePanelPrivate(this,gui,holder,container,headerMode,useScrollAreasForTabs,defaultPageName) )
 
 {
+    assert(holder);
+    holder->setPanelPointer(this);
+    
     _imp->_mainLayout = new QVBoxLayout(this);
     _imp->_mainLayout->setSpacing(0);
     _imp->_mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -477,6 +480,9 @@ DockablePanel::DockablePanel(Gui* gui
 
 DockablePanel::~DockablePanel()
 {
+    if (_imp->_holder) {
+        _imp->_holder->discardPanelPointer();
+    }
     delete _imp->_undoStack;
 
     ///Delete the knob gui if they weren't before
@@ -494,6 +500,9 @@ DockablePanel::~DockablePanel()
 void
 DockablePanel::onGuiClosing()
 {
+    if (_imp->_holder) {
+        _imp->_holder->discardPanelPointer();
+    }
     if (_imp->_nameLineEdit) {
         QObject::disconnect( _imp->_nameLineEdit,SIGNAL( editingFinished() ),this,SLOT( onLineEditNameEditingFinished() ) );
     }
@@ -597,12 +606,39 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
         ///we create only top level knobs, they will in-turn create their children if they have any
         if ( (!onlyTopLevelKnobs) || ( onlyTopLevelKnobs && !knobs[i]->getParentKnob() ) ) {
             bool makeNewLine = true;
-            boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knobs[i]);
+            Group_Knob *isGroup = dynamic_cast<Group_Knob*>(knobs[i].get());
 
             ////The knob  will have a vector of all other knobs on the same line.
             std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
+            
+            
+            //If the knob is dynamic (i:e created after the initial creation of knobs)
+            //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
+            Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(knobs[i]->getParentKnob().get());
+            if (knobs[i]->isDynamicallyCreated() && isParentGroup) {
+                Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(knobs[i]->getParentKnob(), false, lastRowWidget));
+                assert(parentGui);
+                const std::list<KnobGui*>& children = parentGui->getChildren();
+                if (!children.empty()) {
+                    if (children.back()->getKnob()->isNewLineTurnedOff()) {
+                        makeNewLine = false;
+                        lastRowWidget = children.back()->getFieldContainer();
+                        
+                        std::list<KnobGui*>::const_reverse_iterator it = children.rbegin();
+                        ++it;
+                        for (; it != children.rend(); ++it) {
+                            if ((*it)->getKnob()->isNewLineTurnedOff()) {
+                                knobsOnSameLine.push_back((*it)->getKnob());
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
 
-            if (!isGroup) { //< a knob with children (i.e a group) cannot have children on the same line
+            if (!isGroup && (!knobs[i]->isDynamicallyCreated() || !isParentGroup)) { //< a knob with children (i.e a group) cannot have children on the same line
                 if ( (i > 0) && knobs[i - 1]->isNewLineTurnedOff() ) {
                     makeNewLine = false;
                 }
@@ -890,26 +926,41 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
 
-                ret->createGUI(tabLayout,fieldContainer,label,fieldLayout,page->second.currentRow,makeNewLine,knobsOnSameLine);
+                ret->createGUI(tabLayout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
             } else {
                 ///fill the fieldLayout with the widgets
-                ret->createGUI(layout,fieldContainer,label,fieldLayout,page->second.currentRow,makeNewLine,knobsOnSameLine);
+                ret->createGUI(layout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
             }
             
-            //layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            ///FIXME: QFormLayout seems to ignore royally the alignment between the label and the field.
-            ///The only way to have both the label and the field at the same height is to hardcode the height of the label...
-            //int labelHeight =  20;//fieldContainer->sizeHint().height();
-            //label->setFixedHeight(labelHeight);
+            ret->setEnabledSlot();
+           
+            ///Must add the row to the layout before calling setSecret()
+
+            if (parentGui && knob->isDynamicallyCreated() && makeNewLine) {
+                //get the index of the last knob in the group
+                int index = -1;
+                const std::list<KnobGui*>& children = parentGui->getChildren();
+                if (children.empty()) {
+                    index = parentGui->getActualIndexInLayout();
+                } else {
+                    children.back()->getActualIndexInLayout();
+                }
+                ++index;
+                layout->insertRow(index,label, fieldContainer);
+            } else if (makeNewLine) {
+                layout->addRow(label, fieldContainer);
+            }
+
             
+            ret->setSecret();
 
-
+            
             ///increment the row count
             ++page->second.currentRow;
             
             if (parentIsGroup) {
                 assert(parentGui);
-                parentGui->addKnob(ret,page->second.currentRow);
+                parentGui->addKnob(ret);
             }
 
         }
@@ -1509,6 +1560,12 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             }
         }
     }
+}
+
+void
+DockablePanel::scanForNewKnobs()
+{
+     _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL, false);
 }
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
