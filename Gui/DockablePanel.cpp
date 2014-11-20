@@ -24,6 +24,7 @@
 #include <QToolTip>
 #include <QMutex>
 #include <QTreeWidget>
+#include <QHeaderView>
 #include <QColorDialog>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -75,9 +76,14 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/CurveEditorUndoRedo.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/KnobGuiTypes.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
+
+#define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
+#define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
+
 using std::make_pair;
 using namespace Natron;
 
@@ -1824,12 +1830,21 @@ NodeBackDropSettingsPanel::centerOnItem()
     _backdrop->centerOnIt();
 }
 
+struct TreeItem
+{
+    QTreeWidgetItem* item;
+    boost::shared_ptr<KnobI> knob;
+};
+
 struct ManageUserParamsDialogPrivate
 {
     DockablePanel* panel;
     
     QHBoxLayout* mainLayout;
     QTreeWidget* tree;
+    
+    std::list<TreeItem> items;
+    
     
     QWidget* buttonsContainer;
     QVBoxLayout* buttonsLayout;
@@ -1846,6 +1861,7 @@ struct ManageUserParamsDialogPrivate
     : panel(panel)
     , mainLayout(0)
     , tree(0)
+    , items()
     , buttonsContainer(0)
     , buttonsLayout(0)
     , addButton(0)
@@ -1866,34 +1882,87 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->mainLayout = new QHBoxLayout(this);
     
     _imp->tree = new QTreeWidget(this);
+    _imp->tree->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _imp->tree->setRootIsDecorated(false);
+    _imp->tree->setItemsExpandable(false);
+    _imp->tree->header()->setStretchLastSection(false);
+    _imp->tree->setTextElideMode(Qt::ElideMiddle);
+    _imp->tree->setContextMenuPolicy(Qt::CustomContextMenu);
+    _imp->tree->setDragEnabled(true);
+    _imp->tree->setDragDropMode(QAbstractItemView::DragOnly);
+    setAcceptDrops(true);
     
+    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = panel->getKnobs();
+       
     _imp->mainLayout->addWidget(_imp->tree);
     
     _imp->buttonsContainer = new QWidget(this);
     _imp->buttonsLayout = new QVBoxLayout(_imp->buttonsContainer);
     
     _imp->addButton = new Button(tr("Add"),_imp->buttonsContainer);
+    QObject::connect(_imp->addButton,SIGNAL(clicked(bool)),this,SLOT(onAddClicked()));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     
     _imp->editButton = new Button(tr("Edit"),_imp->buttonsContainer);
+    QObject::connect(_imp->editButton,SIGNAL(clicked(bool)),this,SLOT(onEditClicked()));
     _imp->buttonsLayout->addWidget(_imp->editButton);
     
     _imp->removeButton = new Button(tr("Delete"),_imp->buttonsContainer);
+    QObject::connect(_imp->removeButton,SIGNAL(clicked(bool)),this,SLOT(onDeleteClicked()));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     
     _imp->upButton = new Button(tr("Up"),_imp->buttonsContainer);
+    QObject::connect(_imp->upButton,SIGNAL(clicked(bool)),this,SLOT(onUpClicked()));
     _imp->buttonsLayout->addWidget(_imp->upButton);
     
     _imp->downButton = new Button(tr("Down"),_imp->buttonsContainer);
+    QObject::connect(_imp->downButton,SIGNAL(clicked(bool)),this,SLOT(onDownClicked()));
     _imp->buttonsLayout->addWidget(_imp->downButton);
     
     _imp->closeButton = new Button(tr("Close"),_imp->buttonsContainer);
+    QObject::connect(_imp->closeButton,SIGNAL(clicked(bool)),this,SLOT(onCloseClicked()));
     _imp->buttonsLayout->addWidget(_imp->closeButton);
     
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
 }
 
 ManageUserParamsDialog::~ManageUserParamsDialog()
+{
+    
+}
+
+void
+ManageUserParamsDialog::onAddClicked()
+{
+    
+}
+
+void
+ManageUserParamsDialog::onDeleteClicked()
+{
+    
+}
+
+void
+ManageUserParamsDialog::onEditClicked()
+{
+    
+}
+
+void
+ManageUserParamsDialog::onUpClicked()
+{
+    
+}
+
+void
+ManageUserParamsDialog::onDownClicked()
+{
+    
+}
+
+void
+ManageUserParamsDialog::onCloseClicked()
 {
     
 }

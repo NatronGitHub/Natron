@@ -234,7 +234,8 @@ struct KnobHelperPrivate
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevelEnum> animationLevel; //< indicates for each dimension whether it is static/interpolated/onkeyframe
     bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
-    bool dynamicallyCreated; //< true if the knob was dynamically created by the user
+    bool dynamicallyCreated; //< true if the knob was dynamically created by the user (either via python or via the gui)
+    bool userKnob; //< true if it was created by the user and should be put into the "User" page
     
     ///Pointer to the ofx param overlay interact
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
@@ -290,6 +291,7 @@ struct KnobHelperPrivate
     , animationLevel(dimension_)
     , declaredByPlugin(declaredByPlugin_)
     , dynamicallyCreated(false)
+    , userKnob(false)
     , customInteract()
     , gui(0)
     , mustCloneGuiCurvesMutex()
@@ -376,6 +378,18 @@ bool
 KnobHelper::isDynamicallyCreated() const
 {
     return _imp->dynamicallyCreated;
+}
+
+void
+KnobHelper::setAsUserKnob()
+{
+    _imp->userKnob = true;
+}
+
+bool
+KnobHelper::isUserKnob() const
+{
+    return _imp->userKnob;
 }
 
 void
@@ -2308,6 +2322,249 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
             break;
         }
     }
+}
+
+boost::shared_ptr<Int_Knob>
+KnobHolder::createIntKnob(const std::string& name, const std::string& label,const std::string& help,
+                                          bool startNewLine,bool persistent, bool evaluateOnChange, bool animates, int dimension,int min,int max)
+{
+    boost::shared_ptr<Int_Knob> ret = Natron::createKnob<Int_Knob>(this,label, dimension, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(animates);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    ret->setMinimum(min);
+    ret->setMaximum(max);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    return ret;
+}
+
+boost::shared_ptr<Double_Knob>
+KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max)
+{
+    boost::shared_ptr<Double_Knob> ret = Natron::createKnob<Double_Knob>(this,label, dimension, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(animates);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    ret->setMinimum(min);
+    ret->setMaximum(max);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    return ret;
+}
+
+boost::shared_ptr<Color_Knob>
+KnobHolder::createColorKnob(const std::string& name, const std::string& label,const std::string& help,
+                                              bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max)
+{
+    boost::shared_ptr<Color_Knob> ret = Natron::createKnob<Color_Knob>(this,label, dimension, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(animates);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    ret->setMinimum(min);
+    ret->setMaximum(max);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    return ret;
+}
+
+boost::shared_ptr<Bool_Knob>
+KnobHolder::createBoolKnob(const std::string& name, const std::string& label,const std::string& help,
+                                            bool startNewLine,bool persistent, bool evaluateOnChange  , bool animates)
+{
+    boost::shared_ptr<Bool_Knob> ret = Natron::createKnob<Bool_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(animates);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    return ret;
+}
+
+boost::shared_ptr<Choice_Knob>
+KnobHolder::createChoiceKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,const std::vector<std::string>& entries,
+                                                const std::vector<std::string>& entriesHelp)
+{
+    boost::shared_ptr<Choice_Knob> ret = Natron::createKnob<Choice_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(animates);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    ret->populateChoices(entries,entriesHelp);
+    return ret;
+}
+
+boost::shared_ptr<Button_Knob>
+KnobHolder::createButtonKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                bool startNewLine)
+{
+    boost::shared_ptr<Button_Knob> ret = Natron::createKnob<Button_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    return ret;
+}
+
+//Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
+boost::shared_ptr<String_Knob>
+KnobHolder::createStringKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,
+                                                int type)
+{
+    
+    boost::shared_ptr<String_Knob> ret = Natron::createKnob<String_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(animates);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    switch (type) {
+        case 0:
+            ret->setAsLabel();
+            break;
+        case 1:
+            ret->setAsMultiLine();
+            break;
+        case 2:
+            ret->setAsMultiLine();
+            ret->setUsesRichText(true);
+            break;
+        case 3:
+            ret->setAsCustom();
+            break;
+        default:
+            break;
+    }
+    return ret;
+
+}
+
+boost::shared_ptr<File_Knob>
+KnobHolder::createFileKnob(const std::string& name, const std::string& label,const std::string& help,
+                                            bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences)
+{
+    boost::shared_ptr<File_Knob> ret = Natron::createKnob<File_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(false);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    if (useSequences) {
+        ret->setAsInputImage();
+    }
+    return ret;
+}
+
+boost::shared_ptr<OutputFile_Knob>
+KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& label,const std::string& help,
+                                                        bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences)
+{
+    boost::shared_ptr<OutputFile_Knob> ret = Natron::createKnob<OutputFile_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(false);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    if (useSequences) {
+        ret->setAsOutputImageFile();
+    }
+    return ret;
+
+}
+
+boost::shared_ptr<Path_Knob>
+KnobHolder::createPathKnob(const std::string& name, const std::string& label,const std::string& help,
+                                            bool startNewLine,bool persistent, bool evaluateOnChange,bool multiPath)
+{
+    boost::shared_ptr<Path_Knob> ret = Natron::createKnob<Path_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    ret->setIsPersistant(persistent);
+    ret->setAnimationEnabled(false);
+    ret->setEvaluateOnChange(evaluateOnChange);
+    if (!startNewLine) {
+        ret->turnOffNewLine();
+    }
+    if (multiPath) {
+        ret->setMultiPath(true);
+    }
+    return ret;
+
+}
+
+boost::shared_ptr<Group_Knob>
+KnobHolder::createGroupKnob(const std::string& name, const std::string& label,const std::string& help,bool setAsTab)
+{
+    boost::shared_ptr<Group_Knob> ret = Natron::createKnob<Group_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    if (setAsTab) {
+        ret->setAsTab();
+    }
+    return ret;
+
+}
+
+boost::shared_ptr<Page_Knob>
+KnobHolder::createPageKnob(const std::string& name, const std::string& label,const std::string& help)
+{
+    boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    return ret;
+
+}
+
+boost::shared_ptr<Parametric_Knob>
+KnobHolder::createParametricKnob(const std::string& name, const std::string& label,const std::string& help)
+{
+    boost::shared_ptr<Parametric_Knob> ret = Natron::createKnob<Parametric_Knob>(this,label, 1, false);
+    ret->setDynamicallyCreated();
+    ret->setName(name);
+    ret->setHintToolTip(help);
+    return ret;
+
 }
 
 void

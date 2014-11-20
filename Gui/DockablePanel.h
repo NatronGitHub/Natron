@@ -363,6 +363,7 @@ private:
 struct ManageUserParamsDialogPrivate;
 class ManageUserParamsDialog : public QDialog
 {
+    Q_OBJECT
     
 public:
     
@@ -371,6 +372,19 @@ public:
     
     virtual ~ManageUserParamsDialog();
     
+public slots:
+    
+    void onAddClicked();
+    
+    void onDeleteClicked();
+    
+    void onEditClicked();
+    
+    void onUpClicked();
+    
+    void onDownClicked();
+    
+    void onCloseClicked();
 private:
     
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;

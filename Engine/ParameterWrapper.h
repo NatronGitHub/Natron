@@ -853,7 +853,7 @@ class StringParam : public StringParamBase
 public:
     
     enum TypeEnum {
-        eStringTypeLabel, //< A label shown on gui, cannot animate
+        eStringTypeLabel = 0, //< A label shown on gui, cannot animate
         eStringTypeMultiLine, //< A text area in plain text
         eStringTypeRichTextMultiLine, //< A text area with Qt Html support
         eStringTypeCustom, //< A custom string where anything can be passed, it animates but is not editable by the user

@@ -325,6 +325,12 @@ public:
      **/
     virtual void setDynamicallyCreated() = 0;
     virtual bool isDynamicallyCreated() const =0;
+    
+    /**
+     * @brief A user knob is a knob created by the user by the gui
+     **/
+    virtual void setAsUserKnob() = 0;
+    virtual bool isUserKnob() const = 0;
 
 
     /**
@@ -963,6 +969,8 @@ public:
     virtual void setDynamicallyCreated() OVERRIDE FINAL;
     virtual bool isDynamicallyCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    virtual void setAsUserKnob() OVERRIDE FINAL;
+    virtual bool isUserKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.
      * It is set by the factory, do not call it yourself.
@@ -1656,17 +1664,15 @@ public:
     boost::shared_ptr<Path_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help,
                                                   bool startNewLine,bool persistent, bool evaluateOnChange,bool multiPath);
 
-    boost::shared_ptr<Group_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help,bool setAsTab);
+    boost::shared_ptr<Group_Knob> createGroupKnob(const std::string& name, const std::string& label,const std::string& help,bool setAsTab);
     
-    boost::shared_ptr<Page_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help);
+    boost::shared_ptr<Page_Knob> createPageKnob(const std::string& name, const std::string& label,const std::string& help);
     
     boost::shared_ptr<Parametric_Knob> createParametricKnob(const std::string& name, const std::string& label,const std::string& help);
     
-    void refreshKnobs();
     //////////////////////////////////////////////////////////////////////////////////////////
 protected:
     
-    virtual void notifyKnobsRefreshed() = 0;
     
     bool isEvaluationBlocked() const;
 
