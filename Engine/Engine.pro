@@ -128,7 +128,9 @@ SOURCES += \
     NatronEngine/outputfileparam_wrapper.cpp \
     NatronEngine/stringparam_wrapper.cpp \
     NatronEngine/stringparambase_wrapper.cpp \
-    NatronEngine/pathparam_wrapper.cpp
+    NatronEngine/pathparam_wrapper.cpp \
+    NatronEngine/animatedparam_wrapper.cpp \
+    NatronEngine/parametricparam_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -270,7 +272,9 @@ HEADERS += \
     NatronEngine/outputfileparam_wrapper.h \
     NatronEngine/stringparam_wrapper.h \
     NatronEngine/stringparambase_wrapper.h \
-    NatronEngine/pathparam_wrapper.h
+    NatronEngine/pathparam_wrapper.h \
+    NatronEngine/animatedparam_wrapper.h \
+    NatronEngine/parametricparam_wrapper.h
 
 
 OTHER_FILES += \

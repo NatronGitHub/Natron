@@ -630,7 +630,7 @@ void init_BooleanParam(PyObject* module)
     SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_BooleanParam_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "BooleanParam", "BooleanParam*",
-        &Sbk_BooleanParam_Type, &Shiboken::callCppDestructor< ::BooleanParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX])) {
+        &Sbk_BooleanParam_Type, &Shiboken::callCppDestructor< ::BooleanParam >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX])) {
         return;
     }
 

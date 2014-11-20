@@ -630,7 +630,7 @@ void init_StringParamBase(PyObject* module)
     SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_StringParamBase_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "StringParamBase", "StringParamBase*",
-        &Sbk_StringParamBase_Type, &Shiboken::callCppDestructor< ::StringParamBase >, (SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX])) {
+        &Sbk_StringParamBase_Type, &Shiboken::callCppDestructor< ::StringParamBase >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX])) {
         return;
     }
 

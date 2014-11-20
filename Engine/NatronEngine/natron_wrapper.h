@@ -5,7 +5,7 @@
 
 #include <shiboken.h>
 
-#include <GlobalDefines.h>
+#include <NodeWrapper.h>
 
 #endif // SBK_NATRON_H
 
