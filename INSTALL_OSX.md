@@ -57,7 +57,13 @@ Install homebrew from <http://brew.sh/>
 
 Install libraries:
 
-    brew install qt expat glew opencolorio
+    brew tap homebrew/python
+    brew tap homebrew/science
+    brew install qt expat icairo glew
+
+To install the openfx-io and openfx-misc sets of plugin, you also need the following:
+
+    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
 
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):

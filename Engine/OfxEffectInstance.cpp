@@ -318,7 +318,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-        checkOFXClipPreferences(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true);
+        checkOFXClipPreferences(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
         
       
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
@@ -887,7 +887,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
         }
         if ( !getApp()->getProject()->isLoadingProject() ) {
-            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true);
+            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true, true);
         }
     }
     
@@ -1071,7 +1071,8 @@ void
 OfxEffectInstance::checkOFXClipPreferences(double time,
                                            const RenderScale & scale,
                                            const std::string & reason,
-                                           bool forceGetClipPrefAction)
+                                           bool forceGetClipPrefAction,
+                                           bool recurse)
 {
     
     
@@ -1146,18 +1147,19 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
             effectInstance()->endInstanceChangedAction(reason);
         }
     }
-
+    
     ////////////////////////////////////////////////////////////////
     ////////////////////////////////
     //////////////// STEP 5: Recursion down-stream
-
-    ///Finally call recursively this function on all outputs to propagate it along the tree.
-    const std::list<Natron::Node* >& outputs = _node->getOutputs();
-    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-        ///Force a call to getClipPrefs on outputs because they are obviously not dirty
-        (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason, true);
+    if (recurse) {
+        ///Finally call recursively this function on all outputs to propagate it along the tree.
+        const std::list<Natron::Node* >& outputs = _node->getOutputs();
+        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+            ///Force a call to getClipPrefs on outputs because they are obviously not dirty
+            (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason, true, recurse);
+        }
     }
-
+    
     
     
 } // checkOFXClipPreferences
@@ -1196,7 +1198,7 @@ OfxEffectInstance::onMultipleInputsChanged()
         }
 
         
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true);
+        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true, false);
     }
 }
 
@@ -2393,7 +2395,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
         RECURSIVE_ACTION();
-        checkOFXClipPreferences(time, renderScale, ofxReason,false);
+        checkOFXClipPreferences(time, renderScale, ofxReason,false, true);
     }
     if (_overlayInteract) {
         std::vector<std::string> params;

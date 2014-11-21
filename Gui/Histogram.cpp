@@ -1338,7 +1338,8 @@ Histogram::enterEvent(QEvent* e) {
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel";
+    currentFocus->objectName() == "SettingsPanel" ||
+    currentFocus->objectName() == "qt_tabwidget_tabbar";
     
     if (canSetFocus) {
         setFocus();

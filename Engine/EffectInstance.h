@@ -505,7 +505,8 @@ public:
     virtual void checkOFXClipPreferences(double /*time*/,
                                          const RenderScale & /*scale*/,
                                          const std::string & /*reason*/,
-                                        bool /*forceGetClipPrefAction*/) {}
+                                        bool /*forceGetClipPrefAction*/,
+                                        bool /*recurse*/) {}
     
     /**
      * @brief Returns the output aspect ratio to render with

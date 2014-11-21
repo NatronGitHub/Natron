@@ -253,7 +253,8 @@ public:
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
-                                     bool forceGetClipPrefAction) OVERRIDE FINAL;
+                                     bool forceGetClipPrefAction,
+                                         bool recurse) OVERRIDE FINAL;
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
