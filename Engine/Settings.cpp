@@ -864,7 +864,7 @@ Settings::saveSettings()
                     int index = isChoice->getValue(j);
 
                     const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                    assert((int)entries.size() > index);
+                    //assert((int)entries.size() > index);
                     settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
                 } else {
                     settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
