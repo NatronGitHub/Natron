@@ -253,6 +253,8 @@ struct RotoGui::RotoGuiPrivate
     isNearbyFeatherBar(int time,const std::pair<double,double> & pixelScale,const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
+    
+    bool isWithinSelectedCpsBBox(const QPointF& pos) const;
 
     bool isNearbyBBoxTopLeft(const QPointF & p,double tolerance,const std::pair<double,double> & pixelScale) const;
     bool isNearbyBBoxTopRight(const QPointF & p,double tolerance,const std::pair<double,double> & pixelScale) const;
@@ -1479,7 +1481,7 @@ RotoGui::penDown(double /*scaleX*/,
     int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
 
-    if ( _imp->rotoData->showCpsBbox && _imp->isNearbySelectedCpsCrossHair(pos) ) {
+    if ( _imp->rotoData->showCpsBbox && _imp->isWithinSelectedCpsBBox(pos) ) {
         _imp->state = DRAGGING_SELECTED_CPS;
     } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
         _imp->state = DRAGGING_BBOX_TOP_LEFT;
@@ -1870,7 +1872,7 @@ RotoGui::penMotion(double /*scaleX*/,
     int time = _imp->context->getTimelineCurrentTime();
     ///Set the cursor to the appropriate case
     bool cursorSet = false;
-    if ( (_imp->rotoData->selectedCps.size() > 1) && _imp->isNearbySelectedCpsCrossHair(pos) ) {
+    if ( (_imp->rotoData->selectedCps.size() > 1) && _imp->isWithinSelectedCpsBBox(pos) ) {
         _imp->viewer->setCursor( QCursor(Qt::SizeAllCursor) );
         cursorSet = true;
     } else {
@@ -2393,6 +2395,24 @@ RotoGui::RotoGuiPrivate::isNearbySelectedCpsCrossHair(const QPointF & pos) const
     } else {
         return false;
     }
+}
+
+bool
+RotoGui::RotoGuiPrivate::isWithinSelectedCpsBBox(const QPointF& pos) const
+{
+ //   std::pair<double, double> pixelScale;
+//    viewer->getPixelScale(pixelScale.first,pixelScale.second);
+    
+    double l = rotoData->selectedCpsBbox.topLeft().x();
+    double r = rotoData->selectedCpsBbox.bottomRight().x();
+    double b = rotoData->selectedCpsBbox.bottomRight().y();
+    double t = rotoData->selectedCpsBbox.topLeft().y();
+    
+    double toleranceX = 0;//kXHairSelectedCpsTolerance * pixelScale.first;
+    double toleranceY = 0;//kXHairSelectedCpsTolerance * pixelScale.second;
+    
+    return pos.x() > (l - toleranceX) && pos.x() < (r + toleranceX) &&
+    pos.y() > (b - toleranceY) && pos.y() < (t + toleranceY);
 }
 
 bool
