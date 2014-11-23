@@ -2084,8 +2084,8 @@ RotoGui::penMotion(double /*scaleX*/,
 
         double tx = 0., ty = 0.;
         double skewX = 0.,skewY = 0.;
-
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
+        TransformUndoCommand::TransformPointsSelectionEnum type = TransformUndoCommand::eTransformAllPoints;
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2111,7 +2111,17 @@ RotoGui::penMotion(double /*scaleX*/,
                 sy *= ratio;
             }
         }
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
+        TransformUndoCommand::TransformPointsSelectionEnum type;
+        if (!modCASIsShift(e)) {
+            type = TransformUndoCommand::eTransformAllPoints;
+        } else {
+            if (_imp->state == DRAGGING_BBOX_MID_TOP) {
+                type = TransformUndoCommand::eTransformMidTop;
+            } else if (_imp->state == DRAGGING_BBOX_MID_BTM) {
+                type = TransformUndoCommand::eTransformMidBottom;
+            }
+        }
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2137,7 +2147,18 @@ RotoGui::penMotion(double /*scaleX*/,
                 sx *= ratio;
             }
         }
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
+        TransformUndoCommand::TransformPointsSelectionEnum type;
+        if (!modCASIsShift(e)) {
+            type = TransformUndoCommand::eTransformAllPoints;
+        } else {
+            if (_imp->state == DRAGGING_BBOX_MID_RIGHT) {
+                type = TransformUndoCommand::eTransformMidRight;
+            } else if (_imp->state == DRAGGING_BBOX_MID_LEFT) {
+                type = TransformUndoCommand::eTransformMidLeft;
+            }
+        }
+
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
 
         _imp->evaluateOnPenUp = true;
         didSomething = true;
