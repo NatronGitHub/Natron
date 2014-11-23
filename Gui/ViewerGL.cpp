@@ -3108,6 +3108,7 @@ ViewerGL::zoomSlot(int v)
         double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
         _imp->zoomCtx.zoom(centerX, centerY, scale);
+        _imp->zoomOrPannedSinceLastFit = true;
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
