@@ -123,6 +123,7 @@ struct RotoGuiSharedData
     ////like it does in inkscape.
     SelectedCpsTransformMode transformMode;
     boost::shared_ptr<Bezier> builtBezier; //< the bezier currently being built
+    boost::shared_ptr<Bezier> bezierBeingDragged;
     SelectedCP cpBeingDragged; //< the cp being dragged
     boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
                                                      //only relevant when the state is DRAGGING_X_TANGENT
@@ -136,6 +137,7 @@ struct RotoGuiSharedData
           , showCpsBbox(false)
           , transformMode()
           , builtBezier()
+          , bezierBeingDragged()
           , cpBeingDragged()
           , tangentBeingDragged()
           , featherBarBeingDragged()
@@ -1629,8 +1631,12 @@ RotoGui::penDown(double /*scaleX*/,
                     std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
                 if ( found == _imp->rotoData->selectedBeziers.end() ) {
                     _imp->handleBezierSelection(nearbyBezier, e);
+                    
                 }
-                if ( buttonDownIsRight(e) ) {
+                if (buttonDownIsLeft(e)) {
+                    _imp->state = DRAGGING_SELECTED_CPS;
+                    _imp->rotoData->bezierBeingDragged = nearbyBezier;
+                } else if ( buttonDownIsRight(e) ) {
                     showMenuForCurve(nearbyBezier);
                 }
                 didSomething = true;
@@ -1978,7 +1984,20 @@ RotoGui::penMotion(double /*scaleX*/,
     double dy = pos.y() - _imp->lastMousePos.y();
     switch (_imp->state) {
     case DRAGGING_SELECTED_CPS: {
-        pushUndoCommand( new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,dx,dy,time) );
+        
+        if (_imp->rotoData->bezierBeingDragged) {
+            SelectedCPs cps;
+            const std::list<boost::shared_ptr<BezierCP> >& c = _imp->rotoData->bezierBeingDragged->getControlPoints();
+            const std::list<boost::shared_ptr<BezierCP> >& f = _imp->rotoData->bezierBeingDragged->getControlPoints();
+            assert(c.size() == f.size());
+            std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = f.begin();
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp,++itFp) {
+                cps.push_back(std::make_pair(*itCp,*itFp));
+            }
+            pushUndoCommand( new MoveControlPointsUndoCommand(this,cps,dx,dy,time) );
+        } else {
+            pushUndoCommand( new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,dx,dy,time) );
+        }
         _imp->evaluateOnPenUp = true;
         _imp->computeSelectedCpsBBOX();
         didSomething = true;
@@ -2184,6 +2203,7 @@ RotoGui::penUp(double /*scaleX*/,
         _imp->evaluateOnPenUp = false;
     }
     _imp->rotoData->tangentBeingDragged.reset();
+    _imp->rotoData->bezierBeingDragged.reset();
     _imp->rotoData->cpBeingDragged.first.reset();
     _imp->rotoData->cpBeingDragged.second.reset();
     _imp->rotoData->featherBarBeingDragged.first.reset();
