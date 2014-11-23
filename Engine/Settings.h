@@ -39,7 +39,7 @@ class Choice_Knob;
 class Path_Knob;
 class Color_Knob;
 class String_Knob;
-
+class QSettings;
 class Settings
     : public KnobHolder
 {
@@ -93,6 +93,8 @@ public:
     void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
     
     void populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore);
+    
+    void populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts);
 
     void getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats);
 
@@ -223,6 +225,9 @@ private:
 
     boost::shared_ptr<Page_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _natronSettingsExist;
+    boost::shared_ptr<Choice_Knob> _fontChoice;
+    boost::shared_ptr<Choice_Knob> _systemFontChoice;
+    boost::shared_ptr<Int_Knob> _fontSize;
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Bool_Knob> _linearPickers;
@@ -312,6 +317,7 @@ private:
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
+    bool _hasWarnedOnceOnFontChanged ;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_

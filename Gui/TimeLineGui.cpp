@@ -33,7 +33,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Gui.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiAppInstance.h"
-
+#include "Gui/GuiApplicationManager.h"
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
@@ -131,7 +131,7 @@ struct TimelineGuiPrivate
           , _backgroundColor(50,50,50)
           , _ticksColor(200,200,200)
           , _scaleColor(100,100,100)
-          , _font(NATRON_FONT_ALT, NATRON_FONT_SIZE_10)
+          , _font(appFont,appFontSize)
           , _firstPaint(true)
           , cachedFrames()
     {

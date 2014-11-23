@@ -436,7 +436,7 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
             _imp->_nameLabel = new QLabel(initialName,_imp->_headerWidget);
-            _imp->_nameLabel->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+            _imp->_nameLabel->setFont(QFont(appFont,appFontSize));
             _imp->_headerLayout->addWidget(_imp->_nameLabel);
         }
 
@@ -1382,7 +1382,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         
         boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
         QMenu menu(this);
-        menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+        menu.setFont( QFont(appFont,appFontSize) );
         QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
         menu.addAction(setKeys);
         QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
@@ -1581,7 +1581,7 @@ void
 NodeSettingsPanel::onSettingsButtonClicked()
 {
     QMenu menu(this);
-    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    menu.setFont(QFont(appFont,appFontSize));
     
     boost::shared_ptr<Natron::Node> master = _nodeGUI->getNode()->getMasterNode();
     

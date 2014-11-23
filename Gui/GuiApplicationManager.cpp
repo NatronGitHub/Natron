@@ -112,6 +112,9 @@ struct GuiApplicationManagerPrivate
 
     bool _shortcutsChangedVersion;
     
+    QString _fontFamily;
+    int _fontSize;
+    
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
         :   _publicInterface(publicInterface)
           , _toolButtons()
@@ -122,6 +125,8 @@ struct GuiApplicationManagerPrivate
           , _openFileRequest()
           , _actionShortcuts()
           , _shortcutsChangedVersion(false)
+          , _fontFamily()
+          , _fontSize(0)
     {
     }
 
@@ -689,13 +694,23 @@ GuiApplicationManager::initGui()
     QStringList fontFilenames;
     fontFilenames << fontResource.arg("DroidSans");
     fontFilenames << fontResource.arg("DroidSans-Bold");
-
+    fontFilenames << fontResource.arg("Muli-Regular");
     foreach(QString fontFilename, fontFilenames) {
         _imp->_splashScreen->updateText("Loading font " + fontFilename);
         //qDebug() << "attempting to load" << fontFilename;
         int fontID = QFontDatabase::addApplicationFont(fontFilename);
         qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
     }
+    
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QFontDatabase db;
+    QStringList families = db.families();
+    std::vector<std::string> systemFonts(families.size());
+    for (int i = 0; i < families.size(); ++i) {
+        systemFonts[i] = families[i].toStdString();
+    }
+    getCurrentSettings()->populateSystemFonts(settings,systemFonts);
+
 
     _imp->createColorPickerCursor();
     _imp->_knobsClipBoard->isEmpty = true;
@@ -1059,11 +1074,53 @@ GuiApplicationManager::initializeQApp(int &argc,
 
     app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);
-    app->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
-
+    
+    
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    
+    
+    QString fontFamily(NATRON_FONT);
+    int fontSize = NATRON_FONT_SIZE_11;
+    
+    if (settings.contains("font")) {
+        QString fontChoiceEntry = settings.value("font").toString();
+        
+        //fontChoiceEntry == Muli
+        //font_i == 1 == NATRON_FONT_ALT
+        //font_i == 2 == System font
+        if (fontChoiceEntry == "System fonts...") {
+            
+            if (settings.contains("systemFont")) {
+                fontFamily = settings.value("systemFont").toString();
+            }
+        } else {
+            fontFamily = fontChoiceEntry;
+        }
+    }
+    if (settings.contains("fontSize")) {
+        fontSize = settings.value("fontSize").toInt();
+    }
+    qDebug() << "Setting application font to " << fontFamily << " " << fontSize;
+    app->setFont( QFont(fontFamily, fontSize) );
+    _imp->_fontFamily = fontFamily;
+    _imp->_fontSize = fontSize;
+    
     ///Register all the shortcuts.
     populateShortcuts();
 }
+
+QString
+GuiApplicationManager::getAppFont() const
+{
+    return _imp->_fontFamily;
+}
+
+int
+GuiApplicationManager::getAppFontSize() const
+{
+    return _imp->_fontSize;
+}
+
 
 void
 GuiApplicationManager::onAllPluginsLoaded()

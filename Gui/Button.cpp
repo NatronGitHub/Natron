@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "Button.h"
-
+#include "Gui/GuiApplicationManager.h"
 Button::Button(QWidget* parent)
     : QPushButton(parent)
 {
@@ -32,6 +32,6 @@ Button::Button(const QIcon & icon,
 void
 Button::initInternal()
 {
-    setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    setFont( QFont(appFont,appFontSize) );
 }
 

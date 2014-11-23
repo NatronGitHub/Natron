@@ -1804,7 +1804,7 @@ SequenceFileDialog::showFilterMenu()
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
 
-    QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
+    QFont font(appFont,appFontSize);
     QFontMetrics fm(font);
     
     QString defaultString = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
@@ -2399,7 +2399,7 @@ FavoriteView::showMenu(const QPoint &position)
     }
     if (actions.count() > 0) {
         QMenu menu(this);
-        menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        menu.setFont(QFont(appFont,appFontSize));
         menu.addActions(actions);
         menu.exec( mapToGlobal(position) );
     }

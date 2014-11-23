@@ -116,7 +116,7 @@ struct KnobGui::KnobGuiPrivate
           , customInteract(NULL)
           , guiCurves()
     {
-        copyRightClickMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+        copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
     }
 };
 
@@ -243,7 +243,7 @@ void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
     _imp->animationMenu = new QMenu( layout->parentWidget() );
-    _imp->animationMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
@@ -501,7 +501,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             }
 
             QMenu* interpolationMenu = new QMenu(menu);
-            interpolationMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+            interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );
             if (!isEnabled) {

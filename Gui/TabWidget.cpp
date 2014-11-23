@@ -181,7 +181,7 @@ TabWidget::createMenu()
 {
     MenuWithToolTips menu(_gui);
 
-    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    menu.setFont( QFont(appFont,appFontSize) );
     QPixmap pixV,pixM,pixH,pixC,pixA;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);

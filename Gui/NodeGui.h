@@ -298,6 +298,12 @@ public:
     
     void setMergeHintActive(bool active);
     
+    /**
+     * @brief Called after the node-graph view reaches a certain detail level (zoom) to show/hide elements that would otherwise 
+     * not be visible and would just clutter and slow down the interface
+     **/
+    void setVisibleDetails(bool visible);
+    
 public slots:
 
     void setDefaultGradientColor(const QColor & color);

@@ -164,7 +164,7 @@ struct ViewerGL::Implementation
           , textRenderingColor(200,200,200,255)
           , displayWindowOverlayColor(125,125,125,255)
           , rodOverlayColor(100,100,100,255)
-          , textFont( new QFont(NATRON_FONT, NATRON_FONT_SIZE_13) )
+          , textFont( new QFont(appFont,NATRON_FONT_SIZE_13) )
           , overlay(true)
           , supportsGLSL(true)
           , updatingTexture(false)
@@ -212,7 +212,7 @@ struct ViewerGL::Implementation
         displayingImageGain[0] = displayingImageGain[1] = 1.;
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         assert( qApp && qApp->thread() == QThread::currentThread() );
-        menu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+        menu->setFont( QFont(appFont,appFontSize) );
         
         QDesktopWidget* desktop = QApplication::desktop();
         QRect r = desktop->screenGeometry();
@@ -3535,7 +3535,7 @@ ViewerGL::populateMenu()
     QObject::connect( displayOverlaysAction,SIGNAL( triggered() ),this,SLOT( toggleOverlays() ) );
     
     QMenu* showHideMenu = new QMenu(tr("Show/Hide"),_imp->menu);
-    showHideMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());
     
     QAction* showHidePlayer,*showHideLeftToolbar,*showHideRightToolbar,*showHideTopToolbar,*showHideInfobar,*showHideTimeline;

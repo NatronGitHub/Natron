@@ -51,6 +51,7 @@ Edge::Edge(int inputNb_,
       , _paintWithDash(false)
       , _paintBendPoint(false)
       , _bendPointHiddenAutomatically(false)
+      , _wasLabelVisible(true)
       , _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
@@ -450,6 +451,19 @@ Edge::isNearbyBendPoint(const QPointF & scenePoint)
     }
 
     return false;
+}
+
+void
+Edge::setVisibleDetails(bool visible)
+{
+    if (!visible) {
+        _wasLabelVisible = _label->isVisible();
+        _label->hide();
+    } else {
+        if (_wasLabelVisible) {
+            _label->show();
+        }
+    }
 }
 
 void

@@ -330,6 +330,8 @@ public:
     
     void setThreadAsActionCaller(bool actionCaller);
 
+    virtual QString getAppFont() const { return ""; }
+    virtual int getAppFontSize() const { return 11; }
     
 public slots:
     

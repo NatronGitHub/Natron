@@ -307,7 +307,7 @@ NodeGui::createGui()
 
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
-    _nameItem->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_12) );
+    _nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(1);
 
     _persistentMessage = new QGraphicsTextItem("",this);
@@ -452,7 +452,7 @@ NodeGui::updateShape(int width,
 
     _boundingBox->setRect(bbox);
 
-    QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
+    QFont f(appFont,appFontSize);
     QFontMetrics metrics(f);
     int nameWidth = labelBbox.width();
     _nameItem->setX( topLeft.x() + (width / 2) - (nameWidth / 2) );
@@ -1149,16 +1149,18 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
     if (closest) {
         return closest;
     }
-
+    
     if (_outputEdge) {
-        QLineF edgeLine = _outputEdge->line();
-        for (int j = 0; j < 4; ++j) {
-            if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
-                return _outputEdge;
+        if (_outputEdge->isVisible()) {
+            QLineF edgeLine = _outputEdge->line();
+            for (int j = 0; j < 4; ++j) {
+                if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+                    return _outputEdge;
+                }
             }
         }
     }
-
+    
     return NULL;
 } // hasEdgeNearbyRect
 
@@ -1576,6 +1578,17 @@ NodeGui::setMergeHintActive(bool active)
 }
 
 void
+NodeGui::setVisibleDetails(bool visible)
+{
+    if (_nameItem) {
+        _nameItem->setVisible(visible);
+    }
+    for (std::map<int,Edge*>::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        it->second->setVisibleDetails(visible);
+    }
+}
+
+void
 NodeGui::onInputNRenderingStarted(int input)
 {
     
@@ -1901,7 +1914,7 @@ struct NodeGuiIndicatorPrivate
 
 
         textItem = new QGraphicsTextItem(text,parent);
-        QFont font(NATRON_FONT_ALT, NATRON_FONT_SIZE_10);
+        QFont font(appFont,appFontSize);
         QFontMetrics fm(font);
         textItem->setPos(topLeft.x()  - 2 * width / 3, topLeft.y() - 2 * fm.height() / 3);
         textItem->setFont(font);

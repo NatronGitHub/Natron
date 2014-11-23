@@ -50,7 +50,7 @@ SplashScreen::SplashScreen(const QString & filePath)
     setAttribute(Qt::WA_TranslucentBackground, true);
 
     _pixmap.load(filePath);
-    _pixmap = _pixmap.scaled(768, 432);
+    _pixmap = _pixmap.scaled(768, 466);
 
     resize( _pixmap.width(), _pixmap.height() );
     show();
