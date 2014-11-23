@@ -154,8 +154,21 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
 
 KnobGui::~KnobGui()
 {
-//    delete _imp->animationButton;
-//    delete _imp->animationMenu;
+
+}
+
+void
+KnobGui::removeGui()
+{
+    delete _imp->descriptionLabel;
+    _imp->knobsOnSameLine.clear();
+    if (_imp->isOnNewLine) {
+        delete _imp->field;
+    } else {
+        removeSpecificGui();
+        delete _imp->animationMenu;
+    }
+
 }
 
 Gui*

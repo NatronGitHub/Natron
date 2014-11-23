@@ -180,6 +180,10 @@ public:
 
     virtual void scanForNewKnobs() OVERRIDE FINAL;
     
+    void setUserPageActiveIndex();
+    
+    void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
+    
 public slots:
 
     /*Internal slot, not meant to be called externally.*/
@@ -385,9 +389,34 @@ public slots:
     void onDownClicked();
     
     void onCloseClicked();
+    
+    void onSelectionChanged();
+    
 private:
     
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
+};
+
+struct AddKnobDialogPrivate;
+class AddKnobDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    
+    AddKnobDialog(DockablePanel* panel,QWidget* parent);
+    
+    virtual ~AddKnobDialog();
+    
+    boost::shared_ptr<KnobI> getKnob() const;
+
+public slots:
+    
+    void onTypeCurrentIndexChanged(int index);
+    
+    void onOkClicked();
+private:
+    
+    boost::scoped_ptr<AddKnobDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_SETTINGSPANEL_H_

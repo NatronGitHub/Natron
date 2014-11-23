@@ -37,7 +37,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             dynamic_cast<OfxEffectInstance*>( n->getLiveInstance() )->syncPrivateData_other_thread();
         }
 
-        const std::vector< boost::shared_ptr<KnobI> > & knobs = n->getKnobs();
+        std::vector< boost::shared_ptr<KnobI> >  knobs = n->getLiveInstance()->getKnobs_mt_safe();
 
         for (U32 i  = 0; i < knobs.size(); ++i) {
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );

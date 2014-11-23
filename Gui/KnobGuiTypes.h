@@ -96,6 +96,8 @@ public:
                 DockablePanel *container);
 
     virtual ~Int_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
@@ -140,6 +142,7 @@ private:
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
+    QWidget *container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::shared_ptr<Int_Knob> _knob;
@@ -164,6 +167,8 @@ public:
                  DockablePanel *container);
 
     virtual ~Bool_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
@@ -208,6 +213,8 @@ public:
                    DockablePanel *container);
 
     virtual ~Double_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
@@ -255,6 +262,7 @@ private:
     
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
+    QWidget *container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::shared_ptr<Double_Knob> _knob;
@@ -280,6 +288,8 @@ public:
 
     virtual ~Button_KnobGui() OVERRIDE;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+    
     virtual bool showDescriptionLabel() const
     {
         return false;
@@ -328,6 +338,8 @@ public:
                    DockablePanel *container);
 
     virtual ~Choice_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
@@ -371,6 +383,8 @@ public:
                       DockablePanel *container);
 
     virtual ~Separator_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
@@ -415,7 +429,7 @@ public:
     virtual ~ColorPickerLabel() OVERRIDE
     {
     }
-
+    
     bool isPickingEnabled() const
     {
         return _pickingEnabled;
@@ -458,6 +472,8 @@ public:
                   DockablePanel *container);
 
     virtual ~Color_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
@@ -600,6 +616,8 @@ public:
                    DockablePanel *container);
 
     virtual ~String_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
@@ -705,6 +723,8 @@ public:
 
     virtual ~Group_KnobGui() OVERRIDE;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+    
     void addKnob(KnobGui *child);
     
     const std::list<KnobGui*>& getChildren() const { return _children; }
@@ -756,6 +776,9 @@ public:
 
     Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
                        DockablePanel *container);
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+    
     virtual bool showDescriptionLabel() const
     {
         return false;
@@ -790,6 +813,7 @@ private:
 
 private:
     // TODO: PIMPL
+    QWidget* treeColumn;
     CurveWidget* _curveWidget;
     QTreeWidget* _tree;
     Button* _resetButton;

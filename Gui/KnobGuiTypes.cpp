@@ -98,20 +98,20 @@ Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Int_KnobGui::~Int_KnobGui()
 {
-//    for (U32 i  = 0; i < _spinBoxes.size(); ++i) {
-//        delete _spinBoxes[i].first;
-//        delete _spinBoxes[i].second;
-//    }
-//    if (_slider) {
-//        delete _slider;
-//    }
+}
+
+void
+Int_KnobGui::removeSpecificGui()
+{
+    container->setParent(NULL);
+    delete container;
 }
 
 void
 Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
     int dim = _knob->getDimension();
-    QWidget *container = new QWidget( layout->parentWidget() );
+    container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
 
     container->setLayout(containerLayout);
@@ -135,7 +135,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
     
     for (int i = 0; i < dim; ++i) {
-        QWidget *boxContainer = new QWidget( layout->parentWidget() );
+        QWidget *boxContainer = new QWidget( container );
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -578,7 +578,13 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
 
 Bool_KnobGui::~Bool_KnobGui()
 {
-   // delete _checkBox;
+
+}
+
+void Bool_KnobGui::removeSpecificGui()
+{
+    _checkBox->setParent(0);
+    delete _checkBox;
 }
 
 void
@@ -746,19 +752,18 @@ Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Double_KnobGui::~Double_KnobGui()
 {
-//    for (U32 i  = 0; i < _spinBoxes.size(); ++i) {
-//        delete _spinBoxes[i].first;
-//        delete _spinBoxes[i].second;
-//    }
-//    if (_slider) {
-//        delete _slider;
-//    }
+
+}
+
+void Double_KnobGui::removeSpecificGui()
+{
+    delete container;
 }
 
 void
 Double_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    QWidget *container = new QWidget( layout->parentWidget() );
+    container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
 
     container->setLayout(containerLayout);
@@ -784,7 +789,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
-        QWidget *boxContainer = new QWidget( layout->parentWidget() );
+        QWidget *boxContainer = new QWidget( container );
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -1284,7 +1289,11 @@ Button_KnobGui::createWidget(QHBoxLayout* layout)
 
 Button_KnobGui::~Button_KnobGui()
 {
-  //  delete _button;
+}
+
+void Button_KnobGui::removeSpecificGui()
+{
+    delete _button;
 }
 
 void
@@ -1337,7 +1346,12 @@ Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Choice_KnobGui::~Choice_KnobGui()
 {
-   // delete _comboBox;
+   
+}
+
+void Choice_KnobGui::removeSpecificGui()
+{
+    delete _comboBox;
 }
 
 void
@@ -1492,7 +1506,12 @@ Separator_KnobGui::createWidget(QHBoxLayout* layout)
 
 Separator_KnobGui::~Separator_KnobGui()
 {
-    //delete _line;
+    
+}
+
+void Separator_KnobGui::removeSpecificGui()
+{
+    delete _line;
 }
 
 void
@@ -1554,7 +1573,12 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Color_KnobGui::~Color_KnobGui()
 {
-   // delete mainContainer;
+   
+}
+
+void Color_KnobGui::removeSpecificGui()
+{
+   delete mainContainer;
 }
 
 void
@@ -2574,9 +2598,14 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
 String_KnobGui::~String_KnobGui()
 {
-//    delete _lineEdit;
-//    delete _label;
-//    delete _container;
+}
+
+void String_KnobGui::removeSpecificGui()
+{
+    delete _lineEdit;
+    delete _label;
+    delete _container;
+
 }
 
 void
@@ -3352,10 +3381,16 @@ Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Group_KnobGui::~Group_KnobGui()
 {
-   // delete _button;
-    //    for(U32 i  = 0 ; i < _children.size(); ++i){
-    //        delete _children[i].first;
-    //    }
+    
+}
+
+void Group_KnobGui::removeSpecificGui()
+{
+    delete _button;
+//    for (std::list<KnobGui*>::iterator it = _children.begin() ;it!= _children.end();++it) {
+//        (*it)->removeSpecificGui();
+//        delete *it;
+//    }
 }
 
 void
@@ -3497,19 +3532,25 @@ boost::shared_ptr<KnobI> Group_KnobGui::getKnob() const
 
 Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
                                        DockablePanel *container)
-    : KnobGui(knob, container)
-      , _curveWidget(NULL)
-      , _tree(NULL)
-      , _resetButton(NULL)
-      , _curves()
+: KnobGui(knob, container)
+, treeColumn(NULL)
+, _curveWidget(NULL)
+, _tree(NULL)
+, _resetButton(NULL)
+, _curves()
 {
     _knob = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
 }
 
 Parametric_KnobGui::~Parametric_KnobGui()
 {
-//    delete _curveWidget;
-//    delete _tree;
+    
+}
+
+void Parametric_KnobGui::removeSpecificGui()
+{
+    delete _curveWidget;
+    delete treeColumn;
 }
 
 void
@@ -3518,7 +3559,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     QObject::connect( _knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QWidget* treeColumn = new QWidget( layout->parentWidget() );
+    treeColumn = new QWidget( layout->parentWidget() );
     QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
     treeColumnLayout->setContentsMargins(0, 0, 0, 0);
 
