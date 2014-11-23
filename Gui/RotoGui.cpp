@@ -1483,9 +1483,7 @@ RotoGui::penDown(double /*scaleX*/,
     int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
 
-    if ( _imp->rotoData->showCpsBbox && _imp->isWithinSelectedCpsBBox(pos) ) {
-        _imp->state = DRAGGING_SELECTED_CPS;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
+    if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
         _imp->state = DRAGGING_BBOX_TOP_LEFT;
     } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale) ) {
         _imp->state = DRAGGING_BBOX_TOP_RIGHT;
@@ -1501,6 +1499,8 @@ RotoGui::penDown(double /*scaleX*/,
         _imp->state = DRAGGING_BBOX_MID_BTM;
     } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale) ) {
         _imp->state = DRAGGING_BBOX_MID_LEFT;
+    } else if ( _imp->rotoData->showCpsBbox && _imp->isWithinSelectedCpsBBox(pos) ) {
+        _imp->state = DRAGGING_SELECTED_CPS;
     }
 
     if (_imp->state != NONE) {
