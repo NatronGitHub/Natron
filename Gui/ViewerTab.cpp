@@ -72,6 +72,66 @@ struct InputName
 typedef std::map<int,InputName> InputNamesMap;
 }
 
+class ChannelsComboBox : public ComboBox
+{
+    
+public:
+    
+    ChannelsComboBox(QWidget* parent) : ComboBox(parent) {}
+    
+private:
+    
+    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL
+    {
+        ComboBox::paintEvent(event);
+        
+        int idx = activeIndex();
+        if (idx != 1) {
+            QColor color;
+            
+            QPainter p(this);
+            QPen pen;
+            
+            switch (idx) {
+                case 0:
+                    //luminance
+                    color.setRgbF(0.5, 0.5, 0.5);
+                    break;
+                case 2:
+                    //r
+                    color.setRgbF(1., 0, 0);
+                    break;
+                case 3:
+                    //g
+                    color.setRgbF(0., 1., 0.);
+                    break;
+                case 4:
+                    //b
+                    color.setRgbF(0., 0. , 1.);
+                    break;
+                case 5:
+                    //a
+                    color.setRgbF(1.,1.,1.);
+                    break;
+            }
+            
+            pen.setColor(color);
+            p.setPen(pen);
+            
+            
+            QRectF bRect = rect();
+            QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
+            
+            double roundPixels = 3;
+            
+            
+            QPainterPath path;
+            path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+            p.drawPath(path);
+        }
+    }
+};
+
 struct ViewerTabPrivate
 {
     /*OpenGL viewer*/
@@ -89,7 +149,7 @@ struct ViewerTabPrivate
 
     /*1st row*/
     //ComboBox* _viewerLayers;
-    ComboBox* _viewerChannels;
+    ChannelsComboBox* _viewerChannels;
     ComboBox* _zoomCombobox;
     Button* _centerViewerButton;
     Button* _clipToProjectFormatButton;
@@ -231,7 +291,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     // _viewerLayers = new ComboBox(_firstSettingsRow);
     //_firstRowLayout->addWidget(_viewerLayers);
 
-    _imp->_viewerChannels = new ComboBox(_imp->_firstSettingsRow);
+    _imp->_viewerChannels = new ChannelsComboBox(_imp->_firstSettingsRow);
     _imp->_viewerChannels->setToolTip( "<p><b>" + tr("Channels") + ": \n</b></p>"
                                        + tr("The channels to display on the viewer.") );
     _imp->_firstRowLayout->addWidget(_imp->_viewerChannels);
