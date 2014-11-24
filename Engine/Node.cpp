@@ -2385,7 +2385,7 @@ Node::setAborted(bool b)
         ///cancel the dequeuing
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeOne();
+        _imp->nodeIsDequeuingCond.wakeAll();
     }
     //
     //    QMutexLocker l(&_imp->inputsMutex);

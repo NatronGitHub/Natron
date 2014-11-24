@@ -194,9 +194,11 @@ Project::loadProjectInternal(const QString & path,
     } catch (const std::ifstream::failure & e) {
         throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
     }
-    
-    std::string loadMessage = tr("Loading ").toStdString() + name.toStdString() + " ...";
-    getApp()->startProgress(this, loadMessage, false);
+    {
+        std::string projName = isAutoSave  && !realFilePath.isEmpty() ? realFilePath.toStdString() : name.toStdString();
+        std::string loadMessage = tr("Loading ").toStdString() + projName + " ...";
+        getApp()->startProgress(this, loadMessage, false);
+    }
     try {
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);

@@ -647,11 +647,12 @@ SequenceFileDialog::restoreState(const QByteArray & state)
             }
             bool alreadyFound = false;
             
-            for (int j = 0;j < expandedVars.size();++j) {
-                if (expandedVars[j].size() > 1 && (expandedVars[j].endsWith('/') || expandedVars[j].endsWith('\\'))) {
-                    expandedVars[j] = expandedVars[j].remove(expandedVars[j].size() - 1, 1);
+            for (U32 j = 0;j < stdBookMarks.size();++j) {
+                QString otherUrl = stdBookMarks[j].path();
+                if (otherUrl.size() > 1 && (otherUrl.endsWith('/') || otherUrl.endsWith('\\'))) {
+                    otherUrl = otherUrl.remove(otherUrl.size() - 1, 1);
                 }
-                if (expandedVars[j] == urlPath) {
+                if (otherUrl == urlPath) {
                     alreadyFound = true;
                     break;
                 }
