@@ -156,6 +156,15 @@ public:
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
             ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
+            
+            if (natronVersion.find("1.0.0") != std::string::npos && natronVersion.find("RC3") == std::string::npos) {
+                appPTR->setProjectCreatedPriorToRC3(true);
+            } else {
+                appPTR->setProjectCreatedPriorToRC3(false);
+            }
+            
+        } else {
+            appPTR->setProjectCreatedPriorToRC3(false);
         }
         
         assert(_app);

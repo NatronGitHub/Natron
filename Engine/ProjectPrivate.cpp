@@ -106,7 +106,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 1) restore project's knobs.
 
-    bool foundNatronVersionKnob = false;
     for (U32 i = 0; i < projectKnobs.size(); ++i) {
         ///try to find a serialized value for this knob
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
@@ -126,18 +125,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                     assert(serializedKnob);
                     isChoice->choiceRestoration(serializedKnob, choiceData);
                 } else {
-                    
                     projectKnobs[i]->clone( (*it)->getKnob() );
-
-                    if ((*it)->getName() == natronVersion->getName()) {
-                        foundNatronVersionKnob = true;
-                        std::string natronV = natronVersion->getValue();
-                        if (natronV.find("1.0.0") != std::string::npos && natronV.find("RC3") == std::string::npos) {
-                            appPTR->setProjectCreatedPriorToRC3(true);
-                        } else {
-                            appPTR->setProjectCreatedPriorToRC3(false);
-                        }
-                    }
                 }
                 //}
                 break;
@@ -155,10 +143,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     }
     
-    if (!foundNatronVersionKnob) {
-        appPTR->setProjectCreatedPriorToRC3(true);
-    }
-
 
     /// 2) restore the timeline
     timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
