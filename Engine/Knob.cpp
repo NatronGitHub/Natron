@@ -1522,9 +1522,7 @@ KnobHelper::onMasterChanged(KnobI* master,
             return;
         }
     }
-    
-    ///The master must exist.
-    assert(false);
+
 }
 
 void
