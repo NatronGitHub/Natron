@@ -62,7 +62,7 @@ struct ScaleSliderQWidgetPrivate
     , type(type)
     , value(initialPos)
     , dragging(false)
-    , font(new QFont(appFont,appFontSize))
+    , font(new QFont(appFont,NATRON_FONT_SIZE_8))
     , textColor(200,200,200,255)
     , scaleColor(100,100,100,255)
     , sliderColor(97,83,30,255)
