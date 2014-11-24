@@ -2590,13 +2590,15 @@ ViewerTab::onActiveInputsChanged()
         //_imp->_secondInputImage->setEnabled_natron(false);
     }
 
+    bool autoWipe = appPTR->getCurrentSettings()->isAutoWipeEnabled();
+    
     if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
          && ( getCompositingOperator() != eViewerCompositingOperatorNone) ) {
         //setCompositingOperator(eViewerCompositingOperatorNone);
         _imp->_infoWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->_secondInputImage->setEnabled_natron(false);
-    } else if ( (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
+    } else if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
                 && ( getCompositingOperator() == eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
         setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
