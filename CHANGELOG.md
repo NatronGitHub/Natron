@@ -33,6 +33,10 @@ they flag that do support zoom levels but in fact they don't).
 - Roto: When restoring a project, the default tool will be "Select All" instead of "Bezier"
 to avoid creating new beziers by mistake
 
+- Timeline: when pressing the left and right arrows of the keyboard, the cursor will no longer cross the bounds of the timeline but loop over the range instead.
+
+- Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options. 
+
 - Fix a crash on windows when connecting nodes
 
 - Fix a bug on windows where the properties pane would overlap the viewer if placed below it
