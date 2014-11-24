@@ -6,6 +6,16 @@ is now only applied by the "bottom" node of the transform chain. For example if 
 Transform nodes are setup one after another, the first with a scale of 0.1 and the second
 with a scale of 10 then only the downstream node will be rendered with a scale of 1.
 
+- The font of the application and its size are now customizable in the preferences, however a change to these settings requires a restart of Natron. The new default font is "Muli": https://www.google.com/fonts/specimen/Muli
+
+- A new progress bar will display the progression while loading a project
+
+- When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
+
+- Roto: Selected points can now be dragged from everywhere within the bounding box instead of only the cross-hair.
+- Roto: It is now possible to move a bezier just by dragging a part of the curve where there is no control point.
+- Roto: Holding shift while dragging a scale handle of the bounding box will now scale only the half of the shape on the side of the handle
+
 - Improved parameters alignment and spacing in the settings panel 
 
 - A new tab in the preferences is now dedicated to plug-ins management. You can now choose
@@ -23,10 +33,17 @@ they flag that do support zoom levels but in fact they don't).
 - Roto: When restoring a project, the default tool will be "Select All" instead of "Bezier"
 to avoid creating new beziers by mistake
 
-- Fix a crash on windows when connecting nodes
+- Timeline: when pressing the left and right arrows of the keyboard, the cursor will no longer cross the bounds of the timeline but loop over the range instead.
 
-- Fix a bug on windows
+- Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options. 
 
+- Fixed a crash on windows when connecting nodes
+
+- Fixed a bug on windows where the properties pane would overlap the viewer if placed below it
+
+- Fixed a bug where the locale won't be taken into account and files with accents wouldn't be correctly displayed in the file dialog
+
+- Viewer: fixed a bug when the "Auto-wipe" preferences in the settings was disabled. The wipe would still show up automatically. 
 
 Natron 1.0.0 "RC3"
 -----------------

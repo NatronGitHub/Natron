@@ -178,5 +178,7 @@
         <file>Resources/Images/hide_unmodified.png</file>
         <file>Resources/Images/unhide_unmodified.png</file>
         <file>../CHANGELOG.md</file>
+        <file>Resources/Fonts/Muli-Regular.ttf</file>
+        <file>Resources/Images/natronProjectIcon_linux.png</file>
     </qresource>
 </RCC>

@@ -18,6 +18,7 @@
 #include <clocale>
 #include <cstddef>
 #include <QDebug>
+#include <QTextCodec>
 #include <QAbstractSocket>
 #include <QCoreApplication>
 #include <QThread>
@@ -103,6 +104,9 @@ struct AppManagerPrivate
     // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
     QAtomicInt runningThreadsCount;
     
+     //To by-pass a bug introduced in RC3 with the serialization of bezier curves
+    bool lastProjectLoadedCreatedPriorToRC3;
+    
     AppManagerPrivate()
         : _appType(AppManager::eAppTypeBackground)
         , _appInstances()
@@ -131,6 +135,7 @@ struct AppManagerPrivate
         ,useThreadPool(true)
         ,nThreadsMutex()
         ,runningThreadsCount()
+        ,lastProjectLoadedCreatedPriorToRC3(false)
     {
         setMaxCacheFiles();
         
@@ -365,7 +370,10 @@ AppManager::load(int &argc,
 
     _imp->idealThreadCount = QThread::idealThreadCount();
 
-    
+#if QT_VERSION < 0x050000
+    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
+#endif
+
     assert(argv);
     if (!hadArgs) {
         delete [] argv[0];
@@ -462,8 +470,8 @@ AppManager::loadInternal(const QString & projectFilename,
     //
     // this must be done after initializing the QCoreApplication, see
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
-    std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
-    std::setlocale(LC_ALL,"C"); // set the locale for everything
+    //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+    std::setlocale(LC_ALL,"en_US.UTF-8"); // set the locale for everything
     Natron::Log::instance(); //< enable logging
 
     _imp->_settings->initializeKnobsPublic();
@@ -1860,6 +1868,20 @@ void
 AppManager::setThreadAsActionCaller(bool actionCaller)
 {
     _imp->ofxHost->setThreadAsActionCaller(actionCaller);
+}
+
+
+void
+AppManager::setProjectCreatedPriorToRC3(bool b)
+{
+    _imp->lastProjectLoadedCreatedPriorToRC3 = b;
+}
+
+//To by-pass a bug introduced in RC3 with the serialization of bezier curves
+bool
+AppManager::wasProjectCreatedPriorToRC3() const
+{
+    return _imp->lastProjectLoadedCreatedPriorToRC3;
 }
 
 namespace Natron {

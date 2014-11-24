@@ -23,6 +23,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QStyleOption>
 
 #include "Gui/ticks.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/ZoomContext.h"
 
 #define TICK_HEIGHT 7
@@ -61,7 +62,7 @@ struct ScaleSliderQWidgetPrivate
     , type(type)
     , value(initialPos)
     , dragging(false)
-    , font(new QFont(NATRON_FONT_ALT, NATRON_FONT_SIZE_8))
+    , font(new QFont(appFont,NATRON_FONT_SIZE_8))
     , textColor(200,200,200,255)
     , scaleColor(100,100,100,255)
     , sliderColor(97,83,30,255)

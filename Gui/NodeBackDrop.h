@@ -89,6 +89,7 @@ public:
     
     void centerOnIt();
 
+    void setVisibleDetails(bool visible);
 signals:
 
     void positionChanged();

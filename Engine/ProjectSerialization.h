@@ -156,8 +156,8 @@ public:
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
             ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
-        }
-        
+            
+        } 
         assert(_app);
         int nodesCount;
         ar & boost::serialization::make_nvp("NodesCount",nodesCount);

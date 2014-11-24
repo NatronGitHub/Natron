@@ -40,6 +40,7 @@ Settings::Settings(AppInstance* appInstance)
       , _restoringSettings(false)
       , _ocioRestored(false)
       , _settingsExisted(false)
+      , _hasWarnedOnceOnFontChanged(false)
 {
 }
 
@@ -82,6 +83,32 @@ Settings::initializeKnobs()
     _natronSettingsExist->setName("existingSettings");
     _natronSettingsExist->setSecret(true);
     _generalTab->addKnob(_natronSettingsExist);
+    
+    _fontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
+    _fontChoice->setName("font");
+    _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
+    std::vector<std::string> fontEntries;
+    fontEntries.push_back("Muli");
+    fontEntries.push_back("Droid Sans");
+    fontEntries.push_back("System fonts...");
+    _fontChoice->populateChoices(fontEntries);
+    _fontChoice->turnOffNewLine();
+    _fontChoice->setAnimationEnabled(false);
+    
+    _generalTab->addKnob(_fontChoice);
+    
+    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
+    _systemFontChoice->setHintToolTip("List of all fonts available on your system");
+    _systemFontChoice->setName("systemFont");
+    _systemFontChoice->turnOffNewLine();
+    _systemFontChoice->setAnimationEnabled(false);
+    _systemFontChoice->setSecret(true);
+    _generalTab->addKnob(_systemFontChoice);
+    
+    _fontSize = Natron::createKnob<Int_Knob>(this, "Font size");
+    _fontSize->setName("fontSize");
+    _fontSize->setAnimationEnabled(false);
+    _generalTab->addKnob(_fontSize);
     
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
@@ -697,6 +724,9 @@ Settings::setDefaultValues()
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
+    _fontChoice->setDefaultValue(0);
+    _systemFontChoice->setDefaultValue(0);
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_11);
     _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
@@ -709,7 +739,7 @@ Settings::setDefaultValues()
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(false,0);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10,0);
@@ -834,8 +864,9 @@ Settings::saveSettings()
                     int index = isChoice->getValue(j);
 
                     const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                    assert((int)entries.size() > index);
-                    settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                    if (index < (int)entries.size() ) {
+                        settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                    }
                 } else {
                     settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
                 }
@@ -937,6 +968,12 @@ Settings::restoreSettings()
     if (!_settingsExisted) {
         _natronSettingsExist->setValue(true, 0);
         saveSettings();
+    }
+    
+    int font_i = _fontChoice->getValue();
+    if (font_i == 2) {
+        //System font, show it
+        _systemFontChoice->setSecret(false);
     }
     
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
@@ -1113,6 +1150,20 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
     } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
+    } else if ( k == _fontChoice.get() ) {
+        int index = _fontChoice->getValue();
+        _systemFontChoice->setSecret(index != 2);
+        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
+            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
+            _hasWarnedOnceOnFontChanged = true;
+        }
+    } else if ( k == _fontSize.get() || k == _systemFontChoice.get() ) {
+        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
+            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
+            _hasWarnedOnceOnFontChanged = true;
+        }
     }
 } // onKnobValueChanged
 
@@ -1496,6 +1547,24 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
             pluginsToIgnore.push_back(it->first);
         } else {
             _perPluginRenderScaleSupport.insert(std::make_pair(it->first->getPluginID().toStdString(), it->second.renderScaleSupport));
+        }
+    }
+}
+
+void
+Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts)
+{
+    _systemFontChoice->populateChoices(fonts);
+    
+    ///Now restore properly the system font choice
+    QString name(_systemFontChoice->getName().c_str());
+    if (settings.contains(name)) {
+        std::string value = settings.value(name).toString().toStdString();
+        for (U32 i = 0; i < fonts.size(); ++i) {
+            if (fonts[i] == value) {
+                _systemFontChoice->setValue(i, 0);
+                break;
+            }
         }
     }
 }

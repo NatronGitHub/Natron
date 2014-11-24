@@ -655,19 +655,20 @@ GuiAppInstance::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiAppInstance::startProgress(Natron::EffectInstance* effect,
-                              const std::string & message)
+GuiAppInstance::startProgress(KnobHolder* effect,
+                              const std::string & message,
+                              bool canCancel)
 {
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
 
-    _imp->_gui->startProgress(effect, message);
+    _imp->_gui->startProgress(effect, message, canCancel);
 }
 
 void
-GuiAppInstance::endProgress(Natron::EffectInstance* effect)
+GuiAppInstance::endProgress(KnobHolder* effect)
 {
     _imp->_gui->endProgress(effect);
     {
@@ -677,7 +678,7 @@ GuiAppInstance::endProgress(Natron::EffectInstance* effect)
 }
 
 bool
-GuiAppInstance::progressUpdate(Natron::EffectInstance* effect,
+GuiAppInstance::progressUpdate(KnobHolder* effect,
                                double t)
 {
     bool ret =  _imp->_gui->progressUpdate(effect, t);

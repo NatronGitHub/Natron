@@ -94,6 +94,7 @@ struct ProjectPrivate
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
+    bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;

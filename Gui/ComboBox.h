@@ -134,9 +134,12 @@ signals:
 
     void currentIndexChanged(QString);
 
-private:
+protected:
 
-    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE;
+    
+private:
+    
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;

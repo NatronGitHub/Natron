@@ -17,7 +17,7 @@
 #include <QDesktopWidget>
 
 #include "Gui/FromQtEnums.h"
-
+#include "Gui/GuiApplicationManager.h"
 namespace Natron {
 struct MessageBoxPrivate
 {
@@ -110,7 +110,7 @@ MessageBox::init(const QString & title,
         _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->questionLabel->setOpenExternalLinks(true);
         _imp->questionLabel->setContentsMargins(16, 0, 0, 0);
-        QFont f(NATRON_FONT,NATRON_FONT_SIZE_11);
+        QFont f(appFont,appFontSize);
         _imp->questionLabel->setFont(f);
         _imp->vLayout->addWidget(_imp->questionLabel);
     } else {
@@ -118,7 +118,7 @@ MessageBox::init(const QString & title,
         _imp->infoEdit->setReadOnly(true);
         _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
         _imp->infoEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-        QFont f(NATRON_FONT,NATRON_FONT_SIZE_11);
+        QFont f(appFont,appFontSize);
         _imp->infoEdit->setFont(f);
         _imp->vLayout->addWidget(_imp->infoEdit);
     }

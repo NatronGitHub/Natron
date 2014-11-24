@@ -322,7 +322,7 @@ struct GuiPrivate
 
     ///The "About" window.
     AboutWindow* _aboutWindow;
-    std::map<Natron::EffectInstance*,QProgressDialog*> _progressBars;
+    std::map<KnobHolder*,QProgressDialog*> _progressBars;
 
     ///list of the currently opened property panels
     std::list<DockablePanel*> openedPanels;
@@ -1267,6 +1267,7 @@ Gui::restoreLayout(bool wipePrevious,
         createDefaultLayout1();
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
+        
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
              it != layoutSerialization._windows.end(); ++it) {
@@ -2161,7 +2162,7 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
         pluginsToolButton->setAction(action);
     } else {
         QMenu* menu = new QMenu(this);
-        menu->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+        menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
@@ -3959,8 +3960,9 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 }
 
 void
-Gui::startProgress(Natron::EffectInstance* effect,
-                   const std::string & message)
+Gui::startProgress(KnobHolder* effect,
+                   const std::string & message,
+                   bool canCancel)
 {
     if (!effect) {
         return;
@@ -3972,11 +3974,17 @@ Gui::startProgress(Natron::EffectInstance* effect,
     }
 
     QProgressDialog* dialog = new QProgressDialog(message.c_str(),tr("Cancel"),0,100,this);
+    if (!canCancel) {
+        dialog->setCancelButton(0);
+    }
     dialog->setModal(false);
     dialog->setRange(0, 100);
     dialog->setMinimumWidth(250);
-    dialog->setWindowTitle( effect->getNode()->getName_mt_safe().c_str() );
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
+    if (isNamed) {
+        dialog->setWindowTitle( isNamed->getName_mt_safe().c_str() );
+    }
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
 
     ///If a second dialog was asked for whilst another is still active, the first dialog will not be
     ///able to be canceled.
@@ -3990,7 +3998,7 @@ Gui::startProgress(Natron::EffectInstance* effect,
 }
 
 void
-Gui::endProgress(Natron::EffectInstance* effect)
+Gui::endProgress(KnobHolder* effect)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
@@ -3998,7 +4006,7 @@ Gui::endProgress(Natron::EffectInstance* effect)
         return;
     }
 
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
     if ( found == _imp->_progressBars.end() ) {
         return;
     }
@@ -4009,7 +4017,7 @@ Gui::endProgress(Natron::EffectInstance* effect)
 }
 
 bool
-Gui::progressUpdate(Natron::EffectInstance* effect,
+Gui::progressUpdate(KnobHolder* effect,
                     double t)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
@@ -4018,9 +4026,12 @@ Gui::progressUpdate(Natron::EffectInstance* effect,
         return true;
     }
 
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
     if ( found == _imp->_progressBars.end() ) {
-        qDebug() << effect->getNode()->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+        NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
+        if (isNamed) {
+            qDebug() << isNamed->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+        }
     }
     if ( found->second->wasCanceled() ) {
         return false;

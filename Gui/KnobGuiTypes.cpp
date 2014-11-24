@@ -143,7 +143,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString( _knob->getDimensionName(i).c_str() ) + ':', boxContainer);
-            subDesc->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+            subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
@@ -754,7 +754,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString( getKnob()->getDimensionName(i).c_str() ) + ':', boxContainer);
-            subDesc->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+            subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
@@ -2484,7 +2484,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
-        _label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        _label->setFont(QFont(appFont,appFontSize));
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );

@@ -773,7 +773,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _selectedCurveColor(255,255,89,255)
       , _nextCurveAddedColor()
       , _textRenderer()
-      , _font( new QFont(NATRON_FONT, NATRON_FONT_SIZE_10) )
+      , _font( new QFont(appFont,appFontSize) )
       , _curves()
       , _selectedKeyFrames()
       , _hasOpenGLVAOSupport(true)
@@ -806,7 +806,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _nextCurveAddedColor.setHsv(200,255,255);
-    _rightClickMenu->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    _rightClickMenu->setFont( QFont(appFont,appFontSize) );
     _gui->registerNewUndoStack( _undoStack.get() );
     
 }
@@ -832,22 +832,22 @@ CurveWidgetPrivate::createMenu()
     _rightClickMenu->clear();
 
     QMenu* fileMenu = new QMenu(_rightClickMenu);
-    fileMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    fileMenu->setFont( QFont(appFont,appFontSize) );
     fileMenu->setTitle( QObject::tr("File") );
     _rightClickMenu->addAction( fileMenu->menuAction() );
 
     QMenu* editMenu = new QMenu(_rightClickMenu);
-    editMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    editMenu->setFont( QFont(appFont,appFontSize) );
     editMenu->setTitle( QObject::tr("Edit") );
     _rightClickMenu->addAction( editMenu->menuAction() );
 
     QMenu* interpMenu = new QMenu(_rightClickMenu);
-    interpMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    interpMenu->setFont( QFont(appFont,appFontSize) );
     interpMenu->setTitle( QObject::tr("Interpolation") );
     _rightClickMenu->addAction( interpMenu->menuAction() );
 
     QMenu* viewMenu = new QMenu(_rightClickMenu);
-    viewMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    viewMenu->setFont( QFont(appFont,appFontSize) );
     viewMenu->setTitle( QObject::tr("View") );
     _rightClickMenu->addAction( viewMenu->menuAction() );
 

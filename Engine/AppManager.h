@@ -330,6 +330,13 @@ public:
     
     void setThreadAsActionCaller(bool actionCaller);
 
+    virtual QString getAppFont() const { return ""; }
+    virtual int getAppFontSize() const { return 11; }
+    
+    void setProjectCreatedPriorToRC3(bool b);
+    
+    //To by-pass a bug introduced in RC3 with the serialization of bezier curves
+    bool wasProjectCreatedPriorToRC3() const;
     
 public slots:
     
