@@ -36,7 +36,7 @@
 			<key>LSIsAppleDefaultForType</key>
 			<true/>
 			<key>CFBundleTypeIconFile</key>
-			<string>natronProjectIcon_osx.icns</string>
+			<string>../Gui/Resources/Images/natronProjectIcon_osx.icns</string>
 		</dict>
 		<dict>
 			<key>CFBundleTypeExtensions</key>
@@ -52,7 +52,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleTypeIconFile</key>
-			<string>natronProjectIcon_osx.icns</string>
+			<string>../Gui/Resources/Images/natronProjectIcon_osx.icns</string>
 		</dict>
 	</array>
 </dict>
