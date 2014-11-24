@@ -610,6 +610,9 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
+        if (_imp->_selection.nodes.empty()) {
+            autoConnect = false;
+        }
         if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             node_ui->refreshPosition( pos.x(),pos.y(), true );
