@@ -1134,13 +1134,21 @@ ViewerTab::seek(SequenceTime time)
 void
 ViewerTab::previousFrame()
 {
-    seek(_imp->_timeLineGui->currentFrame() - 1);
+    int prevFrame = _imp->_timeLineGui->currentFrame() -1 ;
+    if (prevFrame  < _imp->_timeLineGui->leftBound()) {
+        prevFrame = _imp->_timeLineGui->rightBound();
+    }
+    seek(prevFrame);
 }
 
 void
 ViewerTab::nextFrame()
 {
-    seek(_imp->_timeLineGui->currentFrame() + 1);
+    int nextFrame = _imp->_timeLineGui->currentFrame() + 1;
+    if (nextFrame  > _imp->_timeLineGui->rightBound()) {
+        nextFrame = _imp->_timeLineGui->leftBound();
+    }
+    seek(nextFrame);
 }
 
 void
