@@ -37,11 +37,13 @@ to avoid creating new beziers by mistake
 
 - Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options. 
 
-- Fix a crash on windows when connecting nodes
+- Fixed a crash on windows when connecting nodes
 
-- Fix a bug on windows where the properties pane would overlap the viewer if placed below it
+- Fixed a bug on windows where the properties pane would overlap the viewer if placed below it
 
+- Fixed a bug where the locale won't be taken into account and files with accents wouldn't be correctly displayed in the file dialog
 
+- Viewer: fixed a bug when the "Auto-wipe" preferences in the settings was disabled. The wipe would still show up automatically. 
 
 Natron 1.0.0 "RC3"
 -----------------
