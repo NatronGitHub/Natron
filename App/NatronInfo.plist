@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist SYSTEM "file://localhost/System/Library/DTDs/PropertyList.dtd">
-<plist version="0.9">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
 <dict>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
@@ -10,7 +10,7 @@
 	<string>@ICON@</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
- 	<key>CFBundleGetInfoString</key>
+	<key>CFBundleGetInfoString</key>
 	<string>@SHORT_VERSION@</string>
 	<key>CFBundleSignature</key>
 	<string>@TYPEINFO@</string>
@@ -19,39 +19,41 @@
 	<key>CFBundleIdentifier</key>
 	<string>fr.inria.@EXECUTABLE@</string>
 	<key>CFBundleDocumentTypes</key>
-        <array>
-          <dict>
-	    <key>CFBundleTypeExtensions</key>
-	    <array>
-	      <string>ntp</string>
-	    </array>
-            <key>CFBundleTypeMIMETypes</key>
-            <array>
-              <string>application/vnd.natron.project</string>
-            </array>
-            <key>CFBundleTypeName</key>
-            <string>Natron Project File</string>
-	    <key>CFBundleTypeRole</key>          
-            <string>Editor</string>
- 	    <key>LSIsAppleDefaultForType</key>
-	    <true/>
-          </dict>
-         <dict>
-	    <key>CFBundleTypeExtensions</key>
-	    <array>
-	      <string>nps</string>
-	    </array>
-            <key>CFBundleTypeMIMETypes</key>
-            <array>
-              <string>application/vnd.natron.nodepresets</string>
-            </array>
-            <key>CFBundleTypeName</key>
-            <string>Natron Node Presets</string>
-	    <key>CFBundleTypeRole</key>          
-            <string>Editor</string>
-      <key>LSIsAppleDefaultForType</key>
-	    <true/>
-          </dict>
-        </array>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ntp</string>
+			</array>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>application/vnd.natron.project</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Natron Project File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSIsAppleDefaultForType</key>
+			<true/>
+			<key>CFBundleTypeIconFile</key>
+			<string>natronProjectIcon_osx.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>nps</string>
+			</array>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>application/vnd.natron.nodepresets</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Natron Node Presets</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>natronProjectIcon_osx.icns</string>
+		</dict>
+	</array>
 </dict>
 </plist>
