@@ -103,6 +103,9 @@ struct AppManagerPrivate
     // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
     QAtomicInt runningThreadsCount;
     
+     //To by-pass a bug introduced in RC3 with the serialization of bezier curves
+    bool lastProjectLoadedCreatedPriorToRC3;
+    
     AppManagerPrivate()
         : _appType(AppManager::eAppTypeBackground)
         , _appInstances()
@@ -131,6 +134,7 @@ struct AppManagerPrivate
         ,useThreadPool(true)
         ,nThreadsMutex()
         ,runningThreadsCount()
+        ,lastProjectLoadedCreatedPriorToRC3(false)
     {
         setMaxCacheFiles();
         
@@ -1860,6 +1864,20 @@ void
 AppManager::setThreadAsActionCaller(bool actionCaller)
 {
     _imp->ofxHost->setThreadAsActionCaller(actionCaller);
+}
+
+
+void
+AppManager::setProjectCreatedPriorToRC3(bool b)
+{
+    _imp->lastProjectLoadedCreatedPriorToRC3 = b;
+}
+
+//To by-pass a bug introduced in RC3 with the serialization of bezier curves
+bool
+AppManager::wasProjectCreatedPriorToRC3() const
+{
+    return _imp->lastProjectLoadedCreatedPriorToRC3;
 }
 
 namespace Natron {

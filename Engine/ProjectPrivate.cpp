@@ -106,6 +106,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 1) restore project's knobs.
 
+    bool foundNatronVersionKnob = false;
     for (U32 i = 0; i < projectKnobs.size(); ++i) {
         ///try to find a serialized value for this knob
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
@@ -114,19 +115,30 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 
                 ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
                 //if ( projectKnobs[i]->getIsPersistant() ) {
+                
+                Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(projectKnobs[i].get());
+                if (isChoice) {
+                    const TypeExtraData* extraData = (*it)->getExtraData();
+                    const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+                    assert(choiceData);
                     
-                    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(projectKnobs[i].get());
-                    if (isChoice) {
-                        const TypeExtraData* extraData = (*it)->getExtraData();
-                        const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
-                        assert(choiceData);
-                        
-                        Choice_Knob* serializedKnob = dynamic_cast<Choice_Knob*>((*it)->getKnob().get());
-                        assert(serializedKnob);
-                        isChoice->choiceRestoration(serializedKnob, choiceData);
-                    } else {
-                        projectKnobs[i]->clone( (*it)->getKnob() );
+                    Choice_Knob* serializedKnob = dynamic_cast<Choice_Knob*>((*it)->getKnob().get());
+                    assert(serializedKnob);
+                    isChoice->choiceRestoration(serializedKnob, choiceData);
+                } else {
+                    
+                    projectKnobs[i]->clone( (*it)->getKnob() );
+
+                    if ((*it)->getName() == natronVersion->getName()) {
+                        foundNatronVersionKnob = true;
+                        std::string natronV = natronVersion->getValue();
+                        if (natronV.find("1.0.0") != std::string::npos && natronV.find("RC3") == std::string::npos) {
+                            appPTR->setProjectCreatedPriorToRC3(true);
+                        } else {
+                            appPTR->setProjectCreatedPriorToRC3(false);
+                        }
                     }
+                }
                 //}
                 break;
             }
@@ -141,6 +153,10 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
         }
 
+    }
+    
+    if (!foundNatronVersionKnob) {
+        appPTR->setProjectCreatedPriorToRC3(true);
     }
 
 
