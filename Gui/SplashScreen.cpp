@@ -50,7 +50,6 @@ SplashScreen::SplashScreen(const QString & filePath)
     setAttribute(Qt::WA_TranslucentBackground, true);
 
     _pixmap.load(filePath);
-    _pixmap = _pixmap.scaled(768, 432);
 
     resize( _pixmap.width(), _pixmap.height() );
     show();
@@ -81,6 +80,6 @@ SplashScreen::paintEvent(QPaintEvent*)
     p.drawPixmap(0,0,_pixmap);
     p.setPen(Qt::white);
     p.drawText(QPointF(120,100), _text);
-    p.drawText(QPointF(10, 420),_versionString);
+    p.drawText(QPointF(20, 450),_versionString);
 }
 
