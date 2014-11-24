@@ -1580,6 +1580,9 @@ NodeGui::setMergeHintActive(bool active)
 void
 NodeGui::setVisibleDetails(bool visible)
 {
+    if (!isVisible()) {
+        return;
+    }
     if (_nameItem) {
         _nameItem->setVisible(visible);
     }
