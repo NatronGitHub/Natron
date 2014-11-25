@@ -19,9 +19,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
-
+#endif
 class PluginGroupNode;
 class AppInstance;
 

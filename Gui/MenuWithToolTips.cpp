@@ -11,7 +11,7 @@
 #include "MenuWithToolTips.h"
 
 #include "Global/Macros.h"
-
+#include "Gui/GuiApplicationManager.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QToolTip>
@@ -25,7 +25,7 @@ CLANG_DIAG_ON(uninitialized)
 MenuWithToolTips::MenuWithToolTips(QWidget* parent)
     : QMenu(parent)
 {
-    setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    setFont( QFont(appFont,appFontSize) );
 }
 
 bool

@@ -6,7 +6,7 @@
 #include "ClickableLabel.h"
 #include <QEvent>
 #include <QStyle>
-
+#include "Gui/GuiApplicationManager.h"
 ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
     : QLabel(text, parent),
@@ -16,7 +16,7 @@ ClickableLabel::ClickableLabel(const QString &text,
       animation(0),
       sunkenStyle(false)
 {
-    setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    setFont( QFont(appFont,appFontSize) );
 }
 
 void

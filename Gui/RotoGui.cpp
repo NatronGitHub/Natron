@@ -123,6 +123,7 @@ struct RotoGuiSharedData
     ////like it does in inkscape.
     SelectedCpsTransformMode transformMode;
     boost::shared_ptr<Bezier> builtBezier; //< the bezier currently being built
+    boost::shared_ptr<Bezier> bezierBeingDragged;
     SelectedCP cpBeingDragged; //< the cp being dragged
     boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
                                                      //only relevant when the state is DRAGGING_X_TANGENT
@@ -136,6 +137,7 @@ struct RotoGuiSharedData
           , showCpsBbox(false)
           , transformMode()
           , builtBezier()
+          , bezierBeingDragged()
           , cpBeingDragged()
           , tangentBeingDragged()
           , featherBarBeingDragged()
@@ -253,6 +255,8 @@ struct RotoGui::RotoGuiPrivate
     isNearbyFeatherBar(int time,const std::pair<double,double> & pixelScale,const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
+    
+    bool isWithinSelectedCpsBBox(const QPointF& pos) const;
 
     bool isNearbyBBoxTopLeft(const QPointF & p,double tolerance,const std::pair<double,double> & pixelScale) const;
     bool isNearbyBBoxTopRight(const QPointF & p,double tolerance,const std::pair<double,double> & pixelScale) const;
@@ -343,6 +347,9 @@ RotoGui::RotoGui(NodeGui* node,
     : _imp( new RotoGuiPrivate(this,node,parent,sharedData) )
 {
     assert(parent);
+    assert(_imp->context);
+    
+    bool hasShapes = _imp->context->getNCurves();
 
     QObject::connect( parent->getViewer(),SIGNAL( selectionRectangleChanged(bool) ),this,SLOT( updateSelectionFromSelectionRectangle(bool) ) );
     QObject::connect( parent->getViewer(), SIGNAL( selectionCleared() ), this, SLOT( onSelectionCleared() ) );
@@ -480,7 +487,7 @@ RotoGui::RotoGui(NodeGui* node,
                      tr("only the curves can be selected.")
                      ,selectShortCut,SELECT_CURVES);
     createToolAction(_imp->selectTool, QIcon(pixSelectFeather), tr("Select feather points"), tr("only the feather points can be selected."),selectShortCut,SELECT_FEATHER_POINTS);
-    _imp->selectTool->setDown(false);
+    _imp->selectTool->setDown(hasShapes);
     _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->toolbar->addWidget(_imp->selectTool);
 
@@ -506,6 +513,8 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->bezierEditionTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->bezierEditionTool->setText("Bezier");
+    _imp->bezierEditionTool->setDown(!hasShapes);
+    
     QKeySequence editBezierShortcut(Qt::Key_V);
     QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(pixBezier), tr("Bezier"),
                                               tr("Edit bezier paths. Click and drag the mouse to adjust tangents. Press enter to close the shape. ")
@@ -516,11 +525,12 @@ RotoGui::RotoGui(NodeGui* node,
 
     createToolAction(_imp->bezierEditionTool, QIcon(pixEllipse), tr("Ellipse"),tr("Hold control to draw the ellipse from its center"),editBezierShortcut, DRAW_ELLIPSE);
     createToolAction(_imp->bezierEditionTool, QIcon(pixRectangle), tr("Rectangle"),"", editBezierShortcut,DRAW_RECTANGLE);
+    _imp->bezierEditionTool->setDefaultAction(drawBezierAct);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
-
+    
     ////////////Default action is to make a new bezier
     _imp->selectedRole = _imp->selectTool;
-    onToolActionTriggered(drawBezierAct);
+    onToolActionTriggered(hasShapes ? _imp->selectAllAction : drawBezierAct);
 
     QObject::connect( _imp->node->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime,int) ),
                       this, SLOT( onCurrentFrameChanged(SequenceTime,int) ) );
@@ -1376,6 +1386,9 @@ handleControlPointMaximum(int time,
 void
 RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
 {
+    if (!node->getNode()->isActivated()) {
+        return;
+    }
     int time = context->getTimelineCurrentTime();
     std::pair<double, double> pixelScale;
 
@@ -1470,9 +1483,7 @@ RotoGui::penDown(double /*scaleX*/,
     int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
 
-    if ( _imp->rotoData->showCpsBbox && _imp->isNearbySelectedCpsCrossHair(pos) ) {
-        _imp->state = DRAGGING_SELECTED_CPS;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
+    if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
         _imp->state = DRAGGING_BBOX_TOP_LEFT;
     } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale) ) {
         _imp->state = DRAGGING_BBOX_TOP_RIGHT;
@@ -1488,6 +1499,8 @@ RotoGui::penDown(double /*scaleX*/,
         _imp->state = DRAGGING_BBOX_MID_BTM;
     } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale) ) {
         _imp->state = DRAGGING_BBOX_MID_LEFT;
+    } else if ( _imp->rotoData->showCpsBbox && _imp->isWithinSelectedCpsBBox(pos) ) {
+        _imp->state = DRAGGING_SELECTED_CPS;
     }
 
     if (_imp->state != NONE) {
@@ -1618,8 +1631,12 @@ RotoGui::penDown(double /*scaleX*/,
                     std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
                 if ( found == _imp->rotoData->selectedBeziers.end() ) {
                     _imp->handleBezierSelection(nearbyBezier, e);
+                    
                 }
-                if ( buttonDownIsRight(e) ) {
+                if (buttonDownIsLeft(e)) {
+                    _imp->state = DRAGGING_SELECTED_CPS;
+                    _imp->rotoData->bezierBeingDragged = nearbyBezier;
+                } else if ( buttonDownIsRight(e) ) {
                     showMenuForCurve(nearbyBezier);
                 }
                 didSomething = true;
@@ -1861,7 +1878,7 @@ RotoGui::penMotion(double /*scaleX*/,
     int time = _imp->context->getTimelineCurrentTime();
     ///Set the cursor to the appropriate case
     bool cursorSet = false;
-    if ( (_imp->rotoData->selectedCps.size() > 1) && _imp->isNearbySelectedCpsCrossHair(pos) ) {
+    if ( (_imp->rotoData->selectedCps.size() > 1) && _imp->isWithinSelectedCpsBBox(pos) ) {
         _imp->viewer->setCursor( QCursor(Qt::SizeAllCursor) );
         cursorSet = true;
     } else {
@@ -1967,7 +1984,20 @@ RotoGui::penMotion(double /*scaleX*/,
     double dy = pos.y() - _imp->lastMousePos.y();
     switch (_imp->state) {
     case DRAGGING_SELECTED_CPS: {
-        pushUndoCommand( new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,dx,dy,time) );
+        
+        if (_imp->rotoData->bezierBeingDragged) {
+            SelectedCPs cps;
+            const std::list<boost::shared_ptr<BezierCP> >& c = _imp->rotoData->bezierBeingDragged->getControlPoints();
+            const std::list<boost::shared_ptr<BezierCP> >& f = _imp->rotoData->bezierBeingDragged->getControlPoints();
+            assert(c.size() == f.size());
+            std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = f.begin();
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp,++itFp) {
+                cps.push_back(std::make_pair(*itCp,*itFp));
+            }
+            pushUndoCommand( new MoveControlPointsUndoCommand(this,cps,dx,dy,time) );
+        } else {
+            pushUndoCommand( new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,dx,dy,time) );
+        }
         _imp->evaluateOnPenUp = true;
         _imp->computeSelectedCpsBBOX();
         didSomething = true;
@@ -2054,8 +2084,8 @@ RotoGui::penMotion(double /*scaleX*/,
 
         double tx = 0., ty = 0.;
         double skewX = 0.,skewY = 0.;
-
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
+        TransformUndoCommand::TransformPointsSelectionEnum type = TransformUndoCommand::eTransformAllPoints;
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2081,7 +2111,17 @@ RotoGui::penMotion(double /*scaleX*/,
                 sy *= ratio;
             }
         }
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
+        TransformUndoCommand::TransformPointsSelectionEnum type;
+        if (!modCASIsShift(e)) {
+            type = TransformUndoCommand::eTransformAllPoints;
+        } else {
+            if (_imp->state == DRAGGING_BBOX_MID_TOP) {
+                type = TransformUndoCommand::eTransformMidTop;
+            } else if (_imp->state == DRAGGING_BBOX_MID_BTM) {
+                type = TransformUndoCommand::eTransformMidBottom;
+            }
+        }
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2107,7 +2147,18 @@ RotoGui::penMotion(double /*scaleX*/,
                 sx *= ratio;
             }
         }
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
+        TransformUndoCommand::TransformPointsSelectionEnum type;
+        if (!modCASIsShift(e)) {
+            type = TransformUndoCommand::eTransformAllPoints;
+        } else {
+            if (_imp->state == DRAGGING_BBOX_MID_RIGHT) {
+                type = TransformUndoCommand::eTransformMidRight;
+            } else if (_imp->state == DRAGGING_BBOX_MID_LEFT) {
+                type = TransformUndoCommand::eTransformMidLeft;
+            }
+        }
+
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
 
         _imp->evaluateOnPenUp = true;
         didSomething = true;
@@ -2173,6 +2224,7 @@ RotoGui::penUp(double /*scaleX*/,
         _imp->evaluateOnPenUp = false;
     }
     _imp->rotoData->tangentBeingDragged.reset();
+    _imp->rotoData->bezierBeingDragged.reset();
     _imp->rotoData->cpBeingDragged.first.reset();
     _imp->rotoData->cpBeingDragged.second.reset();
     _imp->rotoData->featherBarBeingDragged.first.reset();
@@ -2384,6 +2436,24 @@ RotoGui::RotoGuiPrivate::isNearbySelectedCpsCrossHair(const QPointF & pos) const
     } else {
         return false;
     }
+}
+
+bool
+RotoGui::RotoGuiPrivate::isWithinSelectedCpsBBox(const QPointF& pos) const
+{
+ //   std::pair<double, double> pixelScale;
+//    viewer->getPixelScale(pixelScale.first,pixelScale.second);
+    
+    double l = rotoData->selectedCpsBbox.topLeft().x();
+    double r = rotoData->selectedCpsBbox.bottomRight().x();
+    double b = rotoData->selectedCpsBbox.bottomRight().y();
+    double t = rotoData->selectedCpsBbox.topLeft().y();
+    
+    double toleranceX = 0;//kXHairSelectedCpsTolerance * pixelScale.first;
+    double toleranceY = 0;//kXHairSelectedCpsTolerance * pixelScale.second;
+    
+    return pos.x() > (l - toleranceX) && pos.x() < (r + toleranceX) &&
+    pos.y() > (b - toleranceY) && pos.y() < (t + toleranceY);
 }
 
 bool
@@ -2960,7 +3030,7 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
     QPoint pos = QCursor::pos();
     QMenu menu(_imp->viewer);
 
-    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    menu.setFont( QFont(appFont,appFontSize) );
 
     QAction* selectAllAction = new QAction(tr("Select All"),&menu);
     selectAllAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_A) );
@@ -3114,7 +3184,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     QPoint pos = QCursor::pos();
     QMenu menu(_imp->viewer);
 
-    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    menu.setFont( QFont(appFont,appFontSize) );
 
     QAction* deleteCp = new QAction(tr("Delete"),&menu);
     deleteCp->setShortcut( QKeySequence(Qt::Key_Backspace) );

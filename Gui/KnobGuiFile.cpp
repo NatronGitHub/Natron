@@ -90,7 +90,7 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
     QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
 
     _openFileButton = new Button( layout->parentWidget() );
-    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _openFileButton->setFixedSize(17, 17);
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
@@ -307,7 +307,7 @@ File_KnobGui::addRightClickMenuEntries(QMenu* menu)
 
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -380,7 +380,7 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 
 
     _openFileButton = new Button( layout->parentWidget() );
-    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _openFileButton->setFixedSize(17, 17);
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
@@ -520,7 +520,7 @@ OutputFile_KnobGui::addRightClickMenuEntries(QMenu* menu)
     
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -686,12 +686,10 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         buttonsLayout->setContentsMargins(0, 0, 0, 0);
         
         _addPathButton = new Button( tr("Add"),buttonsContainer );
-        //_addPathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _addPathButton->setToolTip( tr("Click to add a new project path") );
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
-       // _removePathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
         _removePathButton->setToolTip(tr("Click to remove selected project path"));
         
@@ -721,7 +719,7 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         }
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
-        _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _openFileButton->setFixedSize(17, 17);
         _openFileButton->setToolTip( tr("Click to select a path to append to/replace this variable.") );
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
@@ -1087,7 +1085,7 @@ Path_KnobGui::addRightClickMenuEntries(QMenu* menu)
         
         menu->addSeparator();
         QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-        qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        qtMenu->setFont(QFont(appFont,appFontSize));
         qtMenu->setTitle(tr("Edit"));
         menu->addMenu(qtMenu);
     }

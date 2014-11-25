@@ -14,8 +14,9 @@
 
 #include <string>
 #include <map>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 class KnobI;
 class DockablePanel;
 

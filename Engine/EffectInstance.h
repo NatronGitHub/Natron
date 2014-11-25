@@ -12,9 +12,10 @@
 #ifndef NATRON_ENGINE_EFFECTINSTANCE_H_
 #define NATRON_ENGINE_EFFECTINSTANCE_H_
 #include <list>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
 #include "Engine/Knob.h" // for KnobHolder
@@ -28,7 +29,9 @@ class PluginMemory;
 class BlockingBackgroundRender;
 class RenderEngine;
 class BufferableObject;
-
+namespace Transform {
+struct Matrix3x3;
+}
 
 /**
  * @brief Thread-local arguments given to render a frame by the tree.
@@ -423,27 +426,13 @@ public:
      **/
     boost::shared_ptr<Image> renderRoI(const RenderRoIArgs & args) WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Same as renderRoI(...) but takes in parameter
-     * the outputImage where to render instead. This is used by the Viewer which already did
-     * a cache look-up for optimization purposes.
-     **/
-    void renderRoI(SequenceTime time,
-                   const RenderScale & scale,
-                   unsigned int mipMapLevel,
-                   int view,
-                   const RectI & renderWindow,
-                   const RectD & rod, //!< effect rod in canonical coords
-                   const boost::shared_ptr<ImageParams> & cachedImgParams,
-                   const boost::shared_ptr<Image> & image,
-                   const boost::shared_ptr<Image> & downscaledImage);
-
 
     void getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              Natron::ImageComponentsEnum components,
                                              int channelForAlpha,
+                                             const RectD& rod,
                                              boost::shared_ptr<Natron::Image>* image);
 
 
@@ -497,6 +486,12 @@ public:
      * If this not is not disabled, it will return a pointer to this.
      **/
     Natron::EffectInstance* getNearestNonDisabled() const;
+
+    /**
+     * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
+     * @param inputNb[out] The inputNb of the node that is non disabled.
+     **/
+    Natron::EffectInstance* getNearestNonDisabledPrevious(int* inputNb);
     
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
@@ -510,7 +505,8 @@ public:
     virtual void checkOFXClipPreferences(double /*time*/,
                                          const RenderScale & /*scale*/,
                                          const std::string & /*reason*/,
-                                        bool /*forceGetClipPrefAction*/) {}
+                                        bool /*forceGetClipPrefAction*/,
+                                        bool /*recurse*/) {}
     
     /**
      * @brief Returns the output aspect ratio to render with
@@ -524,6 +520,30 @@ public:
 
     virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool getCanTransform() const { return false; }
+
+    virtual bool getCanApplyTransform(Natron::EffectInstance** /*effect*/) const { return false; }
+
+    virtual void rerouteInputAndSetTransform(int /*inputNb*/,Natron::EffectInstance* /*newInput*/,
+                                             int /*newInputNb*/,const Transform::Matrix3x3& /*m*/) {}
+
+    virtual void clearTransform(int /*inputNb*/) {}
+
+    bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
+
+    void addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img);
+
+    /**
+     * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
+     **/
+    virtual bool isFrameVarying() const { return false; }
+
+    /**
+     * @brief Returns whether the current node and/or the tree upstream is frame varying or animated.
+     * It is frame varying/animated if at least one of the node is animated/varying
+     **/
+    bool isFrameVaryingOrAnimated_Recursive() const;
+
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -534,28 +554,47 @@ protected:
      * rois, depending on the threading-affinity of the plug-in.
      **/
     virtual Natron::StatusEnum render(SequenceTime /*time*/,
-                                  const RenderScale & /*scale*/,
-                                  const RectI & /*roi*/,
-                                  int /*view*/,
-                                  bool /*isSequentialRender*/,
-                                  bool /*isRenderResponseToUserInteraction*/,
-                                  boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN
+                                      const RenderScale & /*originalScale*/,
+                                      const RenderScale & /*mappedScale*/,
+                                      const RectI & /*roi*/,
+                                      int /*view*/,
+                                      bool /*isSequentialRender*/,
+                                      bool /*isRenderResponseToUserInteraction*/,
+                                      boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN
     {
         return Natron::eStatusOK;
     }
 
+    virtual Natron::StatusEnum getTransform(SequenceTime /*time*/,
+                                            const RenderScale& /*renderScale*/,
+                                            int /*view*/,
+                                            Natron::EffectInstance** /*inputToTransform*/,
+                                            Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
+    {
+        return Natron::eStatusReplyDefault;
+    }
+
+
+
 public:
 
     Natron::StatusEnum render_public(SequenceTime time,
-                                 const RenderScale & scale,
+                                 const RenderScale& originalScale,
+                                 const RenderScale & mappedScale,
                                  const RectI & roi,
                                  int view,
                                  bool isSequentialRender,
                                  bool isRenderResponseToUserInteraction,
                                  boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN;
 
+    Natron::StatusEnum getTransform_public(SequenceTime time,
+                                           const RenderScale& renderScale,
+                                           int view,
+                                           Natron::EffectInstance** inputToTransform,
+                                           Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
+
 protected:
-    /**
+/**
      * @brief Can be overloaded to indicates whether the effect is an identity, i.e it doesn't produce
      * any change in output.
      * @param time The time of interest
@@ -645,6 +684,9 @@ public:
                                       const double par,
                                       const bool dontUpscale,
                                       RectI* roiPixel) WARN_UNUSED_RETURN;
+
+
+
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
 
 protected:
@@ -679,11 +721,12 @@ protected:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual RoIMap getRegionsOfInterest(SequenceTime time,
+    virtual void getRegionsOfInterest(SequenceTime time,
                                         const RenderScale & scale,
                                         const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                        int view) WARN_UNUSED_RETURN;
+                                        int view,
+                                        EffectInstance::RoIMap* ret);
 
     /**
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
@@ -708,11 +751,12 @@ public:
                                                 RectD* rod,
                                                 bool* isProjectFormat) WARN_UNUSED_RETURN;
 
-    RoIMap getRegionsOfInterest_public(SequenceTime time,
+    void getRegionsOfInterest_public(SequenceTime time,
                                        const RenderScale & scale,
                                        const RectD & outputRoD,
                                        const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                       int view) WARN_UNUSED_RETURN;
+                                       int view,
+                                      RoIMap* ret);
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 
@@ -782,7 +826,7 @@ public:
     {
     };
 
-    void clearLastRenderedImage();
+    virtual void clearLastRenderedImage();
 
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
@@ -1125,6 +1169,7 @@ protected:
     boost::shared_ptr<Node> _node; //< the node holding this effect
 
 private:
+
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
     struct RenderArgs;
@@ -1141,7 +1186,7 @@ private:
      * @param scale The scale at which to render
      * @param mipMapLevel Redundant with scale
      * @param view The view on which to render
-     * @param renderWindow The rectangle to render of the image, in pixel coordinates (downscaled then)
+     * @param renderWindow The rectangle to render of the image, in pixel coordinates
      * @param cachedImgParams The parameters of the image to render as they are in the cache.
      * @param image This is the "full-scale" image, if the effect does support the render scale, then
      * image and downscaledImage are pointing to the SAME image.
@@ -1161,21 +1206,42 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
-                                      const RenderScale & scale,
-                                      unsigned int mipMapLevel,
-                                      int view,
-                                      const RectI & renderWindow, //< renderWindow in pixel coordinates
-                                      const RectD & rod, //!< rod in canonical coordinates
-                                      const double par,
-                                      const boost::shared_ptr<ImageParams> & cachedImgParams,
-                                      const boost::shared_ptr<Image> & image,
-                                      const boost::shared_ptr<Image> & downscaledImage,
-                                      bool isSequentialRender,
-                                      bool isRenderMadeInResponseToUserInteraction,
-                                      bool byPassCache,
-                                      U64 nodeHash,
-                                      int channelForAlpha,
-                                      bool renderFullScaleThenDownscale);
+                                          const RenderScale & scale,
+                                          unsigned int mipMapLevel,
+                                          int view,
+                                          const RectI & renderWindow,
+                                          const RectD & rod, //!< rod in canonical coordinates
+                                          const double par,
+                                          const FramesNeededMap &framesNeeded,
+                                          const boost::shared_ptr<Image> & image,
+                                          const boost::shared_ptr<Image> & downscaledImage,
+                                          bool outputUseImage,
+                                          bool isSequentialRender,
+                                          bool isRenderMadeInResponseToUserInteraction,
+                                          bool byPassCache,
+                                          U64 nodeHash,
+                                          int channelForAlpha,
+                                          bool renderFullScaleThenDownscale,
+                                          bool useScaleOneInputImages,
+                                          const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
+                                          int transformInputNb,
+                                          int newTransformedInputNb,
+                                          Natron::EffectInstance* transformRerouteInput);
+
+    /**
+     * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
+     * @param inputTransformNb[out] if this node can concatenate, then it will be set to the input number concatenated
+     * @param newInputEffect[out] will be set to the new input upstream replacing the original main input.
+     * @param cat[out] the concatenation matrix of all transforms
+     * @param isResultIdentity[out] if true then the result of all the transforms upstream plus the one of this node is an identity matrix
+     * @return True if the nodes has concatenated nodes, false otherwise.
+     **/
+    bool tryConcatenateTransforms(const RenderRoIArgs& args,
+                                  int* inputTransformNb,
+                                  Natron::EffectInstance** newInputEffect,
+                                  int *newInputNbToFetchFrom,
+                                  boost::shared_ptr<Transform::Matrix3x3>* cat,
+                                  bool* isResultIdentity);
 
     /**
      * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not
@@ -1189,6 +1255,7 @@ private:
                                          U64* nodeHash_p,
                                          U64* rotoAge_p,
                                          bool* isIdentity_p,
+                                         int* identityTime,
                                          int* identityInputNb_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -1210,6 +1277,7 @@ private:
     {
         const RenderArgs* args;
         bool renderFullScaleThenDownscale;
+        bool renderUseScaleOneInputs;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         double par;
@@ -1249,6 +1317,7 @@ private:
                                     const ParallelRenderArgs& frameArgs,
                                      bool setThreadLocalStorage,
                                      bool renderFullScaleThenDownscale,
+                                     bool renderUseScaleOneInputs,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      const RectI & roi,

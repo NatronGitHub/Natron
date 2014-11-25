@@ -69,6 +69,7 @@ class ViewerInstance;
 class PluginGroupNode;
 class Color_Knob;
 class ProcessHandler;
+class KnobHolder;
 namespace Natron {
 class Node;
 class Image;
@@ -382,11 +383,11 @@ public:
 
     void removeTrackerInterface(NodeGui* n,bool pluginsly);
 
-    void startProgress(Natron::EffectInstance* effect,const std::string & message);
+    void startProgress(KnobHolder* effect,const std::string & message, bool canCancel = true);
 
-    void endProgress(Natron::EffectInstance* effect);
+    void endProgress(KnobHolder* effect);
 
-    bool progressUpdate(Natron::EffectInstance* effect,double t);
+    bool progressUpdate(KnobHolder* effect,double t);
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
@@ -537,6 +538,8 @@ public slots:
     void restoreDefaultLayout();
 
     void onFreezeUIButtonClicked(bool clicked);
+
+	void onPropertiesScrolled();
 private:
 
     /**

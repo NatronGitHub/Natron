@@ -13,7 +13,9 @@
 
 #include <map>
 #include <vector>
+#ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#endif
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -92,6 +94,8 @@ public:
      * @brief Returns true if the project is currently loading.
      **/
     bool isLoadingProject() const;
+    
+    bool isLoadingProjectInternal() const;
 
     /**
      * @brief Constructs a vector with all the nodes in the project (even the ones the user

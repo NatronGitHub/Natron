@@ -11,6 +11,7 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QSplitter>
+#include <QDesktopWidget>
 #include <QGLShaderProgram>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -40,7 +41,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveWidget.h"
-
+#include "Gui/GuiApplicationManager.h"
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
@@ -77,7 +78,7 @@ struct HistogramPrivate
           , hasBeenModifiedSinceResize(false)
           , _baseAxisColor(118,215,90,255)
           , _scaleColor(67,123,52,255)
-          , _font(NATRON_FONT, NATRON_FONT_SIZE_10)
+          , _font(appFont,appFontSize)
           , textRenderer()
           , drawCoordinates(false)
           , xCoordinateStr()
@@ -99,6 +100,7 @@ struct HistogramPrivate
           , vmax(0)
           , binsCount(0)
 #endif
+         , sizeH()
     {
     }
 
@@ -231,6 +233,8 @@ struct HistogramPrivate
     double vmin,vmax; //< the x range of the histogram
     unsigned int binsCount;
 #endif // !NATRON_HISTOGRAM_USING_OPENGL
+    
+    QSize sizeH;
 };
 
 Histogram::Histogram(Gui* gui,
@@ -247,18 +251,20 @@ Histogram::Histogram(Gui* gui,
     QObject::connect( &_imp->histogramThread, SIGNAL( histogramProduced() ), this, SLOT( onCPUHistogramComputed() ) );
 #endif
 
-
+    QDesktopWidget* desktop = QApplication::desktop();
+    _imp->sizeH = desktop->screenGeometry().size();
+    
     _imp->rightClickMenu = new QMenu(this);
-    _imp->rightClickMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
     _imp->histogramSelectionMenu = new QMenu(tr("Viewer target"),_imp->rightClickMenu);
-    _imp->histogramSelectionMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
     _imp->viewerCurrentInputMenu = new QMenu(tr("Viewer input"),_imp->rightClickMenu);
-    _imp->viewerCurrentInputMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
     _imp->viewerCurrentInputGroup = new QActionGroup(_imp->viewerCurrentInputMenu);
@@ -282,7 +288,7 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
     _imp->modeMenu = new QMenu(tr("Display mode"),_imp->rightClickMenu);
-    _imp->modeMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
     _imp->fullImage = new QAction(_imp->rightClickMenu);
@@ -293,7 +299,7 @@ Histogram::Histogram(Gui* gui,
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
     _imp->filterMenu = new QMenu(tr("Smoothing"),_imp->rightClickMenu);
-    _imp->filterMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
@@ -574,7 +580,7 @@ Histogram::sizeHint() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return QSize(500,1000);
+    return _imp->sizeH;
 }
 
 void
@@ -1332,7 +1338,8 @@ Histogram::enterEvent(QEvent* e) {
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel";
+    currentFocus->objectName() == "SettingsPanel" ||
+    currentFocus->objectName() == "qt_tabwidget_tabbar";
     
     if (canSetFocus) {
         setFocus();

@@ -23,9 +23,10 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QMutex>
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 
@@ -662,8 +663,11 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(const NodeSerialization & serialization);
+    void initializeKnobs(const NodeSerialization & serialization,int renderScaleSupportPref);
 
+    void onSetSupportRenderScaleMaybeSet(int support);
+    
+    bool useScaleOneImagesWhenRenderScaleSupportIsDisabled() const;
     
     /**
      * @brief Fills keyframes with all different keyframes time that all parameters of this

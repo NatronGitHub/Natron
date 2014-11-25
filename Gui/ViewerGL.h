@@ -14,8 +14,9 @@
 
 #include <vector>
 #include <utility>
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -167,6 +168,8 @@ public:
                                             unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
                                             int textureIndex) OVERRIDE FINAL;
     
+    virtual void clearLastRenderedImage() OVERRIDE FINAL;
+    
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
      *@returns Returns true if the graphic card supports GLSL.
@@ -209,7 +212,7 @@ public slots:
      **/
     void zoomSlot(QString);
 
-    void setRegionOfDefinition(const RectD & rod, int textureIndex);
+    void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
 
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
 

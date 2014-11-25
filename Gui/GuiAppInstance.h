@@ -22,7 +22,7 @@ class NodeGui;
 class Gui;
 class ViewerTab;
 class Format;
-
+class KnobHolder;
 /**
  * @brief This little struct contains what enables file dialogs to show previews.
  * It is shared by all dialogs so that we don't have to recreate the nodes everytimes
@@ -107,9 +107,9 @@ public:
     virtual bool isGuiFrozen() const OVERRIDE FINAL;
 
     virtual bool isShowingDialog() const OVERRIDE FINAL;
-    virtual void startProgress(Natron::EffectInstance* effect,const std::string & message) OVERRIDE FINAL;
-    virtual void endProgress(Natron::EffectInstance* effect) OVERRIDE FINAL;
-    virtual bool progressUpdate(Natron::EffectInstance* effect,double t) OVERRIDE FINAL;
+    virtual void startProgress(KnobHolder* effect,const std::string & message,bool canCancel = true) OVERRIDE FINAL;
+    virtual void endProgress(KnobHolder* effect) OVERRIDE FINAL;
+    virtual bool progressUpdate(KnobHolder* effect,double t) OVERRIDE FINAL;
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;

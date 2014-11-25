@@ -74,7 +74,8 @@ public:
 
     void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE FINAL;
     virtual Natron::StatusEnum render(SequenceTime time,
-                                  const RenderScale & scale,
+                                  const RenderScale& originalScale,
+                                  const RenderScale & mappedScale,
                                   const RectI & roi,
                                   int view,
                                   bool isSequentialRender,

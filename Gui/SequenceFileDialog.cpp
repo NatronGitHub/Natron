@@ -647,11 +647,12 @@ SequenceFileDialog::restoreState(const QByteArray & state)
             }
             bool alreadyFound = false;
             
-            for (int j = 0;j < expandedVars.size();++j) {
-                if (expandedVars[j].size() > 1 && (expandedVars[j].endsWith('/') || expandedVars[j].endsWith('\\'))) {
-                    expandedVars[j] = expandedVars[j].remove(expandedVars[j].size() - 1, 1);
+            for (U32 j = 0;j < stdBookMarks.size();++j) {
+                QString otherUrl = stdBookMarks[j].path();
+                if (otherUrl.size() > 1 && (otherUrl.endsWith('/') || otherUrl.endsWith('\\'))) {
+                    otherUrl = otherUrl.remove(otherUrl.size() - 1, 1);
                 }
-                if (expandedVars[j] == urlPath) {
+                if (otherUrl == urlPath) {
                     alreadyFound = true;
                     break;
                 }
@@ -1798,13 +1799,24 @@ SequenceFileDialog::seekUrl(const QUrl & url)
 void
 SequenceFileDialog::showFilterMenu()
 {
-    QPoint position( _filterLineEdit->mapToGlobal( _filterLineEdit->pos() ) );
+    assert(_filterLineEdit->parentWidget());
+    QPoint position( _filterLineEdit->parentWidget()->mapToGlobal(_filterLineEdit->pos()));
 
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
 
-
-    QAction *defaultFilters = new QAction(FileSystemModel::generateRegexpFilterFromFileExtensions(_filters),this);
+    QFont font(appFont,appFontSize);
+    QFontMetrics fm(font);
+    
+    QString defaultString = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
+    int w = fm.width(defaultString);
+    double percent = _filterLineEdit->width() / (double)w ;
+    if (percent < 1.) {
+        int nCharsToRemove = (1. - percent) * defaultString.size();
+        defaultString.remove(defaultString.size() - 1 - nCharsToRemove, nCharsToRemove);
+    }
+    
+    QAction *defaultFilters = new QAction(defaultString,this);
     QObject::connect( defaultFilters, SIGNAL( triggered() ), this, SLOT( defaultFiltersSlot() ) );
     actions.append(defaultFilters);
 
@@ -1823,8 +1835,9 @@ SequenceFileDialog::showFilterMenu()
 
     if (actions.count() > 0) {
         QMenu menu(_filterLineEdit);
+        menu.setFont(font);
         menu.addActions(actions);
-        menu.setFixedSize( _filterLineEdit->width(),menu.sizeHint().height() );
+      //  menu.setFixedSize( _filterLineEdit->width(),menu.sizeHint().height() );
         menu.exec(position);
     }
 }
@@ -2387,7 +2400,7 @@ FavoriteView::showMenu(const QPoint &position)
     }
     if (actions.count() > 0) {
         QMenu menu(this);
-        menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        menu.setFont(QFont(appFont,appFontSize));
         menu.addActions(actions);
         menu.exec( mapToGlobal(position) );
     }

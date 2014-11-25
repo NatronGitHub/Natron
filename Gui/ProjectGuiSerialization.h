@@ -14,6 +14,7 @@
 #include <list>
 #include <string>
 #include "Global/Macros.h"
+#ifndef Q_MOC_RUN
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -23,6 +24,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
+#endif
 #include "Engine/Rect.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeBackDropSerialization.h"
@@ -32,7 +34,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY 4
 #define VIEWER_DATA_INTRODUCES_CHECKERBOARD 5
 #define VIEWER_DATA_INTRODUCES_FPS 6
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FPS
+#define VIEWER_DATA_REMOVES_ASPECT_RATIO 7
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_REMOVES_ASPECT_RATIO
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -65,7 +68,6 @@ struct ViewerData
     double zoomLeft;
     double zoomBottom;
     double zoomFactor;
-    double zoomAspectRatio;
     bool userRoIenabled;
     RectD userRoI; // in canonical coordinates
     bool isClippedToProject;
@@ -98,7 +100,10 @@ struct ViewerData
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
         ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
-        ar & boost::serialization::make_nvp("zoomPAR",zoomAspectRatio);
+        if (version <  VIEWER_DATA_REMOVES_ASPECT_RATIO) {
+            double zoomPar;
+            ar & boost::serialization::make_nvp("zoomPAR",zoomPar);
+        }
         ar & boost::serialization::make_nvp("UserRoIEnabled",userRoIenabled);
         ar & boost::serialization::make_nvp("UserRoI",userRoI);
         ar & boost::serialization::make_nvp("ClippedToProject",isClippedToProject);

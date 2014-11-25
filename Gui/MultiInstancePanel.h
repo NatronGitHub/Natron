@@ -12,9 +12,10 @@
 #ifndef MULTIINSTANCEPANEL_H
 #define MULTIINSTANCEPANEL_H
 
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#endif
 #include "Engine/Knob.h"
 
 namespace Natron {

@@ -15,8 +15,9 @@
 
 #include <vector>
 #include <QPointF>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include <QUndoCommand>
 
 /**

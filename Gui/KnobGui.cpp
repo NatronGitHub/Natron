@@ -116,7 +116,7 @@ struct KnobGui::KnobGuiPrivate
           , customInteract(NULL)
           , guiCurves()
     {
-        copyRightClickMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+        copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
     }
 };
 
@@ -243,11 +243,11 @@ void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
     _imp->animationMenu = new QMenu( layout->parentWidget() );
-    _imp->animationMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
-    _imp->animationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->animationButton->setFixedSize(17, 17);
     _imp->animationButton->setToolTip( Qt::convertFromPlainText(tr("Animation menu"), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->animationButton,SIGNAL( animationMenuRequested() ),this,SLOT( showAnimationMenu() ) );
     layout->addWidget(_imp->animationButton);
@@ -501,7 +501,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             }
 
             QMenu* interpolationMenu = new QMenu(menu);
-            interpolationMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+            interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );
             if (!isEnabled) {
@@ -931,7 +931,8 @@ KnobGui::hide()
     ////are hidden.
     bool shouldRemoveWidget = true;
     for (U32 i = 0; i < _imp->knobsOnSameLine.size(); ++i) {
-        if ( !_imp->knobsOnSameLine[i]->getIsSecret() ) {
+        KnobGui* sibling = _imp->container->getKnobGui(_imp->knobsOnSameLine[i]);
+        if ( sibling && !sibling->isSecretRecursive() ) {
             shouldRemoveWidget = false;
         }
     }

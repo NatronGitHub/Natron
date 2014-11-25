@@ -142,10 +142,10 @@ GuiAppInstance::load(const QString & projectName,
 
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::vector<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
-    for (U32 i = 0; i < _toolButtons.size(); ++i) {
-        assert(_toolButtons[i]);
-        _imp->_gui->findOrCreateToolButton(_toolButtons[i]);
+    const std::list<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
+    for (std::list<PluginGroupNode*>::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+        assert(*it);
+        _imp->_gui->findOrCreateToolButton(*it);
     }
     emit pluginsPopulated();
 
@@ -655,19 +655,20 @@ GuiAppInstance::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiAppInstance::startProgress(Natron::EffectInstance* effect,
-                              const std::string & message)
+GuiAppInstance::startProgress(KnobHolder* effect,
+                              const std::string & message,
+                              bool canCancel)
 {
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
 
-    _imp->_gui->startProgress(effect, message);
+    _imp->_gui->startProgress(effect, message, canCancel);
 }
 
 void
-GuiAppInstance::endProgress(Natron::EffectInstance* effect)
+GuiAppInstance::endProgress(KnobHolder* effect)
 {
     _imp->_gui->endProgress(effect);
     {
@@ -677,7 +678,7 @@ GuiAppInstance::endProgress(Natron::EffectInstance* effect)
 }
 
 bool
-GuiAppInstance::progressUpdate(Natron::EffectInstance* effect,
+GuiAppInstance::progressUpdate(KnobHolder* effect,
                                double t)
 {
     bool ret =  _imp->_gui->progressUpdate(effect, t);

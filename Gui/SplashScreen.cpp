@@ -32,7 +32,10 @@ SplashScreen::SplashScreen(const QString & filePath)
     QString customBuildString(NATRON_CUSTOM_BUILD_USER_NAME);
     
     if (customBuildString.isEmpty()) {
-        QString buildNo = QString::number(NATRON_BUILD_NUMBER);
+        QString buildNo;
+        if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+            buildNo = QString::number(NATRON_BUILD_NUMBER);
+        }
         _versionString = QString("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS + buildNo
                                  + QObject::tr(" - built on ") + __DATE__ );
     } else {
@@ -47,7 +50,6 @@ SplashScreen::SplashScreen(const QString & filePath)
     setAttribute(Qt::WA_TranslucentBackground, true);
 
     _pixmap.load(filePath);
-    _pixmap = _pixmap.scaled(768, 432);
 
     resize( _pixmap.width(), _pixmap.height() );
     show();
@@ -78,6 +80,6 @@ SplashScreen::paintEvent(QPaintEvent*)
     p.drawPixmap(0,0,_pixmap);
     p.setPen(Qt::white);
     p.drawText(QPointF(120,100), _text);
-    p.drawText(QPointF(10, 420),_versionString);
+    p.drawText(QPointF(20, 450),_versionString);
 }
 

@@ -175,5 +175,11 @@
         <file>Resources/Images/treeview_more.png</file>
         <file>Resources/Images/treeview_vline.png</file>
         <file>Resources/Images/refreshActive.png</file>
+        <file>Resources/Images/hide_unmodified.png</file>
+        <file>Resources/Images/unhide_unmodified.png</file>
+        <file>../CHANGELOG.md</file>
+        <file>Resources/Fonts/Muli-Regular.ttf</file>
+        <file>Resources/Images/natronProjectIcon_linux.png</file>
+        <file>Resources/Images/addTrack.png</file>
     </qresource>
 </RCC>

@@ -18,9 +18,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsLineItem>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
 class QRectF;
@@ -54,6 +54,8 @@ public:
     bool contains(const QPointF &point) const;
 
     void setSource(const boost::shared_ptr<NodeGui> & src);
+    
+    void setVisibleDetails(bool visible);
 
     void setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,const boost::shared_ptr<NodeGui> & dst);
 
@@ -145,6 +147,7 @@ private:
     bool _paintWithDash;
     bool _paintBendPoint;
     bool _bendPointHiddenAutomatically;
+    bool _wasLabelVisible;
     QPointF _middlePoint; //updated only when dest && source are valid
 };
 

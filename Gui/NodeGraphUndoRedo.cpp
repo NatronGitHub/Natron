@@ -444,6 +444,15 @@ ConnectCommand::undo()
 {
     boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>( _dst->getNode() );
 
+	boost::shared_ptr<Natron::Node> internalDst =  _edge->getDest()->getNode();
+	if (_oldSrc) {
+		setText( QObject::tr("Connect %1 to %2")
+			.arg(internalDst->getName().c_str() ).arg( _oldSrc->getNode()->getName().c_str() ) );
+	} else {
+		setText( QObject::tr("Disconnect %1")
+			.arg(internalDst->getName().c_str() ) );
+	}
+
     if (inspector) {
         ///if the node is an inspector, the redo() action might have disconnect the dst and src nodes
         ///hence the _edge ptr might have been invalidated, recreate it
@@ -475,17 +484,10 @@ ConnectCommand::undo()
         }
     }
 
-    if (_oldSrc) {
-        setText( QObject::tr("Connect %1 to %2")
-                 .arg( _edge->getDest()->getNode()->getName().c_str() ).arg( _oldSrc->getNode()->getName().c_str() ) );
-    } else {
-        setText( QObject::tr("Disconnect %1")
-                 .arg( _edge->getDest()->getNode()->getName().c_str() ) );
-    }
 
     _graph->getGui()->getApp()->triggerAutoSave();
     std::list<ViewerInstance* > viewers;
-    _edge->getDest()->getNode()->hasViewersConnected(&viewers);
+    internalDst->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
@@ -498,6 +500,17 @@ ConnectCommand::redo()
     boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>( _dst->getNode() );
 
     _inputNb = _edge->getInputNumber();
+
+	boost::shared_ptr<Natron::Node> internalDst =  _edge->getDest()->getNode();
+
+	if (_newSrc) {
+		setText( QObject::tr("Connect %1 to %2")
+			.arg(internalDst->getName().c_str() ).arg( _newSrc->getNode()->getName().c_str() ) );
+	} else {
+		setText( QObject::tr("Disconnect %1")
+			.arg(internalDst->getName().c_str() ) );
+	}
+
     if (inspector) {
         ///if the node is an inspector we have to do things differently
 
@@ -550,22 +563,15 @@ ConnectCommand::redo()
     assert(_dst);
     _dst->refreshEdges();
 
-    if (_newSrc) {
-        setText( QObject::tr("Connect %1 to %2")
-                 .arg( _edge->getDest()->getNode()->getName().c_str() ).arg( _newSrc->getNode()->getName().c_str() ) );
-    } else {
-        setText( QObject::tr("Disconnect %1")
-                 .arg( _edge->getDest()->getNode()->getName().c_str() ) );
-    }
-
+   
     ///if the node has no inputs, all the viewers attached to that node should be black.
     std::list<ViewerInstance* > viewers;
-    _edge->getDest()->getNode()->hasViewersConnected(&viewers);
+    internalDst->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
-    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>( _edge->getDest()->getNode()->getLiveInstance() );
+    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(internalDst->getLiveInstance() );
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }

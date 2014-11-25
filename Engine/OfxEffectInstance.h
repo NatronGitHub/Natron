@@ -15,7 +15,9 @@
 #include "Global/Macros.h"
 #include <map>
 #include <string>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QString>
@@ -60,7 +62,8 @@ public:
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               const std::string & context,const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                              bool allowFileDialogs) = 0;
+                                              bool allowFileDialogs,
+                                              bool disableRenderScaleSupport) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -90,7 +93,8 @@ public:
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       const std::string & context,const NodeSerialization* serialization,
                                        const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                      bool allowFileDialogs) OVERRIDE FINAL;
+                                      bool allowFileDialogs,
+                                      bool disableRenderScaleSupport) OVERRIDE FINAL;
 
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN
     {
@@ -162,11 +166,12 @@ public:
 
     /// calculate the default rod for this effect instance
     virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time,int view, const RenderScale & scale, RectD *rod)  OVERRIDE;
-    virtual Natron::EffectInstance::RoIMap getRegionsOfInterest(SequenceTime time,
-                                                                const RenderScale & scale,
-                                                                const RectD & outputRoD, //!< full RoD in canonical coordinates
-                                                                const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                                                int view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual void getRegionsOfInterest(SequenceTime time,
+                                  const RenderScale & scale,
+                                  const RectD & outputRoD, //!< full RoD in canonical coordinates
+                                  const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                  int view,
+                                Natron::EffectInstance::RoIMap* ret) OVERRIDE WARN_UNUSED_RETURN;
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
@@ -187,12 +192,13 @@ public:
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::StatusEnum render(SequenceTime time,
-                                  const RenderScale & scale,
-                                  const RectI & roi, //!< renderWindow in pixel coordinates
-                                  int view,
-                                  bool isSequentialRender,
-                                  bool isRenderResponseToUserInteraction,
-                                  boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
+                                      const RenderScale& originalScale,
+                                      const RenderScale & mappedScale,
+                                      const RectI & roi, //!< renderWindow in pixel coordinates
+                                      int view,
+                                      bool isSequentialRender,
+                                      bool isRenderResponseToUserInteraction,
+                                      boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale & scale,
                             const RectD & rod, //!< image rod in canonical coordinates
@@ -242,16 +248,32 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponentsEnum* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL;
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
-                                     bool forceGetClipPrefAction) OVERRIDE FINAL;
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
+                                     bool forceGetClipPrefAction,
+                                         bool recurse) OVERRIDE FINAL;
+    virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getCanApplyTransform(Natron::EffectInstance** effect) const  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum getTransform(SequenceTime time,
+                                            const RenderScale& renderScale,
+                                            int view,
+                                            Natron::EffectInstance** inputToTransform,
+                                            Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void rerouteInputAndSetTransform(int inputNb,Natron::EffectInstance* newInput,
+                                             int newInputNb,const Transform::Matrix3x3& m) OVERRIDE FINAL;
+    virtual void clearTransform(int inputNb) OVERRIDE FINAL;
+
+    virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
+
+
 
 public slots:
 

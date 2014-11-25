@@ -123,6 +123,7 @@ struct Node::Implementation
     , inputFormats()
     , outputFormat()
     , refreshInfoButton()
+    , useFullScaleImagesWhenRenderScaleUnsupported()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -222,6 +223,8 @@ struct Node::Implementation
     std::vector< boost::shared_ptr<String_Knob> > inputFormats;
     boost::shared_ptr<String_Knob> outputFormat;
     boost::shared_ptr<Button_Knob> refreshInfoButton;
+    
+    boost::shared_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -340,6 +343,9 @@ Node::load(const std::string & pluginID,
         fetchParentMultiInstancePointer();
     }
     
+    
+    int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(pluginID);
+
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     bool isFileDialogPreviewReader = fixedName.contains("Natron_File_Dialog_Preview_Provider_Reader");
     if (func.first) {
@@ -349,7 +355,7 @@ Node::load(const std::string & pluginID,
         
         createRotoContextConditionnally();
         initializeInputs();
-        initializeKnobs(serialization);
+        initializeKnobs(serialization,renderScaleSupportPreference);
         if (!paramValues.empty()) {
             setValuesFromSerialization(paramValues);
         }
@@ -368,7 +374,8 @@ Node::load(const std::string & pluginID,
             setValuesFromSerialization(list);
         }
     } else { //ofx plugin
-        _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization,paramValues,!isFileDialogPreviewReader);
+                
+        _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization,paramValues,!isFileDialogPreviewReader,renderScaleSupportPreference == 1);
         assert(_imp->liveInstance);
         _imp->liveInstance->initializeOverlayInteract();
     }
@@ -998,7 +1005,7 @@ Node::makeInfoForInput(int inputNumber) const
 }
 
 void
-Node::initializeKnobs(const NodeSerialization & serialization)
+Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSupportPref)
 {
     ////Only called by the main-thread
     _imp->liveInstance->blockEvaluation();
@@ -1075,10 +1082,27 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->disableNodeKnob->setAnimationEnabled(false);
     _imp->disableNodeKnob->setDefaultValue(false);
     _imp->disableNodeKnob->setName(kDisableNodeKnobName);
+    _imp->disableNodeKnob->turnOffNewLine();
     _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
     _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
     loadKnob(_imp->disableNodeKnob, serialization);
     
+    _imp->useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Render high def. upstream",1,false);
+    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
+    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
+    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
+    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip("This node doesn't support rendering images at a scale lower than 1, it "
+                                                                       "can only render high definition images. When checked this parameter controls "
+                                                                       "whether the rest of the graph upstream should be rendered with a high quality too or at "
+                                                                       "the most optimal resolution for the current viewer's viewport. Typically checking this "
+                                                                       "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
+                                                                       "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
+                                                                       "faster to render but will have to be recomputed when zooming in/out in the Viewer.");
+    if (renderScaleSupportPref == 1) {
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+    }
+    _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
+    loadKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported, serialization);
     
     _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Info",1,false);
     _imp->infoPage->setName("info");
@@ -1126,6 +1150,22 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->liveInstance->unblockEvaluation();
     emit knobsInitialized();
 } // initializeKnobs
+
+void
+Node::onSetSupportRenderScaleMaybeSet(int support)
+{
+    if ((EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes) {
+        if (_imp->useFullScaleImagesWhenRenderScaleUnsupported) {
+            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+        }
+    }
+}
+
+bool
+Node::useScaleOneImagesWhenRenderScaleSupportIsDisabled() const
+{
+    return _imp->useFullScaleImagesWhenRenderScaleUnsupported->getValue();
+}
 
 void
 Node::beginEditKnobs()
@@ -1437,6 +1477,11 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         return eCanConnectInput_graphCycles;
     }
     
+    if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
+        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        return eCanConnectInput_indexOutOfRange;
+    }
+    
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
@@ -1487,8 +1532,10 @@ Node::connectInput(boost::shared_ptr<Node> input,
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
         return false;
     }
-    
-    
+    if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
+        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        return false;
+    }
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
@@ -2338,7 +2385,7 @@ Node::setAborted(bool b)
         ///cancel the dequeuing
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeOne();
+        _imp->nodeIsDequeuingCond.wakeAll();
     }
     //
     //    QMutexLocker l(&_imp->inputsMutex);
@@ -3034,7 +3081,7 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->getIsSecret() ) {
+        if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistant()) {
             continue;
         }
         int dim = knobs[i]->getDimension();

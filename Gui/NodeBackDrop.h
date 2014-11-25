@@ -6,10 +6,10 @@
 
 #ifndef NODEBACKDROP_H
 #define NODEBACKDROP_H
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -89,6 +89,7 @@ public:
     
     void centerOnIt();
 
+    void setVisibleDetails(bool visible);
 signals:
 
     void positionChanged();

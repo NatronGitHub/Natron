@@ -133,7 +133,8 @@ public:
     Natron::EffectInstance* createOFXEffect(const std::string & pluginID,boost::shared_ptr<Natron::Node> node,
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                            bool allowFileDialogs) const;
+                                            bool allowFileDialogs,
+                                            bool disableRenderScaleSupport) const;
 
     void registerAppInstance(AppInstance* app);
 
@@ -265,6 +266,9 @@ public:
                         const QString & pluginLabel,
                         const QString & pluginIconPath,
                         const QString & groupIconPath,
+                        const QString & ofxPluginID,
+                        bool isReader,
+                        bool isWriter,
                         Natron::LibraryBinary* binary,
                         bool mustCreateMutex,
                         int major,
@@ -326,6 +330,13 @@ public:
     
     void setThreadAsActionCaller(bool actionCaller);
 
+    virtual QString getAppFont() const { return ""; }
+    virtual int getAppFontSize() const { return 11; }
+    
+    void setProjectCreatedPriorToRC3(bool b);
+    
+    //To by-pass a bug introduced in RC3 with the serialization of bezier curves
+    bool wasProjectCreatedPriorToRC3() const;
     
 public slots:
     
@@ -383,6 +394,11 @@ protected:
     {
     }
 
+    virtual void ignorePlugin(Natron::Plugin* /*plugin*/)
+    {
+        
+    }
+    
     virtual void onAllPluginsLoaded()
     {
     }

@@ -18,10 +18,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
+#endif
 class QVBoxLayout;
 class QTextBrowser;
 class Button;

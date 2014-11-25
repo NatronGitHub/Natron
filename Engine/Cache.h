@@ -18,6 +18,7 @@
 #include <functional>
 #include <list>
 #include <cstddef>
+#include <utility>
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
@@ -31,6 +32,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
 CLANG_DIAG_ON(deprecated)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
@@ -41,6 +43,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/export.hpp>
+#endif
 
 #include "Engine/AppManager.h" //for access to settings
 #include "Engine/Settings.h"

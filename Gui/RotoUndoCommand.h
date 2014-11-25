@@ -17,14 +17,16 @@
 #include <map>
 #include <QUndoCommand>
 #include <QList>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include "Global/Macros.h"
 class Bezier;
 class BezierCP;
 class RotoGui;
 class RotoLayer;
 class RotoPanel;
+class QRectF;
 class QTreeWidgetItem;
 class RotoItem;
 class Double_Knob;
@@ -71,6 +73,15 @@ class TransformUndoCommand
     : public QUndoCommand
 {
 public:
+    
+    enum TransformPointsSelectionEnum
+    {
+        eTransformAllPoints = 0,
+        eTransformMidRight,
+        eTransformMidBottom,
+        eTransformMidLeft,
+        eTransformMidTop
+    };
 
     TransformUndoCommand(RotoGui* roto,
                          double centerX,
@@ -82,7 +93,9 @@ public:
                          double ty,
                          double sx,
                          double sy,
-                         int time);
+                         int time,
+                         TransformPointsSelectionEnum type,
+                         const QRectF& bbox);
 
     virtual ~TransformUndoCommand();
 

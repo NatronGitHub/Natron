@@ -15,8 +15,12 @@
 #include <list>
 #include <set>
 #include <string>
+
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/serialization/split_member.hpp>
+#endif
 
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -176,9 +180,13 @@ public:
 private:
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+    void save(Archive & ar, const unsigned int version) const;
 
-
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version);
+    
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+    
     boost::scoped_ptr<BezierCPPrivate> _imp;
 };
 
@@ -1011,6 +1019,9 @@ public:
      * MT-safe
      **/
     std::list< boost::shared_ptr<Bezier> > getCurvesByRenderOrder() const;
+    
+    int getNCurves() const;
+    
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;

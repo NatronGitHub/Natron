@@ -4666,6 +4666,13 @@ RotoContext::getCurvesByRenderOrder() const
     return ret;
 }
 
+int
+RotoContext::getNCurves() const
+{
+    std::list< boost::shared_ptr<Bezier> > curves = getCurvesByRenderOrder();
+    return (int)curves.size();
+}
+
 boost::shared_ptr<RotoLayer>
 RotoContext::getLayerByName(const std::string & n) const
 {
@@ -4900,7 +4907,7 @@ RotoContext::renderMask(const RectI & roi,
     hash.append(ageToRender);
     hash.computeHash();
 
-    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, view);
+    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view);
 
     ///If the last rendered image  was with a different hash key (i.e a parameter changed or an input changed)
     ///just remove the old image from the cache to recycle memory.
@@ -4928,7 +4935,7 @@ RotoContext::renderMask(const RectI & roi,
     ImagePtr image;
     
     if (!byPassCache) {
-        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(key, mipmapLevel, depth, components, 3, &image);
+        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(key, mipmapLevel, depth, components, 3,nodeRoD, &image);
         if (image) {
             params = image->getParams();
         }
@@ -4946,7 +4953,6 @@ RotoContext::renderMask(const RectI & roi,
                                            false,
                                            components,
                                            depth,
-                                           -1, time,
                                            std::map<int, std::vector<RangeD> >() );
         
         appPTR->createImageInCache(key, params, &imgLocker, &image);

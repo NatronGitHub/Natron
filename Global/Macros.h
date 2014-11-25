@@ -46,7 +46,7 @@
 #define NATRON_VERSION_REVISION 0
 
 ///For example RC 1, RC 2 etc...
-#define NATRON_BUILD_NUMBER 3
+#define NATRON_BUILD_NUMBER 0
 
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
 #define NATRON_CUSTOM_BUILD_USER_NAME ""
@@ -79,7 +79,7 @@
 #define NATRON_DEVELOPMENT_RELEASE_CANDIDATE "RC"
 #define NATRON_DEVELOPMENT_RELEASE_STABLE "Release"
 
-#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_CANDIDATE
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_STABLE
 
 
 
@@ -128,7 +128,7 @@
 #define NATRON_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
 //#define NATRON_FONT "Helvetica"
 //#define NATRON_FONT_ALT "Times"
-#define NATRON_FONT "Droid Sans"
+#define NATRON_FONT "Muli"//"Droid Sans"
 #define NATRON_FONT_ALT "Droid Sans"
 #define NATRON_FONT_SIZE_6 6
 #define NATRON_FONT_SIZE_8 8
@@ -459,5 +459,11 @@
    CLANG_DIAG_OFF(unused-parameter)
    CLANG_DIAG_OFF(uninitialized)
  */
+
+#if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
+// we want to use override & final, and get no warnings even if not compiling in c++11 mode
+CLANG_DIAG_OFF(c++11-extensions)
+GCC_DIAG_OFF(c++11-extensions)
+#endif
 
 #endif // ifndef NATRON_GLOBAL_MACROS_H

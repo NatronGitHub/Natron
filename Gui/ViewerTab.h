@@ -18,10 +18,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include "Global/GlobalDefines.h"
 
 class ViewerGL;
@@ -195,6 +195,8 @@ public:
     ///Called by ViewerGL when the image changes to refresh the info bar
     void setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth);
     
+	void redrawGLWidgets();
+
 public slots:
 
     void startPause(bool);

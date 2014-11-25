@@ -12,8 +12,9 @@
 #define NATRON_ENGINE_OFXHOST_H_
 
 #include <list>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-
+#endif
 #include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 
@@ -101,7 +102,8 @@ public:
     AbstractOfxEffectInstance* createOfxEffect(const std::string & name,boost::shared_ptr<Node> node,
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                                bool allowFileDialogs);
+                                                bool allowFileDialogs,
+                                                bool disableRenderScaleSupport);
 
     void addPathToLoadOFXPlugins(const std::string path);
 

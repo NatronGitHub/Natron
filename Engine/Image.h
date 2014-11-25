@@ -127,6 +127,7 @@ namespace Natron {
         virtual void onMemoryAllocated() OVERRIDE FINAL;
 
         static ImageKey makeKey(U64 nodeHashKey,
+                                bool frameVaryingOrAnimated,
                                 SequenceTime time,
                                 int view);
         static boost::shared_ptr<ImageParams> makeParams(int cost,
@@ -136,8 +137,6 @@ namespace Natron {
                                                          bool isRoDProjectFormat,
                                                          ImageComponentsEnum components,
                                                          Natron::ImageBitDepthEnum bitdepth,
-                                                         int inputNbIdentity,
-                                                         int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> > & framesNeeded);
 
 
@@ -179,6 +178,11 @@ namespace Natron {
         unsigned int getMipMapLevel() const
         {
             return this->_params->getMipMapLevel();
+        }
+        
+        double getScale() const
+        {
+            return getScaleFromMipMapLevel(getMipMapLevel());
         }
 
         unsigned int getComponentsCount() const;

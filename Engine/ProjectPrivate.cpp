@@ -58,6 +58,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , lastTimelineSeekCaller()
       , isLoadingProjectMutex()
       , isLoadingProject(false)
+      , isLoadingProjectInternal(false)
       , isSavingProjectMutex()
       , isSavingProject(false)
       , autoSaveTimer( new QTimer() )
@@ -104,7 +105,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
 
     /// 1) restore project's knobs.
-
+    bool foundNatronV = false;
     for (U32 i = 0; i < projectKnobs.size(); ++i) {
         ///try to find a serialized value for this knob
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
@@ -113,19 +114,29 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 
                 ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
                 //if ( projectKnobs[i]->getIsPersistant() ) {
+                
+                Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(projectKnobs[i].get());
+                if (isChoice) {
+                    const TypeExtraData* extraData = (*it)->getExtraData();
+                    const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+                    assert(choiceData);
                     
-                    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(projectKnobs[i].get());
-                    if (isChoice) {
-                        const TypeExtraData* extraData = (*it)->getExtraData();
-                        const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
-                        assert(choiceData);
-                        
-                        Choice_Knob* serializedKnob = dynamic_cast<Choice_Knob*>((*it)->getKnob().get());
-                        assert(serializedKnob);
-                        isChoice->choiceRestoration(serializedKnob, choiceData);
-                    } else {
-                        projectKnobs[i]->clone( (*it)->getKnob() );
+                    Choice_Knob* serializedKnob = dynamic_cast<Choice_Knob*>((*it)->getKnob().get());
+                    assert(serializedKnob);
+                    isChoice->choiceRestoration(serializedKnob, choiceData);
+                } else {
+                    projectKnobs[i]->clone( (*it)->getKnob() );
+                    
+                    if (projectKnobs[i]->getName() == "softwareVersion") {
+                        foundNatronV = true;
+                        std::string natronV = natronVersion->getValue();
+                        if (natronV.find("1.0.0") != std::string::npos && natronV.find("RC3") == std::string::npos) {
+                            appPTR->setProjectCreatedPriorToRC3(true);
+                        } else {
+                            appPTR->setProjectCreatedPriorToRC3(false);
+                        }
                     }
+                }
                 //}
                 break;
             }
@@ -141,12 +152,17 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
 
     }
-
+    if (!foundNatronV) {
+        appPTR->setProjectCreatedPriorToRC3(true);
+    }
 
     /// 2) restore the timeline
     timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
     timeline->seekFrame(obj.getCurrentTime(),NULL,Natron::eTimelineChangeReasonPlaybackSeek);
 
+    ///On our tests restoring nodes + connections takes approximatively 20% of loading time of a project, hence we update progress
+    ///for each node of 0.2 / nbNodes
+    
     /// 3) Restore the nodes
     const std::list< NodeSerialization > & serializedNodes = obj.getNodesSerialization();
     bool hasProjectAWriter = false;
@@ -157,7 +173,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     std::map<boost::shared_ptr<Natron::Node>, std::list<NodeSerialization>::const_iterator > parentsToReconnect;
 
     /*first create all nodes*/
+    int nodesRestored = 0;
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+        ++nodesRestored;
         if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
@@ -220,6 +238,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         if ( n->isOutputNode() ) {
             hasProjectAWriter = true;
         }
+        _publicInterface->getApp()->progressUpdate(_publicInterface, ((double)nodesRestored / (double)serializedNodes.size()) * 0.2);
     }
 
 
@@ -298,11 +317,17 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
     }
     
+    _publicInterface->getApp()->progressUpdate(_publicInterface, 0.25);
+    
+    ///The next for loop is about 50% of loading time of a project
     
     ///Now that everything is connected, check clip preferences on all OpenFX effects
     for (U32 i = 0; i < currentNodes.size(); ++i) {
         currentNodes[i]->getLiveInstance()->onMultipleInputsChanged();
+        _publicInterface->getApp()->progressUpdate(_publicInterface, ((double)(i+1) / (double)currentNodes.size()) * 0.5 + 0.25);
     }
+    
+    ///We should be now at 75% progress...
 
     nodeCounters = obj.getNodeCounters();
     

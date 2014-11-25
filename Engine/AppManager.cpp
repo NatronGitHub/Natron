@@ -18,6 +18,7 @@
 #include <clocale>
 #include <cstddef>
 #include <QDebug>
+#include <QTextCodec>
 #include <QAbstractSocket>
 #include <QCoreApplication>
 #include <QThread>
@@ -103,6 +104,9 @@ struct AppManagerPrivate
     // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
     QAtomicInt runningThreadsCount;
     
+     //To by-pass a bug introduced in RC3 with the serialization of bezier curves
+    bool lastProjectLoadedCreatedPriorToRC3;
+    
     AppManagerPrivate()
         : _appType(AppManager::eAppTypeBackground)
         , _appInstances()
@@ -131,6 +135,7 @@ struct AppManagerPrivate
         ,useThreadPool(true)
         ,nThreadsMutex()
         ,runningThreadsCount()
+        ,lastProjectLoadedCreatedPriorToRC3(false)
     {
         setMaxCacheFiles();
         
@@ -365,7 +370,10 @@ AppManager::load(int &argc,
 
     _imp->idealThreadCount = QThread::idealThreadCount();
 
-    
+#if QT_VERSION < 0x050000
+    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
+#endif
+
     assert(argv);
     if (!hadArgs) {
         delete [] argv[0];
@@ -462,8 +470,8 @@ AppManager::loadInternal(const QString & projectFilename,
     //
     // this must be done after initializing the QCoreApplication, see
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
-    std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
-    std::setlocale(LC_ALL,"C"); // set the locale for everything
+    //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+    std::setlocale(LC_ALL,"en_US.UTF-8"); // set the locale for everything
     Natron::Log::instance(); //< enable logging
 
     _imp->_settings->initializeKnobsPublic();
@@ -823,6 +831,45 @@ AppManager::loadAllPlugins()
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
 
+    std::vector<Natron::Plugin*> ignoredPlugins;
+    _imp->_settings->populatePluginsTab(_imp->_plugins, ignoredPlugins);
+    
+    ///Remove from the plug-ins the ignore plug-ins
+    for (std::vector<Natron::Plugin*>::iterator it = ignoredPlugins.begin(); it != ignoredPlugins.end(); ++it) {
+        std::vector<Natron::Plugin*>::iterator found = std::find(_imp->_plugins.begin(),_imp->_plugins.end(),*it);
+        
+        if (found != _imp->_plugins.end()) {
+            
+            ignorePlugin(*it);
+            ///Remove it from the readersMap and writersMap
+            
+            std::string pluginId = (*it)->getPluginID().toStdString();
+            if ((*it)->isReader()) {
+                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = readersMap.begin(); it2 != readersMap.end(); ++it2) {
+                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                        if (it3->first == pluginId) {
+                            it2->second.erase(it3);
+                            break;
+                        }
+                    }
+                }
+            }
+            if ((*it)->isWriter()) {
+                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = writersMap.begin(); it2 != writersMap.end(); ++it2) {
+                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                        if (it3->first == pluginId) {
+                            it2->second.erase(it3);
+                            break;
+                        }
+                    }
+                }
+
+            }
+            delete *found;
+            _imp->_plugins.erase(found);
+        }
+    }
+    
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
 
@@ -850,7 +897,8 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         }
 
         Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
-                                                     "","",qgrouping,NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion() );
+                                                     "","",qgrouping,"",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion(),
+                                                    false,false);
         plugins->push_back(plugin);
 
 
@@ -864,6 +912,9 @@ AppManager::registerPlugin(const QStringList & groups,
                            const QString & pluginLabel,
                            const QString & pluginIconPath,
                            const QString & groupIconPath,
+                           const QString & ofxPluginID,
+                           bool isReader,
+                           bool isWriter,
                            Natron::LibraryBinary* binary,
                            bool mustCreateMutex,
                            int major,
@@ -874,7 +925,8 @@ AppManager::registerPlugin(const QStringList & groups,
     if (mustCreateMutex) {
         pluginMutex = new QMutex(QMutex::Recursive);
     }
-    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,pluginMutex,major,minor);
+    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,ofxPluginID,pluginMutex,major,minor,
+                                                isReader,isWriter);
     _imp->_plugins.push_back(plugin);
     onPluginLoaded(plugin);
 }
@@ -1058,9 +1110,10 @@ AppManager::createOFXEffect(const std::string & pluginID,
                             boost::shared_ptr<Natron::Node> node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                            bool allowFileDialogs) const
+                            bool allowFileDialogs,
+                            bool disableRenderScaleSupport) const
 {
-    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues,allowFileDialogs);
+    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
 }
 
 void
@@ -1815,6 +1868,20 @@ void
 AppManager::setThreadAsActionCaller(bool actionCaller)
 {
     _imp->ofxHost->setThreadAsActionCaller(actionCaller);
+}
+
+
+void
+AppManager::setProjectCreatedPriorToRC3(bool b)
+{
+    _imp->lastProjectLoadedCreatedPriorToRC3 = b;
+}
+
+//To by-pass a bug introduced in RC3 with the serialization of bezier curves
+bool
+AppManager::wasProjectCreatedPriorToRC3() const
+{
+    return _imp->lastProjectLoadedCreatedPriorToRC3;
 }
 
 namespace Natron {

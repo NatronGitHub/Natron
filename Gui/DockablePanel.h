@@ -20,9 +20,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#endif
 #include <QTabWidget>
 #include "Global/GlobalDefines.h"
 

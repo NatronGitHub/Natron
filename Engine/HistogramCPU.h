@@ -8,8 +8,10 @@
 #define HISTOGRAMCPU_H
 #include <vector>
 #include <QThread>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#endif
 #include "Global/Macros.h"
 namespace Natron {
 class Image;

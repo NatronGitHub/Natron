@@ -234,14 +234,15 @@ filenameFromPattern(const std::string & pattern,
 
 Natron::StatusEnum
 QtWriter::render(SequenceTime time,
-                 const RenderScale & scale,
+                 const RenderScale& /*originalScale*/,
+                 const RenderScale & mappedScale,
                  const RectI & roi,
                  int view,
                  bool /*isSequentialRender*/,
                  bool /*isRenderResponseToUserInteraction*/,
                  boost::shared_ptr<Natron::Image> output)
 {
-    boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view, NULL, output->getComponents(), output->getBitDepth(),1, false,NULL);
+    boost::shared_ptr<Natron::Image> src = getImage(0, time, mappedScale, view, NULL, output->getComponents(), output->getBitDepth(),1, false,NULL);
 
     if ( hasOutputConnected() ) {
         output->pasteFrom( *src, src->getBounds() );

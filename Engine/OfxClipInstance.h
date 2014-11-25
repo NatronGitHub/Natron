@@ -19,7 +19,9 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif
 //ofx
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>
@@ -32,6 +34,10 @@ CLANG_DIAG_ON(deprecated)
 
 class OfxImage;
 class OfxEffectInstance;
+namespace Transform
+{
+struct Matrix3x3;
+}
 namespace Natron {
 class EffectInstance;
 class OfxImageEffectInstance;
@@ -179,9 +185,16 @@ public:
     static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
     static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
 
+    void setTransformAndReRouteInput(const Transform::Matrix3x3& m,Natron::EffectInstance* rerouteInput,int newInputNb);
+    void clearTransform();
+    
 private:
 
-    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds);
+    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
+                                                    bool usingReroute,
+                                                    int rerouteInputNb,
+                                                    Natron::EffectInstance* node,
+                                                    const boost::shared_ptr<Transform::Matrix3x3>& transform);
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
     double _aspectRatio;
@@ -200,16 +213,27 @@ private:
     
         bool isMipmapLevelValid;
         unsigned int mipMapLevel;
+        
+        bool isTransformDataValid;
+        boost::shared_ptr<Transform::Matrix3x3> matrix; //< if the clip is associated to a node that can transform
+        Natron::EffectInstance* rerouteNode; //< if the associated node is a concatenated transform, this is the effect from which to fetch images from
+        int rerouteInputNb;
+
         ActionLocalData()
             : isViewValid(false)
-              , view(0)
-              , isMipmapLevelValid(false)
-              , mipMapLevel(false)
+            , view(0)
+            , isMipmapLevelValid(false)
+            , mipMapLevel(false)
+            , isTransformDataValid(false)
+            , matrix()
+            , rerouteNode(0)
+            , rerouteInputNb(-1)
         {
         }
     };
 
     Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
+    
 };
 
 class OfxImage
@@ -239,6 +263,7 @@ public:
 
     explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,
                       const RectI& renderWindow,
+                      const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       OfxClipInstance &clip);
 
     virtual ~OfxImage()

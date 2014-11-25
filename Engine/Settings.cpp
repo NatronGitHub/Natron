@@ -24,6 +24,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/Project.h"
+#include "Engine/Plugin.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "SequenceParsing.h"
@@ -39,6 +40,7 @@ Settings::Settings(AppInstance* appInstance)
       , _restoringSettings(false)
       , _ocioRestored(false)
       , _settingsExisted(false)
+      , _hasWarnedOnceOnFontChanged(false)
 {
 }
 
@@ -81,6 +83,32 @@ Settings::initializeKnobs()
     _natronSettingsExist->setName("existingSettings");
     _natronSettingsExist->setSecret(true);
     _generalTab->addKnob(_natronSettingsExist);
+    
+    _fontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
+    _fontChoice->setName("font");
+    _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
+    std::vector<std::string> fontEntries;
+    fontEntries.push_back("Muli");
+    fontEntries.push_back("Droid Sans");
+    fontEntries.push_back("System fonts...");
+    _fontChoice->populateChoices(fontEntries);
+    _fontChoice->turnOffNewLine();
+    _fontChoice->setAnimationEnabled(false);
+    
+    _generalTab->addKnob(_fontChoice);
+    
+    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
+    _systemFontChoice->setHintToolTip("List of all fonts available on your system");
+    _systemFontChoice->setName("systemFont");
+    _systemFontChoice->turnOffNewLine();
+    _systemFontChoice->setAnimationEnabled(false);
+    _systemFontChoice->setSecret(true);
+    _generalTab->addKnob(_systemFontChoice);
+    
+    _fontSize = Natron::createKnob<Int_Knob>(this, "Font size");
+    _fontSize->setName("fontSize");
+    _fontSize->setAnimationEnabled(false);
+    _generalTab->addKnob(_fontSize);
     
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
@@ -234,57 +262,24 @@ Settings::initializeKnobs()
     _activateRGBSupport->setName("rgbSupport");
     _generalTab->addKnob(_activateRGBSupport);
 
-    _generalTab->addKnob( Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins") );
 
-    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
-    _extraPluginPaths->setName("extraPluginsSearchPaths");
-    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for plugins. "
-                                                   "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
-                                                   "The priority order for system-wide plugins, from high to low, is:\n"
-                                                   "- plugins found in OFX_PLUGIN_PATH\n"
-                                                   "- plugins found in \""
-#if defined(WINDOWS)
-                                                   ) + getStdOFXPluginPath("") +
-                                       std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
-#endif
-#if defined(__linux__) || defined(__FreeBSD__)
-                                                   "/usr/OFX/Plugins"
-#endif
-#if defined(__APPLE__)
-                                                   "/Library/OFX/Plugins"
-#endif
-                                                   "\".\n"
-                                                   "Plugins bundled with the binary distribution of Natron may have either "
-                                                   "higher or lower priority, depending on the \"Prefer bundled plugins over "
-                                                   "system-wide plugins\" setting.\n"
-                                                   "Any change will take effect on the next launch of " NATRON_APPLICATION_NAME ".") );
-    _extraPluginPaths->setMultiPath(true);
-    _generalTab->addKnob(_extraPluginPaths);
-
-    _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plugins");
-    _loadBundledPlugins->setName("useBundledPlugins");
-    _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " also uses the plugins bundled "
-                                        "with the binary distribution.\n"
-                                        "When unchecked, only system-wide plugins are loaded (more information can be "
-                                        "found in the help for the \"Extra plugins search paths\" setting).");
-    _loadBundledPlugins->setAnimationEnabled(false);
-    _generalTab->addKnob(_loadBundledPlugins);
-
-    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer bundled plugins over system-wide plugins");
-    _preferBundledPlugins->setName("preferBundledPlugins");
-    _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the "
-                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins.");
-    _preferBundledPlugins->setAnimationEnabled(false);
-    _generalTab->addKnob(_preferBundledPlugins);
-
-
+    _activateTransformConcatenationSupport = Natron::createKnob<Bool_Knob>(this, "Transforms concatenation support");
+    _activateTransformConcatenationSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to concatenate transform effects "
+                                                           "when they are chained in the compositing tree. This yields better results and faster "
+                                                           "render times because the image is only filtered once instead of as many times as there are "
+                                                           "transformations.");
+    _activateTransformConcatenationSupport->setAnimationEnabled(false);
+    _activateTransformConcatenationSupport->setName("transformCatSupport");
+    _generalTab->addKnob(_activateTransformConcatenationSupport);
+    
+    
     _hostName = Natron::createKnob<String_Knob>(this, "Host name");
     _hostName->setName("hostName");
-    _hostName->setHintToolTip("This is the name of the OpenFX host as it appears to the OpenFX plugins. "
+    _hostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                               "Changing it to the name of another application can help loading some plugins which "
                               "restrict their usage to specific OpenFX hosts. You shoud leave "
-                              "this to its default value, unless you a specific plugin refuses to load or run. "
-                              "Changing this takes effect on the next application launch, and requires clearing "
+                              "this to its default value, unless a specific plugin refuses to load or run. "
+                              "Changing this takes effect upon the next application launch, and requires clearing "
                               "the OpenFX plugins cache from the Cache menu. "
                               "Here is a list of known OpenFX hosts: \n"
                               "uk.co.thefoundry.nuke \n"
@@ -660,6 +655,52 @@ Settings::initializeKnobs()
     _writersTab = Natron::createKnob<Page_Knob>(this, PLUGIN_GROUP_IMAGE_WRITERS);
     _writersTab->setName("writersTab");
 
+    
+    _pluginsTab = Natron::createKnob<Page_Knob>(this, "Plug-ins");
+    _pluginsTab->setName("plugins");
+    
+    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
+    _extraPluginPaths->setName("extraPluginsSearchPaths");
+    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for plugins. "
+                                                   "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
+                                                   "The priority order for system-wide plugins, from high to low, is:\n"
+                                                   "- plugins found in OFX_PLUGIN_PATH\n"
+                                                   "- plugins found in \""
+#if defined(WINDOWS)
+                                                   ) + getStdOFXPluginPath("") +
+                                      std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
+#endif
+#if defined(__linux__) || defined(__FreeBSD__)
+                                                  "/usr/OFX/Plugins"
+#endif
+#if defined(__APPLE__)
+                                                  "/Library/OFX/Plugins"
+#endif
+                                                  "\".\n"
+                                                  "Plugins bundled with the binary distribution of Natron may have either "
+                                                  "higher or lower priority, depending on the \"Prefer bundled plugins over "
+                                                  "system-wide plugins\" setting.\n"
+                                                  "Any change will take effect on the next launch of " NATRON_APPLICATION_NAME ".") );
+    _extraPluginPaths->setMultiPath(true);
+    _pluginsTab->addKnob(_extraPluginPaths);
+    
+    _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plugins");
+    _loadBundledPlugins->setName("useBundledPlugins");
+    _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " also uses the plugins bundled "
+                                        "with the binary distribution.\n"
+                                        "When unchecked, only system-wide plugins are loaded (more information can be "
+                                        "found in the help for the \"Extra plugins search paths\" setting).");
+    _loadBundledPlugins->setAnimationEnabled(false);
+    _pluginsTab->addKnob(_loadBundledPlugins);
+    
+    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer bundled plugins over system-wide plugins");
+    _preferBundledPlugins->setName("preferBundledPlugins");
+    _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the "
+                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins.");
+    _preferBundledPlugins->setAnimationEnabled(false);
+    _pluginsTab->addKnob(_preferBundledPlugins);
+    
+    
     setDefaultValues();
 } // initializeKnobs
 
@@ -683,6 +724,9 @@ Settings::setDefaultValues()
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
+    _fontChoice->setDefaultValue(0);
+    _systemFontChoice->setDefaultValue(0);
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
     _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
@@ -695,13 +739,14 @@ Settings::setDefaultValues()
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(false,0);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10,0);
     _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);
     _activateRGBSupport->setDefaultValue(true);
+    _activateTransformConcatenationSupport->setDefaultValue(true);
     _extraPluginPaths->setDefaultValue("",0);
     _preferBundledPlugins->setDefaultValue(true);
     _loadBundledPlugins->setDefaultValue(true);
@@ -819,8 +864,9 @@ Settings::saveSettings()
                     int index = isChoice->getValue(j);
 
                     const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                    assert((int)entries.size() > index);
-                    settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                    if (index < (int)entries.size() ) {
+                        settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                    }
                 } else {
                     settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
                 }
@@ -836,28 +882,24 @@ Settings::saveSettings()
     }
 } // saveSettings
 
-void
-Settings::restoreSettings()
-{
-    _restoringSettings = true;
-    _wereChangesMadeSinceLastSave = false;
+static void restoreKnobsSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs) {
+    
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i].get());
         Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i].get());
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i].get());
         Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i].get());
-
+        
         const std::string& name = knobs[i]->getName();
         
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             
             std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
             QString qDimName(dimensionName.c_str());
-
+            
             if (settings.contains(qDimName)) {
                 
                 if (isString) {
@@ -871,7 +913,7 @@ Settings::restoreSettings()
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
                         const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-
+                        
                         int found = -1;
                         
                         for (U32 k = 0; k < entries.size(); ++k) {
@@ -901,11 +943,21 @@ Settings::restoreSettings()
                 } else {
                     assert(false);
                 }
-
+                
             }
         }
     }
+
+}
+
+void
+Settings::restoreSettings()
+{
+    _restoringSettings = true;
+    _wereChangesMadeSinceLastSave = false;
     
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    restoreKnobsSettings(knobs);
 
     if (!_ocioRestored) {
         ///Load even though there's no settings!
@@ -916,6 +968,12 @@ Settings::restoreSettings()
     if (!_settingsExisted) {
         _natronSettingsExist->setValue(true, 0);
         saveSettings();
+    }
+    
+    int font_i = _fontChoice->getValue();
+    if (font_i == 2) {
+        //System font, show it
+        _systemFontChoice->setSecret(false);
     }
     
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
@@ -1092,6 +1150,20 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
     } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
+    } else if ( k == _fontChoice.get() ) {
+        int index = _fontChoice->getValue();
+        _systemFontChoice->setSecret(index != 2);
+        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
+            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
+            _hasWarnedOnceOnFontChanged = true;
+        }
+    } else if ( k == _fontSize.get() || k == _systemFontChoice.get() ) {
+        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
+            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
+            _hasWarnedOnceOnFontChanged = true;
+        }
     }
 } // onKnobValueChanged
 
@@ -1194,8 +1266,10 @@ Settings::getWriterPluginIDForFileType(const std::string & extension)
 void
 Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
+    std::vector<boost::shared_ptr<KnobI> > knobs;
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        k->setName("Reader." + it->first);
         k->setAnimationEnabled(false);
         
         std::vector<std::string> entries;
@@ -1217,14 +1291,20 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
         k->populateChoices(entries);
         _readersMapping.push_back(k);
         _readersTab->addKnob(k);
+        knobs.push_back(k);
     }
+    restoreKnobsSettings(knobs);
+
 }
 
 void
 Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
+    std::vector<boost::shared_ptr<KnobI> > knobs;
+
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        k->setName("Writer." + it->first);
         k->setAnimationEnabled(false);
         
         std::vector<std::string> entries;
@@ -1246,6 +1326,246 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
         k->populateChoices(entries);
         _writersMapping.push_back(k);
         _writersTab->addKnob(k);
+        knobs.push_back(k);
+
+    }
+    restoreKnobsSettings(knobs);
+}
+
+static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
+{
+    if (
+        //Tuttle Readers/Writers
+        ofxPluginID == "tuttle.avreader" ||
+        ofxPluginID == "tuttle.avwriter" ||
+        ofxPluginID == "tuttle.dpxwriter" ||
+        ofxPluginID == "tuttle.exrreader" ||
+        ofxPluginID == "tuttle.exrwriter" ||
+        ofxPluginID == "tuttle.imagemagickreader" ||
+        ofxPluginID == "tuttle.jpeg2000reader" ||
+        ofxPluginID == "tuttle.jpeg2000writer" ||
+        ofxPluginID == "tuttle.jpegreader" ||
+        ofxPluginID == "tuttle.jpegwriter" ||
+        ofxPluginID == "tuttle.oiioreader" ||
+        ofxPluginID == "tuttle.oiiowriter" ||
+        ofxPluginID == "tuttle.pngreader" ||
+        ofxPluginID == "tuttle.pngwriter" ||
+        ofxPluginID == "tuttle.rawreader" ||
+        ofxPluginID == "tuttle.turbojpegreader" ||
+        ofxPluginID == "tuttle.turbojpegwriter" ||
+        
+        //Other Tuttle plug-ins
+        ofxPluginID == "tuttle.bitdepth" ||
+        ofxPluginID == "tuttle.colorgradation" ||
+        ofxPluginID == "tuttle.gamma" ||
+        ofxPluginID == "tuttle.invert" ||
+        ofxPluginID == "tuttle.histogramkeyer" ||
+        ofxPluginID == "tuttle.idkeyer" ||
+        ofxPluginID == "tuttle.ocio.colorspace" ||
+        ofxPluginID == "tuttle.ocio.lut" ||
+        ofxPluginID == "tuttle.constant" ||
+        ofxPluginID == "tuttle.inputbuffer" ||
+        ofxPluginID == "tuttle.outputbuffer" ||
+        ofxPluginID == "tuttle.ramp" ||
+        ofxPluginID == "tuttle.lut" ||
+        ofxPluginID == "tuttle.print" ||
+        ofxPluginID == "tuttle.colorgradient" ||
+        ofxPluginID == "tuttle.component" ||
+        ofxPluginID == "tuttle.merge" ||
+        ofxPluginID == "tuttle.crop" ||
+        ofxPluginID == "tuttle.flip" ||
+        ofxPluginID == "tuttle.resize" ||
+        ofxPluginID == "tuttle.pinning" ||
+        ofxPluginID == "tuttle.timeshift" ||
+        ofxPluginID == "tuttle.diff" ||
+        ofxPluginID == "tuttle.dummy" ||
+        ofxPluginID == "tuttle.histogram" ||
+        ofxPluginID == "tuttle.imagestatistics" ||
+        ofxPluginID == "tuttle.debugimageeffectapi" ||
+        ofxPluginID == "tuttle.viewer"
+        ) {
+        //These plug-ins of TuttleOFX achieve the same as plug-ins bundled with Natron, deactivate them by default.
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Returns whether the given plug-in should by default have it's default render-scale support (0) or
+ * it should be deactivated (1).
+ **/
+static int filterDefaultRenderScaleSupportPlugin(const QString& ofxPluginID)
+{
+    if (ofxPluginID == "tuttle.colorbars" ||
+        ofxPluginID == "tuttle.checkerboard" ||
+        ofxPluginID == "tuttle.colorcube" ||
+        ofxPluginID == "tuttle.colorwheel" ||
+        ofxPluginID == "tuttle.ramp" ||
+        ofxPluginID == "tuttle.constant") {
+        return 1;
+    }
+    return 0;
+}
+
+struct PerPluginKnobs
+{
+    boost::shared_ptr<Bool_Knob> enabled;
+    boost::shared_ptr<Choice_Knob> renderScaleSupport;
+    
+    PerPluginKnobs(const boost::shared_ptr<Bool_Knob>& enabled,
+                   const boost::shared_ptr<Choice_Knob>& renderScaleSupport)
+    : enabled(enabled)
+    , renderScaleSupport(renderScaleSupport)
+    {
+        
+    }
+    
+    PerPluginKnobs()
+    : enabled() , renderScaleSupport()
+    {
+        
+    }
+};
+
+void
+Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore)
+{
+    std::vector<boost::shared_ptr<KnobI> > knobsToRestore;
+    
+    std::map<Natron::Plugin*,PerPluginKnobs> pluginsMap;
+    
+    std::set< std::string > groupNames;
+    ///First pass to exctract all groups
+    for (std::vector<Natron::Plugin*>::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        
+        const QString& ofxID = (*it)->getPluginOFXID();
+        if (ofxID.isEmpty()) {
+            continue;
+        }
+        
+        const QStringList& grouping = (*it)->getGrouping();
+        if (grouping.size() > 0) {
+            groupNames.insert(grouping[0].toStdString());
+        }
+    }
+    
+    ///Now create all groups
+
+    std::list< boost::shared_ptr<Group_Knob> > groups;
+    for (std::set< std::string >::iterator it = groupNames.begin(); it != groupNames.end(); ++it) {
+        boost::shared_ptr<Group_Knob>  g = Natron::createKnob<Group_Knob>(this, *it);
+        g->setName(*it);
+        groups.push_back(g);
+    }
+    
+    std::vector<std::string> zoomSupportEntries;
+    zoomSupportEntries.push_back("Plugin default");
+    zoomSupportEntries.push_back("Deactivated");
+    
+    ///Create per-plugin knobs and add them to groups
+    for (std::vector<Natron::Plugin*>::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        
+        const QString& ofxID = (*it)->getPluginOFXID();
+        if (ofxID.isEmpty()) {
+            continue;
+        }
+        
+        boost::shared_ptr<Group_Knob> group;
+        const QStringList& grouping = (*it)->getGrouping();
+        if (grouping.size() > 0) {
+            
+            std::string mainGroup = grouping[0].toStdString();
+            
+            ///Find the corresponding group
+            for (std::list< boost::shared_ptr<Group_Knob> >::const_iterator it2 = groups.begin(); it2 != groups.end(); ++it2) {
+                if ((*it2)->getName() == mainGroup) {
+                    group  = *it2;
+                    break;
+                }
+            }
+        }
+        
+        ///Create checkbox to activate/deactivate the plug-in
+        std::string pluginName = (*it)->getPluginID().toStdString();
+        std::string ofxStdID = ofxID.toStdString();
+        
+        boost::shared_ptr<String_Knob> pluginLabel = Natron::createKnob<String_Knob>(this, pluginName);
+        pluginLabel->setAsLabel();
+        pluginLabel->setName(ofxStdID);
+        pluginLabel->setAnimationEnabled(false);
+        pluginLabel->setDefaultValue(pluginName);
+        pluginLabel->turnOffNewLine();
+        pluginLabel->hideDescription();
+        pluginLabel->setIsPersistant(false);
+        if (group) {
+            group->addKnob(pluginLabel);
+        }
+        
+        _pluginsTab->addKnob(pluginLabel);
+        
+        boost::shared_ptr<Bool_Knob> pluginActivation = Natron::createKnob<Bool_Knob>(this, "Enabled");
+        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(ofxID));
+        pluginActivation->setName(ofxStdID + ".enabled");
+        pluginActivation->setAnimationEnabled(false);
+        pluginActivation->turnOffNewLine();
+        pluginActivation->setHintToolTip("When checked, " + pluginName + " will be activated and you can create a node using this plug-in in " NATRON_APPLICATION_NAME ". When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.");
+        if (group) {
+            group->addKnob(pluginActivation);
+        }
+        _pluginsTab->addKnob(pluginActivation);
+        
+        knobsToRestore.push_back(pluginActivation);
+        
+        boost::shared_ptr<Choice_Knob> zoomSupport = Natron::createKnob<Choice_Knob>(this, "Zoom support");
+        zoomSupport->populateChoices(zoomSupportEntries);
+        zoomSupport->setName(ofxStdID + ".zoomSupport");
+        zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(ofxID));
+        zoomSupport->setHintToolTip("Controls whether the plug-in should have its default zoom support or it should be activated. "
+                                    "This parameter is useful because some plug-ins flag that they can support different level of zoom "
+                                    "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
+                                    "plug-in, hence making it work at different zoom levels."
+                                    "Changes to this parameter will not be applied to existing instances of the plug-in (nodes) unless you "
+                                    "restart the application.");
+        zoomSupport->setAnimationEnabled(false);
+        if (group) {
+            group->addKnob(zoomSupport);
+        }
+        _pluginsTab->addKnob(zoomSupport);
+        
+        knobsToRestore.push_back(zoomSupport);
+        
+        if (group) {
+            _pluginsTab->addKnob(group);
+        }
+        
+        pluginsMap.insert(std::make_pair(*it, PerPluginKnobs(pluginActivation,zoomSupport)));
+
+    }
+    
+    for (std::map<Natron::Plugin*,PerPluginKnobs>::iterator it = pluginsMap.begin() ;it != pluginsMap.end() ; ++it) {
+        if (!it->second.enabled->getValue()) {
+            pluginsToIgnore.push_back(it->first);
+        } else {
+            _perPluginRenderScaleSupport.insert(std::make_pair(it->first->getPluginID().toStdString(), it->second.renderScaleSupport));
+        }
+    }
+}
+
+void
+Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts)
+{
+    _systemFontChoice->populateChoices(fonts);
+    
+    ///Now restore properly the system font choice
+    QString name(_systemFontChoice->getName().c_str());
+    if (settings.contains(name)) {
+        std::string value = settings.value(name).toString().toStdString();
+        for (U32 i = 0; i < fonts.size(); ++i) {
+            if (fonts[i] == value) {
+                _systemFontChoice->setValue(i, 0);
+                break;
+            }
+        }
     }
 }
 
@@ -1257,8 +1577,11 @@ Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* f
         int index = _readersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );
-
-        formats->insert( std::make_pair(_readersMapping[i]->getDescription(),entries[index]) );
+        std::string name = _readersMapping[i]->getName();
+        std::size_t prefix = name.find("Reader.");
+        assert(prefix != std::string::npos);
+        name.erase(prefix,7);
+        formats->insert( std::make_pair(name,entries[index]) );
     }
 }
 
@@ -1270,8 +1593,11 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
         int index = _writersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );
-
-        formats->insert( std::make_pair(_writersMapping[i]->getDescription(),entries[index]) );
+        std::string name = _writersMapping[i]->getName();
+        std::size_t prefix = name.find("Writer.");
+        assert(prefix != std::string::npos);
+        name.erase(prefix,7);
+        formats->insert( std::make_pair(name,entries[index]) );
     }
 }
 
@@ -1627,6 +1953,12 @@ Settings::areRGBPixelComponentsSupported() const
 }
 
 bool
+Settings::isTransformConcatenationEnabled() const
+{
+    return _activateTransformConcatenationSupport->getValue();
+}
+
+bool
 Settings::useGlobalThreadPool() const
 {
     return _useThreadPool->getValue();
@@ -1715,4 +2047,14 @@ bool
 Settings::isAutoWipeEnabled() const
 {
     return _autoWipe->getValue();
+}
+
+int
+Settings::getRenderScaleSupportPreference(const std::string& pluginID) const
+{
+    std::map<std::string,boost::shared_ptr<Choice_Knob> >::const_iterator found = _perPluginRenderScaleSupport.find(pluginID);
+    if (found != _perPluginRenderScaleSupport.end()) {
+        return found->second->getValue();
+    }
+    return -1;
 }

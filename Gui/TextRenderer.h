@@ -6,9 +6,9 @@
 
 #ifndef NATRON_GUI_TEXTRENDERER_H_
 #define NATRON_GUI_TEXTRENDERER_H_
-
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
-
+#endif
 class QString;
 class QColor;
 class QFont;

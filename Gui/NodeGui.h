@@ -13,8 +13,10 @@
 #define NATRON_GUI_NODEGUI_H_
 
 #include <map>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -295,6 +297,12 @@ public:
     void trySetName(const QString& newName);
     
     void setMergeHintActive(bool active);
+    
+    /**
+     * @brief Called after the node-graph view reaches a certain detail level (zoom) to show/hide elements that would otherwise 
+     * not be visible and would just clutter and slow down the interface
+     **/
+    void setVisibleDetails(bool visible);
     
 public slots:
 

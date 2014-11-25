@@ -56,10 +56,11 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
     : LineEdit(parent)
       , _imp( new CompleterLineEditPrivate(displayWords,internalIds,quickExit,parent) )
 {
-    _imp->listView = new QListView(this);
+    _imp->listView = new QListView(parent);
     _imp->model = new QStringListModel(this);
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
+
     connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
     connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
 }
@@ -104,7 +105,7 @@ CompleterLineEdit::filterText(const QString & txt)
     maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
 
     // Position the text edit
-    _imp->listView->resize(width(),maxHeight);
+ //   _imp->listView->setFixedSize(width(),maxHeight);
 
     _imp->listView->move(p);
     _imp->listView->show();
@@ -200,6 +201,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
 void
 CompleterLineEdit::showCompleter()
 {
+    _imp->listView->setFixedWidth(width());
     filterText("");
 }
 

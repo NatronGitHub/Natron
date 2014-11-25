@@ -148,7 +148,7 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
 
     ///Nuke transform suite
-    _properties.setIntProperty(kFnOfxImageEffectCanTransform, 0);
+    _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
 }
 
 OFX::Host::ImageEffect::Instance*
@@ -362,7 +362,8 @@ Natron::OfxHost::createOfxEffect(const std::string & name,
                                  boost::shared_ptr<Natron::Node> node,
                                  const NodeSerialization* serialization,
                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                 bool allowFileDialogs)
+                                 bool allowFileDialogs,
+                                 bool disableRenderScaleSupport)
 {
     assert(node);
     OFX::Host::ImageEffect::ImageEffectPlugin *plugin;
@@ -375,7 +376,7 @@ Natron::OfxHost::createOfxEffect(const std::string & name,
         node->setLiveInstance(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization,paramValues,allowFileDialogs);
+    hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
 
     return hostSideEffect;
 }
@@ -488,15 +489,26 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
             groupIconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
+        } else {
+            //Use default Misc group when the plug-in doesn't belong to a group
+            groups.push_back(PLUGIN_GROUP_DEFAULT);
         }
 
         _ofxPlugins[pluginId] = OFXPluginEntry(openfxId.toStdString(), grouping);
 
+        
+        const std::set<std::string> & contexts = p->getContexts();
+        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
+        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
+        
         appPTR->registerPlugin( groups,
                                 pluginId.c_str(),
                                 pluginLabel.c_str(),
                                 iconFilename,
                                 groupIconFilename,
+                                p->getIdentifier().c_str(),
+                                foundReader != contexts.end(),
+                                foundWriter != contexts.end(),
                                 new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
                                 p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
                                 p->getVersionMajor(), p->getVersionMinor() );
@@ -513,9 +525,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
 
         double evaluation = p->getDescriptor().getProps().getDoubleProperty(kTuttleOfxImageEffectPropEvaluation);
         
-        const std::set<std::string> & contexts = p->getContexts();
-        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
-        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
+        
 
 
         if ( ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap ) {

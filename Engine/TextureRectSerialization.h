@@ -10,11 +10,11 @@
 
 #ifndef NATRON_ENGINE_TEXTURERECTSERIALIZATION_H_
 #define NATRON_ENGINE_TEXTURERECTSERIALIZATION_H_
-
+#ifndef Q_MOC_RUN
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/version.hpp>
-
+#endif
 #include "Engine/TextureRect.h"
 
 #define TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR 2

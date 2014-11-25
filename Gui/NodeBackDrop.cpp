@@ -601,3 +601,10 @@ NodeBackDrop::centerOnIt()
 {
     _imp->graph->centerOnItem(this);
 }
+
+void
+NodeBackDrop::setVisibleDetails(bool visible)
+{
+    _imp->name->setVisible(visible);
+    _imp->label->setVisible(visible);
+}

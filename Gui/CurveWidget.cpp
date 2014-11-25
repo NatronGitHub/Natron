@@ -750,6 +750,7 @@ public:
     Gui* _gui;
 
     GLuint savedTexture;
+    QSize sizeH;
     
 private:
 
@@ -772,7 +773,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _selectedCurveColor(255,255,89,255)
       , _nextCurveAddedColor()
       , _textRenderer()
-      , _font( new QFont(NATRON_FONT, NATRON_FONT_SIZE_10) )
+      , _font( new QFont(appFont,appFontSize) )
       , _curves()
       , _selectedKeyFrames()
       , _hasOpenGLVAOSupport(true)
@@ -793,6 +794,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _undoStack(new QUndoStack)
       , _gui(gui)
       , savedTexture(0)
+      , sizeH()
       , _baseAxisColor(118,215,90,255)
       , _scaleColor(67,123,52,255)
       , _keyDragMaxMovement()
@@ -804,8 +806,9 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _nextCurveAddedColor.setHsv(200,255,255);
-    _rightClickMenu->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    _rightClickMenu->setFont( QFont(appFont,appFontSize) );
     _gui->registerNewUndoStack( _undoStack.get() );
+    
 }
 
 CurveWidgetPrivate::~CurveWidgetPrivate()
@@ -829,22 +832,22 @@ CurveWidgetPrivate::createMenu()
     _rightClickMenu->clear();
 
     QMenu* fileMenu = new QMenu(_rightClickMenu);
-    fileMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    fileMenu->setFont( QFont(appFont,appFontSize) );
     fileMenu->setTitle( QObject::tr("File") );
     _rightClickMenu->addAction( fileMenu->menuAction() );
 
     QMenu* editMenu = new QMenu(_rightClickMenu);
-    editMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    editMenu->setFont( QFont(appFont,appFontSize) );
     editMenu->setTitle( QObject::tr("Edit") );
     _rightClickMenu->addAction( editMenu->menuAction() );
 
     QMenu* interpMenu = new QMenu(_rightClickMenu);
-    interpMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    interpMenu->setFont( QFont(appFont,appFontSize) );
     interpMenu->setTitle( QObject::tr("Interpolation") );
     _rightClickMenu->addAction( interpMenu->menuAction() );
 
     QMenu* viewMenu = new QMenu(_rightClickMenu);
-    viewMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    viewMenu->setFont( QFont(appFont,appFontSize) );
     viewMenu->setTitle( QObject::tr("View") );
     _rightClickMenu->addAction( viewMenu->menuAction() );
 
@@ -1906,6 +1909,18 @@ CurveWidget::CurveWidget(Gui* gui,
         onTimeLineFrameChanged(timeline->currentFrame(), Natron::eValueChangedReasonNatronGuiEdited);
         onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::eValueChangedReasonNatronGuiEdited);
     }
+    
+    if (parent->objectName() == "CurveEditorSplitter") {
+        ///if this is the curve widget associated to the CurveEditor
+        QDesktopWidget* desktop = QApplication::desktop();
+        _imp->sizeH = desktop->screenGeometry().size();
+
+    } else {
+        ///a random parametric param curve editor
+        _imp->sizeH =  QSize(400,400);
+    }
+    
+
 }
 
 CurveWidget::~CurveWidget()
@@ -2879,16 +2894,7 @@ CurveWidget::toWidgetCoordinates(double x,
 QSize
 CurveWidget::sizeHint() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if (parentWidget()->objectName() == "CurveEditorSplitter") {
-        ///if this is the curve widget associated to the CurveEditor
-        return QSize(400,1000);
-    } else {
-        ///a random parametric param curve editor
-        return QSize(400,400);
-    }
+    return _imp->sizeH;
 }
 
 void

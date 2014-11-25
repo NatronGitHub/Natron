@@ -17,6 +17,7 @@
 #include <set>
 
 #include "Global/Macros.h"
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 CLANG_DIAG_OFF(unused-parameter)
@@ -24,7 +25,7 @@ CLANG_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
-
+#endif
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 

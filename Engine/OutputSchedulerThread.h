@@ -11,10 +11,10 @@
 
 #ifndef OUTPUTSCHEDULERTHREAD_H
 #define OUTPUTSCHEDULERTHREAD_H
-
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
+#endif
 #include <QThread>
 
 #include "Global/GlobalDefines.h"

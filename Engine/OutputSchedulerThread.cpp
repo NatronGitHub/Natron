@@ -799,8 +799,16 @@ OutputSchedulerThread::startRender()
             double maxRAMPercent = appPTR->getCurrentSettings()->getRamMaximumPercent();
             double totalRAM = getSystemTotalRAM();
             
+            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->outputEffect);
+            
             double usableRAM = maxRAMPercent * totalRAM;
-            _imp->idealParallelRendersForRAM = usableRAM / approximateRAMNeededFor1Frame;
+            _imp->idealParallelRendersForRAM = (usableRAM / approximateRAMNeededFor1Frame);
+            
+            ///If the node is a viewer increase by 2 to max out the CPU, we don't need interactivity
+            if (!isViewer) {
+                _imp->idealParallelRendersForRAM *= 2;
+            }
+            
             
         } else {
             _imp->idealParallelRendersForRAM = appPTR->getHardwareIdealThreadCount();

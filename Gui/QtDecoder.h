@@ -93,7 +93,8 @@ public:
     }
 
     virtual Natron::StatusEnum render(SequenceTime time,
-                                  const RenderScale & scale,
+                                  const RenderScale& originalScale,
+                                  const RenderScale & mappedScale,
                                   const RectI & roi
                                   ,int view,
                                   bool /*isSequentialRender*/,
@@ -108,6 +109,7 @@ public:
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
+    virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 private:
 
     virtual void initializeKnobs() OVERRIDE;

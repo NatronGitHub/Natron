@@ -17,6 +17,8 @@ include(../config.pri)
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
+INCLUDEPATH += $$PWD/../libs/OpenFX/include/nuke
+INCLUDEPATH += $$PWD/../libs/OpenFX/include/tuttle
 
 win32-msvc* {
 	CONFIG(64bit) {

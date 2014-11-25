@@ -2,64 +2,38 @@ Developer installation on mac osx
 =================================
 
 This file is supposed to guide you step by step to have working (compiling) version of Natron on mac osx ( >= 10.6 ). 
-You need an up to date macports version. Just download it and install it from : 
-(Macports website)[http://www.macports.org]
+
+## Checkout sources
+
+	git checkout https://github.com/MrKepzie/Natron.git
+	cd Natron
+
+If you want to compile the bleeding edge version, use the workshop
+branch:
+
+	git checkout workshop
+	
+Update the submodules:
+
+	git submodule update -i --recursive 
 
 ##Install libraries
 
 In order to have Natron compiling, first you need to install the required libraries.
 
-### *Qt 4.8*
+There are two exclusive options: using MacPorts or using Homebrew.
 
-You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads).
-Alternatively you can get it from macports (recommended):
+### MacPorts
 
-	sudo port install qt4-mac
+You need an up to date macports version. Just download it and install it from : 
+(Macports website)[http://www.macports.org]
 
-### *boost*
-
-You can download boost from 
-(boost download)[http://www.boost.org/users/download/]
-or with macports:
-
-	sudo port install boost
-
-For now only boost serialization is required.
-
-
-###*OpenFX*
-
-In Natron's source tree's root type:
-
-	git submodule update -i --recursive
-
-###*Expat*
-
-With macports:
-
-	sudo port install expat	
-
-###*GLEW*
-
-With macports:
-
-	sudo port install glew
-	
-###*Cairo 1.12*
-
-With macports:
-
-	sudo port install cairo
-
-
-Alternatively you can use the macports version.
-	
-We're done here for libraries.
-
+	sudo port install qt4-mac boost glew cairo expat
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
 
+```Shell
 sudo -s
 cat > /opt/local/lib/pkgconfig/glu.pc << EOF
  prefix=/usr
@@ -75,8 +49,29 @@ Name: glu
  Libs:
  Cflags: -I${includedir}
 EOF
+``
 
-###Add the config.pri file
+### Homebrew
+
+Install homebrew from <http://brew.sh/>
+
+Install libraries:
+
+    brew tap homebrew/python
+    brew tap homebrew/science
+    brew install qt expat icairo glew
+
+To install the openfx-io and openfx-misc sets of plugin, you also need the following:
+
+    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
+
+also set the correct value for the pkg-config path (you can also put
+this in your .bash_profile):
+	
+	export
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
+	
+## Add the config.pri file
 
 You have to define the locations of the required libraries.
 This is done by creating a .pri file that will tell the .pro where to find those libraries.
@@ -92,14 +87,32 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
------ copy and paste the following in a terminal -----
-cat > config.pri << EOF
-  INCLUDEPATH += /opt/local/include
-  LIBS += -L/opt/local/lib -lboost_serialization-mt
-EOF
------ end -----
+If you installed libraries using MacPorts, use the following
+config.pri:
 
-###Build with Makefile
+```Shell
+ # copy and paste the following in a terminal
+cat > config.pri << EOF
+boost: INCLUDEPATH += /opt/local/include
+boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
+EOF
+```
+
+If you installed libraries using Homebrew, use the following
+config.pri:
+
+```Shell
+ # copy and paste the following in a terminal
+cat > config.pri << EOF
+boost: INCLUDEPATH += /opt/local/include
+boost: LIBS += LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+expat: PKGCONFG -= expat
+expat: INCLUDEPATH += /usr/local/opt/expat/include
+expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
+EOF
+```
+
+## Build with Makefile
 You can generate a makefile by typing
 
 	qmake -r Project.pro
@@ -117,7 +130,7 @@ If you want to build in DEBUG mode change the qmake call to this line:
 *You can also enable logging by adding CONFIG+=log
 *You can also enable clang sanitizer by adding CONFIG+=sanitizer
 
-### Build on Xcode
+## Build on Xcode
 
 Follow the instruction of build but 
 add -spec macx-xcode to the qmake call command:
@@ -129,12 +142,10 @@ Then open the already provided Project-xcode.xcodeproj and compile the target "a
 * If using Xcode to compile, and it doesn't find the necessary
 binaries (qmake, moc, pkg-config, just execute this line from a
 terminal and log in/out of your session (see
-http://www.emacswiki.org/emacs/EmacsApp for other options):
+<http://www.emacswiki.org/emacs/EmacsApp> for other options):
 
 launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 
-
-
-###Testing
+## Testing
 
 	(cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)

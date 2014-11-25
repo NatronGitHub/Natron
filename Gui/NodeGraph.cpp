@@ -449,7 +449,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     _imp->_menu = new QMenu(this);
-    _imp->_menu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->_menu->setFont( QFont(appFont,appFontSize) );
 
     QObject::connect( _imp->_gui->getApp()->getTimeLine().get(),SIGNAL( frameChanged(SequenceTime,int) ),
                       this,SLOT( onTimeChanged(SequenceTime,int) ) );
@@ -553,6 +553,9 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
+    if (getGui() && getGui()->getApp() && getGui()->getApp()->getProject()->isLoadingProjectInternal()) {
+        return;
+    }
     if (_imp->_refreshOverlays) {
         ///The visible portion of the scene, in scene coordinates
         QRectF visibleScene = visibleSceneRect();
@@ -607,9 +610,12 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
+        if (_imp->_selection.nodes.empty()) {
+            autoConnect = false;
+        }
         if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
-            node_ui->refreshPosition( pos.x(),pos.y() );
+            node_ui->refreshPosition( pos.x(),pos.y(), true );
         } else {
             moveNodesForIdealPosition(node_ui,autoConnect);
         }
@@ -1590,6 +1596,12 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
+            
+            std::list<boost::shared_ptr<NodeGui> >::iterator foundInSel = std::find(_selection.nodes.begin(),_selection.nodes.end(),*it);
+            if (foundInSel != _selection.nodes.end()) {
+                continue;
+            }
+            
             _selection.nodes.push_back(*it);
             (*it)->setUserSelected(true);
         }
@@ -1597,6 +1609,12 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it != _backdrops.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
+            
+            std::list<NodeBackDrop* >::iterator foundInSel = std::find(_selection.bds.begin(),_selection.bds.end(),*it);
+            if (foundInSel != _selection.bds.end()) {
+                continue;
+            }
+            
             _selection.bds.push_back(*it);
             (*it)->setUserSelected(true);
         }
@@ -1814,14 +1832,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 }
             }
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->previousFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->nextFrame();
-        }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
         if ( getGui()->getLastSelectedViewer() ) {
             getGui()->getLastSelectedViewer()->firstFrame();
@@ -1838,7 +1848,15 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( getGui()->getLastSelectedViewer() ) {
             getGui()->getLastSelectedViewer()->nextIncrement();
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
+    }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+        if ( getGui()->getLastSelectedViewer() ) {
+            getGui()->getLastSelectedViewer()->nextFrame();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+        if ( getGui()->getLastSelectedViewer() ) {
+            getGui()->getLastSelectedViewer()->previousFrame();
+        }
+    }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
@@ -2038,7 +2056,8 @@ NodeGraph::enterEvent(QEvent* e)
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel";
+    currentFocus->objectName() == "SettingsPanel" ||
+    currentFocus->objectName() == "qt_tabwidget_tabbar";
     
     if (canSetFocus) {
         setFocus();
@@ -2058,6 +2077,18 @@ NodeGraph::leaveEvent(QEvent* e)
 }
 
 void
+NodeGraph::setVisibleNodeDetails(bool visible)
+{
+    QMutexLocker k(&_imp->_nodesMutex);
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it!= _imp->_nodes.end(); ++it) {
+        (*it)->setVisibleDetails(visible);
+    }
+    for (std::list<NodeBackDrop*>::const_iterator it =_imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
+        (*it)->setVisibleDetails(visible);
+    }
+}
+
+void
 NodeGraph::wheelEvent(QWheelEvent* e)
 {
     if (e->orientation() != Qt::Vertical) {
@@ -2065,11 +2096,19 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     }
     QPointF newPos = mapToScene( e->pos() );
     double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    qreal newZoomfactor = transform().scale(scaleFactor, scaleFactor).mapRect( QRectF(0, 0, 1, 1) ).width();
-    if ( (newZoomfactor < 0.07) || (newZoomfactor > 10) ) {
-        return;
-    }
+    
+    QTransform transfo = transform();
+    
+    double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();
+    double newZoomfactor = transfo.scale(scaleFactor, scaleFactor).mapRect( QRectF(0, 0, 1, 1) ).width();
+    newZoomfactor = std::max(0.07,std::min(20.,newZoomfactor));
 
+    if (currentZoomFactor >= 0.4 && newZoomfactor < 0.4) {
+        setVisibleNodeDetails(false);
+    } else if (currentZoomFactor <= 0.4 && newZoomfactor > 0.4) {
+        setVisibleNodeDetails(true);
+    }
+    
     if (modCASIsControl(e) && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
@@ -2594,7 +2633,7 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addSeparator();
     
     QMenu* editMenu = new QMenu(tr("Edit"),_imp->_menu);
-    editMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    editMenu->setFont( QFont(appFont,appFontSize) );
     _imp->_menu->addAction( editMenu->menuAction() );
     
     QAction* copyAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphCopy,
@@ -3784,7 +3823,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
     _imp->label = new QLabel(tr("Select all nodes containing this text:"),this);
-    _imp->label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    _imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
     _imp->filter = new LineEdit(this);
@@ -3807,7 +3846,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     
     _imp->resultLabel = new QLabel(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
-    _imp->resultLabel->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    _imp->resultLabel->setFont(QFont(appFont,appFontSize));
     
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
     QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));

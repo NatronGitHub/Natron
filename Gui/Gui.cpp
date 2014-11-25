@@ -74,6 +74,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/AboutWindow.h"
 #include "Gui/ProjectGui.h"
@@ -164,7 +165,6 @@ getPixmapForGrouping(QPixmap* pixmap,
     }
 }
 }
-
 
 struct GuiPrivate
 {
@@ -277,7 +277,7 @@ struct GuiPrivate
     QWidget *_propertiesBin;
     
     QScrollArea* _propertiesScrollArea;
-
+	QWidget* _propertiesContainer;
 
     ///the vertical layout for the properties dock container.
     QVBoxLayout *_layoutPropertiesBin;
@@ -322,7 +322,7 @@ struct GuiPrivate
 
     ///The "About" window.
     AboutWindow* _aboutWindow;
-    std::map<Natron::EffectInstance*,QProgressDialog*> _progressBars;
+    std::map<KnobHolder*,QProgressDialog*> _progressBars;
 
     ///list of the currently opened property panels
     std::list<DockablePanel*> openedPanels;
@@ -403,6 +403,7 @@ struct GuiPrivate
           , _toolBox(0)
           , _propertiesBin(0)
           , _propertiesScrollArea(0)
+		  , _propertiesContainer(0)
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
           , _maxPanelsOpenedSpinBox(0)
@@ -494,6 +495,7 @@ Gui::~Gui()
         delete _imp->_toolButtons[i];
     }
 }
+
 
 void
 GuiPrivate::notifyGuiClosing()
@@ -996,19 +998,20 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
     
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
+	QObject::connect(_propertiesScrollArea->verticalScrollBar(),SIGNAL(valueChanged(int)),_gui,SLOT(onPropertiesScrolled()));
     _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);
 
-    QWidget* propertiesContainer = new QWidget(_propertiesScrollArea);
-    propertiesContainer->setObjectName("_propertiesContainer");
-    _layoutPropertiesBin = new QVBoxLayout(propertiesContainer);
+    _propertiesContainer = new QWidget(_propertiesScrollArea);
+    _propertiesContainer->setObjectName("_propertiesContainer");
+    _layoutPropertiesBin = new QVBoxLayout(_propertiesContainer);
     _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
-    propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
-    _propertiesScrollArea->setWidget(propertiesContainer);
+    _propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+    _propertiesScrollArea->setWidget(_propertiesContainer);
     _propertiesScrollArea->setWidgetResizable(true);
 
-    QWidget* propertiesAreaButtonsContainer = new QWidget(propertiesContainer);
+    QWidget* propertiesAreaButtonsContainer = new QWidget(_propertiesBin);
     QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
     propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
     propertiesAreaButtonsLayout->setSpacing(5);
@@ -1042,6 +1045,31 @@ GuiPrivate::createPropertiesBinGui()
 
     _gui->registerTab(_propertiesBin);
 } // createPropertiesBinGui
+
+void Gui::onPropertiesScrolled()
+{
+#ifdef __NATRON_WIN32__
+	//On Windows Qt 4.8.6 has a bug where the viewport of the scrollarea gets scrolled outside the bounding rect of the QScrollArea and overlaps all widgets inheriting QGLWidget.
+	//The only thing I could think of was to repaint all GL widgets manually...
+
+	{
+		QMutexLocker k(&_imp->_viewerTabsMutex);
+		for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it)
+		{
+			(*it)->redrawGLWidgets();
+		}
+	}
+	_imp->_curveEditor->getCurveWidget()->updateGL();
+
+	{
+		QMutexLocker k (&_imp->_histogramsMutex);
+		for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it)
+		{
+			(*it)->updateGL();
+		}
+	}
+#endif
+}
 
 void
 GuiPrivate::createNodeGraphGui()
@@ -1239,6 +1267,7 @@ Gui::restoreLayout(bool wipePrevious,
         createDefaultLayout1();
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
+        
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
              it != layoutSerialization._windows.end(); ++it) {
@@ -2133,7 +2162,7 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
         pluginsToolButton->setAction(action);
     } else {
         QMenu* menu = new QMenu(this);
-        menu->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+        menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
@@ -3637,7 +3666,7 @@ Gui::getCurveEditor() const
 QWidget*
 Gui::getPropertiesBin() const
 {
-    return _imp->_propertiesScrollArea;
+    return _imp->_propertiesBin;
 }
 
 QVBoxLayout*
@@ -3931,8 +3960,9 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 }
 
 void
-Gui::startProgress(Natron::EffectInstance* effect,
-                   const std::string & message)
+Gui::startProgress(KnobHolder* effect,
+                   const std::string & message,
+                   bool canCancel)
 {
     if (!effect) {
         return;
@@ -3944,11 +3974,17 @@ Gui::startProgress(Natron::EffectInstance* effect,
     }
 
     QProgressDialog* dialog = new QProgressDialog(message.c_str(),tr("Cancel"),0,100,this);
+    if (!canCancel) {
+        dialog->setCancelButton(0);
+    }
     dialog->setModal(false);
     dialog->setRange(0, 100);
     dialog->setMinimumWidth(250);
-    dialog->setWindowTitle( effect->getNode()->getName_mt_safe().c_str() );
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
+    if (isNamed) {
+        dialog->setWindowTitle( isNamed->getName_mt_safe().c_str() );
+    }
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
 
     ///If a second dialog was asked for whilst another is still active, the first dialog will not be
     ///able to be canceled.
@@ -3962,7 +3998,7 @@ Gui::startProgress(Natron::EffectInstance* effect,
 }
 
 void
-Gui::endProgress(Natron::EffectInstance* effect)
+Gui::endProgress(KnobHolder* effect)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
@@ -3970,7 +4006,7 @@ Gui::endProgress(Natron::EffectInstance* effect)
         return;
     }
 
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
     if ( found == _imp->_progressBars.end() ) {
         return;
     }
@@ -3981,7 +4017,7 @@ Gui::endProgress(Natron::EffectInstance* effect)
 }
 
 bool
-Gui::progressUpdate(Natron::EffectInstance* effect,
+Gui::progressUpdate(KnobHolder* effect,
                     double t)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
@@ -3990,9 +4026,12 @@ Gui::progressUpdate(Natron::EffectInstance* effect,
         return true;
     }
 
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
     if ( found == _imp->_progressBars.end() ) {
-        qDebug() << effect->getNode()->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+        NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
+        if (isNamed) {
+            qDebug() << isNamed->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+        }
     }
     if ( found->second->wasCanceled() ) {
         return false;
@@ -4332,7 +4371,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                 if (multiInstance) {
                     const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
                     for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        if (it->first->isActivated()) {
+                        if (node->isSettingsPanelVisible() && it->first->isActivated()&& it->second) {
                             nodes.push_back(it->first);
                         }
                     }

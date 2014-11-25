@@ -21,6 +21,9 @@
 #endif
 #define appPTR ( static_cast<GuiApplicationManager*>( AppManager::instance() ) )
 
+#define appFont ( appPTR->getAppFont() )
+#define appFontSize ( appPTR->getAppFontSize() )
+
 /**
  * @brief Returns true if the given modifiers and symbol should trigger the given action of the given group.
  **/
@@ -61,7 +64,7 @@ public:
 
     virtual ~GuiApplicationManager();
 
-    const std::vector<PluginGroupNode*> & getPluginsToolButtons() const;
+    const std::list<PluginGroupNode*> & getPluginsToolButtons() const;
     PluginGroupNode* findPluginToolButtonOrCreate(const QString & pluginID,const QString & name,const QString & iconPath);
     virtual bool isBackground() const OVERRIDE FINAL
     {
@@ -135,6 +138,12 @@ public:
     bool isShorcutVersionUpToDate() const;
     
     virtual void showOfxLog() OVERRIDE FINAL;
+    
+    virtual QString getAppFont() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    
 public slots:
 
 
@@ -144,6 +153,7 @@ public slots:
 private:
 
     virtual void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE FINAL;
+    virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,

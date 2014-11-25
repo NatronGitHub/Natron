@@ -12,7 +12,9 @@
 
 #include <string>
 #include <cstdarg>
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif
 #include <ofxhImageEffect.h>
 
 #include "Global/GlobalDefines.h"
@@ -158,9 +160,6 @@ public:
         bool frameVarying;
     };
     
-    
-    virtual void setupClipPreferencesArgs(OFX::Host::Property::Set &args) OVERRIDE FINAL;
-    
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/
@@ -260,6 +259,8 @@ public:
     ////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    bool getCanApplyTransform(OfxClipInstance** clip) const;
+    
 private:
     OfxEffectInstance* _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                               Not easy since every Knob need a valid pointer to a node when

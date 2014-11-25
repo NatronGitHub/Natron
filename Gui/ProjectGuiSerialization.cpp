@@ -52,7 +52,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);
                 ViewerData viewerData;
-                tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &viewerData.zoomAspectRatio);
+                double zoompar;
+                tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &zoompar);
                 viewerData.userRoI = tab->getViewer()->getUserRegionOfInterest();
                 viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
                 viewerData.isClippedToProject = tab->isClippedToProject();

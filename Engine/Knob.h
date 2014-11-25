@@ -1468,6 +1468,21 @@ public:
     
     void discardAppPointer();
     
+    /**
+     * @brief Returns true if at least a parameter is animated
+     **/
+    bool getHasAnimation() const;
+    
+    /**
+     * @brief Set the hasAnimation flag
+     **/
+    void setHasAnimation(bool hasAnimation);
+    
+    /**
+     * @brief Auto-compute the animation flag by checking the animation state of all curves of all parameters held
+     **/
+    void updateHasAnimation();
+    
 protected:
 
     bool isEvaluationBlocked() const;

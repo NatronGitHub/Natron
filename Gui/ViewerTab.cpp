@@ -72,6 +72,66 @@ struct InputName
 typedef std::map<int,InputName> InputNamesMap;
 }
 
+class ChannelsComboBox : public ComboBox
+{
+    
+public:
+    
+    ChannelsComboBox(QWidget* parent) : ComboBox(parent) {}
+    
+private:
+    
+    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL
+    {
+        ComboBox::paintEvent(event);
+        
+        int idx = activeIndex();
+        if (idx != 1) {
+            QColor color;
+            
+            QPainter p(this);
+            QPen pen;
+            
+            switch (idx) {
+                case 0:
+                    //luminance
+                    color.setRgbF(0.5, 0.5, 0.5);
+                    break;
+                case 2:
+                    //r
+                    color.setRgbF(1., 0, 0);
+                    break;
+                case 3:
+                    //g
+                    color.setRgbF(0., 1., 0.);
+                    break;
+                case 4:
+                    //b
+                    color.setRgbF(0., 0. , 1.);
+                    break;
+                case 5:
+                    //a
+                    color.setRgbF(1.,1.,1.);
+                    break;
+            }
+            
+            pen.setColor(color);
+            p.setPen(pen);
+            
+            
+            QRectF bRect = rect();
+            QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
+            
+            double roundPixels = 3;
+            
+            
+            QPainterPath path;
+            path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+            p.drawPath(path);
+        }
+    }
+};
+
 struct ViewerTabPrivate
 {
     /*OpenGL viewer*/
@@ -89,7 +149,7 @@ struct ViewerTabPrivate
 
     /*1st row*/
     //ComboBox* _viewerLayers;
-    ComboBox* _viewerChannels;
+    ChannelsComboBox* _viewerChannels;
     ComboBox* _zoomCombobox;
     Button* _centerViewerButton;
     Button* _clipToProjectFormatButton;
@@ -231,7 +291,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     // _viewerLayers = new ComboBox(_firstSettingsRow);
     //_firstRowLayout->addWidget(_viewerLayers);
 
-    _imp->_viewerChannels = new ComboBox(_imp->_firstSettingsRow);
+    _imp->_viewerChannels = new ChannelsComboBox(_imp->_firstSettingsRow);
     _imp->_viewerChannels->setToolTip( "<p><b>" + tr("Channels") + ": \n</b></p>"
                                        + tr("The channels to display on the viewer.") );
     _imp->_firstRowLayout->addWidget(_imp->_viewerChannels);
@@ -428,7 +488,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->_checkerboardButton->setChecked(false);
     _imp->_checkerboardButton->setDown(false);
     _imp->_checkerboardButton->setToolTip(tr("When checked the viewer will draw a checkerboard instead of black "
-                                             "in transparant areas."));
+                                             "in transparant areas (within the project window only)."));
     _imp->_checkerboardButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->_checkerboardButton,SIGNAL(clicked(bool)),this,SLOT(onCheckerboardButtonClicked()));
     _imp->_secondRowLayout->addWidget(_imp->_checkerboardButton);
@@ -1074,13 +1134,21 @@ ViewerTab::seek(SequenceTime time)
 void
 ViewerTab::previousFrame()
 {
-    seek(_imp->_timeLineGui->currentFrame() - 1);
+    int prevFrame = _imp->_timeLineGui->currentFrame() -1 ;
+    if (prevFrame  < _imp->_timeLineGui->leftBound()) {
+        prevFrame = _imp->_timeLineGui->rightBound();
+    }
+    seek(prevFrame);
 }
 
 void
 ViewerTab::nextFrame()
 {
-    seek(_imp->_timeLineGui->currentFrame() + 1);
+    int nextFrame = _imp->_timeLineGui->currentFrame() + 1;
+    if (nextFrame  > _imp->_timeLineGui->rightBound()) {
+        nextFrame = _imp->_timeLineGui->leftBound();
+    }
+    seek(nextFrame);
 }
 
 void
@@ -1355,7 +1423,7 @@ void
 ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
 {
-    if ( !_imp->app || _imp->app->isClosing() || isFileDialogViewer() || _imp->_gui->isGUIFrozen()) {
+    if ( !_imp->app || !_imp->viewer ||  _imp->app->isClosing() || isFileDialogViewer() || _imp->_gui->isGUIFrozen()) {
         return;
     }
 
@@ -1535,30 +1603,20 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
-                    return true;
-                }
-            }
-        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
-            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e) ) {
-                    return true;
-                }
-            }
-        } else {
-            
-            Natron::EffectInstance* effect = (*it)->getLiveInstance();
-            assert(effect);
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
-                
-                // to any other interactive object it may own that shares the same view.
-                return true;
+                didSomething |= _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e);
             }
         }
+        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                didSomething |=  _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e)  ;
+            }
+        }
+        
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        assert(effect);
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
+        
         
     }
 
@@ -1643,31 +1701,21 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
         
         if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentRoto.second->keyUp(scaleX, scaleY, e) ) {
-                    return true;
-                }
-            }
-        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
-            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->_currentTracker.second->keyUp(scaleX, scaleY, e) ) {
-                    return true;
-                }
-            }
-        } else {
-            
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayKeyUp_public( scaleX,scaleY,
-                                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
-                
-                // to any other interactive object it may own that shares the same view.
-                return true;
+                didSomething |= _imp->_currentRoto.second->keyUp(scaleX, scaleY, e);
             }
         }
+        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                didSomething |= _imp->_currentTracker.second->keyUp(scaleX, scaleY, e);
+            }
+        }
+        
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        didSomething |= effect->onOverlayKeyUp_public( scaleX,scaleY,
+                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+        
     }
-
+    
    
 
     
@@ -2544,13 +2592,15 @@ ViewerTab::onActiveInputsChanged()
         //_imp->_secondInputImage->setEnabled_natron(false);
     }
 
+    bool autoWipe = appPTR->getCurrentSettings()->isAutoWipeEnabled();
+    
     if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
          && ( getCompositingOperator() != eViewerCompositingOperatorNone) ) {
         //setCompositingOperator(eViewerCompositingOperatorNone);
         _imp->_infoWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->_secondInputImage->setEnabled_natron(false);
-    } else if ( (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
+    } else if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
                 && ( getCompositingOperator() == eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
         setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
@@ -3100,4 +3150,11 @@ ViewerTab::setTurboButtonDown(bool down)
 {
     _imp->turboButton->setDown(down);
     _imp->turboButton->setChecked(down);
+}
+
+void 
+ViewerTab::redrawGLWidgets()
+{
+	_imp->viewer->updateGL();
+	_imp->_timeLineGui->updateGL();
 }

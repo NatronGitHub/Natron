@@ -28,6 +28,9 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/RotoContext.h"
+#include "Engine/Transform.h"
+
+#include <nuke/fnOfxExtensions.h>
 
 using namespace Natron;
 
@@ -42,6 +45,7 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
       , _nodeInstance(nodeInstance)
       , _effect(effect)
       , _aspectRatio(1.)
+      , _lastActionData()
 {
     assert(_nodeInstance);
     assert(_effect);
@@ -431,11 +435,103 @@ OfxClipInstance::getImage(OfxTime time,
     return getStereoscopicImage(time, -1, optionalBounds);
 }
 
+
+OFX::Host::ImageEffect::Image*
+OfxClipInstance::getStereoscopicImage(OfxTime time,
+                                      int view,
+                                      const OfxRectD *optionalBounds)
+{
+    OfxPointD scale;
+    
+    scale.x = scale.y = 1.;
+    
+    bool hasLocalData = true;
+    if ( !_lastActionData.hasLocalData() ) {
+        hasLocalData = false;
+#ifdef DEBUG
+        if (QThread::currentThread() != qApp->thread()) {
+            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+            "fix it.";
+            
+        }
+#endif
+    }
+    assert( _lastActionData.hasLocalData() );
+    if ( isOutput() ) {
+        boost::shared_ptr<Natron::Image> outputImage;
+        RectI renderWindow;
+        bool ok = _nodeInstance->getThreadLocalRenderedImage(&outputImage,&renderWindow);
+        if (!ok) {
+            return NULL;
+        }
+        //The output clip doesn't have any transform matrix
+        return new OfxImage(outputImage,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
+    }
+    
+    
+    boost::shared_ptr<Transform::Matrix3x3> transform;
+    bool usingReroute ;
+    int rerouteInputNb;
+    Natron::EffectInstance* node ;
+    unsigned int mipMapLevel;
+    if (hasLocalData) {
+        const ActionLocalData& args = _lastActionData.localData();
+        if (!args.isViewValid) {
+#ifdef DEBUG
+            if (QThread::currentThread() != qApp->thread()) {
+                qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+                "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+                "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+            }
+#endif
+            view = 0;
+        } else {
+            if (view == -1) {
+                view = args.view;
+            }
+        }
+        
+        if (!args.isMipmapLevelValid) {
+            mipMapLevel = 0;
+        } else {
+            mipMapLevel = args.mipMapLevel;
+        }
+        
+        if (!args.isTransformDataValid || !args.rerouteNode) {
+            node = _nodeInstance;
+            usingReroute = false;
+            rerouteInputNb = -1;
+        } else {
+            node = args.rerouteNode;
+            rerouteInputNb = args.rerouteInputNb;
+            transform = args.matrix;
+            usingReroute = true;
+        }
+        
+    } else {
+        view = 0;
+        mipMapLevel = 0;
+        node = _nodeInstance;
+        usingReroute = false;
+        rerouteInputNb = -1;
+    }
+    
+    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
+    
+    return getImageInternal(time, scale, view, optionalBounds, usingReroute, rerouteInputNb, node, transform);
+} // getStereoscopicImage
+
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImageInternal(OfxTime time,
                                   const OfxPointD & renderScale,
                                   int view,
-                                  const OfxRectD *optionalBounds)
+                                  const OfxRectD *optionalBounds,
+                                  bool usingReroute,
+                                  int rerouteInputNb,
+                                  Natron::EffectInstance* node,
+                                  const boost::shared_ptr<Transform::Matrix3x3>& transform)
 {
     assert( !isOutput() );
     // input has been rendered just find it in the cache
@@ -447,20 +543,75 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.y2 = optionalBounds->y2;
     }
 
+    
+
     Natron::ImageComponentsEnum comps =  ofxComponentsToNatronComponents( getComponents() );
     Natron::ImageBitDepthEnum bitDepth = ofxDepthToNatronDepth( getPixelDepth() );
     double par = getAspectRatio();
     RectI renderWindow;
-    boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
-                                                                     optionalBounds ? &bounds : NULL,
-                                                                     comps,
-                                                                     bitDepth,
-                                                                     par,
-                                                                     false,&renderWindow);
+    boost::shared_ptr<Natron::Image> image;
+    
+    if (usingReroute) {
+        assert(rerouteInputNb != -1);
+        
+        unsigned int mipMapLevel = Image::getLevelFromScale(renderScale.x);
+        
+        EffectInstance::RoIMap regionsOfInterests;
+        bool gotit = _nodeInstance->getThreadLocalRegionsOfInterests(regionsOfInterests);
+        
+        
+        if (!gotit) {
+            qDebug() << "Bug in transform concatenations: thread-storage has not been set on the new upstream input.";
+            
+            RectD rod;
+            if (optionalBounds) {
+                rod = bounds;
+            } else {
+                bool isProjectFormat;
+                StatusEnum stat = node->getRegionOfDefinition_public(node->getHash(), time, renderScale, view, &rod, &isProjectFormat);
+                assert(stat == Natron::eStatusOK);
+            }
+            node->getRegionsOfInterest_public(time, renderScale, rod, rod, 0,&regionsOfInterests);
+        }
+        
+        EffectInstance* inputNode = node->getInput(rerouteInputNb);
+        if (!inputNode) {
+            return NULL;
+        }
+        
+        RectD roi;
+        if (!optionalBounds) {
+            
+            EffectInstance::RoIMap::iterator found = regionsOfInterests.find(inputNode);
+            assert(found != regionsOfInterests.end());
+            ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
+            roi = found->second;
+            
+        } else {
+            roi = bounds;
+        }
+        
+        RectI pixelRoI;
+        roi.toPixelEnclosing(mipMapLevel, par, &pixelRoI);
+        
+        EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
+                                           view,false,pixelRoI,RectD(),comps,bitDepth,3,true);
+        image = inputNode->renderRoI(args);
+        _nodeInstance->addThreadLocalInputImageTempPointer(image);
+        renderWindow = pixelRoI;
+        
+    } else {
+        image = node->getImage(getInputNb(), time, renderScale, view,
+                               optionalBounds ? &bounds : NULL,
+                               comps,
+                               bitDepth,
+                               par,
+                               false,&renderWindow);
+    }
     if (!image) {
         return NULL;
     } else {
-        return new OfxImage(image,renderWindow,*this);
+        return new OfxImage(image,renderWindow,transform,*this);
     }
 }
 
@@ -544,8 +695,11 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
     }
 }
 
+
+
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
                    const RectI& renderWindow,
+                   const boost::shared_ptr<Transform::Matrix3x3>& mat,
                    OfxClipInstance &clip)
     : OFX::Host::ImageEffect::Image(clip)
       , _bitDepth(OfxImage::eBitDepthFloat)
@@ -600,6 +754,26 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
     setStringProperty( kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey(), 16).toStdString() );
     setDoubleProperty( kOfxImagePropPixelAspectRatio, clip.getAspectRatio() );
+    
+    //Attach the transform matrix if any
+    if (mat) {
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
+        
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
+        
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
+        setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
+    } else {
+        for (int i = 0; i < 9; ++i) {
+            setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
+        }
+    }
+    
 }
 
 OfxRGBAColourF*
@@ -647,73 +821,6 @@ OfxClipInstance::getAssociatedNode() const
     }
 }
 
-OFX::Host::ImageEffect::Image*
-OfxClipInstance::getStereoscopicImage(OfxTime time,
-                                      int view,
-                                      const OfxRectD *optionalBounds)
-{
-    OfxPointD scale;
-    
-    scale.x = scale.y = 1.;
-    
-    bool hasLocalData = true;
-    if ( !_lastActionData.hasLocalData() ) {
-        hasLocalData = false;
-#ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread()) {
-            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-            "fix it.";
-            
-        }
-#endif
-    }
-    assert( _lastActionData.hasLocalData() );
-    if ( isOutput() ) {
-        boost::shared_ptr<Natron::Image> outputImage;
-        RectI renderWindow;
-        bool ok = _nodeInstance->getThreadLocalRenderedImage(&outputImage,&renderWindow);
-        if (!ok) {
-            return NULL;
-        }
-
-        return new OfxImage(outputImage,renderWindow,*this);
-    }
-
-    unsigned int mipMapLevel;
-    if (hasLocalData) {
-        const ActionLocalData& args = _lastActionData.localData();
-        if (!args.isViewValid) {
-#ifdef DEBUG
-            if (QThread::currentThread() != qApp->thread()) {
-                qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-                "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-                "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
-            }
-#endif
-            view = 0;
-        } else {
-            if (view == -1) {
-                view = args.view;
-            }
-        }
-        
-        if (!args.isMipmapLevelValid) {
-            mipMapLevel = 0;
-        } else {
-            mipMapLevel = args.mipMapLevel;
-        }
-        
-    } else {
-        view = 0;
-        mipMapLevel = 0;
-    }
-    
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
-
-    return getImageInternal(time, scale, view, optionalBounds);
-} // getStereoscopicImage
 
 void
 OfxClipInstance::setRenderedView(int view)
@@ -771,6 +878,37 @@ OfxClipInstance::discardMipMapLevel()
 {
     assert( _lastActionData.hasLocalData() );
     _lastActionData.localData().isMipmapLevelValid = false;
+}
+
+void
+OfxClipInstance::setTransformAndReRouteInput(const Transform::Matrix3x3& m,Natron::EffectInstance* rerouteInput,int newInputNb)
+{
+    if ( _lastActionData.hasLocalData() ) {
+        ActionLocalData & args = _lastActionData.localData();
+#ifdef DEBUG
+        if (QThread::currentThread() != qApp->thread() && args.isTransformDataValid) {
+            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
+        }
+#endif
+        args.matrix.reset(new Transform::Matrix3x3(m));
+        args.rerouteInputNb = newInputNb;
+        args.rerouteNode = rerouteInput;
+        args.isTransformDataValid = true;
+    } else {
+        ActionLocalData args;
+        args.matrix.reset(new Transform::Matrix3x3(m));
+        args.rerouteInputNb = newInputNb;
+        args.rerouteNode = rerouteInput;
+        args.isTransformDataValid = true;
+        _lastActionData.setLocalData(args);
+    }
+  }
+
+void
+OfxClipInstance::clearTransform()
+{
+    assert(_lastActionData.hasLocalData());
+    _lastActionData.localData().isTransformDataValid = false;
 }
 
 const std::string &
