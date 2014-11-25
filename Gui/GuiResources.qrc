@@ -180,5 +180,6 @@
         <file>../CHANGELOG.md</file>
         <file>Resources/Fonts/Muli-Regular.ttf</file>
         <file>Resources/Images/natronProjectIcon_linux.png</file>
+        <file>Resources/Images/addTrack.png</file>
     </qresource>
 </RCC>

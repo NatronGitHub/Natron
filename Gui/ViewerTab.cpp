@@ -1603,19 +1603,20 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-                _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e);
+                didSomething |= _imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e);
             }
-        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
-            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-                _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e)  ;
-            }
-        } else {
-            
-            Natron::EffectInstance* effect = (*it)->getLiveInstance();
-            assert(effect);
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            (void)effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
         }
+        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                didSomething |=  _imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e)  ;
+            }
+        }
+        
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        assert(effect);
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
+        
         
     }
 
@@ -1700,20 +1701,21 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
         
         if (_imp->_currentRoto.first && (*it) == _imp->_currentRoto.first->getNode()) {
             if ( _imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible() ) {
-                _imp->_currentRoto.second->keyUp(scaleX, scaleY, e);
+                didSomething |= _imp->_currentRoto.second->keyUp(scaleX, scaleY, e);
             }
-        } else if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
-            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
-                _imp->_currentTracker.second->keyUp(scaleX, scaleY, e);
-            }
-        } else {
-            
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            (void)effect->onOverlayKeyUp_public( scaleX,scaleY,
-                                          QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         }
+        if (_imp->_currentTracker.first && (*it) == _imp->_currentTracker.first->getNode()) {
+            if ( _imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible() ) {
+                didSomething |= _imp->_currentTracker.second->keyUp(scaleX, scaleY, e);
+            }
+        }
+        
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        didSomething |= effect->onOverlayKeyUp_public( scaleX,scaleY,
+                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+        
     }
-
+    
    
 
     
