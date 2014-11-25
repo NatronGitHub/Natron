@@ -146,6 +146,9 @@ struct Node::Implementation
     , nodeIsRenderingMutex()
     , mustQuitProcessing(false)
     , mustQuitProcessingMutex()
+    , persistentMessage()
+    , persistentMessageType(0)
+    , persistentMessageMutex()
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -264,8 +267,9 @@ struct Node::Implementation
     bool mustQuitProcessing;
     mutable QMutex mustQuitProcessingMutex;
     
-    
-    
+    QString persistentMessage;
+    int persistentMessageType;
+    mutable QMutex persistentMessageMutex;
 };
 
 /**
@@ -2440,15 +2444,26 @@ Node::setPersistentMessage(MessageTypeEnum type,
             
             return;
         }
-        QString message;
-        message.append( getName_mt_safe().c_str() );
-        if (type == eMessageTypeError) {
-            message.append(" error: ");
-        } else if (type == eMessageTypeWarning) {
-            message.append(" warning: ");
+        
+        {
+            QMutexLocker k(&_imp->persistentMessageMutex);
+            
+            QString message;
+            message.append( getName_mt_safe().c_str() );
+            if (type == eMessageTypeError) {
+                message.append(" error: ");
+                _imp->persistentMessageType = 1;
+            } else if (type == eMessageTypeWarning) {
+                message.append(" warning: ");
+                _imp->persistentMessageType = 2;
+            }
+            message.append( content.c_str() );
+            if (message == _imp->persistentMessage) {
+                return;
+            }
+            _imp->persistentMessage = message;
         }
-        message.append( content.c_str() );
-        emit persistentMessageChanged( (int)type,message );
+        emit persistentMessageChanged();
     } else {
         std::cout << "Persistent message" << std::endl;
         std::cout << content << std::endl;
@@ -2456,10 +2471,25 @@ Node::setPersistentMessage(MessageTypeEnum type,
 }
 
 void
+Node::getPersistentMessage(QString* message,int* type) const
+{
+    QMutexLocker k(&_imp->persistentMessageMutex);
+    *type = _imp->persistentMessageType;
+    *message = _imp->persistentMessage;
+}
+
+void
 Node::clearPersistentMessage()
 {
     if ( !appPTR->isBackground() ) {
-        emit persistentMessageCleared();
+        {
+            QMutexLocker k(&_imp->persistentMessageMutex);
+            if (!_imp->persistentMessage.isEmpty()) {
+                _imp->persistentMessage.clear();
+                k.unlock();
+                emit persistentMessageChanged();
+            }
+        }
     }
     
     QMutexLocker l(&_imp->inputsMutex);

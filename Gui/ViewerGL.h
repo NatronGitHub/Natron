@@ -183,12 +183,9 @@ public:
      **/
     void disconnectViewer();
 
-    void setPersistentMessage(int type,const QString & message);
-
-    void clearPersistentMessage();
-
-    const QString & getCurrentPersistentMessage() const;
-
+    void updatePersistentMessage();
+    void updatePersistentMessageToWidth(int w);
+    
 public slots:
 
 

@@ -715,6 +715,8 @@ public:
      * @brief Returns true if the parallel render args thread-storage is set
      **/
     bool isNodeRendering() const;
+    
+    void getPersistentMessage(QString* message,int* type) const;
 
 public slots:
 
@@ -764,9 +766,7 @@ signals:
 
     void knobsAgeChanged(U64 age);
 
-    void persistentMessageChanged(int,QString);
-
-    void persistentMessageCleared();
+    void persistentMessageChanged();
 
     void inputsInitialized();
 
