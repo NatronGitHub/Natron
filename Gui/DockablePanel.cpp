@@ -52,6 +52,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/Image.h"
 #include "Engine/NodeSerialization.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
@@ -464,7 +465,7 @@ DockablePanel::DockablePanel(Gui* gui
     if (useScrollAreasForTabs) {
         _imp->_tabWidget = new QTabWidget(this);
     } else {
-        _imp->_tabWidget = new DockablePanelTabWidget(this);
+        _imp->_tabWidget = new DockablePanelTabWidget(gui,this);
     }
     _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     _imp->_tabWidget->setObjectName("QTabWidget");
@@ -506,10 +507,32 @@ DockablePanel::getHolder() const
     return _imp->_holder;
 }
 
-DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
+DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,QWidget* parent)
     : QTabWidget(parent)
+    , _gui(gui)
 {
     setFocusPolicy(Qt::StrongFocus);
+}
+
+void
+DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
+{
+    Qt::Key key = (Qt::Key)event->key();
+    Qt::KeyboardModifiers modifiers = event->modifiers();
+    
+    bool hasF = hasFocus();
+    
+    if (!hasF && isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
+        if ( _gui->getLastSelectedViewer() ) {
+            _gui->getLastSelectedViewer()->previousFrame();
+        }
+    } else if (!hasF && isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+        if ( _gui->getLastSelectedViewer() ) {
+            _gui->getLastSelectedViewer()->nextFrame();
+        }
+    } else {
+        QTabWidget::keyPressEvent(event);
+    }
 }
 
 QSize

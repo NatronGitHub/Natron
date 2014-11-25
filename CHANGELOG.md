@@ -45,6 +45,11 @@ to avoid creating new beziers by mistake
 
 - Viewer: fixed a bug when the "Auto-wipe" preferences in the settings was disabled. The wipe would still show up automatically. 
 
+- Fixed a bug where the extra OpenFX plug-ins search paths would be ignored
+
+- Readers: when a file changes externally, don't reload it automatically, instead a warning is displayed on the viewer and it is up to the user to reload it with the button created specifically
+for the occasion. The warning notification can be disabled in the preferences of Natron. The tooltip of the field with the filename now indicates the last modification date of the file.
+
 Natron 1.0.0 "RC3"
 -----------------
 
