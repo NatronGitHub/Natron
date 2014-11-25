@@ -195,9 +195,8 @@ File_KnobGui::updateLastOpened(const QString &str)
 void
 File_KnobGui::updateGUI(int /*dimension*/)
 {
-    std::string newValue = _knob->getFileName(_knob->getCurrentTime(), 0);
-    QString file(newValue.c_str());
-    _lineEdit->setText(file);
+    
+    _lineEdit->setText(_knob->getValue().c_str());
     
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if (useNotifications && _knob->getHolder() && _knob->getEvaluateOnChange() ) {
@@ -205,6 +204,9 @@ File_KnobGui::updateGUI(int /*dimension*/)
             _watcher->removePath(_fileBeingWatched.c_str());
             _fileBeingWatched.clear();
         }
+        
+        std::string newValue = _knob->getFileName(_knob->getCurrentTime(), 0);
+        QString file(newValue.c_str());
         
         if (QFile::exists(file)) {
             _watcher->addPath(file);
