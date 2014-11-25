@@ -1604,9 +1604,46 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
 QStringList
 Settings::getPluginsExtraSearchPaths() const
 {
-    QString paths = _extraPluginPaths->getValue().c_str();
+    std::string paths = _extraPluginPaths->getValue().c_str();
+    QStringList variables;
+    
+    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
+    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
+    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
+    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
+    
+    size_t i = paths.find(startNameTag);
+    while (i != std::string::npos) {
+        i += startNameTag.size();
+        assert(i < paths.size());
+        size_t endNamePos = paths.find(endNameTag,i);
+        assert(endNamePos != std::string::npos && endNamePos < paths.size());
+        
+        std::string name,value;
+        while (i < endNamePos) {
+            name.push_back(paths[i]);
+            ++i;
+        }
+        
+        i = paths.find(startValueTag,i);
+        i += startValueTag.size();
+        assert(i != std::string::npos && i < paths.size());
+        
+        size_t endValuePos = paths.find(endValueTag,i);
+        assert(endValuePos != std::string::npos && endValuePos < paths.size());
+        
+        while (i < endValuePos) {
+            value.push_back(paths.at(i));
+            ++i;
+        }
+        
+        // In order to use XML tags, the text inside the tags has to be unescaped.
+        variables.push_back(Project::unescapeXML(value).c_str());
+        
+        i = paths.find(startNameTag,i);
+    }
 
-    return paths.split( QChar(';') );
+    return variables;
 }
 
 void
