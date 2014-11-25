@@ -115,6 +115,13 @@ Settings::initializeKnobs()
     _checkForUpdates->setAnimationEnabled(false);
     _checkForUpdates->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will check for new updates on start-up of the application.");
     _generalTab->addKnob(_checkForUpdates);
+    
+    _notifyOnFileChange = Natron::createKnob<Bool_Knob>(this, "Warn when a file changes externally");
+    _notifyOnFileChange->setName("warnOnExternalChange");
+    _notifyOnFileChange->setAnimationEnabled(false);
+    _notifyOnFileChange->setHintToolTip("When checked, if a file read from a file parameter changes externally, a warning will be displayed "
+                                        "on the viewer. Turning this off will suspend the notification system.");
+    _generalTab->addKnob(_notifyOnFileChange);
 
     _autoSaveDelay = Natron::createKnob<Int_Knob>(this, "Auto-save trigger delay");
     _autoSaveDelay->setName("autoSaveDelay");
@@ -728,6 +735,7 @@ Settings::setDefaultValues()
     _systemFontChoice->setDefaultValue(0);
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
     _checkForUpdates->setDefaultValue(false);
+    _notifyOnFileChange->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
@@ -2094,4 +2102,10 @@ Settings::getRenderScaleSupportPreference(const std::string& pluginID) const
         return found->second->getValue();
     }
     return -1;
+}
+
+bool
+Settings::notifyOnFileChange() const
+{
+    return _notifyOnFileChange->getValue();
 }

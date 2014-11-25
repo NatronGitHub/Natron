@@ -16,6 +16,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
+#include <QtCore/QDateTime>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -70,6 +71,8 @@ public slots:
     void onTextEdited() ;
     
     void onButtonClicked();
+    
+    void onReloadClicked();
 
     void open_file();
 
@@ -100,7 +103,9 @@ private:
 
     LineEdit *_lineEdit;
     Button *_openFileButton;
+    Button* _reloadButton;
     QString _lastOpened;
+    QDateTime _lastModified;
     QFileSystemWatcher* _watcher;
     std::string _fileBeingWatched;
     boost::shared_ptr<File_Knob> _knob;

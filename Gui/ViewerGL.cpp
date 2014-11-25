@@ -3712,17 +3712,19 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     if (!nodes.empty()) {
         ++next;
     }
+    int nbNonEmpty = 0;
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         QString mess;
         int nType;
         (*it)->getPersistentMessage(&mess, &nType);
         if (!mess.isEmpty()) {
             allMessages.append(mess);
+            ++nbNonEmpty;
         }
         if (next != nodes.rend()) {
             ++next;
         }
-        if (nodes.size() == 1 && nType == 2) {
+        if (nbNonEmpty == 1 && nType == 2) {
             type = 2;
         } else {
             type = 1;

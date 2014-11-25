@@ -213,6 +213,9 @@ public:
      **/
     int getRenderScaleSupportPreference(const std::string& pluginID) const;
     
+    
+    bool notifyOnFileChange() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -229,6 +232,7 @@ private:
     boost::shared_ptr<Choice_Knob> _systemFontChoice;
     boost::shared_ptr<Int_Knob> _fontSize;
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
+    boost::shared_ptr<Bool_Knob> _notifyOnFileChange;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Int_Knob> _numberOfThreads;
