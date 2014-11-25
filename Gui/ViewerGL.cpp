@@ -81,6 +81,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
 #define WIPE_ROTATE_OFFSET 30
 
+#define PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS 20
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -164,13 +165,13 @@ struct ViewerGL::Implementation
           , textRenderingColor(200,200,200,255)
           , displayWindowOverlayColor(125,125,125,255)
           , rodOverlayColor(100,100,100,255)
-          , textFont( new QFont(appFont,NATRON_FONT_SIZE_13) )
+          , textFont( new QFont(appFont,appFontSize) )
           , overlay(true)
           , supportsGLSL(true)
           , updatingTexture(false)
           , clearColor(0,0,0,255)
           , menu( new QMenu(_this) )
-          , persistentMessage()
+          , persistentMessages()
           , persistentMessageType(0)
           , displayPersistentMessage(false)
           , textRenderer()
@@ -256,7 +257,7 @@ struct ViewerGL::Implementation
     bool updatingTexture;
     QColor clearColor;
     QMenu* menu;
-    QString persistentMessage;
+    QStringList persistentMessages;
     int persistentMessageType;
     bool displayPersistentMessage;
     Natron::TextRenderer textRenderer;
@@ -1023,7 +1024,12 @@ ViewerGL::resizeGL(int width,
          !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
          ( ( oldWidth != width) || ( oldHeight != height) ) ) {
         viewer->renderCurrentFrame(true);
-        updateGL();
+        
+        if (!_imp->persistentMessages.empty()) {
+            updatePersistentMessageToWidth(width - 20);
+        } else {
+            updateGL();
+        }
     }
 }
 
@@ -1226,10 +1232,6 @@ ViewerGL::paintGL()
             drawOverlay(_imp->displayingImageMipMapLevel);
         }
         
-        if (_imp->displayPersistentMessage) {
-            drawPersistentMessage();
-        }
-        
         if (_imp->ms == eMouseStateSelecting) {
             _imp->drawSelectionRectangle();
         }
@@ -1387,6 +1389,10 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
+    
+    if (_imp->displayPersistentMessage) {
+        drawPersistentMessage();
+    }
 } // drawOverlay
 
 void
@@ -1746,6 +1752,98 @@ ViewerGL::drawPickerPixel()
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 }
 
+namespace {
+
+    
+static QStringList explode(const QString& str)
+{
+    QRegExp rx("(\\ |\\-|\\.|\\/|\\t|\\n)"); //RegEx for ' ' '/' '.' '-' '\t' '\n'
+
+    QStringList ret;
+    int startIndex = 0;
+    while (true) {
+        int index = str.indexOf(rx, startIndex);
+        
+        if (index == -1) {
+            ret.push_back(str.mid(startIndex));
+            return ret;
+        }
+        
+        QString word = str.mid(startIndex, index - startIndex);
+        
+        const QChar& nextChar = str[index];
+        
+        // Dashes and the likes should stick to the word occuring before it. Whitespace doesn't have to.
+        if (nextChar.isSpace()) {
+            ret.push_back(word);
+            ret.push_back(nextChar);
+        } else {
+            ret.push_back(word + nextChar);
+        }
+        
+        startIndex = index + 1;
+    }
+    return ret;
+}
+    
+static QStringList wordWrap(const QFontMetrics& fm,const QString& str, int width)
+{
+    QStringList words = explode(str);
+    
+    int curLineLength = 0;
+
+    QStringList stringL;
+    QString curString;
+    
+    for(int i = 0; i < words.size(); ++i) {
+        
+        QString word = words[i];
+        int wordPixels = fm.width(word);
+        
+        // If adding the new word to the current line would be too long,
+        // then put it on a new line (and split it up if it's too long).
+        if (curLineLength + wordPixels > width) {
+            // Only move down to a new line if we have text on the current line.
+            // Avoids situation where wrapped whitespace causes emptylines in text.
+            if (curLineLength > 0) {
+                if (!curString.isEmpty()) {
+                    stringL.push_back(curString);
+                    curString.clear();
+                }
+                //tmp.append('\n');
+                curLineLength = 0;
+            }
+            
+            // If the current word is too long to fit on a line even on it's own then
+            // split the word up.
+            while (wordPixels > width) {
+                
+                curString.clear();
+                curString.append(word.mid(0, width - 1));
+                word = word.mid(width - 1);
+                
+                if (!curString.isEmpty()) {
+                    stringL.push_back(curString);
+                    curString.clear();
+                }
+                //tmp.append('\n');
+            }
+            
+            // Remove leading whitespace from the word so the new line starts flush to the left.
+            word = word.trimmed();
+            
+        }
+        curString.append(word);
+        curLineLength += wordPixels;
+    }
+    if (!curString.isEmpty()) {
+        stringL.push_back(curString);
+    }
+    return stringL;
+}
+
+}
+
 void
 ViewerGL::drawPersistentMessage()
 {
@@ -1753,48 +1851,21 @@ ViewerGL::drawPersistentMessage()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    QFontMetrics metrics( font() );
-    int numberOfLines = std::ceil( (double)metrics.width(_imp->persistentMessage) / (double)(width() - 20) );
-    int averageCharsPerLine = numberOfLines != 0 ? _imp->persistentMessage.size() / numberOfLines : _imp->persistentMessage.size();
-    QStringList lines;
-    int i = 0;
-    QString message = _imp->persistentMessage;
-    while (!message.isEmpty()) {
-        QString str;
-        while ( i < message.size() ) {
-            if ( (i % averageCharsPerLine == 0) && (i != 0) ) {
-                break;
-            }
-            str.append( message.at(i) );
-            ++i;
-        }
-        
-        if (i < message.size()) {
-            int originalIndex = i;
-            /*Find closest word before and insert a new line*/
-            while ( i >= 0 && message.at(i) != QChar(' ') && message.at(i) != QChar('\t') &&
-                   message.at(i) != QChar('\n')) {
-                --i;
-            }
-            if (i >= 0) {
-                str.remove(i, str.size() - originalIndex);
-            }
-        }
-        message.remove(0, str.size());
-        lines.append(str);
-        i = 0;
-    }
+    QFontMetrics metrics( *_imp->textFont );
 
-    int offset = metrics.height() + 10;
-    QPointF topLeft, bottomRight, textPos;
-    double zoomScreenPixelHeight;
+    int offset =  10;
+    double metricsHeightZoomCoord;
+    QPointF topLeft, bottomRight,offsetZoomCoord;
+    
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         topLeft = _imp->zoomCtx.toZoomCoordinates(0,0);
-        bottomRight = _imp->zoomCtx.toZoomCoordinates( _imp->zoomCtx.screenWidth(),numberOfLines * (metrics.height() * 2) );
-        textPos = _imp->zoomCtx.toZoomCoordinates(20, offset);
-        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
+        bottomRight = _imp->zoomCtx.toZoomCoordinates( _imp->zoomCtx.screenWidth(),_imp->persistentMessages.size() * (metrics.height() + offset) );
+        offsetZoomCoord = _imp->zoomCtx.toZoomCoordinates(PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS, offset);
+        metricsHeightZoomCoord = topLeft.y() - _imp->zoomCtx.toZoomCoordinates(0, metrics.height()).y();
     }
+    offsetZoomCoord.ry() = topLeft.y() - offsetZoomCoord.y();
+    QPointF textPos(offsetZoomCoord.x(),  topLeft.y() - (offsetZoomCoord.y() / 2.) - metricsHeightZoomCoord);
     
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1814,9 +1885,9 @@ ViewerGL::drawPersistentMessage()
         glEnd();
 
 
-        for (int j = 0; j < lines.size(); ++j) {
-            renderText(textPos.x(),textPos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
-            textPos.setY(textPos.y() - metrics.height() * 2 * zoomScreenPixelHeight);
+        for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
+            renderText(textPos.x(),textPos.y(), _imp->persistentMessages.at(j),_imp->textRenderingColor,*_imp->textFont);
+            textPos.setY(textPos.y() - (metricsHeightZoomCoord + offsetZoomCoord.y()));/*metrics.height() * 2 * zoomScreenPixelHeight*/
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -3620,34 +3691,62 @@ ViewerGL::renderText(double x,
 }
 
 void
-ViewerGL::setPersistentMessage(int type,
-                               const QString & message)
+ViewerGL::updatePersistentMessageToWidth(int w)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    if (!_imp->viewerTab || !_imp->viewerTab->getGui()) {
+        return;
+    }
+    
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    _imp->viewerTab->getGui()->getNodesEntitledForOverlays(nodes);
+    
+    _imp->persistentMessages.clear();
+    QStringList allMessages;
+    
+    int type = 0;
+    ///Draw overlays in reverse order of appearance
+    std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator next = nodes.rbegin();
+    if (!nodes.empty()) {
+        ++next;
+    }
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        QString mess;
+        int nType;
+        (*it)->getPersistentMessage(&mess, &nType);
+        if (!mess.isEmpty()) {
+            allMessages.append(mess);
+        }
+        if (next != nodes.rend()) {
+            ++next;
+        }
+        if (nodes.size() == 1 && nType == 2) {
+            type = 2;
+        } else {
+            type = 1;
+        }
+    }
     _imp->persistentMessageType = type;
-    _imp->persistentMessage = message;
-    _imp->displayPersistentMessage = true;
+    
+    QFontMetrics fm(*_imp->textFont);
+    
+    for (int i = 0; i < allMessages.size(); ++i) {
+        QStringList wordWrapped = wordWrap(fm,allMessages[i], w - PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS);
+        for (int j = 0; j < wordWrapped.size(); ++j) {
+            _imp->persistentMessages.push_back(wordWrapped[j]);
+        }
+    }
+    
+    _imp->displayPersistentMessage = !_imp->persistentMessages.isEmpty();
     updateGL();
-}
-
-const QString &
-ViewerGL::getCurrentPersistentMessage() const
-{
-    return _imp->persistentMessage;
 }
 
 void
-ViewerGL::clearPersistentMessage()
+ViewerGL::updatePersistentMessage()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (!_imp->displayPersistentMessage) {
-        return;
-    }
-    _imp->persistentMessage.clear();
-    _imp->displayPersistentMessage = false;
-    updateGL();
+    updatePersistentMessageToWidth(width() - 20);
 }
 
 void

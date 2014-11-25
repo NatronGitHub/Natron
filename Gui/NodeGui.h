@@ -303,9 +303,11 @@ public:
      * not be visible and would just clutter and slow down the interface
      **/
     void setVisibleDetails(bool visible);
-    
+        
 public slots:
 
+    void onSettingsPanelClosed(bool closed);
+    
     void setDefaultGradientColor(const QColor & color);
 
     void togglePreview();
@@ -334,9 +336,7 @@ public slots:
 
     void onInternalNameChanged(const QString &);
 
-    void onPersistentMessageChanged(int type,const QString & message);
-
-    void onPersistentMessageCleared();
+    void onPersistentMessageChanged();
 
     void refreshEdges();
 
@@ -458,8 +458,6 @@ private:
     /*A pointer to the preview pixmap displayed for readers/*/
     QGraphicsPixmapItem* _previewPixmap;
     QGraphicsTextItem* _persistentMessage;
-    QString _lastPersistentMessage;
-    int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
     bool _mergeHintActive;
     NodeGuiIndicator* _bitDepthWarning;

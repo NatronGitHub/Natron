@@ -2647,7 +2647,6 @@ ViewerTab::onInputChanged(int inputNb)
             _imp->_inputNamesMap.erase(found);
         }
     }
-    _imp->viewer->clearPersistentMessage();
 }
 
 void
