@@ -726,7 +726,7 @@ Settings::setDefaultValues()
     _natronSettingsExist->setDefaultValue(false);
     _fontChoice->setDefaultValue(0);
     _systemFontChoice->setDefaultValue(0);
-    _fontSize->setDefaultValue(NATRON_FONT_SIZE_11);
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
     _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
