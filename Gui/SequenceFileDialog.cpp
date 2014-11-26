@@ -269,7 +269,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
     _lookInCombobox->setDuplicatesEnabled(false);
 
-    _lookInCombobox->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
+   // _lookInCombobox->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
 
     _buttonsLayout->addStretch();
 
@@ -2503,11 +2503,34 @@ FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,QWidget *parent)
 : QComboBox(parent)
 , urlModel(new UrlModel(this))
 , dialog(p)
+, doResize(false)
 {
     urlModel->setFileSystemModel( p->getLookingFileSystemModel() );
     setModel(urlModel);
+    QObject::connect(this, SIGNAL(currentIndexChanged(int)), this , SLOT(onCurrentIndexChanged(int)));
 }
 
+void
+FileDialogComboBox::onCurrentIndexChanged(int index)
+{
+    if (doResize && index >= 0 && index < count()) {
+        updateGeometry();
+        doResize = false;
+    }
+}
+
+QSize
+FileDialogComboBox::sizeHint() const
+{
+    int index = currentIndex();
+    if (index >= 0 && index < count()) {
+        QFontMetrics fm = fontMetrics();
+        QString txt = itemText(index);
+        int w = fm.width(txt);
+        return QSize(w + 10, fm.height() * 1.5);
+    }
+    return QComboBox::sizeHint();
+}
 
 void
 FileDialogComboBox::showPopup()
@@ -2515,7 +2538,6 @@ FileDialogComboBox::showPopup()
     if (model()->rowCount() > 1) {
         QComboBox::showPopup();
     }
-
     urlModel->setUrls( std::vector<QUrl>() );
     std::vector<QUrl> list;
     QModelIndex idx = dialog->getFileSystemModel()->index( dialog->rootPath() );
@@ -2557,7 +2579,8 @@ FileDialogComboBox::showPopup()
         urlModel->addUrls(stdUrls, -1);
     }
     setCurrentIndex(0);
-
+    
+    doResize = true;
     QComboBox::showPopup();
 } // showPopup
 
