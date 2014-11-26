@@ -94,7 +94,14 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
 QSize
 ScaleSliderQWidget::sizeHint() const
 {
-    return QSize(150,20);
+    return QWidget::sizeHint();
+   
+}
+
+QSize
+ScaleSliderQWidget::minimumSizeHint() const
+{
+   return QSize(150,20); 
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()

@@ -110,6 +110,7 @@ Int_KnobGui::~Int_KnobGui()
 void
 Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     int dim = _knob->getDimension();
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
@@ -136,6 +137,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget( layout->parentWidget() );
+        boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -725,6 +727,7 @@ Double_KnobGui::~Double_KnobGui()
 void
 Double_KnobGui::createWidget(QHBoxLayout* layout)
 {
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
 
@@ -752,6 +755,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget( layout->parentWidget() );
+        boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -1501,14 +1505,14 @@ Color_KnobGui::~Color_KnobGui()
 void
 Color_KnobGui::createWidget(QHBoxLayout* layout)
 {
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     mainContainer = new QWidget( layout->parentWidget() );
     mainLayout = new QHBoxLayout(mainContainer);
-    mainContainer->setLayout(mainLayout);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     boxContainers = new QWidget(mainContainer);
+    boxContainers->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     boxLayout = new QHBoxLayout(boxContainers);
-    boxContainers->setLayout(boxLayout);
     boxLayout->setContentsMargins(0, 0, 0, 0);
     boxLayout->setSpacing(1);
 
@@ -1662,7 +1666,6 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     }
     _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    boxLayout->addWidget(_slider);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
     _slider->hide();
 
@@ -1711,6 +1714,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->addWidget(_dimensionSwitchButton);
 
     mainLayout->addWidget(boxContainers);
+    mainLayout->addWidget(_slider);
     mainLayout->addWidget(colorContainer);
 
     layout->addWidget(mainContainer);
