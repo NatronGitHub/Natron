@@ -924,9 +924,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1144,9 +1142,7 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
