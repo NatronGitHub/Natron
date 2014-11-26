@@ -69,7 +69,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 
     _panel->initializeKnobs();
 
-    resize(700, 400);
+    resize(900, 600);
 }
 
 void

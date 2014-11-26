@@ -63,7 +63,7 @@ public:
                  DockablePanel *container);
 
     virtual ~File_KnobGui() OVERRIDE;
-
+    
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
@@ -88,7 +88,7 @@ public slots:
 private:
     
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -150,7 +150,7 @@ public slots:
 private:
     
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-    
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -215,7 +215,7 @@ public slots:
 
 private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

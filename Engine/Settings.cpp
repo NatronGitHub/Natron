@@ -192,6 +192,7 @@ Settings::initializeKnobs()
                                        "for an effect.");
     
     _nThreadsPerEffect->setMinimum(0);
+    _nThreadsPerEffect->disableSlider();
     _generalTab->addKnob(_nThreadsPerEffect);
 
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");

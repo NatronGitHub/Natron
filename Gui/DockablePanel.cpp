@@ -18,7 +18,7 @@
 #include <QTabWidget>
 #include <QStyle>
 #include <QUndoStack>
-#include <QFormLayout>
+#include <QGridLayout>
 #include <QUndoCommand>
 #include <QDebug>
 #include <QToolTip>
@@ -653,6 +653,8 @@ DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<Kno
     ///add all knobs left  to the default page
 
     RotoPanel* roto = initializeRotoPanel();
+    
+    
     if (roto) {
         PageMap::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
         ///the top level parent is not a page, i.e the plug-in didn't specify any page
@@ -681,17 +683,19 @@ DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<Kno
         }
 
         assert( parentTab != _imp->_pages.end() );
-        QFormLayout* layout;
+        
+        QGridLayout* layout = 0;
         if (_imp->_useScrollAreasForTabs) {
-            layout = dynamic_cast<QFormLayout*>( dynamic_cast<QScrollArea*>(parentTab->second.tab)->widget()->layout() );
+            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(parentTab->second.tab)->widget()->layout() );
         } else {
-            layout = dynamic_cast<QFormLayout*>( parentTab->second.tab->layout() );
+            layout = dynamic_cast<QGridLayout*>( parentTab->second.tab->layout() );
         }
         assert(layout);
-        layout->addRow(roto);
+        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
     }
 
     initializeExtraGui(_imp->_mainLayout);
+    
 }
 
 void
@@ -827,12 +831,12 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             assert( page != _pages.end() );
 
             ///retrieve the form layout
-            QFormLayout* layout;
+            QGridLayout* layout;
             if (_useScrollAreasForTabs) {
-                layout = dynamic_cast<QFormLayout*>(
+                layout = dynamic_cast<QGridLayout*>(
                     dynamic_cast<QScrollArea*>(page->second.tab)->widget()->layout() );
             } else {
-                layout = dynamic_cast<QFormLayout*>( page->second.tab->layout() );
+                layout = dynamic_cast<QGridLayout*>( page->second.tab->layout() );
             }
             assert(layout);
 
@@ -853,7 +857,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 fieldLayout = new QHBoxLayout(fieldContainer);
                 fieldLayout->setContentsMargins(3,0,0,NATRON_SETTINGS_VERTICAL_SPACING_PIXELS);
                 fieldLayout->setSpacing(2);
-                fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+                //fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
             } else {
                 ///otherwise re-use the last row's widget and layout
                 assert(lastRowWidget);
@@ -865,9 +869,10 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             }
             assert(fieldContainer);
             assert(fieldLayout);
-            ClickableLabel* label = new ClickableLabel("",page->second.tab);
+            ClickableLabel* label = 0;
             
-            if (ret->showDescriptionLabel() && !knob->getDescription().empty() && label) {
+            if (ret->showDescriptionLabel() && !knob->getDescription().empty()) {
+                label = new ClickableLabel("",page->second.tab);
                 label->setText_overload( QString(QString( ret->getKnob()->getDescription().c_str() ) + ":") );
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             }
@@ -882,42 +887,36 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     QHBoxLayout* frameLayout = new QHBoxLayout(frame);
                     page->second.tabWidget = new QTabWidget(frame);
                     frameLayout->addWidget(page->second.tabWidget);
-                    layout->addRow(frame);
+                    layout->addWidget(frame, page->second.currentRow, 0, 1, 2);
                 }
                 QString parentTabName( parentIsGroup->getDescription().c_str() );
 
                 ///now check if the tab exists
                 QWidget* tab = 0;
-                QFormLayout* tabLayout = 0;
+                QGridLayout* tabLayout = 0;
                 for (int i = 0; i < page->second.tabWidget->count(); ++i) {
                     if (page->second.tabWidget->tabText(i) == parentTabName) {
                         tab = page->second.tabWidget->widget(i);
-                        tabLayout = qobject_cast<QFormLayout*>( tab->layout() );
+                        tabLayout = qobject_cast<QGridLayout*>( tab->layout() );
                         break;
                     }
                 }
 
                 if (!tab) {
                     tab = new QWidget(page->second.tabWidget);
-                    tabLayout = new QFormLayout(tab);
+                    tabLayout = new QGridLayout(tab);
+                    tabLayout->setColumnStretch(1, 1);
                     tabLayout->setContentsMargins(0, 0, 0, 0);
                     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
-
+                
                 ret->createGUI(tabLayout,fieldContainer,label,fieldLayout,page->second.currentRow,makeNewLine,knobsOnSameLine);
             } else {
                 ///fill the fieldLayout with the widgets
                 ret->createGUI(layout,fieldContainer,label,fieldLayout,page->second.currentRow,makeNewLine,knobsOnSameLine);
             }
             
-            //layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            ///FIXME: QFormLayout seems to ignore royally the alignment between the label and the field.
-            ///The only way to have both the label and the field at the same height is to hardcode the height of the label...
-            //int labelHeight =  20;//fieldContainer->sizeHint().height();
-            //label->setFixedHeight(labelHeight);
-            
-
 
             ///increment the row count
             ++page->second.currentRow;
@@ -999,6 +998,7 @@ DockablePanelPrivate::addPage(const QString & name)
     if (_useScrollAreasForTabs) {
         QScrollArea* sa = new QScrollArea(_tabWidget);
         layoutContainer = new QWidget(sa);
+        layoutContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
         sa->setWidgetResizable(true);
         sa->setWidget(layoutContainer);
         newTab = sa;
@@ -1009,15 +1009,12 @@ DockablePanelPrivate::addPage(const QString & name)
         newTab = clickableWidget;
         layoutContainer = newTab;
     }
-    QFormLayout *tabLayout = new QFormLayout(layoutContainer);
+    QGridLayout *tabLayout = new QGridLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
     tabLayout->setContentsMargins(3, 0, 0, 0);
+    tabLayout->setColumnStretch(1, 1);
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
-    tabLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    tabLayout->setAlignment(Qt::AlignVCenter);
-    tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     _tabWidget->addTab(newTab,name);
     Page p;
     p.tab = newTab;

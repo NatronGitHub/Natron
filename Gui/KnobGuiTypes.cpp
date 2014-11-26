@@ -110,7 +110,7 @@ Int_KnobGui::~Int_KnobGui()
 void
 Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    
     int dim = _knob->getDimension();
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
@@ -124,6 +124,10 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         _knob->disableSlider();
     }
 
+    if (!_knob->isSliderDisabled()) {
+        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    }
+    
     //  const std::vector<int> &maximums = intKnob->getMaximums();
     //    const std::vector<int> &minimums = intKnob->getMinimums();
     const std::vector<int> &increments = _knob->getIncrements();
@@ -201,6 +205,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
+        _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);
         
@@ -264,6 +269,12 @@ Int_KnobGui::onDimensionSwitchClicked()
         }
     }
     
+}
+
+bool
+Int_KnobGui::shouldAddStretch() const
+{
+    return _knob->isSliderDisabled();
 }
 
 void
@@ -693,6 +704,12 @@ Double_KnobGui::valueAccordingToType(bool normalize,
     }
 }
 
+bool
+Double_KnobGui::shouldAddStretch() const
+{
+    return _knob->isSliderDisabled();
+}
+
 Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
 : KnobGui(knob, container)
@@ -738,6 +755,10 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
 
     if (getKnobsCountOnSameLine() > 1) {
         _knob->disableSlider();
+    }
+    
+    if (!_knob->isSliderDisabled()) {
+        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
 
     int dim = getKnob()->getDimension();
@@ -842,6 +863,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     if (dim > 1 && !_knob->isSliderDisabled() ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);
@@ -1694,6 +1716,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
     _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
     _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
+    _dimensionSwitchButton->setFixedSize(17, 17);
     _dimensionSwitchButton->setCheckable(true);
 
     bool enableAllDimensions = false;

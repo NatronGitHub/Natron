@@ -456,10 +456,12 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
-            const std::map<int,OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            for (std::map<int,OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                if (it2->second == instance) {
-                    OfxParamToKnob* paramToKnob = dynamic_cast<OfxParamToKnob*>(it2->second);
+            
+            int nChildren = isPage->getProperties().getDimension(kOfxParamPropPageChild);
+            for(int i = 0; i < nChildren; ++i) {
+                std::string childName = isPage->getProperties().getStringProperty(kOfxParamPropPageChild,i);
+                if (childName == descriptor.getName()) {
+                    OfxParamToKnob* paramToKnob = dynamic_cast<OfxParamToKnob*>(isPage);
                     assert(paramToKnob);
                     parentPage = dynamic_cast<Page_Knob*>(paramToKnob->getKnob().get());
                     assert(parentPage);
