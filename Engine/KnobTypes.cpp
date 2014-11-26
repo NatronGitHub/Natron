@@ -923,7 +923,7 @@ Page_Knob::typeName() const
 }
 
 void
-Page_Knob::addKnob(boost::shared_ptr<KnobI> k)
+Page_Knob::addKnob(const boost::shared_ptr<KnobI> &k)
 {
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     

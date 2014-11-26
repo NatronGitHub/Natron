@@ -142,7 +142,11 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainerLayout->setSpacing(3);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(QString( _knob->getDimensionName(i).c_str() ) + ':', boxContainer);
+            std::string dimLabel = getKnob()->getDimensionName(i);
+            if (!dimLabel.empty()) {
+                dimLabel.append(":");
+            }
+            subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
@@ -180,6 +184,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
+        _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
@@ -753,13 +758,17 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainerLayout->setSpacing(3);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(QString( getKnob()->getDimensionName(i).c_str() ) + ':', boxContainer);
+            std::string dimLabel = getKnob()->getDimensionName(i);
+            if (!dimLabel.empty()) {
+                dimLabel.append(":");
+            }
+            subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
-
+        
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(box,i);
 
@@ -813,6 +822,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
+        _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
@@ -1414,6 +1424,7 @@ Separator_KnobGui::createWidget(QHBoxLayout* layout)
 {
     ///FIXME: this line is never visible.
     _line = new QFrame( layout->parentWidget() );
+    _line->setFixedHeight(2);
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
     _line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -1537,7 +1548,11 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     
     QFont font(appFont,appFontSize);
     
-    _rLabel = new QLabel(QString(QString(_knob->getDimensionName(0).c_str()) + ":").toLower(), boxContainers);
+    std::string dimLabel = _knob->getDimensionName(0);
+    if (!dimLabel.empty()) {
+        dimLabel.append(":");
+    }
+    _rLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
     _rLabel->setFont(font);
     if ( hasToolTip() ) {
         _rLabel->setToolTip( toolTip() );
@@ -1561,7 +1576,13 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _gBox->setToolTip( toolTip() );
         }
-        _gLabel = new QLabel(QString(QString(_knob->getDimensionName(1).c_str()) + ":").toLower(), boxContainers);
+        
+        dimLabel = _knob->getDimensionName(1);
+        if (!dimLabel.empty()) {
+            dimLabel.append(":");
+        }
+
+        _gLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
         _gLabel->setFont(font);
         if ( hasToolTip() ) {
             _gLabel->setToolTip( toolTip() );
@@ -1584,7 +1605,13 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _bBox->setToolTip( toolTip() );
         }
-        _bLabel = new QLabel(QString(QString(_knob->getDimensionName(2).c_str()) + ":").toLower(), boxContainers);
+        
+        dimLabel = _knob->getDimensionName(2);
+        if (!dimLabel.empty()) {
+            dimLabel.append(":");
+        }
+
+        _bLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
         _bLabel->setFont(font);
         if ( hasToolTip() ) {
             _bLabel->setToolTip( toolTip() );
@@ -1608,7 +1635,13 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _aBox->setToolTip( toolTip() );
         }
-        _aLabel = new QLabel(QString(QString(_knob->getDimensionName(3).c_str()) + ":").toLower(), boxContainers);
+        
+        dimLabel = _knob->getDimensionName(3);
+        if (!dimLabel.empty()) {
+            dimLabel.append(":");
+        }
+
+        _aLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
         _aLabel->setFont(font);
         if ( hasToolTip() ) {
             _aLabel->setToolTip( toolTip() );
@@ -1628,6 +1661,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         slidermax = 1.;
     }
     _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::eScaleTypeLinear, boxContainers);
+    _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     boxLayout->addWidget(_slider);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
     _slider->hide();
