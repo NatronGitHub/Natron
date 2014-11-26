@@ -199,6 +199,30 @@ Project::loadProjectInternal(const QString & path,
         std::string loadMessage = tr("Loading ").toStdString() + projName + " ...";
         getApp()->startProgress(this, loadMessage, false);
     }
+    
+    if (NATRON_VERSION_MAJOR == 1 && NATRON_VERSION_MINOR == 0 && NATRON_VERSION_REVISION == 0) {
+        
+        ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
+        ///in the BezierCP class serialisation
+        bool foundV = false;
+        QFile f(filePath);
+        f.open(QIODevice::ReadOnly);
+        QTextStream fs(&f);
+        while (!fs.atEnd()) {
+            
+            QString line = fs.readLine();
+
+            if (line.indexOf("Natron v1.0.0 RC2") != -1 || line.indexOf("Natron v1.0.0 RC3") != -1) {
+                appPTR->setProjectCreatedDuringRC2Or3(true);
+                foundV = true;
+                break;
+            }
+        }
+        if (!foundV) {
+            appPTR->setProjectCreatedDuringRC2Or3(false);
+        }
+    }
+    
     try {
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
