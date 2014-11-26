@@ -130,10 +130,12 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                     if (projectKnobs[i]->getName() == "softwareVersion") {
                         foundNatronV = true;
                         std::string natronV = natronVersion->getValue();
-                        if (natronV.find("1.0.0") != std::string::npos && natronV.find("RC3") == std::string::npos) {
-                            appPTR->setProjectCreatedPriorToRC3(true);
+                        if (natronV.find("1.0.0") != std::string::npos
+                            && (natronV.find("RC3") == std::string::npos &&
+                                natronV.find("RC2") == std::string::npos)) {
+                            appPTR->setProjectCreatedDuringRC2Or3(true);
                         } else {
-                            appPTR->setProjectCreatedPriorToRC3(false);
+                            appPTR->setProjectCreatedDuringRC2Or3(false);
                         }
                     }
                 }
@@ -153,7 +155,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     }
     if (!foundNatronV) {
-        appPTR->setProjectCreatedPriorToRC3(true);
+        appPTR->setProjectCreatedDuringRC2Or3(true);
     }
 
     /// 2) restore the timeline
