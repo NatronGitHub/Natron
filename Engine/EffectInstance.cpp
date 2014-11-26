@@ -571,11 +571,13 @@ EffectInstance::setParallelRenderArgs(int time,
                                       bool isSequential,
                                       bool canAbort,
                                       U64 nodeHash,
-                                      U64 rotoAge)
+                                      U64 rotoAge,
+                                      const TimeLine* timeline)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     
     args.time = time;
+    args.timeline = timeline;
     args.view = view;
     args.isRenderResponseToUserInteraction = isRenderUserInteraction;
     args.isSequentialRender = isSequential;
@@ -654,7 +656,7 @@ EffectInstance::aborted() const
                 if (args.canAbort) {
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     return args.nodeHash != getHash() ||
-                    args.time != getApp()->getTimeLine()->currentFrame();
+                    args.time != args.timeline->currentFrame();
                 } else {
                     return false;
                 }
@@ -2774,7 +2776,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                                   frameArgs.isRenderResponseToUserInteraction,
                                                                   frameArgs.isSequentialRender,
                                                                   frameArgs.canAbort,
-                                                                  frameArgs.nodeHash) );
+                                                                  frameArgs.nodeHash,
+                                                                  frameArgs.timeline) );
     }
     if ( renderRectToRender.isNull() ) {
         ///We've got nothing to do
@@ -3682,7 +3685,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                        true,
                                                        false,
                                                        false,
-                                                       getHash());
+                                                       getHash(),
+                                                       getApp()->getTimeLine().get());
 
         RECURSIVE_ACTION();
         knobChanged(k, reason, /*view*/ 0, time);

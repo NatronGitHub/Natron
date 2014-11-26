@@ -43,6 +43,7 @@ class NodeSettingsPanel;
 class KnobI;
 class ViewerInstance;
 class Format;
+class TimeLine;
 class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
@@ -684,7 +685,8 @@ public:
                                bool isRenderUserInteraction,
                                bool isSequential,
                                bool canAbort,
-                               U64 nodeHash);
+                               U64 nodeHash,
+                               const TimeLine* timeline);
     
     void invalidateParallelRenderArgs();
     
@@ -693,16 +695,17 @@ public:
         Node* node;
     public:
         
-        ParallelRenderArgsSetter(Node* node,
+        ParallelRenderArgsSetter(Node* n,
                                  int time,
                                  int view,
                                  bool isRenderUserInteraction,
                                  bool isSequential,
                                  bool canAbort,
-                                 U64 nodeHash)
-        : node(node)
+                                 U64 nodeHash,
+                                 const TimeLine* timeline)
+        : node(n)
         {
-            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash);
+            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,timeline);
         }
         
         ~ParallelRenderArgsSetter()
@@ -850,6 +853,7 @@ private:
                                        bool isSequential,
                                        U64 nodeHash,
                                        bool canAbort,
+                                       const TimeLine* timeline,
                                        std::list<Natron::Node*>& markedNodes);
     
 

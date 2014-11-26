@@ -859,7 +859,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                                    true,
                                                    false,
                                                    false,
-                                                   getHash());
+                                                   getHash(),
+                                                   getApp()->getTimeLine().get());
     
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
     

@@ -1834,7 +1834,8 @@ private:
                                                                    false,  // is this render due to user interaction ?
                                                                    canOnlyHandleOneView, // is this sequential ?
                                                                    true,
-                                                                   activeInputToRenderHash);
+                                                                   activeInputToRenderHash,
+                                                                   _imp->output->getApp()->getTimeLine().get());
                     
                     boost::shared_ptr<Natron::Image> img =
                     activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
@@ -1912,7 +1913,8 @@ DefaultScheduler::treatFrame(const BufferedFrame& frame)
                                                    false,  // is this render due to user interaction ?
                                                    canOnlyHandleOneView, // is this sequential ?
                                                    true,
-                                                   hash);
+                                                   hash,
+                                                   _effect->getApp()->getTimeLine().get());
     
     
     Natron::EffectInstance::RenderRoIArgs args(frame.time,

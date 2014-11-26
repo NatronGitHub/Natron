@@ -24,6 +24,7 @@
 
 class Hash64;
 class Format;
+class TimeLine;
 class OverlaySupport;
 class PluginMemory;
 class BlockingBackgroundRender;
@@ -45,6 +46,9 @@ struct ParallelRenderArgs
     ///which are local to a renderRoI call whilst this is local
     ///to a frame being rendered by the tree.
     int time;
+    
+    ///To check the current time on the timeline
+    const TimeLine* timeline;
     
     ///The initial view requested to render.
     ///This may be different than the view held in RenderArgs
@@ -72,7 +76,12 @@ struct ParallelRenderArgs
     bool canAbort;
     
     ParallelRenderArgs()
-    : validArgs(false)
+    : time(0)
+    , timeline(0)
+    , view(0)
+    , nodeHash(0)
+    , rotoAge(0)
+    , validArgs(false)
     {
         
     }
@@ -470,7 +479,8 @@ public:
                                bool isSequential,
                                bool canAbort,
                                U64 nodeHash,
-                               U64 rotoAge);
+                               U64 rotoAge,
+                               const TimeLine* timeline);
 
     void invalidateParallelRenderArgs();
 
