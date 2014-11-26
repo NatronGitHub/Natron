@@ -1536,7 +1536,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     }
     
     QFont font(appFont,appFontSize);
-    _rLabel = new QLabel(QString( _knob->getDimensionName(0).c_str() + ':').toLower(), boxContainers);
+    
+    _rLabel = new QLabel(QString(QString(_knob->getDimensionName(0).c_str()) + ":").toLower(), boxContainers);
     _rLabel->setFont(font);
     if ( hasToolTip() ) {
         _rLabel->setToolTip( toolTip() );
@@ -1560,7 +1561,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _gBox->setToolTip( toolTip() );
         }
-        _gLabel = new QLabel(QString( _knob->getDimensionName(1).c_str() + ':').toLower(), boxContainers);
+        _gLabel = new QLabel(QString(QString(_knob->getDimensionName(1).c_str()) + ":").toLower(), boxContainers);
         _gLabel->setFont(font);
         if ( hasToolTip() ) {
             _gLabel->setToolTip( toolTip() );
@@ -1583,7 +1584,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _bBox->setToolTip( toolTip() );
         }
-        _bLabel = new QLabel(QString( _knob->getDimensionName(2).c_str() + ':').toLower(), boxContainers);
+        _bLabel = new QLabel(QString(QString(_knob->getDimensionName(2).c_str()) + ":").toLower(), boxContainers);
         _bLabel->setFont(font);
         if ( hasToolTip() ) {
             _bLabel->setToolTip( toolTip() );
@@ -1607,7 +1608,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _aBox->setToolTip( toolTip() );
         }
-        _aLabel = new QLabel(QString( _knob->getDimensionName(3).c_str() + ':' ).toLower(), boxContainers);
+        _aLabel = new QLabel(QString(QString(_knob->getDimensionName(3).c_str()) + ":").toLower(), boxContainers);
         _aLabel->setFont(font);
         if ( hasToolTip() ) {
             _aLabel->setToolTip( toolTip() );
