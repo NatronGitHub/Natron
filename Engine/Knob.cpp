@@ -330,6 +330,10 @@ void
 KnobHelper::populate()
 {
     Color_Knob* isColor = dynamic_cast<Color_Knob*>(this);
+    Separator_Knob* isSep = dynamic_cast<Separator_Knob*>(this);
+    if (isSep) {
+        _imp->IsPersistant = false;
+    }
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
         _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
