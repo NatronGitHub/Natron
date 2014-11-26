@@ -450,11 +450,42 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
+    
+    Page_Knob* parentPage = 0;
+    const std::list<OFX::Host::Param::Instance*> & params = getParamList();
+    for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
+        OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
+        if (isPage) {
+            const std::map<int,OFX::Host::Param::Instance*>& children = isPage->getChildren();
+            for (std::map<int,OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+                if (it2->second == instance) {
+                    OfxParamToKnob* paramToKnob = dynamic_cast<OfxParamToKnob*>(it2->second);
+                    assert(paramToKnob);
+                    parentPage = dynamic_cast<Page_Knob*>(paramToKnob->getKnob().get());
+                    assert(parentPage);
+                    break;
+                }
+            }
+        }
+        if (parentPage) {
+            break;
+        }
+    }
+    if (parentPage) {
+        parentPage->addKnob(knob);
+    }
+    
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
-    if (layoutHint == 1) {
-        (void)Natron::createKnob<Separator_Knob>( getOfxEffectInstance(), knob->getDescription() );
-    } else if (layoutHint == 2) {
+    if (layoutHint == 2) {
         knob->turnOffNewLine();
+    } else if (layoutHint == 1 && parent.empty()) {
+        boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
+        sep->setName(knob->getName() + std::string("_separator"));
+        
+        if (parentPage) {
+            parentPage->addKnob(sep);
+        }
+    
     }
     knob->setOfxParamHandle( (void*)instance->getHandle() );
 
@@ -478,9 +509,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
     //for each params find their parents if any and add to the parent this param's knob
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
-        if (isPage) {
-            isPage->populatePage();
-        } else {
+        if (!isPage) {
+       
             std::map<OFX::Host::Param::Instance*,std::string>::const_iterator found = _parentingMap.find(*it);
 
             //the param has no parent
@@ -489,6 +519,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             }
 
             assert( !found->second.empty() );
+           
 
             //find the parent by name
             const std::map<std::string, OFX::Host::Param::Instance*> & paramsMap = getParams();
@@ -500,7 +531,17 @@ OfxImageEffectInstance::addParamsToTheirParents()
             //add the param's knob to the parent
             OfxParamToKnob* knobHolder = dynamic_cast<OfxParamToKnob*>(found->first);
             assert(knobHolder);
-            dynamic_cast<OfxGroupInstance*>(foundParent->second)->addKnob( knobHolder->getKnob() );
+            OfxGroupInstance* grp = dynamic_cast<OfxGroupInstance*>(foundParent->second);
+            grp->addKnob( knobHolder->getKnob() );
+            
+            
+            int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
+            if (layoutHint == 1) {
+                
+                boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
+                sep->setName((*it)->getName() + std::string("_separator"));
+                grp->addKnob(sep);
+            }
         }
     }
 }

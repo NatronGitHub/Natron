@@ -1427,8 +1427,10 @@ void
 Separator_KnobGui::createWidget(QHBoxLayout* layout)
 {
     ///FIXME: this line is never visible.
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
     _line = new QFrame( layout->parentWidget() );
     _line->setFixedHeight(2);
+    _line->setGeometry(0, 0, 300, 2);
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
     _line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
