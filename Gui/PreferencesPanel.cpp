@@ -116,7 +116,9 @@ void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
     if ( _settings->wereChangesMadeSinceLastSave() ) {
+        _settings->blockEvaluation();
         _settings->restoreSettings();
+        _settings->unblockEvaluation();
     }
 }
 
