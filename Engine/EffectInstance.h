@@ -652,15 +652,6 @@ public:
      **/
     virtual RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
 
-    /**
-     * @brief Can be derived to indicate that the data rendered by the plug-in is expensive
-     * and should be stored in a persistent manner such as on disk.
-     **/
-    virtual bool shouldRenderedDataBePersistent() const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
     bool aborted() const WARN_UNUSED_RETURN;
@@ -1236,7 +1227,31 @@ private:
                                           const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
                                           int transformInputNb,
                                           int newTransformedInputNb,
-                                          Natron::EffectInstance* transformRerouteInput);
+                                          Natron::EffectInstance* transformRerouteInput,
+                                          RoIMap* inputRoisParam,
+                                          std::list<boost::shared_ptr<Natron::Image> >* inputImagesParam);
+
+    bool renderInputImagesForRoI(SequenceTime time,
+                                 int view,
+                                 double par,
+                                 U64 nodeHash,
+                                 U64 rotoAge,
+                                 const RectD& rod,
+                                 const RectI& downscaledRenderWindow,
+                                 const RectD& canonicalRenderWindow,
+                                 const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
+                                 int transformInputNb,
+                                 int newTransformedInputNb,
+                                 Natron::EffectInstance* transformRerouteInput,
+                                 unsigned int mipMapLevel,
+                                 const RenderScale & scale,
+                                 const RenderScale& renderMappedScale,
+                                 bool useScaleOneInputImages,
+                                 bool byPassCache,
+                                 const FramesNeededMap& framesNeeded,
+                                 std::list< boost::shared_ptr<Natron::Image> > *inputImages,
+                                 RoIMap* inputsRoI);
+
 
     /**
      * @brief Check if Transform effects concatenation is possible on the current node and node upstream.

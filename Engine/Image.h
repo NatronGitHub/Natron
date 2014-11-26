@@ -138,6 +138,16 @@ namespace Natron {
                                                          ImageComponentsEnum components,
                                                          Natron::ImageBitDepthEnum bitdepth,
                                                          const std::map<int, std::vector<RangeD> > & framesNeeded);
+        
+        static boost::shared_ptr<ImageParams> makeParams(int cost,
+                                                         const RectD & rod,    // the image rod in canonical coordinates
+                                                         const RectI& bounds,
+                                                         const double par,
+                                                         unsigned int mipMapLevel,
+                                                         bool isRoDProjectFormat,
+                                                         ImageComponentsEnum components,
+                                                         Natron::ImageBitDepthEnum bitdepth,
+                                                         const std::map<int, std::vector<RangeD> > & framesNeeded);
 
 
 

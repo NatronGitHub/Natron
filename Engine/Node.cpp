@@ -2159,7 +2159,8 @@ Node::makePreviewImage(SequenceTime time,
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
+    U64 nodeHash = getHashValue();
+    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -2186,7 +2187,7 @@ Node::makePreviewImage(SequenceTime time,
                                              true,
                                              false,
                                              false,
-                                             getHashValue(),
+                                             nodeHash,
                                              getApp()->getTimeLine().get());
     
     // Exceptions are caught because the program can run without a preview,

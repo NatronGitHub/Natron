@@ -187,18 +187,11 @@ struct OutputSchedulerThreadPrivate
     
     ///Render threads wait in this condition and the scheduler wake them when it needs to render some frames
     QWaitCondition framesToRenderNotEmptyCond;
-    
 
     
     Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
     RenderEngine* engine;
-    
-    ///An approximation of the RAM required by 1 parallel render to compute a frame.
-    ///This is just the number of nodes in the tree times the size in RAM of an image of the size of the project.
-    ///Once we have the approximation we can determine what is the ideal number of parallel renders so we don't
-    ///hit the swap.
-    ///This is only accessed by the Scheduler Thread
-    std::size_t idealParallelRendersForRAM;
+
     
     OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::Mode mode)
     : buf()
@@ -240,7 +233,6 @@ struct OutputSchedulerThreadPrivate
     , framesToRenderNotEmptyCond()
     , outputEffect(effect)
     , engine(engine)
-    , idealParallelRendersForRAM(0)
     {
        
     }
@@ -780,41 +772,6 @@ OutputSchedulerThread::startRender()
         startingFrame = timelineGetTime();
     }
     
-    ///Evaluate the number of nodes in the tree to get an idea of the RAM required
-    {
-        int nbNodes = 0;
-        std::set<Natron::EffectInstance*> marked;
-        getNbNodesRecursive(_imp->outputEffect, &nbNodes, marked);
-        
-        Format f;
-        _imp->outputEffect->getRenderFormat(&f);
-        
-        ///The approximation is about nbNodes times the size of a RGBA 32bit fp frame of the size of the project.
-        std::size_t approximateRAMNeededFor1Frame = f.width() * f.height() * 4 * sizeof(float);
-        approximateRAMNeededFor1Frame *= nbNodes;
-        
-        
-        if (approximateRAMNeededFor1Frame > 0) {
-            
-            double maxRAMPercent = appPTR->getCurrentSettings()->getRamMaximumPercent();
-            double totalRAM = getSystemTotalRAM();
-            
-            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->outputEffect);
-            
-            double usableRAM = maxRAMPercent * totalRAM;
-            _imp->idealParallelRendersForRAM = (usableRAM / approximateRAMNeededFor1Frame);
-            
-            ///If the node is a viewer increase by 2 to max out the CPU, we don't need interactivity
-            if (!isViewer) {
-                _imp->idealParallelRendersForRAM *= 2;
-            }
-            
-            
-        } else {
-            _imp->idealParallelRendersForRAM = appPTR->getHardwareIdealThreadCount();
-        }
-    }
-    
     aboutToStartRender();
     
     ///Flag that we're now doing work
@@ -1193,9 +1150,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
         optimalNThreads = userSettingParallelThreads;
     }
     optimalNThreads = std::max(1,optimalNThreads);
-    
-    ///Clamp optimalNThreads to the     _imp->idealParallelRendersForRAM so we don't hit the swap
-    optimalNThreads = std::min((int)_imp->idealParallelRendersForRAM,optimalNThreads);
+
 
     if (runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) {
      

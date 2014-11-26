@@ -374,6 +374,28 @@ Image::makeParams(int cost,
                                                            framesNeeded) );
 }
 
+boost::shared_ptr<ImageParams>
+Image::makeParams(int cost,
+                  const RectD & rod,    // the image rod in canonical coordinates
+                  const RectI& bounds,
+                  const double par,
+                  unsigned int mipMapLevel,
+                  bool isRoDProjectFormat,
+                  ImageComponentsEnum components,
+                  Natron::ImageBitDepthEnum bitdepth,
+                  const std::map<int, std::vector<RangeD> > & framesNeeded)
+{
+    return boost::shared_ptr<ImageParams>( new ImageParams(cost,
+                                                           rod,
+                                                           par,
+                                                           mipMapLevel,
+                                                           bounds,
+                                                           bitdepth,
+                                                           isRoDProjectFormat,
+                                                           components,
+                                                           framesNeeded) );
+}
+
 //boost::shared_ptr<ImageParams>
 //Image::getParams() const WARN_UNUSED_RETURN
 //{

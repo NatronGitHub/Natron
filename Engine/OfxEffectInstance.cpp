@@ -1249,13 +1249,6 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-#ifdef DEBUG
-            if (QThread::currentThread() != qApp->thread()) {
-                
-                qDebug() << "getRegionOfDefinition cannot be called recursively as an action. Please check this.";
-            }
-#endif
-            
             skipDiscarding = true;
         }
         
