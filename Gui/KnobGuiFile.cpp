@@ -206,6 +206,9 @@ File_KnobGui::updateGUI(int /*dimension*/)
         }
         
         std::string newValue = _knob->getFileName(_knob->getCurrentTime(), 0);
+        if (_knob->getHolder()->getApp()) {
+            _knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
+        }
         QString file(newValue.c_str());
         
         if (QFile::exists(file)) {
@@ -233,8 +236,11 @@ File_KnobGui::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
     std::string filepath = _knob->getFileName(time, 0);
-    
+    if (_knob->getHolder()->getApp()) {
+        _knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
+    }
     if (filepath != _fileBeingWatched  && _knob->getHolder() && _knob->getEvaluateOnChange() ) {
+        
         
         if (!_fileBeingWatched.empty()) {
             _watcher->removePath(_fileBeingWatched.c_str());
