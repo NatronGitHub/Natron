@@ -830,7 +830,7 @@ OfxClipInstance::setRenderedView(int view)
     if ( _lastActionData.hasLocalData() ) {
         ActionLocalData & args = _lastActionData.localData();
 #ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread() && args.isViewValid) {
+        if (QThread::currentThread() != qApp->thread() && args.isViewValid && args.view != view) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
 #endif
@@ -860,7 +860,7 @@ OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     if ( _lastActionData.hasLocalData() ) {
         ActionLocalData & args = _lastActionData.localData();
 #ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread() && args.isMipmapLevelValid) {
+        if (QThread::currentThread() != qApp->thread() && args.isMipmapLevelValid && args.mipMapLevel != mipMapLevel) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
 #endif

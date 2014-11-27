@@ -3545,7 +3545,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         RenderScale scaleOne;
         scaleOne.x = scaleOne.y = 1.;
         {
-            NON_RECURSIVE_ACTION();
+            RECURSIVE_ACTION();
             ret = getRegionOfDefinition(hash,time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
             
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {

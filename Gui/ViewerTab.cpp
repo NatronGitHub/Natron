@@ -2073,6 +2073,9 @@ void
 ViewerTab::createTrackerInterface(NodeGui* n)
 {
     boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
+    if (!multiPanel) {
+        return;
+    }
     boost::shared_ptr<TrackerPanel> trackPanel = boost::dynamic_pointer_cast<TrackerPanel>(multiPanel);
 
     assert(trackPanel);
