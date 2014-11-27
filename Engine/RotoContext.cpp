@@ -4955,7 +4955,7 @@ RotoContext::renderMask(const RectI & roi,
                                            depth,
                                            std::map<int, std::vector<RangeD> >() );
         
-        appPTR->createImageInCache(key, params, &imgLocker, &image);
+        bool cached = Natron::getImageFromCacheOrCreate(key, params, &imgLocker, &image);
         if (!image) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
@@ -4964,8 +4964,12 @@ RotoContext::renderMask(const RectI & roi,
             
             return image;
         }
-    
-        image->allocateMemory();
+        if (!cached) {
+            image->allocateMemory();
+        } else {
+            ///lock the image because it might not be allocated yet
+            imgLocker.lock(image);
+        }
         
     }
 

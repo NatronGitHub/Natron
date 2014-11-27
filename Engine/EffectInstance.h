@@ -1207,29 +1207,22 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
-                                          const RenderScale & scale,
                                           unsigned int mipMapLevel,
                                           int view,
-                                          const RectI & renderWindow,
+                                          const std::list<RectI>& rectsToRender,
                                           const RectD & rod, //!< rod in canonical coordinates
                                           const double par,
-                                          const FramesNeededMap &framesNeeded,
                                           const boost::shared_ptr<Image> & image,
                                           const boost::shared_ptr<Image> & downscaledImage,
                                           bool outputUseImage,
                                           bool isSequentialRender,
                                           bool isRenderMadeInResponseToUserInteraction,
-                                          bool byPassCache,
                                           U64 nodeHash,
                                           int channelForAlpha,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
-                                          const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
-                                          int transformInputNb,
-                                          int newTransformedInputNb,
-                                          Natron::EffectInstance* transformRerouteInput,
-                                          RoIMap* inputRoisParam,
-                                          std::list<boost::shared_ptr<Natron::Image> >* inputImagesParam);
+                                          const RoIMap& inputRoisParam,
+                                          const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam);
 
     bool renderInputImagesForRoI(SequenceTime time,
                                  int view,

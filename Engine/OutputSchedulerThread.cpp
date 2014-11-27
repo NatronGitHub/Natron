@@ -734,22 +734,6 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     }
 }
 
-static void getNbNodesRecursive(Natron::EffectInstance* effect,int* nbNodes,std::set<Natron::EffectInstance*>& markedNodes)
-{
-    if (markedNodes.find(effect) != markedNodes.end()) {
-        return;
-    }
-    *nbNodes = *nbNodes + 1;
-    markedNodes.insert(effect);
-    
-    std::vector<boost::shared_ptr<Natron::Node> > inputs = effect->getNode()->getInputs_copy();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (inputs[i]) {
-            getNbNodesRecursive(inputs[i]->getLiveInstance(), nbNodes, markedNodes);
-        }
-    }
-}
-
 void
 OutputSchedulerThread::startRender()
 {
@@ -789,8 +773,7 @@ OutputSchedulerThread::startRender()
     
     ///Start with one thread if it doesn't exist
     if (nThreads == 0) {
-        _imp->appendRunnable(createRunnable());
-        nThreads = 1;
+        adjustNumberOfThreads(&nThreads);
     }
     
     QMutexLocker l(&_imp->renderThreadsMutex);

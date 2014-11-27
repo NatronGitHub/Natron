@@ -1381,10 +1381,15 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 ImageLocker imageLock(this);
                 
                 boost::shared_ptr<Image> img;
-                Natron::createImageInCache(key, imageParams, &imageLock, &img);
+                bool cached = Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img);
                 assert(img);
                 
-                img->allocateMemory();
+                if (!cached) {
+                    img->allocateMemory();
+                } else {
+                    ///lock the image because it might not be allocated yet
+                    imageLock.lock(img);
+                }
                 
                 bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
                 
@@ -1415,10 +1420,14 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
                 ImageLocker imageLock(this);
                 
                 boost::shared_ptr<Image> img;
-                Natron::createImageInCache(key, imageParams, &imageLock, &img);
+                bool cached = Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img);
                 assert(img);
-                
-                img->allocateMemory();
+                if (!cached) {
+                    img->allocateMemory();
+                } else {
+                    ///lock the image because it might not be allocated yet
+                    imageLock.lock(img);
+                }
                 
                 imageToConvert->downscaleMipMap(imageToConvert->getBounds(),
                                                                imageToConvert->getMipMapLevel(), img->getMipMapLevel() , true, img.get());
@@ -1850,6 +1859,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     boost::shared_ptr<Natron::Image> downscaledImage = image;
     
     FramesNeededMap framesNeeded;
+    if (image) {
+        framesNeeded = cachedImgParams->getFramesNeeded();
+    } else {
+        framesNeeded = getFramesNeeded_public(args.time);
+    }
+    
+    
     RoIMap inputsRoi;
     std::list <boost::shared_ptr<Image> > inputImages;
 
@@ -1891,25 +1907,73 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         roi.intersect(downscaledImageBounds, &roi);
     }
     
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Allocate image in the cache ///////////////////////////////////////////////////////////////
-    bool imageIsCached;
-    if (!image) {
-        imageIsCached = false;
-        ///The image is not cached
-       
-        RectD canonicalRoI;
-        if (useImageAsOutput) {
-            roi.toCanonical(0, par, rod, &canonicalRoI);
-        } else {
-            roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+    RectD canonicalRoI;
+    if (useImageAsOutput) {
+        roi.toCanonical(0, par, rod, &canonicalRoI);
+    } else {
+        roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+    }
+    
+    /// If the list is empty then we already rendered it all
+    /// Each rect in this list is in pixel coordinate (downscaled)
+    std::list<RectI> rectsToRender;
+    
+    ///In the event where we had the image from the cache, but it wasn't completly rendered over the RoI but the cache was almost full,
+    ///we don't hold a pointer to it, allowing the cache to free it.
+    ///Hence after rendering all the input images, we redo a cache look-up to check whether the image is still here
+    bool redoCacheLookup = false;
+    
+    bool tilesSupported = supportsTiles();
+
+    if (image) {
+        
+        ///We check what is left to render.
+        rectsToRender = image->getRestToRender(roi);
+        
+        if (!rectsToRender.empty() && appPTR->isNodeCacheAlmostFull()) {
+            ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
+            ///we might recursively end-up in this same situation at each level of the render tree, ending with all images of each level
+            ///being held in memory.
+            ///Our strategy here is to clear the pointer, hence allowing the cache to remove the image, and ask the inputs to render the full RoI
+            ///instead of the rest to render. This way, even if the image is cleared from the cache we already have rendered the full RoI anyway.
+            image.reset();
+            cachedImgParams.reset();
+            rectsToRender.clear();
+            rectsToRender.push_back(roi);
+            redoCacheLookup = true;
         }
         
-        framesNeeded = getFramesNeeded_public(args.time);
+        
+        
+        ///If the effect doesn't support tiles and it has something left to render, just render the bounds again
+        ///Note that it should NEVER happen because if it doesn't support tiles in the first place, it would
+        ///have rendered the rod already.
+        if (!tilesSupported && !rectsToRender.empty()) {
+            ///if the effect doesn't support tiles, just render the whole rod again even though
+            rectsToRender.clear();
+            rectsToRender.push_back( image->getBounds() );
+        }
+        
+    } else {
+        
+        if (tilesSupported) {
+            rectsToRender.push_back(roi);
+        } else {
+            rectsToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
+        }
+    }
 
-        
-        ///Pre-render input images before allocating the image
-        
+    if (redoCacheLookup) {
+        getImageFromCacheAndConvertIfNeeded(key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod, &image);
+        if (image) {
+            cachedImgParams = image->getParams();
+            ///We check what is left to render.
+            rectsToRender = image->getRestToRender(roi);
+        }
+    }
+    
+    ///Pre-render input images before allocating the image if we need to render
+    if (!rectsToRender.empty()) {
         if (!renderInputImagesForRoI(args.time,
                                      args.view,
                                      par,
@@ -1932,7 +1996,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                      &inputsRoi)) {
             return ImagePtr();
         }
-
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Allocate image in the cache ///////////////////////////////////////////////////////////////
+    if (!image) {
+        ///The image is not cached
         
         // why should the rod be empty here?
         assert( !rod.isNull() );
@@ -1969,7 +2038,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
             ImagePtr newImage;
             
-            appPTR->createImageInCache(key, cachedImgParams, &imageLock, &newImage);
+            bool cached = Natron::getImageFromCacheOrCreate(key, cachedImgParams, &imageLock, &newImage);
             
             if (!newImage) {
                 std::stringstream ss;
@@ -1983,11 +2052,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             assert(newImage);
             assert(newImage->getRoD() == rod);
             
-            newImage->allocateMemory();
+            if (!cached) {
+                newImage->allocateMemory();
+            } else {
+                ///lock the image because it might not be allocated yet
+                imageLock.lock(newImage);
+            }
             
             image = newImage;
             downscaledImage = image;
-
         }
         
         if (renderFullScaleThenDownscale) {
@@ -2014,8 +2087,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                                                                        args.components,
                                                                                                        args.bitdepth,
                                                                                                        framesNeeded);
-                appPTR->createImageInCache(key, upscaledImageParams, &upscaledImageLock, &image);
-                image->allocateMemory();
+                bool cached = Natron::getImageFromCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, &image);
+                if (!cached) {
+                    image->allocateMemory();
+                } else {
+                    ///lock the image because it might not be allocated yet
+                    upscaledImageLock.lock(image);
+                }
             }
             
         }
@@ -2025,7 +2103,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ////////////////////////////// End allocation of image in cache ///////////////////////////////////////////////////////////////
     } // if (!image) (the image is not cached)
     else {
-        imageIsCached = true;
         if (renderFullScaleThenDownscale && image->getMipMapLevel() == 0) {
             //Allocate a downscale image that will be cheap to create
             ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
@@ -2034,38 +2111,34 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             downscaledImage.reset( new Natron::Image(args.components, rod, bounds, args.mipMapLevel, image->getPixelAspectRatio(), args.bitdepth) );
         }
         framesNeeded = cachedImgParams->getFramesNeeded();
+        
     }
     
     
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
+    EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
     
-    
-    EffectInstance::RenderRoIStatusEnum renderRetCode = renderRoIInternal(args.time,
-                                                                          args.scale,
-                                                                          args.mipMapLevel,
-                                                                          args.view,
-                                                                          roi,
-                                                                          rod,
-                                                                          par,
-                                                                          framesNeeded,
-                                                                          image,
-                                                                          downscaledImage,
-                                                                          useImageAsOutput,
-                                                                          frameRenderArgs.isSequentialRender,
-                                                                          frameRenderArgs.isRenderResponseToUserInteraction,
-                                                                          byPassCache,
-                                                                          nodeHash,
-                                                                          args.channelForAlpha,
-                                                                          renderFullScaleThenDownscale,
-                                                                          renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                                          transformMatrix,
-                                                                          transformInputNb,
-                                                                          newInputNb,
-                                                                          newInputAfterConcat,
-                                                                          !imageIsCached ? &inputsRoi : NULL,
-                                                                          !imageIsCached ? &inputImages : NULL);
+    if (!rectsToRender.empty()) {
+        renderRetCode = renderRoIInternal(args.time,
+                                          args.mipMapLevel,
+                                          args.view,
+                                          rectsToRender,
+                                          rod,
+                                          par,
+                                          image,
+                                          downscaledImage,
+                                          useImageAsOutput,
+                                          frameRenderArgs.isSequentialRender,
+                                          frameRenderArgs.isRenderResponseToUserInteraction,
+                                          nodeHash,
+                                          args.channelForAlpha,
+                                          renderFullScaleThenDownscale,
+                                          renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                          inputsRoi,
+                                          inputImages);
+    }
     
 #ifdef DEBUG
     if (renderRetCode != eRenderRoIStatusRenderFailed && !aborted()) {
@@ -2257,29 +2330,22 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
 
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(SequenceTime time,
-                                  const RenderScale & scale,
                                   unsigned int mipMapLevel,
                                   int view,
-                                  const RectI & roi,
+                                  const std::list<RectI>& rectsToRender,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
-                                  const FramesNeededMap &framesNeeded,
                                   const boost::shared_ptr<Image> & image,
                                   const boost::shared_ptr<Image> & downscaledImage,
                                   bool outputUseImage, //< whether we output to image or downscaledImage
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
-                                  bool byPassCache,
                                   U64 nodeHash,
                                   int channelForAlpha,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
-                                  const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
-                                  int transformInputNb,
-                                  int newTransformedInputNb,
-                                  Natron::EffectInstance* transformRerouteInput,
-                                  RoIMap* inputRoisParam,
-                                  std::list<boost::shared_ptr<Natron::Image> >* inputImagesParam)
+                                  const RoIMap& inputsRoi,
+                                  const std::list<boost::shared_ptr<Natron::Image> >& inputImages)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
 
@@ -2326,23 +2392,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
     ///We check what is left to render.
 
-    /// If the list is empty then we already rendered it all
-    /// Each rect in this list is in pixel coordinate (downscaled)
-    std::list<RectI> rectsToRender = outputUseImage ? image->getRestToRender(roi) : downscaledImage->getRestToRender(roi);
-
-    ///if the effect doesn't support tiles and it has something left to render, just render the rod again
-    ///note that it should NEVER happen because if it doesn't support tiles in the first place, it would
-    ///have rendered the rod already.
-    if ( !tilesSupported && !rectsToRender.empty() ) {
-        ///if the effect doesn't support tiles, just render the whole rod again even though
-        rectsToRender.clear();
-        rectsToRender.push_back( downscaledImage->getBounds() );
-    }
-    
     ///Here we fetch the age of the roto context if there's any to pass it through
     ///the tree and remember it when the plugin calls getImage() afterwards
-    boost::shared_ptr<RotoContext> rotoContext = _node->getRotoContext();
-    U64 rotoAge = rotoContext ? rotoContext->getAge() : 0;
     Natron::StatusEnum renderStatus = eStatusOK;
 
     if ( rectsToRender.empty() ) {
@@ -2459,39 +2510,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                      -1,
                                      renderMappedImage);
         
-        RoIMap inputsRoi;
-        std::list <boost::shared_ptr<Image> > inputImages;
-        
-        if (inputRoisParam) {
-            inputsRoi = *inputRoisParam;
-            inputImages = *inputImagesParam;
-        } else {
-            if (!renderInputImagesForRoI(time,
-                                         view,
-                                         par,
-                                         nodeHash,
-                                         rotoAge,
-                                         rod,
-                                         downscaledRectToRender,
-                                         canonicalRectToRender,
-                                         transformMatrix,
-                                         transformInputNb,
-                                         newTransformedInputNb,
-                                         transformRerouteInput,
-                                         mipMapLevel,
-                                         scale,
-                                         renderMappedScale,
-                                         useScaleOneInputImages,
-                                         byPassCache,
-                                         framesNeeded,
-                                         &inputImages,
-                                         &inputsRoi)) {
-                //if render was aborted, remove the frame from the cache as it contains only garbage
-                appPTR->removeFromNodeCache(image);
-                return eRenderRoIStatusImageRendered;
-            }
-        }
-     
         
         int firstFrame, lastFrame;
         getFrameRange_public(nodeHash, &firstFrame, &lastFrame);

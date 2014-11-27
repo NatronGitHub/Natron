@@ -1186,18 +1186,11 @@ bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              const boost::shared_ptr<Natron::ImageParams>& params,
                              ImageLocker* imageLocker,
-                             std::list<boost::shared_ptr<Natron::Image> >* returnValue) const
+                             boost::shared_ptr<Natron::Image>* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
 }
 
-void
-AppManager::createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                               ImageLocker* imageLocker,
-                               boost::shared_ptr<Natron::Image>* returnValue) const
-{
-    _imp->_nodeCache->create(key, params, imageLocker, returnValue);
-}
 
 bool
 AppManager::getTexture(const Natron::FrameKey & key,
@@ -1225,18 +1218,8 @@ AppManager::getTextureOrCreate(const Natron::FrameKey & key,
                                FrameEntryLocker* entryLocker,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
-    std::list<boost::shared_ptr<Natron::FrameEntry> > retList;
     
-    bool ret =  _imp->_viewerCache->getOrCreate(key, params,entryLocker,&retList);
-    
-    if (!retList.empty()) {
-        if (retList.size() > 1) {
-            qDebug() << "WARNING: Several FrameEntry's were found in the cache for with the same key, this is a bug since they are unique.";
-        }
-        
-        *returnValue = retList.front();
-    }
-    return ret;
+    return _imp->_viewerCache->getOrCreate(key, params,entryLocker,returnValue);
 }
 
 U64
@@ -1766,6 +1749,22 @@ AppManager::qt_tildeExpansion(const QString &path,
 
 #endif
 
+bool
+AppManager::isNodeCacheAlmostFull() const
+{
+    std::size_t nodeCacheSize = _imp->_nodeCache->getMemoryCacheSize();
+    std::size_t nodeMaxCacheSize = _imp->_nodeCache->getMaximumMemorySize();
+    
+    if (nodeMaxCacheSize == 0) {
+        return true;
+    }
+    
+    if ((double)nodeCacheSize / nodeMaxCacheSize >= NATRON_CACHE_LIMIT_PERCENT) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 void
 AppManager::checkCacheFreeMemoryIsGoodEnough()

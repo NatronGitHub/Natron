@@ -244,6 +244,11 @@ public:
      * @brief To be called by a CacheEntry on destruction.
      **/
     virtual void notifyEntryDestroyed(int time, size_t size, Natron::StorageModeEnum storage) const = 0;
+    
+    /**
+     * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new iamge
+     **/
+    virtual void notifyMemoryDeallocated() const = 0;
 
     /**
      * @brief To be called when a backing file has been closed
@@ -256,6 +261,7 @@ public:
      **/
     virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,Natron::StorageModeEnum newStorage,
                                            int time,size_t size) const = 0;
+    
 };
 
 
@@ -457,18 +463,23 @@ public:
      **/
     void deallocate()
     {
+        std::size_t sz = size();
+        bool dataAllocated = _data.isAllocated();
+        int time = getTime();
+        
+        _data.deallocate();
+        
         if (_cache) {
             if ( isStoredOnDisk() ) {
-                if ( _data.isAllocated() ) {
-                    _cache->notifyEntryStorageChanged( Natron::eStorageModeRAM, Natron::eStorageModeDisk, getTime(), size() );
+                if (dataAllocated) {
+                    _cache->notifyEntryStorageChanged( Natron::eStorageModeRAM, Natron::eStorageModeDisk, time, sz );
                 }
             } else {
-                if ( _data.isAllocated() ) {
-                    _cache->notifyEntryDestroyed(getTime(), size(), Natron::eStorageModeRAM);
+                if (dataAllocated) {
+                    _cache->notifyEntryDestroyed(time, sz, Natron::eStorageModeRAM);
                 }
             }
         }
-        _data.deallocate();
     }
 
     /**

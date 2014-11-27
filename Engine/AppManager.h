@@ -173,11 +173,8 @@ public:
      **/
     bool getImageOrCreate(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
                           ImageLocker* imageLocker,
-                          std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
-    
-    void createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
+    
 
     bool getTexture(const Natron::FrameKey & key,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
@@ -338,6 +335,8 @@ public:
     //To by-pass a bug introduced in RC3 with the serialization of bezier curves
     bool wasProjectCreatedDuringRC2Or3() const;
     
+    bool isNodeCacheAlmostFull() const;
+    
 public slots:
     
 
@@ -459,17 +458,11 @@ inline bool
 getImageFromCacheOrCreate(const Natron::ImageKey & key,
                           const boost::shared_ptr<Natron::ImageParams>& params,
                           ImageLocker* imageLocker,
-                          std::list<boost::shared_ptr<Natron::Image> >* returnValue)
+                          boost::shared_ptr<Natron::Image>* returnValue)
 {
     return appPTR->getImageOrCreate(key,params, imageLocker, returnValue);
 }
     
-inline void createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                                  ImageLocker* imageLocker,
-                                  boost::shared_ptr<Natron::Image>* returnValue) 
-{
-    appPTR->createImageInCache(key, params, imageLocker, returnValue);
-}
 
 inline bool
 getTextureFromCache(const Natron::FrameKey & key,
