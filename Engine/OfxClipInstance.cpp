@@ -611,7 +611,11 @@ OfxClipInstance::getImageInternal(OfxTime time,
     if (!image) {
         return NULL;
     } else {
-        return new OfxImage(image,renderWindow,transform,*this);
+        if (renderWindow.isNull()) {
+            return NULL;
+        } else {
+            return new OfxImage(image,renderWindow,transform,*this);
+        }
     }
 }
 
