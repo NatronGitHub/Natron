@@ -1092,7 +1092,8 @@ SequenceItemDelegate::paint(QPainter * painter,
     }
     
     QString filename = item->fileName();
-
+    QFont f(appFont,appFontSize);
+    painter->setFont(f);
     if (option.state & QStyle::State_Selected) {
         painter->fillRect( geom, option.palette.highlight() );
     }
@@ -1135,14 +1136,13 @@ SequenceItemDelegate::paint(QPainter * painter,
         
 #ifdef FILE_DIALOG_DISABLE_ICONS
         QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
-        QFont f = painter->font();
+        //QFont f = painter->font();
         if (isDir) {
             //change the font to bold
             f.setBold(true);
-            f.setPointSize(12);
+            f.setPointSize(f.pointSize() + 1);
         } else {
             f.setBold(false);
-            f.setPointSize(11);
         }
         painter->setFont(f);
 #else
