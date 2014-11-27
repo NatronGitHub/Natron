@@ -1480,7 +1480,7 @@ RotoGui::penDown(double /*scaleX*/,
 
     bool didSomething = false;
     int time = _imp->context->getTimelineCurrentTime();
-    int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
+    double tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
 
     if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
