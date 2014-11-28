@@ -29,6 +29,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Engine/NodeGuiI.h"
 
 class Edge;
 class QPainterPath;
@@ -113,14 +114,14 @@ private:
 };
 
 class NodeGui
-    : public QObject,public QGraphicsItem
+    : public QObject,public QGraphicsItem, public NodeGuiI
 {
     Q_OBJECT
-             Q_INTERFACES(QGraphicsItem)
-
+    Q_INTERFACES(QGraphicsItem)
+    
 public:
-
-
+    
+    
     typedef std::map<int,Edge*> InputEdgesMap;
 
     NodeGui(QGraphicsItem *parent = 0);
@@ -157,6 +158,8 @@ public:
     {
         return _graph;
     }
+    
+    virtual bool isSettingsPanelOpened() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE FINAL;

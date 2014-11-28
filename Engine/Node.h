@@ -48,6 +48,7 @@ class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
 class Double_Knob;
+class NodeGuiI;
 class RotoContext;
 namespace Natron {
 class OutputEffectInstance;
@@ -359,7 +360,14 @@ public:
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
     virtual int disconnectInput(Node* input);
+    
+    void setNodeGuiPointer(NodeGuiI* gui);
 
+    bool isSettingsPanelOpened() const;
+    
+    bool shouldCacheOutput() const;
+
+    
 private:
     /**
      * @brief Adds an output to this node.
@@ -721,6 +729,8 @@ public:
     
     void getPersistentMessage(QString* message,int* type) const;
 
+    bool isForceCachingEnabled() const;
+    
 public slots:
 
     void setKnobsAge(U64 newAge);

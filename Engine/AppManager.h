@@ -337,6 +337,7 @@ public:
     
     bool isNodeCacheAlmostFull() const;
     
+    bool isAggressiveCachingEnabled() const;
 public slots:
     
 

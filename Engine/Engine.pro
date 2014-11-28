@@ -145,6 +145,7 @@ HEADERS += \
     Lut.h \
     MemoryFile.h \
     Node.h \
+    NodeGuiI.h \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \

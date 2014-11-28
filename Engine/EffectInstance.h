@@ -121,6 +121,10 @@ public:
         int channelForAlpha; //< if this is a mask this is from this channel that we will fetch the mask
         bool calledFromGetImage;
         
+        ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
+        ///might already be in this list
+        std::list<boost::shared_ptr<Natron::Image> > inputImagesList;
+        
         RenderRoIArgs()
         {
         }
@@ -135,7 +139,8 @@ public:
                       Natron::ImageComponentsEnum components_,
                       Natron::ImageBitDepthEnum bitdepth_,
                       int channelForAlpha_ = 3,
-                      bool calledFromGetImage = false)
+                      bool calledFromGetImage = false,
+                      const std::list<boost::shared_ptr<Natron::Image> >& inputImages = std::list<boost::shared_ptr<Natron::Image> >())
             : time(time_)
               , scale(scale_)
               , mipMapLevel(mipMapLevel_)
@@ -147,6 +152,7 @@ public:
               , bitdepth(bitdepth_)
               , channelForAlpha(channelForAlpha_)
               , calledFromGetImage(calledFromGetImage)
+              , inputImagesList(inputImages)
         {
         }
     };
@@ -442,6 +448,7 @@ public:
                                              Natron::ImageComponentsEnum components,
                                              int channelForAlpha,
                                              const RectD& rod,
+                                             const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
 
@@ -689,6 +696,8 @@ public:
 
 
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
+
+    bool shouldCacheOutput() const;
 
 protected:
 

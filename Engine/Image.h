@@ -107,7 +107,8 @@ namespace Natron {
               const Natron::CacheAPI* cache,
               Natron::StorageModeEnum storage,
               const std::string & path);
-
+        
+        
 
         /*This constructor can be used to allocate a local Image. The deallocation should
        then be handled by the user. Note that no view number is passed in parameter
@@ -119,6 +120,11 @@ namespace Natron {
               double par,
               Natron::ImageBitDepthEnum bitdepth);
 
+        //Same as above but parameters are in the ImageParams object
+        Image(const ImageKey & key,
+              const boost::shared_ptr<Natron::ImageParams>& params);
+
+        
         virtual ~Image()
         {
             deallocate();

@@ -45,6 +45,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Timer.h"
 #include "Engine/Settings.h"
+#include "Engine/NodeGuiI.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
@@ -124,6 +125,7 @@ struct Node::Implementation
     , outputFormat()
     , refreshInfoButton()
     , useFullScaleImagesWhenRenderScaleUnsupported()
+    , forceCaching()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -149,6 +151,7 @@ struct Node::Implementation
     , persistentMessage()
     , persistentMessageType(0)
     , persistentMessageMutex()
+    , guiPointer(0)
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -228,6 +231,7 @@ struct Node::Implementation
     boost::shared_ptr<Button_Knob> refreshInfoButton;
     
     boost::shared_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported;
+    boost::shared_ptr<Bool_Knob> forceCaching;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -270,6 +274,8 @@ struct Node::Implementation
     QString persistentMessage;
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
+    
+    NodeGuiI* guiPointer;
 };
 
 /**
@@ -1070,6 +1076,18 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
     loadKnob(_imp->nodeLabelKnob, serialization);
     
+    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Force caching");
+    _imp->forceCaching->setName("forceCaching");
+    _imp->forceCaching->setDefaultValue(false);
+    _imp->forceCaching->setAnimationEnabled(false);
+    _imp->forceCaching->turnOffNewLine();
+    _imp->forceCaching->setIsPersistant(true);
+    _imp->forceCaching->setEvaluateOnChange(false);
+    _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
+                                       "images.");
+    _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
+    loadKnob(_imp->forceCaching,serialization);
+    
     _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Preview enabled",1,false);
     assert(_imp->previewEnabledKnob);
     _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
@@ -1154,6 +1172,12 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->liveInstance->unblockEvaluation();
     emit knobsInitialized();
 } // initializeKnobs
+
+bool
+Node::isForceCachingEnabled() const
+{
+    return _imp->forceCaching->getValue();
+}
 
 void
 Node::onSetSupportRenderScaleMaybeSet(int support)
@@ -3407,6 +3431,60 @@ Node::dequeueActions()
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
     _imp->nodeIsDequeuing = false;
     _imp->nodeIsDequeuingCond.wakeAll();
+}
+
+bool
+Node::shouldCacheOutput() const
+{
+    {
+        QMutexLocker k(&_imp->outputsMutex);
+        std::size_t sz = _imp->outputs.size();
+        if (sz > 1) {
+            ///The node is referenced multiple times below, cache it
+            return true;
+        } else {
+            if (sz == 1) {
+                //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
+                //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
+                return _imp->outputs.front()->isSettingsPanelOpened()  || isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
+            } else {
+                return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
+            }
+        }
+    }
+    
+}
+
+void
+Node::setNodeGuiPointer(NodeGuiI* gui)
+{
+    assert(!_imp->guiPointer);
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->guiPointer = gui;
+}
+
+bool
+Node::isSettingsPanelOpened() const
+{
+    if (!_imp->guiPointer) {
+        return false;
+    }
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->isSettingsPanelOpened();
+    }
+    {
+        QMutexLocker k(&_imp->masterNodeMutex);
+        if (_imp->masterNode) {
+            return _imp->masterNode->isSettingsPanelOpened();
+        }
+        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
+            if (it->masterNode->isSettingsPanelOpened()) {
+                return true;
+            }
+        }
+    }
+    return _imp->guiPointer->isSettingsPanelOpened();
+    
 }
 
 //////////////////////////////////

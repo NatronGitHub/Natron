@@ -951,6 +951,7 @@ public:
                                                 Natron::ImageBitDepthEnum depth,
                                                 int view,
                                                 unsigned int mipmapLevel,
+                                                const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                                 bool byPassCache);
 
     /**

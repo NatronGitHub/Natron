@@ -290,6 +290,18 @@ Image::Image(const ImageKey & key,
     _par = params->getPixelAspectRatio();
 }
 
+Image::Image(const ImageKey & key,
+             const boost::shared_ptr<Natron::ImageParams>& params)
+: CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, NULL,Natron::eStorageModeRAM,std::string())
+{
+    _components = params->getComponents();
+    _bitDepth = params->getBitDepth();
+    _rod = params->getRoD();
+    _bounds = params->getBounds();
+    _par = params->getPixelAspectRatio();
+    allocateMemory();
+}
+
 
 /*This constructor can be used to allocate a local Image. The deallocation should
    then be handled by the user. Note that no view number is passed in parameter

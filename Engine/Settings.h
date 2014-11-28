@@ -216,6 +216,8 @@ public:
     
     bool notifyOnFileChange() const;
     
+    bool isAggressiveCachingEnabled() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -256,6 +258,7 @@ private:
     boost::shared_ptr<File_Knob> _customOcioConfigFile;
     boost::shared_ptr<Page_Knob> _cachingTab;
 
+    boost::shared_ptr<Bool_Knob> _aggressiveCaching;
     ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
     boost::shared_ptr<String_Knob> _maxPlaybackLabel;

@@ -146,6 +146,7 @@ NodeGui::initialize(NodeGraph* dag,
     _internalNode = internalNode;
     assert(internalNode);
     _graph = dag;
+    _internalNode->setNodeGuiPointer(this);
 
     QObject::connect( this, SIGNAL( nameChanged(QString) ), _internalNode.get(), SLOT( setName(QString) ) );
     QObject::connect( _internalNode.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInternalNameChanged(QString) ) );
@@ -2371,4 +2372,10 @@ NodeGui::trySetName(const QString& newName)
         emit nameChanged(newName);
     }
 
+}
+
+bool
+NodeGui::isSettingsPanelOpened() const
+{
+    return _settingsPanel ? !_settingsPanel->isClosed() : false;
 }

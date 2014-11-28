@@ -1222,6 +1222,12 @@ AppManager::getTextureOrCreate(const Natron::FrameKey & key,
     return _imp->_viewerCache->getOrCreate(key, params,entryLocker,returnValue);
 }
 
+bool
+AppManager::isAggressiveCachingEnabled() const
+{
+    return _imp->_settings->isAggressiveCachingEnabled();
+}
+
 U64
 AppManager::getCachesTotalMemorySize() const
 {

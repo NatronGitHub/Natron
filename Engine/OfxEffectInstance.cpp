@@ -1455,6 +1455,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         appPTR->writeToOfxLog_mt_safe(QString( getNode()->getName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
     }
     if (stat != kOfxStatReplyDefault) {
+        
         for (std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin(); it != inputRois.end(); ++it) {
             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
             RectD inputRoi; // input RoI in canonical coordinates
@@ -1462,12 +1463,13 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
             inputRoi.x2 = it->second.x2;
             inputRoi.y1 = it->second.y1;
             inputRoi.y2 = it->second.y2;
-
+            
             ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
             ///infinite rod.
             ifInfiniteclipRectToProjectDefault(&inputRoi);
             ret->insert( std::make_pair(inputNode,inputRoi) );
         }
+        
     } else if (stat == kOfxStatReplyDefault) {
         
         const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& clips = effectInstance()->getClips();
