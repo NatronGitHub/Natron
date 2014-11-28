@@ -1469,9 +1469,18 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
             ret->insert( std::make_pair(inputNode,inputRoi) );
         }
     } else if (stat == kOfxStatReplyDefault) {
-        for (int i = 0; i < effectInstance()->getNClips(); ++i) {
-            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>( effectInstance()->getNthClip(i) )->getAssociatedNode();
-            ret->insert( std::make_pair(inputNode, renderWindow) );
+        
+        const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& clips = effectInstance()->getClips();
+        for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
+            if (!it->second->isOutput()) {
+                OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
+                assert(natronClip);
+                EffectInstance* inputNode = natronClip->getAssociatedNode();
+                if (inputNode) {
+                    ret->insert( std::make_pair(inputNode, renderWindow) );
+                }
+
+            }
         }
     }
 

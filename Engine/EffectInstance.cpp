@@ -1213,14 +1213,18 @@ EffectInstance::getFramesNeeded(SequenceTime time)
 {
     EffectInstance::FramesNeededMap ret;
     RangeD defaultRange;
-
+    
     defaultRange.min = defaultRange.max = time;
     std::vector<RangeD> ranges;
     ranges.push_back(defaultRange);
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        Natron::EffectInstance* input = getInput(i);
-        if (input) {
+        if (isInputRotoBrush(i)) {
             ret.insert( std::make_pair(i, ranges) );
+        } else {
+            Natron::EffectInstance* input = getInput(i);
+            if (input) {
+                ret.insert( std::make_pair(i, ranges) );
+            }
         }
     }
 
@@ -1855,7 +1859,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End cache lookup//////////////////////////////////////////////////////////
 
-
     boost::shared_ptr<Natron::Image> downscaledImage = image;
     
     FramesNeededMap framesNeeded;
@@ -2110,8 +2113,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
             downscaledImage.reset( new Natron::Image(args.components, rod, bounds, args.mipMapLevel, image->getPixelAspectRatio(), args.bitdepth) );
         }
-        framesNeeded = cachedImgParams->getFramesNeeded();
-        
     }
     
     
@@ -2200,8 +2201,12 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
                                         RoIMap* inputsRoi)
 {
     getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view,inputsRoi);
-    
-    
+#ifdef DEBUG
+    if (!inputsRoi->empty() && framesNeeded.empty()) {
+        qDebug() << getNode()->getName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
+        << "an empty list with getFramesNeededAction";
+    }
+#endif
     if (transformMatrix) {
         //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
         
@@ -2266,7 +2271,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
                 
                 ///For all frames requested for this node, render the RoI requested.
                 for (U32 range = 0; range < it2->second.size(); ++range) {
-                    for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
+                    for (int f = std::floor(it2->second[range].min + 0.5); f <= std::floor(it2->second[range].max + 0.5); ++f) {
                         Natron::ImageComponentsEnum inputPrefComps;
                         Natron::ImageBitDepthEnum inputPrefDepth;
                         getPreferredDepthAndComponents(it2->first, &inputPrefComps, &inputPrefDepth);

@@ -800,6 +800,13 @@ OfxImageEffectInstance::updatePreferences_safe(double frameRate,const std::strin
     _frameVarying = frameVarying;
 }
 
+const
+std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>&
+OfxImageEffectInstance::getClips() const
+{
+    return _clips;
+}
+
 bool
 OfxImageEffectInstance::getCanApplyTransform(OfxClipInstance** clip) const
 {
