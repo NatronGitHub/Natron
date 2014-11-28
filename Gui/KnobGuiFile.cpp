@@ -1071,7 +1071,7 @@ Path_KnobGui::onItemDataChanged(TableItem* /*item*/)
     
     if (oldPath != newPath) {
         
-        if (_knob->getHolder() && _knob->getHolder() == _knob->getHolder()->getApp()->getProject().get() &&
+        if (_knob->getHolder() && _knob->getHolder()->isProject() &&
             appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
             std::map<std::string,std::string> oldEnv,newEnv;
             
