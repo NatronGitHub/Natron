@@ -1303,6 +1303,7 @@ private:
     struct TiledRenderingFunctorArgs
     {
         const RenderArgs* args;
+        std::list<boost::shared_ptr<Natron::Image> > inputImages;
         bool renderFullScaleThenDownscale;
         bool renderUseScaleOneInputs;
         bool isSequentialRender;
@@ -1336,24 +1337,25 @@ private:
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     Natron::StatusEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
-                                         const ParallelRenderArgs& frameArgs,
-                                         bool setThreadLocalStorage,
-                                         const RectI & roi );
+                                             const ParallelRenderArgs& frameArgs,
+                                             bool setThreadLocalStorage,
+                                             const RectI & roi );
 
     Natron::StatusEnum tiledRenderingFunctor(const RenderArgs & args,
-                                    const ParallelRenderArgs& frameArgs,
-                                     bool setThreadLocalStorage,
-                                     bool renderFullScaleThenDownscale,
-                                     bool renderUseScaleOneInputs,
-                                     bool isSequentialRender,
-                                     bool isRenderResponseToUserInteraction,
-                                     const RectI & roi,
-                                     const double par,
-                                     const boost::shared_ptr<Natron::Image> & downscaledImage,
-                                     const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                     const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                     const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
-                                     const boost::shared_ptr<Natron::Image> & renderMappedImage);
+                                             const ParallelRenderArgs& frameArgs,
+                                             const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
+                                             bool setThreadLocalStorage,
+                                             bool renderFullScaleThenDownscale,
+                                             bool renderUseScaleOneInputs,
+                                             bool isSequentialRender,
+                                             bool isRenderResponseToUserInteraction,
+                                             const RectI & roi,
+                                             const double par,
+                                             const boost::shared_ptr<Natron::Image> & downscaledImage,
+                                             const boost::shared_ptr<Natron::Image> & fullScaleImage,
+                                             const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
+                                             const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
+                                             const boost::shared_ptr<Natron::Image> & renderMappedImage);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

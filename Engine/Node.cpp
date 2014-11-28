@@ -449,6 +449,12 @@ Node::fetchParentMultiInstancePointer()
     }
 }
 
+Natron::Node*
+Node::getParentMultiInstance() const
+{
+    return _imp->multiInstanceParent;
+}
+
 bool
 Node::isMultiInstance() const
 {
@@ -3446,7 +3452,8 @@ Node::shouldCacheOutput() const
             if (sz == 1) {
                 //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
                 //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
-                return _imp->outputs.front()->isSettingsPanelOpened()  || isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
+                Node* output = _imp->outputs.front();
+                return output->isSettingsPanelOpened() || output->isMultiInstance() || output->getParentMultiInstance() || isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() || isPreviewEnabled();
             } else {
                 return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
             }

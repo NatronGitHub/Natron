@@ -146,6 +146,8 @@ public:
      * e.g: the Tracker node.
      **/
     bool isMultiInstance() const;
+    
+    Natron::Node* getParentMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
     std::string getParentMultiInstanceName() const;

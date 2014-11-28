@@ -1019,7 +1019,10 @@ EffectInstance::getImage(int inputNb,
         getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
         boost::shared_ptr<Natron::Image> mask =  roto->renderMask(pixelRoI, outputComps, nodeHash,rotoAge,
                                                                   RectD(), time, depth, view, mipMapLevel, inputImagesThreadLocal, byPassCache);
-        _imp->addInputImageTempPointer(mask);
+        if (inputImagesThreadLocal.empty()) {
+            ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
+            _imp->addInputImageTempPointer(mask);
+        }
         if (roiPixel) {
             *roiPixel = pixelRoI;
         }
@@ -1081,9 +1084,10 @@ EffectInstance::getImage(int inputNb,
         
     } else {
         
-        ///The image is cached and we don't want Natron to remove it, so we hold a pointer to it (which will be removed
-        ///once the plug-in render action returns)
-        _imp->addInputImageTempPointer(inputImg);
+        if (inputImagesThreadLocal.empty()) {
+            ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
+            _imp->addInputImageTempPointer(inputImg);
+        }
         return inputImg;
         
     }
@@ -1746,10 +1750,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End get RoD ///////////////////////////////////////////////////////////////
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check if effect is identity ///////////////////////////////////////////////////////////////
-
     {
         SequenceTime inputTimeIdentity = 0.;
         int inputNbIdentity;
@@ -2737,6 +2740,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             TiledRenderingFunctorArgs tiledArgs;
             tiledArgs.args = &args;
             tiledArgs.isSequentialRender = isSequentialRender;
+            tiledArgs.inputImages = inputImages;
             tiledArgs.renderUseScaleOneInputs = useScaleOneInputImages;
             tiledArgs.isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
             tiledArgs.downscaledImage = downscaledImage;
@@ -2802,6 +2806,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             
             renderStatus = tiledRenderingFunctor(args,
                                                  frameArgs,
+                                                 inputImages,
                                                  false,
                                                  renderFullScaleThenDownscale,
                                                  useScaleOneInputImages,
@@ -2842,6 +2847,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
 {
     return tiledRenderingFunctor(*args.args,
                                  frameArgs,
+                                 args.inputImages,
                                  setThreadLocalStorage,
                                  args.renderFullScaleThenDownscale,
                                  args.renderUseScaleOneInputs,
@@ -2859,6 +2865,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
 Natron::StatusEnum
 EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       const ParallelRenderArgs& frameArgs,
+                                      const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                       bool setThreadLocalStorage,
                                       bool renderFullScaleThenDownscale,
                                       bool renderUseScaleOneInputs,
@@ -2910,6 +2917,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
     boost::shared_ptr<Node::ParallelRenderArgsSetter> scopedFrameArgs;
     
+    boost::shared_ptr<InputImagesHolder_RAII> scopedInputImages;
+    
     if (!setThreadLocalStorage) {
         renderRectToRender = args._renderWindowPixel;
     } else {
@@ -2959,6 +2968,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                                   frameArgs.canAbort,
                                                                   frameArgs.nodeHash,
                                                                   frameArgs.timeline) );
+        
+        scopedInputImages.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
     }
     if ( renderRectToRender.isNull() ) {
         ///We've got nothing to do
