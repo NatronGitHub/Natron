@@ -1067,19 +1067,22 @@ clipPrefsProxy(OfxEffectInstance* self,
     
 } //endCheckOFXClipPreferences
 
-
 void
-OfxEffectInstance::checkOFXClipPreferences(double time,
-                                           const RenderScale & scale,
-                                           const std::string & reason,
-                                           bool forceGetClipPrefAction,
-                                           bool recurse)
+OfxEffectInstance::checkOFXClipPref_recursive(double time,
+                                              const RenderScale & scale,
+                                              const std::string & reason,
+                                              bool forceGetClipPrefAction,
+                                              bool recurse,
+                                              std::list<Natron::Node*>& markedNodes)
 {
-    
+    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(),markedNodes.end(),_node.get());
+    if (found != markedNodes.end()) {
+        return;
+    }
     
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
-
+    
     ////////////////////////////////////////////////////////////////
     ///////////////////////////////////
     //////////////// STEP 1 : Get plug-in render preferences
@@ -1149,10 +1152,13 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
         }
     }
     
+    
     ////////////////////////////////////////////////////////////////
     ////////////////////////////////
     //////////////// STEP 5: Recursion down-stream
     if (recurse) {
+        markedNodes.push_back(_node.get());
+
         ///Finally call recursively this function on all outputs to propagate it along the tree.
         const std::list<Natron::Node* >& outputs = _node->getOutputs();
         for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
@@ -1160,6 +1166,18 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
             (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason, true, recurse);
         }
     }
+
+}
+
+void
+OfxEffectInstance::checkOFXClipPreferences(double time,
+                                           const RenderScale & scale,
+                                           const std::string & reason,
+                                           bool forceGetClipPrefAction,
+                                           bool recurse)
+{
+    std::list<Natron::Node*> markedNodes;
+    checkOFXClipPref_recursive(time, scale, reason, forceGetClipPrefAction, recurse, markedNodes);
     
     
     

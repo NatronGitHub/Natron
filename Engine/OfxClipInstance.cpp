@@ -594,8 +594,11 @@ OfxClipInstance::getImageInternal(OfxTime time,
         RectI pixelRoI;
         roi.toPixelEnclosing(mipMapLevel, par, &pixelRoI);
         
+        ImageList inputImages;
+        _nodeInstance->getThreadLocalInputImages(&inputImages);
+        
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),comps,bitDepth,3,true);
+                                           view,false,pixelRoI,RectD(),comps,bitDepth,3,true,inputImages);
         image = inputNode->renderRoI(args);
         _nodeInstance->addThreadLocalInputImageTempPointer(image);
         renderWindow = pixelRoI;

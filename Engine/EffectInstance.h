@@ -548,6 +548,8 @@ public:
 
     bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
 
+    void getThreadLocalInputImages(std::list<boost::shared_ptr<Natron::Image> >* images) const;
+
     void addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img);
 
     /**

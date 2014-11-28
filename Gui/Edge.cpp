@@ -83,6 +83,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
       , _useRenderingColor(false)
       , _useHighlight(false)
       , _paintWithDash(false)
+      , _paintBendPoint(false)
       , _bendPointHiddenAutomatically(false)
       , _wasLabelVisible(false)
       , _middlePoint()

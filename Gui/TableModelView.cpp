@@ -158,6 +158,15 @@ TableModel::TableModel(int rows,
 
 TableModel::~TableModel()
 {
+    for (int i = 0; i < _imp->tableItems.size(); ++i) {
+        delete _imp->tableItems[i];
+    }
+    
+    
+    for (int i = 0; i < _imp->horizontalHeaderItems.size(); ++i) {
+        delete _imp->horizontalHeaderItems[i];
+    }
+
 }
 
 void
