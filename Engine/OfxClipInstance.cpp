@@ -730,7 +730,6 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
     unsigned char* ptr = internalImage->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
-    assert(ptr);
     setPointerProperty( kOfxImagePropData, ptr);
     
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
