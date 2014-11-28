@@ -955,9 +955,7 @@ KnobGui::hide()
     }
 
     if (shouldRemoveWidget) {
-        //_imp->containerLayout->removeWidget(_imp->field);
-        //_imp->field->setParent(0);
-        //_imp->field->hide();
+        _imp->field->hide();
     }
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->hide();
@@ -984,23 +982,11 @@ KnobGui::show(int /*index*/)
     }
 
     if (_imp->isOnNewLine) {
-        //QLayoutItem* item = _imp->containerLayout->itemAt(_imp->row, QFormLayout::FieldRole);
-        //if ( ( item && (item->widget() != _imp->field) ) || !item ) {
-        //    int indexToUse = index != -1 ? index : _imp->row;
-         //   _imp->containerLayout->setWidget(indexToUse, QFormLayout::LabelRole,_imp->descriptionLabel);
-         //   _imp->containerLayout->setWidget(indexToUse, QFormLayout::FieldRole, _imp->field);
-       //  }
-        //_imp->field->setParent( _imp->containerLayout->parentWidget() );
         _imp->field->show();
-
-        if (_imp->descriptionLabel) {
-            //_imp->descriptionLabel->setParent( _imp->containerLayout->parentWidget() );
-            _imp->descriptionLabel->show();
-        }
-    } else {
-        if (_imp->descriptionLabel) {
-            _imp->descriptionLabel->show();
-        }
+    }
+    
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->show();
     }
 }
 
