@@ -118,7 +118,8 @@ namespace Natron {
               const RectI & bounds,    //!< bounds in pixel coordinates
               unsigned int mipMapLevel,
               double par,
-              Natron::ImageBitDepthEnum bitdepth);
+              Natron::ImageBitDepthEnum bitdepth,
+              bool useBitmap = false);
 
         //Same as above but parameters are in the ImageParams object
         Image(const ImageKey & key,
@@ -129,6 +130,8 @@ namespace Natron {
         {
             deallocate();
         }
+        
+        bool usesBitMap() const { return _useBitmap; }
 
         virtual void onMemoryAllocated() OVERRIDE FINAL;
 
@@ -264,6 +267,9 @@ namespace Natron {
      **/
         std::list<RectI> getRestToRender(const RectI & regionOfInterest) const
         {
+            if (!_useBitmap) {
+                return std::list<RectI>();
+            }
             QReadLocker locker(&_lock);
 
             return _bitmap.minimalNonMarkedRects(regionOfInterest);
@@ -271,6 +277,9 @@ namespace Natron {
 
         RectI getMinimalRect(const RectI & regionOfInterest) const
         {
+            if (!_useBitmap) {
+                return regionOfInterest;
+            }
             QReadLocker locker(&_lock);
 
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
@@ -278,6 +287,9 @@ namespace Natron {
 
         void markForRendered(const RectI & roi)
         {
+            if (!_useBitmap) {
+                return;
+            }
             QWriteLocker locker(&_lock);
 
             _bitmap.markForRendered(roi);
@@ -433,6 +445,7 @@ namespace Natron {
         RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
         RectI _bounds;
         double _par;
+        bool _useBitmap;
     };
 
     template <typename SRCPIX,typename DSTPIX>

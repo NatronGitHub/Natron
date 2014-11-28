@@ -942,7 +942,8 @@ public:
      * @brief Render the mask formed by all the shapes contained in the context within the roi.
      * The image will use the cache if byPassCache is set to true.
      **/
-    boost::shared_ptr<Natron::Image> renderMask(const RectI & roi,
+    boost::shared_ptr<Natron::Image> renderMask(bool useCache,
+                                                const RectI & roi,
                                                 Natron::ImageComponentsEnum components,
                                                 U64 nodeHash,
                                                 U64 ageToRender,

@@ -4886,7 +4886,8 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 }
 
 boost::shared_ptr<Natron::Image>
-RotoContext::renderMask(const RectI & roi,
+RotoContext::renderMask(bool useCache,
+                        const RectI & roi,
                         Natron::ImageComponentsEnum components,
                         U64 nodeHash,
                         U64 ageToRender,
@@ -4936,7 +4937,7 @@ RotoContext::renderMask(const RectI & roi,
     ImagePtr image;
     
     if (!byPassCache) {
-        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(key, mipmapLevel, depth, components, 3,nodeRoD, inputImages, &image);
+        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, key, mipmapLevel, depth, components, 3,nodeRoD, inputImages, &image);
         if (image) {
             params = image->getParams();
         }

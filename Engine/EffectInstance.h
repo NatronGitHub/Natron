@@ -442,7 +442,8 @@ public:
     boost::shared_ptr<Image> renderRoI(const RenderRoIArgs & args) WARN_UNUSED_RETURN;
 
 
-    void getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
+    void getImageFromCacheAndConvertIfNeeded(bool useCache,
+                                             const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              Natron::ImageComponentsEnum components,
@@ -1235,7 +1236,8 @@ private:
                                           const RoIMap& inputRoisParam,
                                           const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam);
 
-    bool renderInputImagesForRoI(SequenceTime time,
+    bool renderInputImagesForRoI(bool createImageInCache,
+                                 SequenceTime time,
                                  int view,
                                  double par,
                                  U64 nodeHash,

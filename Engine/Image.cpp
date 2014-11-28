@@ -282,6 +282,7 @@ Image::Image(const ImageKey & key,
              Natron::StorageModeEnum storage,
              const std::string & path)
     : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)
+    , _useBitmap(true)
 {
     _components = params->getComponents();
     _bitDepth = params->getBitDepth();
@@ -293,6 +294,7 @@ Image::Image(const ImageKey & key,
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<Natron::ImageParams>& params)
 : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, NULL,Natron::eStorageModeRAM,std::string())
+, _useBitmap(false)
 {
     _components = params->getComponents();
     _bitDepth = params->getBitDepth();
@@ -311,8 +313,10 @@ Image::Image(ImageComponentsEnum components,
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
              double par,
-             Natron::ImageBitDepthEnum bitdepth)
+             Natron::ImageBitDepthEnum bitdepth,
+             bool useBitmap)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
+    , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0,false,0,0),
                   boost::shared_ptr<ImageParams>( new ImageParams( 0,
@@ -340,8 +344,9 @@ Image::Image(ImageComponentsEnum components,
 void
 Image::onMemoryAllocated()
 {
-    
-    _bitmap.initialize(_bounds);
+    if (_cache || _useBitmap) {
+        _bitmap.initialize(_bounds);
+    }
 
 
 #ifdef DEBUG
@@ -975,7 +980,7 @@ Image::downscaleMipMap(const RectI & roi,
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() ) );
+    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() , true) );
 
     buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -1363,7 +1368,7 @@ Image::buildMipMapLevel(const RectI & roi,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getPixelAspectRatio(),getBitDepth() );
+        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getPixelAspectRatio(),getBitDepth() , true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
