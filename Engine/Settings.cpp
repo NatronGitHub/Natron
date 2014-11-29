@@ -584,10 +584,10 @@ Settings::initializeKnobs()
     _aggressiveCaching->setName("aggressiveCaching");
     _aggressiveCaching->setAnimationEnabled(false);
     _aggressiveCaching->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will cache the output of all images "
-                                       "rendered by all nodes, regardless of their \"Cached\" parameter. When enabling this option "
+                                       "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
                                        "you need to have at least 8GiB of RAM, and 16GiB is recommended.\n"
                                        "If not checked, " NATRON_APPLICATION_NAME " will only cache the  nodes "
-                                       "which have multiple outputs, or their parameter \"Cached\" checked or if one of its "
+                                       "which have multiple outputs, or their parameter \"Force caching\" checked or if one of its "
                                        "output has its settings panel opened.");
     _cachingTab->addKnob(_aggressiveCaching);
     

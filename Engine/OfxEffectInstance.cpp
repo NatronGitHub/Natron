@@ -2803,3 +2803,9 @@ OfxEffectInstance::isFrameVarying() const
     return effectInstance()->isFrameVarying();
 }
 
+bool
+OfxEffectInstance::doesTemporalClipAccess() const
+{
+    return effectInstance()->temporalAccess();
+}
+

@@ -916,6 +916,10 @@ public:
         return false;
     }
 
+    virtual bool doesTemporalClipAccess() const {
+        return false;
+    }
+
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
      * with the content of pattern.

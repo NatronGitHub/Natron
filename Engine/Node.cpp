@@ -3443,6 +3443,9 @@ bool
 Node::shouldCacheOutput() const
 {
     {
+        //If true then we're in analysis, so we cache the input of the analysis effect
+        bool isMainThread = QThread::currentThread() == qApp->thread();
+        
         QMutexLocker k(&_imp->outputsMutex);
         std::size_t sz = _imp->outputs.size();
         if (sz > 1) {
@@ -3453,7 +3456,12 @@ Node::shouldCacheOutput() const
                 //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
                 //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
                 Node* output = _imp->outputs.front();
-                return output->isSettingsPanelOpened() || output->isMultiInstance() || output->getParentMultiInstance() || isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() || isPreviewEnabled();
+                return output->isSettingsPanelOpened() ||
+                _imp->liveInstance->doesTemporalClipAccess() ||
+                (isMainThread && (output->isMultiInstance() || output->getParentMultiInstance())) ||
+                isForceCachingEnabled() ||
+                appPTR->isAggressiveCachingEnabled() ||
+                (isPreviewEnabled() && !appPTR->isBackground());
             } else {
                 return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
             }
