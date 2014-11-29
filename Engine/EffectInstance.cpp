@@ -1990,17 +1990,26 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///Make sure the RoI falls within the image bounds
     ///Intersection will be in pixel coordinates
     if (useImageAsOutput) {
-        roi.intersect(upscaledImageBounds, &roi);
+        if (!roi.intersect(upscaledImageBounds, &roi)) {
+            return ImagePtr();
+        }
         if (!createInCache) {
             ///If we don't cache the image, just allocate the roi
             upscaledImageBounds.intersect(roi, &upscaledImageBounds);
         }
+        assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
+               roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
+
     } else {
-        roi.intersect(downscaledImageBounds, &roi);
+        if (!roi.intersect(downscaledImageBounds, &roi)) {
+            return ImagePtr();
+        }
         if (!createInCache) {
             ///If we don't cache the image, just allocate the roi 
             downscaledImageBounds.intersect(roi, &downscaledImageBounds);
         }
+        assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
+               roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
     }
     
     RectD canonicalRoI;
@@ -3014,7 +3023,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     RenderScale originalScale;
     originalScale.x = downscaledImage->getScale();
     originalScale.y = originalScale.x;
-    
+
     Natron::StatusEnum st = render_public(time,
                                           originalScale,
                                           renderMappedScale,

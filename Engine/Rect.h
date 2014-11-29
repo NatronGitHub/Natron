@@ -350,9 +350,11 @@ public:
         }
 
         intersection->x1 = std::max(x1,r.x1);
-        intersection->x2 = std::min(x2,r.x2);
+        // the region must be *at least* empty, thus the maximin.
+        intersection->x2 = std::max(intersection->x1,std::min(x2,r.x2));
         intersection->y1 = std::max(y1,r.y1);
-        intersection->y2 = std::min(y2,r.y2);
+        // the region must be *at least* empty, thus the maximin.
+        intersection->y2 = std::max(intersection->y1,std::min(y2,r.y2));
 
         return true;
     }

@@ -773,6 +773,10 @@ Image::halveRoIForDepth(const RectI & roi,
          srcBm += (srcBounds.width() + srcBounds.width()) - dstRoIWidth * 2,
          dstBm += (dstBounds.width()) - dstRoIWidth) {
         
+        if (y * 2 >= srcRoI.height()) {
+            break;
+        }
+        
         bool pickNextRow = (y * 2) < (srcBounds.y2 - 1);
         bool pickThisRow = (y * 2) >= (srcBounds.y1);
         int sumH = (int)pickNextRow + (int)pickThisRow;
