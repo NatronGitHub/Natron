@@ -773,96 +773,54 @@ Image::halveRoIForDepth(const RectI & roi,
          srcBm += (srcBounds.width() + srcBounds.width()) - dstRoIWidth * 2,
          dstBm += (dstBounds.width()) - dstRoIWidth) {
         
+        bool pickNextRow = (y * 2) < (srcBounds.y2 - 1);
+        bool pickThisRow = (y * 2) >= (srcBounds.y1);
+        int sumH = (int)pickNextRow + (int)pickThisRow;
+        assert(sumH == 1 || sumH == 2);
+        
         for (int x = 0; x < dstRoIWidth;
              ++x,
              src += (components + components) - components, // two pixels minus what was done on previous iteration
              dst += (components) - components, // one pixel minus what was done on previous iteration
              ++srcBm) {
             
-            if (x * 2 > srcRoI.width() -1) {
+            bool pickNextCol = (x * 2) < (srcBounds.x2 - 1);
+            bool pickThisCol = (x * 2) >= (srcBounds.x1);
+            int sumW = (int)pickThisCol + (int)pickNextCol;
+            assert(sumW == 1 || sumW == 2);
+            
+            for (int k = 0; k < components; ++k, ++dst, ++src) {
+                
+                
+                PIX a = (pickThisCol && pickThisRow) ? *src : 0;
+                PIX b = (pickNextCol && pickThisRow) ? *(src + components) : 0;
+                PIX c = (pickThisCol && pickNextRow) ? *(src + srcRowSize): 0;
+                PIX d = (pickNextCol && pickNextRow) ? *(src + srcRowSize  + components)  : 0;
+                
+                assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
+                assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
+                *dst = (a + b + c + d) / (sumH * sumW);
 
-                for (int k = 0; k < components; ++k, ++dst,++src) {
-                    *dst = 0;
-                }
-                continue;
             }
             
-            bool useNextPixel = x * 2 < srcRoI.width() - 1;
-
-            //The src image can be in this implementation smaller than dstBounds * 2
-            if (y * 2  < (srcRoI.height() - 1)) {
+            if (copyBitMap) {
                 
-                for (int k = 0; k < components; ++k, ++dst, ++src) {
-                    
-                    if (!useNextPixel) {
-                        *dst = PIX( (float)( *src + *(src + srcRowSize) ) / 2. );
-                    } else {
-                        *dst = PIX( (float)( *src +
-                                            *(src + components) +
-                                            *(src + srcRowSize) +
-                                            *(src + srcRowSize  + components) ) / 4. );
-                    }
-                }
-                if (copyBitMap) {
-                    if (!useNextPixel) {
-                        if (*srcBm != 0  && *(srcBm + srcBounds.width()) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    } else {
-                        if (*srcBm != 0 && *(srcBm + 1) != 0 && *(srcBm + srcBounds.width()) != 0 && *(srcBm + srcBounds.width() + 1) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    }
-                    
-                    ++srcBm;
-                    ++dstBm;
-                }
-            } else if (y * 2 == (srcRoI.height() - 1)) {
+                PIX a = (pickThisCol && pickThisRow) ? *srcBm : 0;
+                PIX b = (pickNextCol && pickThisRow) ? *(srcBm + 1) : 0;
+                PIX c = (pickThisCol && pickNextRow) ? *(srcBm + srcBounds.width()): 0;
+                PIX d = (pickNextCol && pickNextRow) ? *(src + srcBounds.width()  + 1)  : 0;
                 
-                if (!useNextPixel) {
-                    for (int k = 0; k < components; ++k, ++dst, ++src) {
-                        *dst = *src;
-                        
-                    }
-                } else {
-                    for (int k = 0; k < components; ++k, ++dst, ++src) {
-                        *dst = PIX( (float)( *src +
-                                            *(src + components) ) / 2. );
-                        
-                    }
-                }
-                
-                if (copyBitMap) {
-                    if (!useNextPixel) {
-                        *dstBm = *srcBm;
-                    } else {
-                        if (*srcBm != 0 && *(srcBm + 1) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    }
-                   
-                    ++srcBm;
-                    ++dstBm;
-                }
-            } else if (y * 2 > (srcRoI.height() - 1)) {
-                //Copy the previous line
-                for (int k = 0; k < components; ++k, ++dst,++src) {
-                    *dst = *(dst - dstRowSize);
-                    
-                }
-                if (copyBitMap) {
-                    *dstBm = *(dstBm - dstBounds.width());
-                    ++dstBm;
-                }
+                *dstBm = (a + b + c + d) / (sumH * sumW);
+               
+                ++srcBm;
+                ++dstBm;
             }
         }
+        
+        
+        
     }
+    
 } // halveRoIForDepth
 
 // code proofread and fixed by @devernay on 8/8/2014
