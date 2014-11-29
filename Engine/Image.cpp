@@ -812,7 +812,7 @@ Image::halveRoIForDepth(const RectI & roi,
                 PIX a = (pickThisCol && pickThisRow) ? *srcBm : 0;
                 PIX b = (pickNextCol && pickThisRow) ? *(srcBm + 1) : 0;
                 PIX c = (pickThisCol && pickNextRow) ? *(srcBm + srcBounds.width()): 0;
-                PIX d = (pickNextCol && pickNextRow) ? *(src + srcBounds.width()  + 1)  : 0;
+                PIX d = (pickNextCol && pickNextRow) ? *(srcBm + srcBounds.width()  + 1)  : 0;
                 
                 *dstBm = (a + b + c + d) / (sumH * sumW);
                
