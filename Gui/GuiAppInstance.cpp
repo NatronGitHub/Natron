@@ -74,7 +74,14 @@ GuiAppInstance::GuiAppInstance(int appID)
 }
 
 void
-GuiAppInstance::aboutToQuit()
+GuiAppInstance::resetPreviewProvider()
+{
+    deletePreviewProvider();
+    _imp->_previewProvider.reset(new FileDialogPreviewProvider);
+}
+
+void
+GuiAppInstance::deletePreviewProvider()
 {
     /**
      Kill the nodes used to make the previews in the file dialogs
@@ -100,7 +107,13 @@ GuiAppInstance::aboutToQuit()
         
         _imp->_previewProvider.reset();
     }
+}
+
+void
+GuiAppInstance::aboutToQuit()
+{
     
+    deletePreviewProvider();
     _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
     _imp->_gui->close();

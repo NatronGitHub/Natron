@@ -581,6 +581,7 @@ Gui::abortProject(bool quitApp)
         _imp->_appInstance->getProject()->closeProject();
         _imp->_appInstance->quit();
     } else {
+        _imp->_appInstance->resetPreviewProvider();
         _imp->_appInstance->getProject()->closeProject();
         restoreDefaultLayout();
     }

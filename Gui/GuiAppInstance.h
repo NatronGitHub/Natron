@@ -53,6 +53,14 @@ public:
 
     virtual ~GuiAppInstance();
 
+    void resetPreviewProvider();
+private:
+    
+    
+    void deletePreviewProvider();
+    
+public:
+    
     virtual void aboutToQuit() OVERRIDE FINAL;
     virtual void load(const QString & projectName = QString(),
                       const std::list<RenderRequest> &writersWork = std::list<AppInstance::RenderRequest>()) OVERRIDE FINAL;
