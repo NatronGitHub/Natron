@@ -85,7 +85,7 @@ public:
 
             if ( !path.empty() && (count != 0) ) {
                 //if the backing file has already the good size and we just wanted to re-open the mapping
-                _backingFile->resize( count * sizeof(DataType) );
+                _backingFile->resize(count);
             }
         } else if (storage == Natron::eStorageModeRAM) {
             _storageMode = eStorageModeRAM;
@@ -123,13 +123,6 @@ public:
 
     void restoreBufferFromFile(const std::string & path)
     {
-        try {
-            _backingFile.reset( new MemoryFile(path,MemoryFile::if_exists_keep_if_dont_exists_create) );
-        } catch (const std::exception & e) {
-            _backingFile.reset();
-            throw std::bad_alloc();
-        }
-
         _path = path;
         _storageMode = eStorageModeDisk;
     }
@@ -374,7 +367,7 @@ public:
         }
 
         allocate(_params->getElementsCount(),_requestedStorage,_requestedPath);
-        onMemoryAllocated();
+        onMemoryAllocated(false);
 
         if (_cache) {
             _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
@@ -384,11 +377,10 @@ public:
     /**
      * @brief To be called for disk-cached entries when restoring them from a file.
      * The file-path will be the one passed to the constructor
-     * WARNING: This function throws a std::bad_alloc if the allocation fails.
      **/
-    void restoreMemory()
+    void restoreMetaDataFromFile(std::size_t size)
     {
-        if (_requestedStorage == Natron::eStorageModeNone) {
+        if (!_cache || _requestedStorage != Natron::eStorageModeDisk) {
             return;
         }
         
@@ -397,15 +389,17 @@ public:
         restoreBufferFromFile(_requestedPath);
         
         if (_cache) {
-            _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
+            _cache->notifyEntryStorageChanged(Natron::eStorageModeNone, Natron::eStorageModeDisk, getTime(),size);
         }
-        onMemoryAllocated();
+        onMemoryAllocated(true);
     }
 
     /**
      * @brief Called right away once the buffer is allocated. Used in debug mode to initialize image with a default color.
+     * @param diskRestoration If true, this is called by restoreMetaDataFromFile() and the memory is in fact not allocated, this should
+     * just restore meta-data
      **/
-    virtual void onMemoryAllocated()
+    virtual void onMemoryAllocated(bool /*diskRestoration*/)
     {
     }
 

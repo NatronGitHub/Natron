@@ -67,6 +67,11 @@ namespace Natron {
         {
             std::fill(_map.begin(), _map.end(), 0);
         }
+        
+        void setTo1()
+        {
+            std::fill(_map.begin(),_map.end(),1);
+        }
 
         const RectI & getBounds() const
         {
@@ -133,7 +138,7 @@ namespace Natron {
         
         bool usesBitMap() const { return _useBitmap; }
 
-        virtual void onMemoryAllocated() OVERRIDE FINAL;
+        virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
 
         static ImageKey makeKey(U64 nodeHashKey,
                                 bool frameVaryingOrAnimated,

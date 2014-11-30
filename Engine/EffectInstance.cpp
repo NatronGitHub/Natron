@@ -41,6 +41,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Transform.h"
+#include "Engine/DiskCacheNode.h"
 
 using namespace Natron;
 
@@ -1344,6 +1345,7 @@ EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted
 
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
+                                                    bool useDiskCache,
                                                     const Natron::ImageKey& key,
                                                     unsigned int mipMapLevel,
                                                     Natron::ImageBitDepthEnum bitdepth,
@@ -1368,7 +1370,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     }
     
     if (!isCached) {
-        isCached = Natron::getImageFromCache(key,&cachedImages);
+        isCached = !useDiskCache ? Natron::getImageFromCache(key,&cachedImages) : Natron::getImageFromDiskCache(key, &cachedImages);
     }
     
     if (isCached) {
@@ -1460,7 +1462,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 
                 boost::shared_ptr<Image> img;
                 if (useCache) {
-                    bool cached = Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img);
+                    bool cached = !useDiskCache ? Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img) :
+                                                  Natron::getImageFromDiskCacheOrCreate(key, imageParams, &imageLock, &img);
                     assert(img);
                     
                     if (!cached) {
@@ -1505,7 +1508,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 
                 boost::shared_ptr<Image> img;
                 if (useCache) {
-                    bool cached = Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img);
+                    bool cached = !useDiskCache ? Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img) :
+                                                  Natron::getImageFromDiskCacheOrCreate(key, imageParams, &imageLock, &img);
                     assert(img);
                     if (!cached) {
                         img->allocateMemory();
@@ -1900,6 +1904,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
     bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     Natron::ImageKey key = Natron::Image::makeKey(nodeHash, isFrameVaryingOrAnimated, args.time, args.view);
+    
+    bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
+
     {
         ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
@@ -1915,16 +1922,21 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
         if ( lastRenderedImage && lastRenderHash != nodeHash ) {
             ///once we got it remove it from the cache
-            appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+            if (!useDiskCacheNode) {
+                appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+            } else {
+                appPTR->removeAllImagesFromDiskCacheWithMatchingKey(lastRenderHash);
+            }
             {
                 QMutexLocker l(&_imp->lastRenderArgsMutex);
                 _imp->lastImage.reset();
             }
         }
     }
+    
 
     boost::shared_ptr<ImageParams> cachedImgParams;
-    getImageFromCacheAndConvertIfNeeded(createInCache, key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod,args.inputImagesList, &image);
+    getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod,args.inputImagesList, &image);
 
     
     if (byPassCache) {
@@ -2069,7 +2081,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
 
     if (redoCacheLookup) {
-        getImageFromCacheAndConvertIfNeeded(createInCache, key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod,args.inputImagesList, &image);
+        getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,args.bitdepth, args.components, args.channelForAlpha,rod,args.inputImagesList, &image);
         if (image) {
             cachedImgParams = image->getParams();
             ///We check what is left to render.
@@ -2122,7 +2134,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         
         
         //Controls whether images are stored on disk or in RAM, 0 = RAM, 1 = mmap
-        int cost = 0;
+        int cost = useDiskCacheNode ? 1 : 0;
     
         //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
         //recreate, instead cache the full-scale image
@@ -2152,7 +2164,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             
             ImagePtr newImage;
             if (createInCache) {
-                bool cached = Natron::getImageFromCacheOrCreate(key, cachedImgParams, &imageLock, &newImage);
+                bool cached = !useDiskCacheNode ? Natron::getImageFromCacheOrCreate(key, cachedImgParams, &imageLock, &newImage) :
+                                                  Natron::getImageFromDiskCacheOrCreate(key, cachedImgParams, &imageLock, &newImage);
                 
                 if (!newImage) {
                     std::stringstream ss;
@@ -2208,7 +2221,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                     
                     image.reset();
                     
-                    bool cached = Natron::getImageFromCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, &image);
+                    bool cached = !useDiskCacheNode ? Natron::getImageFromCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, &image) :
+                                                      Natron::getImageFromDiskCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, &image) ;
                     if (!cached) {
                         image->allocateMemory();
                     } else {
@@ -3596,7 +3610,12 @@ EffectInstance::isIdentity_public(U64 hash,
         
         NON_RECURSIVE_ACTION();
         bool ret = false;
-        if ( _node->isNodeDisabled() ) {
+        
+        if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
+            ret = true;
+            *inputNb = 0;
+            *inputTime = time;
+        } else if ( _node->isNodeDisabled() ) {
             ret = true;
             *inputTime = time;
             *inputNb = -1;

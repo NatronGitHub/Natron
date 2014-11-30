@@ -51,6 +51,7 @@ SOURCES += \
     ChannelSet.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
+    DiskCacheNode.cpp \
     EffectInstance.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
@@ -112,6 +113,7 @@ HEADERS += \
     CurveSerialization.h \
     CurvePrivate.h \
     ChannelSet.h \
+    DiskCacheNode.h \
     EffectInstance.h \
     FileDownloader.h \
     FileSystemModel.h \

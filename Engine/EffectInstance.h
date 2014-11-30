@@ -443,6 +443,7 @@ public:
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
+                                             bool useDiskCache,
                                              const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
                                              Natron::ImageBitDepthEnum bitdepth,
@@ -700,7 +701,7 @@ public:
 
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
 
-    bool shouldCacheOutput() const;
+    virtual bool shouldCacheOutput() const;
 
 protected:
 

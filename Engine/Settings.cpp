@@ -27,6 +27,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/StandardPaths.h"
 #include "SequenceParsing.h"
 
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
@@ -656,15 +657,37 @@ Settings::initializeKnobs()
     _unreachableRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_unreachableRAMLabel);
 
-    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GiB)");
-    _maxDiskCacheGB->setName("maxDiskCache");
-    _maxDiskCacheGB->setAnimationEnabled(false);
-    _maxDiskCacheGB->setMinimum(0);
-    _maxDiskCacheGB->setMaximum(100);
-    _maxDiskCacheGB->setHintToolTip("The maximum size that may be used by caches located on disk (in GiB)");
-    _cachingTab->addKnob(_maxDiskCacheGB);
+    _maxViewerDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum playback disk cache size (GiB)");
+    _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
+    _maxViewerDiskCacheGB->setAnimationEnabled(false);
+    _maxViewerDiskCacheGB->setMinimum(0);
+    _maxViewerDiskCacheGB->setMaximum(100);
+    _maxViewerDiskCacheGB->setHintToolTip("The maximum size that may be used by the playback cache on disk (in GiB)");
+    _cachingTab->addKnob(_maxViewerDiskCacheGB);
+    
+    _maxDiskCacheNodeGB = Natron::createKnob<Int_Knob>(this, "Maximum DiskCache node disk usage (GiB)");
+    _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
+    _maxDiskCacheNodeGB->setAnimationEnabled(false);
+    _maxDiskCacheNodeGB->setMinimum(0);
+    _maxDiskCacheNodeGB->setMaximum(100);
+    _maxDiskCacheNodeGB->setHintToolTip("The maximum size that may be used by the DiskCache node on disk (in GiB)");
+    _cachingTab->addKnob(_maxDiskCacheNodeGB);
 
 
+    _diskCachePath = Natron::createKnob<Path_Knob>(this, "Disk cache path (empty = default)");
+    _diskCachePath->setName("diskCachePath");
+    _diskCachePath->setAnimationEnabled(false);
+    _diskCachePath->setMultiPath(false);
+    
+    QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    std::string diskCacheTt("WARNING: Changing this parameter requires a restart of the application. \n"
+                            "This is points to the location where " NATRON_APPLICATION_NAME " on-disk caches will be. "
+                            "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
+                            "the default location will be used. The default location is: \n");
+    
+    _diskCachePath->setHintToolTip(diskCacheTt + defaultLocation.toStdString());
+    _cachingTab->addKnob(_diskCachePath);
+    
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
 
@@ -790,7 +813,8 @@ Settings::setDefaultValues()
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
     _unreachableRAMPercent->setDefaultValue(5);
-    _maxDiskCacheGB->setDefaultValue(10,0);
+    _maxViewerDiskCacheGB->setDefaultValue(5,0);
+    _maxDiskCacheNodeGB->setDefaultValue(10,0);
     setCachingLabels();
     _defaultNodeColor->setDefaultValue(0.6,0);
     _defaultNodeColor->setDefaultValue(0.6,1);
@@ -1101,9 +1125,13 @@ Settings::onKnobValueChanged(KnobI* k,
                 }
             }
         }
-    } else if ( k == _maxDiskCacheGB.get() ) {
+    } else if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheSize() );
+            appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
+        }
+    } else if ( k == _maxViewerDiskCacheGB.get() ) {
+        if (!_restoringSettings) {
+            appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheNodeSize());
         }
     } else if ( k == _maxRAMPercent.get() ) {
         if (!_restoringSettings) {
@@ -1115,6 +1143,8 @@ Settings::onKnobValueChanged(KnobI* k,
             appPTR->setPlaybackCacheMaximumSize( getRamPlaybackMaximumPercent() );
         }
         setCachingLabels();
+    } else if ( k == _diskCachePath.get() ) {
+        appPTR->setDiskCacheLocation(_diskCachePath->getValue().c_str());
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
@@ -1213,9 +1243,15 @@ Settings::getRamPlaybackMaximumPercent() const
 }
 
 U64
-Settings::getMaximumDiskCacheSize() const
+Settings::getMaximumViewerDiskCacheSize() const
 {
-    return (U64)( _maxDiskCacheGB->getValue() ) * std::pow(1024.,3.);
+    return (U64)( _maxViewerDiskCacheGB->getValue() ) * std::pow(1024.,3.);
+}
+
+U64
+Settings::getMaximumDiskCacheNodeSize() const
+{
+    return (U64)( _maxDiskCacheNodeGB->getValue() ) * std::pow(1024.,3.);
 }
 
 double

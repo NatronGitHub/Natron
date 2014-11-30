@@ -44,6 +44,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/serialization/split_member.hpp>
 #endif
 
 #include "Engine/AppManager.h" //for access to settings
@@ -57,6 +58,9 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/StandardPaths.h"
 #include "Engine/ImageLocker.h"
 #include "Global/MemoryInfo.h"
+
+#define SERIALIZED_ENTRY_INTRODUCES_SIZE 2
+#define SERIALIZED_ENTRY_VERSION SERIALIZED_ENTRY_INTRODUCES_SIZE
 
 //Beyond that percentage of occupation, the cache will start evicting LRU entries
 #define NATRON_CACHE_LIMIT_PERCENT 0.9
@@ -150,19 +154,23 @@ private:
     {
         for (;;) {
             
+            bool quit;
             {
                 QMutexLocker k(&mustQuitMutex);
-                if (mustQuit) {
-                    mustQuit = false;
-                    mustQuitCond.wakeAll();
-                    return;
-                }
+                quit = mustQuit;
             }
             
             {
                 boost::shared_ptr<T> front;
                 {
                     QMutexLocker k(&_entriesQueueMutex);
+                    if (quit && _entriesQueue.empty()) {
+                        _entriesQueueMutex.unlock();
+                        QMutexLocker k(&mustQuitMutex);
+                        mustQuit = false;
+                        mustQuitCond.wakeAll();
+                        return;
+                    }
                     while (_entriesQueue.empty()) {
                         _entriesQueueNotEmptyCond.wait(&_entriesQueueMutex);
                     }
@@ -254,16 +262,39 @@ public:
         hash_type hash;
         typename EntryType::key_type key;
         ParamsTypePtr params;
-
+        std::size_t size; //< the data size in bytes
+        
+        SerializedEntry()
+        : hash(0)
+        , key()
+        , params()
+        , size(0)
+        {
+            
+        }
 
         template<class Archive>
-        void serialize(Archive & ar,
+        void save(Archive & ar,
+                       const unsigned int /*version*/) const
+        {
+            ar & boost::serialization::make_nvp("Hash",hash);
+            ar & boost::serialization::make_nvp("Key",key);
+            ar & boost::serialization::make_nvp("Params",params);
+            ar & boost::serialization::make_nvp("Size",size);
+        }
+        
+        template<class Archive>
+        void load(Archive & ar,
                        const unsigned int /*version*/)
         {
             ar & boost::serialization::make_nvp("Hash",hash);
             ar & boost::serialization::make_nvp("Key",key);
             ar & boost::serialization::make_nvp("Params",params);
+            ar & boost::serialization::make_nvp("Size",size);
         }
+        
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     };
 
     typedef std::list< SerializedEntry > CacheTOC;
@@ -568,7 +599,7 @@ private:
                 assert(imageLocker);
                 imageLocker->lock(*returnValue);
                 
-                sealEntry(*returnValue);
+                sealEntry(*returnValue, true);
             }
             
         }
@@ -941,7 +972,7 @@ public:
         QMutexLocker k(&_sizeLock);
         
         assert(oldStorage != newStorage);
-
+        assert(newStorage != Natron::eStorageModeNone);
         if (oldStorage == Natron::eStorageModeRAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
             _diskCacheSize += size;
@@ -951,7 +982,7 @@ public:
 #endif
             ///We switched from RAM to DISK that means the MemoryFile object has been destroyed hence the file has been closed.
             appPTR->decreaseNCacheFilesOpened();
-        } else {
+        } else if (oldStorage == Natron::eStorageModeDisk) {
             _memoryCacheSize += size;
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
 #ifdef NATRON_DEBUG_CACHE
@@ -960,6 +991,12 @@ public:
 #endif
             ///We switched from DISK to RAM that means the MemoryFile object has been created and the file opened
             appPTR->increaseNCacheFilesOpened();
+        } else {
+            if (newStorage == Natron::eStorageModeRAM) {
+                _memoryCacheSize += size;
+            } else if (newStorage == Natron::eStorageModeDisk) {
+                _diskCacheSize += size;
+            }
         }
        
         _signalEmitter->emitEntryStorageChanged(time, (int)oldStorage, (int)newStorage);
@@ -989,13 +1026,12 @@ public:
     /*Returns the name of the cache with its path preprended*/
     QString getCachePath() const
     {
-        QString cacheFolderName( Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator() );
-
-        cacheFolderName.append( QDir::separator() );
-        QString str(cacheFolderName);
-        str.append( cacheName().c_str() );
-
-        return str;
+        QString cacheFolderName(appPTR->getDiskCacheLocation());
+        if (!cacheFolderName.endsWith('\\') && !cacheFolderName.endsWith('/')) {
+            cacheFolderName.append(QDir::separator());
+        }
+        cacheFolderName.append( cacheName().c_str() );
+        return cacheFolderName;
     }
 
     std::string getRestoreFilePath() const
@@ -1192,6 +1228,7 @@ public:
                     serialization.hash = (*it2)->getHashKey();
                     serialization.params = (*it2)->getParams();
                     serialization.key = (*it2)->getKey();
+                    serialization.size = (*it2)->dataSize();
                     tableOfContents->push_back(serialization);
                 }
             }
@@ -1223,62 +1260,13 @@ public:
             }
             EntryType* value = NULL;
 
-            ///Before allocating the memory check that there's enough space to fit in memory
-            {
-                QMutexLocker locker(&_lock);
-                appPTR->checkCacheFreeMemoryIsGoodEnough();
-            }
-            
-            {
-                QMutexLocker locker(&_lock);
-                
-                
-                U64 memoryCacheSize,maximumInMemorySize;
-                {
-                    QMutexLocker k(&_sizeLock);
-                    memoryCacheSize = _memoryCacheSize;
-                    maximumInMemorySize = std::max((std::size_t)1,_maximumInMemorySize);
-                    
-                }
-                double occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
-                
-                while ( (occupationPercentage >= NATRON_CACHE_LIMIT_PERCENT) ) {
-        
-                    std::list<EntryTypePtr> deleted;
-                    if ( !tryEvictEntry(deleted) ) {
-                        break;
-                    }
-                    
-                    for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
-                        if (!(*it)->isStoredOnDisk()) {
-                            memoryCacheSize -= (*it)->size();
-                        }
-                        entriesToBeDeleted.push_back(*it);
-                    }
-                    occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
-                }
-            }
             Natron::StorageModeEnum storage = Natron::eStorageModeDisk;
 
-            
-            ///Just in case, we don't allow more than X files to be removed at once.
-            int safeCounter = 0;
-            ///If too many files are opened, fall-back on RAM storage.
-            while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
-#ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
-#endif
-                if ( !evictLRUDiskEntry() ) {
-                    break;
-                }
-                ++safeCounter;
-            }
-            
-            
-            
             try {
                 value = new EntryType(it->key,it->params,this,storage, QString( getCachePath() + QDir::separator() ).toStdString());
-                value->restoreMemory();
+                
+                ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
+                value->restoreMetaDataFromFile(it->size);
             } catch (const std::bad_alloc & e) {
                 qDebug() << e.what();
                 continue;
@@ -1286,7 +1274,7 @@ public:
 
             {
                 QMutexLocker locker(&_lock);
-                sealEntry(EntryTypePtr(value));
+                sealEntry(EntryTypePtr(value), false);
             }
         }
     }
@@ -1405,93 +1393,38 @@ private:
         }
     }
 
-    /** @brief Allocates a new entry by the cache. On failure a NULL pointer is returned.
-     * The storage is then handled by the cache solely.
+    /** @brief Inserts into the cache an entry that was previously allocated by the createInternal()
+     * function. This is called directly by createInternal() if the allocation was successful
      **/
-    EntryTypePtr newEntry(const typename EntryType::key_type & key,
-                          const ParamsTypePtr & params,
-                          std::list<EntryTypePtr> &entriesToBeDeleted,
-                          ImageLockerHelper<EntryType>* imageLocker) const
-    {
-        assert( !_lock.tryLock() );   // must be locked
-        EntryTypePtr entryptr;
-        Natron::StorageModeEnum storage;
-        if (params->getCost() == 0) {
-            storage = Natron::eStorageModeRAM;
-        } else if (params->getCost() >= 1) {
-            storage = Natron::eStorageModeDisk;
-        } else {
-            storage = Natron::eStorageModeNone;
-        }
-
-    
-        U64 memoryCacheSize,maximumInMemorySize;
-        {
-            QMutexLocker k(&_sizeLock);
-            memoryCacheSize = _memoryCacheSize;
-            maximumInMemorySize = std::max((std::size_t)1,_maximumInMemorySize);
-            
-        }
-        
-        double occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
-        ///While the current cache size can't fit the new entry, erase the last recently used entries.
-        ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
-        while (occupationPercentage > NATRON_CACHE_LIMIT_PERCENT) {
-            
-            std::list<EntryTypePtr> deleted;
-            if ( !tryEvictEntry(deleted) ) {
-                break;
-            }
-            
-            for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
-                if (!(*it)->isStoredOnDisk()) {
-                    memoryCacheSize -= (*it)->size();
-                }
-                entriesToBeDeleted.push_back(*it);
-            }
-            
-            occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
-        }
-
-        ///At this point there could be nothing in the cache but the condition totalFreeRAM <= systemRAMToKeepFree would still be
-        ///true. This is likely because the other cache is taking all the memory.
-        // We still allocate the entry because otherwise we would never be able to continue the render.
-        try {
-            entryptr.reset( new EntryType(key,params,this,storage,
-                                        storage == Natron::eStorageModeDisk ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
-
-            ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
-            
-        } catch (const std::bad_alloc & e) {
-            return EntryTypePtr();
-        }
-
-        ///Take the lock before sealing the entry into the cache, making sure no-one will be able to get the image before it's allocated
-        assert(imageLocker);
-        imageLocker->lock(entryptr);
-       
-        sealEntry(entryptr);
-
-        return entryptr;
-    }
-
-    /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
-     * function. This is called directly by newEntry() if the allocation was successful
-     **/
-    void sealEntry(const EntryTypePtr & entry) const
+    void sealEntry(const EntryTypePtr & entry,bool inMemory) const
     {
         assert( !_lock.tryLock() );   // must be locked
         typename EntryType::hash_type hash = entry->getHashKey();
-        /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
-        CacheIterator existingEntry = _memoryCache(hash);
-        if ( existingEntry == _memoryCache.end() ) {
-            _memoryCache.insert(hash,entry);
+        
+        if (inMemory) {
+            
+            /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
+            CacheIterator existingEntry = _memoryCache(hash);
+            if ( existingEntry == _memoryCache.end() ) {
+                _memoryCache.insert(hash,entry);
+            } else {
+                /*append to the existing list*/
+                getValueFromIterator(existingEntry).push_back(entry);
+            }
+            
         } else {
-            /*append to the existing list*/
-            getValueFromIterator(existingEntry).push_back(entry);
+            
+            CacheIterator existingEntry = _diskCache(hash);
+            if ( existingEntry == _diskCache.end() ) {
+                _diskCache.insert(hash,entry);
+            } else {
+                /*append to the existing list*/
+                getValueFromIterator(existingEntry).push_back(entry);
+            }
+            
         }
     }
-
+    
     bool tryEvictEntry(std::list<EntryTypePtr>& entriesToBeDeleted) const
     {
         assert( !_lock.tryLock() );

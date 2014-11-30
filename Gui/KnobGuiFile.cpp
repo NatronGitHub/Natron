@@ -777,8 +777,6 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         _lineEdit = new LineEdit(_mainContainer);
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
-        QObject::connect( _lineEdit, SIGNAL( textDropped() ), this, SLOT( onTextDropped() ) );
-        QObject::connect( _lineEdit, SIGNAL( textPasted() ), this, SLOT( onTextPasted() ) );
 
         if ( hasToolTip() ) {
             _lineEdit->setToolTip( toolTip() );

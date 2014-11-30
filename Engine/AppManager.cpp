@@ -47,6 +47,7 @@
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
+#include "Engine/DiskCacheNode.h"
 #include "Engine/NoOp.h"
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
@@ -67,7 +68,12 @@ struct AppManagerPrivate
     boost::scoped_ptr<Natron::OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
     boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache; //< Images cache
+    boost::shared_ptr<Natron::Cache<Natron::Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
     boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache; //< Viewer textures cache
+    
+    mutable QMutex diskCachesLocationMutex;
+    QString diskCachesLocation;
+    
     ProcessInputChannel* _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
@@ -118,7 +124,10 @@ struct AppManagerPrivate
         , ofxHost( new Natron::OfxHost() )
         , _knobFactory( new KnobFactory() )
         , _nodeCache()
+        , _diskCache()
         , _viewerCache()
+        , diskCachesLocationMutex()
+        , diskCachesLocation()
         ,_backgroundIPC(0)
         ,_loaded(false)
         ,_binaryPath()
@@ -163,6 +172,12 @@ struct AppManagerPrivate
      **/
     void setMaxCacheFiles();
 };
+
+void
+AppManager::saveCaches() const
+{
+    _imp->saveCaches();
+}
 
 int
 AppManager::getHardwareIdealThreadCount()
@@ -369,6 +384,7 @@ AppManager::load(int &argc,
     initializeQApp(argc, argv);
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) ;
 
 #if QT_VERSION < 0x050000
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
@@ -493,11 +509,14 @@ AppManager::loadInternal(const QString & projectFilename,
 
 
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-    U64 maxDiskCache = _imp->_settings->getMaximumDiskCacheSize();
+    U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-
-    U64 viewerCacheSize = maxDiskCache + playbackSize;
-    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1) );
+    U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
+    
+    U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
+    
+    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1.) );
+    _imp->_diskCache.reset( new Cache<Image>("DiskCache",0x1, maxDiskCacheNode,0.) );
     _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",0x1,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
 
     setLoadingStatus( tr("Restoring the image cache...") );
@@ -640,6 +659,7 @@ AppManager::clearDiskCache()
 {
     clearLastRenderedTextures();
     _imp->_viewerCache->clear();
+    _imp->_diskCache->clear();
 }
 
 void
@@ -798,18 +818,24 @@ AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
+    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
     _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
 void
-AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
+AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
 {
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
 
     _imp->_viewerCache->setMaximumCacheSize(size);
     _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)size );
+}
+
+void
+AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
+{
+    _imp->_diskCache->setMaximumCacheSize(size);
 }
 
 void
@@ -820,7 +846,7 @@ AppManager::setPlaybackCacheMaximumSize(double p)
 
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
+    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
     _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
@@ -914,6 +940,30 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
 
         onPluginLoaded(plugin);
     }
+    {
+        boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&DiskCacheNode::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        
+        Natron::Plugin* plugin = new Natron::Plugin( binary,node->getPluginID().c_str(),node->getPluginLabel().c_str(),
+                                                    "","",qgrouping,"",NULL,node->getMajorVersion(),node->getMinorVersion(),
+                                                    false,false);
+        plugins->push_back(plugin);
+        
+        
+        onPluginLoaded(plugin);
+    }
+
 }
 
 void
@@ -1158,6 +1208,12 @@ AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
 }
 
 void
+AppManager::removeAllImagesFromDiskCacheWithMatchingKey(U64 treeVersion)
+{
+    _imp->_diskCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
+}
+
+void
 AppManager::removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion)
 {
     _imp->_viewerCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
@@ -1189,6 +1245,20 @@ AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              boost::shared_ptr<Natron::Image>* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
+}
+
+bool
+AppManager::getImage_diskCache(const Natron::ImageKey & key,std::list<boost::shared_ptr<Natron::Image> >* returnValue) const
+{
+    return _imp->_diskCache->get(key, returnValue);
+}
+
+bool
+AppManager::getImageOrCreate_diskCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
+                                ImageLocker* imageLocker,
+                                boost::shared_ptr<Natron::Image>* returnValue) const
+{
+    return _imp->_diskCache->getOrCreate(key, params, imageLocker, returnValue);
 }
 
 
@@ -1279,12 +1349,12 @@ AppManager::registerEngineMetaTypes() const
 #endif
 }
 
-void
-AppManagerPrivate::saveCaches()
+template <typename T>
+void saveCache(Natron::Cache<T>* cache)
 {
     std::ofstream ofile;
     ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
+    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     try {
         ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
     } catch (const std::ofstream::failure & e) {
@@ -1299,8 +1369,8 @@ AppManagerPrivate::saveCaches()
         return;
     }
     
-    Natron::Cache<FrameEntry>::CacheTOC toc;
-    _viewerCache->save(&toc);
+    typename Natron::Cache<T>::CacheTOC toc;
+    cache->save(&toc);
     
     try {
         boost::archive::binary_oarchive oArchive(ofile);
@@ -1310,39 +1380,78 @@ AppManagerPrivate::saveCaches()
     }
     
     ofile.close();
-    
 
-    //
-    //    {
-    //        std::ofstream ofile;
-    //        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    //        std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
-    //        try {
-    //            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-    //        } catch (const std::ofstream::failure & e) {
-    //            qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
-    //
-    //            return;
-    //        }
-    //
-    //        if ( !ofile.good() ) {
-    //            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
-    //
-    //            return;
-    //        }
-    //
-    //        Natron::Cache<Image>::CacheTOC toc;
-    //        _nodeCache->save(&toc);
-    //
-    //        try {
-    //            boost::archive::binary_oarchive oArchive(ofile);
-    //            oArchive << toc;
-    //            ofile.close();
-    //        } catch (const std::exception & e) {
-    //            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
-    //        }
-    //    }
+}
+
+void
+AppManager::setDiskCacheLocation(const QString& path)
+{
+    
+    QDir d(path);
+    QMutexLocker k(&_imp->diskCachesLocationMutex);
+    if (d.exists() && !path.isEmpty()) {
+        _imp->diskCachesLocation = path;
+    } else {
+        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    }
+    
+}
+
+const QString&
+AppManager::getDiskCacheLocation() const
+{
+    QMutexLocker k(&_imp->diskCachesLocationMutex);
+    return _imp->diskCachesLocation;
+}
+
+void
+AppManagerPrivate::saveCaches()
+{
+    saveCache<FrameEntry>(_viewerCache.get());
+    saveCache<Image>(_diskCache.get());
 } // saveCaches
+
+template <typename T>
+void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
+{
+    if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
+        std::ifstream ifile;
+        std::string settingsFilePath = cache->getRestoreFilePath();
+        try {
+            ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            ifile.open(settingsFilePath.c_str(),std::ifstream::in);
+        } catch (const std::ifstream::failure & e) {
+            qDebug() << "Failed to open the cache restoration file: " << e.what();
+            
+            return;
+        }
+        
+        if ( !ifile.good() ) {
+            qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+            ifile.close();
+            
+            return;
+        }
+        
+        typename Natron::Cache<T>::CacheTOC tableOfContents;
+        try {
+            boost::archive::binary_iarchive iArchive(ifile);
+            iArchive >> tableOfContents;
+        } catch (const std::exception & e) {
+            qDebug() << e.what();
+            ifile.close();
+            
+            return;
+        }
+        
+        ifile.close();
+        
+        QFile restoreFile( settingsFilePath.c_str() );
+        restoreFile.remove();
+        
+        cache->restore(tableOfContents);
+    }
+}
 
 void
 AppManagerPrivate::restoreCaches()
@@ -1387,43 +1496,8 @@ AppManagerPrivate::restoreCaches()
     //        }
     //    }
     if (!appPTR->isBackground()) {
-        if ( checkForCacheDiskStructure( _viewerCache->getCachePath() ) ) {
-            std::ifstream ifile;
-            std::string settingsFilePath = _viewerCache->getRestoreFilePath();
-            try {
-                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-            } catch (const std::ifstream::failure & e) {
-                qDebug() << "Failed to open the cache restoration file: " << e.what();
-
-                return;
-            }
-
-            if ( !ifile.good() ) {
-                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
-                ifile.close();
-
-                return;
-            }
-
-            Natron::Cache<FrameEntry>::CacheTOC tableOfContents;
-            try {
-                boost::archive::binary_iarchive iArchive(ifile);
-                iArchive >> tableOfContents;
-            } catch (const std::exception & e) {
-                qDebug() << e.what();
-                ifile.close();
-
-                return;
-            }
-
-            ifile.close();
-
-            QFile restoreFile( settingsFilePath.c_str() );
-            restoreFile.remove();
-
-            _viewerCache->restore(tableOfContents);
-        }
+        restoreCache<FrameEntry>(this, _viewerCache.get());
+        restoreCache<Image>(this, _diskCache.get());
     }
 } // restoreCaches
 

@@ -342,16 +342,21 @@ Image::Image(ImageComponentsEnum components,
 }
 
 void
-Image::onMemoryAllocated()
+Image::onMemoryAllocated(bool diskRestoration)
 {
     if (_cache || _useBitmap) {
         _bitmap.initialize(_bounds);
     }
 
-
+    if (diskRestoration) {
+        _bitmap.setTo1();
+    }
+    
 #ifdef DEBUG
-    ///fill with red, to recognize unrendered pixels
-    fill(_bounds,1.,0.,0.,1.);
+    if (!diskRestoration) {
+        ///fill with red, to recognize unrendered pixels
+        fill(_bounds,1.,0.,0.,1.);
+    }
 #endif
     
 }

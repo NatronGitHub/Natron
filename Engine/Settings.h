@@ -67,7 +67,9 @@ public:
 
     double getRamPlaybackMaximumPercent() const;
 
-    U64 getMaximumDiskCacheSize() const;
+    U64 getMaximumViewerDiskCacheSize() const;
+    
+    U64 getMaximumDiskCacheNodeSize() const;
 
     double getUnreachableRamPercent() const;
 
@@ -278,7 +280,10 @@ private:
     boost::shared_ptr<String_Knob> _unreachableRAMLabel;
     
     ///The total disk space allowed for all Natron's caches
-    boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
+    boost::shared_ptr<Int_Knob> _maxViewerDiskCacheGB;
+    boost::shared_ptr<Int_Knob> _maxDiskCacheNodeGB;
+    boost::shared_ptr<Path_Knob> _diskCachePath;
+    
     boost::shared_ptr<Page_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
     boost::shared_ptr<Int_Knob> _powerOf2Tiling;

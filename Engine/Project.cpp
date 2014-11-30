@@ -337,6 +337,10 @@ Project::saveProject(const QString & path,
         QMutexLocker l(&_imp->isSavingProjectMutex);
         _imp->isSavingProject = false;
     }
+    
+    ///Save caches ToC
+    appPTR->saveCaches();
+    
     return ret;
 }
 
