@@ -102,6 +102,7 @@ CompleterLineEdit::filterText(const QString & txt)
     QRect screen = desktop->screenGeometry();
     double maxHeight = ( screen.height() - p.y() ) * 0.8;
     QFontMetrics fm = _imp->listView->fontMetrics();
+#pragma message WARN("value stored to maxHeight is never read")
     maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
 
     // Position the text edit

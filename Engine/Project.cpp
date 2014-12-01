@@ -1618,6 +1618,7 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
                     assert(ok);
                     
                     ok = connectNodes(it->second, created, it->first);
+                    (void)ok;
                     //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                 }
             }

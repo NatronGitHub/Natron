@@ -1512,7 +1512,9 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     if (srcLut == dstLut) {
         srcLut = dstLut = 0;
     }
-
+    if (intersection.isNull()) {
+        return;
+    }
     for (int y = 0; y < intersection.height(); ++y) {
         int start = rand() % intersection.width();
         const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);

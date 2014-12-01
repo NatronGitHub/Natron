@@ -1440,6 +1440,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         
         if (!imageToConvert && !*image) {
             ///We only found an image with a mipmap level > to the one requested or unconvertable comps/bitdepth
+#pragma message WARN("value stored to isCached is never read")
             isCached = false;
             
         } else if (imageToConvert && !*image) {
