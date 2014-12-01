@@ -1168,7 +1168,7 @@ Settings::onKnobValueChanged(KnobI* k,
         
         bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
         if (warnOcioChanged && appPTR->getTopLevelInstance()) {
-            bool stopAsking;
+            bool stopAsking = false;
             Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
                                   QObject::tr("The OpenColorIO config change requires a restart of "
                                               NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
@@ -1185,7 +1185,7 @@ Settings::onKnobValueChanged(KnobI* k,
             tryLoadOpenColorIOConfig();
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
             if (warnOcioChanged && appPTR->getTopLevelInstance()) {
-                bool stopAsking;
+                bool stopAsking = false;
                 Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
@@ -2095,7 +2095,7 @@ Settings::doOCIOStartupCheckIfNeeded()
             return;
         }
         
-        bool stopAsking;
+        bool stopAsking = false;
         Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),
                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                      Natron::eStandardButtonYes,
