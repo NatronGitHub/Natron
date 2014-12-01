@@ -1,4 +1,10 @@
 # This is the http://travis-ci.org configuration file for Natron
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "Ss+/N7eLl1cnXRP+XmXuBuuMXTZ/0TUgiGxBJMYGVTmwG2tDDAfhsUh5laeb/OE7dNxwLK5uLeb/XXI4AlP6W7tfquIAAq6/PhKIiRTXDgU6Sfa5voHiM8ni1x9rBtmaOk6/8QjWWSisrQmy9DmxRfYtP2i/sKkpIcJHCs5OCpo="
+
 os:
   - linux
   - osx
@@ -23,17 +29,25 @@ cache:
   - /usr/local/Cellar
 
 # Travis CI has 1.5 cores per VM, take advantage of it
-env:
-  - CONFIG="coverage debug" MAKEFLAGSPARALLEL="-j 2"
-
 before_install:
    - date -u
    - uname -a
+   - export J='-j3'
 
 install:
+  - tools/travis/coverity_env.sh
+  - if [[ ${COVERITY_BUILD_DISABLED} == 1 ]];
+    then
+        exit 0;
+    fi
   - tools/travis/install_dependencies.sh > install_dependencies.log 2>&1
 
 script:
+  - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
+    then
+      echo "Don't build on coverty_scan branch.";
+      exit 0;
+    fi
   - tools/travis/build.sh
 
 after_success:
@@ -41,3 +55,12 @@ after_success:
 
 after_failure:
   - cat install_dependencies.log || true
+
+addons:
+  coverity_scan:
+    project:
+      name: "MrKepzie/Natron"
+      description: "Natron Build submitted via Travis CI"
+    notification_email: frederic.devernay@inria.fr
+    build_command: "tools/travis/build.sh"
+    branch_pattern: coverity_scan
