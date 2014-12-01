@@ -1240,7 +1240,6 @@ public:
                     serialization.size = (*it2)->dataSize();
                     serialization.filePath = (*it2)->getFilePath();
                     tableOfContents->push_back(serialization);
-                    std::cout << "filename " << serialization.filePath << std::endl;
 #ifdef DEBUG
                     if (!CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash)) {
                         qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
