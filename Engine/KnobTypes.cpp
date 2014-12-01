@@ -399,7 +399,7 @@ getInputRoD(EffectInstance* effect,
 #else
     Format f;
     effect->getRenderFormat(&f);
-    rod = f;
+    rod = f.toCanonicalFormat();
 #endif
 }
 

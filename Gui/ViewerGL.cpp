@@ -370,12 +370,7 @@ struct ViewerGL::Implementation
     void getProjectFormatCanonical(RectD& canonicalProjectFormat) const
     {
         QMutexLocker k(&projectFormatMutex);
-        RectI pixelF;
-        pixelF.x1 = projectFormat.x1;
-        pixelF.y1 = projectFormat.y1;
-        pixelF.x2 = projectFormat.x2;
-        pixelF.y2 = projectFormat.y2;
-        pixelF.toCanonical_noClipping(0, projectFormat.getPixelAspectRatio(), &canonicalProjectFormat);
+        canonicalProjectFormat = projectFormat.toCanonicalFormat();
     }
 };
 
@@ -915,7 +910,9 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     Format projectFormat;
     parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
 
-    _imp->blankViewerInfo.setRoD(projectFormat);
+    RectD canonicalFormat = projectFormat.toCanonicalFormat();
+    
+    _imp->blankViewerInfo.setRoD(canonicalFormat);
     _imp->blankViewerInfo.setDisplayWindow(projectFormat);
     setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),0);
     setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),1);
@@ -2405,7 +2402,9 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 
     if (image) {
         _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
-        _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
+        RectI pixelRoD;
+        image->getRoD().toPixelEnclosing(0, image->getPixelAspectRatio(), &pixelRoD);
+        _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(pixelRoD, image->getPixelAspectRatio()));
         {
             QMutexLocker k(&_imp->lastRenderedImageMutex);
             _imp->lastRenderedImage[textureIndex] = image;
@@ -2703,9 +2702,10 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     Format dispW = getDisplayWindow();
+    RectD canonicalDispW = dispW.toCanonicalFormat();
     for (int i = 0; i < 2; ++i) {
         const RectD& rod = getRoD(i);
-        updateInfoWidgetColorPicker(zoomPos, e->pos(), width(), height(), rod, dispW, i);
+        updateInfoWidgetColorPicker(zoomPos, e->pos(), width(), height(), rod, canonicalDispW, i);
     }
     
     //update the cursor if it is hovering an overlay and we're not dragging the image
@@ -3354,9 +3354,10 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     if (!_imp->viewerTab->getGui()) {
         return;
     }
+    RectD canonicalFormat = format.toCanonicalFormat();
     
     _imp->blankViewerInfo.setDisplayWindow(format);
-    _imp->blankViewerInfo.setRoD(format);
+    _imp->blankViewerInfo.setRoD(canonicalFormat);
     for (int i = 0; i < 2; ++i) {
         if (_imp->infoViewer[i]) {
             _imp->infoViewer[i]->setResolution(format);
@@ -3384,7 +3385,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     if (!_imp->isUserRoISet) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
-            _imp->userRoI = format;
+            _imp->userRoI = canonicalFormat;
         }
         _imp->isUserRoISet = true;
     }
@@ -4171,7 +4172,7 @@ ViewerGL::resetWipeControls()
     } else if (_imp->activeTextures[0]) {
         rod = getRoD(0);
     } else {
-        rod = _imp->projectFormat;
+        _imp->getProjectFormatCanonical(rod);
     }
     {
         QMutexLocker l(&_imp->wipeControlsMutex);

@@ -1159,9 +1159,9 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
 {
     /*If the rod is infinite clip it to the project's default*/
 
-    Format projectDefault;
-
-    getRenderFormat(&projectDefault);
+    Format projectFormat;
+    getRenderFormat(&projectFormat);
+    RectD projectDefault = projectFormat.toCanonicalFormat();
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
     assert( !projectDefault.isNull() );
 
@@ -1390,7 +1390,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 ////just discard this entry
                 Format projectFormat;
                 getRenderFormat(&projectFormat);
-                if ( static_cast<RectD &>(projectFormat) != (*it)->getRoD() ) {
+                RectD canonicalProject = projectFormat.toCanonicalFormat();
+                if ( canonicalProject != (*it)->getRoD() ) {
                     appPTR->removeFromNodeCache(*it);
                     continue;
                 }
@@ -1999,29 +2000,35 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     rod.toPixelEnclosing(0, par, &upscaledImageBounds);
     
 
+    bool tilesSupported = supportsTiles();
+
     ///Make sure the RoI falls within the image bounds
     ///Intersection will be in pixel coordinates
-    if (useImageAsOutput) {
-        if (!roi.intersect(upscaledImageBounds, &roi)) {
-            return ImagePtr();
+    if (tilesSupported) {
+        if (useImageAsOutput) {
+            if (!roi.intersect(upscaledImageBounds, &roi)) {
+                return ImagePtr();
+            }
+            if (!createInCache) {
+                ///If we don't cache the image, just allocate the roi
+                upscaledImageBounds.intersect(roi, &upscaledImageBounds);
+            }
+            assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
+                   roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
+            
+        } else {
+            if (!roi.intersect(downscaledImageBounds, &roi)) {
+                return ImagePtr();
+            }
+            if (!createInCache) {
+                ///If we don't cache the image, just allocate the roi
+                downscaledImageBounds.intersect(roi, &downscaledImageBounds);
+            }
+            assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
+                   roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
         }
-        if (!createInCache) {
-            ///If we don't cache the image, just allocate the roi
-            upscaledImageBounds.intersect(roi, &upscaledImageBounds);
-        }
-        assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
-               roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
-
     } else {
-        if (!roi.intersect(downscaledImageBounds, &roi)) {
-            return ImagePtr();
-        }
-        if (!createInCache) {
-            ///If we don't cache the image, just allocate the roi 
-            downscaledImageBounds.intersect(roi, &downscaledImageBounds);
-        }
-        assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
-               roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
+        roi = useImageAsOutput ? upscaledImageBounds : downscaledImageBounds;
     }
     
     RectD canonicalRoI;
@@ -2040,7 +2047,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///Hence after rendering all the input images, we redo a cache look-up to check whether the image is still here
     bool redoCacheLookup = false;
     
-    bool tilesSupported = supportsTiles();
 
     if (image) {
         
@@ -2525,7 +2531,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///Any solution how to work around this ?
     if ( isReader() ) {
         Format frmt;
-        frmt.set(rod);
+        RectI pixelRoD;
+        rod.toPixelEnclosing(0, par, &pixelRoD);
+        frmt.set(pixelRoD);
         frmt.setPixelAspectRatio(par);
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
@@ -2676,11 +2684,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
             assert(useScaleOneInputImages || (*it)->getMipMapLevel() == mipMapLevel);
             const RectD & srcRodCanonical = (*it)->getRoD();
-            RectI srcRod;
-            srcRodCanonical.toPixelEnclosing(0, (*it)->getPixelAspectRatio(), &srcRod); // compute srcRod at level 0
+            RectI srcBounds;
+            srcRodCanonical.toPixelEnclosing((*it)->getMipMapLevel(), (*it)->getPixelAspectRatio(), &srcBounds); // compute srcRod at level 0
             const RectD & dstRodCanonical = renderMappedImage->getRoD();
-            RectI dstRod;
-            dstRodCanonical.toPixelEnclosing(0, par, &dstRod); // compute dstRod at level 0
+            RectI dstBounds;
+            dstRodCanonical.toPixelEnclosing(mipMapLevel, par, &dstBounds); // compute dstRod at level 0
 
             if (!tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -2701,34 +2709,29 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 ///quality compared to the images rendered at scale 1, hence we don't cache them.
                 ///If we were to cache them, we would need to change the way the cache works and return a list of potential images instead.
                 ///This way we could add a "quality" identifier to images and pick the best one from the list returned by the cache.
-                RectI srcBounds = (*it)->getBounds();
-                RectI dstBounds = renderMappedImage->getBounds();
-                if (mipMapLevel) {
-                    srcBounds = srcBounds.upscalePowerOfTwo(mipMapLevel);
-                    srcBounds.intersect(srcRod, &srcBounds);
-                    dstBounds = dstBounds.upscalePowerOfTwo(mipMapLevel);
-                    dstBounds.intersect(dstRod, &dstBounds);
-                }
-                assert(srcRod.x1 == srcBounds.x1);
-                assert(srcRod.x2 == srcBounds.x2);
-                assert(srcRod.y1 == srcBounds.y1);
-                assert(srcRod.y2 == srcBounds.y2);
-                assert(dstRod.x1 == dstBounds.x1);
-                assert(dstRod.x2 == dstBounds.x2);
-                assert(dstRod.y1 == dstBounds.y1);
-                assert(dstRod.y2 == dstBounds.y2);
+                RectI srcRealBounds = (*it)->getBounds();
+                RectI dstRealBounds = renderMappedImage->getBounds();
+                
+                assert(srcRealBounds.x1 == srcBounds.x1);
+                assert(srcRealBounds.x2 == srcBounds.x2);
+                assert(srcRealBounds.y1 == srcBounds.y1);
+                assert(srcRealBounds.y2 == srcBounds.y2);
+                assert(dstRealBounds.x1 == dstBounds.x1);
+                assert(dstRealBounds.x2 == dstBounds.x2);
+                assert(dstRealBounds.y1 == dstBounds.y1);
+                assert(dstRealBounds.y2 == dstBounds.y2);
             }
             if ( !supportsMultiResolution() ) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
                 //   Multiple resolution images mean...
                 //    input and output images can be of any size
                 //    input and output images can be offset from the origin
-                assert(srcRod.x1 == 0);
-                assert(srcRod.y1 == 0);
-                assert(srcRod.x1 == dstRod.x1);
-                assert(srcRod.x2 == dstRod.x2);
-                assert(srcRod.y1 == dstRod.y1);
-                assert(srcRod.y2 == dstRod.y2);
+                assert(srcBounds.x1 == 0);
+                assert(srcBounds.y1 == 0);
+                assert(srcBounds.x1 == dstBounds.x1);
+                assert(srcBounds.x2 == dstBounds.x2);
+                assert(srcBounds.y1 == dstBounds.y1);
+                assert(srcBounds.y2 == dstBounds.y2);
             }
         } //end for
         
