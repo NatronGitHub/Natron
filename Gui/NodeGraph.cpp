@@ -1568,6 +1568,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
 
     update();
+    QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void

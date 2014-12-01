@@ -16,6 +16,7 @@ Splitter::Splitter(QWidget* parent)
     : QSplitter(parent)
       , _lock()
 {
+    setMouseTracking(true);
 }
 
 Splitter::Splitter(Qt::Orientation orientation,
@@ -23,6 +24,7 @@ Splitter::Splitter(Qt::Orientation orientation,
     : QSplitter(orientation,parent)
       , _lock()
 {
+    setMouseTracking(true);
 }
 
 void

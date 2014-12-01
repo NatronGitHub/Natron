@@ -1192,6 +1192,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         update();
         break;
     }
+    QGLWidget::mouseMoveEvent(e);
 }
 
 void

@@ -209,6 +209,15 @@ TabWidget::createMenu()
     QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
     menu.addAction(closeAction);
     
+    QAction* hideToolbar;
+    if (_gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+        hideToolbar = new QAction(tr("Show left toolbar"),&menu);
+    } else {
+        hideToolbar = new QAction(tr("Hide left toolbar"),&menu);
+    }
+    QObject::connect(hideToolbar, SIGNAL(triggered()), this, SLOT(onHideLeftToolBarActionTriggered()));
+    menu.addAction(hideToolbar);
+    
     QAction* hideTabbar;
     if (_tabBarVisible) {
         hideTabbar = new QAction(tr("Hide tabs header"),&menu);
@@ -235,6 +244,12 @@ TabWidget::createMenu()
     menu.addAction(isAnchorAction);
 
     menu.exec( _leftCornerButton->mapToGlobal( QPoint(0,0) ) );
+}
+
+void
+TabWidget::onHideLeftToolBarActionTriggered()
+{
+    _gui->setLeftToolBarDisplayedOnMouseHoverOnly(!_gui->isLeftToolBarDisplayedOnMouseHoverOnly());
 }
 
 void
@@ -1249,6 +1264,9 @@ TabWidget::mouseMoveEvent(QMouseEvent* e)
                 _header->setVisible(false);
             }
         }
+    }
+    if (_gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+        _gui->refreshLeftToolBarVisibility(e->globalPos());
     }
     QFrame::mouseMoveEvent(e);
 }

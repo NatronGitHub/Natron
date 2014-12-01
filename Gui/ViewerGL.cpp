@@ -2682,6 +2682,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
 
     ///The app is closing don't do anything
     if ( !_imp->viewerTab->getGui() || !getInternalNode()) {
+        QGLWidget::mouseMoveEvent(e);
         return;
     }
 
@@ -3018,6 +3019,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
 //    }else{
 //        setCursor(QCursor(Qt::ArrowCursor));
 //    }
+    QGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void

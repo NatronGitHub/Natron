@@ -166,6 +166,24 @@ getPixmapForGrouping(QPixmap* pixmap,
 }
 }
 
+class AutoHideToolBar : public QToolBar
+{
+    Gui* _gui;
+public:
+    
+    AutoHideToolBar(Gui* gui,QWidget* parent) : QToolBar(parent), _gui(gui) {}
+    
+private:
+    
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL
+    {
+        if (_gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+            _gui->setLeftToolBarVisible(false);
+        }
+        QToolBar::leaveEvent(e);
+    }
+};
+
 struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
@@ -332,6 +350,8 @@ struct GuiPrivate
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
     ShortCutEditor* shortcutEditor;
+    
+    bool leftToolBarDisplayedOnHoverOnly;
 
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
@@ -436,6 +456,7 @@ struct GuiPrivate
           , aboutToCloseMutex()
           , _aboutToClose(false)
           , shortcutEditor(0)
+          , leftToolBarDisplayedOnHoverOnly(false)
     {
     }
 
@@ -459,6 +480,8 @@ struct GuiPrivate
     
     ///If there's only 1 non-floating pane in the main window, return it, otherwise returns NULL
     TabWidget* getOnly1NonFloatingPane(int & count) const;
+    
+    void refreshLeftToolBarVisibility(const QPoint& p);
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -496,6 +519,48 @@ Gui::~Gui()
     }
 }
 
+
+bool
+Gui::isLeftToolBarDisplayedOnMouseHoverOnly() const
+{
+    return _imp->leftToolBarDisplayedOnHoverOnly;
+}
+
+void
+Gui::setLeftToolBarDisplayedOnMouseHoverOnly(bool b)
+{
+    _imp->leftToolBarDisplayedOnHoverOnly = b;
+    QPoint p = QCursor::pos();
+    
+    if (b) {
+        _imp->refreshLeftToolBarVisibility(mapFromGlobal(p));
+    } else {
+        _imp->_toolBox->show();
+    }
+}
+
+void
+Gui::refreshLeftToolBarVisibility(const QPoint& globalPos)
+{
+    _imp->refreshLeftToolBarVisibility(mapFromGlobal(globalPos));
+}
+
+void
+Gui::setLeftToolBarVisible(bool visible)
+{
+    _imp->_toolBox->setVisible(visible);
+}
+
+void GuiPrivate::refreshLeftToolBarVisibility(const QPoint& p)
+{
+    int toolbarW = _toolBox->sizeHint().width();
+    if (p.x() <= toolbarW) {
+        _toolBox->show();
+    } else {
+        _toolBox->hide();
+    }
+    
+}
 
 void
 GuiPrivate::notifyGuiClosing()
@@ -915,6 +980,7 @@ Gui::setupUi()
     ///Restores position, size of the main window as well as whether it was fullscreen or not.
     _imp->restoreGuiGeometry();
 
+
     _imp->_undoStacksGroup = new QUndoGroup;
     QObject::connect( _imp->_undoStacksGroup, SIGNAL( activeStackChanged(QUndoStack*) ), this, SLOT( onCurrentUndoStackChanged(QUndoStack*) ) );
 
@@ -929,15 +995,20 @@ Gui::setupUi()
     _imp->_centralWidget->setLayout(_imp->_mainLayout);
 
     _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
+    _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_leftRightSplitter->setObjectName(kMainSplitterObjectName);
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
 
 
-    _imp->_toolBox = new QToolBar(_imp->_leftRightSplitter);
+    _imp->_toolBox = new AutoHideToolBar(this, _imp->_leftRightSplitter);
     _imp->_toolBox->setOrientation(Qt::Vertical);
     _imp->_toolBox->setMaximumWidth(40);
+    
+    if (_imp->leftToolBarDisplayedOnHoverOnly) {
+        _imp->refreshLeftToolBarVisibility(mapFromGlobal(QCursor::pos()));
+    }
 
     _imp->_leftRightSplitter->addWidget(_imp->_toolBox);
 
@@ -1132,6 +1203,7 @@ Gui::wipeLayout()
     unregisterSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->deleteLater();
     _imp->_leftRightSplitter = newSplitter;
+    _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_mainLayout->addWidget(newSplitter);
 
     {
@@ -3128,6 +3200,10 @@ GuiPrivate::restoreGuiGeometry()
             _gui->toggleFullScreen();
         }
     }
+    
+    if ( settings.contains("ToolbarHidden") ) {
+        leftToolBarDisplayedOnHoverOnly = settings.value("ToolbarHidden").toBool();
+    }
 
     settings.endGroup();
 
@@ -3154,7 +3230,7 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue( "pos", _gui->pos() );
     settings.setValue( "size", _gui->size() );
     settings.setValue( "fullScreen", _gui->isFullScreen() );
-
+    settings.setValue( "ToolbarHidden",leftToolBarDisplayedOnHoverOnly);
     settings.endGroup();
 
     settings.setValue("LastOpenProjectDialogPath", _lastLoadProjectOpenedDir);
@@ -4143,8 +4219,9 @@ Gui::moveEvent(QMoveEvent* e)
 {
     QMainWindow::moveEvent(e);
     QPoint p = pos();
-
+    
     setMtSafePosition( p.x(), p.y() );
+    
 }
 
 void

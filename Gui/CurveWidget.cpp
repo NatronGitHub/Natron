@@ -2688,6 +2688,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
     if (_imp->_state == eEventStateNone) {
         // nothing else to do
+        QGLWidget::mouseMoveEvent(e);
         return;
     }
 
@@ -2750,6 +2751,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     _imp->_oldClick = e->pos();
 
     update();
+    QGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void
