@@ -88,16 +88,20 @@ public:
         return EffectInstance::eRenderSafetyFullySafeFrame;
     }
 
-    virtual bool supportsTiles() const
+    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
 
-    virtual bool supportsMultiResolution() const
+    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
 
+    virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 

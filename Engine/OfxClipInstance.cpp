@@ -218,6 +218,7 @@ OfxClipInstance::getPremult() const
 double
 OfxClipInstance::getAspectRatio() const
 {
+    assert(_nodeInstance);
     if (isOutput()) {
         return _aspectRatio;
     }
@@ -225,11 +226,12 @@ OfxClipInstance::getAspectRatio() const
     EffectInstance* input = getAssociatedNode();
     if (input) {
         return input->getPreferredAspectRatio();
-    } else {
+    } else if (_nodeInstance) {
         Format f;
         _nodeInstance->getRenderFormat(&f);
         return f.getPixelAspectRatio();
     }
+    return 0.; // invalid value
 }
 
 void

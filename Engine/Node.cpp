@@ -3012,6 +3012,9 @@ void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)
 {
+    if (!what) {
+        return;
+    }
     for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it != _imp->maskChannelKnob.end(); ++it) {
         if (it->second.get() == what) {
             int index = it->second->getValue();
@@ -3041,7 +3044,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if (what->getName() == kOfxParamStringSublabelName) {
         //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
         String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
-        if (what) {
+        if (strKnob) {
             QString operation = strKnob->getValue().c_str();
             replaceCustomDataInlabel('(' + operation + ')');
         }

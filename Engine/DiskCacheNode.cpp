@@ -70,6 +70,7 @@ DiskCacheNode::initializeKnobs()
     choices.push_back("Timeline bounds");
     choices.push_back("Manual");
     _imp->frameRange->populateChoices(choices);
+    _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setDefaultValue(0);
     page->addKnob(_imp->frameRange);
     
@@ -77,6 +78,7 @@ DiskCacheNode::initializeKnobs()
     _imp->firstFrame->setAnimationEnabled(false);
     _imp->firstFrame->setName("firstFrame");
     _imp->firstFrame->disableSlider();
+    _imp->firstFrame->setEvaluateOnChange(false);
     _imp->firstFrame->turnOffNewLine();
     _imp->firstFrame->setDefaultValue(1);
     _imp->firstFrame->setSecret(true);
@@ -86,6 +88,7 @@ DiskCacheNode::initializeKnobs()
     _imp->lastFrame->setAnimationEnabled(false);
     _imp->lastFrame->setName("LastFrame");
     _imp->lastFrame->disableSlider();
+    _imp->lastFrame->setEvaluateOnChange(false);
     _imp->lastFrame->setDefaultValue(100);
     _imp->lastFrame->setSecret(true);
     page->addKnob(_imp->lastFrame);

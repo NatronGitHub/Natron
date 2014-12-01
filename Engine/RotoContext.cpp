@@ -4463,7 +4463,7 @@ addOrRemoveKeyRecursively(RotoLayer* isLayer,
             } else if (layer) {
                 isBezier->removeKeyframe(time);
             }
-        } else if (isLayer) {
+        } else if (layer) {
             addOrRemoveKeyRecursively(layer,time, add);
         }
     }

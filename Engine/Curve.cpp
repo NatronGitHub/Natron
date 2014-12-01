@@ -461,35 +461,36 @@ Curve::getNearestKeyFrameWithTime(double time,
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
-    // Keyframes are ordered
-    KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
-    KeyFrameSet::const_iterator lower = it;
-    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for (; it != upper; ++it) {
-        if (it->getTime() > time) {
-            upper = it;
-            break;
-        } else if (it->getTime() == time) {
-            *k = *it;
-
-            return true;
-        } else {
-            lower = it;
-        }
-    }
-
-    if ( upper == _imp->keyFrames.begin() ) {
-        *k = *upper;
+    if (_imp->keyFrames.size() == 1) {
+        *k = *_imp->keyFrames.begin();
 
         return true;
     }
 
-    if ( upper == _imp->keyFrames.end() ) {
+    KeyFrame kt(time, 0.); // virtual keyframe at t for comparison
+
+    KeyFrameSet::const_iterator lower = _imp->keyFrames.lower_bound(kt);
+    if (lower == _imp->keyFrames.end()) {
+        // all elements are before, take the last one
+        *k = *_imp->keyFrames.rbegin();
+
+        return true;
+    }
+    if (lower->getTime() >= time) {
+        // we are before the first element, return it
+        *k = *lower;
+
+        return true;
+    }
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.upper_bound(kt);
+    if (upper == _imp->keyFrames.end()) {
+        // no element after this one, return the lower bound
         *k = *lower;
 
         return true;
     }
 
+    // upper and lower are both valid iterators, take the closest one
     assert(time - lower->getTime() > 0);
     assert(upper->getTime() - time > 0);
 

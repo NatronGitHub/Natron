@@ -993,7 +993,6 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
     TreeItems::iterator it = _imp->findItem(item);
 
     if ( it != _imp->items.end() ) {
-        int time = _imp->context->getTimelineCurrentTime();
         switch (column) {
         case COL_ACTIVATED: {
             bool activated = !it->rotoItem->isGloballyActivated();

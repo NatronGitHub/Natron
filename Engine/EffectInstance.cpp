@@ -1438,11 +1438,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
         }
         
-        if (!imageToConvert && !*image) {
-            ///We only found an image with a mipmap level > to the one requested or unconvertable comps/bitdepth
-            isCached = false;
-            
-        } else if (imageToConvert && !*image) {
+        if (imageToConvert && !*image) {
 
             //Take the lock after getting the image from the cache
             ///to make sure a thread will not attempt to write to the image while its being allocated.
@@ -1532,7 +1528,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             
             *image = imageToConvert;
             
-        } else if (*image) {
+        } else if (*image) { //  else if (imageToConvert && !*image)
             
             //Take the lock after getting the image from the cache
             ///to make sure a thread will not attempt to write to the image while its being allocated.
