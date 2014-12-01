@@ -1290,7 +1290,7 @@ Settings::isAutoPreviewOnForNewProjects() const
     return _autoPreviewEnabledForNewProjects->getValue();
 }
 
-const std::string &
+std::string
 Settings::getReaderPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
@@ -1305,7 +1305,7 @@ Settings::getReaderPluginIDForFileType(const std::string & extension)
     throw std::invalid_argument("Unsupported file extension");
 }
 
-const std::string &
+std::string
 Settings::getWriterPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _writersMapping.size(); ++i) {

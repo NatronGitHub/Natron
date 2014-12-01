@@ -746,7 +746,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     QLineF bottomEdge(texRectClipped.x2,texRectClipped.y1,texRectClipped.x1,texRectClipped.y1);
     QLineF leftEdge(texRectClipped.x1,texRectClipped.y1,texRectClipped.x1,texRectClipped.y2);
     bool crossingTop = false,crossingRight = false,crossingLeft = false,crossingBtm = false;
-    int validIntersectionsIndex[2];
+    int validIntersectionsIndex[4];
     validIntersectionsIndex[0] = validIntersectionsIndex[1] = -1;
     int numIntersec = 0;
     intersectionTypes[0] = inter.intersect(topEdge, &intersections[0]);
