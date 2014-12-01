@@ -35,7 +35,7 @@ before_install:
    - export J='-j3'
 
 install:
-  - tools/travis/coverity_env.sh
+  - . tools/travis/coverity_env.sh
   - if [[ ${COVERITY_BUILD_DISABLED} == 1 ]];
     then
         exit 0;
