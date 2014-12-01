@@ -93,6 +93,12 @@ public:
         return false;
     }
 
+    virtual bool supportsMultiResolution() const
+    {
+        return true;
+    }
+
+
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
