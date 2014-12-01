@@ -1617,8 +1617,7 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
                     bool ok = disconnectNodes(selected.get(), it->first);
                     assert(ok);
                     
-                    ok = connectNodes(it->second, created, it->first);
-                    (void)ok;
+                    (void)connectNodes(it->second, created, it->first);
                     //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                 }
             }

@@ -98,12 +98,11 @@ CompleterLineEdit::filterText(const QString & txt)
     }
 
     QPoint p = mapToGlobal( QPoint( 0,height() ) );
-    QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
-    double maxHeight = ( screen.height() - p.y() ) * 0.8;
-    QFontMetrics fm = _imp->listView->fontMetrics();
-#pragma message WARN("value stored to maxHeight is never read")
-    maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
+    //QDesktopWidget* desktop = QApplication::desktop();
+    //QRect screen = desktop->screenGeometry();
+    //double maxHeight = ( screen.height() - p.y() ) * 0.8;
+    //QFontMetrics fm = _imp->listView->fontMetrics();
+    //maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
 
     // Position the text edit
  //   _imp->listView->setFixedSize(width(),maxHeight);

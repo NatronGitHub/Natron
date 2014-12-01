@@ -993,8 +993,6 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
     TreeItems::iterator it = _imp->findItem(item);
 
     if ( it != _imp->items.end() ) {
-#pragma message WARN("value stored to time is never read")
-        int time = _imp->context->getTimelineCurrentTime();
         switch (column) {
         case COL_ACTIVATED: {
             bool activated = !it->rotoItem->isGloballyActivated();
