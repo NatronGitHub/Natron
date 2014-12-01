@@ -82,6 +82,9 @@ struct ParallelRenderArgs
     , nodeHash(0)
     , rotoAge(0)
     , validArgs(false)
+    , isRenderResponseToUserInteraction(false)
+    , isSequentialRender(false)
+    , canAbort(false)
     {
         
     }

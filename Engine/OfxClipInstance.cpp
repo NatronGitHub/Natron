@@ -959,7 +959,7 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
             return rgba;
         }
         if (isSupportedComponent(alpha)) {
-            return rgb;
+            return alpha;
         }
     }
     
