@@ -533,6 +533,8 @@ public:
 
     KeyBoundAction()
         : BoundAction()
+        , currentShortcut(Qt::Key_unknown)
+        , defaultShortcut(Qt::Key_unknown)
     {
     }
 

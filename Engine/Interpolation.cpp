@@ -95,7 +95,7 @@ cubicDerive(double /*c0*/,
 static int
 isZero(double x)
 {
-    return x > -EQN_EPS && x < EQN_EPS;
+    return x == 0. || (x > -EQN_EPS && x < EQN_EPS);
 }
 
 /// solve linear equation c0 + c1*x = 0.

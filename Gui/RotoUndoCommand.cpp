@@ -373,6 +373,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
                                                const boost::shared_ptr<BezierCP> & cp)
     : QUndoCommand()
       , _roto(roto)
+      , _firstRedoCalled(false)
       , _curves()
 {
     assert(curve && cp);

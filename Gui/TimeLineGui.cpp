@@ -298,7 +298,7 @@ TimeLineGui::paintGL()
 
         QFontMetrics fontM(_imp->_font);
 
-        double lineYPosWidget = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
+        double lineYPosWidget = height() - 1 - fontM.height()  - TICK_HEIGHT / 2.;
         double lineYpos = toTimeLineCoordinates(0,lineYPosWidget).y();
         double cachedLineYPos = toTimeLineCoordinates(0,lineYPosWidget + 1).y();
 
@@ -372,19 +372,19 @@ TimeLineGui::paintGL()
 
         QPointF cursorBtm(_imp->_timeline->currentFrame(),lineYpos);
         QPointF cursorBtmWidgetCoord = toWidgetCoordinates( cursorBtm.x(),cursorBtm.y() );
-        QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2,
+        QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2.,
                                                       cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-        QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2,
+        QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2.,
                                                        cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
         QPointF leftBoundBtm(_imp->_timeline->leftBound(),lineYpos);
         QPointF leftBoundWidgetCoord = toWidgetCoordinates( leftBoundBtm.x(),leftBoundBtm.y() );
-        QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2,
+        QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2.,
                                                           leftBoundWidgetCoord.y() );
         QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
                                                      leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
         QPointF rightBoundBtm(_imp->_timeline->rightBound(),lineYpos);
         QPointF rightBoundWidgetCoord = toWidgetCoordinates( rightBoundBtm.x(),rightBoundBtm.y() );
-        QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2,
+        QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2.,
                                                           rightBoundWidgetCoord.y() );
         QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
                                                       rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
@@ -398,9 +398,9 @@ TimeLineGui::paintGL()
             int currentPosBtmWidgetCoordX = _imp->_lastMouseEventWidgetCoord.x();
             int currentPosBtmWidgetCoordY = toWidgetCoordinates(0,lineYpos).y();
             QPointF currentPosBtm = toTimeLineCoordinates(currentPosBtmWidgetCoordX,currentPosBtmWidgetCoordY);
-            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - CURSOR_WIDTH / 2,
+            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - CURSOR_WIDTH / 2.,
                                                               currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
-            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH / 2,
+            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH / 2.,
                                                                currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
             int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
             QString mouseNumber( QString::number(hoveredTime) );
@@ -437,7 +437,7 @@ TimeLineGui::paintGL()
         }
 
         QString currentFrameStr( QString::number( _imp->_timeline->currentFrame() ) );
-        double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2;
+        double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2.;
         double cursorTextPos = toTimeLineCoordinates(cursorTextXposWidget,0).x();
         renderText(cursorTextPos,cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->_font);
         glColor4f( actualCursorColor.redF(),actualCursorColor.greenF(),actualCursorColor.blueF(),actualCursorColor.alphaF() );
@@ -450,7 +450,7 @@ TimeLineGui::paintGL()
 
         if ( _imp->_timeline->leftBound() != _imp->_timeline->currentFrame() ) {
             QString leftBoundStr( QString::number( _imp->_timeline->leftBound() ) );
-            double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2,0 ).x() - fontM.width(leftBoundStr) / 2;
+            double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2.,0 ).x() - fontM.width(leftBoundStr) / 2.;
             double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
             renderText(leftBoundTextPos,leftBoundTop.y(),
                        leftBoundStr, _imp->_boundsColor, _imp->_font);
@@ -465,7 +465,7 @@ TimeLineGui::paintGL()
 
         if ( _imp->_timeline->rightBound() != _imp->_timeline->currentFrame() ) {
             QString rightBoundStr( QString::number( _imp->_timeline->rightBound() ) );
-            double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2,0 ).x() - fontM.width(rightBoundStr) / 2;
+            double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2.,0 ).x() - fontM.width(rightBoundStr) / 2.;
             double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
             renderText(rightBoundTextPos,rightBoundTop.y(),
                        rightBoundStr, _imp->_boundsColor, _imp->_font);

@@ -776,7 +776,7 @@ RotoPanelPrivate::insertItemRecursively(int time,
 #endif
         QObject::connect( drawable,SIGNAL( shapeColorChanged() ),publicInterface,SLOT( onRotoItemShapeColorChanged() ) );
         QObject::connect( drawable,SIGNAL( compositingOperatorChanged(int,int) ),publicInterface,SLOT( onRotoItemCompOperatorChanged(int,int) ) );
-    } else {
+    } else if (layer) {
         treeItem->setIcon(0, iconLayer);
         ///insert children
         const std::list<boost::shared_ptr<RotoItem> > & children = layer->getItems();

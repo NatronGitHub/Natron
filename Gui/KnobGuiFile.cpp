@@ -630,6 +630,13 @@ Path_KnobGui::Path_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _mainContainer(0)
+    , _lineEdit(0)
+    , _openFileButton(0)
+    , _table(0)
+    , _model(0)
+    , _addPathButton(0)
+    , _removePathButton(0)
+    , _editPathButton(0)
     , _isInsertingItem(false)
 {
     _knob = boost::dynamic_pointer_cast<Path_Knob>(knob);
