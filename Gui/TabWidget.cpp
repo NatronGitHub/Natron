@@ -1265,7 +1265,7 @@ TabWidget::mouseMoveEvent(QMouseEvent* e)
             }
         }
     }
-    if (_gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+    if (_gui && _gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
         _gui->refreshLeftToolBarVisibility(e->globalPos());
     }
     QFrame::mouseMoveEvent(e);
