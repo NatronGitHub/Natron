@@ -87,8 +87,8 @@ public:
     
     void setUseGlobalThreadPool(bool use) ;
 
-    const std::string & getReaderPluginIDForFileType(const std::string & extension);
-    const std::string & getWriterPluginIDForFileType(const std::string & extension);
+    std::string getReaderPluginIDForFileType(const std::string & extension);
+    std::string getWriterPluginIDForFileType(const std::string & extension);
 
     void populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
 
