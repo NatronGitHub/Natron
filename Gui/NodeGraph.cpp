@@ -2117,22 +2117,24 @@ NodeGraph::wheelEvent(QWheelEvent* e)
         }
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
-//        QPointF centerScene = visibleSceneRect().center();
-//        QPointF deltaScene;
-//        deltaScene.rx() = newPos.x() - centerScene.x();
-//        deltaScene.ry() = newPos.y() - centerScene.y();
-//        QTransform t = transform();
-//        QTransform mapping;
-//        mapping.translate(-deltaScene.x(),-deltaScene.y());
-//        mapping.scale(scaleFactor,scaleFactor);
-//        mapping.translate(deltaScene.x(),deltaScene.y());
-//        t.translate(-deltaScene.x(),-deltaScene.y());
-//        t.scale(scaleFactor,scaleFactor);
-//        t.translate(deltaScene.x(),deltaScene.y());
-//        setTransform(t);
-//        centerScene = mapping.map(centerScene);
-        scale(scaleFactor,scaleFactor);
-//        centerOn(centerScene);
+        QPointF centerScene = visibleSceneRect().center();
+        QPointF deltaScene;
+        deltaScene.rx() = newPos.x() - centerScene.x();
+        deltaScene.ry() = newPos.y() - centerScene.y();
+        QTransform t = transform();
+        QTransform mapping;
+        mapping.translate(-deltaScene.x(),-deltaScene.y());
+        mapping.scale(scaleFactor,scaleFactor);
+        mapping.translate(deltaScene.x(),deltaScene.y());
+        t.translate(-deltaScene.x(),-deltaScene.y());
+        t.scale(scaleFactor,scaleFactor);
+        t.translate(deltaScene.x(),deltaScene.y());
+        setTransform(t);
+        centerScene = mapping.map(centerScene);
+        
+        centerOn(centerScene);
+        
+        //scale(scaleFactor,scaleFactor);
         _imp->_refreshOverlays = true;
     }
     _imp->_lastScenePosClick = newPos;

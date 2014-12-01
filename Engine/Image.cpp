@@ -991,6 +991,9 @@ Image::upscaleMipMapForDepth(const RectI & roi,
 
     assert( output->getComponents() == getComponents() );
     int components = getElementsCountForComponents( getComponents() );
+    if (components == 0) {
+        return;
+    }
     int srcRowSize = getBounds().width() * components;
     int dstRowSize = output->getBounds().width() * components;
     const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);

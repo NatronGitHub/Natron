@@ -4110,13 +4110,14 @@ Gui::progressUpdate(KnobHolder* effect,
         if (isNamed) {
             qDebug() << isNamed->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
         }
+    } else {
+        if ( found->second->wasCanceled() ) {
+            return false;
+        }
+        found->second->setValue(t * 100);
     }
-    if ( found->second->wasCanceled() ) {
-        return false;
-    }
-    found->second->setValue(t * 100);
     QCoreApplication::processEvents();
-
+    
     return true;
 }
 

@@ -412,12 +412,11 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         viewerName = selectedHistAction->text().toStdString();
     }
 
-    int textureIndex = -1;
+    int textureIndex = 0;
     QAction* selectedInputAction = viewerCurrentInputGroup->checkedAction();
     if (selectedInputAction) {
         textureIndex = selectedInputAction->data().toInt();
-    }
-
+    } 
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();

@@ -392,7 +392,7 @@ public:
     /*the area : w*h*/
     U64 area() const
     {
-        return width() * height();
+        return (U64)width() * height();
     }
 
     RectI & operator=(const RectI & other)
@@ -744,7 +744,7 @@ public:
     /*the area : w*h*/
     double area() const
     {
-        return width() * height();
+        return (double)width() * height();
     }
 
     RectD & operator=(const RectD & other)
