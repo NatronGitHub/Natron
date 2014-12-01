@@ -92,6 +92,7 @@ DiskCacheNode::initializeKnobs()
     
     _imp->preRender = Natron::createKnob<Button_Knob>(this, "Pre-cache");
     _imp->preRender->setName("preRender");
+    _imp->preRender->setEvaluateOnChange(false);
     _imp->preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");
     page->addKnob(_imp->preRender);
     

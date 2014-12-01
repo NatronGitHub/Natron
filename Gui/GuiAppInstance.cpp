@@ -28,6 +28,7 @@
 #include "Engine/Node.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
+#include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/ViewerInstance.h"
 using namespace Natron;
@@ -599,13 +600,19 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
     
     ///get the output file knob to get the name of the sequence
     QString outputFileSequence;
-    boost::shared_ptr<KnobI> fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
-    if (fileKnob) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
-        assert(isString);
-        outputFileSequence = isString->getValue().c_str();
+    
+    DiskCacheNode* isDiskCache = dynamic_cast<DiskCacheNode*>(w.writer);
+    if (isDiskCache) {
+        outputFileSequence = isDiskCache->getName_mt_safe().c_str();
+    } else {
+        boost::shared_ptr<KnobI> fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
+        if (fileKnob) {
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
+            assert(isString);
+            outputFileSequence = isString->getValue().c_str();
+        }
     }
-
+    
 
     if ( renderInSeparateProcess ) {
         try {

@@ -567,7 +567,7 @@ Image::pixelAt(int x,
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
 
-        return this->_data.writable()
+        return (unsigned char*)(this->_data.writable())
                + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
                + ( x - _bounds.left() ) * compDataSize;
     } else {
@@ -584,7 +584,7 @@ Image::pixelAt(int x,
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
 
-        return this->_data.readable()
+        return (const unsigned char*)(this->_data.readable())
                + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
                + ( x - _bounds.left() ) * compDataSize;
     } else {

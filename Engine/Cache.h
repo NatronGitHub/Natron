@@ -435,6 +435,11 @@ public:
         _memoryCache.clear();
         _diskCache.clear();
         delete _signalEmitter;
+        
+    }
+    
+    void waitForDeleterThread()
+    {
         _deleterThread.quitThread();
     }
 
