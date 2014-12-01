@@ -5,9 +5,10 @@
 #include <cassert>
 #include <stdexcept>
 #include <vector>
-
+#include <fstream>
 #include <QtCore/QFile>
 #include <QtCore/QDir>
+#include <QtCore/QDebug>
 #ifndef Q_MOC_RUN
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
@@ -16,6 +17,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
+#include <SequenceParsing.h> // for removePath
 
 namespace Natron {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -108,6 +110,10 @@ public:
             assert(_backingFile);
             _backingFile->resize( count * sizeof(DataType) );
         }
+    }
+    
+    const std::string& getFilePath() const {
+        return _path;
     }
 
     void reOpenFileMapping() const
@@ -254,6 +260,59 @@ public:
      **/
     virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,Natron::StorageModeEnum newStorage,
                                            int time,size_t size) const = 0;
+    
+    
+#ifdef DEBUG
+    static bool checkFileNameMatchesHash(const std::string &originalFileName,U64 hash)
+    {
+        
+        std::string filename = originalFileName;
+        std::string path = SequenceParsing::removePath(filename);
+        //remove extension from filename
+        {
+            size_t lastdot = filename.find_last_of('.');
+            if (lastdot != std::string::npos) {
+                filename.erase(lastdot, std::string::npos);
+            }
+        }
+        
+        //remove index if it has one
+        {
+            std::size_t foundSep = filename.find_last_of('_');
+            if (foundSep != std::string::npos) {
+                filename.erase(foundSep, std::string::npos);
+            }
+        }
+        
+        QString hashKeyStr(filename.c_str());
+        
+        //prepend the 2 digits of the containing directory
+        {
+            if (path.size() > 0) {
+                if (path[path.size() - 1] == '\\' || path[path.size() -1] == '/') {
+                    path.erase(path.size() - 1, 1);
+                }
+                
+                std::size_t foundSep = path.find_last_of('/');
+                if (foundSep == std::string::npos) {
+                    foundSep = path.find_last_of('\\');
+                }
+                assert(foundSep != std::string::npos);
+                std::string enclosingDirName = path.substr(foundSep + 1, std::string::npos);
+                hashKeyStr.prepend(enclosingDirName.c_str());
+            }
+        }
+        
+        
+        U64 hashKey = hashKeyStr.toULongLong(0,16); //< to hex (base 16)
+        if (hashKey == hash) {
+            return true;
+        } else {
+            return false;
+        }
+        
+    }
+#endif
     
 };
 
@@ -408,13 +467,17 @@ public:
     {
         return _key;
     }
+    
+    const std::string& getFilePath() const {
+        return _data.getFilePath();
+    }
 
     typename AbstractCacheEntry<KeyType>::hash_type getHashKey() const OVERRIDE FINAL
     {
         return _key.getHash();
     }
 
-    std::string generateStringFromHash(const std::string & path) const
+    std::string generateStringFromHash(const std::string & path,U64 hashKey) const
     {
         std::string name(path);
 
@@ -426,15 +489,20 @@ public:
                 throw std::invalid_argument(path);
             }
         }
-        std::ostringstream oss1;
-        typename AbstractCacheEntry<KeyType>::hash_type _hashKey = getHashKey();
-        oss1 << std::hex << ( _hashKey >> (sizeof(typename AbstractCacheEntry<KeyType>::hash_type) * 8 - 4) );
-        oss1 << std::hex << ( (_hashKey << 4) >> (sizeof(typename AbstractCacheEntry<KeyType>::hash_type) * 8 - 4) );
-        name.append( oss1.str() );
-        std::ostringstream oss2;
-        oss2 << std::hex << ( (_hashKey << 8) >> 8 );
+        QString hashKeyStr = QString::number(hashKey,16); //< hex is base 16
+        for (int i = 0; i < 2; ++i) {
+            if (i >= hashKeyStr.size()) {
+                break;
+            }
+            name.push_back(hashKeyStr[i].toAscii());
+        }
         name.append("/");
-        name.append( oss2.str() );
+        int i = 2;
+        while (i < hashKeyStr.size()) {
+            name.push_back(hashKeyStr[i].toAscii());
+            ++i;
+        }
+        
         name.append("." NATRON_CACHE_FILE_EXT);
 
         return name;
@@ -554,6 +622,15 @@ protected:
     }
 
 private:
+
+    static bool fileExists(const std::string& filename)
+    {
+        std::ifstream f(filename.c_str());
+        bool ret = f.good();
+        f.close();
+        return ret;
+    }
+
     /** @brief This function is called in allocateMeory(...) and before the object is exposed
      * to other threads. Hence this function doesn't need locking mechanism at all.
      * We must ensure that this function is called ONLY by allocateMemory(), that's why
@@ -566,12 +643,33 @@ private:
         std::string fileName;
 
         if (storage == Natron::eStorageModeDisk) {
+            
+            typename AbstractCacheEntry<KeyType>::hash_type hashKey = getHashKey();
             try {
-                fileName = generateStringFromHash(path);
+                fileName = generateStringFromHash(path,hashKey);
             } catch (const std::invalid_argument & e) {
                 std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
                 return;
             }
+            
+            assert(!fileName.empty());
+            //Check if the filename already exists, if so append a 0-based index after the hash (separated by a '_')
+            //and try again
+            int index = 0;
+            if (fileExists(fileName)) {
+                fileName.insert(fileName.size() - 4,"_0");
+            }
+            while (fileExists(fileName)) {
+                ++index;
+                std::stringstream ss;
+                ss << index;
+                fileName.replace(fileName.size() - 1,std::string::npos,ss.str());
+            }
+#ifdef DEBUG
+            if (!CacheAPI::checkFileNameMatchesHash(fileName, hashKey)) {
+                qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+            }
+#endif
         }
         _data.allocate(count, storage, fileName);
     }
@@ -583,16 +681,10 @@ private:
      **/
     void restoreBufferFromFile(const std::string & path)
     {
-        std::string fileName;
-
-        try {
-            fileName = generateStringFromHash(path);
-        } catch (const std::invalid_argument & e) {
-            std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
-            return;
+        if (!fileExists(path)) {
+            throw std::bad_alloc();
         }
-
-        _data.restoreBufferFromFile(fileName);
+        _data.restoreBufferFromFile(path);
        
     }
 

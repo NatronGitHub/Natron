@@ -53,6 +53,8 @@
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
 
+#define NATRON_CACHE_VERSION 2
+
 using namespace Natron;
 
 AppManager* AppManager::_instance = 0;
@@ -519,9 +521,9 @@ AppManager::loadInternal(const QString & projectFilename,
     
     U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
     
-    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1.) );
-    _imp->_diskCache.reset( new Cache<Image>("DiskCache",0x1, maxDiskCacheNode,0.) );
-    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",0x1,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
+    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",NATRON_CACHE_VERSION, maxCacheRAM - playbackSize,1.) );
+    _imp->_diskCache.reset( new Cache<Image>("DiskCache",NATRON_CACHE_VERSION, maxDiskCacheNode,0.) );
+    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",NATRON_CACHE_VERSION,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
 
     setLoadingStatus( tr("Restoring the image cache...") );
     _imp->restoreCaches();
@@ -1375,9 +1377,10 @@ void saveCache(Natron::Cache<T>* cache)
     
     typename Natron::Cache<T>::CacheTOC toc;
     cache->save(&toc);
-    
+    unsigned int version = cache->cacheVersion();
     try {
         boost::archive::binary_oarchive oArchive(ofile);
+        oArchive << version;
         oArchive << toc;
     } catch (const std::exception & e) {
         qDebug() << "Failed to serialize the cache table of contents: " << e.what();
@@ -1438,9 +1441,18 @@ void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
         }
         
         typename Natron::Cache<T>::CacheTOC tableOfContents;
+        unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
         try {
             boost::archive::binary_iarchive iArchive(ifile);
-            iArchive >> tableOfContents;
+            if (cache->cacheVersion() >= NATRON_CACHE_VERSION) {
+                iArchive >> cacheVersion;
+            }
+            //Only load caches with same version, otherwise wipe it!
+            if (cacheVersion == cache->cacheVersion()) {
+                iArchive >> tableOfContents;
+            } else {
+                p->cleanUpCacheDiskStructure(cache->getCachePath());
+            }
         } catch (const std::exception & e) {
             qDebug() << e.what();
             ifile.close();

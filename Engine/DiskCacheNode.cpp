@@ -154,7 +154,7 @@ DiskCacheNode::getFrameRange(SequenceTime *first,SequenceTime *last)
 }
 
 void
-DiskCacheNode::getPreferredDepthAndComponents(int inputNb,Natron::ImageComponentsEnum* comp,Natron::ImageBitDepthEnum* depth) const
+DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,Natron::ImageComponentsEnum* comp,Natron::ImageBitDepthEnum* depth) const
 {
     EffectInstance* input = getInput(0);
     if (input) {

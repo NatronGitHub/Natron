@@ -27,7 +27,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QObject>
-#include <QtCore/QDebug>
 #include <QtCore/QTextStream>
 #include <QtCore/QBuffer>
 #include <QtCore/QThreadPool>
@@ -263,12 +262,14 @@ public:
         typename EntryType::key_type key;
         ParamsTypePtr params;
         std::size_t size; //< the data size in bytes
+        std::string filePath; //< we need to serialize it as several entries can have the same hash, hence we index them
         
         SerializedEntry()
         : hash(0)
         , key()
         , params()
         , size(0)
+        , filePath()
         {
             
         }
@@ -281,6 +282,7 @@ public:
             ar & boost::serialization::make_nvp("Key",key);
             ar & boost::serialization::make_nvp("Params",params);
             ar & boost::serialization::make_nvp("Size",size);
+            ar & boost::serialization::make_nvp("Filename",filePath);
         }
         
         template<class Archive>
@@ -291,6 +293,7 @@ public:
             ar & boost::serialization::make_nvp("Key",key);
             ar & boost::serialization::make_nvp("Params",params);
             ar & boost::serialization::make_nvp("Size",size);
+            ar & boost::serialization::make_nvp("Filename",filePath);
         }
         
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -1218,6 +1221,7 @@ public:
         }
     }
 
+    
     /*Saves cache to disk as a settings file.
      */
     void save(CacheTOC* tableOfContents)
@@ -1234,11 +1238,19 @@ public:
                     serialization.params = (*it2)->getParams();
                     serialization.key = (*it2)->getKey();
                     serialization.size = (*it2)->dataSize();
+                    serialization.filePath = (*it2)->getFilePath();
                     tableOfContents->push_back(serialization);
+                    std::cout << "filename " << serialization.filePath << std::endl;
+#ifdef DEBUG
+                    if (!CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash)) {
+                        qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+                    }
+#endif
                 }
             }
         }
     }
+
 
     /*Restores the cache from disk.*/
     void restore(const CacheTOC & tableOfContents)
@@ -1247,7 +1259,6 @@ public:
         ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
         ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
         std::list<EntryTypePtr> entriesToBeDeleted;
-        
 
         for (typename CacheTOC::const_iterator it =
                  tableOfContents.begin(); it != tableOfContents.end(); ++it) {
@@ -1263,12 +1274,19 @@ public:
                  */
                 qDebug() << "WARNING: serialized hash key different than the restored one";
             }
+            
+#ifdef DEBUG
+            if (!checkFileNameMatchesHash(it->filePath, it->hash)) {
+                qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+            }
+#endif
+            
             EntryType* value = NULL;
 
             Natron::StorageModeEnum storage = Natron::eStorageModeDisk;
 
             try {
-                value = new EntryType(it->key,it->params,this,storage, QString( getCachePath() + QDir::separator() ).toStdString());
+                value = new EntryType(it->key,it->params,this,storage,it->filePath);
                 
                 ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
                 value->restoreMetaDataFromFile(it->size);
