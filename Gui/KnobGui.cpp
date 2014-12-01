@@ -1253,6 +1253,15 @@ struct LinkToKnobDialogPrivate
 
     LinkToKnobDialogPrivate(KnobGui* from)
         : fromKnob(from)
+        , mainLayout(0)
+        , firstLineLayout(0)
+        , firstLine(0)
+        , selectNodeLabel(0)
+        , nodeSelectionCombo(0)
+        , knobSelectionCombo(0)
+        , buttons(0)
+        , allNodes()
+        , allKnobs()
     {
     }
 };

@@ -225,10 +225,8 @@ struct ValueSerialization
                 
                 assert(_extraData);
                 ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
+                assert(data);
                 data->_choiceString = label;
-                
-                
-                
             }
             isChoice->setValue(v, _dimension);
 

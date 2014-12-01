@@ -368,6 +368,7 @@ public:
     , _data()
     , _cache()
     , _removeBackingFileBeforeDestruction(false)
+    , _requestedStorage(eStorageModeNone)
     {
     }
 

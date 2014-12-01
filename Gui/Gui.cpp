@@ -439,6 +439,7 @@ struct GuiPrivate
           , menuRender(0)
           , viewersMenu(0)
           , viewerInputsMenu(0)
+          , viewersViewMenu(0)
           , cacheMenu(0)
           , _panesMutex()
           , _panes()

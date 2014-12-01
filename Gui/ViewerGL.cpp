@@ -2376,10 +2376,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     OpenGLViewerI::BitDepth bd = getBitDepth();
     assert(textureIndex == 0 || textureIndex == 1);
     if (bd == OpenGLViewerI::BYTE) {
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::BYTE);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte);
     } else if ( (bd == OpenGLViewerI::FLOAT) || (bd == OpenGLViewerI::HALF_FLOAT) ) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::FLOAT);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
@@ -4335,7 +4335,7 @@ ViewerGL::getTextureColorAt(int x,
     *b = 0;
     *a = 0;
 
-    Texture::DataType type;
+    Texture::DataTypeEnum type;
     if (_imp->displayTextures[0]) {
         type = _imp->displayTextures[0]->type();
     } else if (_imp->displayTextures[1]) {
@@ -4350,7 +4350,7 @@ ViewerGL::getTextureColorAt(int x,
         pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
     }
 
-    if ( (type == Texture::BYTE) || !_imp->supportsGLSL ) {
+    if ( (type == Texture::eDataTypeByte) || !_imp->supportsGLSL ) {
         U32 pixel;
         glReadBuffer(GL_FRONT);
         glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
@@ -4364,7 +4364,7 @@ ViewerGL::getTextureColorAt(int x,
         *b = (double)blue / 255.;
         *a = (double)alpha / 255.;
         glCheckError();
-    } else if ( (type == Texture::FLOAT) && _imp->supportsGLSL ) {
+    } else if ( (type == Texture::eDataTypeFloat) && _imp->supportsGLSL ) {
         GLfloat pixel[4];
         glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_RGBA, GL_FLOAT, pixel);
         *r = (double)pixel[0];

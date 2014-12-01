@@ -461,8 +461,11 @@ Curve::getNearestKeyFrameWithTime(double time,
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
+    // Keyframes are ordered
+    KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
+    KeyFrameSet::const_iterator lower = it;
     KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+    for (; it != upper; ++it) {
         if (it->getTime() > time) {
             upper = it;
             break;
@@ -470,6 +473,8 @@ Curve::getNearestKeyFrameWithTime(double time,
             *k = *it;
 
             return true;
+        } else {
+            lower = it;
         }
     }
 
@@ -479,8 +484,6 @@ Curve::getNearestKeyFrameWithTime(double time,
         return true;
     }
 
-    KeyFrameSet::const_iterator lower = upper;
-    --lower;
     if ( upper == _imp->keyFrames.end() ) {
         *k = *lower;
 

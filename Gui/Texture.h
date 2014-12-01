@@ -21,9 +21,12 @@ class Texture
 {
 public:
     /*Note that the short datatype is not used currently*/
-    enum DataType
+    enum DataTypeEnum
     {
-        BYTE = 0,FLOAT = 1, HALF_FLOAT = 2
+        eDataTypeNone,
+        eDataTypeByte,
+        eDataTypeFloat,
+        eDataTypeHalf,
     };
 
 public:
@@ -48,13 +51,13 @@ public:
         return _textureRect.h;
     }
 
-    DataType type() const
+    DataTypeEnum type() const
     {
         return _type;
     }
 
     /*allocates the texture*/
-    void fillOrAllocateTexture(const TextureRect & texRect,DataType type);
+    void fillOrAllocateTexture(const TextureRect & texRect, DataTypeEnum type);
 
     const TextureRect & getTextureRect() const
     {
@@ -69,7 +72,7 @@ private:
     U32 _target;
     int _minFilter,_magFilter;
     TextureRect _textureRect;
-    DataType _type;
+    DataTypeEnum _type;
 };
 
 

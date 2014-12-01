@@ -118,6 +118,7 @@ struct ShortCutEditorPrivate
           , shortcutGroup(0)
           , shortcutGroupLayout(0)
           , shortcutLabel(0)
+          , shortcutEditor(0)
           , validateButton(0)
           , clearButton(0)
           , resetButton(0)
