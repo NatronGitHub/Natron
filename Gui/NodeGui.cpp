@@ -1543,6 +1543,7 @@ NodeGui::onRenderingStarted()
 {
     _stateIndicator->setBrush(Qt::yellow);
     _stateIndicator->show();
+    update();
     
 }
 
@@ -1550,6 +1551,7 @@ void
 NodeGui::onRenderingFinished()
 {
     _stateIndicator->hide();
+    update();
 }
 
 void
@@ -1863,6 +1865,7 @@ NodeGui::onDisabledKnobToggled(bool disabled)
 
     _disabledTopLeftBtmRight->setVisible(disabled);
     _disabledBtmLeftTopRight->setVisible(disabled);
+    update();
 }
 
 void
