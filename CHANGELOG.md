@@ -8,6 +8,24 @@ with a scale of 10 then only the downstream node will be rendered with a scale o
 
 - The font of the application and its size are now customizable in the preferences, however a change to these settings requires a restart of Natron. The new default font is "Muli": https://www.google.com/fonts/specimen/Muli
 
+- We slightly adjusted how caching works in Natron which should globally make the software much faster. Previous versions of Natron had what's called an "Agressive caching" behaviour: every image of every node was cached in RAM, resulting in heavy memory usage and sometimes degraded performances. The new default behaviour is to cache the output of a node only if:
+    * Several outputs are connected to this node
+    * The node has a single output, but that output has its settings panel opened (Meaning the user is heavily editing the output effect and would like the input branch being in the cache)
+    * The node has its preview image enabled (in interactive session only)
+    * The node is using several images at different times to compute the result of the output (e.g: a retimer node)
+    * The parameter "Force caching" in the "Node" tab of the settings panel is checked
+Aggressive caching can however make the interactivity of Natron slightly faster (when using it in GUI mode) but would not be any useful in background render mode, so make sure it is checked off when rendering on disk. 
+You can by-pass this behaviour and come-back to the original "Aggressive caching" solution by turning it on in the Preferences of Natron. At least 8GiB of RAM are required to use aggressive caching, 16GiB  are recommended. 
+
+- New HSVTool node to adjust hue, saturation and brightnes, or perform color replacement.
+
+- New HSVToRGB & RGBToHSV nodes to convert between these 2 color-spaces
+
+- New Saturation node to modify the color saturation of an image.
+
+- New DiskCache node. This node allows to cache a branch of the compositing tree to re-use it later on without re-computing the images. This cache is persistent on disk and is saved between 2 runs
+of Natron. You can configure the location and maximum size of the cache in the preferences of Natron; in the Cache tab. 
+
 - A new progress bar will display the progression while loading a project
 
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
