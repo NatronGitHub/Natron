@@ -55,6 +55,10 @@ public:
 
     ProjectSerialization(AppInstance* app)
         : _app(app)
+        , _timelineLeft(0)
+        , _timelineRight(0)
+        , _timelineCurrent(0)
+        , _creationDate(0)
     {
     }
 
