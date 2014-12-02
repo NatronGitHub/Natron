@@ -1054,13 +1054,17 @@ Application::event(QEvent* e)
     switch ( e->type() ) {
     case QEvent::FileOpen: {
         assert(_app);
-        QString file =  static_cast<QFileOpenEvent*>(e)->file();
+        QFileOpenEvent* foe = dynamic_cast<QFileOpenEvent*>(e);
+        assert(foe);
+        if (foe) {
+            QString file =  foe->file();
 #ifdef Q_OS_UNIX
-        if ( !file.isEmpty() ) {
-            file = AppManager::qt_tildeExpansion(file);
-        }
+            if ( !file.isEmpty() ) {
+                file = AppManager::qt_tildeExpansion(file);
+            }
 #endif
-        _app->setFileToOpen(file);
+            _app->setFileToOpen(file);
+        }
     }
 
         return true;

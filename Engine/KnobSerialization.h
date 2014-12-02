@@ -144,7 +144,10 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("Label", label);
             assert(_extraData);
             ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
-            data->_choiceString = label;
+            assert(data);
+            if (data) {
+                data->_choiceString = label;
+            }
             
         } else if (isString) {
             std::string v = isString->getValue(_dimension);

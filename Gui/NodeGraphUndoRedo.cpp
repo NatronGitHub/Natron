@@ -84,7 +84,7 @@ MoveMultipleNodesCommand::redo()
 bool
 MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command)
 {
-    const MoveMultipleNodesCommand *mvCmd = static_cast<const MoveMultipleNodesCommand *>(command);
+    const MoveMultipleNodesCommand *mvCmd = dynamic_cast<const MoveMultipleNodesCommand *>(command);
 
     if (!mvCmd) {
         return false;

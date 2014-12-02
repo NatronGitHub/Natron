@@ -486,8 +486,9 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
                 RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>( projectNodes[j]->getLiveInstance() );
                 assert(w.writer);
-                
-                w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
+                if (w.writer) {
+                    w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
+                }
                 renderers.push_back(w);
             }
         }

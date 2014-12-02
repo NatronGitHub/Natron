@@ -730,7 +730,10 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
     }
 
     KnobHelper* helper = dynamic_cast<KnobHelper*>( knob.get() );
-    QObject::connect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),_publicInterface,SLOT( onKnobDeletion() ) );
+    assert(helper);
+    if (helper) {
+        QObject::connect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),_publicInterface,SLOT( onKnobDeletion() ) );
+    }
     KnobGui* ret =  appPTR->createGuiForKnob(knob,_publicInterface);
     if (!ret) {
         qDebug() << "Failed to create Knob GUI";

@@ -1678,7 +1678,8 @@ NodeGraph::event(QEvent* e)
         return false;
     }
     if (e->type() == QEvent::KeyPress) {
-        QKeyEvent* ke = static_cast<QKeyEvent*>(e);
+        QKeyEvent* ke = dynamic_cast<QKeyEvent*>(e);
+        assert(ke);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
             NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName,this);
 

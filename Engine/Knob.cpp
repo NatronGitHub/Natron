@@ -155,14 +155,18 @@ KnobI::deleteValueAtTime(int time,
 void
 KnobI::removeAnimation(int dimension)
 {
-    removeAnimation(dimension, Natron::eValueChangedReasonPluginEdited);
+    if (canAnimate()) {
+        removeAnimation(dimension, Natron::eValueChangedReasonPluginEdited);
+    }
 }
 
 
 void
 KnobI::onAnimationRemoved(int dimension)
 {
-    removeAnimation(dimension, Natron::eValueChangedReasonUserEdited);
+    if (canAnimate()) {
+        removeAnimation(dimension, Natron::eValueChangedReasonUserEdited);
+    }
 }
 
 /***********************************KNOB HELPER******************************************/
@@ -336,7 +340,9 @@ KnobHelper::populate()
     }
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
-        _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
+        if (canAnimate()) {
+            _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
+        }
         _imp->animationLevel[i] = Natron::eAnimationLevelNone;
         
         
@@ -448,6 +454,9 @@ KnobHelper::deleteValueAtTime(int time,
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return;
+    }
     
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
@@ -460,6 +469,7 @@ KnobHelper::deleteValueAtTime(int time,
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
     }
+    assert(curve);
 
     try {
         curve->removeKeyFrameWithTime( (double)time );
@@ -503,6 +513,10 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
         throw std::invalid_argument("KnobHelper::moveValueAtTime(): Dimension out of range");
     }
     
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return;
+    }
+
     KnobHolder* holder = getHolder();
     
     boost::shared_ptr<Curve> curve;
@@ -515,7 +529,6 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
     }
-    
     assert(curve);
     
     std::pair<double,double> curveYRange = curve->getCurveYRange();
@@ -584,6 +597,10 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
     
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return;
+    }
+
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
@@ -595,7 +612,8 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
     }
-    
+    assert(curve);
+
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
         return false;
@@ -624,6 +642,10 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
     
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return;
+    }
+
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
@@ -635,6 +657,7 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
     }
+    assert(curve);
 
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
@@ -665,6 +688,10 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
     
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return;
+    }
+
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
@@ -676,6 +703,7 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
     }
+    assert(curve);
     
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
@@ -712,6 +740,10 @@ KnobHelper::removeAnimation(int dimension,
         throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
     }
 
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return;
+    }
+
     KnobHolder* holder = getHolder();
 
     boost::shared_ptr<Curve> curve;
@@ -724,13 +756,17 @@ KnobHelper::removeAnimation(int dimension,
         curve = _imp->gui->getCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
     }
+    assert(curve);
 
     if ( _signalSlotHandler && (reason != Natron::eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationAboutToBeRemoved(dimension);
     }
 
-    curve->clearKeyFrames();
-
+    assert(curve);
+    if (curve) {
+        curve->clearKeyFrames();
+    }
+    
     if ( _signalSlotHandler && (reason != Natron::eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationRemoved(dimension);
     }
@@ -776,10 +812,18 @@ KnobHelper::setInternalCurveHasChanged(int dimension, bool changed)
 void
 KnobHelper::cloneGuiCurvesIfNeeded(std::set<int>& modifiedDimensions)
 {
+    if (!canAnimate()) {
+        return;
+    }
+
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustCloneGuiCurves[i]) {
-            getCurve(i)->clone(*_imp->gui->getCurve(i));
+            boost::shared_ptr<Curve> curve = getCurve(i);
+            assert(curve);
+            boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(i);
+            assert(guicurve);
+            curve->clone(*guicurve);
             _imp->mustCloneGuiCurves[i] = false;
             
             modifiedDimensions.insert(i);
@@ -793,8 +837,14 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::set<int>& modifiedDimensions)
 void
 KnobHelper::guiCurveCloneInternalCurve(int dimension)
 {
+    if (!canAnimate()) {
+        return;
+    }
+
     if (_imp->gui) {
-        _imp->gui->getCurve(dimension)->clone(*(_imp->curves[dimension]));
+        boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(dimension);
+        assert(guicurve);
+        guicurve->clone(*(_imp->curves[dimension]));
         if (_signalSlotHandler) {
             _signalSlotHandler->s_refreshGuiCurve(dimension);
         }
@@ -804,6 +854,10 @@ KnobHelper::guiCurveCloneInternalCurve(int dimension)
 boost::shared_ptr<Curve>
 KnobHelper::getGuiCurve(int dimension) const
 {
+    if (!canAnimate()) {
+        return;
+    }
+
     if (_imp->gui) {
         return _imp->gui->getCurve(dimension);
     } else {
@@ -833,7 +887,12 @@ boost::shared_ptr<Curve> KnobHelper::getCurve(int dimension,bool byPassMaster) c
 bool
 KnobHelper::isAnimated(int dimension) const
 {
-    return getCurve(dimension)->isAnimated();
+    if (!canAnimate()) {
+        return false;
+    }
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    return curve->isAnimated();
 }
 
 const std::vector<boost::shared_ptr<Curve> > &
@@ -1023,6 +1082,7 @@ KnobHelper::getHolder() const
 void
 KnobHelper::setAnimationEnabled(bool val)
 {
+    assert(!val || canAnimate());
     _imp->isAnimationEnabled = val;
 }
 
@@ -1267,7 +1327,7 @@ KnobHelper::slaveTo(int dimension,
     KnobHelper* helper = dynamic_cast<KnobHelper*>( other.get() );
     assert(helper);
 
-    if (helper->_signalSlotHandler && _signalSlotHandler) {
+    if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
@@ -1297,8 +1357,10 @@ KnobHelper::slaveTo(int dimension,
     evaluateValueChange(dimension, reason);
 
     ///Register this as a listener of the master
-    helper->addListener(this);
-
+    if (helper) {
+        helper->addListener(this);
+    }
+    
     return true;
 }
 
@@ -1340,7 +1402,7 @@ KnobHelper::checkAnimationLevel(int dimension)
 {
     AnimationLevelEnum level = Natron::eAnimationLevelNone;
 
-    if ( getHolder() && getHolder()->getApp() ) {
+    if ( canAnimate() && isAnimated(dimension) && getHolder() && getHolder()->getApp() ) {
         boost::shared_ptr<Curve> c = getCurve(dimension);
         SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
         if (c->getKeyFramesCount() > 0) {
@@ -1443,7 +1505,7 @@ KnobHelper::getLastKeyFrameTime(int dimension,
                                 double* time) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
-    if ( !isAnimated(dimension) ) {
+    if ( !canAnimate() || !isAnimated(dimension) ) {
         return false;
     }
 
@@ -1464,7 +1526,13 @@ KnobHelper::getFirstKeyFrameTime(int dimension,
 int
 KnobHelper::getKeyFramesCount(int dimension) const
 {
-    return getCurve(dimension)->getKeyFramesCount();   //< getCurve will return the master's curve if any
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return 0;
+    }
+
+    boost::shared_ptr<Curve> curve = getCurve(dimension);  //< getCurve will return the master's curve if any
+    assert(curve);
+    return curve->getKeyFramesCount();   //< getCurve will return the master's curve if any
 }
 
 bool
@@ -1473,7 +1541,7 @@ KnobHelper::getNearestKeyFrameTime(int dimension,
                                    double* nearestTime) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
-    if ( !isAnimated(dimension) ) {
+    if ( !canAnimate() || !isAnimated(dimension) ) {
         return false;
     }
 
@@ -1493,7 +1561,7 @@ KnobHelper::getKeyFrameIndex(int dimension,
                              double time) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
-    if ( !isAnimated(dimension) ) {
+    if ( !canAnimate() || !isAnimated(dimension) ) {
         return -1;
     }
 
@@ -1659,7 +1727,9 @@ KnobHolder::~KnobHolder()
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelper* helper = dynamic_cast<KnobHelper*>( _imp->knobs[i].get() );
         assert(helper);
-        helper->_imp->holder = 0;
+        if (helper) {
+            helper->_imp->holder = 0;
+        }
     }
 }
 
