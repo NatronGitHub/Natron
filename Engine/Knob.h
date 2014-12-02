@@ -296,6 +296,9 @@ signals:
 class KnobI
     : public OverlaySupport
 {
+    
+    friend class KnobHolder;
+    
 public:
 
     KnobI()
@@ -306,6 +309,14 @@ public:
     {
     }
 
+protected:
+    /**
+     * @brief Deletes this knob permanantly
+     **/
+    virtual void deleteKnob() = 0;
+    
+public:
+    
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
      * to initialize curves and values. This is separated from the constructor as we need RTTI
@@ -957,6 +968,10 @@ public:
 
     virtual ~KnobHelper();
 
+private:
+    virtual void deleteKnob() OVERRIDE FINAL;
+public:
+    
     virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
     virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
@@ -1561,12 +1576,17 @@ public:
      * @brief Dynamically removes a knob (from the GUI also)
      **/
     void removeDynamicKnob(KnobI* knob);
+    
+    void moveKnobOneStepUp(KnobI* knob);
+    void moveKnobOneStepDown(KnobI* knob);
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
     AppInstance* getApp() const WARN_UNUSED_RETURN;
     boost::shared_ptr<KnobI> getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     const std::vector< boost::shared_ptr<KnobI> > & getKnobs() const WARN_UNUSED_RETURN;
+    
+    std::vector< boost::shared_ptr<KnobI> >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
 
     void onGuiFrozenChange(bool frozen);
     
@@ -1782,10 +1802,6 @@ public:
        Knob class. Don't call this*/
     void addKnob(boost::shared_ptr<KnobI> k);
 
-
-    /*Removes a knob to the vector. This is called by the
-       Knob class. Don't call this*/
-    void removeKnob(KnobI* k);
 
     void initializeKnobsPublic();
 

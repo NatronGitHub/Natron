@@ -658,6 +658,11 @@ public:
                bool declaredByPlugin);
 
     void addKnob(boost::shared_ptr<KnobI> k);
+    
+    void removeKnob(KnobI* k);
+    
+    void moveOneStepUp(KnobI* k);
+    void moveOneStepDown(KnobI* k);
 
     const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
 
@@ -701,6 +706,12 @@ public:
 
     void addKnob(const boost::shared_ptr<KnobI>& k);
     
+
+    void moveOneStepUp(KnobI* k);
+    void moveOneStepDown(KnobI* k);
+    
+    void removeKnob(KnobI* k);
+
     const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
     {
         return _children;

@@ -336,8 +336,37 @@ KnobHelper::~KnobHelper()
     if (_signalSlotHandler) {
         _signalSlotHandler->s_deleted();
     }
-    if (_imp->holder) {
-        _imp->holder->removeKnob(this);
+}
+
+void
+KnobHelper::deleteKnob()
+{
+    if (_imp->parentKnob) {
+        Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(_imp->parentKnob.get());
+        Page_Knob* isPage = dynamic_cast<Page_Knob*>(_imp->parentKnob.get());
+        if (isGrp) {
+            isGrp->removeKnob(this);
+        } else if (isPage) {
+            isPage->removeKnob(this);
+        } else {
+            assert(false);
+        }
+    }
+    Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(this);
+    Page_Knob* isPage = dynamic_cast<Page_Knob*>(this);
+    if (isGrp) {
+        std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
+        for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
+            dynamic_cast<KnobHelper*>(it->get())->deleteKnob();
+        }
+    } else if (isPage) {
+        std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
+        for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
+            dynamic_cast<KnobHelper*>(it->get())->deleteKnob();
+        }
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_deleted();
     }
 }
 
@@ -388,6 +417,7 @@ void
 KnobHelper::setAsUserKnob()
 {
     _imp->userKnob = true;
+    _imp->dynamicallyCreated = true;
 }
 
 bool
@@ -2215,7 +2245,7 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
     assert(fromExprDimension != -1);
     KnobHelper* slave = dynamic_cast<KnobHelper*>(knob);
     
-    if ( getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
+    if ( slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
         ///hackish way to get a shared ptr to this knob
         slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
     }
@@ -2278,6 +2308,8 @@ KnobHelper::getCurrentTime() const
 struct KnobHolder::KnobHolderPrivate
 {
     AppInstance* app;
+    
+    QMutex knobsMutex;
     std::vector< boost::shared_ptr<KnobI> > knobs;
     bool knobsInitialized;
     bool isSlave;
@@ -2340,6 +2372,7 @@ struct KnobHolder::KnobHolderPrivate
     
     KnobHolderPrivate(AppInstance* appInstance_)
         : app(appInstance_)
+          , knobsMutex()
           , knobs()
           , knobsInitialized(false)
           , isSlave(false)
@@ -2379,6 +2412,15 @@ KnobHolder::~KnobHolder()
 }
 
 void
+KnobHolder::addKnob(boost::shared_ptr<KnobI> k)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker kk(&_imp->knobsMutex);
+    _imp->knobs.push_back(k);
+}
+
+
+void
 KnobHolder::setPanelPointer(DockablePanelI* gui)
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -2404,10 +2446,81 @@ KnobHolder::refreshKnobs()
 void
 KnobHolder::removeDynamicKnob(KnobI* knob)
 {
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        if (_imp->knobs[i].get() == knob && _imp->knobs[i]->isDynamicallyCreated()) {
-            _imp->knobs[i]->getSignalSlotHandler()->s_deleted();
+    QMutexLocker k(&_imp->knobsMutex);
+    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        if (it->get() == knob && (*it)->isDynamicallyCreated()) {
+            (*it)->deleteKnob();
+            _imp->knobs.erase(it);
             break;
+        }
+    }
+}
+
+void
+KnobHolder::moveKnobOneStepUp(KnobI* knob)
+{
+    boost::shared_ptr<KnobI> parent = knob->getParentKnob();
+    Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parent.get());
+    Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parent.get());
+    
+    //the knob belongs to a group/page , change its index within the group instead
+    if (parentIsGrp) {
+        parentIsGrp->moveOneStepUp(knob);
+    } else if (parentIsPage) {
+        parentIsPage->moveOneStepUp(knob);
+    } else {
+        
+        QMutexLocker k(&_imp->knobsMutex);
+        int prevTopLevel = -1;
+        for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+            if (_imp->knobs[i].get() == knob) {
+                if (prevTopLevel != -1) {
+                    boost::shared_ptr<KnobI> tmp = _imp->knobs[prevTopLevel];
+                    _imp->knobs[prevTopLevel] = _imp->knobs[i];
+                    _imp->knobs[i] = tmp;
+                }
+                break;
+            } else {
+                boost::shared_ptr<KnobI> parent = _imp->knobs[i]->getParentKnob();
+                if (!parent) {
+                    prevTopLevel = i;
+                }
+            }
+        }
+    }
+}
+
+void
+KnobHolder::moveKnobOneStepDown(KnobI* knob)
+{
+    boost::shared_ptr<KnobI> parent = knob->getParentKnob();
+    Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parent.get());
+    Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parent.get());
+    
+    //the knob belongs to a group/page , change its index within the group instead
+    if (parentIsGrp) {
+        parentIsGrp->moveOneStepDown(knob);
+    } else if (parentIsPage) {
+        parentIsPage->moveOneStepDown(knob);
+    } else {
+        
+        QMutexLocker k(&_imp->knobsMutex);        
+        int foundIndex = - 1;
+        for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+            if (_imp->knobs[i].get() == knob) {
+                foundIndex = i;
+                break;
+            }
+        }
+        assert(foundIndex != -1);
+        for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
+            boost::shared_ptr<KnobI> parent = _imp->knobs[i]->getParentKnob();
+            if (!parent) {
+                boost::shared_ptr<KnobI> tmp = _imp->knobs[foundIndex];
+                _imp->knobs[foundIndex] = _imp->knobs[i];
+                _imp->knobs[i] = tmp;
+                break;
+            }
         }
     }
 }
@@ -2706,24 +2819,7 @@ void
 KnobHolder::initializeKnobsPublic()
 {
     initializeKnobs();
-    _imp->knobsInitialized = true;
-}
 
-void
-KnobHolder::addKnob(boost::shared_ptr<KnobI> k)
-{
-    _imp->knobs.push_back(k);
-}
-
-void
-KnobHolder::removeKnob(KnobI* knob)
-{
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        if (_imp->knobs[i].get() == knob) {
-            _imp->knobs.erase(_imp->knobs.begin() + i);
-            break;
-        }
-    }
 }
 
 void
@@ -2738,6 +2834,7 @@ KnobHolder::onGuiFrozenChange(bool frozen)
 void
 KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if (getApp()->isGuiFrozen()) {
         return;
     }
@@ -2749,6 +2846,7 @@ KnobHolder::refreshAfterTimeChange(SequenceTime time)
 void
 KnobHolder::refreshInstanceSpecificKnobsOnly(SequenceTime time)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if (getApp()->isGuiFrozen()) {
         return;
     }
@@ -2761,11 +2859,10 @@ KnobHolder::refreshInstanceSpecificKnobsOnly(SequenceTime time)
 
 boost::shared_ptr<KnobI> KnobHolder::getKnobByName(const std::string & name) const
 {
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
-    
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->getName() == name) {
-            return knobs[i];
+    QMutexLocker k(&_imp->knobsMutex);
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+        if (_imp->knobs[i]->getName() == name) {
+            return _imp->knobs[i];
         }
     }
     
@@ -2780,9 +2877,17 @@ KnobHolder::getKnobs() const
     return _imp->knobs;
 }
 
+std::vector< boost::shared_ptr<KnobI> >
+KnobHolder::getKnobs_mt_safe() const
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    return _imp->knobs;
+}
+
 void
 KnobHolder::slaveAllKnobs(KnobHolder* other)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if (_imp->isSlave) {
         return;
     }
@@ -2995,6 +3100,8 @@ KnobHolder::getRecursionLevel() const
 void
 KnobHolder::restoreDefaultValues()
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     aboutToRestoreDefaultValues();
     
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
@@ -3074,6 +3181,8 @@ KnobHolder::setHasAnimation(bool hasAnimation)
 void
 KnobHolder::updateHasAnimation()
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     bool hasAnimation = false;
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if ((*it)->hasAnimation()) {

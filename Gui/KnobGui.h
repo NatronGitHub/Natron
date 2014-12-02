@@ -59,7 +59,16 @@ public:
             DockablePanel* container);
 
     virtual ~KnobGui() OVERRIDE;
-
+    
+    void removeGui();
+    
+protected:
+    /**
+     * @brief Override this to delete all user interface created for this knob
+     **/
+    virtual void removeSpecificGui() = 0;
+    
+public:
 
     /**
      * @brief This function must return a pointer to the internal knob.

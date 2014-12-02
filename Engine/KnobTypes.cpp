@@ -887,6 +887,47 @@ Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
     }
 }
 
+void
+Group_Knob::removeKnob(KnobI* k)
+{
+    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+        if (it->get() == k) {
+            _children.erase(it);
+            return;
+        }
+    }
+}
+
+void
+Group_Knob::moveOneStepUp(KnobI* k)
+{
+    for (U32 i = 0; i < _children.size(); ++i) {
+        if (_children[i].get() == k) {
+            if (i == 0) {
+                break;
+            }
+            boost::shared_ptr<KnobI> tmp = _children[i - 1];
+            _children[i - 1] = _children[i];
+            _children[i] = tmp;
+        }
+    }
+}
+
+void
+Group_Knob::moveOneStepDown(KnobI* k)
+{
+    for (U32 i = 0; i < _children.size(); ++i) {
+        if (_children[i].get() == k) {
+            if (i == _children.size() - 1) {
+                break;
+            }
+            boost::shared_ptr<KnobI> tmp = _children[i + 1];
+            _children[i + 1] = _children[i];
+            _children[i] = tmp;
+        }
+    }
+}
+
 const std::vector< boost::shared_ptr<KnobI> > &
 Group_Knob::getChildren() const
 {
@@ -934,6 +975,48 @@ Page_Knob::addKnob(const boost::shared_ptr<KnobI> &k)
         }
     }
 }
+
+void
+Page_Knob::removeKnob(KnobI* k)
+{
+    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+        if (it->get() == k) {
+            _children.erase(it);
+            return;
+        }
+    }
+}
+
+void
+Page_Knob::moveOneStepUp(KnobI* k)
+{
+    for (U32 i = 0; i < _children.size(); ++i) {
+        if (_children[i].get() == k) {
+            if (i == 0) {
+                break;
+            }
+            boost::shared_ptr<KnobI> tmp = _children[i - 1];
+            _children[i - 1] = _children[i];
+            _children[i] = tmp;
+        }
+    }
+}
+
+void
+Page_Knob::moveOneStepDown(KnobI* k)
+{
+    for (U32 i = 0; i < _children.size(); ++i) {
+        if (_children[i].get() == k) {
+            if (i == _children.size() - 1) {
+                break;
+            }
+            boost::shared_ptr<KnobI> tmp = _children[i + 1];
+            _children[i + 1] = _children[i];
+            _children[i] = tmp;
+        }
+    }
+}
+
 
 /******************************Parametric_Knob**************************************/
 

@@ -20,10 +20,13 @@
 #include <QUndoStack>
 #include <QGridLayout>
 #include <QUndoCommand>
+#include <QFormLayout>
 #include <QDebug>
 #include <QToolTip>
+#include <QHeaderView>
 #include <QMutex>
 #include <QTreeWidget>
+#include <QCheckBox>
 #include <QHeaderView>
 #include <QColorDialog>
 CLANG_DIAG_OFF(unused-private-field)
@@ -35,6 +38,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QImage>
 #include <QToolButton>
 #include <QMenu>
+#include <QDialogButtonBox>
 
 #include <ofxNatron.h>
 
@@ -58,6 +62,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
+#include "Gui/ComboBox.h"
 #include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiTypes.h" // for Group_KnobGui
@@ -78,12 +83,14 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/SpinBox.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
+
 
 using std::make_pair;
 using namespace Natron;
@@ -209,7 +216,7 @@ struct DockablePanelPrivate
     }
 
     /*inserts a new page to the dockable panel.*/
-    PageMap::iterator addPage(const QString & name);
+    PageMap::iterator addPage(Page_Knob* page,const QString & name);
 
 
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
@@ -482,15 +489,15 @@ DockablePanel::DockablePanel(Gui* gui
     _imp->_mainLayout->addWidget(_imp->_tabWidget);
 
     if (createDefaultPage) {
-        _imp->addPage(defaultPageName);
+        _imp->addPage(NULL,defaultPageName);
     }
 }
 
 DockablePanel::~DockablePanel()
 {
-    if (_imp->_holder) {
-        _imp->_holder->discardPanelPointer();
-    }
+//    if (_imp->_holder) {
+//        _imp->_holder->discardPanelPointer();
+//    }
     delete _imp->_undoStack;
 
     ///Delete the knob gui if they weren't before
@@ -501,6 +508,17 @@ DockablePanel::~DockablePanel()
             QObject::disconnect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),this,SLOT( onKnobDeletion() ) );
             it->first->setKnobGuiPointer(0);
             it->second->deleteLater();
+        }
+    }
+}
+
+void
+DockablePanel::setUserPageActiveIndex()
+{
+    for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
+        if (_imp->_tabWidget->tabText(i) == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
+            _imp->_tabWidget->setCurrentIndex(i);
+            break;
         }
     }
 }
@@ -722,14 +740,14 @@ DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<Kno
             for (U32 i = 0; i < knobs.size(); ++i) {
                 Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
                 if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
-                    parentTab = _imp->addPage( p->getDescription().c_str() );
+                    parentTab = _imp->addPage(p, p->getDescription().c_str() );
                     break;
                 }
             }
 
             ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
             if ( parentTab == _imp->_pages.end() ) {
-                parentTab = _imp->addPage(_imp->_defaultPageName);
+                parentTab = _imp->addPage(NULL, _imp->_defaultPageName);
             }
         }
 
@@ -822,7 +840,10 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
 
     if (isPage) {
-        addPage( isPage->getDescription().c_str() );
+        
+        QString pageName(isPage->getDescription().c_str());
+        addPage(isPage.get(), pageName);
+
     } else {
         ret = createKnobGui(knob);
 
@@ -851,9 +872,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             ////find in which page the knob should be
             Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
             PageMap::iterator page = _pages.end();
-
+            
             if (isTopLevelParentAPage) {
-                page = addPage( isTopLevelParentAPage->getDescription().c_str() );
+                page = addPage(isTopLevelParentAPage, isTopLevelParentAPage->getDescription().c_str() );
             } else {
                 ///the top level parent is not a page, i.e the plug-in didn't specify any page
                 ///for this param, put it in the first page that is not the default page.
@@ -870,14 +891,14 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     for (U32 i = 0; i < knobs.size(); ++i) {
                         Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
                         if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
-                            page = addPage( p->getDescription().c_str() );
+                            page = addPage(p,  p->getDescription().c_str() );
                             break;
                         }
                     }
 
                     ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
                     if ( page == _pages.end() ) {
-                        page = addPage(_defaultPageName);
+                        page = addPage(NULL, _defaultPageName);
                     }
                 }
             }
@@ -1066,13 +1087,18 @@ RightClickableWidget::enterEvent(QEvent* e)
 }
 
 PageMap::iterator
-DockablePanelPrivate::addPage(const QString & name)
+DockablePanelPrivate::addPage(Page_Knob* page,const QString & name)
 {
     PageMap::iterator found = _pages.find(name);
 
     if ( found != _pages.end() ) {
         return found;
     }
+    
+    if (page) {
+        QObject::connect( page->getSignalSlotHandler().get(),SIGNAL( deleted() ),_publicInterface,SLOT( onKnobDeletion() ) );
+    }
+
 
     QWidget* newTab;
     QWidget* layoutContainer;
@@ -1327,22 +1353,65 @@ DockablePanel::insertHeaderButton(int headerPosition)
 }
 
 void
+DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
+{
+    Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
+    if (isPage) {
+        PageMap::iterator found = _imp->_pages.find(isPage->getDescription().c_str());
+        if (found != _imp->_pages.end()) {
+            int index = _imp->_tabWidget->indexOf(found->second.tab);
+            if (index != -1) {
+                _imp->_tabWidget->removeTab(index);
+            }
+            found->second.tab->deleteLater();
+            _imp->_pages.erase(found);
+        }
+        
+    } else {
+        
+        Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
+        if (isGrp && isGrp->isTab()) {
+            //find parent page
+            KnobI* parentKnobTmp = isGrp;
+            while (parentKnobTmp) {
+                boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
+                if (!parent) {
+                    break;
+                } else {
+                    parentKnobTmp = parent.get();
+                }
+            }
+            Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
+            if (isTopLevelParentAPage) {
+                PageMap::iterator page = _imp->_pages.find(isTopLevelParentAPage->getDescription().c_str());
+                int index = page->second.tabWidget->indexOf(page->second.tab);
+                if (index != -1) {
+                    page->second.tabWidget->removeTab(index);
+                    page->second.tab->deleteLater();
+                }
+                if (page->second.tabWidget->count() == 0) {
+                    page->second.tabWidget->deleteLater();
+                    _imp->_pages.erase(page);
+                }
+            }
+        } else {
+            
+            std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            if (it != _imp->_knobs.end()) {
+                it->second->removeGui();
+                delete it->second;
+                _imp->_knobs.erase(it);
+            }
+        }
+    }
+}
+
+void
 DockablePanel::onKnobDeletion()
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
     if (handler) {
-        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
-            if (helper->getSignalSlotHandler().get() == handler) {
-                if (it->second) {
-                    it->second->deleteLater();
-                }
-                _imp->_knobs.erase(it);
-
-                return;
-            }
-        }
+        deleteKnobGui(handler->getKnob());
     }
 }
 
@@ -1513,7 +1582,8 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 void
 DockablePanel::onManageUserParametersActionTriggered()
 {
-    
+    ManageUserParamsDialog dialog(this,this);
+    dialog.exec();
 }
 
 void
@@ -1909,6 +1979,10 @@ struct ManageUserParamsDialogPrivate
     {
         
     }
+    
+    boost::shared_ptr<Page_Knob> getUserPageKnob() const;
+    
+    void rebuildUserPage();
 };
 
 ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* parent)
@@ -1918,18 +1992,29 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->mainLayout = new QHBoxLayout(this);
     
     _imp->tree = new QTreeWidget(this);
+    _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->tree->setSelectionBehavior(QAbstractItemView::SelectRows);
     _imp->tree->setRootIsDecorated(false);
     _imp->tree->setItemsExpandable(false);
     _imp->tree->header()->setStretchLastSection(false);
     _imp->tree->setTextElideMode(Qt::ElideMiddle);
     _imp->tree->setContextMenuPolicy(Qt::CustomContextMenu);
-    _imp->tree->setDragEnabled(true);
-    _imp->tree->setDragDropMode(QAbstractItemView::DragOnly);
-    setAcceptDrops(true);
+    _imp->tree->header()->setStretchLastSection(true);
+    _imp->tree->header()->hide();
+    
+    QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()),this,SLOT(onSelectionChanged()));
     
     const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = panel->getKnobs();
-       
+    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if (it->first->isUserKnob()) {
+            TreeItem i;
+            i.knob = it->first;
+            i.item = new QTreeWidgetItem(_imp->tree);
+            i.item->setText(0, it->first->getName().c_str());
+            _imp->items.push_back(i);
+        }
+    }
+    
     _imp->mainLayout->addWidget(_imp->tree);
     
     _imp->buttonsContainer = new QWidget(this);
@@ -1960,6 +2045,9 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->buttonsLayout->addWidget(_imp->closeButton);
     
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
+    onSelectionChanged();
+    _imp->panel->setUserPageActiveIndex();
+
 }
 
 ManageUserParamsDialog::~ManageUserParamsDialog()
@@ -1967,16 +2055,76 @@ ManageUserParamsDialog::~ManageUserParamsDialog()
     
 }
 
+boost::shared_ptr<Page_Knob>
+ManageUserParamsDialogPrivate::getUserPageKnob() const
+{
+    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = panel->getKnobs();
+    
+    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if (it->first->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            return boost::dynamic_pointer_cast<Page_Knob>(it->first);
+        }
+    }
+    
+    boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(panel->getHolder(),NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
+    ret->setAsUserKnob();
+    ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
+    return ret;
+}
+
+void
+ManageUserParamsDialogPrivate::rebuildUserPage()
+{
+    boost::shared_ptr<Page_Knob> page = getUserPageKnob();
+    std::vector<boost::shared_ptr<KnobI> > children = page->getChildren();
+
+    
+    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
+        panel->deleteKnobGui(*it);
+    }
+    panel->scanForNewKnobs();
+}
+
 void
 ManageUserParamsDialog::onAddClicked()
 {
-    
+    AddKnobDialog dialog(_imp->panel,this);
+    if (dialog.exec()) {
+        boost::shared_ptr<KnobI> knob = dialog.getKnob();
+  
+        TreeItem i;
+        i.knob = knob;
+        i.item = new QTreeWidgetItem(_imp->tree);
+        i.item->setText(0, knob->getName().c_str());
+        _imp->items.push_back(i);
+        
+        boost::shared_ptr<Page_Knob> userPage = _imp->getUserPageKnob();
+        userPage->addKnob(knob);
+        _imp->panel->setUserPageActiveIndex();
+    }
+    _imp->rebuildUserPage();
 }
 
 void
 ManageUserParamsDialog::onDeleteClicked()
 {
-    
+    QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
+    if (!selection.isEmpty()) {
+        for (int i = 0; i < selection.size(); ++i) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+                if (it->item == selection[i]) {
+                    it->knob->getHolder()->removeDynamicKnob(it->knob.get());
+                    delete it->item;
+                    _imp->items.erase(it);
+                    boost::shared_ptr<Page_Knob> userPage = _imp->getUserPageKnob();
+                    if (userPage->getChildren().empty()) {
+                        userPage->getHolder()->removeDynamicKnob(userPage.get());
+                    }
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void
@@ -1988,18 +2136,878 @@ ManageUserParamsDialog::onEditClicked()
 void
 ManageUserParamsDialog::onUpClicked()
 {
-    
+    QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
+    if (!selection.isEmpty()) {
+        for (int i = 0; i < selection.size(); ++i) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+                if (it->item == selection[i]) {
+                    _imp->panel->getHolder()->moveKnobOneStepUp(it->knob.get());
+                    break;
+                }
+            }
+            
+        }
+        _imp->rebuildUserPage();
+    }
 }
 
 void
 ManageUserParamsDialog::onDownClicked()
 {
-    
+    QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
+    if (!selection.isEmpty()) {
+        for (int i = 0; i < selection.size(); ++i) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+                if (it->item == selection[i]) {
+                    _imp->panel->getHolder()->moveKnobOneStepDown(it->knob.get());
+                    break;
+                }
+            }
+            
+        }
+        _imp->rebuildUserPage();
+    }
 }
 
 void
 ManageUserParamsDialog::onCloseClicked()
 {
+    accept();
+}
+
+void
+ManageUserParamsDialog::onSelectionChanged()
+{
+    QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
+    _imp->removeButton->setEnabled(!selection.empty());
+    _imp->editButton->setEnabled(!selection.empty());
+    _imp->upButton->setEnabled(!selection.empty());
+    _imp->downButton->setEnabled(!selection.empty());
+}
+
+struct AddKnobDialogPrivate
+{
+    boost::shared_ptr<KnobI> knob;
+    DockablePanel* panel;
+    
+    QVBoxLayout* vLayout;
+    
+    QWidget* mainContainer;
+    QFormLayout* mainLayout;
+    
+    QLabel* typeLabel;
+    ComboBox* typeChoice;
+    QLabel* nameLabel;
+    LineEdit* nameLineEdit;
+
+    
+    QLabel* labelLabel;
+    LineEdit* labelLineEdit;
+    
+    QLabel* hideLabel;
+    QCheckBox* hideBox;
+    
+    QLabel* startNewLineLabel;
+    QCheckBox* startNewLineBox;
+    
+    QLabel* animatesLabel;
+    QCheckBox* animatesCheckbox;
+    
+    QLabel* evaluatesLabel;
+    QCheckBox* evaluatesOnChange;
+    
+    QLabel* tooltipLabel;
+    QTextEdit* tooltipArea;
+    
+    QLabel* minLabel;
+    SpinBox* minBox;
+    
+    QLabel* maxLabel;
+    SpinBox* maxBox;
+    
+    QLabel* menuItemsLabel;
+    QTextEdit* menuItemsEdit;
+    
+    QLabel* multiLineLabel;
+    QCheckBox* multiLine;
+    
+    QLabel* richTextLabel;
+    QCheckBox* richText;
+    
+    QLabel* sequenceDialogLabel;
+    QCheckBox* sequenceDialog;
+    
+    QLabel* multiPathLabel;
+    QCheckBox* multiPath;
+    
+    QLabel* groupAsTabLabel;
+    QCheckBox* groupAsTab;
+    
+    QLabel* parentGroupLabel;
+    ComboBox* parentGroup;
+    
+    std::list<Group_Knob*> userGroups;
+    
+    AddKnobDialogPrivate(DockablePanel* panel)
+    : knob()
+    , panel(panel)
+    , vLayout(0)
+    , mainContainer(0)
+    , mainLayout(0)
+    , typeLabel(0)
+    , typeChoice(0)
+    , nameLabel(0)
+    , nameLineEdit(0)
+    , labelLabel(0)
+    , labelLineEdit(0)
+    , hideLabel(0)
+    , hideBox(0)
+    , startNewLineLabel(0)
+    , startNewLineBox(0)
+    , animatesLabel(0)
+    , animatesCheckbox(0)
+    , evaluatesLabel(0)
+    , evaluatesOnChange(0)
+    , tooltipLabel(0)
+    , tooltipArea(0)
+    , minLabel(0)
+    , minBox(0)
+    , maxLabel(0)
+    , maxBox(0)
+    , menuItemsLabel(0)
+    , menuItemsEdit(0)
+    , multiLineLabel(0)
+    , multiLine(0)
+    , richTextLabel(0)
+    , richText(0)
+    , sequenceDialogLabel(0)
+    , sequenceDialog(0)
+    , multiPathLabel(0)
+    , multiPath(0)
+    , groupAsTabLabel(0)
+    , groupAsTab(0)
+    , parentGroupLabel(0)
+    , parentGroup(0)
+    , userGroups()
+    {
+        
+    }
+    
+    void setVisibleMinMax(bool visible);
+    
+    void setVisibleMenuItems(bool visible);
+    
+    void setVisibleAnimates(bool visible);
+    
+    void setVisibleEvaluate(bool visible);
+    
+    void setVisibleStartNewLine(bool visible);
+    
+    void setVisibleHide(bool visible);
+    
+    void setVisibleMultiLine(bool visible);
+    
+    void setVisibleRichText(bool visible);
+    
+    void setVisibleSequence(bool visible);
+    
+    void setVisibleMultiPath(bool visible);
+    
+    void setVisibleGrpAsTab(bool visible);
+    
+    void setVisibleParent(bool visible);
+    
+    void createKnobFromSelection();
+};
+
+AddKnobDialog::AddKnobDialog(DockablePanel* panel,QWidget* parent)
+: QDialog(parent)
+, _imp(new AddKnobDialogPrivate(panel))
+{
+    QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
+    
+    _imp->vLayout = new QVBoxLayout(this);
+    _imp->vLayout->setContentsMargins(0, 0, 15, 0);
+    
+    _imp->mainContainer = new QWidget(this);
+    _imp->mainLayout = new QFormLayout(_imp->mainContainer);
+    _imp->mainLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
+    _imp->mainLayout->setFormAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    _imp->mainLayout->setSpacing(3);
+    _imp->mainLayout->setContentsMargins(0, 0, 15, 0);
+    
+    _imp->vLayout->addWidget(_imp->mainContainer);
+    
+    {
+        QWidget* firstRowContainer = new QWidget(this);
+        QHBoxLayout* firstRowLayout = new QHBoxLayout(firstRowContainer);
+        firstRowLayout->setContentsMargins(0, 0, 0, 0);
+        
+        _imp->nameLabel = new QLabel(tr("Script name:"),this);
+        _imp->nameLabel->setFont(font);
+        _imp->nameLineEdit = new LineEdit(firstRowContainer);
+        _imp->nameLineEdit->setToolTip(tr("The name of the parameter as it will be used in Python scripts"));
+        firstRowLayout->addWidget(_imp->nameLineEdit);
+        firstRowLayout->addStretch();
+
+        _imp->mainLayout->addRow(_imp->nameLabel, firstRowContainer);
+        
+    }
+    
+    {
+        QWidget* secondRowContainer = new QWidget(this);
+        QHBoxLayout* secondRowLayout = new QHBoxLayout(secondRowContainer);
+        secondRowLayout->setContentsMargins(0, 0, 15, 0);
+        _imp->labelLabel = new QLabel(tr("Label:"),secondRowContainer);
+        _imp->labelLabel->setFont(font);
+        _imp->labelLineEdit = new LineEdit(secondRowContainer);
+        _imp->labelLineEdit->setToolTip(tr("The label of the parameter as displayed on the graphical user interface"));
+        secondRowLayout->addWidget(_imp->labelLineEdit);
+        _imp->hideLabel = new QLabel(tr("Hide:"),secondRowContainer);
+        _imp->hideLabel->setFont(font);
+        secondRowLayout->addWidget(_imp->hideLabel);
+        _imp->hideBox = new QCheckBox(secondRowContainer);
+        _imp->hideBox->setToolTip(tr("If checked the parameter will not be visible on the user interface"));
+        secondRowLayout->addWidget(_imp->hideBox);
+        _imp->startNewLineLabel = new QLabel(tr("Start new line:"),secondRowContainer);
+        _imp->startNewLineLabel->setFont(font);
+        secondRowLayout->addWidget(_imp->startNewLineLabel);
+        _imp->startNewLineBox = new QCheckBox(secondRowContainer);
+        _imp->startNewLineBox->setToolTip(tr("If checked the <b><i>next</i></b> parameter defined will be on the same line as this parameter"));
+        secondRowLayout->addWidget(_imp->startNewLineBox);
+        secondRowLayout->addStretch();
+        
+        _imp->mainLayout->addRow(_imp->labelLabel, secondRowContainer);
+    }
+    
+    {
+        QWidget* thirdRowContainer = new QWidget(this);
+        QHBoxLayout* thirdRowLayout = new QHBoxLayout(thirdRowContainer);
+        thirdRowLayout->setContentsMargins(0, 0, 15, 0);
+        _imp->typeLabel = new QLabel(tr("Type:"),thirdRowContainer);
+        _imp->typeLabel->setFont(font);
+        _imp->typeChoice = new ComboBox(thirdRowContainer);
+        _imp->typeChoice->setToolTip(tr("The data type of the parameter"));
+        _imp->typeChoice->addItem("Integer");
+        _imp->typeChoice->addItem("Integer 2D");
+        _imp->typeChoice->addItem("Integer 3D");
+        _imp->typeChoice->addItem("Floating point");
+        _imp->typeChoice->addItem("Floating point 2D");
+        _imp->typeChoice->addItem("Floating point 3D");
+        _imp->typeChoice->addItem("Color RGB");
+        _imp->typeChoice->addItem("Color RGBA");
+        _imp->typeChoice->addItem("Choice (Pulldown)");
+        _imp->typeChoice->addItem("Checkbox");
+        _imp->typeChoice->addItem("Label");
+        _imp->typeChoice->addItem("Text input");
+        _imp->typeChoice->addItem("Input file");
+        _imp->typeChoice->addItem("Output file");
+        _imp->typeChoice->addItem("Directory");
+        _imp->typeChoice->addItem("Group");
+        _imp->typeChoice->addItem("Page");
+        QObject::connect(_imp->typeChoice, SIGNAL(currentIndexChanged(int)),this, SLOT(onTypeCurrentIndexChanged(int)));
+        
+        thirdRowLayout->addWidget(_imp->typeChoice);
+        _imp->animatesLabel = new QLabel(tr("Animates:"),thirdRowContainer);
+        _imp->animatesLabel->setFont(font);
+        thirdRowLayout->addWidget(_imp->animatesLabel);
+        _imp->animatesCheckbox = new QCheckBox(thirdRowContainer);
+        _imp->animatesCheckbox->setToolTip(tr("When checked this parameter will be able to animate with keyframes"));
+        thirdRowLayout->addWidget(_imp->animatesCheckbox);
+        _imp->evaluatesLabel = new QLabel(tr("Render on change:"),thirdRowContainer);
+        _imp->evaluatesLabel->setFont(font);
+        thirdRowLayout->addWidget(_imp->evaluatesLabel);
+        _imp->evaluatesOnChange = new QCheckBox(thirdRowContainer);
+        _imp->evaluatesOnChange->setToolTip(tr("If checked, when the value of this parameter changes a new render will be triggered"));
+        thirdRowLayout->addWidget(_imp->evaluatesOnChange);
+        thirdRowLayout->addStretch();
+        
+        _imp->mainLayout->addRow(_imp->typeLabel, thirdRowContainer);
+    }
+    {
+        _imp->tooltipLabel = new QLabel(tr("Tooltip:"),this);
+        _imp->tooltipLabel->setFont(font);
+        _imp->tooltipArea = new QTextEdit(this);
+        _imp->tooltipArea->setToolTip(tr("The help tooltip that will appear when hovering the parameter with the mouse"));
+        _imp->mainLayout->addRow(_imp->tooltipLabel,_imp->tooltipArea);
+    }
+    {
+        _imp->menuItemsLabel = new QLabel(tr("Menu items:"),this);
+        _imp->menuItemsLabel->setFont(font);
+        _imp->menuItemsEdit = new QTextEdit(this);
+        QString tt = Qt::convertFromPlainText(tr("The entries that will be available in the drop-down menu. \n"
+                                                 "Each line defines a new menu entry. You can specify a specific help tooltip for each entry "
+                                                 "by separating the entry text from the help with the following characters on the line: "
+                                                 "<?> \n\n"
+                                                 "E.g: Special function<?>Will use our very own special function"),Qt::WhiteSpaceNormal);
+        _imp->menuItemsEdit->setToolTip(tt);
+        _imp->mainLayout->addRow(_imp->menuItemsLabel,_imp->menuItemsEdit);
+    }
+    {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+        
+        _imp->multiLineLabel = new QLabel(tr("Multi-line:"),optContainer);
+        _imp->multiLineLabel->setFont(font);
+        _imp->multiLine = new QCheckBox(optContainer);
+        _imp->multiLine->setToolTip(tr("Should this text be multi-line or single-line ?"));
+        optLayout->addWidget(_imp->multiLine);
+        _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
+    }
+    {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+        
+        _imp->richTextLabel = new QLabel(tr("Rich text:"),optContainer);
+        _imp->richTextLabel->setFont(font);
+        _imp->richText = new QCheckBox(optContainer);
+        QString tt = Qt::convertFromPlainText(tr("If checked, the text area will be able to use rich text encoding with a sub-set of html.\n "
+                                                 "This property is only valid for multi-line input text only"),Qt::WhiteSpaceNormal);
+
+        _imp->richText->setToolTip(tt);
+        optLayout->addWidget(_imp->richText);
+        _imp->mainLayout->addRow(_imp->richTextLabel, optContainer);
+    }
+    {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+        
+        _imp->sequenceDialogLabel = new QLabel(tr("Use sequence dialog:"),optContainer);
+        _imp->sequenceDialogLabel->setFont(font);
+        _imp->sequenceDialog = new QCheckBox(optContainer);
+        _imp->sequenceDialog->setToolTip(tr("If checked the file dialog for this parameter will be able to decode image sequences"));
+        optLayout->addWidget(_imp->sequenceDialog);
+        _imp->mainLayout->addRow(_imp->sequenceDialogLabel, optContainer);
+    }
+    {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+        
+        _imp->multiPathLabel = new QLabel(tr("Multiple paths:"),optContainer);
+        _imp->multiPathLabel->setFont(font);
+        _imp->multiPath = new QCheckBox(optContainer);
+        _imp->multiPath->setToolTip(tr("If checked the parameter will be a table where each entry points to a different path"));
+        optLayout->addWidget(_imp->multiPath);
+        _imp->mainLayout->addRow(_imp->multiPathLabel, optContainer);
+    }
+    {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+        
+        _imp->groupAsTabLabel = new QLabel(tr("Group as tab:"),optContainer);
+        _imp->groupAsTabLabel->setFont(font);
+        _imp->groupAsTab = new QCheckBox(optContainer);
+        _imp->groupAsTab->setToolTip(tr("If checked the group will be a tab instead"));
+        optLayout->addWidget(_imp->groupAsTab);
+        _imp->mainLayout->addRow(_imp->groupAsTabLabel, optContainer);
+    }
+    {
+        QWidget* minMaxContainer = new QWidget(this);
+        QHBoxLayout* minMaxLayout = new QHBoxLayout(minMaxContainer);
+        minMaxLayout->setContentsMargins(0, 0, 0, 0);
+        _imp->minLabel = new QLabel(tr("Minimum:"),minMaxContainer);
+        _imp->minLabel->setFont(font);
+        
+        _imp->minBox = new SpinBox(minMaxContainer,SpinBox::DOUBLE_SPINBOX);
+        _imp->minBox->setToolTip(tr("Set the minimum value for the parameter"));
+        minMaxLayout->addWidget(_imp->minBox);
+        
+        _imp->maxLabel = new QLabel(tr("Maximum:"),minMaxContainer);
+        _imp->maxLabel->setFont(font);
+        _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::DOUBLE_SPINBOX);
+        _imp->maxBox->setToolTip(tr("Set the maximum value for the parameter"));
+        minMaxLayout->addWidget(_imp->maxLabel);
+        minMaxLayout->addWidget(_imp->maxBox);
+        minMaxLayout->addStretch();
+        
+        _imp->mainLayout->addRow(_imp->minLabel, minMaxContainer);
+    }
+    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
+    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if (it->first->isUserKnob()) {
+            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(it->first.get());
+            if (isGrp) {
+                _imp->userGroups.push_back(isGrp);
+            }
+        }
+    }
+    
+    if (!_imp->userGroups.empty()) {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+        
+        _imp->parentGroupLabel = new QLabel(tr("Group:"),optContainer);
+        _imp->parentGroupLabel->setFont(font);
+        _imp->parentGroup = new ComboBox(optContainer);
+        _imp->parentGroup->addItem("-");
+        for (std::list<Group_Knob*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
+            _imp->parentGroup->addItem((*it)->getName().c_str());
+        }
+        _imp->parentGroup->setToolTip(tr("The name of the group under which this parameter will appear"));
+        optLayout->addWidget(_imp->parentGroup);
+        _imp->mainLayout->addRow(_imp->parentGroupLabel, optContainer);
+    }
+    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),Qt::Horizontal,this);
+    QObject::connect(buttons,SIGNAL(rejected()), this, SLOT(reject()));
+    QObject::connect(buttons,SIGNAL(accepted()), this, SLOT(onOkClicked()));
+    _imp->vLayout->addWidget(buttons);
+    
+    onTypeCurrentIndexChanged(_imp->typeChoice->activeIndex());
+    _imp->panel->setUserPageActiveIndex();
+}
+
+void
+AddKnobDialog::onTypeCurrentIndexChanged(int index)
+{
+    switch (index) {
+        case 0: // int
+        case 1: // int 2D
+        case 2: // int 3D
+        case 3: // fp
+        case 4: // fp 2D
+        case 5: // fp 3D
+        case 6: // RGB
+        case 7: // RGBA
+            _imp->setVisibleAnimates(true);
+            _imp->setVisibleEvaluate(true);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(true);
+            _imp->setVisibleStartNewLine(true);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            break;
+        case 8: // choice
+            _imp->setVisibleAnimates(true);
+            _imp->setVisibleEvaluate(true);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(true);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(true);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            break;
+        case 9: // bool
+            _imp->setVisibleAnimates(true);
+            _imp->setVisibleEvaluate(true);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(true);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            break;
+        case 10: // label
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(false);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(true);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            break;
+        case 11: // text input
+            _imp->setVisibleAnimates(true);
+            _imp->setVisibleEvaluate(true);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(false);
+            _imp->setVisibleMultiLine(true);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(true);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            break;
+        case 12: // input file
+        case 13: // output file
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(true);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(false);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(true);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            break;
+        case 14: // path
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(true);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(false);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(true);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            break;
+        case 15: // grp
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(false);
+            _imp->setVisibleHide(true);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(false);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(true);
+            _imp->setVisibleParent(false);
+            break;
+        case 16: // page
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(false);
+            _imp->setVisibleHide(false);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(false);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(false);
+            break;
+        default:
+            break;
+    }
+}
+
+AddKnobDialog::~AddKnobDialog()
+{
     
 }
 
+boost::shared_ptr<KnobI>
+AddKnobDialog::getKnob() const
+{
+    return _imp->knob;
+}
+
+void
+AddKnobDialogPrivate::createKnobFromSelection()
+{
+    int index = typeChoice->activeIndex();
+    std::string label = labelLineEdit->text().toStdString();
+    
+    switch (index) {
+        case 0:
+        case 1:
+        case 2: {
+            //int
+            int dim = index + 1;
+            boost::shared_ptr<Int_Knob> k = Natron::createKnob<Int_Knob>(panel->getHolder(), label, dim, false);
+            std::vector<int> mins(dim);
+            std::vector<int> maxs(dim);
+            for (int i = 0; i < dim; ++i) {
+                mins[i] = std::floor(minBox->value() + 0.5);
+                maxs[i] = std::floor(maxBox->value() + 0.5);
+            }
+            k->setMinimumsAndMaximums(mins, maxs);
+            knob = k;
+        } break;
+        case 3:
+        case 4:
+        case 5: {
+            //double
+            int dim = index - 2;
+            boost::shared_ptr<Double_Knob> k = Natron::createKnob<Double_Knob>(panel->getHolder(), label, dim, false);
+            std::vector<double> mins(dim);
+            std::vector<double> maxs(dim);
+            for (int i = 0; i < dim; ++i) {
+                mins[i] = minBox->value();
+                maxs[i] = maxBox->value();
+            }
+            k->setMinimumsAndMaximums(mins, maxs);
+            knob = k;
+        } break;
+        case 6:
+        case 7: {
+            // color
+            int dim = index - 3;
+            boost::shared_ptr<Color_Knob> k = Natron::createKnob<Color_Knob>(panel->getHolder(), label, dim, false);
+            std::vector<double> mins(dim);
+            std::vector<double> maxs(dim);
+            for (int i = 0; i < dim; ++i) {
+                mins[i] = minBox->value();
+                maxs[i] = maxBox->value();
+            }
+            k->setMinimumsAndMaximums(mins, maxs);
+            knob = k;
+        }  break;
+        case 8: {
+            boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(panel->getHolder(), label, 1, false);
+            QString entriesRaw = menuItemsEdit->toPlainText();
+            QTextStream stream(&entriesRaw);
+            std::vector<std::string> entries,helps;
+
+            while (stream.atEnd()) {
+                QString line = stream.readLine();
+                int foundHelp = line.indexOf("<?>");
+                if (foundHelp) {
+                    QString entry = line.mid(0,foundHelp);
+                    QString help = line.mid(foundHelp + 3,-1);
+                    entries.push_back(entry.toStdString());
+                    helps.push_back(help.toStdString());
+                } else {
+                    entries.push_back(line.toStdString());
+                    helps.push_back("");
+                }
+            }
+            k->populateChoices(entries,helps);
+            knob = k;
+        } break;
+        case 9: {
+            boost::shared_ptr<Bool_Knob> k = Natron::createKnob<Bool_Knob>(panel->getHolder(), label, 1, false);
+            knob = k;
+        }   break;
+        case 10:
+        case 11: {
+            boost::shared_ptr<String_Knob> k = Natron::createKnob<String_Knob>(panel->getHolder(), label, 1, false);
+            if (multiLine->isChecked()) {
+                k->setAsMultiLine();
+                if (richText->isChecked()) {
+                    k->setUsesRichText(true);
+                }
+            } else {
+                if (index == 10) {
+                    k->setAsLabel();
+                }
+            }
+            
+            knob = k;
+        }   break;
+        case 12: {
+            boost::shared_ptr<File_Knob> k = Natron::createKnob<File_Knob>(panel->getHolder(), label, 1, false);
+            if (sequenceDialog->isChecked()) {
+                k->setAsInputImage();
+            }
+            knob = k;
+        } break;
+        case 13: {
+            boost::shared_ptr<OutputFile_Knob> k = Natron::createKnob<OutputFile_Knob>(panel->getHolder(), label, 1, false);
+            if (sequenceDialog->isChecked()) {
+                k->setAsOutputImageFile();
+            }
+            knob = k;
+        } break;
+        case 14: {
+            boost::shared_ptr<Path_Knob> k = Natron::createKnob<Path_Knob>(panel->getHolder(), label, 1, false);
+            if (multiPath->isChecked()) {
+                k->setMultiPath(true);
+            }
+            knob = k;
+        } break;
+        case 15: {
+            boost::shared_ptr<Group_Knob> k = Natron::createKnob<Group_Knob>(panel->getHolder(), label, 1, false);
+            if (groupAsTab->isChecked()) {
+                k->setAsTab();
+            }
+            knob = k;
+        } break;
+        case 16: {
+            boost::shared_ptr<Page_Knob> k = Natron::createKnob<Page_Knob>(panel->getHolder(), label, 1, false);
+            knob = k;
+        } break;
+        default:
+            break;
+    }
+    assert(knob);
+    knob->setAsUserKnob();
+    if (knob->canAnimate()) {
+        knob->setAnimationEnabled(animatesCheckbox->isChecked());
+    }
+    knob->setEvaluateOnChange(evaluatesOnChange->isChecked());
+    if (!startNewLineBox->isChecked()) {
+        knob->turnOffNewLine();
+    }
+    knob->setSecret(hideBox->isChecked());
+    knob->setName(nameLineEdit->text().toStdString());
+    knob->setHintToolTip(tooltipArea->toPlainText().toStdString());
+    if (parentGroup) {
+        std::string selectedItem = parentGroup->getCurrentIndexText().toStdString();
+        if (selectedItem != "-") {
+            for (std::list<Group_Knob*>::iterator it = userGroups.begin(); it != userGroups.end(); ++it) {
+                if ((*it)->getName() == selectedItem) {
+                    (*it)->addKnob(knob);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void
+AddKnobDialog::onOkClicked()
+{
+    QString name = _imp->nameLineEdit->text();
+    bool badFormat = false;
+    if (name.isEmpty()) {
+        badFormat = true;
+    }
+    if (!badFormat && !name[0].isLetter()) {
+        badFormat = true;
+    }
+    
+    if (!badFormat) {
+        //make sure everything is alphaNumeric without spaces
+        for (int i = 0; i < name.size(); ++i) {
+            if (name[i] == QChar(' ') || !name[i].isLetterOrNumber()) {
+                badFormat = true;
+                break;
+            }
+        }
+    }
+    
+    if (badFormat) {
+        Natron::errorDialog(tr("Error").toStdString(), tr("A parameter must have a unique script name composed only of characters from "
+                                                          "[a - z / A- Z] and digits [0 - 9]. This name cannot contain spaces for scripting purposes.")
+                            .toStdString());
+        return;
+        
+    } else {
+        _imp->createKnobFromSelection();
+    }
+    
+    accept();
+}
+
+void
+AddKnobDialogPrivate::setVisibleMinMax(bool visible)
+{
+    minLabel->setVisible(visible);
+    minBox->setVisible(visible);
+    maxLabel->setVisible(visible);
+    maxBox->setVisible(visible);
+    int type = typeChoice->activeIndex();
+    
+    if (type == 6 || type == 7) {
+        // color range to 0-1
+        minBox->setValue(0.);
+        maxBox->setValue(1.);
+    } else {
+        minBox->setValue(0);
+        maxBox->setValue(100);
+    }
+}
+
+void
+AddKnobDialogPrivate::setVisibleMenuItems(bool visible)
+{
+    menuItemsLabel->setVisible(visible);
+    menuItemsEdit->setVisible(visible);
+}
+
+void
+AddKnobDialogPrivate::setVisibleAnimates(bool visible)
+{
+    animatesLabel->setVisible(visible);
+    animatesCheckbox->setVisible(visible);
+    animatesCheckbox->setChecked(visible);
+}
+
+void
+AddKnobDialogPrivate::setVisibleEvaluate(bool visible)
+{
+    evaluatesLabel->setVisible(visible);
+    evaluatesOnChange->setVisible(visible);
+    evaluatesOnChange->setChecked(visible);
+}
+
+void
+AddKnobDialogPrivate::setVisibleStartNewLine(bool visible)
+{
+    startNewLineLabel->setVisible(visible);
+    startNewLineBox->setVisible(visible);
+    startNewLineBox->setChecked(true);
+}
+
+void
+AddKnobDialogPrivate::setVisibleHide(bool visible)
+{
+    hideLabel->setVisible(visible);
+    hideBox->setVisible(visible);
+    hideBox->setChecked(false);
+}
+
+void
+AddKnobDialogPrivate::setVisibleMultiLine(bool visible)
+{
+    multiLineLabel->setVisible(visible);
+    multiLine->setVisible(visible);
+    multiLine->setChecked(false);
+}
+
+void
+AddKnobDialogPrivate::setVisibleRichText(bool visible)
+{
+    richTextLabel->setVisible(visible);
+    richText->setVisible(visible);
+    richText->setChecked(false);
+}
+
+void
+AddKnobDialogPrivate::setVisibleSequence(bool visible)
+{
+    sequenceDialogLabel->setVisible(visible);
+    sequenceDialog->setVisible(visible);
+    sequenceDialog->setChecked(false);
+}
+
+void
+AddKnobDialogPrivate::setVisibleMultiPath(bool visible)
+{
+    multiPathLabel->setVisible(visible);
+    multiPath->setVisible(visible);
+    multiPath->setChecked(false);
+}
+
+void
+AddKnobDialogPrivate::setVisibleGrpAsTab(bool visible)
+{
+    groupAsTabLabel->setVisible(visible);
+    groupAsTab->setVisible(visible);
+    groupAsTab->setChecked(false);
+}
+
+void
+AddKnobDialogPrivate::setVisibleParent(bool visible)
+{
+    if (!userGroups.empty()) {
+        assert(parentGroup);
+        parentGroup->setVisible(visible);
+        parentGroupLabel->setVisible(visible);
+    }
+}

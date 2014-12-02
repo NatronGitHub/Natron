@@ -64,6 +64,8 @@ public:
 
     virtual ~File_KnobGui() OVERRIDE;
     
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
@@ -133,6 +135,8 @@ public:
 
     virtual ~OutputFile_KnobGui() OVERRIDE;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+    
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
@@ -192,6 +196,8 @@ public:
                  DockablePanel *container);
 
     virtual ~Path_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
