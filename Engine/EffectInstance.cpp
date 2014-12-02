@@ -2696,7 +2696,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             srcRodCanonical.toPixelEnclosing((*it)->getMipMapLevel(), (*it)->getPixelAspectRatio(), &srcBounds); // compute srcRod at level 0
             const RectD & dstRodCanonical = renderMappedImage->getRoD();
             RectI dstBounds;
-            dstRodCanonical.toPixelEnclosing(mipMapLevel, par, &dstBounds); // compute dstRod at level 0
+            dstRodCanonical.toPixelEnclosing(renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
 
             if (!tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
