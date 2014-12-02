@@ -1827,6 +1827,7 @@ static QStringList wordWrap(const QFontMetrics& fm,const QString& str, int width
                     stringL.push_back(curString);
                     curString.clear();
                 }
+                wordPixels = fm.width(word);
                 //tmp.append('\n');
             }
             
