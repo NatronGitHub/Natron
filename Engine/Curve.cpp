@@ -251,11 +251,15 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
             found = true;
         }
     }
-    assert(found);
-    Parametric_Knob* parametric = dynamic_cast<Parametric_Knob*>(owner);
-    if (parametric) {
-        _imp->isParametric = true;
+    
+    if (!found) {
+        Parametric_Knob* parametric = dynamic_cast<Parametric_Knob*>(owner);
+        if (parametric) {
+            _imp->isParametric = true;
+            found = true;
+        }
     }
+    assert(found);
 }
 
 Curve::Curve(const Curve & other)
