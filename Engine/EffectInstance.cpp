@@ -1864,8 +1864,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///Try to concatenate transform effects
     boost::shared_ptr<Transform::Matrix3x3> transformMatrix;
     Natron::EffectInstance* newInputAfterConcat = 0;
-    int transformInputNb;
-    int newInputNb;
+    int transformInputNb = -1;
+    int newInputNb = -1;
     bool isResultingTransformIdentity;
     bool hasConcat;
     
@@ -1876,7 +1876,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
     
     
-    assert(!hasConcat || (transformMatrix && newInputAfterConcat));
+    assert((!hasConcat && (transformInputNb == -1) && (newInputAfterConcat == 0) && (newInputNb == -1)) ||
+           (hasConcat && transformMatrix && (transformInputNb != -1) && newInputAfterConcat && (newInputNb != -1)));
     
     boost::shared_ptr<TransformReroute_RAII> transformConcatenationReroute;
     
@@ -1887,9 +1888,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
         ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
         transformConcatenationReroute.reset(new TransformReroute_RAII(this, transformInputNb, newInputAfterConcat, newInputNb, transformMatrix));
-    } else {
-        transformInputNb = -1;
-        newInputNb = -1;
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End transform concatenations//////////////////////////////////////////////////////////
@@ -2385,7 +2383,13 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
             continue;
         }
         
-        EffectInstance* inputEffect = it2->first == transformInputNb ? transformRerouteInput->getInput(it2->first) :  getInput(it2->first);
+        EffectInstance* inputEffect;
+        if (it2->first == transformInputNb) {
+            assert(transformRerouteInput);
+            inputEffect = transformRerouteInput->getInput(it2->first);
+        } else {
+            inputEffect = getInput(it2->first);
+        }
         if (inputEffect) {
             ///What region are we interested in for this input effect ? (This is in Canonical coords)
             RoIMap::iterator foundInputRoI = inputsRoi->find(inputEffect);

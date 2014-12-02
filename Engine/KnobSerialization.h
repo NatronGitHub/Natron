@@ -407,6 +407,7 @@ public:
     ///Constructor used to serialize
     explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob,bool copyKnob)
         : _knob()
+        , _dimension(0)
         , _extraData(NULL)
     {
         initialize(knob,copyKnob);

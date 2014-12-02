@@ -49,7 +49,14 @@ public:
 
     ////Used to deserialize
     NodeSerialization(AppInstance* app)
-        : _isNull(true), _hasRotoContext(false), _node(), _app(app)
+        : _isNull(true)
+        , _nbKnobs(0)
+        , _knobsAge(0)
+        , _pluginMajorVersion(-1)
+        , _pluginMinorVersion(-1)
+        , _hasRotoContext(false)
+        , _node()
+        , _app(app)
     {
     }
 

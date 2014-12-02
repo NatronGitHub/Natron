@@ -630,7 +630,7 @@ FileSystemModel::myComputer(int /*role*/) const
 //        case Qt::DecorationRole:
 //            return d->fileInfoGatherer.iconProvider()->icon(QFileIconProvider::Computer);
 //    }
-    return QVariant();
+//    return QVariant();
 
 }
 

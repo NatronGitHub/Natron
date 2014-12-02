@@ -923,8 +923,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
 
 # ifdef DEBUG
     {
-        boost::shared_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
-        assert(reader);
+        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        assert(reader.get());
         std::map<std::string,void*> readerFunctions;
         readerFunctions.insert( std::make_pair("BuildEffect", (void*)&QtReader::BuildEffect) );
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
@@ -951,8 +951,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
     }
 
     {
-        boost::shared_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
-        assert(writer);
+        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        assert(writer.get());
         std::map<std::string,void*> writerFunctions;
         writerFunctions.insert( std::make_pair("BuildEffect", (void*)&QtWriter::BuildEffect) );
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
