@@ -196,9 +196,9 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
         }
     }
     if (!found) {
-        Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
+        Color_Knob* k = dynamic_cast<Color_Knob*>(owner);
         if (k) {
-            _imp->type = CurvePrivate::eCurveTypeInt;
+            _imp->type = CurvePrivate::eCurveTypeDouble;
             found = true;
         }
     }
@@ -225,6 +225,20 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
     }
     if (!found) {
         File_Knob* k = dynamic_cast<File_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
+        }
+    }
+    if (!found) {
+        OutputFile_Knob* k = dynamic_cast<OutputFile_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
+        }
+    }
+    if (!found) {
+        Path_Knob* k = dynamic_cast<Path_Knob*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeString;
             found = true;

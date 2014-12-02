@@ -899,7 +899,11 @@ Knob<std::string>::unSlave(int dimension,
                 _values[dimension] =  isString->getValue(master.first);
             }
         }
-        getCurve(dimension)->clone( *( master.second->getCurve(master.first) ) );
+        boost::shared_ptr<Curve> curve = getCurve(dimension);
+        assert(curve);
+        boost::shared_ptr<Curve> mastercurve = master.second->getCurve(master.first);
+        assert(mastercurve);
+        curve->clone(*mastercurve);
 
         cloneExtraData( master.second.get() );
     }

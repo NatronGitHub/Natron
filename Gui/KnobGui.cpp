@@ -146,8 +146,10 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
     
     _imp->guiCurves.resize(knob->getDimension());
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        _imp->guiCurves[i].reset(new Curve(*(knob->getCurve(i))));
+    if (knob->canAnimate()) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            _imp->guiCurves[i].reset(new Curve(*(knob->getCurve(i))));
+        }
     }
 }
 
