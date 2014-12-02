@@ -1600,6 +1600,9 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                 int prefInput;
                 inputTransformEffect = inputTransformEffect->getNearestNonDisabledPrevious(&prefInput);
                 if (prefInput == -1) {
+                    *newInputEffect = 0;
+                    *newInputNbToFetchFrom = -1;
+                    *inputTransformNb = -1;
                     return false;
                 }
                 
@@ -1660,6 +1663,11 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
             return true;
         }
     }
+    
+    *newInputEffect = 0;
+    *newInputNbToFetchFrom = -1;
+    *inputTransformNb = -1;
+
     return false;
 
 }
