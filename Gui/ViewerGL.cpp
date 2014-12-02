@@ -4701,25 +4701,81 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double bSum = 0.;
     double aSum = 0.;
     if ( !img || (img->getMipMapLevel() != mipMapLevel) ) {
-        double colorGPU[4];
-        for (int yPixel = rectPixel.bottom(); yPixel < rectPixel.top(); ++yPixel) {
-            for (int xPixel = rectPixel.left(); xPixel < rectPixel.right(); ++xPixel) {
-                getTextureColorAt(xPixel << mipMapLevel, yPixel << mipMapLevel,
-                                                   &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
-                aSum += colorGPU[3];
+        
+        Texture::DataTypeEnum type;
+        if (_imp->displayTextures[0]) {
+            type = _imp->displayTextures[0]->type();
+        } else if (_imp->displayTextures[1]) {
+            type = _imp->displayTextures[1]->type();
+        } else {
+            return false;
+        }
+
+        if ( (type == Texture::eDataTypeByte) || !_imp->supportsGLSL ) {
+            std::vector<U32> pixels(rectPixel.width() * rectPixel.height());
+            glReadBuffer(GL_FRONT);
+            glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
+                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels.front());
+            double rF,gF,bF,aF;
+            for (U32 i = 0 ; i < pixels.size(); ++i) {
+                U8 red = 0, green = 0, blue = 0, alpha = 0;
+                blue |= pixels[i];
+                green |= (pixels[i] >> 8);
+                red |= (pixels[i] >> 16);
+                alpha |= (pixels[i] >> 24);
+                rF = (double)red / 255.;
+                gF = (double)green / 255.;
+                bF = (double)blue / 255.;
+                aF = (double)alpha / 255.;
+                
+                aSum += aF;
                 if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
                     const Natron::Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
                     
-                    rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
-                    gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
-                    bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[2]);
+                    rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
+                    gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
+                    bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
                 } else {
-                    rSum += colorGPU[0];
-                    gSum += colorGPU[1];
-                    bSum += colorGPU[2];
+                    rSum += rF;
+                    gSum += gF;
+                    bSum += bF;
+                }
+
+            }
+            
+            glCheckError();
+        } else if ( (type == Texture::eDataTypeFloat) && _imp->supportsGLSL ) {
+            std::vector<float> pixels(rectPixel.width() * rectPixel.height() * 4);
+            glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
+                         GL_RGBA, GL_FLOAT, &pixels.front());
+            
+            int rowSize = rectPixel.width() * 4;
+            for (int y = 0; y < rectPixel.height(); ++y) {
+                for (int x = 0; x < rectPixel.width(); ++x) {
+                    double rF = pixels[y * rowSize + (4 * x)];
+                    double gF = pixels[y * rowSize + (4 * x) + 1];
+                    double bF = pixels[y * rowSize + (4 * x) + 2];
+                    double aF = pixels[y * rowSize + (4 * x) + 3];
+                    
+                    aSum += aF;
+                    if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
+                        const Natron::Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+                        
+                        rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
+                        gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
+                        bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
+                    } else {
+                        rSum += rF;
+                        gSum += gF;
+                        bSum += bF;
+                    }
                 }
             }
+          
+
+            glCheckError();
         }
+ 
         *r = rSum / rectPixel.area();
         *g = gSum / rectPixel.area();
         *b = bSum / rectPixel.area();
