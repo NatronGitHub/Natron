@@ -237,7 +237,7 @@ public:
     
 public slots:
     
-    void doTreatFrameMainThread(const BufferedFrame& frame);
+    void doTreatFrameMainThread(const BufferedFrame& frame,bool mustSeekTimeline,int time);
     
     /**
      @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
@@ -256,7 +256,7 @@ public slots:
     void abortRendering(bool blocking);
 signals:
     
-    void s_doTreatOnMainThread(const BufferedFrame& frame);
+    void s_doTreatOnMainThread(const BufferedFrame& frame,bool mustSeekTimeline,int time);
     
     void s_abortRenderingOnMainThread(bool blocking);
     

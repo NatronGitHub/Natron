@@ -1553,6 +1553,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     
     uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
                                           params->image,
+                                          params->cachedFrame->getTime(),
                                           params->rod,
                                           params->bytesCount,
                                           params->textureRect,

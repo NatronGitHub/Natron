@@ -741,7 +741,7 @@ KnobHelper::removeAnimation(int dimension,
     }
 
     if (!canAnimate() || !isAnimated(dimension)) {
-        return false;
+        return ;
     }
 
     KnobHolder* holder = getHolder();

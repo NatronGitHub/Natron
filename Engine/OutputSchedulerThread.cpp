@@ -436,8 +436,8 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::Output
 : QThread()
 , _imp(new OutputSchedulerThreadPrivate(engine,effect,mode))
 {
-    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrame)), this,
-                     SLOT(doTreatFrameMainThread(BufferedFrame)));
+    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrame,bool,int)), this,
+                     SLOT(doTreatFrameMainThread(BufferedFrame,bool,int)));
     
     QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)));
     
@@ -940,7 +940,6 @@ OutputSchedulerThread::run()
                         
                         ///Do not wait in the buf wait condition and go directly into the stopEngine()
                         renderFinished = true;
-                        
                         break;
                     }
                 }
@@ -1027,6 +1026,16 @@ OutputSchedulerThread::run()
                 if (_imp->mode == TREAT_ON_SCHEDULER_THREAD) {
                     treatFrame(frameToRender);
                     
+                    if (!renderFinished) {
+                        ///Timeline might have changed if another thread moved the playhead
+                        int timelineCurrentTime = timelineGetTime();
+                        if (timelineCurrentTime != expectedTimeToRender) {
+                            timelineGoTo(timelineCurrentTime);
+                        } else {
+                            timelineGoTo(nextFrameToRender);
+                        }
+                        
+                    }
                 } else {
                     ///Treat on main-thread
                                     
@@ -1046,7 +1055,19 @@ OutputSchedulerThread::run()
                     
                     _imp->treatRunning = true;
                     
-                    emit s_doTreatOnMainThread(frameToRender);
+                    int timeToSeek = 0;
+                    if (!renderFinished) {
+                        ///Timeline might have changed if another thread moved the playhead
+                        int timelineCurrentTime = timelineGetTime();
+                        if (timelineCurrentTime != expectedTimeToRender) {
+                            timeToSeek = timelineCurrentTime;
+                        } else {
+                            timeToSeek = nextFrameToRender;
+                        }
+                        
+                    }
+
+                    emit s_doTreatOnMainThread(frameToRender,!renderFinished, timeToSeek);
                                         
                     while (_imp->treatRunning) {
                         _imp->treatCondition.wait(&_imp->treatMutex);
@@ -1060,18 +1081,6 @@ OutputSchedulerThread::run()
                 
                 notifyFrameRendered(expectedTimeToRender,eSchedulingPolicyOrdered);
                 
-    
-                if (!renderFinished) {
-                    ///Timeline might have changed if another thread moved the playhead
-                    int timelineCurrentTime = timelineGetTime();
-                    if (timelineCurrentTime != expectedTimeToRender) {
-                        timelineGoTo(timelineCurrentTime);
-                    } else {
-                        timelineGoTo(nextFrameToRender);
-                    }
-                    
-                }
-                
                 ///////////
                 /// End of the loop, refresh bufferEmpty
                 {
@@ -1081,26 +1090,23 @@ OutputSchedulerThread::run()
                 
             } // while(!bufferEmpty)
             
-            if (!renderFinished) {
-                bool isAbortRequested;
-                bool blocking;
-                {
-                    QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
-                    isAbortRequested = _imp->abortRequested > 0;
-                    blocking = _imp->isAbortRequestBlocking;
-                }
-                if (!isAbortRequested) {
+            bool isAbortRequested;
+            bool blocking;
+            {
+                QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
+                isAbortRequested = _imp->abortRequested > 0;
+                blocking = _imp->isAbortRequestBlocking;
+            }
+            if (!renderFinished && !isAbortRequested) {
+                
                     QMutexLocker bufLocker (&_imp->bufMutex);
                     ///Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
                     _imp->bufCondition.wait(&_imp->bufMutex);
-                } else {
-                    if (blocking) {
-                        //Move the timeline to the last rendered frame to keep it in sync with what is displayed
-                        timelineGoTo(getLastRenderedTime());
-                    }
-                    break;
-                }
             } else {
+                if (blocking) {
+                    //Move the timeline to the last rendered frame to keep it in sync with what is displayed
+                    timelineGoTo(getLastRenderedTime());
+                }
                 break;
             }
         }
@@ -1217,7 +1223,7 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_p
 
 
 void
-OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame)
+OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame,bool mustSeekTimeline,int time)
 {
     assert(QThread::currentThread() == qApp->thread());
     {
@@ -1230,6 +1236,10 @@ OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame)
     
     
     treatFrame(frame);
+    
+    if (mustSeekTimeline) {
+        timelineGoTo(time);
+    }
     
     QMutexLocker treatLocker (&_imp->treatMutex);
     _imp->treatRunning = false;

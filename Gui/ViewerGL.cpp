@@ -212,6 +212,9 @@ struct ViewerGL::Implementation
         memoryHeldByLastRenderedImages[0] = memoryHeldByLastRenderedImages[1] = 0;
         displayingImageGain[0] = displayingImageGain[1] = 1.;
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
+        for (int i = 0; i < 2 ; ++i) {
+            displayingImageTime[i] = 0;
+        }
         assert( qApp && qApp->thread() == QThread::currentThread() );
         menu->setFont( QFont(appFont,appFontSize) );
         
@@ -243,6 +246,7 @@ struct ViewerGL::Implementation
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel;
     Natron::ImagePremultiplicationEnum displayingImagePremult[2];
+    int displayingImageTime[2];
     Natron::ViewerColorSpaceEnum displayingImageLut;
     MouseStateEnum ms; /*!< Holds the mouse state*/
     HoverStateEnum hs;
@@ -1107,7 +1111,6 @@ ViewerGL::paintGL()
 
         glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
         glCheckError();
-
 
 
         // don't even bind the shader on 8-bits gamma-compressed textures
@@ -2341,6 +2344,7 @@ ViewerGL::initShaderGLSL()
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      const boost::shared_ptr<Natron::Image>& image,
+                                     int time,
                                      const RectD& rod,
                                      size_t bytesCount,
                                      const TextureRect & region,
@@ -2391,7 +2395,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     _imp->displayingImageMipMapLevel = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
     _imp->displayingImagePremult[textureIndex] = premult;
-    
+    _imp->displayingImageTime[textureIndex] = time;
     ViewerInstance* internalNode = getInternalNode();
     
     if (_imp->memoryHeldByLastRenderedImages[textureIndex] > 0) {
@@ -3931,7 +3935,7 @@ ViewerGL::redraw()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    update();
+    updateGL();
 }
 
 /**
@@ -4859,8 +4863,8 @@ int
 ViewerGL::getCurrentlyDisplayedTime() const
 {
     QMutexLocker k(&_imp->lastRenderedImageMutex);
-    if (_imp->lastRenderedImage[0]) {
-        return _imp->lastRenderedImage[0]->getTime();
+    if (_imp->activeTextures[0]) {
+        return _imp->displayingImageTime[0];
     } else {
         return _imp->viewerTab->getTimeLine()->currentFrame();
     }
