@@ -122,7 +122,7 @@ DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, 
         }
     } else if (_imp->preRender.get() == k) {
         AppInstance::RenderWork w;
-        w.writer = dynamic_cast<OutputEffectInstance*>(this);
+        w.writer = this;
         w.firstFrame = INT_MIN;
         w.lastFrame = INT_MAX;
         std::list<AppInstance::RenderWork> works;

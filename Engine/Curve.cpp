@@ -186,54 +186,58 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
     _imp->owner = owner;
     _imp->dimensionInOwner = dimensionInOwner;
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
-    _imp->type = CurvePrivate::eCurveTypeDouble;
+    bool found = false;
     // use RTTI to guess curve type
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeInt;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Double_Knob* k = dynamic_cast<Double_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeDouble;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeInt;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            String_Knob* k = dynamic_cast<String_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeString;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeInt;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            File_Knob* k = dynamic_cast<File_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeString;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeBool;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        String_Knob* k = dynamic_cast<String_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
         }
     }
-
+    if (!found) {
+        File_Knob* k = dynamic_cast<File_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
+        }
+    }
+    if (!found) {
+        Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeBool;
+            found = true;
+        }
+    }
+    assert(found);
     Parametric_Knob* parametric = dynamic_cast<Parametric_Knob*>(owner);
     if (parametric) {
         _imp->isParametric = true;

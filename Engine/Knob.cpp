@@ -1267,7 +1267,7 @@ KnobHelper::slaveTo(int dimension,
     KnobHelper* helper = dynamic_cast<KnobHelper*>( other.get() );
     assert(helper);
 
-    if (helper->_signalSlotHandler && _signalSlotHandler) {
+    if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
@@ -1297,8 +1297,10 @@ KnobHelper::slaveTo(int dimension,
     evaluateValueChange(dimension, reason);
 
     ///Register this as a listener of the master
-    helper->addListener(this);
-
+    if (helper) {
+        helper->addListener(this);
+    }
+    
     return true;
 }
 
@@ -1659,7 +1661,9 @@ KnobHolder::~KnobHolder()
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelper* helper = dynamic_cast<KnobHelper*>( _imp->knobs[i].get() );
         assert(helper);
-        helper->_imp->holder = 0;
+        if (helper) {
+            helper->_imp->holder = 0;
+        }
     }
 }
 
