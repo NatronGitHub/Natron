@@ -195,13 +195,18 @@ struct ValueSerialization
         ar & boost::serialization::make_nvp("HasAnimation",hasAnimation);
         bool convertOldFileKeyframesToPattern = false;
         if (hasAnimation) {
+            assert(_knob->canAnimate());
             Curve c;
             ar & boost::serialization::make_nvp("Curve",c);
             ///This is to overcome the change to the animation of file params: They no longer hold keyframes
             ///Don't try to load keyframes
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
             if (!convertOldFileKeyframesToPattern) {
-                _knob->getCurve(_dimension)->clone(c);
+                boost::shared_ptr<Curve> curve = _knob->getCurve(_dimension);
+                assert(curve);
+                if (curve) {
+                    _knob->getCurve(_dimension)->clone(c);
+                }
             }
         }
 

@@ -3143,10 +3143,14 @@ Node::areKeyframesVisibleOnTimeline() const
 void
 Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 {
+    assert(keyframes);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistant()) {
+            continue;
+        }
+        if (!knobs[i]->canAnimate()) {
             continue;
         }
         int dim = knobs[i]->getDimension();

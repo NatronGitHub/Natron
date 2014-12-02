@@ -65,8 +65,12 @@ getNumKeys(boost::shared_ptr<KnobI> knob,
 {
     int sum = 0;
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        sum += knob->getCurve(i)->getKeyFramesCount();
+    if (knob->canAnimate()) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            boost::shared_ptr<Curve> curve = knob->getCurve(i);
+            assert(curve);
+            sum += curve->getKeyFramesCount();
+        }
     }
     nKeys =  sum;
 
@@ -90,7 +94,9 @@ getKeyTime(boost::shared_ptr<KnobI> knob,
             indexSoFar += curveKeyFramesCount;
             continue;
         } else {
-            KeyFrameSet set = knob->getCurve(dimension)->getKeyFrames_mt_safe();
+            boost::shared_ptr<Curve> curve = knob->getCurve(dimension);
+            assert(curve);
+            KeyFrameSet set = curve->getKeyFrames_mt_safe();
             KeyFrameSet::const_iterator it = set.begin();
             while ( it != set.end() ) {
                 if (indexSoFar == nth) {
@@ -116,7 +122,12 @@ getKeyIndex(boost::shared_ptr<KnobI> knob,
     int c = 0;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
-        KeyFrameSet set = knob->getCurve(i)->getKeyFrames_mt_safe();
+        if (!knob->isAnimated(i)) {
+            continue;
+        }
+        boost::shared_ptr<Curve> curve = knob->getCurve(i);
+        assert(curve);
+        KeyFrameSet set = curve->getKeyFrames_mt_safe();
         for (KeyFrameSet::const_iterator it = set.begin(); it != set.end(); ++it) {
             if (it->getTime() == time) {
                 if (direction == 0) {

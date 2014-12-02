@@ -1473,6 +1473,7 @@ Knob<T>::clone(KnobI* other,
             if (thisCurve && otherCurve) {
                 thisCurve->clone(*otherCurve);
             }
+
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
             if (guiCurve && otherGuiCurve) {
@@ -1509,7 +1510,6 @@ Knob<T>::clone(KnobI* other,
             if (thisCurve && otherCurve) {
                 thisCurve->clone(*otherCurve, offset, range);
             }
-            
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
             if (guiCurve && otherGuiCurve) {
@@ -1549,7 +1549,9 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                     }
                 }
             }
-            getCurve(i,true)->clone( *other->getCurve(i,true) );
+            boost::shared_ptr<Curve> curve = getCurve(i,true);
+            assert(curve);
+            curve->clone( *other->getCurve(i,true) );
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
             if (guiCurve && otherGuiCurve) {
@@ -1622,6 +1624,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                     if (curve) {
                         curve->addKeyFrame((*it)->_imp->key);
                     }
+
                     if (getHolder()) {
                         getHolder()->setHasAnimation(true);
                     }
@@ -1633,6 +1636,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 if (curve) {
                     curve->addKeyFrame((*it)->_imp->key);
                 }
+
                 if (getHolder()) {
                     getHolder()->setHasAnimation(true);
                 }
