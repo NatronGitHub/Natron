@@ -101,6 +101,9 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_NAVIGATOR_BASE_HEIGHT 0.2
 #define NATRON_NAVIGATOR_BASE_WIDTH 0.2
 
+#define NATRON_SCENE_MIN 0
+#define NATRON_SCENE_MAX INT_MAX
+
 using namespace Natron;
 using std::cout; using std::endl;
 
@@ -283,7 +286,9 @@ struct NodeGraphPrivate
     QGraphicsRectItem* _selectionRect;
     bool _bendPointsVisible;
     bool _knobLinksVisible;
-
+    double _accumDelta;
+    bool _detailsVisible;
+    
     NodeGraphPrivate(Gui* gui,
                      NodeGraph* p)
         : _publicInterface(p)
@@ -325,6 +330,8 @@ struct NodeGraphPrivate
           , _selectionRect(NULL)
           , _bendPointsVisible(false)
           , _knobLinksVisible(true)
+          , _accumDelta(0)
+          , _detailsVisible(false)
     {
     }
 
@@ -385,8 +392,10 @@ NodeGraph::NodeGraph(Gui* gui,
     setCacheMode(CacheBackground);
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
-    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
-    scale( qreal(0.8), qreal(0.8) );
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    //setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    //setResizeAnchor(QGraphicsView::AnchorUnderMouse);
+    scale(0.8,0.8);
 
     _imp->_root = new QGraphicsTextItem(0);
     _imp->_nodeRoot = new QGraphicsTextItem(_imp->_root);
@@ -438,18 +447,18 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_bL->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     scene->addItem(_imp->_bL);
 
-    scene->setSceneRect(0,0,10000,10000);
-    _imp->_tL->setPos( _imp->_tL->mapFromScene( QPointF(0,10000) ) );
-    _imp->_tR->setPos( _imp->_tR->mapFromScene( QPointF(10000,10000) ) );
-    _imp->_bR->setPos( _imp->_bR->mapFromScene( QPointF(10000,0) ) );
-    _imp->_bL->setPos( _imp->_bL->mapFromScene( QPointF(0,0) ) );
-    centerOn(5000,5000);
+    _imp->_tL->setPos( _imp->_tL->mapFromScene( QPointF(NATRON_SCENE_MIN,NATRON_SCENE_MAX) ) );
+    _imp->_tR->setPos( _imp->_tR->mapFromScene( QPointF(NATRON_SCENE_MAX,NATRON_SCENE_MAX) ) );
+    _imp->_bR->setPos( _imp->_bR->mapFromScene( QPointF(NATRON_SCENE_MAX,NATRON_SCENE_MIN) ) );
+    _imp->_bL->setPos( _imp->_bL->mapFromScene( QPointF(NATRON_SCENE_MIN,NATRON_SCENE_MIN) ) );
+    centerOn(0,0);
+    setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
 
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     _imp->_menu = new QMenu(this);
-    _imp->_menu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->_menu->setFont( QFont(appFont,appFontSize) );
 
     QObject::connect( _imp->_gui->getApp()->getTimeLine().get(),SIGNAL( frameChanged(SequenceTime,int) ),
                       this,SLOT( onTimeChanged(SequenceTime,int) ) );
@@ -553,6 +562,9 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
+    if (getGui() && getGui()->getApp() && getGui()->getApp()->getProject()->isLoadingProjectInternal()) {
+        return;
+    }
     if (_imp->_refreshOverlays) {
         ///The visible portion of the scene, in scene coordinates
         QRectF visibleScene = visibleSceneRect();
@@ -607,6 +619,9 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
+        if (_imp->_selection.nodes.empty()) {
+            autoConnect = false;
+        }
         if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             node_ui->refreshPosition( pos.x(),pos.y(), true );
@@ -1001,19 +1016,9 @@ NodeGraph::isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const
         double xScale = navWidth / sceneR.width();
         double yScale =  navHeight / sceneR.height();
         double scaleFactor = std::max(0.001,std::min(xScale,yScale));
-        
-        int sceneW_navPixelCoord = std::floor(sceneR.width() * scaleFactor);
-        int sceneH_navPixelCoord = std::floor(sceneR.height() * scaleFactor);
-        
-        int xOffset = navWidth - sceneW_navPixelCoord;
-        int yOffset = navHeight - sceneH_navPixelCoord;
-        
+
         ///Make the widgetPos relative to the navTopLeftWidget
         QPoint clickNavPos(widgetPos.x() - navTopLeftWidget.x(), widgetPos.y() - navTopLeftWidget.y());
-        if (clickNavPos.x() < xOffset / 2. || clickNavPos.x() > (navWidth - xOffset / 2.) ||
-            clickNavPos.y() < yOffset / 2. || clickNavPos.y() > (navHeight - yOffset / 2.)) {
-            return false;
-        }
         
         scenePos.rx() = clickNavPos.x() / scaleFactor;
         scenePos.ry() = clickNavPos.y() / scaleFactor;
@@ -1562,6 +1567,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
 
     update();
+    QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void
@@ -1672,7 +1678,8 @@ NodeGraph::event(QEvent* e)
         return false;
     }
     if (e->type() == QEvent::KeyPress) {
-        QKeyEvent* ke = static_cast<QKeyEvent*>(e);
+        QKeyEvent* ke = dynamic_cast<QKeyEvent*>(e);
+        assert(ke);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
             NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName,this);
 
@@ -1860,7 +1867,11 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         _imp->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions, modifiers, key) ) {
         toggleKnobLinksVisible();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoPreview, modifiers, key) ) {
+        toggleAutoPreview();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoTurbo, modifiers, key) ) {
+        toggleAutoTurbo();
+    }  else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         popFindDialog(QCursor::pos());
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         popRenameDialog(QCursor::pos());
@@ -1912,6 +1923,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         }
     }
 } // keyPressEvent
+
+void
+NodeGraph::toggleAutoTurbo()
+{
+    appPTR->getCurrentSettings()->setAutoTurboModeEnabled(!appPTR->getCurrentSettings()->isAutoTurboEnabled());
+}
 
 void
 NodeGraphPrivate::rearrangeSelectedNodes()
@@ -2071,18 +2088,44 @@ NodeGraph::leaveEvent(QEvent* e)
 }
 
 void
+NodeGraph::setVisibleNodeDetails(bool visible)
+{
+    if (visible == _imp->_detailsVisible) {
+        return;
+    }
+    _imp->_detailsVisible = visible;
+    QMutexLocker k(&_imp->_nodesMutex);
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it!= _imp->_nodes.end(); ++it) {
+        (*it)->setVisibleDetails(visible);
+    }
+    for (std::list<NodeBackDrop*>::const_iterator it =_imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
+        (*it)->setVisibleDetails(visible);
+    }
+}
+
+void
 NodeGraph::wheelEvent(QWheelEvent* e)
 {
     if (e->orientation() != Qt::Vertical) {
         return;
     }
     QPointF newPos = mapToScene( e->pos() );
+    
     double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    qreal newZoomfactor = transform().scale(scaleFactor, scaleFactor).mapRect( QRectF(0, 0, 1, 1) ).width();
-    if ( (newZoomfactor < 0.07) || (newZoomfactor > 10) ) {
+    
+    QTransform transfo = transform();
+    
+    double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();
+    double newZoomfactor = currentZoomFactor * scaleFactor;
+    if (newZoomfactor < 0.05 || newZoomfactor > 40) {
         return;
     }
-
+    if (newZoomfactor < 0.4) {
+        setVisibleNodeDetails(false);
+    } else if (newZoomfactor >= 0.4) {
+        setVisibleNodeDetails(true);
+    }
+    
     if (modCASIsControl(e) && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
@@ -2091,22 +2134,31 @@ NodeGraph::wheelEvent(QWheelEvent* e)
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
 //        QPointF centerScene = visibleSceneRect().center();
+//        QPoint center = visibleWidgetRect().center();
 //        QPointF deltaScene;
-//        deltaScene.rx() = newPos.x() - centerScene.x();
-//        deltaScene.ry() = newPos.y() - centerScene.y();
+//        deltaScene.rx() = e->x() - center.x();
+//        deltaScene.ry() = e->y() - center.y();
 //        QTransform t = transform();
-//        QTransform mapping;
-//        mapping.translate(-deltaScene.x(),-deltaScene.y());
-//        mapping.scale(scaleFactor,scaleFactor);
-//        mapping.translate(deltaScene.x(),deltaScene.y());
-//        t.translate(-deltaScene.x(),-deltaScene.y());
+//        centerOn(newPos);
+//        //t.translate(-deltaScene.x(),-deltaScene.y());
 //        t.scale(scaleFactor,scaleFactor);
-//        t.translate(deltaScene.x(),deltaScene.y());
+//        //t.translate(deltaScene.x(),deltaScene.y());
 //        setTransform(t);
-//        centerScene = mapping.map(centerScene);
-        scale(scaleFactor,scaleFactor);
 //        centerOn(centerScene);
+ 
+        //       scale(scaleFactor,scaleFactor);
+        //QPointF delta =
+        
+
+        _imp->_accumDelta += e->delta();
+        if (std::abs(_imp->_accumDelta) > 60) {
+            scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
+            setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
+            scale(scaleFactor,scaleFactor);
+            _imp->_accumDelta = 0;
+        }
         _imp->_refreshOverlays = true;
+
     }
     _imp->_lastScenePosClick = newPos;
 }
@@ -2607,7 +2659,7 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addSeparator();
     
     QMenu* editMenu = new QMenu(tr("Edit"),_imp->_menu);
-    editMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    editMenu->setFont( QFont(appFont,appFontSize) );
     _imp->_menu->addAction( editMenu->menuAction() );
     
     QAction* copyAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphCopy,
@@ -2698,6 +2750,14 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( autoPreview,SIGNAL( triggered() ),this,SLOT( toggleAutoPreview() ) );
     QObject::connect( _imp->_gui->getApp()->getProject().get(),SIGNAL( autoPreviewChanged(bool) ),autoPreview,SLOT( setChecked(bool) ) );
     _imp->_menu->addAction(autoPreview);
+    
+    QAction* autoTurbo = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphToggleAutoTurbo,
+                                               kShortcutDescActionGraphToggleAutoTurbo,_imp->_menu);
+    autoTurbo->setCheckable(true);
+    autoTurbo->setChecked( appPTR->getCurrentSettings()->isAutoTurboEnabled() );
+    QObject::connect( autoTurbo,SIGNAL( triggered() ),this,SLOT( toggleAutoTurbo() ) );
+    _imp->_menu->addAction(autoTurbo);
+
     
     QAction* forceRefreshPreviews = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphForcePreview,
                                                            kShortcutDescActionGraphForcePreview,_imp->_menu);
@@ -3384,7 +3444,7 @@ NodeGraph::centerOnAllNodes()
 
 
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-            if ( (*it)->isActive() && (*it)->isVisible() ) {
+            if ( /*(*it)->isActive() &&*/ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
                 QPointF pos = (*it)->scenePos();
                 xmin = std::min( xmin, pos.x() );
@@ -3393,17 +3453,19 @@ NodeGraph::centerOnAllNodes()
                 ymax = std::max( ymax,pos.y() + size.height() );
             }
         }
-
+        
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-            xmin = std::min( xmin,bbox.x() );
-            ymin = std::min( ymin,bbox.y() );
-            xmax = std::max( xmax,bbox.x() + bbox.width() );
-            ymax = std::max( ymax,bbox.y() + bbox.height() );
+            if ((*it)->isVisible()) {
+                QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+                xmin = std::min( xmin,bbox.x() );
+                ymin = std::min( ymin,bbox.y() );
+                xmax = std::max( xmax,bbox.x() + bbox.width() );
+                ymax = std::max( ymax,bbox.y() + bbox.height() );
+            }
         }
     } else {
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
-            if ( (*it)->isActive() && (*it)->isVisible() ) {
+            if ( /*(*it)->isActive() && */(*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
                 QPointF pos = (*it)->scenePos();
                 xmin = std::min( xmin, pos.x() );
@@ -3414,18 +3476,21 @@ NodeGraph::centerOnAllNodes()
         }
         
         for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-            xmin = std::min( xmin,bbox.x() );
-            ymin = std::min( ymin,bbox.y() );
-            xmax = std::max( xmax,bbox.x() + bbox.width() );
-            ymax = std::max( ymax,bbox.y() + bbox.height() );
+            if ((*it)->isVisible()) {
+                QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+                xmin = std::min( xmin,bbox.x() );
+                ymin = std::min( ymin,bbox.y() );
+                xmax = std::max( xmax,bbox.x() + bbox.width() );
+                ymax = std::max( ymax,bbox.y() + bbox.height() );
+            }
         }
 
     }
-    QRect rect( xmin,ymin,(xmax - xmin),(ymax - ymin) );
+    QRectF rect( xmin,ymin,(xmax - xmin),(ymax - ymin) );
     fitInView(rect,Qt::KeepAspectRatio);
+
     _imp->_refreshOverlays = true;
-    repaint();
+    update();
 }
 
 void
@@ -3797,7 +3862,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
     _imp->label = new QLabel(tr("Select all nodes containing this text:"),this);
-    _imp->label->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    _imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
     _imp->filter = new LineEdit(this);
@@ -3820,7 +3885,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     
     _imp->resultLabel = new QLabel(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
-    _imp->resultLabel->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    _imp->resultLabel->setFont(QFont(appFont,appFontSize));
     
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
     QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));

@@ -181,7 +181,7 @@ TabWidget::createMenu()
 {
     MenuWithToolTips menu(_gui);
 
-    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    menu.setFont( QFont(appFont,appFontSize) );
     QPixmap pixV,pixM,pixH,pixC,pixA;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
@@ -209,6 +209,15 @@ TabWidget::createMenu()
     QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
     menu.addAction(closeAction);
     
+    QAction* hideToolbar;
+    if (_gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+        hideToolbar = new QAction(tr("Show left toolbar"),&menu);
+    } else {
+        hideToolbar = new QAction(tr("Hide left toolbar"),&menu);
+    }
+    QObject::connect(hideToolbar, SIGNAL(triggered()), this, SLOT(onHideLeftToolBarActionTriggered()));
+    menu.addAction(hideToolbar);
+    
     QAction* hideTabbar;
     if (_tabBarVisible) {
         hideTabbar = new QAction(tr("Hide tabs header"),&menu);
@@ -235,6 +244,12 @@ TabWidget::createMenu()
     menu.addAction(isAnchorAction);
 
     menu.exec( _leftCornerButton->mapToGlobal( QPoint(0,0) ) );
+}
+
+void
+TabWidget::onHideLeftToolBarActionTriggered()
+{
+    _gui->setLeftToolBarDisplayedOnMouseHoverOnly(!_gui->isLeftToolBarDisplayedOnMouseHoverOnly());
 }
 
 void
@@ -1249,6 +1264,9 @@ TabWidget::mouseMoveEvent(QMouseEvent* e)
                 _header->setVisible(false);
             }
         }
+    }
+    if (_gui && _gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+        _gui->refreshLeftToolBarVisibility(e->globalPos());
     }
     QFrame::mouseMoveEvent(e);
 }

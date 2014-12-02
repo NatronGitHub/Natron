@@ -210,6 +210,8 @@ public:
         
     void onNodeNameEditDialogFinished();
     
+    void toggleAutoTurbo();
+    
 private:
 
 
@@ -224,6 +226,8 @@ private:
     
     bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
 
+    void setVisibleNodeDetails(bool visible);
+    
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

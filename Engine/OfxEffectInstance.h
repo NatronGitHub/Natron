@@ -171,7 +171,7 @@ public:
                                   const RectD & outputRoD, //!< full RoD in canonical coordinates
                                   const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                   int view,
-                                Natron::EffectInstance::RoIMap* ret) OVERRIDE WARN_UNUSED_RETURN;
+                                Natron::EffectInstance::RoIMap* ret) OVERRIDE FINAL;
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
@@ -217,6 +217,8 @@ public:
      **/
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /**
      * @brief Does this effect supports multiresolution ?
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
@@ -253,8 +255,17 @@ public:
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
-                                     bool forceGetClipPrefAction,
+                                         bool forceGetClipPrefAction,
                                          bool recurse) OVERRIDE FINAL;
+private:
+    void checkOFXClipPref_recursive(double time,
+                                    const RenderScale & scale,
+                                    const std::string & reason,
+                                    bool forceGetClipPrefAction,
+                                    bool recurse,
+                                    std::list<Natron::Node*>& markedNodes);
+public:
+
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;

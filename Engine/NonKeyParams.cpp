@@ -52,17 +52,5 @@ NonKeyParams::getCost() const
     return _cost;
 }
 
-bool
-NonKeyParams::operator==(const NonKeyParams & other) const
-{
-    return _cost == other._cost &&
-           _elementsCount == other._elementsCount &&
-           isEqualToVirtual(other);
-}
 
-bool
-NonKeyParams::operator!=(const NonKeyParams & other) const
-{
-    return !(*this == other);
-}
 

@@ -239,6 +239,8 @@ public:
 class FileDialogComboBox
     : public QComboBox
 {
+    Q_OBJECT
+    
 public:
     
     
@@ -251,12 +253,20 @@ public:
         return m_history;
     }
 
-    void paintEvent(QPaintEvent* e);
-
+    
+    
+public slots:
+    
+    void onCurrentIndexChanged(int index);
 private:
+    
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     UrlModel *urlModel;
     SequenceFileDialog *dialog;
     QStringList m_history;
+    bool doResize;
 };
 
 /**

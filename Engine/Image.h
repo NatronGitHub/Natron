@@ -67,6 +67,11 @@ namespace Natron {
         {
             std::fill(_map.begin(), _map.end(), 0);
         }
+        
+        void setTo1()
+        {
+            std::fill(_map.begin(),_map.end(),1);
+        }
 
         const RectI & getBounds() const
         {
@@ -107,7 +112,8 @@ namespace Natron {
               const Natron::CacheAPI* cache,
               Natron::StorageModeEnum storage,
               const std::string & path);
-
+        
+        
 
         /*This constructor can be used to allocate a local Image. The deallocation should
        then be handled by the user. Note that no view number is passed in parameter
@@ -117,14 +123,22 @@ namespace Natron {
               const RectI & bounds,    //!< bounds in pixel coordinates
               unsigned int mipMapLevel,
               double par,
-              Natron::ImageBitDepthEnum bitdepth);
+              Natron::ImageBitDepthEnum bitdepth,
+              bool useBitmap = false);
 
+        //Same as above but parameters are in the ImageParams object
+        Image(const ImageKey & key,
+              const boost::shared_ptr<Natron::ImageParams>& params);
+
+        
         virtual ~Image()
         {
             deallocate();
         }
+        
+        bool usesBitMap() const { return _useBitmap; }
 
-        virtual void onMemoryAllocated() OVERRIDE FINAL;
+        virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
 
         static ImageKey makeKey(U64 nodeHashKey,
                                 bool frameVaryingOrAnimated,
@@ -132,6 +146,16 @@ namespace Natron {
                                 int view);
         static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                          const RectD & rod,    // the image rod in canonical coordinates
+                                                         const double par,
+                                                         unsigned int mipMapLevel,
+                                                         bool isRoDProjectFormat,
+                                                         ImageComponentsEnum components,
+                                                         Natron::ImageBitDepthEnum bitdepth,
+                                                         const std::map<int, std::vector<RangeD> > & framesNeeded);
+        
+        static boost::shared_ptr<ImageParams> makeParams(int cost,
+                                                         const RectD & rod,    // the image rod in canonical coordinates
+                                                         const RectI& bounds,
                                                          const double par,
                                                          unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,
@@ -248,6 +272,9 @@ namespace Natron {
      **/
         std::list<RectI> getRestToRender(const RectI & regionOfInterest) const
         {
+            if (!_useBitmap) {
+                return std::list<RectI>();
+            }
             QReadLocker locker(&_lock);
 
             return _bitmap.minimalNonMarkedRects(regionOfInterest);
@@ -255,6 +282,9 @@ namespace Natron {
 
         RectI getMinimalRect(const RectI & regionOfInterest) const
         {
+            if (!_useBitmap) {
+                return regionOfInterest;
+            }
             QReadLocker locker(&_lock);
 
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
@@ -262,6 +292,9 @@ namespace Natron {
 
         void markForRendered(const RectI & roi)
         {
+            if (!_useBitmap) {
+                return;
+            }
             QWriteLocker locker(&_lock);
 
             _bitmap.markForRendered(roi);
@@ -417,6 +450,7 @@ namespace Natron {
         RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
         RectI _bounds;
         double _par;
+        bool _useBitmap;
     };
 
     template <typename SRCPIX,typename DSTPIX>

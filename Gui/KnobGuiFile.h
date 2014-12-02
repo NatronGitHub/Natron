@@ -16,6 +16,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
+#include <QtCore/QDateTime>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -62,7 +63,7 @@ public:
                  DockablePanel *container);
 
     virtual ~File_KnobGui() OVERRIDE;
-
+    
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
@@ -70,6 +71,8 @@ public slots:
     void onTextEdited() ;
     
     void onButtonClicked();
+    
+    void onReloadClicked();
 
     void open_file();
 
@@ -85,7 +88,7 @@ public slots:
 private:
     
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -102,7 +105,9 @@ private:
 
     LineEdit *_lineEdit;
     Button *_openFileButton;
+    Button* _reloadButton;
     QString _lastOpened;
+    QDateTime _lastModified;
     QFileSystemWatcher* _watcher;
     std::string _fileBeingWatched;
     boost::shared_ptr<File_Knob> _knob;
@@ -147,7 +152,7 @@ public slots:
 private:
     
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-    
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -214,7 +219,7 @@ public slots:
 
 private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

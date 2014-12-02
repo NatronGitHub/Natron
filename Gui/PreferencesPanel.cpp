@@ -69,7 +69,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 
     _panel->initializeKnobs();
 
-    resize(700, 400);
+    resize(900, 600);
 }
 
 void
@@ -116,7 +116,9 @@ void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
     if ( _settings->wereChangesMadeSinceLastSave() ) {
+        _settings->blockEvaluation();
         _settings->restoreSettings();
+        _settings->unblockEvaluation();
     }
 }
 

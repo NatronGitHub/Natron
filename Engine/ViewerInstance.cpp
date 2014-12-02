@@ -718,7 +718,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                            !isSequentialRender,  // is this render due to user interaction ?
                                                            isSequentialRender, // is this sequential ?
                                                            canAbort,
-                                                           inputNodeHash);
+                                                           inputNodeHash,
+                                                           getTimeline().get());
             
             
             
@@ -1552,6 +1553,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     
     uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
                                           params->image,
+                                          params->cachedFrame->getTime(),
                                           params->rod,
                                           params->bytesCount,
                                           params->textureRect,

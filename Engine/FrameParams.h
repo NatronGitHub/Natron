@@ -39,14 +39,17 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
+    bool operator==(const FrameParams & other) const
+    {
+        return NonKeyParams::operator==(other) && _rod == other._rod;
+    }
+    
+    bool operator!=(const FrameParams & other) const
+    {
+        return !(*this == other);
+    }
 private:
 
-    virtual bool isEqualToVirtual(const NonKeyParams & other) const OVERRIDE FINAL
-    {
-        const FrameParams & imgParams = static_cast<const FrameParams &>(other);
-
-        return _rod == imgParams._rod;
-    }
 
     RectI _rod;
 };

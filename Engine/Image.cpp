@@ -282,12 +282,26 @@ Image::Image(const ImageKey & key,
              Natron::StorageModeEnum storage,
              const std::string & path)
     : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)
+    , _useBitmap(true)
 {
     _components = params->getComponents();
     _bitDepth = params->getBitDepth();
     _rod = params->getRoD();
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
+}
+
+Image::Image(const ImageKey & key,
+             const boost::shared_ptr<Natron::ImageParams>& params)
+: CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, NULL,Natron::eStorageModeRAM,std::string())
+, _useBitmap(false)
+{
+    _components = params->getComponents();
+    _bitDepth = params->getBitDepth();
+    _rod = params->getRoD();
+    _bounds = params->getBounds();
+    _par = params->getPixelAspectRatio();
+    allocateMemory();
 }
 
 
@@ -299,8 +313,10 @@ Image::Image(ImageComponentsEnum components,
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
              double par,
-             Natron::ImageBitDepthEnum bitdepth)
+             Natron::ImageBitDepthEnum bitdepth,
+             bool useBitmap)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
+    , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0,false,0,0),
                   boost::shared_ptr<ImageParams>( new ImageParams( 0,
@@ -326,15 +342,21 @@ Image::Image(ImageComponentsEnum components,
 }
 
 void
-Image::onMemoryAllocated()
+Image::onMemoryAllocated(bool diskRestoration)
 {
+    if (_cache || _useBitmap) {
+        _bitmap.initialize(_bounds);
+    }
+
+    if (diskRestoration) {
+        _bitmap.setTo1();
+    }
     
-    _bitmap.initialize(_bounds);
-
-
 #ifdef DEBUG
-    ///fill with red, to recognize unrendered pixels
-    fill(_bounds,1.,0.,0.,1.);
+    if (!diskRestoration) {
+        ///fill with red, to recognize unrendered pixels
+        fill(_bounds,1.,0.,0.,1.);
+    }
 #endif
     
 }
@@ -363,6 +385,28 @@ Image::makeParams(int cost,
 
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
+    return boost::shared_ptr<ImageParams>( new ImageParams(cost,
+                                                           rod,
+                                                           par,
+                                                           mipMapLevel,
+                                                           bounds,
+                                                           bitdepth,
+                                                           isRoDProjectFormat,
+                                                           components,
+                                                           framesNeeded) );
+}
+
+boost::shared_ptr<ImageParams>
+Image::makeParams(int cost,
+                  const RectD & rod,    // the image rod in canonical coordinates
+                  const RectI& bounds,
+                  const double par,
+                  unsigned int mipMapLevel,
+                  bool isRoDProjectFormat,
+                  ImageComponentsEnum components,
+                  Natron::ImageBitDepthEnum bitdepth,
+                  const std::map<int, std::vector<RangeD> > & framesNeeded)
+{
     return boost::shared_ptr<ImageParams>( new ImageParams(cost,
                                                            rod,
                                                            par,
@@ -523,7 +567,7 @@ Image::pixelAt(int x,
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
 
-        return this->_data.writable()
+        return (unsigned char*)(this->_data.writable())
                + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
                + ( x - _bounds.left() ) * compDataSize;
     } else {
@@ -540,7 +584,7 @@ Image::pixelAt(int x,
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
 
-        return this->_data.readable()
+        return (const unsigned char*)(this->_data.readable())
                + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
                + ( x - _bounds.left() ) * compDataSize;
     } else {
@@ -734,96 +778,58 @@ Image::halveRoIForDepth(const RectI & roi,
          srcBm += (srcBounds.width() + srcBounds.width()) - dstRoIWidth * 2,
          dstBm += (dstBounds.width()) - dstRoIWidth) {
         
+        if (y * 2 >= srcRoI.height()) {
+            break;
+        }
+        
+        bool pickNextRow = (y * 2) < (srcBounds.y2 - 1);
+        bool pickThisRow = (y * 2) >= (srcBounds.y1);
+        int sumH = (int)pickNextRow + (int)pickThisRow;
+        assert(sumH == 1 || sumH == 2);
+        
         for (int x = 0; x < dstRoIWidth;
              ++x,
              src += (components + components) - components, // two pixels minus what was done on previous iteration
              dst += (components) - components, // one pixel minus what was done on previous iteration
              ++srcBm) {
             
-            if (x * 2 > srcRoI.width() -1) {
+            bool pickNextCol = (x * 2) < (srcBounds.x2 - 1);
+            bool pickThisCol = (x * 2) >= (srcBounds.x1);
+            int sumW = (int)pickThisCol + (int)pickNextCol;
+            assert(sumW == 1 || sumW == 2);
+            
+            for (int k = 0; k < components; ++k, ++dst, ++src) {
+                
+                
+                PIX a = (pickThisCol && pickThisRow) ? *src : 0;
+                PIX b = (pickNextCol && pickThisRow) ? *(src + components) : 0;
+                PIX c = (pickThisCol && pickNextRow) ? *(src + srcRowSize): 0;
+                PIX d = (pickNextCol && pickNextRow) ? *(src + srcRowSize  + components)  : 0;
+                
+                assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
+                assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
+                *dst = (a + b + c + d) / (sumH * sumW);
 
-                for (int k = 0; k < components; ++k, ++dst,++src) {
-                    *dst = 0;
-                }
-                continue;
             }
             
-            bool useNextPixel = x * 2 < srcRoI.width() - 1;
-
-            //The src image can be in this implementation smaller than dstBounds * 2
-            if (y * 2  < (srcRoI.height() - 1)) {
+            if (copyBitMap) {
                 
-                for (int k = 0; k < components; ++k, ++dst, ++src) {
-                    
-                    if (!useNextPixel) {
-                        *dst = PIX( (float)( *src + *(src + srcRowSize) ) / 2. );
-                    } else {
-                        *dst = PIX( (float)( *src +
-                                            *(src + components) +
-                                            *(src + srcRowSize) +
-                                            *(src + srcRowSize  + components) ) / 4. );
-                    }
-                }
-                if (copyBitMap) {
-                    if (!useNextPixel) {
-                        if (*srcBm != 0  && *(srcBm + srcBounds.width()) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    } else {
-                        if (*srcBm != 0 && *(srcBm + 1) != 0 && *(srcBm + srcBounds.width()) != 0 && *(srcBm + srcBounds.width() + 1) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    }
-                    
-                    ++srcBm;
-                    ++dstBm;
-                }
-            } else if (y * 2 == (srcRoI.height() - 1)) {
+                PIX a = (pickThisCol && pickThisRow) ? *srcBm : 0;
+                PIX b = (pickNextCol && pickThisRow) ? *(srcBm + 1) : 0;
+                PIX c = (pickThisCol && pickNextRow) ? *(srcBm + srcBounds.width()): 0;
+                PIX d = (pickNextCol && pickNextRow) ? *(srcBm + srcBounds.width()  + 1)  : 0;
                 
-                if (!useNextPixel) {
-                    for (int k = 0; k < components; ++k, ++dst, ++src) {
-                        *dst = *src;
-                        
-                    }
-                } else {
-                    for (int k = 0; k < components; ++k, ++dst, ++src) {
-                        *dst = PIX( (float)( *src +
-                                            *(src + components) ) / 2. );
-                        
-                    }
-                }
-                
-                if (copyBitMap) {
-                    if (!useNextPixel) {
-                        *dstBm = *srcBm;
-                    } else {
-                        if (*srcBm != 0 && *(srcBm + 1) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    }
-                   
-                    ++srcBm;
-                    ++dstBm;
-                }
-            } else if (y * 2 > (srcRoI.height() - 1)) {
-                //Copy the previous line
-                for (int k = 0; k < components; ++k, ++dst,++src) {
-                    *dst = *(dst - dstRowSize);
-                    
-                }
-                if (copyBitMap) {
-                    *dstBm = *(dstBm - dstBounds.width());
-                    ++dstBm;
-                }
+                *dstBm = (a + b + c + d) / (sumH * sumW);
+               
+                ++srcBm;
+                ++dstBm;
             }
         }
+        
+        
+        
     }
+    
 } // halveRoIForDepth
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -941,7 +947,7 @@ Image::downscaleMipMap(const RectI & roi,
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() ) );
+    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() , true) );
 
     buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -985,6 +991,9 @@ Image::upscaleMipMapForDepth(const RectI & roi,
 
     assert( output->getComponents() == getComponents() );
     int components = getElementsCountForComponents( getComponents() );
+    if (components == 0) {
+        return;
+    }
     int srcRowSize = getBounds().width() * components;
     int dstRowSize = output->getBounds().width() * components;
     const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
@@ -1329,7 +1338,7 @@ Image::buildMipMapLevel(const RectI & roi,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getPixelAspectRatio(),getBitDepth() );
+        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getPixelAspectRatio(),getBitDepth() , true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
@@ -1506,7 +1515,9 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     if (srcLut == dstLut) {
         srcLut = dstLut = 0;
     }
-
+    if (intersection.isNull()) {
+        return;
+    }
     for (int y = 0; y < intersection.height(); ++y) {
         int start = rand() % intersection.width();
         const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);

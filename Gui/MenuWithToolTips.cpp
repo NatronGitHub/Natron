@@ -11,7 +11,7 @@
 #include "MenuWithToolTips.h"
 
 #include "Global/Macros.h"
-
+#include "Gui/GuiApplicationManager.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QToolTip>
@@ -25,17 +25,18 @@ CLANG_DIAG_ON(uninitialized)
 MenuWithToolTips::MenuWithToolTips(QWidget* parent)
     : QMenu(parent)
 {
-    setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    setFont( QFont(appFont,appFontSize) );
 }
 
 bool
 MenuWithToolTips::event (QEvent* e)
 {
-    const QHelpEvent* helpEvent = static_cast <QHelpEvent*>(e);
+    if (e->type() == QEvent::ToolTip) {
+        const QHelpEvent* helpEvent = dynamic_cast<QHelpEvent*>(e);
+        assert(helpEvent);
 
-    if (helpEvent->type() == QEvent::ToolTip) {
         QAction* action = activeAction();
-        if (!action) {
+        if (!helpEvent || !action) {
             return false;
         }
         if ( action->text() != action->toolTip() ) {

@@ -50,12 +50,17 @@ class MultiInstancePanel;
 class DockablePanelTabWidget
     : public QTabWidget
 {
+    Gui* _gui;
 public:
 
-    DockablePanelTabWidget(QWidget* parent = 0);
+    DockablePanelTabWidget(Gui* gui,QWidget* parent = 0);
 
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+    
+private:
+    
+    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
 };
 
 class DockablePanel;

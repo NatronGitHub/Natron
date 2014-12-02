@@ -28,6 +28,7 @@
 #include "Engine/Node.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
+#include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/ViewerInstance.h"
 using namespace Natron;
@@ -74,7 +75,14 @@ GuiAppInstance::GuiAppInstance(int appID)
 }
 
 void
-GuiAppInstance::aboutToQuit()
+GuiAppInstance::resetPreviewProvider()
+{
+    deletePreviewProvider();
+    _imp->_previewProvider.reset(new FileDialogPreviewProvider);
+}
+
+void
+GuiAppInstance::deletePreviewProvider()
 {
     /**
      Kill the nodes used to make the previews in the file dialogs
@@ -100,7 +108,13 @@ GuiAppInstance::aboutToQuit()
         
         _imp->_previewProvider.reset();
     }
+}
+
+void
+GuiAppInstance::aboutToQuit()
+{
     
+    deletePreviewProvider();
     _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
     _imp->_gui->close();
@@ -587,13 +601,19 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
     
     ///get the output file knob to get the name of the sequence
     QString outputFileSequence;
-    boost::shared_ptr<KnobI> fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
-    if (fileKnob) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
-        assert(isString);
-        outputFileSequence = isString->getValue().c_str();
+    
+    DiskCacheNode* isDiskCache = dynamic_cast<DiskCacheNode*>(w.writer);
+    if (isDiskCache) {
+        outputFileSequence = isDiskCache->getName_mt_safe().c_str();
+    } else {
+        boost::shared_ptr<KnobI> fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
+        if (fileKnob) {
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
+            assert(isString);
+            outputFileSequence = isString->getValue().c_str();
+        }
     }
-
+    
 
     if ( renderInSeparateProcess ) {
         try {
@@ -656,19 +676,20 @@ GuiAppInstance::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiAppInstance::startProgress(Natron::EffectInstance* effect,
-                              const std::string & message)
+GuiAppInstance::startProgress(KnobHolder* effect,
+                              const std::string & message,
+                              bool canCancel)
 {
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
 
-    _imp->_gui->startProgress(effect, message);
+    _imp->_gui->startProgress(effect, message, canCancel);
 }
 
 void
-GuiAppInstance::endProgress(Natron::EffectInstance* effect)
+GuiAppInstance::endProgress(KnobHolder* effect)
 {
     _imp->_gui->endProgress(effect);
     {
@@ -678,7 +699,7 @@ GuiAppInstance::endProgress(Natron::EffectInstance* effect)
 }
 
 bool
-GuiAppInstance::progressUpdate(Natron::EffectInstance* effect,
+GuiAppInstance::progressUpdate(KnobHolder* effect,
                                double t)
 {
     bool ret =  _imp->_gui->progressUpdate(effect, t);

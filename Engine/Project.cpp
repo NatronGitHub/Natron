@@ -194,8 +194,40 @@ Project::loadProjectInternal(const QString & path,
     } catch (const std::ifstream::failure & e) {
         throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
     }
+    {
+        std::string projName = isAutoSave  && !realFilePath.isEmpty() ? realFilePath.toStdString() : name.toStdString();
+        std::string loadMessage = tr("Loading ").toStdString() + projName + " ...";
+        getApp()->startProgress(this, loadMessage, false);
+    }
+    
+    if (NATRON_VERSION_MAJOR == 1 && NATRON_VERSION_MINOR == 0 && NATRON_VERSION_REVISION == 0) {
+        
+        ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
+        ///in the BezierCP class serialisation
+        bool foundV = false;
+        QFile f(filePath);
+        f.open(QIODevice::ReadOnly);
+        QTextStream fs(&f);
+        while (!fs.atEnd()) {
+            
+            QString line = fs.readLine();
 
+            if (line.indexOf("Natron v1.0.0 RC2") != -1 || line.indexOf("Natron v1.0.0 RC3") != -1) {
+                appPTR->setProjectCreatedDuringRC2Or3(true);
+                foundV = true;
+                break;
+            }
+        }
+        if (!foundV) {
+            appPTR->setProjectCreatedDuringRC2Or3(false);
+        }
+    }
+    
     try {
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = true;
+        }
         boost::archive::xml_iarchive iArchive(ifile);
         bool bgProject;
         iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
@@ -204,18 +236,34 @@ Project::loadProjectInternal(const QString & path,
         
         ret = load(projectSerializationObj,name,path,isAutoSave,realFilePath);
         
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
+        
         if (!bgProject) {
             getApp()->loadProjectGui(iArchive);
         }
     } catch (const boost::archive::archive_exception & e) {
         ifile.close();
+        getApp()->endProgress(this);
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
         throw std::runtime_error( e.what() );
     } catch (const std::exception & e) {
         ifile.close();
+        getApp()->endProgress(this);
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
         throw std::runtime_error( std::string("Failed to read the project file: ") + std::string( e.what() ) );
     }
 
     ifile.close();
+    getApp()->endProgress(this);
     emit projectNameChanged(name);
     return ret;
 }
@@ -289,6 +337,10 @@ Project::saveProject(const QString & path,
         QMutexLocker l(&_imp->isSavingProjectMutex);
         _imp->isSavingProject = false;
     }
+    
+    ///Save caches ToC
+    appPTR->saveCaches();
+    
     return ret;
 }
 
@@ -1239,6 +1291,14 @@ Project::isLoadingProject() const
 
     return _imp->isLoadingProject;
 }
+    
+bool
+Project::isLoadingProjectInternal() const
+{
+    QMutexLocker l(&_imp->isLoadingProjectMutex);
+    
+    return _imp->isLoadingProjectInternal;
+}
 
 bool
 Project::isGraphWorthLess() const
@@ -1558,7 +1618,7 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
                     bool ok = disconnectNodes(selected.get(), it->first);
                     assert(ok);
                     
-                    ok = connectNodes(it->second, created, it->first);
+                    (void)connectNodes(it->second, created, it->first);
                     //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                 }
             }

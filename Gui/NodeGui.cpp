@@ -97,7 +97,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _channelsPixmap(NULL)
       , _previewPixmap(NULL)
       , _persistentMessage(NULL)
-      , _lastPersistentMessageType(0)
       , _stateIndicator(NULL)
       , _mergeHintActive(false)
       , _bitDepthWarning(NULL)
@@ -147,6 +146,7 @@ NodeGui::initialize(NodeGraph* dag,
     _internalNode = internalNode;
     assert(internalNode);
     _graph = dag;
+    _internalNode->setNodeGuiPointer(this);
 
     QObject::connect( this, SIGNAL( nameChanged(QString) ), _internalNode.get(), SLOT( setName(QString) ) );
     QObject::connect( _internalNode.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInternalNameChanged(QString) ) );
@@ -158,8 +158,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( _internalNode.get(), SIGNAL( deactivated(bool) ),this,SLOT( deactivate(bool) ) );
     QObject::connect( _internalNode.get(), SIGNAL( activated(bool) ), this, SLOT( activate(bool) ) );
     QObject::connect( _internalNode.get(), SIGNAL( inputChanged(int) ), this, SLOT( connectEdge(int) ) );
-    QObject::connect( _internalNode.get(), SIGNAL( persistentMessageChanged(int,QString) ),this,SLOT( onPersistentMessageChanged(int,QString) ) );
-    QObject::connect( _internalNode.get(), SIGNAL( persistentMessageCleared() ), this, SLOT( onPersistentMessageCleared() ) );
+    QObject::connect( _internalNode.get(), SIGNAL( persistentMessageChanged() ),this,SLOT( onPersistentMessageChanged() ) );
     QObject::connect( _internalNode.get(), SIGNAL( renderingStarted() ), this, SLOT( onRenderingStarted() ) );
     QObject::connect( _internalNode.get(), SIGNAL( renderingEnded() ), this, SLOT( onRenderingFinished() ) );
     QObject::connect( _internalNode.get(), SIGNAL( inputNIsRendering(int) ), this, SLOT( onInputNRenderingStarted(int) ) );
@@ -191,7 +190,7 @@ NodeGui::initialize(NodeGraph* dag,
     _settingsPanel = createPanel(dockContainer,requestedByLoad,thisAsShared);
     if (_settingsPanel) {
         QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
-        QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SIGNAL( settingsPanelClosed(bool) ) );
+        QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
         QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( setDefaultGradientColor(QColor) ) );
     }
     OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( _internalNode->getLiveInstance() );
@@ -254,6 +253,22 @@ NodeGui::initialize(NodeGraph* dag,
 } // initialize
 
 void
+NodeGui::onSettingsPanelClosed(bool closed)
+{
+    QString message;
+    int type;
+    _internalNode->getPersistentMessage(&message, &type);
+    
+    if (!message.isEmpty()) {
+        const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->getViewer()->updatePersistentMessage();
+        }
+    }
+    emit settingsPanelClosed(closed);
+}
+
+void
 NodeGui::initializeShape()
 {
     updateShape(NODE_WIDTH,NODE_HEIGHT);
@@ -307,7 +322,7 @@ NodeGui::createGui()
 
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
-    _nameItem->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_12) );
+    _nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(1);
 
     _persistentMessage = new QGraphicsTextItem("",this);
@@ -452,7 +467,7 @@ NodeGui::updateShape(int width,
 
     _boundingBox->setRect(bbox);
 
-    QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
+    QFont f(appFont,appFontSize);
     QFontMetrics metrics(f);
     int nameWidth = labelBbox.width();
     _nameItem->setX( topLeft.x() + (width / 2) - (nameWidth / 2) );
@@ -1149,16 +1164,18 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
     if (closest) {
         return closest;
     }
-
+    
     if (_outputEdge) {
-        QLineF edgeLine = _outputEdge->line();
-        for (int j = 0; j < 4; ++j) {
-            if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
-                return _outputEdge;
+        if (_outputEdge->isVisible()) {
+            QLineF edgeLine = _outputEdge->line();
+            for (int j = 0; j < 4; ++j) {
+                if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+                    return _outputEdge;
+                }
             }
         }
     }
-
+    
     return NULL;
 } // hasEdgeNearbyRect
 
@@ -1390,76 +1407,56 @@ NodeGui::isSettingsPanelVisible() const
 }
 
 void
-NodeGui::onPersistentMessageChanged(int type,
-                                    const QString & message)
+NodeGui::onPersistentMessageChanged()
 {
     //keep type in synch with this enum:
     //enum MessageTypeEnum{eMessageTypeInfo = 0,eMessageTypeError = 1,eMessageTypeWarning = 2,eMessageTypeQuestion = 3};
 
     ///don't do anything if the last persistent message is the same
-    if ( (message == _lastPersistentMessage) || !_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui() ) {
+    if (!_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui()) {
         return;
     }
-    _persistentMessage->show();
-    _stateIndicator->show();
+    
+    QString message;
+    int type;
+    _internalNode->getPersistentMessage(&message, &type);
+    
+    _persistentMessage->setVisible(!message.isEmpty());
+    _stateIndicator->setVisible(!message.isEmpty());
+    
+    if (message.isEmpty()) {
 
-    _lastPersistentMessage = message;
-    if (type == 1) {
-        _persistentMessage->setPlainText("ERROR");
-        QColor errColor(128,0,0,255);
-        _persistentMessage->setDefaultTextColor(errColor);
-        _stateIndicator->setBrush(errColor);
-        _lastPersistentMessageType = 1;
-    } else if (type == 2) {
-        _persistentMessage->setPlainText("WARNING");
-        QColor warColor(180,180,0,255);
-        _persistentMessage->setDefaultTextColor(warColor);
-        _stateIndicator->setBrush(warColor);
-        _lastPersistentMessageType = 2;
+
+        setToolTip(QString());
+        
     } else {
-        return;
-    }
-    setToolTip(message);
-    std::list<ViewerInstance* > viewers;
-    _internalNode->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
-        ///the tab might not exist if the node is being deactivated following a tab close request by the user.
-
-        if (tab) {
-            ///don't update the viewer message if it is the same
-            if (tab->getViewer()->getCurrentPersistentMessage() != message) {
-                tab->getViewer()->setPersistentMessage(type,message);
-            }
+    
+        if (type == 1) {
+            _persistentMessage->setPlainText("ERROR");
+            QColor errColor(128,0,0,255);
+            _persistentMessage->setDefaultTextColor(errColor);
+            _stateIndicator->setBrush(errColor);
+        } else if (type == 2) {
+            _persistentMessage->setPlainText("WARNING");
+            QColor warColor(180,180,0,255);
+            _persistentMessage->setDefaultTextColor(warColor);
+            _stateIndicator->setBrush(warColor);
+        } else {
+            return;
         }
+        
+        setToolTip(message);
+        
+        QRectF rect = _boundingBox->rect();
+        updateShape( rect.width(), rect.height() );
     }
-    QRectF rect = _boundingBox->rect();
-    updateShape( rect.width(), rect.height() );
+
+    const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->getViewer()->updatePersistentMessage();
+    }
 }
 
-void
-NodeGui::onPersistentMessageCleared()
-{
-    if ( !_persistentMessage || !_persistentMessage->isVisible() || !_graph->getGui() ) {
-        return;
-    }
-    if (!_lastPersistentMessage.isEmpty()) {
-        _lastPersistentMessage.clear();
-        _persistentMessage->hide();
-        _stateIndicator->hide();
-        setToolTip("");
-        std::list<ViewerInstance* > viewers;
-        _internalNode->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
-            
-            ///the tab might not exist if the node is being deactivated following a tab close request by the user.
-            if (tab) {
-                tab->getViewer()->clearPersistentMessage();
-            }
-        }
-    }
-}
 
 QVBoxLayout*
 NodeGui::getDockContainer() const
@@ -1546,6 +1543,7 @@ NodeGui::onRenderingStarted()
 {
     _stateIndicator->setBrush(Qt::yellow);
     _stateIndicator->show();
+    update();
     
 }
 
@@ -1553,6 +1551,7 @@ void
 NodeGui::onRenderingFinished()
 {
     _stateIndicator->hide();
+    update();
 }
 
 void
@@ -1573,6 +1572,20 @@ NodeGui::setMergeHintActive(bool active)
         }
     }
     
+}
+
+void
+NodeGui::setVisibleDetails(bool visible)
+{
+    if (!isVisible()) {
+        return;
+    }
+    if (_nameItem) {
+        _nameItem->setVisible(visible);
+    }
+    for (std::map<int,Edge*>::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        it->second->setVisibleDetails(visible);
+    }
 }
 
 void
@@ -1861,6 +1874,7 @@ NodeGui::onDisabledKnobToggled(bool disabled)
 
     _disabledTopLeftBtmRight->setVisible(disabled);
     _disabledBtmLeftTopRight->setVisible(disabled);
+    update();
 }
 
 void
@@ -1910,7 +1924,7 @@ struct NodeGuiIndicatorPrivate
 
 
         textItem = new QGraphicsTextItem(text,parent);
-        QFont font(NATRON_FONT_ALT, NATRON_FONT_SIZE_10);
+        QFont font(appFont,appFontSize);
         QFontMetrics fm(font);
         textItem->setPos(topLeft.x()  - 2 * width / 3, topLeft.y() - 2 * fm.height() / 3);
         textItem->setFont(font);
@@ -2370,4 +2384,10 @@ NodeGui::trySetName(const QString& newName)
         emit nameChanged(newName);
     }
 
+}
+
+bool
+NodeGui::isSettingsPanelOpened() const
+{
+    return _settingsPanel ? !_settingsPanel->isClosed() : false;
 }

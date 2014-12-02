@@ -24,6 +24,7 @@
 
 class Hash64;
 class Format;
+class TimeLine;
 class OverlaySupport;
 class PluginMemory;
 class BlockingBackgroundRender;
@@ -45,6 +46,9 @@ struct ParallelRenderArgs
     ///which are local to a renderRoI call whilst this is local
     ///to a frame being rendered by the tree.
     int time;
+    
+    ///To check the current time on the timeline
+    const TimeLine* timeline;
     
     ///The initial view requested to render.
     ///This may be different than the view held in RenderArgs
@@ -72,7 +76,15 @@ struct ParallelRenderArgs
     bool canAbort;
     
     ParallelRenderArgs()
-    : validArgs(false)
+    : time(0)
+    , timeline(0)
+    , view(0)
+    , nodeHash(0)
+    , rotoAge(0)
+    , validArgs(false)
+    , isRenderResponseToUserInteraction(false)
+    , isSequentialRender(false)
+    , canAbort(false)
     {
         
     }
@@ -112,6 +124,10 @@ public:
         int channelForAlpha; //< if this is a mask this is from this channel that we will fetch the mask
         bool calledFromGetImage;
         
+        ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
+        ///might already be in this list
+        std::list<boost::shared_ptr<Natron::Image> > inputImagesList;
+        
         RenderRoIArgs()
         {
         }
@@ -126,7 +142,8 @@ public:
                       Natron::ImageComponentsEnum components_,
                       Natron::ImageBitDepthEnum bitdepth_,
                       int channelForAlpha_ = 3,
-                      bool calledFromGetImage = false)
+                      bool calledFromGetImage = false,
+                      const std::list<boost::shared_ptr<Natron::Image> >& inputImages = std::list<boost::shared_ptr<Natron::Image> >())
             : time(time_)
               , scale(scale_)
               , mipMapLevel(mipMapLevel_)
@@ -138,6 +155,7 @@ public:
               , bitdepth(bitdepth_)
               , channelForAlpha(channelForAlpha_)
               , calledFromGetImage(calledFromGetImage)
+              , inputImagesList(inputImages)
         {
         }
     };
@@ -427,12 +445,15 @@ public:
     boost::shared_ptr<Image> renderRoI(const RenderRoIArgs & args) WARN_UNUSED_RETURN;
 
 
-    void getImageFromCacheAndConvertIfNeeded(const Natron::ImageKey& key,
+    void getImageFromCacheAndConvertIfNeeded(bool useCache,
+                                             bool useDiskCache,
+                                             const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              Natron::ImageComponentsEnum components,
                                              int channelForAlpha,
                                              const RectD& rod,
+                                             const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
 
@@ -470,7 +491,8 @@ public:
                                bool isSequential,
                                bool canAbort,
                                U64 nodeHash,
-                               U64 rotoAge);
+                               U64 rotoAge,
+                               const TimeLine* timeline);
 
     void invalidateParallelRenderArgs();
 
@@ -531,6 +553,8 @@ public:
 
     bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
 
+
+    void getThreadLocalInputImages(std::list<boost::shared_ptr<Natron::Image> >* images) const;
 
     void addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img);
 
@@ -644,15 +668,6 @@ public:
      **/
     virtual RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
 
-    /**
-     * @brief Can be derived to indicate that the data rendered by the plug-in is expensive
-     * and should be stored in a persistent manner such as on disk.
-     **/
-    virtual bool shouldRenderedDataBePersistent() const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
     bool aborted() const WARN_UNUSED_RETURN;
@@ -690,6 +705,8 @@ public:
 
 
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
+
+    virtual bool shouldCacheOutput() const;
 
 protected:
 
@@ -890,6 +907,10 @@ public:
      **/
     virtual bool supportsMultipleClipsPAR() const
     {
+        return false;
+    }
+
+    virtual bool doesTemporalClipAccess() const {
         return false;
     }
 
@@ -1196,27 +1217,45 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
-                                          const RenderScale & scale,
                                           unsigned int mipMapLevel,
                                           int view,
-                                          const RectI & renderWindow,
+                                          const std::list<RectI>& rectsToRender,
                                           const RectD & rod, //!< rod in canonical coordinates
                                           const double par,
-                                          const FramesNeededMap &framesNeeded,
                                           const boost::shared_ptr<Image> & image,
                                           const boost::shared_ptr<Image> & downscaledImage,
                                           bool outputUseImage,
                                           bool isSequentialRender,
                                           bool isRenderMadeInResponseToUserInteraction,
-                                          bool byPassCache,
                                           U64 nodeHash,
                                           int channelForAlpha,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
-                                          const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
-                                          int transformInputNb,
-                                          int newTransformedInputNb,
-                                          Natron::EffectInstance* transformRerouteInput);
+                                          const RoIMap& inputRoisParam,
+                                          const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam);
+
+    bool renderInputImagesForRoI(bool createImageInCache,
+                                 SequenceTime time,
+                                 int view,
+                                 double par,
+                                 U64 nodeHash,
+                                 U64 rotoAge,
+                                 const RectD& rod,
+                                 const RectI& downscaledRenderWindow,
+                                 const RectD& canonicalRenderWindow,
+                                 const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
+                                 int transformInputNb,
+                                 int newTransformedInputNb,
+                                 Natron::EffectInstance* transformRerouteInput,
+                                 unsigned int mipMapLevel,
+                                 const RenderScale & scale,
+                                 const RenderScale& renderMappedScale,
+                                 bool useScaleOneInputImages,
+                                 bool byPassCache,
+                                 const FramesNeededMap& framesNeeded,
+                                 std::list< boost::shared_ptr<Natron::Image> > *inputImages,
+                                 RoIMap* inputsRoI);
+
 
     /**
      * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
@@ -1268,6 +1307,7 @@ private:
     struct TiledRenderingFunctorArgs
     {
         const RenderArgs* args;
+        std::list<boost::shared_ptr<Natron::Image> > inputImages;
         bool renderFullScaleThenDownscale;
         bool renderUseScaleOneInputs;
         bool isSequentialRender;
@@ -1301,24 +1341,25 @@ private:
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     Natron::StatusEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
-                                         const ParallelRenderArgs& frameArgs,
-                                         bool setThreadLocalStorage,
-                                         const RectI & roi );
+                                             const ParallelRenderArgs& frameArgs,
+                                             bool setThreadLocalStorage,
+                                             const RectI & roi );
 
     Natron::StatusEnum tiledRenderingFunctor(const RenderArgs & args,
-                                    const ParallelRenderArgs& frameArgs,
-                                     bool setThreadLocalStorage,
-                                     bool renderFullScaleThenDownscale,
-                                     bool renderUseScaleOneInputs,
-                                     bool isSequentialRender,
-                                     bool isRenderResponseToUserInteraction,
-                                     const RectI & roi,
-                                     const double par,
-                                     const boost::shared_ptr<Natron::Image> & downscaledImage,
-                                     const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                     const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                     const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
-                                     const boost::shared_ptr<Natron::Image> & renderMappedImage);
+                                             const ParallelRenderArgs& frameArgs,
+                                             const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
+                                             bool setThreadLocalStorage,
+                                             bool renderFullScaleThenDownscale,
+                                             bool renderUseScaleOneInputs,
+                                             bool isSequentialRender,
+                                             bool isRenderResponseToUserInteraction,
+                                             const RectI & roi,
+                                             const double par,
+                                             const boost::shared_ptr<Natron::Image> & downscaledImage,
+                                             const boost::shared_ptr<Natron::Image> & fullScaleImage,
+                                             const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
+                                             const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
+                                             const boost::shared_ptr<Natron::Image> & renderMappedImage);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

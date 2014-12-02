@@ -260,7 +260,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     archive >> boost::serialization::make_nvp("ProjectGui",obj);
 
     const std::map<std::string, ViewerData > & viewersProjections = obj.getViewersProjections();
-
+    
 
     ///now restore the backdrops
     const std::list<NodeBackDropSerialization> & backdrops = obj.getBackdrops();
@@ -450,6 +450,11 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         //move it by default to the viewer pane, before restoring the layout anyway which
         ///will relocate it correctly
         _gui->appendTabToDefaultViewerPane(h);
+    }
+    
+    if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
+        _gui->getNodeGraph()->clearSelection();
+        _gui->getNodeGraph()->centerOnAllNodes();
     }
 } // load
 

@@ -65,8 +65,12 @@ getNumKeys(boost::shared_ptr<KnobI> knob,
 {
     int sum = 0;
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        sum += knob->getCurve(i)->getKeyFramesCount();
+    if (knob->canAnimate()) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            boost::shared_ptr<Curve> curve = knob->getCurve(i);
+            assert(curve);
+            sum += curve->getKeyFramesCount();
+        }
     }
     nKeys =  sum;
 
@@ -90,7 +94,9 @@ getKeyTime(boost::shared_ptr<KnobI> knob,
             indexSoFar += curveKeyFramesCount;
             continue;
         } else {
-            KeyFrameSet set = knob->getCurve(dimension)->getKeyFrames_mt_safe();
+            boost::shared_ptr<Curve> curve = knob->getCurve(dimension);
+            assert(curve);
+            KeyFrameSet set = curve->getKeyFrames_mt_safe();
             KeyFrameSet::const_iterator it = set.begin();
             while ( it != set.end() ) {
                 if (indexSoFar == nth) {
@@ -116,7 +122,12 @@ getKeyIndex(boost::shared_ptr<KnobI> knob,
     int c = 0;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
-        KeyFrameSet set = knob->getCurve(i)->getKeyFrames_mt_safe();
+        if (!knob->isAnimated(i)) {
+            continue;
+        }
+        boost::shared_ptr<Curve> curve = knob->getCurve(i);
+        assert(curve);
+        KeyFrameSet set = curve->getKeyFrames_mt_safe();
         for (KeyFrameSet::const_iterator it = set.begin(); it != set.end(); ++it) {
             if (it->getTime() == time) {
                 if (direction == 0) {
@@ -251,9 +262,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,
     _knob->setMaximum(max);
     _knob->setDefaultValue(def,0);
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
-    if ( !dimensionName.empty() ) {
-        _knob->setDimensionName(0, dimensionName);
-    }
+    _knob->setDimensionName(0, dimensionName);
 }
 
 OfxStatus
@@ -439,9 +448,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
     }
 
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
-    if ( !dimensionName.empty() ) {
-        _knob->setDimensionName(0, dimensionName);
-    }
+    _knob->setDimensionName(0, dimensionName);
 }
 
 OfxStatus
@@ -924,9 +931,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1144,9 +1149,7 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1373,9 +1376,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
 
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
+        
     }
     _knob->setMinimumsAndMaximums(minimum, maximum);
     setDisplayRange();
@@ -1624,9 +1626,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance* node,
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1845,9 +1845,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node,
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -2111,9 +2109,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance*node,
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
 
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        if ( !dimensionName.empty() ) {
-            _knob->setDimensionName(i, dimensionName);
-        }
+        _knob->setDimensionName(i, dimensionName);
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);

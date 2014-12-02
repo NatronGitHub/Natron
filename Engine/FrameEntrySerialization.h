@@ -42,5 +42,4 @@ Natron::FrameKey::serialize(Archive & ar,
 }
 
 BOOST_CLASS_VERSION(Natron::FrameKey, FRAME_KEY_VERSION)
-
 #endif // FRAMEENTRYSERIALIZATION_H

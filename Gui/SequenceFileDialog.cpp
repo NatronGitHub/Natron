@@ -269,7 +269,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
     _lookInCombobox->setDuplicatesEnabled(false);
 
-    _lookInCombobox->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
+   // _lookInCombobox->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
 
     _buttonsLayout->addStretch();
 
@@ -647,11 +647,12 @@ SequenceFileDialog::restoreState(const QByteArray & state)
             }
             bool alreadyFound = false;
             
-            for (int j = 0;j < expandedVars.size();++j) {
-                if (expandedVars[j].size() > 1 && (expandedVars[j].endsWith('/') || expandedVars[j].endsWith('\\'))) {
-                    expandedVars[j] = expandedVars[j].remove(expandedVars[j].size() - 1, 1);
+            for (U32 j = 0;j < stdBookMarks.size();++j) {
+                QString otherUrl = stdBookMarks[j].path();
+                if (otherUrl.size() > 1 && (otherUrl.endsWith('/') || otherUrl.endsWith('\\'))) {
+                    otherUrl = otherUrl.remove(otherUrl.size() - 1, 1);
                 }
-                if (expandedVars[j] == urlPath) {
+                if (otherUrl == urlPath) {
                     alreadyFound = true;
                     break;
                 }
@@ -1091,7 +1092,8 @@ SequenceItemDelegate::paint(QPainter * painter,
     }
     
     QString filename = item->fileName();
-
+    QFont f(appFont,appFontSize);
+    painter->setFont(f);
     if (option.state & QStyle::State_Selected) {
         painter->fillRect( geom, option.palette.highlight() );
     }
@@ -1134,14 +1136,13 @@ SequenceItemDelegate::paint(QPainter * painter,
         
 #ifdef FILE_DIALOG_DISABLE_ICONS
         QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
-        QFont f = painter->font();
+        //QFont f = painter->font();
         if (isDir) {
             //change the font to bold
             f.setBold(true);
-            f.setPointSize(12);
+            f.setPointSize(f.pointSize() + 1);
         } else {
             f.setBold(false);
-            f.setPointSize(11);
         }
         painter->setFont(f);
 #else
@@ -1804,7 +1805,7 @@ SequenceFileDialog::showFilterMenu()
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
 
-    QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
+    QFont font(appFont,appFontSize);
     QFontMetrics fm(font);
     
     QString defaultString = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
@@ -2399,7 +2400,7 @@ FavoriteView::showMenu(const QPoint &position)
     }
     if (actions.count() > 0) {
         QMenu menu(this);
-        menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        menu.setFont(QFont(appFont,appFontSize));
         menu.addActions(actions);
         menu.exec( mapToGlobal(position) );
     }
@@ -2502,11 +2503,34 @@ FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,QWidget *parent)
 : QComboBox(parent)
 , urlModel(new UrlModel(this))
 , dialog(p)
+, doResize(false)
 {
     urlModel->setFileSystemModel( p->getLookingFileSystemModel() );
     setModel(urlModel);
+    QObject::connect(this, SIGNAL(currentIndexChanged(int)), this , SLOT(onCurrentIndexChanged(int)));
 }
 
+void
+FileDialogComboBox::onCurrentIndexChanged(int index)
+{
+    if (doResize && index >= 0 && index < count()) {
+        updateGeometry();
+        doResize = false;
+    }
+}
+
+QSize
+FileDialogComboBox::sizeHint() const
+{
+    int index = currentIndex();
+    if (index >= 0 && index < count()) {
+        QFontMetrics fm = fontMetrics();
+        QString txt = itemText(index);
+        int w = fm.width(txt);
+        return QSize(w + 10, fm.height() * 1.5);
+    }
+    return QComboBox::sizeHint();
+}
 
 void
 FileDialogComboBox::showPopup()
@@ -2514,7 +2538,6 @@ FileDialogComboBox::showPopup()
     if (model()->rowCount() > 1) {
         QComboBox::showPopup();
     }
-
     urlModel->setUrls( std::vector<QUrl>() );
     std::vector<QUrl> list;
     QModelIndex idx = dialog->getFileSystemModel()->index( dialog->rootPath() );
@@ -2556,7 +2579,8 @@ FileDialogComboBox::showPopup()
         urlModel->addUrls(stdUrls, -1);
     }
     setCurrentIndex(0);
-
+    
+    doResize = true;
     QComboBox::showPopup();
 } // showPopup
 

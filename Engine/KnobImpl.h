@@ -384,7 +384,9 @@ Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
     if (master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
         assert(isString); //< other data types aren't supported
-        return isString->getValue(master.first,false);
+        if (isString) {
+            return isString->getValue(master.first,false);
+        }
     }
 
     QReadLocker l(&_valueMutex);
@@ -476,7 +478,9 @@ Knob<std::string>::getValueAtTime(double time,
     if (!byPassMaster && master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
         assert(isString); //< other data types aren't supported
-        return isString->getValueAtTime(time,master.first,false);
+        if (isString) {
+            return isString->getValueAtTime(time,master.first,false);
+        }
     }
     std::string ret;
     const AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<const AnimatingString_KnobHelper* >(this);
@@ -490,7 +494,7 @@ Knob<std::string>::getValueAtTime(double time,
     assert( ret.empty() );
 
     boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
-    if (curve->getKeyFramesCount() > 0) {
+    if (curve && curve->getKeyFramesCount() > 0) {
         assert(isStringAnimated);
         isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), &ret);
 
@@ -501,7 +505,9 @@ Knob<std::string>::getValueAtTime(double time,
         if (master.second) {
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
             assert(isString); //< other data types aren't supported
-            return isString->getValue(master.first);
+            if (isString) {
+                return isString->getValue(master.first);
+            }
         }
         
         QReadLocker l(&_valueMutex);
@@ -556,7 +562,7 @@ Knob<T>::getValueAtTime(double time,
         }
     }
     boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
-    if (curve->getKeyFramesCount() > 0) {
+    if (curve && curve->getKeyFramesCount() > 0) {
         //getValueAt already clamps to the range for us
         return (T)curve->getValueAt(time,clamp);
     } else {
@@ -841,10 +847,12 @@ template <>
 void
 Knob<std::string>::makeKeyFrame(Curve* /*curve*/,double time,const std::string& v,KeyFrame* key)
 {
-    double keyFrameValue;
+    double keyFrameValue = 0.;
     AnimatingString_KnobHelper* isStringAnimatedKnob = dynamic_cast<AnimatingString_KnobHelper*>(this);
     assert(isStringAnimatedKnob);
-    isStringAnimatedKnob->stringToKeyFrameValue(time,v,&keyFrameValue);
+    if (isStringAnimatedKnob) {
+        isStringAnimatedKnob->stringToKeyFrameValue(time,v,&keyFrameValue);
+    }
     
     *key = KeyFrame( (double)time,keyFrameValue );
 }
@@ -901,6 +909,7 @@ Knob<T>::setValueAtTime(int time,
 
 
     boost::shared_ptr<Curve> curve = getCurve(dimension,true);
+    assert(curve);
     makeKeyFrame(curve.get(), time, v, newKey);
     
     ///If we cannot set value, queue it
@@ -1007,10 +1016,16 @@ Knob<std::string>::unSlave(int dimension,
         {
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
             assert(isString); //< other data types aren't supported
-            QWriteLocker l1(&_valueMutex);
-            _values[dimension] =  isString->getValue(master.first);
+            if (isString) {
+                QWriteLocker l1(&_valueMutex);
+                _values[dimension] =  isString->getValue(master.first);
+            }
         }
-        getCurve(dimension)->clone( *( master.second->getCurve(master.first) ) );
+        boost::shared_ptr<Curve> curve = getCurve(dimension);
+        boost::shared_ptr<Curve> mastercurve = master.second->getCurve(master.first);
+        if (curve && mastercurve) {
+            curve->clone(*mastercurve);
+        }
 
         cloneExtraData( master.second.get() );
     }
@@ -1144,7 +1159,9 @@ Knob<std::string>::getKeyFrameValueByIndex(int dimension,
     if (master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
         assert(isString); //< other data types aren't supported
-        return isString->getKeyFrameValueByIndex(master.first,index,ok);
+        if (isString) {
+            return isString->getKeyFrameValueByIndex(master.first,index,ok);
+        }
     }
 
     assert( dimension < getDimension() );
@@ -1154,17 +1171,19 @@ Knob<std::string>::getKeyFrameValueByIndex(int dimension,
         return "";
     }
 
-    const AnimatingString_KnobHelper* animatedString = dynamic_cast<const AnimatingString_KnobHelper*>(this);
-    assert(animatedString);
-
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    assert(curve);
-    KeyFrame kf;
-    *ok =  curve->getKeyFrameWithIndex(index, &kf);
     std::string value;
 
-    if (*ok) {
-        animatedString->stringFromInterpolatedValue(kf.getValue(),&value);
+    const AnimatingString_KnobHelper* animatedString = dynamic_cast<const AnimatingString_KnobHelper*>(this);
+    assert(animatedString);
+    if (animatedString) {
+        boost::shared_ptr<Curve> curve = getCurve(dimension);
+        assert(curve);
+        KeyFrame kf;
+        *ok =  curve->getKeyFrameWithIndex(index, &kf);
+
+        if (*ok) {
+            animatedString->stringFromInterpolatedValue(kf.getValue(),&value);
+        }
     }
 
     return value;
@@ -1378,7 +1397,9 @@ Knob<std::string>::getIntegrateFromTimeToTime(double time1,
     if (master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
         assert(isString); //< other data types aren't supported
-        return isString->getIntegrateFromTimeToTime(time1, time2, master.first);
+        if (isString) {
+            return isString->getIntegrateFromTimeToTime(time1, time2, master.first);
+        }
     }
 
     boost::shared_ptr<Curve> curve  = getCurve(dimension);
@@ -1469,7 +1490,7 @@ Knob<int>::cloneValues(KnobI* other)
         for (U32 i = 0; i < v.size(); ++i) {
             _values[i] = v[i];
         }
-    } else {
+    } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
@@ -1495,7 +1516,7 @@ Knob<bool>::cloneValues(KnobI* other)
         }
     } else if (isBool) {
         _values = isBool->getValueForEachDimension_mt_safe_vector();
-    } else {
+    } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
@@ -1533,7 +1554,7 @@ Knob<double>::cloneValues(KnobI* other)
             _values[i] = v[i];
             //_defaultValues[i] = defaultV[i];
         }
-    } else {
+    } else if (isDouble) {
         _values = isDouble->getValueForEachDimension_mt_safe_vector();
         //_defaultValues = isDouble->getDefaultValues_mt_safe();
     }
@@ -1547,13 +1568,15 @@ Knob<std::string>::cloneValues(KnobI* other)
     
     ///Can only clone strings
     assert(isString);
-    QWriteLocker k(&_valueMutex);
-    std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
-    //std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
-    //assert(defaultV.size() == v.size());
-    for (U32 i = 0; i < v.size(); ++i) {
-        _values[i] = v[i];
-        //_defaultValues[i] = defaultV[i];
+    if (isString) {
+        QWriteLocker k(&_valueMutex);
+        std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
+        //std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
+        //assert(defaultV.size() == v.size());
+        for (U32 i = 0; i < v.size(); ++i) {
+            _values[i] = v[i];
+            //_defaultValues[i] = defaultV[i];
+        }
     }
 }
 
@@ -1570,7 +1593,12 @@ Knob<T>::clone(KnobI* other,
     cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if (i == dimension || dimension == -1) {
-            getCurve(i,true)->clone( *other->getCurve(i,true) );
+            boost::shared_ptr<Curve> thisCurve = getCurve(i,true);
+            boost::shared_ptr<Curve> otherCurve = other->getCurve(i,true);
+            if (thisCurve && otherCurve) {
+                thisCurve->clone(*otherCurve);
+            }
+
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
             if (guiCurve && otherGuiCurve) {
@@ -1603,7 +1631,11 @@ Knob<T>::clone(KnobI* other,
     int dimMin = std::min( getDimension(), other->getDimension() );
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
-            getCurve(i,true)->clone(*other->getCurve(i,true), offset, range);
+            boost::shared_ptr<Curve> thisCurve = getCurve(i,true);
+            boost::shared_ptr<Curve> otherCurve = other->getCurve(i,true);
+            if (thisCurve && otherCurve) {
+                thisCurve->clone(*otherCurve, offset, range);
+            }
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
             if (guiCurve && otherGuiCurve) {
@@ -1644,7 +1676,9 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                     }
                 }
             }
-            getCurve(i,true)->clone( *other->getCurve(i,true) );
+            boost::shared_ptr<Curve> curve = getCurve(i,true);
+            assert(curve);
+            curve->clone( *other->getCurve(i,true) );
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
             if (guiCurve && otherGuiCurve) {
@@ -1714,7 +1748,10 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 
                 if ((*it)->_imp->useKey) {
                     boost::shared_ptr<Curve> curve = getCurve((*it)->_imp->dimension);
-                    curve->addKeyFrame((*it)->_imp->key);
+                    if (curve) {
+                        curve->addKeyFrame((*it)->_imp->key);
+                    }
+
                     if (getHolder()) {
                         getHolder()->setHasAnimation(true);
                     }
@@ -1723,7 +1760,10 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 }
             } else {
                 boost::shared_ptr<Curve> curve = getCurve((*it)->_imp->dimension);
-                curve->addKeyFrame((*it)->_imp->key);
+                if (curve) {
+                    curve->addKeyFrame((*it)->_imp->key);
+                }
+
                 if (getHolder()) {
                     getHolder()->setHasAnimation(true);
                 }
@@ -1762,7 +1802,7 @@ bool Knob<T>::hasModifications() const
 {
     for (int i = 0; i < getDimension(); ++i) {
         boost::shared_ptr<Curve> c = getCurve(i);
-        if (c->isAnimated()) {
+        if (c && c->isAnimated()) {
             return true;
         }
         

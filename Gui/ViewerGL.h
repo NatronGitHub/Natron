@@ -162,6 +162,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const boost::shared_ptr<Natron::Image>& image,
+                                            int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double offset, int lut, int pboIndex,
@@ -183,12 +184,9 @@ public:
      **/
     void disconnectViewer();
 
-    void setPersistentMessage(int type,const QString & message);
-
-    void clearPersistentMessage();
-
-    const QString & getCurrentPersistentMessage() const;
-
+    void updatePersistentMessage();
+    void updatePersistentMessageToWidth(int w);
+    
 public slots:
 
 

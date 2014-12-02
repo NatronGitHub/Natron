@@ -97,9 +97,13 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsBar);
     _imp->buttonsLayout->setContentsMargins(3, 2, 0, 0);
 
-    _imp->addTrackButton = new Button("+",_imp->buttonsBar);
+    QPixmap pixAdd;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_TRACK,&pixAdd);
+    
+    _imp->addTrackButton = new Button(QIcon(pixAdd),"",_imp->buttonsBar);
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
+    _imp->addTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->addTrackButton->setToolTip( tr( Qt::convertFromPlainText("When enabled you can add new tracks by clicking on the Viewer. "
                                                                    "Holding the Control + Alt keys is the same as pressing this button."
                                                                    ,Qt::WhiteSpaceNormal).toStdString().c_str() ) );
@@ -116,8 +120,8 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_ENABLED, &pixUpdateViewerEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_DISABLED, &pixUpdateViewerDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, &pixUpdateViewerEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH, &pixUpdateViewerDisabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_STOP, &pixStop);
 
     QIcon bwIcon;

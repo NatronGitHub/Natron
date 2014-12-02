@@ -91,6 +91,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const boost::shared_ptr<Natron::Image>& image,
+                                            int time,
                                             const RectD& rod,
                                             size_t bytesCount,
                                             const TextureRect & region,

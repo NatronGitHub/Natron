@@ -29,6 +29,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Engine/NodeGuiI.h"
 
 class Edge;
 class QPainterPath;
@@ -113,14 +114,14 @@ private:
 };
 
 class NodeGui
-    : public QObject,public QGraphicsItem
+    : public QObject,public QGraphicsItem, public NodeGuiI
 {
     Q_OBJECT
-             Q_INTERFACES(QGraphicsItem)
-
+    Q_INTERFACES(QGraphicsItem)
+    
 public:
-
-
+    
+    
     typedef std::map<int,Edge*> InputEdgesMap;
 
     NodeGui(QGraphicsItem *parent = 0);
@@ -157,6 +158,8 @@ public:
     {
         return _graph;
     }
+    
+    virtual bool isSettingsPanelOpened() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE FINAL;
@@ -298,8 +301,16 @@ public:
     
     void setMergeHintActive(bool active);
     
+    /**
+     * @brief Called after the node-graph view reaches a certain detail level (zoom) to show/hide elements that would otherwise 
+     * not be visible and would just clutter and slow down the interface
+     **/
+    void setVisibleDetails(bool visible);
+        
 public slots:
 
+    void onSettingsPanelClosed(bool closed);
+    
     void setDefaultGradientColor(const QColor & color);
 
     void togglePreview();
@@ -328,9 +339,7 @@ public slots:
 
     void onInternalNameChanged(const QString &);
 
-    void onPersistentMessageChanged(int type,const QString & message);
-
-    void onPersistentMessageCleared();
+    void onPersistentMessageChanged();
 
     void refreshEdges();
 
@@ -452,8 +461,6 @@ private:
     /*A pointer to the preview pixmap displayed for readers/*/
     QGraphicsPixmapItem* _previewPixmap;
     QGraphicsTextItem* _persistentMessage;
-    QString _lastPersistentMessage;
-    int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
     bool _mergeHintActive;
     NodeGuiIndicator* _bitDepthWarning;

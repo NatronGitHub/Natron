@@ -49,17 +49,20 @@ Name: glu
  Libs:
  Cflags: -I${includedir}
 EOF
-``
+```
 
 ### Homebrew
 
 Install homebrew from <http://brew.sh/>
 
+For a universal 32/64 bits build, add the option --universal to all
+the "brew install" commands.
+
 Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install qt expat icairo glew
+    brew install qt expat cairo glew
 
 To install the openfx-io and openfx-misc sets of plugin, you also need the following:
 
@@ -68,8 +71,7 @@ To install the openfx-io and openfx-misc sets of plugin, you also need the follo
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 	
-	export
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
 	
 ## Add the config.pri file
 
@@ -108,7 +110,7 @@ config.pri:
 cat > config.pri << EOF
 boost: INCLUDEPATH += /opt/local/include
 boost: LIBS += LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
-expat: PKGCONFG -= expat
+expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 EOF
@@ -130,8 +132,9 @@ If you want to build in DEBUG mode change the qmake call to this line:
 
 	qmake -r CONFIG+=debug Project.pro
 
-*You can also enable logging by adding CONFIG+=log
-*You can also enable clang sanitizer by adding CONFIG+=sanitizer
+* You can also enable logging by adding CONFIG+=log
+
+* You can also enable clang sanitizer by adding CONFIG+=sanitizer
 
 ## Build on Xcode
 

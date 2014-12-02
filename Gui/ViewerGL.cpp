@@ -81,6 +81,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
 #define WIPE_ROTATE_OFFSET 30
 
+#define PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS 20
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -164,13 +165,13 @@ struct ViewerGL::Implementation
           , textRenderingColor(200,200,200,255)
           , displayWindowOverlayColor(125,125,125,255)
           , rodOverlayColor(100,100,100,255)
-          , textFont( new QFont(NATRON_FONT, NATRON_FONT_SIZE_13) )
+          , textFont( new QFont(appFont,appFontSize) )
           , overlay(true)
           , supportsGLSL(true)
           , updatingTexture(false)
           , clearColor(0,0,0,255)
           , menu( new QMenu(_this) )
-          , persistentMessage()
+          , persistentMessages()
           , persistentMessageType(0)
           , displayPersistentMessage(false)
           , textRenderer()
@@ -211,8 +212,11 @@ struct ViewerGL::Implementation
         memoryHeldByLastRenderedImages[0] = memoryHeldByLastRenderedImages[1] = 0;
         displayingImageGain[0] = displayingImageGain[1] = 1.;
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
+        for (int i = 0; i < 2 ; ++i) {
+            displayingImageTime[i] = 0;
+        }
         assert( qApp && qApp->thread() == QThread::currentThread() );
-        menu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+        menu->setFont( QFont(appFont,appFontSize) );
         
         QDesktopWidget* desktop = QApplication::desktop();
         QRect r = desktop->screenGeometry();
@@ -242,6 +246,7 @@ struct ViewerGL::Implementation
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel;
     Natron::ImagePremultiplicationEnum displayingImagePremult[2];
+    int displayingImageTime[2];
     Natron::ViewerColorSpaceEnum displayingImageLut;
     MouseStateEnum ms; /*!< Holds the mouse state*/
     HoverStateEnum hs;
@@ -256,7 +261,7 @@ struct ViewerGL::Implementation
     bool updatingTexture;
     QColor clearColor;
     QMenu* menu;
-    QString persistentMessage;
+    QStringList persistentMessages;
     int persistentMessageType;
     bool displayPersistentMessage;
     Natron::TextRenderer textRenderer;
@@ -369,12 +374,7 @@ struct ViewerGL::Implementation
     void getProjectFormatCanonical(RectD& canonicalProjectFormat) const
     {
         QMutexLocker k(&projectFormatMutex);
-        RectI pixelF;
-        pixelF.x1 = projectFormat.x1;
-        pixelF.y1 = projectFormat.y1;
-        pixelF.x2 = projectFormat.x2;
-        pixelF.y2 = projectFormat.y2;
-        pixelF.toCanonical_noClipping(0, projectFormat.getPixelAspectRatio(), &canonicalProjectFormat);
+        canonicalProjectFormat = projectFormat.toCanonicalFormat();
     }
 };
 
@@ -745,7 +745,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     QLineF bottomEdge(texRectClipped.x2,texRectClipped.y1,texRectClipped.x1,texRectClipped.y1);
     QLineF leftEdge(texRectClipped.x1,texRectClipped.y1,texRectClipped.x1,texRectClipped.y2);
     bool crossingTop = false,crossingRight = false,crossingLeft = false,crossingBtm = false;
-    int validIntersectionsIndex[2];
+    int validIntersectionsIndex[4];
     validIntersectionsIndex[0] = validIntersectionsIndex[1] = -1;
     int numIntersec = 0;
     intersectionTypes[0] = inter.intersect(topEdge, &intersections[0]);
@@ -914,7 +914,9 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     Format projectFormat;
     parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
 
-    _imp->blankViewerInfo.setRoD(projectFormat);
+    RectD canonicalFormat = projectFormat.toCanonicalFormat();
+    
+    _imp->blankViewerInfo.setRoD(canonicalFormat);
     _imp->blankViewerInfo.setDisplayWindow(projectFormat);
     setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),0);
     setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),1);
@@ -1023,7 +1025,12 @@ ViewerGL::resizeGL(int width,
          !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
          ( ( oldWidth != width) || ( oldHeight != height) ) ) {
         viewer->renderCurrentFrame(true);
-        updateGL();
+        
+        if (!_imp->persistentMessages.empty()) {
+            updatePersistentMessageToWidth(width - 20);
+        } else {
+            updateGL();
+        }
     }
 }
 
@@ -1106,13 +1113,16 @@ ViewerGL::paintGL()
         glCheckError();
 
 
-
         // don't even bind the shader on 8-bits gamma-compressed textures
         ViewerCompositingOperatorEnum compOp = _imp->viewerTab->getCompositingOperator();
 
         ///Determine whether we need to draw each texture or not
         int activeInputs[2];
-        _imp->viewerTab->getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
+        ViewerInstance* internalViewer = _imp->viewerTab->getInternalNode();
+        if (!internalViewer) {
+            return;
+        }
+        internalViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
         bool drawTexture[2];
         drawTexture[0] = _imp->activeTextures[0];
         drawTexture[1] = _imp->activeTextures[1] && compOp != eViewerCompositingOperatorNone;
@@ -1224,10 +1234,6 @@ ViewerGL::paintGL()
         glCheckError();
         if (_imp->overlay) {
             drawOverlay(_imp->displayingImageMipMapLevel);
-        }
-        
-        if (_imp->displayPersistentMessage) {
-            drawPersistentMessage();
         }
         
         if (_imp->ms == eMouseStateSelecting) {
@@ -1387,6 +1393,10 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
+    
+    if (_imp->displayPersistentMessage) {
+        drawPersistentMessage();
+    }
 } // drawOverlay
 
 void
@@ -1746,6 +1756,99 @@ ViewerGL::drawPickerPixel()
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 }
 
+namespace {
+
+    
+static QStringList explode(const QString& str)
+{
+    QRegExp rx("(\\ |\\-|\\.|\\/|\\t|\\n)"); //RegEx for ' ' '/' '.' '-' '\t' '\n'
+
+    QStringList ret;
+    int startIndex = 0;
+    while (true) {
+        int index = str.indexOf(rx, startIndex);
+        
+        if (index == -1) {
+            ret.push_back(str.mid(startIndex));
+            return ret;
+        }
+        
+        QString word = str.mid(startIndex, index - startIndex);
+        
+        const QChar& nextChar = str[index];
+        
+        // Dashes and the likes should stick to the word occuring before it. Whitespace doesn't have to.
+        if (nextChar.isSpace()) {
+            ret.push_back(word);
+            ret.push_back(nextChar);
+        } else {
+            ret.push_back(word + nextChar);
+        }
+        
+        startIndex = index + 1;
+    }
+    return ret;
+}
+    
+static QStringList wordWrap(const QFontMetrics& fm,const QString& str, int width)
+{
+    QStringList words = explode(str);
+    
+    int curLineLength = 0;
+
+    QStringList stringL;
+    QString curString;
+    
+    for(int i = 0; i < words.size(); ++i) {
+        
+        QString word = words[i];
+        int wordPixels = fm.width(word);
+        
+        // If adding the new word to the current line would be too long,
+        // then put it on a new line (and split it up if it's too long).
+        if (curLineLength + wordPixels > width) {
+            // Only move down to a new line if we have text on the current line.
+            // Avoids situation where wrapped whitespace causes emptylines in text.
+            if (curLineLength > 0) {
+                if (!curString.isEmpty()) {
+                    stringL.push_back(curString);
+                    curString.clear();
+                }
+                //tmp.append('\n');
+                curLineLength = 0;
+            }
+            
+            // If the current word is too long to fit on a line even on it's own then
+            // split the word up.
+            while (wordPixels > width) {
+                
+                curString.clear();
+                curString.append(word.mid(0, width - 1));
+                word = word.mid(width - 1);
+                
+                if (!curString.isEmpty()) {
+                    stringL.push_back(curString);
+                    curString.clear();
+                }
+                wordPixels = fm.width(word);
+                //tmp.append('\n');
+            }
+            
+            // Remove leading whitespace from the word so the new line starts flush to the left.
+            word = word.trimmed();
+            
+        }
+        curString.append(word);
+        curLineLength += wordPixels;
+    }
+    if (!curString.isEmpty()) {
+        stringL.push_back(curString);
+    }
+    return stringL;
+}
+
+}
+
 void
 ViewerGL::drawPersistentMessage()
 {
@@ -1753,48 +1856,21 @@ ViewerGL::drawPersistentMessage()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    QFontMetrics metrics( font() );
-    int numberOfLines = std::ceil( (double)metrics.width(_imp->persistentMessage) / (double)(width() - 20) );
-    int averageCharsPerLine = numberOfLines != 0 ? _imp->persistentMessage.size() / numberOfLines : _imp->persistentMessage.size();
-    QStringList lines;
-    int i = 0;
-    QString message = _imp->persistentMessage;
-    while (!message.isEmpty()) {
-        QString str;
-        while ( i < message.size() ) {
-            if ( (i % averageCharsPerLine == 0) && (i != 0) ) {
-                break;
-            }
-            str.append( message.at(i) );
-            ++i;
-        }
-        
-        if (i < message.size()) {
-            int originalIndex = i;
-            /*Find closest word before and insert a new line*/
-            while ( i >= 0 && message.at(i) != QChar(' ') && message.at(i) != QChar('\t') &&
-                   message.at(i) != QChar('\n')) {
-                --i;
-            }
-            if (i >= 0) {
-                str.remove(i, str.size() - originalIndex);
-            }
-        }
-        message.remove(0, str.size());
-        lines.append(str);
-        i = 0;
-    }
+    QFontMetrics metrics( *_imp->textFont );
 
-    int offset = metrics.height() + 10;
-    QPointF topLeft, bottomRight, textPos;
-    double zoomScreenPixelHeight;
+    int offset =  10;
+    double metricsHeightZoomCoord;
+    QPointF topLeft, bottomRight,offsetZoomCoord;
+    
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         topLeft = _imp->zoomCtx.toZoomCoordinates(0,0);
-        bottomRight = _imp->zoomCtx.toZoomCoordinates( _imp->zoomCtx.screenWidth(),numberOfLines * (metrics.height() * 2) );
-        textPos = _imp->zoomCtx.toZoomCoordinates(20, offset);
-        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
+        bottomRight = _imp->zoomCtx.toZoomCoordinates( _imp->zoomCtx.screenWidth(),_imp->persistentMessages.size() * (metrics.height() + offset) );
+        offsetZoomCoord = _imp->zoomCtx.toZoomCoordinates(PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS, offset);
+        metricsHeightZoomCoord = topLeft.y() - _imp->zoomCtx.toZoomCoordinates(0, metrics.height()).y();
     }
+    offsetZoomCoord.ry() = topLeft.y() - offsetZoomCoord.y();
+    QPointF textPos(offsetZoomCoord.x(),  topLeft.y() - (offsetZoomCoord.y() / 2.) - metricsHeightZoomCoord);
     
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1814,9 +1890,9 @@ ViewerGL::drawPersistentMessage()
         glEnd();
 
 
-        for (int j = 0; j < lines.size(); ++j) {
-            renderText(textPos.x(),textPos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
-            textPos.setY(textPos.y() - metrics.height() * 2 * zoomScreenPixelHeight);
+        for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
+            renderText(textPos.x(),textPos.y(), _imp->persistentMessages.at(j),_imp->textRenderingColor,*_imp->textFont);
+            textPos.setY(textPos.y() - (metricsHeightZoomCoord + offsetZoomCoord.y()));/*metrics.height() * 2 * zoomScreenPixelHeight*/
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -2268,6 +2344,7 @@ ViewerGL::initShaderGLSL()
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      const boost::shared_ptr<Natron::Image>& image,
+                                     int time,
                                      const RectD& rod,
                                      size_t bytesCount,
                                      const TextureRect & region,
@@ -2304,10 +2381,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     OpenGLViewerI::BitDepth bd = getBitDepth();
     assert(textureIndex == 0 || textureIndex == 1);
     if (bd == OpenGLViewerI::BYTE) {
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::BYTE);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte);
     } else if ( (bd == OpenGLViewerI::FLOAT) || (bd == OpenGLViewerI::HALF_FLOAT) ) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::FLOAT);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
@@ -2318,7 +2395,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     _imp->displayingImageMipMapLevel = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
     _imp->displayingImagePremult[textureIndex] = premult;
-    
+    _imp->displayingImageTime[textureIndex] = time;
     ViewerInstance* internalNode = getInternalNode();
     
     if (_imp->memoryHeldByLastRenderedImages[textureIndex] > 0) {
@@ -2330,7 +2407,9 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 
     if (image) {
         _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
-        _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(image->getRoD(), image->getPixelAspectRatio()));
+        RectI pixelRoD;
+        image->getRoD().toPixelEnclosing(0, image->getPixelAspectRatio(), &pixelRoD);
+        _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(pixelRoD, image->getPixelAspectRatio()));
         {
             QMutexLocker k(&_imp->lastRenderedImageMutex);
             _imp->lastRenderedImage[textureIndex] = image;
@@ -2607,6 +2686,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
 
     ///The app is closing don't do anything
     if ( !_imp->viewerTab->getGui() || !getInternalNode()) {
+        QGLWidget::mouseMoveEvent(e);
         return;
     }
 
@@ -2627,9 +2707,10 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     Format dispW = getDisplayWindow();
+    RectD canonicalDispW = dispW.toCanonicalFormat();
     for (int i = 0; i < 2; ++i) {
         const RectD& rod = getRoD(i);
-        updateInfoWidgetColorPicker(zoomPos, e->pos(), width(), height(), rod, dispW, i);
+        updateInfoWidgetColorPicker(zoomPos, e->pos(), width(), height(), rod, canonicalDispW, i);
     }
     
     //update the cursor if it is hovering an overlay and we're not dragging the image
@@ -2943,6 +3024,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
 //    }else{
 //        setCursor(QCursor(Qt::ArrowCursor));
 //    }
+    QGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void
@@ -3108,6 +3190,7 @@ ViewerGL::zoomSlot(int v)
         double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
         _imp->zoomCtx.zoom(centerX, centerY, scale);
+        _imp->zoomOrPannedSinceLastFit = true;
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
@@ -3276,9 +3359,10 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     if (!_imp->viewerTab->getGui()) {
         return;
     }
+    RectD canonicalFormat = format.toCanonicalFormat();
     
     _imp->blankViewerInfo.setDisplayWindow(format);
-    _imp->blankViewerInfo.setRoD(format);
+    _imp->blankViewerInfo.setRoD(canonicalFormat);
     for (int i = 0; i < 2; ++i) {
         if (_imp->infoViewer[i]) {
             _imp->infoViewer[i]->setResolution(format);
@@ -3306,7 +3390,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     if (!_imp->isUserRoISet) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
-            _imp->userRoI = format;
+            _imp->userRoI = canonicalFormat;
         }
         _imp->isUserRoISet = true;
     }
@@ -3534,7 +3618,7 @@ ViewerGL::populateMenu()
     QObject::connect( displayOverlaysAction,SIGNAL( triggered() ),this,SLOT( toggleOverlays() ) );
     
     QMenu* showHideMenu = new QMenu(tr("Show/Hide"),_imp->menu);
-    showHideMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());
     
     QAction* showHidePlayer,*showHideLeftToolbar,*showHideRightToolbar,*showHideTopToolbar,*showHideInfobar,*showHideTimeline;
@@ -3619,34 +3703,64 @@ ViewerGL::renderText(double x,
 }
 
 void
-ViewerGL::setPersistentMessage(int type,
-                               const QString & message)
+ViewerGL::updatePersistentMessageToWidth(int w)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    if (!_imp->viewerTab || !_imp->viewerTab->getGui()) {
+        return;
+    }
+    
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    _imp->viewerTab->getGui()->getNodesEntitledForOverlays(nodes);
+    
+    _imp->persistentMessages.clear();
+    QStringList allMessages;
+    
+    int type = 0;
+    ///Draw overlays in reverse order of appearance
+    std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator next = nodes.rbegin();
+    if (!nodes.empty()) {
+        ++next;
+    }
+    int nbNonEmpty = 0;
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        QString mess;
+        int nType;
+        (*it)->getPersistentMessage(&mess, &nType);
+        if (!mess.isEmpty()) {
+            allMessages.append(mess);
+            ++nbNonEmpty;
+        }
+        if (next != nodes.rend()) {
+            ++next;
+        }
+        if (nbNonEmpty == 1 && nType == 2) {
+            type = 2;
+        } else {
+            type = 1;
+        }
+    }
     _imp->persistentMessageType = type;
-    _imp->persistentMessage = message;
-    _imp->displayPersistentMessage = true;
+    
+    QFontMetrics fm(*_imp->textFont);
+    
+    for (int i = 0; i < allMessages.size(); ++i) {
+        QStringList wordWrapped = wordWrap(fm,allMessages[i], w - PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS);
+        for (int j = 0; j < wordWrapped.size(); ++j) {
+            _imp->persistentMessages.push_back(wordWrapped[j]);
+        }
+    }
+    
+    _imp->displayPersistentMessage = !_imp->persistentMessages.isEmpty();
     updateGL();
-}
-
-const QString &
-ViewerGL::getCurrentPersistentMessage() const
-{
-    return _imp->persistentMessage;
 }
 
 void
-ViewerGL::clearPersistentMessage()
+ViewerGL::updatePersistentMessage()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (!_imp->displayPersistentMessage) {
-        return;
-    }
-    _imp->persistentMessage.clear();
-    _imp->displayPersistentMessage = false;
-    updateGL();
+    updatePersistentMessageToWidth(width() - 20);
 }
 
 void
@@ -3821,7 +3935,7 @@ ViewerGL::redraw()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    update();
+    updateGL();
 }
 
 /**
@@ -4063,7 +4177,7 @@ ViewerGL::resetWipeControls()
     } else if (_imp->activeTextures[0]) {
         rod = getRoD(0);
     } else {
-        rod = _imp->projectFormat;
+        _imp->getProjectFormatCanonical(rod);
     }
     {
         QMutexLocker l(&_imp->wipeControlsMutex);
@@ -4226,7 +4340,7 @@ ViewerGL::getTextureColorAt(int x,
     *b = 0;
     *a = 0;
 
-    Texture::DataType type;
+    Texture::DataTypeEnum type;
     if (_imp->displayTextures[0]) {
         type = _imp->displayTextures[0]->type();
     } else if (_imp->displayTextures[1]) {
@@ -4241,7 +4355,7 @@ ViewerGL::getTextureColorAt(int x,
         pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
     }
 
-    if ( (type == Texture::BYTE) || !_imp->supportsGLSL ) {
+    if ( (type == Texture::eDataTypeByte) || !_imp->supportsGLSL ) {
         U32 pixel;
         glReadBuffer(GL_FRONT);
         glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
@@ -4255,7 +4369,7 @@ ViewerGL::getTextureColorAt(int x,
         *b = (double)blue / 255.;
         *a = (double)alpha / 255.;
         glCheckError();
-    } else if ( (type == Texture::FLOAT) && _imp->supportsGLSL ) {
+    } else if ( (type == Texture::eDataTypeFloat) && _imp->supportsGLSL ) {
         GLfloat pixel[4];
         glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_RGBA, GL_FLOAT, pixel);
         *r = (double)pixel[0];
@@ -4592,25 +4706,81 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double bSum = 0.;
     double aSum = 0.;
     if ( !img || (img->getMipMapLevel() != mipMapLevel) ) {
-        double colorGPU[4];
-        for (int yPixel = rectPixel.bottom(); yPixel < rectPixel.top(); ++yPixel) {
-            for (int xPixel = rectPixel.left(); xPixel < rectPixel.right(); ++xPixel) {
-                getTextureColorAt(xPixel << mipMapLevel, yPixel << mipMapLevel,
-                                                   &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
-                aSum += colorGPU[3];
+        
+        Texture::DataTypeEnum type;
+        if (_imp->displayTextures[0]) {
+            type = _imp->displayTextures[0]->type();
+        } else if (_imp->displayTextures[1]) {
+            type = _imp->displayTextures[1]->type();
+        } else {
+            return false;
+        }
+
+        if ( (type == Texture::eDataTypeByte) || !_imp->supportsGLSL ) {
+            std::vector<U32> pixels(rectPixel.width() * rectPixel.height());
+            glReadBuffer(GL_FRONT);
+            glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
+                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels.front());
+            double rF,gF,bF,aF;
+            for (U32 i = 0 ; i < pixels.size(); ++i) {
+                U8 red = 0, green = 0, blue = 0, alpha = 0;
+                blue |= pixels[i];
+                green |= (pixels[i] >> 8);
+                red |= (pixels[i] >> 16);
+                alpha |= (pixels[i] >> 24);
+                rF = (double)red / 255.;
+                gF = (double)green / 255.;
+                bF = (double)blue / 255.;
+                aF = (double)alpha / 255.;
+                
+                aSum += aF;
                 if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
                     const Natron::Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
                     
-                    rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
-                    gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
-                    bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[2]);
+                    rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
+                    gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
+                    bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
                 } else {
-                    rSum += colorGPU[0];
-                    gSum += colorGPU[1];
-                    bSum += colorGPU[2];
+                    rSum += rF;
+                    gSum += gF;
+                    bSum += bF;
+                }
+
+            }
+            
+            glCheckError();
+        } else if ( (type == Texture::eDataTypeFloat) && _imp->supportsGLSL ) {
+            std::vector<float> pixels(rectPixel.width() * rectPixel.height() * 4);
+            glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
+                         GL_RGBA, GL_FLOAT, &pixels.front());
+            
+            int rowSize = rectPixel.width() * 4;
+            for (int y = 0; y < rectPixel.height(); ++y) {
+                for (int x = 0; x < rectPixel.width(); ++x) {
+                    double rF = pixels[y * rowSize + (4 * x)];
+                    double gF = pixels[y * rowSize + (4 * x) + 1];
+                    double bF = pixels[y * rowSize + (4 * x) + 2];
+                    double aF = pixels[y * rowSize + (4 * x) + 3];
+                    
+                    aSum += aF;
+                    if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
+                        const Natron::Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+                        
+                        rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
+                        gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
+                        bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
+                    } else {
+                        rSum += rF;
+                        gSum += gF;
+                        bSum += bF;
+                    }
                 }
             }
+          
+
+            glCheckError();
         }
+ 
         *r = rSum / rectPixel.area();
         *g = gSum / rectPixel.area();
         *b = bSum / rectPixel.area();
@@ -4693,8 +4863,8 @@ int
 ViewerGL::getCurrentlyDisplayedTime() const
 {
     QMutexLocker k(&_imp->lastRenderedImageMutex);
-    if (_imp->lastRenderedImage[0]) {
-        return _imp->lastRenderedImage[0]->getTime();
+    if (_imp->activeTextures[0]) {
+        return _imp->displayingImageTime[0];
     } else {
         return _imp->viewerTab->getTimeLine()->currentFrame();
     }

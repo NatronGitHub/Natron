@@ -35,6 +35,7 @@ class NodeSerialization;
 class TimeLine;
 struct AppInstancePrivate;
 class KnobSerialization;
+class KnobHolder;
 class ProcessHandler;
 namespace Natron {
 class Node;
@@ -247,16 +248,18 @@ public:
     
     virtual bool isGuiFrozen() const { return false; }
 
-    virtual void startProgress(Natron::EffectInstance* /*effect*/,
-                               const std::string & /*message*/)
+    virtual void startProgress(KnobHolder* /*effect*/,
+                               const std::string & /*message*/,
+                              bool canCancel = true)
+    {
+        (void)canCancel;
+    }
+
+    virtual void endProgress(KnobHolder* /*effect*/)
     {
     }
 
-    virtual void endProgress(Natron::EffectInstance* /*effect*/)
-    {
-    }
-
-    virtual bool progressUpdate(Natron::EffectInstance* /*effect*/,
+    virtual bool progressUpdate(KnobHolder* /*effect*/,
                                 double /*t*/)
     {
         return true;

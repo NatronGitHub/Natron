@@ -27,6 +27,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/StandardPaths.h"
 #include "SequenceParsing.h"
 
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
@@ -40,6 +41,7 @@ Settings::Settings(AppInstance* appInstance)
       , _restoringSettings(false)
       , _ocioRestored(false)
       , _settingsExisted(false)
+      , _hasWarnedOnceOnFontChanged(false)
 {
 }
 
@@ -83,11 +85,44 @@ Settings::initializeKnobs()
     _natronSettingsExist->setSecret(true);
     _generalTab->addKnob(_natronSettingsExist);
     
+    _fontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
+    _fontChoice->setName("font");
+    _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
+    std::vector<std::string> fontEntries;
+    fontEntries.push_back("Muli");
+    fontEntries.push_back("Droid Sans");
+    fontEntries.push_back("System fonts...");
+    _fontChoice->populateChoices(fontEntries);
+    _fontChoice->turnOffNewLine();
+    _fontChoice->setAnimationEnabled(false);
+    
+    _generalTab->addKnob(_fontChoice);
+    
+    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
+    _systemFontChoice->setHintToolTip("List of all fonts available on your system");
+    _systemFontChoice->setName("systemFont");
+    _systemFontChoice->turnOffNewLine();
+    _systemFontChoice->setAnimationEnabled(false);
+    _systemFontChoice->setSecret(true);
+    _generalTab->addKnob(_systemFontChoice);
+    
+    _fontSize = Natron::createKnob<Int_Knob>(this, "Font size");
+    _fontSize->setName("fontSize");
+    _fontSize->setAnimationEnabled(false);
+    _generalTab->addKnob(_fontSize);
+    
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setAnimationEnabled(false);
     _checkForUpdates->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will check for new updates on start-up of the application.");
     _generalTab->addKnob(_checkForUpdates);
+    
+    _notifyOnFileChange = Natron::createKnob<Bool_Knob>(this, "Warn when a file changes externally");
+    _notifyOnFileChange->setName("warnOnExternalChange");
+    _notifyOnFileChange->setAnimationEnabled(false);
+    _notifyOnFileChange->setHintToolTip("When checked, if a file read from a file parameter changes externally, a warning will be displayed "
+                                        "on the viewer. Turning this off will suspend the notification system.");
+    _generalTab->addKnob(_notifyOnFileChange);
 
     _autoSaveDelay = Natron::createKnob<Int_Knob>(this, "Auto-save trigger delay");
     _autoSaveDelay->setName("autoSaveDelay");
@@ -158,6 +193,7 @@ Settings::initializeKnobs()
                                        "for an effect.");
     
     _nThreadsPerEffect->setMinimum(0);
+    _nThreadsPerEffect->disableSlider();
     _generalTab->addKnob(_nThreadsPerEffect);
 
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
@@ -390,6 +426,13 @@ Settings::initializeKnobs()
     
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
+    
+    _autoTurbo = Natron::createKnob<Bool_Knob>(this, "Auto-turbo");
+    _autoTurbo->setName("autoTurbo");
+    _autoTurbo->setHintToolTip("When checked the Turbo-mode will be enabled automatically when playback is started and disabled "
+                               "when finished.");
+    _autoTurbo->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_autoTurbo);
 
     _snapNodesToConnections = Natron::createKnob<Bool_Knob>(this, "Snap to node");
     _snapNodesToConnections->setName("enableSnapToNode");
@@ -545,6 +588,17 @@ Settings::initializeKnobs()
     /////////// Caching tab
     _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
 
+    _aggressiveCaching = Natron::createKnob<Bool_Knob>(this, "Aggressive caching");
+    _aggressiveCaching->setName("aggressiveCaching");
+    _aggressiveCaching->setAnimationEnabled(false);
+    _aggressiveCaching->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will cache the output of all images "
+                                       "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
+                                       "you need to have at least 8GiB of RAM, and 16GiB is recommended.\n"
+                                       "If not checked, " NATRON_APPLICATION_NAME " will only cache the  nodes "
+                                       "which have multiple outputs, or their parameter \"Force caching\" checked or if one of its "
+                                       "output has its settings panel opened.");
+    _cachingTab->addKnob(_aggressiveCaching);
+    
     _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum amount of RAM memory used for caching (% of total RAM)");
     _maxRAMPercent->setName("maxRAMPercent");
     _maxRAMPercent->setAnimationEnabled(false);
@@ -610,15 +664,37 @@ Settings::initializeKnobs()
     _unreachableRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_unreachableRAMLabel);
 
-    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GiB)");
-    _maxDiskCacheGB->setName("maxDiskCache");
-    _maxDiskCacheGB->setAnimationEnabled(false);
-    _maxDiskCacheGB->setMinimum(0);
-    _maxDiskCacheGB->setMaximum(100);
-    _maxDiskCacheGB->setHintToolTip("The maximum size that may be used by caches located on disk (in GiB)");
-    _cachingTab->addKnob(_maxDiskCacheGB);
+    _maxViewerDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum playback disk cache size (GiB)");
+    _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
+    _maxViewerDiskCacheGB->setAnimationEnabled(false);
+    _maxViewerDiskCacheGB->setMinimum(0);
+    _maxViewerDiskCacheGB->setMaximum(100);
+    _maxViewerDiskCacheGB->setHintToolTip("The maximum size that may be used by the playback cache on disk (in GiB)");
+    _cachingTab->addKnob(_maxViewerDiskCacheGB);
+    
+    _maxDiskCacheNodeGB = Natron::createKnob<Int_Knob>(this, "Maximum DiskCache node disk usage (GiB)");
+    _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
+    _maxDiskCacheNodeGB->setAnimationEnabled(false);
+    _maxDiskCacheNodeGB->setMinimum(0);
+    _maxDiskCacheNodeGB->setMaximum(100);
+    _maxDiskCacheNodeGB->setHintToolTip("The maximum size that may be used by the DiskCache node on disk (in GiB)");
+    _cachingTab->addKnob(_maxDiskCacheNodeGB);
 
 
+    _diskCachePath = Natron::createKnob<Path_Knob>(this, "Disk cache path (empty = default)");
+    _diskCachePath->setName("diskCachePath");
+    _diskCachePath->setAnimationEnabled(false);
+    _diskCachePath->setMultiPath(false);
+    
+    QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    std::string diskCacheTt("WARNING: Changing this parameter requires a restart of the application. \n"
+                            "This is points to the location where " NATRON_APPLICATION_NAME " on-disk caches will be. "
+                            "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
+                            "the default location will be used. The default location is: \n");
+    
+    _diskCachePath->setHintToolTip(diskCacheTt + defaultLocation.toStdString());
+    _cachingTab->addKnob(_diskCachePath);
+    
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
 
@@ -697,7 +773,11 @@ Settings::setDefaultValues()
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
+    _fontChoice->setDefaultValue(1);
+    _systemFontChoice->setDefaultValue(0);
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
     _checkForUpdates->setDefaultValue(false);
+    _notifyOnFileChange->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
@@ -709,7 +789,7 @@ Settings::setDefaultValues()
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(false,0);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10,0);
@@ -736,11 +816,14 @@ Settings::setDefaultValues()
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
 
+    _aggressiveCaching->setDefaultValue(false);
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
     _unreachableRAMPercent->setDefaultValue(5);
-    _maxDiskCacheGB->setDefaultValue(10,0);
+    _maxViewerDiskCacheGB->setDefaultValue(5,0);
+    _maxDiskCacheNodeGB->setDefaultValue(10,0);
     setCachingLabels();
+    _autoTurbo->setDefaultValue(false);
     _defaultNodeColor->setDefaultValue(0.6,0);
     _defaultNodeColor->setDefaultValue(0.6,1);
     _defaultNodeColor->setDefaultValue(0.6,2);
@@ -834,8 +917,9 @@ Settings::saveSettings()
                     int index = isChoice->getValue(j);
 
                     const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                    assert((int)entries.size() > index);
-                    settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                    if (index < (int)entries.size() ) {
+                        settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                    }
                 } else {
                     settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
                 }
@@ -937,6 +1021,12 @@ Settings::restoreSettings()
     if (!_settingsExisted) {
         _natronSettingsExist->setValue(true, 0);
         saveSettings();
+    }
+    
+    int font_i = _fontChoice->getValue();
+    if (font_i == 2) {
+        //System font, show it
+        _systemFontChoice->setSecret(false);
     }
     
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
@@ -1043,9 +1133,13 @@ Settings::onKnobValueChanged(KnobI* k,
                 }
             }
         }
-    } else if ( k == _maxDiskCacheGB.get() ) {
+    } else if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheSize() );
+            appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
+        }
+    } else if ( k == _maxViewerDiskCacheGB.get() ) {
+        if (!_restoringSettings) {
+            appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheNodeSize());
         }
     } else if ( k == _maxRAMPercent.get() ) {
         if (!_restoringSettings) {
@@ -1057,6 +1151,8 @@ Settings::onKnobValueChanged(KnobI* k,
             appPTR->setPlaybackCacheMaximumSize( getRamPlaybackMaximumPercent() );
         }
         setCachingLabels();
+    } else if ( k == _diskCachePath.get() ) {
+        appPTR->setDiskCacheLocation(_diskCachePath->getValue().c_str());
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
@@ -1080,7 +1176,7 @@ Settings::onKnobValueChanged(KnobI* k,
         
         bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
         if (warnOcioChanged && appPTR->getTopLevelInstance()) {
-            bool stopAsking;
+            bool stopAsking = false;
             Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
                                   QObject::tr("The OpenColorIO config change requires a restart of "
                                               NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
@@ -1097,7 +1193,7 @@ Settings::onKnobValueChanged(KnobI* k,
             tryLoadOpenColorIOConfig();
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
             if (warnOcioChanged && appPTR->getTopLevelInstance()) {
-                bool stopAsking;
+                bool stopAsking = false;
                 Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
@@ -1113,6 +1209,20 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
     } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
+    } else if ( k == _fontChoice.get() ) {
+        int index = _fontChoice->getValue();
+        _systemFontChoice->setSecret(index != 2);
+        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
+            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
+            _hasWarnedOnceOnFontChanged = true;
+        }
+    } else if ( k == _fontSize.get() || k == _systemFontChoice.get() ) {
+        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
+            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
+            _hasWarnedOnceOnFontChanged = true;
+        }
     }
 } // onKnobValueChanged
 
@@ -1141,9 +1251,15 @@ Settings::getRamPlaybackMaximumPercent() const
 }
 
 U64
-Settings::getMaximumDiskCacheSize() const
+Settings::getMaximumViewerDiskCacheSize() const
 {
-    return (U64)( _maxDiskCacheGB->getValue() ) * std::pow(1024.,3.);
+    return (U64)( _maxViewerDiskCacheGB->getValue() ) * std::pow(1024.,3.);
+}
+
+U64
+Settings::getMaximumDiskCacheNodeSize() const
+{
+    return (U64)( _maxDiskCacheNodeGB->getValue() ) * std::pow(1024.,3.);
 }
 
 double
@@ -1182,7 +1298,7 @@ Settings::isAutoPreviewOnForNewProjects() const
     return _autoPreviewEnabledForNewProjects->getValue();
 }
 
-const std::string &
+std::string
 Settings::getReaderPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
@@ -1197,7 +1313,7 @@ Settings::getReaderPluginIDForFileType(const std::string & extension)
     throw std::invalid_argument("Unsupported file extension");
 }
 
-const std::string &
+std::string
 Settings::getWriterPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
@@ -1501,6 +1617,24 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
 }
 
 void
+Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts)
+{
+    _systemFontChoice->populateChoices(fonts);
+    
+    ///Now restore properly the system font choice
+    QString name(_systemFontChoice->getName().c_str());
+    if (settings.contains(name)) {
+        std::string value = settings.value(name).toString().toStdString();
+        for (U32 i = 0; i < fonts.size(); ++i) {
+            if (fonts[i] == value) {
+                _systemFontChoice->setValue(i, 0);
+                break;
+            }
+        }
+    }
+}
+
+void
 Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats)
 {
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
@@ -1535,9 +1669,46 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
 QStringList
 Settings::getPluginsExtraSearchPaths() const
 {
-    QString paths = _extraPluginPaths->getValue().c_str();
+    std::string paths = _extraPluginPaths->getValue().c_str();
+    QStringList variables;
+    
+    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
+    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
+    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
+    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
+    
+    size_t i = paths.find(startNameTag);
+    while (i != std::string::npos) {
+        i += startNameTag.size();
+        assert(i < paths.size());
+        size_t endNamePos = paths.find(endNameTag,i);
+        assert(endNamePos != std::string::npos && endNamePos < paths.size());
+        
+        std::string name,value;
+        while (i < endNamePos) {
+            name.push_back(paths[i]);
+            ++i;
+        }
+        
+        i = paths.find(startValueTag,i);
+        i += startValueTag.size();
+        assert(i != std::string::npos && i < paths.size());
+        
+        size_t endValuePos = paths.find(endValueTag,i);
+        assert(endValuePos != std::string::npos && endValuePos < paths.size());
+        
+        while (i < endValuePos) {
+            value.push_back(paths.at(i));
+            ++i;
+        }
+        
+        // In order to use XML tags, the text inside the tags has to be unescaped.
+        variables.push_back(Project::unescapeXML(value).c_str());
+        
+        i = paths.find(startNameTag,i);
+    }
 
-    return paths.split( QChar(';') );
+    return variables;
 }
 
 void
@@ -1932,7 +2103,7 @@ Settings::doOCIOStartupCheckIfNeeded()
             return;
         }
         
-        bool stopAsking;
+        bool stopAsking = false;
         Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),
                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                      Natron::eStandardButtonYes,
@@ -1988,4 +2159,28 @@ Settings::getRenderScaleSupportPreference(const std::string& pluginID) const
         return found->second->getValue();
     }
     return -1;
+}
+
+bool
+Settings::notifyOnFileChange() const
+{
+    return _notifyOnFileChange->getValue();
+}
+
+bool
+Settings::isAggressiveCachingEnabled() const
+{
+    return _aggressiveCaching->getValue();
+}
+
+bool
+Settings::isAutoTurboEnabled() const
+{
+    return _autoTurbo->getValue();
+}
+
+void
+Settings::setAutoTurboModeEnabled(bool e)
+{
+    _autoTurbo->setValue(e, 0);
 }

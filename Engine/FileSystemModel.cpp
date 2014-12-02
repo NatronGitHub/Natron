@@ -630,7 +630,7 @@ FileSystemModel::myComputer(int /*role*/) const
 //        case Qt::DecorationRole:
 //            return d->fileInfoGatherer.iconProvider()->icon(QFileIconProvider::Computer);
 //    }
-    return QVariant();
+//    return QVariant();
 
 }
 
@@ -1261,7 +1261,7 @@ typedef std::list< std::pair< boost::shared_ptr<SequenceParsing::SequenceFromFil
 void
 FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& item)
 {
-    
+
     QDir dir( item->absoluteFilePath() );
     
     Qt::SortOrder viewOrder = _imp->model->sortIndicatorOrder();
@@ -1315,9 +1315,9 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
             sequences.push_back(std::make_pair(boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), all[i]));
         } else {
             
-            
+
             QString filename = all[i].fileName();
-            
+
             /// If the item does not match the filter regexp set by the user, discard it
             if ( !_imp->model->isAcceptedByRegexps(filename) ) {
                 KERNEL_INCR();

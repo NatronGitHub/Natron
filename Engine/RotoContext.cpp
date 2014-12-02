@@ -4463,7 +4463,7 @@ addOrRemoveKeyRecursively(RotoLayer* isLayer,
             } else if (layer) {
                 isBezier->removeKeyframe(time);
             }
-        } else if (isLayer) {
+        } else if (layer) {
             addOrRemoveKeyRecursively(layer,time, add);
         }
     }
@@ -4886,7 +4886,8 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 }
 
 boost::shared_ptr<Natron::Image>
-RotoContext::renderMask(const RectI & roi,
+RotoContext::renderMask(bool useCache,
+                        const RectI & roi,
                         Natron::ImageComponentsEnum components,
                         U64 nodeHash,
                         U64 ageToRender,
@@ -4895,6 +4896,7 @@ RotoContext::renderMask(const RectI & roi,
                         Natron::ImageBitDepthEnum depth,
                         int view,
                         unsigned int mipmapLevel,
+                        const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                         bool byPassCache)
 {
     std::list< boost::shared_ptr<Bezier> > splines = getCurvesByRenderOrder();
@@ -4935,7 +4937,7 @@ RotoContext::renderMask(const RectI & roi,
     ImagePtr image;
     
     if (!byPassCache) {
-        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(key, mipmapLevel, depth, components, 3,nodeRoD, &image);
+        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components, 3,nodeRoD, inputImages, &image);
         if (image) {
             params = image->getParams();
         }
@@ -4955,7 +4957,7 @@ RotoContext::renderMask(const RectI & roi,
                                            depth,
                                            std::map<int, std::vector<RangeD> >() );
         
-        appPTR->createImageInCache(key, params, &imgLocker, &image);
+        bool cached = Natron::getImageFromCacheOrCreate(key, params, &imgLocker, &image);
         if (!image) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
@@ -4964,8 +4966,12 @@ RotoContext::renderMask(const RectI & roi,
             
             return image;
         }
-    
-        image->allocateMemory();
+        if (!cached) {
+            image->allocateMemory();
+        } else {
+            ///lock the image because it might not be allocated yet
+            imgLocker.lock(image);
+        }
         
     }
 

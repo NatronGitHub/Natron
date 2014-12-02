@@ -128,6 +128,7 @@ private:
 
     void setMinimum(int);
 
+    virtual bool shouldAddStretch() const OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
@@ -173,6 +174,7 @@ public slots:
 
 private:
 
+    
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -243,6 +245,7 @@ private:
     void setMaximum(int);
     void setMinimum(int);
 
+    virtual bool shouldAddStretch() const OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
@@ -372,10 +375,15 @@ public:
 
     virtual ~Separator_KnobGui() OVERRIDE;
 
+    virtual bool showDescriptionLabel() const
+    {
+        return false;
+    }
+    
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 private:
-
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -491,6 +499,7 @@ private:
     void expandAllDimensions();
     void foldAllDimensions();
 
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -637,6 +646,7 @@ public slots:
 
 private:
 
+    virtual bool shouldAddStretch() const { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

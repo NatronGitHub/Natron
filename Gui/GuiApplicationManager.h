@@ -21,6 +21,9 @@
 #endif
 #define appPTR ( static_cast<GuiApplicationManager*>( AppManager::instance() ) )
 
+#define appFont ( appPTR->getAppFont() )
+#define appFontSize ( appPTR->getAppFontSize() )
+
 /**
  * @brief Returns true if the given modifiers and symbol should trigger the given action of the given group.
  **/
@@ -135,6 +138,12 @@ public:
     bool isShorcutVersionUpToDate() const;
     
     virtual void showOfxLog() OVERRIDE FINAL;
+    
+    virtual QString getAppFont() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    
 public slots:
 
 

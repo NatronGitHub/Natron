@@ -91,7 +91,7 @@ struct KnobGui::KnobGuiPrivate
 
     ////A vector of all other knobs on the same line.
     std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
-    QFormLayout* containerLayout;
+    QGridLayout* containerLayout;
     QWidget* field;
     QWidget* descriptionLabel;
     bool isOnNewLine;
@@ -116,7 +116,7 @@ struct KnobGui::KnobGuiPrivate
           , customInteract(NULL)
           , guiCurves()
     {
-        copyRightClickMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+        copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
     }
 };
 
@@ -147,8 +147,10 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
     QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
     _imp->guiCurves.resize(knob->getDimension());
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        _imp->guiCurves[i].reset(new Curve(*(knob->getCurve(i))));
+    if (knob->canAnimate()) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            _imp->guiCurves[i].reset(new Curve(*(knob->getCurve(i))));
+        }
     }
 }
 
@@ -181,9 +183,9 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 }
 
 void
-KnobGui::createGUI(QFormLayout* containerLayout,
+KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   QWidget* label,
+                   QLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
@@ -197,11 +199,17 @@ KnobGui::createGUI(QFormLayout* containerLayout,
     _imp->descriptionLabel = label;
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
+        //layout->addStretch();
         layout->addSpacing(15);
-        layout->addWidget(label);
+        if (label) {
+            layout->addWidget(label);
+        }
     }
 
-    _imp->descriptionLabel->setToolTip( toolTip() );
+
+    if (label) {
+        label->setToolTip( toolTip() );
+    }
 
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
     if (customInteract != 0) {
@@ -214,13 +222,17 @@ KnobGui::createGUI(QFormLayout* containerLayout,
     if ( knob->isAnimationEnabled() ) {
         createAnimationButton(layout);
     }
+    
+    if (!knob->isNewLineTurnedOff() && shouldAddStretch()) {
+        layout->addStretch();
+    }
+
     _imp->widgetCreated = true;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         updateGuiInternal(i);
         onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
     }
-    
 }
 
 void
@@ -237,7 +249,7 @@ void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
     _imp->animationMenu = new QMenu( layout->parentWidget() );
-    _imp->animationMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
@@ -495,7 +507,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             }
 
             QMenu* interpolationMenu = new QMenu(menu);
-            interpolationMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+            interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );
             if (!isEnabled) {
@@ -1054,8 +1066,6 @@ KnobGui::hide()
     }
 
     if (shouldRemoveWidget) {
-        _imp->containerLayout->removeWidget(_imp->field);
-        _imp->field->setParent(0);
         _imp->field->hide();
     }
     if (_imp->descriptionLabel) {
@@ -1064,7 +1074,7 @@ KnobGui::hide()
 }
 
 void
-KnobGui::show(int index)
+KnobGui::show(int /*index*/)
 {
     if (!getGui()) {
         return;
@@ -1083,27 +1093,11 @@ KnobGui::show(int index)
     }
 
     if (_imp->isOnNewLine) {
-        
-        int row = getActualIndexInLayout();
-        if (row == -1) {
-            if (index == -1) {
-                _imp->containerLayout->addRow(_imp->descriptionLabel,_imp->field);
-            } else {
-                _imp->containerLayout->setWidget(index, QFormLayout::LabelRole,_imp->descriptionLabel);
-                _imp->containerLayout->setWidget(index, QFormLayout::FieldRole, _imp->field);
-            }
-        }
-        _imp->field->setParent( _imp->containerLayout->parentWidget() );
         _imp->field->show();
-
-        if (_imp->descriptionLabel) {
-            _imp->descriptionLabel->setParent( _imp->containerLayout->parentWidget() );
-            _imp->descriptionLabel->show();
-        }
-    } else {
-        if (_imp->descriptionLabel) {
-            _imp->descriptionLabel->show();
-        }
+    }
+    
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->show();
     }
 }
 
@@ -1111,7 +1105,7 @@ int
 KnobGui::getActualIndexInLayout() const
 {
     for (int i = 0; i < _imp->containerLayout->rowCount(); ++i) {
-        QLayoutItem* item = _imp->containerLayout->itemAt(i, QFormLayout::FieldRole);
+        QLayoutItem* item = _imp->containerLayout->itemAtPosition(i, 1);
         if ( item && (item->widget() == _imp->field) ) {
             return i;
         }
@@ -1370,6 +1364,15 @@ struct LinkToKnobDialogPrivate
 
     LinkToKnobDialogPrivate(KnobGui* from)
         : fromKnob(from)
+        , mainLayout(0)
+        , firstLineLayout(0)
+        , firstLine(0)
+        , selectNodeLabel(0)
+        , nodeSelectionCombo(0)
+        , knobSelectionCombo(0)
+        , buttons(0)
+        , allNodes()
+        , allKnobs()
     {
     }
 };

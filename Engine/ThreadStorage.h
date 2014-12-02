@@ -26,6 +26,8 @@ class ThreadStorage
     : public QThreadStorage<T>
 {
 public:
+    ThreadStorage() : mainData() {}
+
     /// Is local storage present?
     /// This *does not* mean that it was initialized.
     /// For example, local data on the main thread is
@@ -54,7 +56,7 @@ public:
         }
     }
 
-    inline void setLocalData(T t)
+    inline void setLocalData(const T& t)
     {
         if ( QThread::currentThread() == qApp->thread() ) {
             mainData = t;

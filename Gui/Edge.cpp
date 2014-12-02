@@ -51,6 +51,7 @@ Edge::Edge(int inputNb_,
       , _paintWithDash(false)
       , _paintBendPoint(false)
       , _bendPointHiddenAutomatically(false)
+      , _wasLabelVisible(false)
       , _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
@@ -82,6 +83,10 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
       , _useRenderingColor(false)
       , _useHighlight(false)
       , _paintWithDash(false)
+      , _paintBendPoint(false)
+      , _bendPointHiddenAutomatically(false)
+      , _wasLabelVisible(false)
+      , _middlePoint()
 {
     assert(src);
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
@@ -242,15 +247,17 @@ Edge::initLine()
             }
 
 
-            if ( _label && isActive() ) {
+            if ( _label ) {
                 _label->setPos( _middlePoint + QPointF(-5,-10) );
                 QFontMetrics fm( _label->font() );
                 int fontHeight = fm.height();
                 double txtWidth = fm.width( _label->toPlainText() );
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
                     _label->hide();
+                    _wasLabelVisible = false;
                 } else {
                     _label->show();
+                    _wasLabelVisible = true;
                 }
             }
         }
@@ -450,6 +457,19 @@ Edge::isNearbyBendPoint(const QPointF & scenePoint)
     }
 
     return false;
+}
+
+void
+Edge::setVisibleDetails(bool visible)
+{
+    if (!visible) {
+        _wasLabelVisible = _label->isVisible();
+        _label->hide();
+    } else {
+        if (_wasLabelVisible) {
+            _label->show();
+        }
+    }
 }
 
 void

@@ -166,6 +166,24 @@ getPixmapForGrouping(QPixmap* pixmap,
 }
 }
 
+class AutoHideToolBar : public QToolBar
+{
+    Gui* _gui;
+public:
+    
+    AutoHideToolBar(Gui* gui,QWidget* parent) : QToolBar(parent), _gui(gui) {}
+    
+private:
+    
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL
+    {
+        if (_gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+            _gui->setLeftToolBarVisible(false);
+        }
+        QToolBar::leaveEvent(e);
+    }
+};
+
 struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
@@ -322,7 +340,7 @@ struct GuiPrivate
 
     ///The "About" window.
     AboutWindow* _aboutWindow;
-    std::map<Natron::EffectInstance*,QProgressDialog*> _progressBars;
+    std::map<KnobHolder*,QProgressDialog*> _progressBars;
 
     ///list of the currently opened property panels
     std::list<DockablePanel*> openedPanels;
@@ -332,6 +350,8 @@ struct GuiPrivate
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
     ShortCutEditor* shortcutEditor;
+    
+    bool leftToolBarDisplayedOnHoverOnly;
 
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
@@ -419,6 +439,7 @@ struct GuiPrivate
           , menuRender(0)
           , viewersMenu(0)
           , viewerInputsMenu(0)
+          , viewersViewMenu(0)
           , cacheMenu(0)
           , _panesMutex()
           , _panes()
@@ -436,6 +457,7 @@ struct GuiPrivate
           , aboutToCloseMutex()
           , _aboutToClose(false)
           , shortcutEditor(0)
+          , leftToolBarDisplayedOnHoverOnly(false)
     {
     }
 
@@ -459,6 +481,8 @@ struct GuiPrivate
     
     ///If there's only 1 non-floating pane in the main window, return it, otherwise returns NULL
     TabWidget* getOnly1NonFloatingPane(int & count) const;
+    
+    void refreshLeftToolBarVisibility(const QPoint& p);
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -496,6 +520,48 @@ Gui::~Gui()
     }
 }
 
+
+bool
+Gui::isLeftToolBarDisplayedOnMouseHoverOnly() const
+{
+    return _imp->leftToolBarDisplayedOnHoverOnly;
+}
+
+void
+Gui::setLeftToolBarDisplayedOnMouseHoverOnly(bool b)
+{
+    _imp->leftToolBarDisplayedOnHoverOnly = b;
+    QPoint p = QCursor::pos();
+    
+    if (b) {
+        _imp->refreshLeftToolBarVisibility(mapFromGlobal(p));
+    } else {
+        _imp->_toolBox->show();
+    }
+}
+
+void
+Gui::refreshLeftToolBarVisibility(const QPoint& globalPos)
+{
+    _imp->refreshLeftToolBarVisibility(mapFromGlobal(globalPos));
+}
+
+void
+Gui::setLeftToolBarVisible(bool visible)
+{
+    _imp->_toolBox->setVisible(visible);
+}
+
+void GuiPrivate::refreshLeftToolBarVisibility(const QPoint& p)
+{
+    int toolbarW = _toolBox->sizeHint().width();
+    if (p.x() <= toolbarW) {
+        _toolBox->show();
+    } else {
+        _toolBox->hide();
+    }
+    
+}
 
 void
 GuiPrivate::notifyGuiClosing()
@@ -581,6 +647,7 @@ Gui::abortProject(bool quitApp)
         _imp->_appInstance->getProject()->closeProject();
         _imp->_appInstance->quit();
     } else {
+        _imp->_appInstance->resetPreviewProvider();
         _imp->_appInstance->getProject()->closeProject();
         restoreDefaultLayout();
     }
@@ -914,6 +981,7 @@ Gui::setupUi()
     ///Restores position, size of the main window as well as whether it was fullscreen or not.
     _imp->restoreGuiGeometry();
 
+
     _imp->_undoStacksGroup = new QUndoGroup;
     QObject::connect( _imp->_undoStacksGroup, SIGNAL( activeStackChanged(QUndoStack*) ), this, SLOT( onCurrentUndoStackChanged(QUndoStack*) ) );
 
@@ -928,15 +996,20 @@ Gui::setupUi()
     _imp->_centralWidget->setLayout(_imp->_mainLayout);
 
     _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
+    _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_leftRightSplitter->setObjectName(kMainSplitterObjectName);
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
 
 
-    _imp->_toolBox = new QToolBar(_imp->_leftRightSplitter);
+    _imp->_toolBox = new AutoHideToolBar(this, _imp->_leftRightSplitter);
     _imp->_toolBox->setOrientation(Qt::Vertical);
     _imp->_toolBox->setMaximumWidth(40);
+    
+    if (_imp->leftToolBarDisplayedOnHoverOnly) {
+        _imp->refreshLeftToolBarVisibility(mapFromGlobal(QCursor::pos()));
+    }
 
     _imp->_leftRightSplitter->addWidget(_imp->_toolBox);
 
@@ -1131,6 +1204,7 @@ Gui::wipeLayout()
     unregisterSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->deleteLater();
     _imp->_leftRightSplitter = newSplitter;
+    _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_mainLayout->addWidget(newSplitter);
 
     {
@@ -1267,6 +1341,7 @@ Gui::restoreLayout(bool wipePrevious,
         createDefaultLayout1();
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
+        
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
              it != layoutSerialization._windows.end(); ++it) {
@@ -2162,7 +2237,7 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
         pluginsToolButton->setAction(action);
     } else {
         QMenu* menu = new QMenu(this);
-        menu->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+        menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
@@ -3135,6 +3210,10 @@ GuiPrivate::restoreGuiGeometry()
             _gui->toggleFullScreen();
         }
     }
+    
+    if ( settings.contains("ToolbarHidden") ) {
+        leftToolBarDisplayedOnHoverOnly = settings.value("ToolbarHidden").toBool();
+    }
 
     settings.endGroup();
 
@@ -3161,7 +3240,7 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue( "pos", _gui->pos() );
     settings.setValue( "size", _gui->size() );
     settings.setValue( "fullScreen", _gui->isFullScreen() );
-
+    settings.setValue( "ToolbarHidden",leftToolBarDisplayedOnHoverOnly);
     settings.endGroup();
 
     settings.setValue("LastOpenProjectDialogPath", _lastLoadProjectOpenedDir);
@@ -3968,8 +4047,9 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 }
 
 void
-Gui::startProgress(Natron::EffectInstance* effect,
-                   const std::string & message)
+Gui::startProgress(KnobHolder* effect,
+                   const std::string & message,
+                   bool canCancel)
 {
     if (!effect) {
         return;
@@ -3981,11 +4061,17 @@ Gui::startProgress(Natron::EffectInstance* effect,
     }
 
     QProgressDialog* dialog = new QProgressDialog(message.c_str(),tr("Cancel"),0,100,this);
+    if (!canCancel) {
+        dialog->setCancelButton(0);
+    }
     dialog->setModal(false);
     dialog->setRange(0, 100);
     dialog->setMinimumWidth(250);
-    dialog->setWindowTitle( effect->getNode()->getName_mt_safe().c_str() );
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
+    if (isNamed) {
+        dialog->setWindowTitle( isNamed->getName_mt_safe().c_str() );
+    }
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
 
     ///If a second dialog was asked for whilst another is still active, the first dialog will not be
     ///able to be canceled.
@@ -3999,7 +4085,7 @@ Gui::startProgress(Natron::EffectInstance* effect,
 }
 
 void
-Gui::endProgress(Natron::EffectInstance* effect)
+Gui::endProgress(KnobHolder* effect)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
@@ -4007,7 +4093,7 @@ Gui::endProgress(Natron::EffectInstance* effect)
         return;
     }
 
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
     if ( found == _imp->_progressBars.end() ) {
         return;
     }
@@ -4018,7 +4104,7 @@ Gui::endProgress(Natron::EffectInstance* effect)
 }
 
 bool
-Gui::progressUpdate(Natron::EffectInstance* effect,
+Gui::progressUpdate(KnobHolder* effect,
                     double t)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
@@ -4027,16 +4113,20 @@ Gui::progressUpdate(Natron::EffectInstance* effect,
         return true;
     }
 
-    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
     if ( found == _imp->_progressBars.end() ) {
-        qDebug() << effect->getNode()->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+        NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
+        if (isNamed) {
+            qDebug() << isNamed->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+        }
+    } else {
+        if ( found->second->wasCanceled() ) {
+            return false;
+        }
+        found->second->setValue(t * 100);
     }
-    if ( found->second->wasCanceled() ) {
-        return false;
-    }
-    found->second->setValue(t * 100);
     QCoreApplication::processEvents();
-
+    
     return true;
 }
 
@@ -4140,8 +4230,9 @@ Gui::moveEvent(QMoveEvent* e)
 {
     QMainWindow::moveEvent(e);
     QPoint p = pos();
-
+    
     setMtSafePosition( p.x(), p.y() );
+    
 }
 
 void
@@ -4234,6 +4325,9 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         QMutexLocker k(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
             (*it)->setTurboButtonDown(clicked);
+            if (!clicked) {
+                (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
+            }
         }
     }
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);

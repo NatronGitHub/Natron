@@ -579,7 +579,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
         const std::vector<boost::shared_ptr<KnobI> > & instanceKnobs = node->getKnobs();
         for (U32 i = 0; i < instanceKnobs.size(); ++i) {
             boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
-                dynamic_cast<KnobHelper*>( instanceKnobs[i].get() )->getSignalSlotHandler();
+                instanceKnobs[i]->getSignalSlotHandler();
             if (slotsHandler) {
                 QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(int,int) ), publicInterface,SLOT( onInstanceKnobValueChanged(int,int) ) );
             }
@@ -2166,7 +2166,7 @@ TrackerPanel::showMenuForInstance(Natron::Node* instance)
 {
     QMenu menu( getGui() );
 
-    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    menu.setFont( QFont(appFont,appFontSize) );
 
     QAction* copyTrackAnimation = new QAction(tr("Copy track animation"),&menu);
     menu.addAction(copyTrackAnimation);

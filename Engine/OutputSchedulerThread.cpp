@@ -187,18 +187,11 @@ struct OutputSchedulerThreadPrivate
     
     ///Render threads wait in this condition and the scheduler wake them when it needs to render some frames
     QWaitCondition framesToRenderNotEmptyCond;
-    
 
     
     Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
     RenderEngine* engine;
-    
-    ///An approximation of the RAM required by 1 parallel render to compute a frame.
-    ///This is just the number of nodes in the tree times the size in RAM of an image of the size of the project.
-    ///Once we have the approximation we can determine what is the ideal number of parallel renders so we don't
-    ///hit the swap.
-    ///This is only accessed by the Scheduler Thread
-    std::size_t idealParallelRendersForRAM;
+
     
     OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::Mode mode)
     : buf()
@@ -240,7 +233,6 @@ struct OutputSchedulerThreadPrivate
     , framesToRenderNotEmptyCond()
     , outputEffect(effect)
     , engine(engine)
-    , idealParallelRendersForRAM(0)
     {
        
     }
@@ -444,8 +436,8 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::Output
 : QThread()
 , _imp(new OutputSchedulerThreadPrivate(engine,effect,mode))
 {
-    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrame)), this,
-                     SLOT(doTreatFrameMainThread(BufferedFrame)));
+    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrame,bool,int)), this,
+                     SLOT(doTreatFrameMainThread(BufferedFrame,bool,int)));
     
     QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)));
     
@@ -742,22 +734,6 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     }
 }
 
-static void getNbNodesRecursive(Natron::EffectInstance* effect,int* nbNodes,std::set<Natron::EffectInstance*>& markedNodes)
-{
-    if (markedNodes.find(effect) != markedNodes.end()) {
-        return;
-    }
-    *nbNodes = *nbNodes + 1;
-    markedNodes.insert(effect);
-    
-    std::vector<boost::shared_ptr<Natron::Node> > inputs = effect->getNode()->getInputs_copy();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (inputs[i]) {
-            getNbNodesRecursive(inputs[i]->getLiveInstance(), nbNodes, markedNodes);
-        }
-    }
-}
-
 void
 OutputSchedulerThread::startRender()
 {
@@ -780,41 +756,6 @@ OutputSchedulerThread::startRender()
         startingFrame = timelineGetTime();
     }
     
-    ///Evaluate the number of nodes in the tree to get an idea of the RAM required
-    {
-        int nbNodes = 0;
-        std::set<Natron::EffectInstance*> marked;
-        getNbNodesRecursive(_imp->outputEffect, &nbNodes, marked);
-        
-        Format f;
-        _imp->outputEffect->getRenderFormat(&f);
-        
-        ///The approximation is about nbNodes times the size of a RGBA 32bit fp frame of the size of the project.
-        std::size_t approximateRAMNeededFor1Frame = f.width() * f.height() * 4 * sizeof(float);
-        approximateRAMNeededFor1Frame *= nbNodes;
-        
-        
-        if (approximateRAMNeededFor1Frame > 0) {
-            
-            double maxRAMPercent = appPTR->getCurrentSettings()->getRamMaximumPercent();
-            double totalRAM = getSystemTotalRAM();
-            
-            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->outputEffect);
-            
-            double usableRAM = maxRAMPercent * totalRAM;
-            _imp->idealParallelRendersForRAM = (usableRAM / approximateRAMNeededFor1Frame);
-            
-            ///If the node is a viewer increase by 2 to max out the CPU, we don't need interactivity
-            if (!isViewer) {
-                _imp->idealParallelRendersForRAM *= 2;
-            }
-            
-            
-        } else {
-            _imp->idealParallelRendersForRAM = appPTR->getHardwareIdealThreadCount();
-        }
-    }
-    
     aboutToStartRender();
     
     ///Flag that we're now doing work
@@ -832,8 +773,7 @@ OutputSchedulerThread::startRender()
     
     ///Start with one thread if it doesn't exist
     if (nThreads == 0) {
-        _imp->appendRunnable(createRunnable());
-        nThreads = 1;
+        adjustNumberOfThreads(&nThreads);
     }
     
     QMutexLocker l(&_imp->renderThreadsMutex);
@@ -1000,7 +940,6 @@ OutputSchedulerThread::run()
                         
                         ///Do not wait in the buf wait condition and go directly into the stopEngine()
                         renderFinished = true;
-                        
                         break;
                     }
                 }
@@ -1087,6 +1026,16 @@ OutputSchedulerThread::run()
                 if (_imp->mode == TREAT_ON_SCHEDULER_THREAD) {
                     treatFrame(frameToRender);
                     
+                    if (!renderFinished) {
+                        ///Timeline might have changed if another thread moved the playhead
+                        int timelineCurrentTime = timelineGetTime();
+                        if (timelineCurrentTime != expectedTimeToRender) {
+                            timelineGoTo(timelineCurrentTime);
+                        } else {
+                            timelineGoTo(nextFrameToRender);
+                        }
+                        
+                    }
                 } else {
                     ///Treat on main-thread
                                     
@@ -1106,7 +1055,19 @@ OutputSchedulerThread::run()
                     
                     _imp->treatRunning = true;
                     
-                    emit s_doTreatOnMainThread(frameToRender);
+                    int timeToSeek = 0;
+                    if (!renderFinished) {
+                        ///Timeline might have changed if another thread moved the playhead
+                        int timelineCurrentTime = timelineGetTime();
+                        if (timelineCurrentTime != expectedTimeToRender) {
+                            timeToSeek = timelineCurrentTime;
+                        } else {
+                            timeToSeek = nextFrameToRender;
+                        }
+                        
+                    }
+
+                    emit s_doTreatOnMainThread(frameToRender,!renderFinished, timeToSeek);
                                         
                     while (_imp->treatRunning) {
                         _imp->treatCondition.wait(&_imp->treatMutex);
@@ -1120,18 +1081,6 @@ OutputSchedulerThread::run()
                 
                 notifyFrameRendered(expectedTimeToRender,eSchedulingPolicyOrdered);
                 
-    
-                if (!renderFinished) {
-                    ///Timeline might have changed if another thread moved the playhead
-                    int timelineCurrentTime = timelineGetTime();
-                    if (timelineCurrentTime != expectedTimeToRender) {
-                        timelineGoTo(timelineCurrentTime);
-                    } else {
-                        timelineGoTo(nextFrameToRender);
-                    }
-                    
-                }
-                
                 ///////////
                 /// End of the loop, refresh bufferEmpty
                 {
@@ -1141,26 +1090,23 @@ OutputSchedulerThread::run()
                 
             } // while(!bufferEmpty)
             
-            if (!renderFinished) {
-                bool isAbortRequested;
-                bool blocking;
-                {
-                    QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
-                    isAbortRequested = _imp->abortRequested > 0;
-                    blocking = _imp->isAbortRequestBlocking;
-                }
-                if (!isAbortRequested) {
+            bool isAbortRequested;
+            bool blocking;
+            {
+                QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
+                isAbortRequested = _imp->abortRequested > 0;
+                blocking = _imp->isAbortRequestBlocking;
+            }
+            if (!renderFinished && !isAbortRequested) {
+                
                     QMutexLocker bufLocker (&_imp->bufMutex);
                     ///Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
                     _imp->bufCondition.wait(&_imp->bufMutex);
-                } else {
-                    if (blocking) {
-                        //Move the timeline to the last rendered frame to keep it in sync with what is displayed
-                        timelineGoTo(getLastRenderedTime());
-                    }
-                    break;
-                }
             } else {
+                if (blocking) {
+                    //Move the timeline to the last rendered frame to keep it in sync with what is displayed
+                    timelineGoTo(getLastRenderedTime());
+                }
                 break;
             }
         }
@@ -1193,9 +1139,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
         optimalNThreads = userSettingParallelThreads;
     }
     optimalNThreads = std::max(1,optimalNThreads);
-    
-    ///Clamp optimalNThreads to the     _imp->idealParallelRendersForRAM so we don't hit the swap
-    optimalNThreads = std::min((int)_imp->idealParallelRendersForRAM,optimalNThreads);
+
 
     if (runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) {
      
@@ -1279,7 +1223,7 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_p
 
 
 void
-OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame)
+OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame,bool mustSeekTimeline,int time)
 {
     assert(QThread::currentThread() == qApp->thread());
     {
@@ -1292,6 +1236,10 @@ OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame)
     
     
     treatFrame(frame);
+    
+    if (mustSeekTimeline) {
+        timelineGoTo(time);
+    }
     
     QMutexLocker treatLocker (&_imp->treatMutex);
     _imp->treatRunning = false;
@@ -1834,7 +1782,8 @@ private:
                                                                    false,  // is this render due to user interaction ?
                                                                    canOnlyHandleOneView, // is this sequential ?
                                                                    true,
-                                                                   activeInputToRenderHash);
+                                                                   activeInputToRenderHash,
+                                                                   _imp->output->getApp()->getTimeLine().get());
                     
                     boost::shared_ptr<Natron::Image> img =
                     activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
@@ -1912,7 +1861,8 @@ DefaultScheduler::treatFrame(const BufferedFrame& frame)
                                                    false,  // is this render due to user interaction ?
                                                    canOnlyHandleOneView, // is this sequential ?
                                                    true,
-                                                   hash);
+                                                   hash,
+                                                   _effect->getApp()->getTimeLine().get());
     
     
     Natron::EffectInstance::RenderRoIArgs args(frame.time,

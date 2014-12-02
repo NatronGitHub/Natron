@@ -293,6 +293,8 @@ public slots:
     void onShowHideTabBarActionTriggered();
 
     void onTabBarMouseLeft();
+    
+    void onHideLeftToolBarActionTriggered();
 private:
 
 

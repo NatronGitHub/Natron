@@ -313,8 +313,8 @@ InfoViewerWidget::setResolution(const Format & f)
     if ( format.getName() == std::string("") ) {
         
         QString w,h;
-        w.setNum(format.width(),'f',1);
-        h.setNum(format.height(),'f',1);
+        w.setNum(format.width());
+        h.setNum(format.height());
         removeTrailingZeroes(w);
         removeTrailingZeroes(h);
         

@@ -43,10 +43,12 @@ class NodeSettingsPanel;
 class KnobI;
 class ViewerInstance;
 class Format;
+class TimeLine;
 class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
 class Double_Knob;
+class NodeGuiI;
 class RotoContext;
 namespace Natron {
 class OutputEffectInstance;
@@ -144,6 +146,8 @@ public:
      * e.g: the Tracker node.
      **/
     bool isMultiInstance() const;
+    
+    Natron::Node* getParentMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
     std::string getParentMultiInstanceName() const;
@@ -358,7 +362,14 @@ public:
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
     virtual int disconnectInput(Node* input);
+    
+    void setNodeGuiPointer(NodeGuiI* gui);
 
+    bool isSettingsPanelOpened() const;
+    
+    bool shouldCacheOutput() const;
+
+    
 private:
     /**
      * @brief Adds an output to this node.
@@ -680,7 +691,8 @@ public:
                                bool isRenderUserInteraction,
                                bool isSequential,
                                bool canAbort,
-                               U64 nodeHash);
+                               U64 nodeHash,
+                               const TimeLine* timeline);
     
     void invalidateParallelRenderArgs();
     
@@ -689,16 +701,17 @@ public:
         Node* node;
     public:
         
-        ParallelRenderArgsSetter(Node* node,
+        ParallelRenderArgsSetter(Node* n,
                                  int time,
                                  int view,
                                  bool isRenderUserInteraction,
                                  bool isSequential,
                                  bool canAbort,
-                                 U64 nodeHash)
-        : node(node)
+                                 U64 nodeHash,
+                                 const TimeLine* timeline)
+        : node(n)
         {
-            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash);
+            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,timeline);
         }
         
         ~ParallelRenderArgsSetter()
@@ -711,6 +724,8 @@ public:
      * @brief Returns true if the parallel render args thread-storage is set
      **/
     bool isNodeRendering() const;
+    
+    void getPersistentMessage(QString* message,int* type) const;
 
     
     /**
@@ -727,6 +742,7 @@ public:
      **/
     std::size_t declareCurrentNodeVariable_Python(std::string& script);
 
+    bool isForceCachingEnabled() const;
     
 public slots:
 
@@ -776,9 +792,7 @@ signals:
 
     void knobsAgeChanged(U64 age);
 
-    void persistentMessageChanged(int,QString);
-
-    void persistentMessageCleared();
+    void persistentMessageChanged();
 
     void inputsInitialized();
 
@@ -858,6 +872,7 @@ private:
                                        bool isSequential,
                                        U64 nodeHash,
                                        bool canAbort,
+                                       const TimeLine* timeline,
                                        std::list<Natron::Node*>& markedNodes);
     
 

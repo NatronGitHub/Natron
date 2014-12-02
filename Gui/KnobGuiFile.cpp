@@ -30,6 +30,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Node.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
@@ -49,6 +50,7 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob,
     : KnobGui(knob, container)
     , _lineEdit(0)
     , _openFileButton(0)
+    , _reloadButton(0)
     , _lastOpened()
     , _watcher(new QFileSystemWatcher)
     , _fileBeingWatched()
@@ -75,8 +77,15 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
         boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
         QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime, int)));
     }
-    _lineEdit = new LineEdit( layout->parentWidget() );
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    
+    QWidget *container = new QWidget( layout->parentWidget() );
+    QHBoxLayout *containerLayout = new QHBoxLayout(container);
+    container->setLayout(containerLayout);
+    containerLayout->setSpacing(0);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _lineEdit = new LineEdit(container);
+    //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     _lineEdit->setPlaceholderText( tr("File path...") );
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -85,21 +94,30 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
 
     QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
 
-    _openFileButton = new Button( layout->parentWidget() );
-    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+
+    _openFileButton = new Button(container);
+    _openFileButton->setFixedSize(17, 17);
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
-    _openFileButton->setToolTip(tr("Browse file..."));
+    _openFileButton->setToolTip(toolTip());
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
-    QWidget *container = new QWidget( layout->parentWidget() );
-    QHBoxLayout *containerLayout = new QHBoxLayout(container);
-    container->setLayout(containerLayout);
-    containerLayout->setContentsMargins(0, 0, 0, 0);
+    
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
-
+    
+    if (_knob->getHolder() && _knob->isInputImageFile()) {
+        _reloadButton = new Button(container);
+        _reloadButton->setFixedSize(17, 17);
+        _reloadButton->setFocusPolicy(Qt::NoFocus);
+        QPixmap pixRefresh;
+        appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, &pixRefresh);
+        _reloadButton->setIcon(QIcon(pixRefresh));
+        _reloadButton->setToolTip(tr("Reload the file"));
+        QObject::connect( _reloadButton, SIGNAL( clicked() ), this, SLOT( onReloadClicked() ) );
+        containerLayout->addWidget(_reloadButton);
+    }
     layout->addWidget(container);
     
 }
@@ -108,6 +126,20 @@ void
 File_KnobGui::onButtonClicked()
 {
     open_file();
+}
+
+void
+File_KnobGui::onReloadClicked()
+{
+    if (_reloadButton) {
+        assert(_knob->getHolder());
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
+        if (effect) {
+            effect->purgeCaches();
+            effect->clearPersistentMessage();
+        }
+        _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
+    }
 }
 
 
@@ -159,18 +191,31 @@ File_KnobGui::updateLastOpened(const QString &str)
 void
 File_KnobGui::updateGUI(int /*dimension*/)
 {
-    std::string newValue = _knob->getValue();
-    QString file(newValue.c_str());
-    _lineEdit->setText(file);
     
-    if (newValue != _fileBeingWatched && _knob->getHolder() && _knob->getEvaluateOnChange() ) {
+    _lineEdit->setText(_knob->getValue().c_str());
+    
+    bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
+    if (useNotifications && _knob->getHolder() && _knob->getEvaluateOnChange() ) {
         if (!_fileBeingWatched.empty()) {
             _watcher->removePath(_fileBeingWatched.c_str());
             _fileBeingWatched.clear();
         }
         
+        std::string newValue = _knob->getFileName(_knob->getCurrentTime(), 0);
+        if (_knob->getHolder()->getApp()) {
+            _knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
+        }
+        QString file(newValue.c_str());
+        
         if (QFile::exists(file)) {
             _watcher->addPath(file);
+            QFileInfo info(file);
+            _lastModified = info.lastModified();
+            
+            QString tt = toolTip();
+            tt.append("\n\nLast modified: ");
+            tt.append(_lastModified.toString(Qt::SystemLocaleShortDate));
+            _lineEdit->setToolTip(tt);
             _fileBeingWatched = newValue;
         }
     }
@@ -179,11 +224,19 @@ File_KnobGui::updateGUI(int /*dimension*/)
 void
 File_KnobGui::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
 {
+    
+    bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
+    if (!useNotifications) {
+        return;
+    }
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
     std::string filepath = _knob->getFileName(time, 0);
-    
+    if (!filepath.empty() && _knob->getHolder() && _knob->getHolder()->getApp()) {
+        _knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
+    }
     if (filepath != _fileBeingWatched  && _knob->getHolder() && _knob->getEvaluateOnChange() ) {
+        
         
         if (!_fileBeingWatched.empty()) {
             _watcher->removePath(_fileBeingWatched.c_str());
@@ -195,6 +248,8 @@ File_KnobGui::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
         if (QFile::exists(qfilePath)) {
             _watcher->addPath(qfilePath);
             _fileBeingWatched = filepath;
+            QFileInfo info(qfilePath);
+            _lastModified = info.lastModified();
         }
     }
    
@@ -212,8 +267,19 @@ File_KnobGui::watchedFileChanged()
         EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
         if (effect) {
             effect->purgeCaches();
+            
+            if (_reloadButton) {
+                QFileInfo fileMonitored(_fileBeingWatched.c_str());
+                if (fileMonitored.lastModified() != _lastModified) {
+                    QString warn = tr("The file ") + _lineEdit->text() + tr(" has changed on disk. Press reload file to load the new version of the file");
+                    effect->setPersistentMessage(Natron::eMessageTypeWarning, warn.toStdString());
+                }
+                
+            } else {
+                 _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
+            }
         }
-        _knob->getHolder()->evaluate_public(_knob.get(), true, Natron::eValueChangedReasonUserEdited);
+        
     }
     
     
@@ -303,7 +369,7 @@ File_KnobGui::addRightClickMenuEntries(QMenu* menu)
 
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -397,7 +463,7 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 
 
     _openFileButton = new Button( layout->parentWidget() );
-    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _openFileButton->setFixedSize(17, 17);
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
@@ -537,7 +603,7 @@ OutputFile_KnobGui::addRightClickMenuEntries(QMenu* menu)
     
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -605,6 +671,13 @@ Path_KnobGui::Path_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _mainContainer(0)
+    , _lineEdit(0)
+    , _openFileButton(0)
+    , _table(0)
+    , _model(0)
+    , _addPathButton(0)
+    , _removePathButton(0)
+    , _editPathButton(0)
     , _isInsertingItem(false)
 {
     _knob = boost::dynamic_pointer_cast<Path_Knob>(knob);
@@ -725,12 +798,10 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         buttonsLayout->setContentsMargins(0, 0, 0, 0);
         
         _addPathButton = new Button( tr("Add"),buttonsContainer );
-        //_addPathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _addPathButton->setToolTip( tr("Click to add a new project path") );
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
-       // _removePathButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
         _removePathButton->setToolTip(tr("Click to remove selected project path"));
         
@@ -752,12 +823,10 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         _lineEdit = new LineEdit(_mainContainer);
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
-        QObject::connect( _lineEdit, SIGNAL( textDropped() ), this, SLOT( onTextDropped() ) );
-        QObject::connect( _lineEdit, SIGNAL( textPasted() ), this, SLOT( onTextPasted() ) );
 
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
-        _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _openFileButton->setFixedSize(17, 17);
         _openFileButton->setToolTip( tr("Click to select a path to append to/replace this variable.") );
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
@@ -1043,7 +1112,7 @@ Path_KnobGui::onItemDataChanged(TableItem* /*item*/)
     
     if (oldPath != newPath) {
         
-        if (_knob->getHolder() && _knob->getHolder() == _knob->getHolder()->getApp()->getProject().get() &&
+        if (_knob->getHolder() && _knob->getHolder()->isProject() &&
             appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
             std::map<std::string,std::string> oldEnv,newEnv;
             
@@ -1123,7 +1192,7 @@ Path_KnobGui::addRightClickMenuEntries(QMenu* menu)
         
         menu->addSeparator();
         QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-        qtMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+        qtMenu->setFont(QFont(appFont,appFontSize));
         qtMenu->setTitle(tr("Edit"));
         menu->addMenu(qtMenu);
     }

@@ -41,7 +41,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveWidget.h"
-
+#include "Gui/GuiApplicationManager.h"
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
@@ -65,8 +65,10 @@ struct HistogramPrivate
           , histogramSelectionGroup(NULL)
           , viewerCurrentInputMenu(NULL)
           , viewerCurrentInputGroup(NULL)
+          , modeActions(0)
           , modeMenu(NULL)
           , fullImage(NULL)
+          , filterActions(0)
           , filterMenu(NULL)
           , widget(widget)
           , mode(Histogram::RGB)
@@ -78,7 +80,7 @@ struct HistogramPrivate
           , hasBeenModifiedSinceResize(false)
           , _baseAxisColor(118,215,90,255)
           , _scaleColor(67,123,52,255)
-          , _font(NATRON_FONT, NATRON_FONT_SIZE_10)
+          , _font(appFont,appFontSize)
           , textRenderer()
           , drawCoordinates(false)
           , xCoordinateStr()
@@ -255,16 +257,16 @@ Histogram::Histogram(Gui* gui,
     _imp->sizeH = desktop->screenGeometry().size();
     
     _imp->rightClickMenu = new QMenu(this);
-    _imp->rightClickMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
     _imp->histogramSelectionMenu = new QMenu(tr("Viewer target"),_imp->rightClickMenu);
-    _imp->histogramSelectionMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
     _imp->viewerCurrentInputMenu = new QMenu(tr("Viewer input"),_imp->rightClickMenu);
-    _imp->viewerCurrentInputMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
     _imp->viewerCurrentInputGroup = new QActionGroup(_imp->viewerCurrentInputMenu);
@@ -288,7 +290,7 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
     _imp->modeMenu = new QMenu(tr("Display mode"),_imp->rightClickMenu);
-    _imp->modeMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
     _imp->fullImage = new QAction(_imp->rightClickMenu);
@@ -299,7 +301,7 @@ Histogram::Histogram(Gui* gui,
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
     _imp->filterMenu = new QMenu(tr("Smoothing"),_imp->rightClickMenu);
-    _imp->filterMenu->setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
+    _imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
@@ -410,12 +412,11 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         viewerName = selectedHistAction->text().toStdString();
     }
 
-    int textureIndex = -1;
+    int textureIndex = 0;
     QAction* selectedInputAction = viewerCurrentInputGroup->checkedAction();
     if (selectedInputAction) {
         textureIndex = selectedInputAction->data().toInt();
-    }
-
+    } 
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();
@@ -1192,6 +1193,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         update();
         break;
     }
+    QGLWidget::mouseMoveEvent(e);
 }
 
 void

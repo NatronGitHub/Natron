@@ -378,6 +378,9 @@
 #define kShortcutIDActionGraphToggleAutoPreview "toggleAutoPreview"
 #define kShortcutDescActionGraphToggleAutoPreview "Auto previews"
 
+#define kShortcutIDActionGraphToggleAutoTurbo "toggleAutoTurbo"
+#define kShortcutDescActionGraphToggleAutoTurbo "Auto turbo"
+
 #define kShortcutIDActionGraphTogglePreview "togglePreview"
 #define kShortcutDescActionGraphTogglePreview "Toggle preview images"
 
@@ -533,6 +536,8 @@ public:
 
     KeyBoundAction()
         : BoundAction()
+        , currentShortcut(Qt::Key_unknown)
+        , defaultShortcut(Qt::Key_unknown)
     {
     }
 

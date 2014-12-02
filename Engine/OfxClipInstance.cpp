@@ -220,6 +220,7 @@ OfxClipInstance::getPremult() const
 double
 OfxClipInstance::getAspectRatio() const
 {
+    assert(_nodeInstance);
     if (isOutput()) {
         return _aspectRatio;
     }
@@ -227,11 +228,12 @@ OfxClipInstance::getAspectRatio() const
     EffectInstance* input = getAssociatedNode();
     if (input) {
         return input->getPreferredAspectRatio();
-    } else {
+    } else if (_nodeInstance) {
         Format f;
         _nodeInstance->getRenderFormat(&f);
         return f.getPixelAspectRatio();
     }
+    return 0.; // invalid value
 }
 
 void
@@ -594,8 +596,11 @@ OfxClipInstance::getImageInternal(OfxTime time,
         RectI pixelRoI;
         roi.toPixelEnclosing(mipMapLevel, par, &pixelRoI);
         
+        ImageList inputImages;
+        _nodeInstance->getThreadLocalInputImages(&inputImages);
+        
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),comps,bitDepth,3,true);
+                                           view,false,pixelRoI,RectD(),comps,bitDepth,3,true,inputImages);
         image = inputNode->renderRoI(args);
 
         _nodeInstance->addThreadLocalInputImageTempPointer(image);
@@ -613,7 +618,11 @@ OfxClipInstance::getImageInternal(OfxTime time,
     if (!image) {
         return NULL;
     } else {
-        return new OfxImage(image,renderWindow,transform,*this);
+        if (renderWindow.isNull()) {
+            return NULL;
+        } else {
+            return new OfxImage(image,renderWindow,transform,*this);
+        }
     }
 }
 
@@ -727,7 +736,8 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     renderWindow.intersect(bounds, &pluginsSeenBounds);
     
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
-    setPointerProperty( kOfxImagePropData,internalImage->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() ) );
+    unsigned char* ptr = internalImage->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+    setPointerProperty( kOfxImagePropData, ptr);
     
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
     ///so we're sure the plug-in doesn't attempt to access outside pixels.
@@ -831,7 +841,7 @@ OfxClipInstance::setRenderedView(int view)
     if ( _lastActionData.hasLocalData() ) {
         ActionLocalData & args = _lastActionData.localData();
 #ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread() && args.isViewValid) {
+        if (QThread::currentThread() != qApp->thread() && args.isViewValid && args.view != view) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
 #endif
@@ -861,7 +871,7 @@ OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     if ( _lastActionData.hasLocalData() ) {
         ActionLocalData & args = _lastActionData.localData();
 #ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread() && args.isMipmapLevelValid) {
+        if (QThread::currentThread() != qApp->thread() && args.isMipmapLevelValid && args.mipMapLevel != mipMapLevel) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
 #endif
@@ -952,7 +962,7 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
             return rgba;
         }
         if (isSupportedComponent(alpha)) {
-            return rgb;
+            return alpha;
         }
     }
     

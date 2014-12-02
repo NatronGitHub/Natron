@@ -55,6 +55,10 @@ public:
 
     ProjectSerialization(AppInstance* app)
         : _app(app)
+        , _timelineLeft(0)
+        , _timelineRight(0)
+        , _timelineCurrent(0)
+        , _creationDate(0)
     {
     }
 
@@ -156,8 +160,8 @@ public:
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
             ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
-        }
-        
+            
+        } 
         assert(_app);
         int nodesCount;
         ar & boost::serialization::make_nvp("NodesCount",nodesCount);
@@ -169,11 +173,13 @@ public:
 
         int knobsCount;
         ar & boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
+        
         for (int i = 0; i < knobsCount; ++i) {
             boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
             ar & boost::serialization::make_nvp("item",*ks);
             _projectKnobs.push_back(ks);
         }
+
         ar & boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
         ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);

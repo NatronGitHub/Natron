@@ -261,6 +261,8 @@ public:
 
     bool getCanApplyTransform(OfxClipInstance** clip) const;
     
+    const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
+    
 private:
     OfxEffectInstance* _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                               Not easy since every Knob need a valid pointer to a node when

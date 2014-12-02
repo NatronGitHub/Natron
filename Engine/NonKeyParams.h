@@ -45,19 +45,24 @@ public:
 
     int getCost() const;
 
-    bool operator==(const NonKeyParams & other) const;
-
-    bool operator!=(const NonKeyParams & other) const;
+    
 
     template<class Archive>
     void serialize(Archive & ar,const unsigned int /*version*/);
 
 protected:
 
-    virtual bool isEqualToVirtual(const NonKeyParams & /*other*/) const
+    bool operator==(const NonKeyParams & other) const
     {
-        return true;
+        return (_cost == other._cost &&
+                _elementsCount == other._elementsCount);
     }
+    
+    bool operator!=(const NonKeyParams & other) const
+    {
+        return !(*this == other);
+    }
+
 
 private:
 

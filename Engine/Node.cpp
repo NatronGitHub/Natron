@@ -46,6 +46,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Timer.h"
 #include "Engine/Settings.h"
+#include "Engine/NodeGuiI.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
@@ -126,6 +127,7 @@ struct Node::Implementation
     , outputFormat()
     , refreshInfoButton()
     , useFullScaleImagesWhenRenderScaleUnsupported()
+    , forceCaching()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -148,6 +150,10 @@ struct Node::Implementation
     , nodeIsRenderingMutex()
     , mustQuitProcessing(false)
     , mustQuitProcessingMutex()
+    , persistentMessage()
+    , persistentMessageType(0)
+    , persistentMessageMutex()
+    , guiPointer(0)
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -229,6 +235,7 @@ struct Node::Implementation
     boost::shared_ptr<Button_Knob> refreshInfoButton;
     
     boost::shared_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported;
+    boost::shared_ptr<Bool_Knob> forceCaching;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -268,8 +275,11 @@ struct Node::Implementation
     bool mustQuitProcessing;
     mutable QMutex mustQuitProcessingMutex;
     
+    QString persistentMessage;
+    int persistentMessageType;
+    mutable QMutex persistentMessageMutex;
     
-    
+    NodeGuiI* guiPointer;
 };
 
 /**
@@ -443,6 +453,12 @@ Node::fetchParentMultiInstancePointer()
             break;
         }
     }
+}
+
+Natron::Node*
+Node::getParentMultiInstance() const
+{
+    return _imp->multiInstanceParent;
 }
 
 bool
@@ -1106,6 +1122,18 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
     loadKnob(_imp->nodeLabelKnob, serialization);
     
+    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Force caching");
+    _imp->forceCaching->setName("forceCaching");
+    _imp->forceCaching->setDefaultValue(false);
+    _imp->forceCaching->setAnimationEnabled(false);
+    _imp->forceCaching->turnOffNewLine();
+    _imp->forceCaching->setIsPersistant(true);
+    _imp->forceCaching->setEvaluateOnChange(false);
+    _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
+                                       "images.");
+    _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
+    loadKnob(_imp->forceCaching,serialization);
+    
     _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Preview enabled",1,false);
     assert(_imp->previewEnabledKnob);
     _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
@@ -1190,6 +1218,12 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->liveInstance->unblockEvaluation();
     emit knobsInitialized();
 } // initializeKnobs
+
+bool
+Node::isForceCachingEnabled() const
+{
+    return _imp->forceCaching->getValue();
+}
 
 void
 Node::onSetSupportRenderScaleMaybeSet(int support)
@@ -2203,7 +2237,8 @@ Node::makePreviewImage(SequenceTime time,
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
+    U64 nodeHash = getHashValue();
+    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -2230,7 +2265,8 @@ Node::makePreviewImage(SequenceTime time,
                                              true,
                                              false,
                                              false,
-                                             getHashValue());
+                                             nodeHash,
+                                             getApp()->getTimeLine().get());
     
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
@@ -2433,7 +2469,7 @@ Node::setAborted(bool b)
         ///cancel the dequeuing
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeOne();
+        _imp->nodeIsDequeuingCond.wakeAll();
     }
     //
     //    QMutexLocker l(&_imp->inputsMutex);
@@ -2488,15 +2524,26 @@ Node::setPersistentMessage(MessageTypeEnum type,
             
             return;
         }
-        QString message;
-        message.append( getName_mt_safe().c_str() );
-        if (type == eMessageTypeError) {
-            message.append(" error: ");
-        } else if (type == eMessageTypeWarning) {
-            message.append(" warning: ");
+        
+        {
+            QMutexLocker k(&_imp->persistentMessageMutex);
+            
+            QString message;
+            message.append( getName_mt_safe().c_str() );
+            if (type == eMessageTypeError) {
+                message.append(" error: ");
+                _imp->persistentMessageType = 1;
+            } else if (type == eMessageTypeWarning) {
+                message.append(" warning: ");
+                _imp->persistentMessageType = 2;
+            }
+            message.append( content.c_str() );
+            if (message == _imp->persistentMessage) {
+                return;
+            }
+            _imp->persistentMessage = message;
         }
-        message.append( content.c_str() );
-        emit persistentMessageChanged( (int)type,message );
+        emit persistentMessageChanged();
     } else {
         std::cout << "Persistent message" << std::endl;
         std::cout << content << std::endl;
@@ -2504,10 +2551,25 @@ Node::setPersistentMessage(MessageTypeEnum type,
 }
 
 void
+Node::getPersistentMessage(QString* message,int* type) const
+{
+    QMutexLocker k(&_imp->persistentMessageMutex);
+    *type = _imp->persistentMessageType;
+    *message = _imp->persistentMessage;
+}
+
+void
 Node::clearPersistentMessage()
 {
     if ( !appPTR->isBackground() ) {
-        emit persistentMessageCleared();
+        {
+            QMutexLocker k(&_imp->persistentMessageMutex);
+            if (!_imp->persistentMessage.isEmpty()) {
+                _imp->persistentMessage.clear();
+                k.unlock();
+                emit persistentMessageChanged();
+            }
+        }
     }
     
     QMutexLocker l(&_imp->inputsMutex);
@@ -3001,6 +3063,9 @@ void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)
 {
+    if (!what) {
+        return;
+    }
     for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it != _imp->maskChannelKnob.end(); ++it) {
         if (it->second.get() == what) {
             int index = it->second->getValue();
@@ -3030,7 +3095,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if (what->getName() == kOfxParamStringSublabelName) {
         //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
         String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
-        if (what) {
+        if (strKnob) {
             QString operation = strKnob->getValue().c_str();
             replaceCustomDataInlabel('(' + operation + ')');
         }
@@ -3129,10 +3194,14 @@ Node::areKeyframesVisibleOnTimeline() const
 void
 Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 {
+    assert(keyframes);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistant()) {
+            continue;
+        }
+        if (!knobs[i]->canAnimate()) {
             continue;
         }
         int dim = knobs[i]->getDimension();
@@ -3142,9 +3211,11 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             continue;
         }
         for (int j = 0; j < dim; ++j) {
-            KeyFrameSet kfs = knobs[i]->getCurve(j)->getKeyFrames_mt_safe();
-            for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                keyframes->push_back( it->getTime() );
+            if (knobs[i]->canAnimate() && knobs[i]->isAnimated(j)) {
+                KeyFrameSet kfs = knobs[i]->getCurve(j)->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                    keyframes->push_back( it->getTime() );
+                }
             }
         }
     }
@@ -3259,10 +3330,11 @@ Node::setParallelRenderArgs(int time,
                             bool isRenderUserInteraction,
                             bool isSequential,
                             bool canAbort,
-                            U64 nodeHash)
+                            U64 nodeHash,
+                            const TimeLine* timeline)
 {
     std::list<Natron::Node*> marked;
-    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, marked);
+    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, timeline, marked);
 }
 
 void
@@ -3331,6 +3403,7 @@ Node::setParallelRenderArgsInternal(int time,
                                     bool isSequential,
                                     U64 nodeHash,
                                     bool canAbort,
+                                    const TimeLine* timeline,
                                     std::list<Natron::Node*>& markedNodes)
 {
     ///If marked, we alredy set render args
@@ -3346,7 +3419,7 @@ Node::setParallelRenderArgsInternal(int time,
         rotoAge = 0;
     }
     
-    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge);
+    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge, timeline);
     
     
     ///Wait for the main-thread to be done dequeuing the connect actions queue
@@ -3379,7 +3452,7 @@ Node::setParallelRenderArgsInternal(int time,
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
-            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort,
+            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort, timeline,
                                                  markedNodes);
             
         }
@@ -3451,6 +3524,68 @@ Node::declarePythonFields()
             Natron::declareParameterAsNodeField(getName(), knobName);
         }
     }
+}
+bool
+Node::shouldCacheOutput() const
+{
+    {
+        //If true then we're in analysis, so we cache the input of the analysis effect
+        bool isMainThread = QThread::currentThread() == qApp->thread();
+        
+        QMutexLocker k(&_imp->outputsMutex);
+        std::size_t sz = _imp->outputs.size();
+        if (sz > 1) {
+            ///The node is referenced multiple times below, cache it
+            return true;
+        } else {
+            if (sz == 1) {
+                //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
+                //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
+                Node* output = _imp->outputs.front();
+                return output->isSettingsPanelOpened() ||
+                _imp->liveInstance->doesTemporalClipAccess() ||
+                (isMainThread && (output->isMultiInstance() || output->getParentMultiInstance())) ||
+                isForceCachingEnabled() ||
+                appPTR->isAggressiveCachingEnabled() ||
+                (isPreviewEnabled() && !appPTR->isBackground());
+            } else {
+                return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
+            }
+        }
+    }
+    
+}
+
+void
+Node::setNodeGuiPointer(NodeGuiI* gui)
+{
+    assert(!_imp->guiPointer);
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->guiPointer = gui;
+}
+
+bool
+Node::isSettingsPanelOpened() const
+{
+    if (!_imp->guiPointer) {
+        return false;
+    }
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->isSettingsPanelOpened();
+    }
+    {
+        QMutexLocker k(&_imp->masterNodeMutex);
+        if (_imp->masterNode) {
+            return _imp->masterNode->isSettingsPanelOpened();
+        }
+        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
+            if (it->masterNode->isSettingsPanelOpened()) {
+                return true;
+            }
+        }
+    }
+    return _imp->guiPointer->isSettingsPanelOpened();
+    
 }
 
 //////////////////////////////////

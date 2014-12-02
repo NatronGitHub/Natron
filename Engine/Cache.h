@@ -24,9 +24,9 @@
 #include "Global/MemoryInfo.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QObject>
-#include <QtCore/QDebug>
 #include <QtCore/QTextStream>
 #include <QtCore/QBuffer>
 #include <QtCore/QThreadPool>
@@ -43,6 +43,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/serialization/split_member.hpp>
 #endif
 
 #include "Engine/AppManager.h" //for access to settings
@@ -56,6 +57,13 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/StandardPaths.h"
 #include "Engine/ImageLocker.h"
 #include "Global/MemoryInfo.h"
+
+#define SERIALIZED_ENTRY_INTRODUCES_SIZE 2
+#define SERIALIZED_ENTRY_VERSION SERIALIZED_ENTRY_INTRODUCES_SIZE
+
+//Beyond that percentage of occupation, the cache will start evicting LRU entries
+#define NATRON_CACHE_LIMIT_PERCENT 0.9
+
 ///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
 //#define NATRON_DEBUG_CACHE
 
@@ -66,20 +74,113 @@ namespace Natron {
 * getImageOrCreate() doesn't wait for all the entries to be deleted (which can be expensive for large images)
 **/
 template <typename T>
-class DeleterThread : public QRunnable
+class DeleterThread : public QThread
 {
-    std::list<boost::shared_ptr<T> > _entriesToDelete;
+    mutable QMutex _entriesQueueMutex;
+    std::list<boost::shared_ptr<T> >_entriesQueue;
+    QWaitCondition _entriesQueueNotEmptyCond;
+    
+    
+    bool mustQuit;
+    QMutex mustQuitMutex;
+    QWaitCondition mustQuitCond;
+    
+    CacheAPI* cache;
+    
 public:
     
-    DeleterThread(const std::list<boost::shared_ptr<T> >& entriesToDelete)
-    : _entriesToDelete(entriesToDelete)
-    {}
+    DeleterThread(CacheAPI* cache)
+    : QThread()
+    , _entriesQueueMutex()
+    , _entriesQueue()
+    , _entriesQueueNotEmptyCond()
+    , mustQuit(false)
+    , mustQuitMutex()
+    , mustQuitCond()
+    , cache(cache)
+    {
+        setObjectName("CacheDeleter");
+    }
     
     virtual ~DeleterThread() {}
     
+    void
+    appendToQueue(const std::list<boost::shared_ptr<T> >& entriesToDelete)
+    {
+        if (entriesToDelete.empty()) {
+            return;
+        }
+        
+        {
+            QMutexLocker k(&_entriesQueueMutex);
+            _entriesQueue.insert(_entriesQueue.begin(), entriesToDelete.begin(), entriesToDelete.end());
+        }
+        if (!isRunning()) {
+            start();
+        } else {
+            QMutexLocker k(&_entriesQueueMutex);
+            _entriesQueueNotEmptyCond.wakeOne();
+        }
+    }
+    
+    void quitThread()
+    {
+        
+        if (!isRunning()) {
+            return;
+        }
+        QMutexLocker k(&mustQuitMutex);
+        mustQuit = true;
+        
+        {
+            QMutexLocker k2(&_entriesQueueMutex);
+            _entriesQueue.push_back(boost::shared_ptr<T>());
+            _entriesQueueNotEmptyCond.wakeOne();
+        }
+        while (mustQuit) {
+            mustQuitCond.wait(&mustQuitMutex);
+        }
+    }
+    
+    bool isWorking() const {
+        QMutexLocker k(&_entriesQueueMutex);
+        return !_entriesQueue.empty();
+    }
+    
+private:
+    
     virtual void run() OVERRIDE FINAL
     {
-        _entriesToDelete.clear();
+        for (;;) {
+            
+            bool quit;
+            {
+                QMutexLocker k(&mustQuitMutex);
+                quit = mustQuit;
+            }
+            
+            {
+                boost::shared_ptr<T> front;
+                {
+                    QMutexLocker k(&_entriesQueueMutex);
+                    if (quit && _entriesQueue.empty()) {
+                        _entriesQueueMutex.unlock();
+                        QMutexLocker k(&mustQuitMutex);
+                        mustQuit = false;
+                        mustQuitCond.wakeAll();
+                        return;
+                    }
+                    while (_entriesQueue.empty()) {
+                        _entriesQueueNotEmptyCond.wait(&_entriesQueueMutex);
+                    }
+                    
+                    assert(!_entriesQueue.empty());
+                    front = _entriesQueue.front();
+                    _entriesQueue.pop_front();
+                }
+            } // front. After this scope, the image is guarenteed to be freed
+            cache->notifyMemoryDeallocated();
+        }
     }
 };
 
@@ -160,16 +261,43 @@ public:
         hash_type hash;
         typename EntryType::key_type key;
         ParamsTypePtr params;
-
+        std::size_t size; //< the data size in bytes
+        std::string filePath; //< we need to serialize it as several entries can have the same hash, hence we index them
+        
+        SerializedEntry()
+        : hash(0)
+        , key()
+        , params()
+        , size(0)
+        , filePath()
+        {
+            
+        }
 
         template<class Archive>
-        void serialize(Archive & ar,
+        void save(Archive & ar,
+                       const unsigned int /*version*/) const
+        {
+            ar & boost::serialization::make_nvp("Hash",hash);
+            ar & boost::serialization::make_nvp("Key",key);
+            ar & boost::serialization::make_nvp("Params",params);
+            ar & boost::serialization::make_nvp("Size",size);
+            ar & boost::serialization::make_nvp("Filename",filePath);
+        }
+        
+        template<class Archive>
+        void load(Archive & ar,
                        const unsigned int /*version*/)
         {
             ar & boost::serialization::make_nvp("Hash",hash);
             ar & boost::serialization::make_nvp("Key",key);
             ar & boost::serialization::make_nvp("Params",params);
+            ar & boost::serialization::make_nvp("Size",size);
+            ar & boost::serialization::make_nvp("Filename",filePath);
         }
+        
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     };
 
     typedef std::list< SerializedEntry > CacheTOC;
@@ -270,6 +398,9 @@ private:
 
     bool _tearingDown;
     
+    mutable Natron::DeleterThread<EntryType> _deleterThread;
+    mutable QWaitCondition _memoryFullCondition; //< protected by _sizeLock
+    
 public:
 
 
@@ -295,6 +426,8 @@ public:
           ,_signalEmitter(new CacheSignalEmitter)
           ,_maxPhysicalRAM( getSystemTotalRAM() )
           ,_tearingDown(false)
+          ,_deleterThread(this)
+          ,_memoryFullCondition()
     {
     }
 
@@ -305,6 +438,12 @@ public:
         _memoryCache.clear();
         _diskCache.clear();
         delete _signalEmitter;
+        
+    }
+    
+    void waitForDeleterThread()
+    {
+        _deleterThread.quitThread();
     }
 
     /**
@@ -330,15 +469,46 @@ public:
         return getInternal(key,returnValue);
         
     } // get
+    
+    /**
+     * @brief Same as get() except that it returns an entry that exactly matches the key
+     * *AND* the params.
+     **/
+    bool getByParam(const typename EntryType::key_type & key,
+                    const ParamsTypePtr& params,
+                    EntryTypePtr* returnValue) const
+    {
+        
+        ///Be atomic, so it cannot be created by another thread in the meantime
+        QMutexLocker getlocker(&_getLock);
+        
+        ///lock the cache before reading it.
+        std::list<EntryTypePtr> entries;
+        {
+            QMutexLocker locker(&_lock);
+            return getInternal(key,entries);
+        }
+        
+        
+        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+            if (*(*it)->getParams() == *params) {
+                *returnValue = *it;
+                return true;
+            }
+        }
+        return false;
+        
+    } // get
 
 private:
     
     void createInternal(const typename EntryType::key_type & key,
                 const ParamsTypePtr& params,
                 ImageLockerHelper<EntryType>* imageLocker,
-                std::list<EntryTypePtr>& entriesToBeDeleted,
                 EntryTypePtr* returnValue) const
     {
+        //_lock must not be taken here
+        
         ///Before allocating the memory check that there's enough space to fit in memory
         appPTR->checkCacheFreeMemoryIsGoodEnough();
         
@@ -356,37 +526,98 @@ private:
             ++safeCounter;
         }
         
-        QMutexLocker locker(&_lock);
-        *returnValue =  newEntry(key,params,entriesToBeDeleted,imageLocker);
+        U64 memoryCacheSize,maximumInMemorySize;
+        {
+            QMutexLocker k(&_sizeLock);
+            memoryCacheSize = _memoryCacheSize;
+            maximumInMemorySize = std::max((std::size_t)1,_maximumInMemorySize);
+            
+        }
+        {
+            QMutexLocker locker(&_lock);
+            std::list<EntryTypePtr> entriesToBeDeleted;
+            double occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
+            ///While the current cache size can't fit the new entry, erase the last recently used entries.
+            ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
+            while (occupationPercentage > NATRON_CACHE_LIMIT_PERCENT) {
+                
+                std::list<EntryTypePtr> deleted;
+                if ( !tryEvictEntry(deleted) ) {
+                    break;
+                }
+                
+                for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
+                    if (!(*it)->isStoredOnDisk()) {
+                        memoryCacheSize -= (*it)->size();
+                    }
+                    entriesToBeDeleted.push_back(*it);
+                }
+                
+                occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
+            }
+            
+            if (!entriesToBeDeleted.empty()) {
+                ///Launch a separate thread whose function will be to delete all the entries to be deleted
+                _deleterThread.appendToQueue(entriesToBeDeleted);
+                
+                ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+                ///that the separate thread will delete
+                entriesToBeDeleted.clear();
+            }
+            
+        }
+        {
+            //If _maximumcacheSize == 0 we don't return 1 otherwise we would cause a deadlock
+            QMutexLocker k(&_sizeLock);
+            double occupationPercentage =  _maximumCacheSize == 0 ? 0.99 : (double)_memoryCacheSize / _maximumCacheSize;
+            
+            //_memoryCacheSize member will get updated while images are being destroyed by the parallel thread.
+            //we wait for cache memory occupation to be < 100% to be sure we don't hit swap here
+            while (occupationPercentage >= 1. && _deleterThread.isWorking()) {
+                _memoryFullCondition.wait(&_sizeLock);
+                occupationPercentage =  _maximumCacheSize == 0 ? 0.99 : (double)_memoryCacheSize / _maximumCacheSize;
+            }
+            
+        }
+        {
+            QMutexLocker locker(&_lock);
+            
+            Natron::StorageModeEnum storage;
+            if (params->getCost() == 0) {
+                storage = Natron::eStorageModeRAM;
+            } else if (params->getCost() >= 1) {
+                storage = Natron::eStorageModeDisk;
+            } else {
+                storage = Natron::eStorageModeNone;
+            }
+            
+            
+            try {
+                returnValue->reset( new EntryType(key,params,this,storage,
+                                                  storage == Natron::eStorageModeDisk ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
+                
+                ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
+                
+            } catch (const std::bad_alloc & e) {
+                *returnValue = EntryTypePtr();
+            }
+            
+            if (*returnValue) {
+                ///Take the lock before sealing the entry into the cache, making sure no-one will be able to get the image before it's allocated
+                assert(imageLocker);
+                imageLocker->lock(*returnValue);
+                
+                sealEntry(*returnValue, true);
+            }
+            
+        }
     }
     
 public:
     
+
     /**
-     * @brief Creates an entry in the cache regardless whether an entry with the same key already exists.
-     **/
-    void create(const typename EntryType::key_type & key,
-                const ParamsTypePtr& params,
-                ImageLockerHelper<EntryType>* imageLocker,
-                EntryTypePtr* returnValue) const
-    {
-        std::list<EntryTypePtr> entriesToBeDeleted;
-        
-        createInternal(key, params, imageLocker, entriesToBeDeleted, returnValue);
-        
-        if (!entriesToBeDeleted.empty()) {
-            ///Launch a separate thread whose function will be to delete all the entries to be deleted
-            DeleterThread<EntryType>* dThread = new DeleterThread<EntryType>(entriesToBeDeleted);
-            QThreadPool::globalInstance()->start(dThread);
-            
-            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
-            ///that the separate thread will delete
-            entriesToBeDeleted.clear();
-        }
-    }
-    
-    /**
-     * @brief Look-up the cache for an entry whose key matches the params.
+     * @brief Look-up the cache for an entry whose key matches the 'key' and 'params'.
      * Unlike get(...) this function creates a new entry if it couldn't be found.
      * Note that this function also takes extra parameters which go along the value_type
      * and will be cached. These parameters aren't taken into account for the computation of
@@ -415,50 +646,36 @@ public:
     bool getOrCreate(const typename EntryType::key_type & key,
                      const ParamsTypePtr& params,
                      ImageLockerHelper<EntryType>* imageLocker,
-                     std::list<EntryTypePtr>* returnValue) const
+                     EntryTypePtr* returnValue) const
     {
         
         ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
         ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
-        std::list<EntryTypePtr> entriesToBeDeleted;
-
         
-        bool ret;
         {
             ///Be atomic, so it cannot be created by another thread in the meantime
             QMutexLocker getlocker(&_getLock);
             
+            std::list<EntryTypePtr> entries;
             bool didGetSucceed;
             {
                 QMutexLocker locker(&_lock);
-                didGetSucceed = getInternal(key,returnValue);
+                didGetSucceed = getInternal(key,&entries);
             }
             
-            ret = didGetSucceed;
-            
-            if (!didGetSucceed) {
-                
-                EntryTypePtr entry;
-                createInternal(key,params,imageLocker,entriesToBeDeleted,&entry);
-                if (entry) {
-                    returnValue->push_back(entry);
+            for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                if (*(*it)->getParams() == *params) {
+                    *returnValue = *it;
+                    return true;
                 }
-                ret =  false;
             }
-        } // getlocker
-        
-        if (!entriesToBeDeleted.empty()) {
-            ///Launch a separate thread whose function will be to delete all the entries to be deleted
-            DeleterThread<EntryType>* dThread = new DeleterThread<EntryType>(entriesToBeDeleted);
-            QThreadPool::globalInstance()->start(dThread);
             
-            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
-            ///that the separate thread will delete
-            entriesToBeDeleted.clear();
-        }
-        return ret;
+            createInternal(key,params,imageLocker,returnValue);
+            return false;
+            
+        } // getlocker
     }
-
+    
     /**
      * @brief Clears entirely the disk portion and memory portion.
      **/
@@ -588,18 +805,23 @@ public:
             {
                 QMutexLocker k(&_sizeLock);
                 memoryCacheSize = _memoryCacheSize;
-                maximumInMemorySize = _maximumInMemorySize;
+                maximumInMemorySize = std::max((std::size_t)1,_maximumInMemorySize);
             }
-            while (memoryCacheSize >= maximumInMemorySize) {
-                if ( !tryEvictEntry(entriesToBeDeleted) ) {
+            double occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
+            while (occupationPercentage >= NATRON_CACHE_LIMIT_PERCENT) {
+       
+                std::list<EntryTypePtr> deleted;
+                if ( !tryEvictEntry(deleted) ) {
                     break;
                 }
                 
-                {
-                    QMutexLocker k(&_sizeLock);
-                    memoryCacheSize = _memoryCacheSize;
-                    maximumInMemorySize = _maximumInMemorySize;
+                for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
+                    if (!(*it)->isStoredOnDisk()) {
+                        memoryCacheSize -= (*it)->size();
+                    }
+                    entriesToBeDeleted.push_back(*it);
                 }
+                occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
             }
         }
     }
@@ -732,8 +954,15 @@ public:
 #endif
         }
         
+
         _signalEmitter->emitRemovedEntry(time,(int)storage);
     
+    }
+    
+    virtual void notifyMemoryDeallocated() const OVERRIDE FINAL
+    {
+        QMutexLocker k(&_sizeLock);
+        _memoryFullCondition.wakeAll();
     }
 
     /**
@@ -751,7 +980,7 @@ public:
         QMutexLocker k(&_sizeLock);
         
         assert(oldStorage != newStorage);
-
+        assert(newStorage != Natron::eStorageModeNone);
         if (oldStorage == Natron::eStorageModeRAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
             _diskCacheSize += size;
@@ -761,7 +990,7 @@ public:
 #endif
             ///We switched from RAM to DISK that means the MemoryFile object has been destroyed hence the file has been closed.
             appPTR->decreaseNCacheFilesOpened();
-        } else {
+        } else if (oldStorage == Natron::eStorageModeDisk) {
             _memoryCacheSize += size;
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
 #ifdef NATRON_DEBUG_CACHE
@@ -770,6 +999,12 @@ public:
 #endif
             ///We switched from DISK to RAM that means the MemoryFile object has been created and the file opened
             appPTR->increaseNCacheFilesOpened();
+        } else {
+            if (newStorage == Natron::eStorageModeRAM) {
+                _memoryCacheSize += size;
+            } else if (newStorage == Natron::eStorageModeDisk) {
+                _diskCacheSize += size;
+            }
         }
        
         _signalEmitter->emitEntryStorageChanged(time, (int)oldStorage, (int)newStorage);
@@ -799,13 +1034,12 @@ public:
     /*Returns the name of the cache with its path preprended*/
     QString getCachePath() const
     {
-        QString cacheFolderName( Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator() );
-
-        cacheFolderName.append( QDir::separator() );
-        QString str(cacheFolderName);
-        str.append( cacheName().c_str() );
-
-        return str;
+        QString cacheFolderName(appPTR->getDiskCacheLocation());
+        if (!cacheFolderName.endsWith('\\') && !cacheFolderName.endsWith('/')) {
+            cacheFolderName.append(QDir::separator());
+        }
+        cacheFolderName.append( cacheName().c_str() );
+        return cacheFolderName;
     }
 
     std::string getRestoreFilePath() const
@@ -855,6 +1089,7 @@ public:
         return _signalEmitter;
     }
     
+
 
     /** @brief This function can be called to remove a specific entry from the cache. For example a frame
      * that has had its render aborted but already belong to the cache.
@@ -978,9 +1213,7 @@ public:
             
         }
         if (!toDelete.empty()) {
-            ///Launch a separate thread whose function will be to delete all the entries to be deleted
-            DeleterThread<EntryType>* dThread = new DeleterThread<EntryType>(toDelete);
-            QThreadPool::globalInstance()->start(dThread);
+            _deleterThread.appendToQueue(toDelete);
             
             ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
             ///that the separate thread will delete
@@ -988,6 +1221,7 @@ public:
         }
     }
 
+    
     /*Saves cache to disk as a settings file.
      */
     void save(CacheTOC* tableOfContents)
@@ -1003,11 +1237,19 @@ public:
                     serialization.hash = (*it2)->getHashKey();
                     serialization.params = (*it2)->getParams();
                     serialization.key = (*it2)->getKey();
+                    serialization.size = (*it2)->dataSize();
+                    serialization.filePath = (*it2)->getFilePath();
                     tableOfContents->push_back(serialization);
+#ifdef DEBUG
+                    if (!CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash)) {
+                        qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+                    }
+#endif
                 }
             }
         }
     }
+
 
     /*Restores the cache from disk.*/
     void restore(const CacheTOC & tableOfContents)
@@ -1016,7 +1258,6 @@ public:
         ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
         ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
         std::list<EntryTypePtr> entriesToBeDeleted;
-        
 
         for (typename CacheTOC::const_iterator it =
                  tableOfContents.begin(); it != tableOfContents.end(); ++it) {
@@ -1032,62 +1273,22 @@ public:
                  */
                 qDebug() << "WARNING: serialized hash key different than the restored one";
             }
+            
+#ifdef DEBUG
+            if (!checkFileNameMatchesHash(it->filePath, it->hash)) {
+                qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+            }
+#endif
+            
             EntryType* value = NULL;
 
-            ///Before allocating the memory check that there's enough space to fit in memory
-            {
-                QMutexLocker locker(&_lock);
-                appPTR->checkCacheFreeMemoryIsGoodEnough();
-            }
-            size_t entryDataSize = it->params->getElementsCount() * sizeof(data_t);
-            
-            {
-                QMutexLocker locker(&_lock);
-                
-                
-                U64 memoryCacheSize,maximumInMemorySize;
-                {
-                    QMutexLocker k(&_sizeLock);
-                    memoryCacheSize = _memoryCacheSize;
-                    maximumInMemorySize = _maximumInMemorySize;
-                    
-                }
-                
-                
-                while ( (memoryCacheSize + entryDataSize >= maximumInMemorySize) ) {
-                    if ( !tryEvictEntry(entriesToBeDeleted) ) {
-                        break;
-                    }
-                    
-                    {
-                        QMutexLocker k(&_sizeLock);
-                        memoryCacheSize = _memoryCacheSize;
-                        maximumInMemorySize = _maximumInMemorySize;
-                        
-                    }
-                }
-            }
             Natron::StorageModeEnum storage = Natron::eStorageModeDisk;
 
-            
-            ///Just in case, we don't allow more than X files to be removed at once.
-            int safeCounter = 0;
-            ///If too many files are opened, fall-back on RAM storage.
-            while ( appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000 ) {
-#ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
-#endif
-                if ( !evictLRUDiskEntry() ) {
-                    break;
-                }
-                ++safeCounter;
-            }
-            
-            
-            
             try {
-                value = new EntryType(it->key,it->params,this,storage, QString( getCachePath() + QDir::separator() ).toStdString());
-                value->restoreMemory();
+                value = new EntryType(it->key,it->params,this,storage,it->filePath);
+                
+                ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
+                value->restoreMetaDataFromFile(it->size);
             } catch (const std::bad_alloc & e) {
                 qDebug() << e.what();
                 continue;
@@ -1095,7 +1296,7 @@ public:
 
             {
                 QMutexLocker locker(&_lock);
-                sealEntry(EntryTypePtr(value));
+                sealEntry(EntryTypePtr(value), false);
             }
         }
     }
@@ -1214,90 +1415,38 @@ private:
         }
     }
 
-    /** @brief Allocates a new entry by the cache. On failure a NULL pointer is returned.
-     * The storage is then handled by the cache solely.
+    /** @brief Inserts into the cache an entry that was previously allocated by the createInternal()
+     * function. This is called directly by createInternal() if the allocation was successful
      **/
-    EntryTypePtr newEntry(const typename EntryType::key_type & key,
-                          const ParamsTypePtr & params,
-                          std::list<EntryTypePtr> &entriesToBeDeleted,
-                          ImageLockerHelper<EntryType>* imageLocker) const
-    {
-        assert( !_lock.tryLock() );   // must be locked
-        EntryTypePtr entryptr;
-        Natron::StorageModeEnum storage;
-        if (params->getCost() == 0) {
-            storage = Natron::eStorageModeRAM;
-        } else if (params->getCost() >= 1) {
-            storage = Natron::eStorageModeDisk;
-        } else {
-            storage = Natron::eStorageModeNone;
-        }
-
-    
-        size_t entryDataSize = params->getElementsCount() * sizeof(data_t);
-
-        U64 memoryCacheSize,maximumInMemorySize;
-        {
-            QMutexLocker k(&_sizeLock);
-            memoryCacheSize = _memoryCacheSize;
-            maximumInMemorySize = _maximumInMemorySize;
-            
-        }
-        
-      
-        ///While the current cache size can't fit the new entry, erase the last recently used entries.
-        ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
-        while ( (memoryCacheSize + entryDataSize >= maximumInMemorySize)) {
-            if ( !tryEvictEntry(entriesToBeDeleted) ) {
-                break;
-            }
-            {
-                QMutexLocker k(&_sizeLock);
-                memoryCacheSize = _memoryCacheSize;
-                maximumInMemorySize = _maximumInMemorySize;
-                
-            }
-        }
-
-        ///At this point there could be nothing in the cache but the condition totalFreeRAM <= systemRAMToKeepFree would still be
-        ///true. This is likely because the other cache is taking all the memory.
-        // We still allocate the entry because otherwise we would never be able to continue the render.
-        try {
-            entryptr.reset( new EntryType(key,params,this,storage,
-                                        storage == Natron::eStorageModeDisk ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
-
-            ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
-            
-        } catch (const std::bad_alloc & e) {
-            return EntryTypePtr();
-        }
-
-        ///Take the lock before sealing the entry into the cache, making sure no-one will be able to get the image before it's allocated
-        assert(imageLocker);
-        imageLocker->lock(entryptr);
-       
-        sealEntry(entryptr);
-
-        return entryptr;
-    }
-
-    /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
-     * function. This is called directly by newEntry() if the allocation was successful
-     **/
-    void sealEntry(const EntryTypePtr & entry) const
+    void sealEntry(const EntryTypePtr & entry,bool inMemory) const
     {
         assert( !_lock.tryLock() );   // must be locked
         typename EntryType::hash_type hash = entry->getHashKey();
-        /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
-        CacheIterator existingEntry = _memoryCache(hash);
-        if ( existingEntry == _memoryCache.end() ) {
-            _memoryCache.insert(hash,entry);
+        
+        if (inMemory) {
+            
+            /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
+            CacheIterator existingEntry = _memoryCache(hash);
+            if ( existingEntry == _memoryCache.end() ) {
+                _memoryCache.insert(hash,entry);
+            } else {
+                /*append to the existing list*/
+                getValueFromIterator(existingEntry).push_back(entry);
+            }
+            
         } else {
-            /*append to the existing list*/
-            getValueFromIterator(existingEntry).push_back(entry);
+            
+            CacheIterator existingEntry = _diskCache(hash);
+            if ( existingEntry == _diskCache.end() ) {
+                _diskCache.insert(hash,entry);
+            } else {
+                /*append to the existing list*/
+                getValueFromIterator(existingEntry).push_back(entry);
+            }
+            
         }
     }
-
+    
     bool tryEvictEntry(std::list<EntryTypePtr>& entriesToBeDeleted) const
     {
         assert( !_lock.tryLock() );

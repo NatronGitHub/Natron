@@ -69,6 +69,7 @@ class ViewerInstance;
 class PluginGroupNode;
 class Color_Knob;
 class ProcessHandler;
+class KnobHolder;
 namespace Natron {
 class Node;
 class Image;
@@ -382,11 +383,11 @@ public:
 
     void removeTrackerInterface(NodeGui* n,bool pluginsly);
 
-    void startProgress(Natron::EffectInstance* effect,const std::string & message);
+    void startProgress(KnobHolder* effect,const std::string & message, bool canCancel = true);
 
-    void endProgress(Natron::EffectInstance* effect);
+    void endProgress(KnobHolder* effect);
 
-    bool progressUpdate(Natron::EffectInstance* effect,double t);
+    bool progressUpdate(KnobHolder* effect,double t);
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
@@ -430,7 +431,14 @@ public:
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
     void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
-
+    
+    bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
+    
+    void setLeftToolBarDisplayedOnMouseHoverOnly(bool b);
+    
+    void refreshLeftToolBarVisibility(const QPoint& globalPos);
+    
+    void setLeftToolBarVisible(bool visible);
 signals:
 
     void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
