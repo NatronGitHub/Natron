@@ -220,6 +220,9 @@ public:
     
     bool isAggressiveCachingEnabled() const;
     
+    bool isAutoTurboEnabled() const;
+    
+    void setAutoTurboModeEnabled(bool e);
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -292,6 +295,7 @@ private:
     boost::shared_ptr<Color_Knob> _checkerboardColor2;
     boost::shared_ptr<Bool_Knob> _autoWipe;
     boost::shared_ptr<Page_Knob> _nodegraphTab;
+    boost::shared_ptr<Bool_Knob> _autoTurbo;
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
     boost::shared_ptr<Bool_Knob> _useBWIcons;

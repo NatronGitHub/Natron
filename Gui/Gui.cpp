@@ -4316,6 +4316,9 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         QMutexLocker k(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
             (*it)->setTurboButtonDown(clicked);
+            if (!clicked) {
+                (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
+            }
         }
     }
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);

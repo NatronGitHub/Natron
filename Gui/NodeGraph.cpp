@@ -101,6 +101,9 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_NAVIGATOR_BASE_HEIGHT 0.2
 #define NATRON_NAVIGATOR_BASE_WIDTH 0.2
 
+
+#define NATRON_SCENE_MAX 10000
+
 using namespace Natron;
 using std::cout; using std::endl;
 
@@ -386,6 +389,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+   // setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale( qreal(0.8), qreal(0.8) );
 
     _imp->_root = new QGraphicsTextItem(0);
@@ -438,10 +442,10 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_bL->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     scene->addItem(_imp->_bL);
 
-    scene->setSceneRect(0,0,10000,10000);
-    _imp->_tL->setPos( _imp->_tL->mapFromScene( QPointF(0,10000) ) );
-    _imp->_tR->setPos( _imp->_tR->mapFromScene( QPointF(10000,10000) ) );
-    _imp->_bR->setPos( _imp->_bR->mapFromScene( QPointF(10000,0) ) );
+    setSceneRect(0,0,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
+    _imp->_tL->setPos( _imp->_tL->mapFromScene( QPointF(0,NATRON_SCENE_MAX) ) );
+    _imp->_tR->setPos( _imp->_tR->mapFromScene( QPointF(NATRON_SCENE_MAX,NATRON_SCENE_MAX) ) );
+    _imp->_bR->setPos( _imp->_bR->mapFromScene( QPointF(NATRON_SCENE_MAX,0) ) );
     _imp->_bL->setPos( _imp->_bL->mapFromScene( QPointF(0,0) ) );
     centerOn(5000,5000);
 
@@ -1867,7 +1871,11 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         _imp->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions, modifiers, key) ) {
         toggleKnobLinksVisible();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoPreview, modifiers, key) ) {
+        toggleAutoPreview();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoTurbo, modifiers, key) ) {
+        toggleAutoTurbo();
+    }  else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         popFindDialog(QCursor::pos());
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         popRenameDialog(QCursor::pos());
@@ -1919,6 +1927,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         }
     }
 } // keyPressEvent
+
+void
+NodeGraph::toggleAutoTurbo()
+{
+    appPTR->getCurrentSettings()->setAutoTurboModeEnabled(!appPTR->getCurrentSettings()->isAutoTurboEnabled());
+}
 
 void
 NodeGraphPrivate::rearrangeSelectedNodes()
@@ -2118,9 +2132,11 @@ NodeGraph::wheelEvent(QWheelEvent* e)
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
 //        QPointF centerScene = visibleSceneRect().center();
+//        QRectF d = visibleSceneRect();
+//        QPoint center = mapFromScene(centerScene);
 //        QPointF deltaScene;
-//        deltaScene.rx() = newPos.x() - centerScene.x();
-//        deltaScene.ry() = newPos.y() - centerScene.y();
+//        deltaScene.rx() = e->x() - center.x();
+//        deltaScene.ry() = e->y() - center.y();
 //        QTransform t = transform();
 //        QTransform mapping;
 //        mapping.translate(-deltaScene.x(),-deltaScene.y());
@@ -2134,7 +2150,7 @@ NodeGraph::wheelEvent(QWheelEvent* e)
 //        
 //        centerOn(centerScene);
         
-        scale(scaleFactor,scaleFactor);
+       scale(scaleFactor,scaleFactor);
         _imp->_refreshOverlays = true;
     }
     _imp->_lastScenePosClick = newPos;
@@ -2727,6 +2743,14 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( autoPreview,SIGNAL( triggered() ),this,SLOT( toggleAutoPreview() ) );
     QObject::connect( _imp->_gui->getApp()->getProject().get(),SIGNAL( autoPreviewChanged(bool) ),autoPreview,SLOT( setChecked(bool) ) );
     _imp->_menu->addAction(autoPreview);
+    
+    QAction* autoTurbo = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphToggleAutoTurbo,
+                                               kShortcutDescActionGraphToggleAutoTurbo,_imp->_menu);
+    autoTurbo->setCheckable(true);
+    autoTurbo->setChecked( appPTR->getCurrentSettings()->isAutoTurboEnabled() );
+    QObject::connect( autoTurbo,SIGNAL( triggered() ),this,SLOT( toggleAutoTurbo() ) );
+    _imp->_menu->addAction(autoTurbo);
+
     
     QAction* forceRefreshPreviews = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphForcePreview,
                                                            kShortcutDescActionGraphForcePreview,_imp->_menu);

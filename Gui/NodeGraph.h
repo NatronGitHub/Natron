@@ -210,6 +210,8 @@ public:
         
     void onNodeNameEditDialogFinished();
     
+    void toggleAutoTurbo();
+    
 private:
 
 

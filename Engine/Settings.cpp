@@ -426,6 +426,13 @@ Settings::initializeKnobs()
     
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
+    
+    _autoTurbo = Natron::createKnob<Bool_Knob>(this, "Auto-turbo");
+    _autoTurbo->setName("autoTurbo");
+    _autoTurbo->setHintToolTip("When checked the Turbo-mode will be enabled automatically when playback is started and disabled "
+                               "when finished.");
+    _autoTurbo->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_autoTurbo);
 
     _snapNodesToConnections = Natron::createKnob<Bool_Knob>(this, "Snap to node");
     _snapNodesToConnections->setName("enableSnapToNode");
@@ -816,6 +823,7 @@ Settings::setDefaultValues()
     _maxViewerDiskCacheGB->setDefaultValue(5,0);
     _maxDiskCacheNodeGB->setDefaultValue(10,0);
     setCachingLabels();
+    _autoTurbo->setDefaultValue(false);
     _defaultNodeColor->setDefaultValue(0.6,0);
     _defaultNodeColor->setDefaultValue(0.6,1);
     _defaultNodeColor->setDefaultValue(0.6,2);
@@ -2163,4 +2171,16 @@ bool
 Settings::isAggressiveCachingEnabled() const
 {
     return _aggressiveCaching->getValue();
+}
+
+bool
+Settings::isAutoTurboEnabled() const
+{
+    return _autoTurbo->getValue();
+}
+
+void
+Settings::setAutoTurboModeEnabled(bool e)
+{
+    _autoTurbo->setValue(e, 0);
 }

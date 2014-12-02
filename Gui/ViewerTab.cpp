@@ -1078,6 +1078,9 @@ ViewerTab::startPause(bool b)
     if (b) {
         _imp->play_Forward_Button->setDown(true);
         _imp->play_Forward_Button->setChecked(true);
+        if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+            _imp->_gui->onFreezeUIButtonClicked(true);
+        }
         boost::shared_ptr<TimeLine> timeline = _imp->_timeLineGui->getTimeline();
         _imp->_viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_FORWARD);
     }
@@ -1090,6 +1093,9 @@ ViewerTab::abortRendering()
     _imp->play_Backward_Button->setDown(false);
     _imp->play_Forward_Button->setChecked(false);
     _imp->play_Backward_Button->setChecked(false);
+    if (_imp->_gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        _imp->_gui->onFreezeUIButtonClicked(false);
+    }
     ///Abort all viewers because they are all synchronised.
     const std::list<boost::shared_ptr<NodeGui> > & activeNodes = _imp->_gui->getNodeGraph()->getAllActiveNodes();
 
@@ -1108,7 +1114,9 @@ ViewerTab::onEngineStopped()
     _imp->play_Backward_Button->setDown(false);
     _imp->play_Forward_Button->setChecked(false);
     _imp->play_Backward_Button->setChecked(false);
-
+    if (_imp->_gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        _imp->_gui->onFreezeUIButtonClicked(false);
+    }
 }
 
 void
@@ -1118,6 +1126,9 @@ ViewerTab::startBackward(bool b)
     if (b) {
         _imp->play_Backward_Button->setDown(true);
         _imp->play_Backward_Button->setChecked(true);
+        if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+            _imp->_gui->onFreezeUIButtonClicked(true);
+        }
         boost::shared_ptr<TimeLine> timeline = _imp->_timeLineGui->getTimeline();
         _imp->_viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_BACKWARD);
 

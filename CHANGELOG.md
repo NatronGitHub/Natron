@@ -55,6 +55,10 @@ to avoid creating new beziers by mistake
 
 - Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options. 
 
+- A new Auto-turbo setting has been added: when enabled, the Turbo-mode (originally toggable with the button on the right of the media player) will be enabled/disabled automatically when playback is started/finished. You can turn on/off this preference in the settings (NodeGraph tab) or in the right click menu of the node-graph.
+
+- Transform: When holding down the SHIFT modifier and controling the translate handle on the viewer, the direction will be constrained to either the X or  Y axis.
+
 - Fixed a crash on windows when connecting nodes
 
 - Fixed a bug on windows where the properties pane would overlap the viewer if placed below it
