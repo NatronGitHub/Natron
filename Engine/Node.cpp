@@ -3156,9 +3156,11 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             continue;
         }
         for (int j = 0; j < dim; ++j) {
-            KeyFrameSet kfs = knobs[i]->getCurve(j)->getKeyFrames_mt_safe();
-            for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                keyframes->push_back( it->getTime() );
+            if (knobs[i]->canAnimate() && knobs[i]->isAnimated(j)) {
+                KeyFrameSet kfs = knobs[i]->getCurve(j)->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                    keyframes->push_back( it->getTime() );
+                }
             }
         }
     }

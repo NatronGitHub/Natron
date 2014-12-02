@@ -514,7 +514,7 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
     }
     
     if (!canAnimate() || !isAnimated(dimension)) {
-        return;
+        return false;
     }
 
     KnobHolder* holder = getHolder();
@@ -598,7 +598,7 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
     }
     
     if (!canAnimate() || !isAnimated(dimension)) {
-        return;
+        return false;
     }
 
     KnobHolder* holder = getHolder();
@@ -643,7 +643,7 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
     }
     
     if (!canAnimate() || !isAnimated(dimension)) {
-        return;
+        return false;
     }
 
     KnobHolder* holder = getHolder();
@@ -689,7 +689,7 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
     }
     
     if (!canAnimate() || !isAnimated(dimension)) {
-        return;
+        return false;
     }
 
     KnobHolder* holder = getHolder();
@@ -741,7 +741,7 @@ KnobHelper::removeAnimation(int dimension,
     }
 
     if (!canAnimate() || !isAnimated(dimension)) {
-        return;
+        return false;
     }
 
     KnobHolder* holder = getHolder();
@@ -855,7 +855,7 @@ boost::shared_ptr<Curve>
 KnobHelper::getGuiCurve(int dimension) const
 {
     if (!canAnimate()) {
-        return;
+        return boost::shared_ptr<Curve>();
     }
 
     if (_imp->gui) {
@@ -874,7 +874,9 @@ KnobHelper::setGuiCurveHasChanged(int dimension,bool changed)
 
 boost::shared_ptr<Curve> KnobHelper::getCurve(int dimension,bool byPassMaster) const
 {
-    assert( 0 <= dimension && dimension < (int)_imp->curves.size() );
+    if (dimension < 0 || dimension >= (int)_imp->curves.size() ) {
+        return boost::shared_ptr<Curve>();
+    }
 
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
@@ -1082,7 +1084,9 @@ KnobHelper::getHolder() const
 void
 KnobHelper::setAnimationEnabled(bool val)
 {
-    assert(!val || canAnimate());
+    if (!canAnimate()) {
+        return;
+    }
     _imp->isAnimationEnabled = val;
 }
 

@@ -226,7 +226,7 @@ DiskCacheNode::render(SequenceTime time,
         srcImg->convertToFormat(roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
                                 getApp()->getDefaultColorSpaceForBitDepth(output->getBitDepth()), 3, false, true, false, output.get());
     } else {
-        output->pasteFrom(*srcImg, roi, true);
+        output->pasteFrom(*srcImg, roi, output->usesBitMap() && srcImg->usesBitMap());
     }
     
     return eStatusOK;
