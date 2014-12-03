@@ -175,9 +175,11 @@ public:
         mask = 0; _size = 0;
     }
 
-    operator bool() const {
+    // the following is marked explicit, because an implicit cast to bool is very dangerous.
+    explicit operator bool() const {
         return (bool)(mask >> 1);
     }                                                   // allow to do stuff like if(channelsA & channelsB)
+
     bool empty() const
     {
         return !(bool)(mask >> 1);

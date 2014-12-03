@@ -465,6 +465,6 @@ ChannelSet::printOut() const
 bool
 hasAlpha(ChannelSet mask)
 {
-    return (mask & 1) || ( mask & (1 << Channel_alpha) );
+    return mask.contains(Channel_alpha);
 }
 } // namespace Natron
