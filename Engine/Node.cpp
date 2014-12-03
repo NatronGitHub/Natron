@@ -308,6 +308,7 @@ Node::createRotoContextConditionnally()
     ///Initialize the roto context if any
     if ( isRotoNode() ) {
         _imp->rotoContext.reset( new RotoContext(this) );
+        _imp->rotoContext->createBaseLayer();
     }
 }
 

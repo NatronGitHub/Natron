@@ -334,7 +334,9 @@ AddPointUndoCommand::AddPointUndoCommand(RotoGui* roto,
       , _index(index)
       , _t(t)
 {
-    _oldCurve.reset( new Bezier(*curve) );
+    _oldCurve.reset( new Bezier(curve->getContext(),curve->getName_mt_safe(),curve->getParentLayer()) );
+    _oldCurve->clone(*curve);
+    
 }
 
 AddPointUndoCommand::~AddPointUndoCommand()
@@ -386,7 +388,8 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
     assert(desc.parentLayer);
     desc.curve = curve;
     desc.points.push_back(indexToRemove);
-    desc.oldCurve.reset( new Bezier(*curve) );
+    desc.oldCurve.reset( new Bezier(curve->getContext(),curve->getName_mt_safe(),curve->getParentLayer()) );
+    desc.oldCurve->clone(*curve);
     _curves.push_back(desc);
 }
 
@@ -428,7 +431,8 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
             assert(curveDesc.parentLayer);
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
-            curveDesc.oldCurve.reset( new Bezier(*curve) );
+            curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getName_mt_safe(),curve->getParentLayer()) );
+            curveDesc.oldCurve->clone(*curve);
             _curves.push_back(curveDesc);
         } else {
             foundCurve->points.push_back(indexToRemove);
@@ -1124,7 +1128,8 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
     if (!_newCurve) {
         _curveNonExistant = true;
     } else {
-        _oldCurve.reset( new Bezier(*_newCurve) );
+        _oldCurve.reset( new Bezier(_newCurve->getContext(),_newCurve->getName_mt_safe(),_newCurve->getParentLayer()) );
+        _oldCurve->clone(*_newCurve);
     }
 }
 
@@ -1167,7 +1172,8 @@ MakeBezierUndoCommand::redo()
             if (!_newCurve) {
                 _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName);
                 assert(_newCurve);
-                _oldCurve.reset( new Bezier(*_newCurve) );
+                _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getName_mt_safe(), _newCurve->getParentLayer()) );
+                _oldCurve->clone(*_newCurve);
                 _lastPointAdded = 0;
                 _curveNonExistant = false;
             } else {
@@ -1765,7 +1771,9 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
             boost::shared_ptr<RotoLayer> srcLayer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
 
             if (srcBezier) {
-                boost::shared_ptr<Bezier> copy( new Bezier(*srcBezier) );
+                boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(),srcBezier->getName_mt_safe(),
+                                                           srcBezier->getParentLayer()) );
+                copy->clone(*srcBezier);
                 copy->setName( getItemCopyName(roto, it->rotoItem));
                 it->itemCopy = copy;
             } else {
@@ -1811,7 +1819,8 @@ PasteItemUndoCommand::redo()
     if (_mode == CopyToItem) {
         Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
         assert(isBezier);
-        _oldTargetItem.reset( new Bezier(*isBezier) );
+        _oldTargetItem.reset( new Bezier(isBezier->getContext(),isBezier->getName_mt_safe(),isBezier->getParentLayer()) );
+        _oldTargetItem->clone(*isBezier);
         assert(_pastedItems.size() == 1);
         PastedItem & front = _pastedItems.front();
         Bezier* toCopy = dynamic_cast<Bezier*>( front.rotoItem.get() );
@@ -1852,7 +1861,8 @@ DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
     Bezier* isBezier = dynamic_cast<Bezier*>( _item.item.get() );
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>( _item.item.get() );
     if (isBezier) {
-        _item.duplicatedItem.reset( new Bezier(*isBezier) );
+        _item.duplicatedItem.reset( new Bezier(isBezier->getContext(),isBezier->getName_mt_safe(),isBezier->getParentLayer()) );
+        _item.duplicatedItem->clone(*isBezier);
     } else {
         assert(isLayer);
         _item.duplicatedItem.reset( new RotoLayer(*isLayer) );

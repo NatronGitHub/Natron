@@ -779,8 +779,7 @@ boost::shared_ptr<RotoLayer>
 RotoItem::getParentLayer() const
 {
     QMutexLocker l(&itemMutex);
-
-    return boost::shared_ptr<RotoLayer>(_imp->parentLayer);
+    return _imp->parentLayer.lock();
 }
 
 void
@@ -1890,12 +1889,6 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
 {
 }
 
-Bezier::Bezier(const Bezier & other)
-: RotoDrawableItem( other.getContext(), other.getName_mt_safe(), other.getParentLayer() )
-, _imp( new BezierPrivate() )
-{
-    clone(other);
-}
 
 Bezier::Bezier(const Bezier & other,
                const boost::shared_ptr<RotoLayer>& parent)
@@ -3695,9 +3688,17 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 RotoContext::RotoContext(Natron::Node* node)
     : _imp( new RotoContextPrivate(node) )
 {
+   
+}
+
+///Must be done here because at the time of the constructor, the shared_ptr doesn't exist yet but
+///addLayer() needs it to get a shared ptr to this
+void
+RotoContext::createBaseLayer()
+{
     ////Add the base layer
     boost::shared_ptr<RotoLayer> base = addLayer();
-
+    
     deselect(base,RotoContext::OTHER);
 }
 
@@ -3709,7 +3710,7 @@ boost::shared_ptr<RotoLayer>
 RotoContext::addLayer()
 {
     int no;
-    boost::shared_ptr<RotoContext> this_shared = boost::dynamic_pointer_cast<RotoContext>(shared_from_this());
+    boost::shared_ptr<RotoContext> this_shared = shared_from_this();
     assert(this_shared);
 
     ///MT-safe: only called on the main-thread

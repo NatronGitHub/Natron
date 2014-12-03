@@ -283,9 +283,10 @@ public:
      **/
     std::string getRotoNodeName() const;
 
+    boost::shared_ptr<RotoContext> getContext() const;
+
 protected:
 
-    boost::shared_ptr<RotoContext> getContext() const;
 
     ///This mutex protects every-member this class and the derived class might have.
     ///That is for the RotoItem class:
@@ -500,8 +501,6 @@ public:
     Bezier(const boost::shared_ptr<RotoContext>& context,
            const std::string & name,
            const boost::shared_ptr<RotoLayer>& parent);
-
-    explicit Bezier(const Bezier & other);
 
     Bezier(const Bezier & other,
            const boost::shared_ptr<RotoLayer>& parent);
@@ -873,6 +872,8 @@ public:
     RotoContext(Natron::Node* node);
 
     virtual ~RotoContext();
+    
+    void createBaseLayer();
 
     /**
      * @brief Returns true when the context is empty (it has no shapes)

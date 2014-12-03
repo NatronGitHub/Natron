@@ -541,7 +541,10 @@ void
 RotoPanel::onSelectedBezierKeyframeSet(int time)
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    boost::shared_ptr<Bezier> isBezier;
+    if (b) {
+        isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    }
     _imp->updateSplinesInfoGUI(time);
     if (isBezier) {
         _imp->setItemKey(isBezier, time);
@@ -552,7 +555,10 @@ void
 RotoPanel::onSelectedBezierKeyframeRemoved(int time)
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    boost::shared_ptr<Bezier> isBezier ;
+    if (b) {
+        isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    }
     _imp->updateSplinesInfoGUI(time);
     if (isBezier) {
         _imp->removeItemKey(isBezier, time);
@@ -563,7 +569,10 @@ void
 RotoPanel::onSelectedBezierAboutToClone()
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    boost::shared_ptr<Bezier> isBezier ;
+    if (b) {
+        isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    }
 
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
@@ -581,7 +590,10 @@ void
 RotoPanel::onSelectedBezierCloned()
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    boost::shared_ptr<Bezier> isBezier;
+    if (b) {
+        isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    }
 
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
@@ -891,7 +903,10 @@ RotoPanel::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
                          int reason)
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    boost::shared_ptr<Bezier> isBezier;
+    if (b) {
+        isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    }
 
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
@@ -961,7 +976,10 @@ void
 RotoPanel::onRotoItemShapeColorChanged()
 {
     RotoDrawableItem* i = qobject_cast<RotoDrawableItem*>( sender() );
-    boost::shared_ptr<RotoDrawableItem> item = boost::dynamic_pointer_cast<RotoDrawableItem>(i->shared_from_this());
+    boost::shared_ptr<RotoDrawableItem> item;
+    if (i) {
+        item = boost::dynamic_pointer_cast<RotoDrawableItem>(i->shared_from_this());
+    }
 
     if (item) {
         int time = _imp->context->getTimelineCurrentTime();
@@ -984,7 +1002,10 @@ RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
         return;
     }
     RotoDrawableItem* i = qobject_cast<RotoDrawableItem*>( sender() );
-    boost::shared_ptr<RotoDrawableItem> item = boost::dynamic_pointer_cast<RotoDrawableItem>(i->shared_from_this());
+    boost::shared_ptr<RotoDrawableItem> item;
+    if (item) {
+        item = boost::dynamic_pointer_cast<RotoDrawableItem>(i->shared_from_this());
+    }
 
     if (item) {
         int time = _imp->context->getTimelineCurrentTime();
