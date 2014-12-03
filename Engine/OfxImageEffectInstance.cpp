@@ -902,7 +902,9 @@ OfxImageEffectInstance::getClips() const
 bool
 OfxImageEffectInstance::getCanApplyTransform(OfxClipInstance** clip) const
 {
-    
+    if (!clip) {
+        return false;
+    }
     for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
         if (it->second->canTransform()) {
             assert(!it->second->isOutput());
@@ -910,7 +912,7 @@ OfxImageEffectInstance::getCanApplyTransform(OfxClipInstance** clip) const
                 return false;
             }
             *clip = dynamic_cast<OfxClipInstance*>(it->second);
-            return (clip != NULL);
+            return (*clip != NULL);
         }
     }
     return false;

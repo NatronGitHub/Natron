@@ -402,33 +402,7 @@ AppInstance::questionDialog(const std::string & title,
     return Natron::eStandardButtonYes;
 }
 
-void
-AppInstance::checkViewersConnection()
-{
-    std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
 
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-        if (n) {
-            n->renderCurrentFrame(true);
-        }
-    }
-}
-
-void
-AppInstance::redrawAllViewers()
-{
-    std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
-
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-        if (n) {
-            n->redrawViewer();
-        }
-    }
-}
 
 void
 AppInstance::triggerAutoSave()

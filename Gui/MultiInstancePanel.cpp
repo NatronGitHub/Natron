@@ -1032,9 +1032,11 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                     Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
                     if (!isButton) {
                         otherKnob->clone(knobs[i]);
+                        knobs[i]->blockEvaluation();
                         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
                             knobs[i]->slaveTo(j, otherKnob, j,true);
                         }
+                        knobs[i]->unblockEvaluation();
                     }
                 }
 
@@ -1065,6 +1067,8 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
             }
         }
     }
+    
+    getGui()->redrawAllViewers();
 } // onSelectionChanged
 
 void
@@ -1150,6 +1154,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
         if ( knobs[i]->isInstanceSpecific() ) {
             for (int j = 0; j < knobs[i]->getDimension(); ++j) {
                 if ( instanceSpecificIndex == modelIndex.column() ) {
+
                     Int_Knob* isInt = dynamic_cast<Int_Knob*>( knobs[i].get() );
                     Bool_Knob* isBool = dynamic_cast<Bool_Knob*>( knobs[i].get() );
                     Double_Knob* isDouble = dynamic_cast<Double_Knob*>( knobs[i].get() );
@@ -1166,7 +1171,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     } else if (isString) {
                         isString->setValue(data.toString().toStdString(), j,true);
                     }
-
+         
                     return;
                 }
                 ++instanceSpecificIndex;

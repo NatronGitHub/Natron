@@ -134,6 +134,8 @@ public:
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
 public slots:
+    
+    virtual void redrawAllViewers() OVERRIDE FINAL;
 
     void onProcessFinished();
 

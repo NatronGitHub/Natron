@@ -439,6 +439,9 @@ public:
     void refreshLeftToolBarVisibility(const QPoint& globalPos);
     
     void setLeftToolBarVisible(bool visible);
+    
+    void redrawAllViewers();
+    
 signals:
 
     void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);

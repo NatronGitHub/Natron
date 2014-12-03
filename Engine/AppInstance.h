@@ -304,10 +304,7 @@ public slots:
 
     void quit();
 
-    /* The following methods are forwarded to the model */
-    void checkViewersConnection();
-
-    void redrawAllViewers();
+    virtual void redrawAllViewers() {}
 
     void triggerAutoSave();
 
