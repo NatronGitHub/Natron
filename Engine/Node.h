@@ -55,7 +55,6 @@ class OutputEffectInstance;
 class Image;
 class EffectInstance;
 class LibraryBinary;
-class ChannelSet;
 
 class Node
     : public QObject
@@ -757,11 +756,6 @@ public slots:
         emit previewImageChanged(time);
     }
 
-    void notifyGuiChannelChanged(const Natron::ChannelSet & c)
-    {
-        emit channelsChanged(c);
-    }
-
     void onMasterNodeDeactivated();
 
     void onInputNameChanged(const QString & name);
@@ -807,8 +801,6 @@ signals:
     void previewImageChanged(int);
 
     void previewRefreshRequested(int);
-
-    void channelsChanged(const Natron::ChannelSet &);
 
     void inputNIsRendering(int inputNb);
 
