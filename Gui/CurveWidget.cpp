@@ -571,7 +571,7 @@ KnobCurveGui::getInternalKnob() const
 }
 
 BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
-                                   Bezier* bezier,
+                                   const boost::shared_ptr<Bezier>& bezier,
                                    const boost::shared_ptr<RotoContext>& roto,
                                    const QString & name,
                                    const QColor & color,
@@ -586,7 +586,7 @@ BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
     }
 }
 
-Bezier*
+boost::shared_ptr<Bezier>
 BezierCPCurveGui::getBezier() const
 {
     return _bezier;

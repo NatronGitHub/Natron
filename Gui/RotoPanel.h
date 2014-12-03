@@ -46,7 +46,7 @@ public:
     boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
     QTreeWidgetItem* getTreeItemForRotoItem(const boost::shared_ptr<RotoItem> & item) const;
     std::string getNodeName() const;
-    RotoContext* getContext() const;
+    boost::shared_ptr<RotoContext> getContext() const;
 
     void clearSelection();
 
@@ -56,7 +56,8 @@ public:
 
     void setLastRightClickedItem(QTreeWidgetItem* item);
 
-    void makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem = NULL);
+    void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
+                                  QTreeWidgetItem* treeItem = NULL);
 
 public slots:
 
@@ -89,7 +90,7 @@ public slots:
     void onItemInserted(int reason);
 
     ///An item was removed by the user
-    void onItemRemoved(RotoItem* item,int reason);
+    void onItemRemoved(const boost::shared_ptr<RotoItem>& item,int reason);
 
 #ifdef NATRON_ROTO_INVERTIBLE
     ///An item had its inverted state changed
@@ -105,19 +106,19 @@ public slots:
     void onCurrentItemCompOperatorChanged(int index);
 
     ///The user changed the current item in the tree
-    void onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem* previous);
+    void onCurrentItemChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
     ///An item content was changed
-    void onItemChanged(QTreeWidgetItem* item,int column);
+    void onItemChanged(QTreeWidgetItem* item, int column);
 
     ///An item was clicked
-    void onItemClicked(QTreeWidgetItem* item,int column);
+    void onItemClicked(QTreeWidgetItem* item, int column);
 
     ///An item was double clicked
     void onItemDoubleClicked(QTreeWidgetItem* item,int column);
 
     ///Connected to QApplication::focusChanged to deal with an issue of the QTreeWidget
-    void onFocusChanged(QWidget* old,QWidget*);
+    void onFocusChanged(QWidget* old, QWidget*);
 
     ///This gets called when the selection in the tree has changed
     void onItemSelectionChanged();
@@ -153,14 +154,14 @@ private:
 
 struct DroppedTreeItem
 {
-    RotoLayer* newParentLayer;
+    boost::shared_ptr<RotoLayer> newParentLayer;
     int insertIndex;
     QTreeWidgetItem* newParentItem;
     QTreeWidgetItem* dropped;
     boost::shared_ptr<RotoItem> droppedRotoItem;
 
     DroppedTreeItem()
-        : newParentLayer(0)
+        : newParentLayer()
           , insertIndex(-1)
           , newParentItem(0)
           , dropped(0)
