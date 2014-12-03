@@ -1454,17 +1454,21 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
     if (stat != kOfxStatReplyDefault) {
         
         for (std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin(); it != inputRois.end(); ++it) {
-            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-            RectD inputRoi; // input RoI in canonical coordinates
-            inputRoi.x1 = it->second.x1;
-            inputRoi.x2 = it->second.x2;
-            inputRoi.y1 = it->second.y1;
-            inputRoi.y2 = it->second.y2;
-            
-            ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
-            ///infinite rod.
-            ifInfiniteclipRectToProjectDefault(&inputRoi);
-            ret->insert( std::make_pair(inputNode,inputRoi) );
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+            assert(clip);
+            if (clip) {
+                EffectInstance* inputNode = clip->getAssociatedNode();
+                RectD inputRoi; // input RoI in canonical coordinates
+                inputRoi.x1 = it->second.x1;
+                inputRoi.x2 = it->second.x2;
+                inputRoi.y1 = it->second.y1;
+                inputRoi.y2 = it->second.y2;
+
+                ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
+                ///infinite rod.
+                ifInfiniteclipRectToProjectDefault(&inputRoi);
+                ret->insert( std::make_pair(inputNode,inputRoi) );
+            }
         }
         
     } else if (stat == kOfxStatReplyDefault) {
@@ -1507,9 +1511,13 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time)
         Natron::errorDialog( getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
-            int inputNb = dynamic_cast<OfxClipInstance*>(it->first)->getInputNb();
-            if (inputNb != -1) {
-                ret.insert( std::make_pair(inputNb,it->second) );
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+            assert(clip);
+            if (clip) {
+                int inputNb = clip->getInputNb();
+                if (inputNb != -1) {
+                    ret.insert( std::make_pair(inputNb,it->second) );
+                }
             }
         }
     } else if (stat == kOfxStatReplyDefault) {
@@ -1700,10 +1708,15 @@ OfxEffectInstance::isIdentity(SequenceTime time,
             // this is a plugin-side error, don't crash
             qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
 
-            return eStatusFailed;
+            return false;
         }
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
+        if (!natronClip) {
+            qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
+
+            return false;
+        }
         *inputTime = inputTimeOfx;
 
         if ( natronClip->isOutput() ) {
@@ -2753,7 +2766,9 @@ OfxEffectInstance::getTransform(SequenceTime time,
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
     assert(clip);
     OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
-    
+    if (!natronClip) {
+        return Natron::eStatusFailed;
+    }
     *inputToTransform = natronClip->getAssociatedNode();
     
     return Natron::eStatusOK;

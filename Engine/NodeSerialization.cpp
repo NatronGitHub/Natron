@@ -20,9 +20,16 @@
 
 NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs,bool copyKnobs)
     : _isNull(true)
-      , _hasRotoContext(false)
-      , _node()
-      , _app(NULL)
+    , _nbKnobs(0)
+    , _knobsValues()
+    , _knobsAge(0)
+    , _pluginLabel()
+    , _pluginID()
+    , _pluginMajorVersion(-1)
+    , _pluginMinorVersion(-1)
+    , _hasRotoContext(false)
+    , _node()
+    , _app(NULL)
 {
     if (n) {
         _node = n;

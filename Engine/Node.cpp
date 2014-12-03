@@ -3679,7 +3679,11 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     emit inputChanged(inputNb);
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
-        dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame(true);
+        Natron::OutputEffectInstance* oei = dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() );
+        assert(oei);
+        if (oei) {
+            oei->renderCurrentFrame(true);
+        }
     }
 }
 
