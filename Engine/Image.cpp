@@ -782,8 +782,8 @@ Image::halveRoIForDepth(const RectI & roi,
             break;
         }
         
-        bool pickNextRow = (y * 2) < (srcBounds.height() - 1);
-        bool pickThisRow = (y * 2) >= (srcBounds.y1);
+        bool pickNextRow = ((y + dstRoI.y1) * 2) < (srcBounds.y2 - 1);
+        bool pickThisRow = ((y + dstRoI.y1) * 2) >= (srcBounds.y1);
         int sumH = (int)pickNextRow + (int)pickThisRow;
         assert(sumH == 1 || sumH == 2);
         
@@ -793,8 +793,8 @@ Image::halveRoIForDepth(const RectI & roi,
              dst += (components) - components, // one pixel minus what was done on previous iteration
              ++srcBm) {
             
-            bool pickNextCol = (x * 2) < (srcBounds.width() - 1);
-            bool pickThisCol = (x * 2) >= (srcBounds.x1);
+            bool pickNextCol = ((x + dstRoI.x1) * 2) < (srcBounds.x2 - 1);
+            bool pickThisCol = ((x + dstRoI.x1) * 2) >= (srcBounds.x1);
             int sumW = (int)pickThisCol + (int)pickNextCol;
             assert(sumW == 1 || sumW == 2);
             
