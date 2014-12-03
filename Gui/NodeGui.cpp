@@ -652,6 +652,9 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
+    if (!isVisible()) {
+        return;
+    }
     item->stackBefore(this);
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
