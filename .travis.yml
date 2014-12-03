@@ -4,6 +4,12 @@ env:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "Ss+/N7eLl1cnXRP+XmXuBuuMXTZ/0TUgiGxBJMYGVTmwG2tDDAfhsUh5laeb/OE7dNxwLK5uLeb/XXI4AlP6W7tfquIAAq6/PhKIiRTXDgU6Sfa5voHiM8ni1x9rBtmaOk6/8QjWWSisrQmy9DmxRfYtP2i/sKkpIcJHCs5OCpo="
+  # Coverity run condition (avoid matrix multiple runs), need customized
+  # build script. Need an update if new matrix cases.
+  - coverity_scan_run_condition='"$CC" = gcc -a "$TRAVIS_OS_NAME" != osx'
+  # Coverity script test mode (if true no uploading, avoid reaching the quota)
+  # usual processing: false.
+  - coverity_scan_script_test_mode=false
 
 os:
   - linux
