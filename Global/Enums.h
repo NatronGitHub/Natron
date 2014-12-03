@@ -11,9 +11,6 @@
 #ifndef NATRON_GLOBAL_ENUMS_H_
 #define NATRON_GLOBAL_ENUMS_H_
 
-#define NATRON_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
-#define NATRON_MAX_VALID_CHANNEL_INDEX 6
-
 #include "Global/Macros.h"
 #include <QFlags>
 CLANG_DIAG_OFF(deprecated)
@@ -39,34 +36,6 @@ enum TimelineChangeReasonEnum
     eTimelineChangeReasonUserSeek = 0,
     eTimelineChangeReasonPlaybackSeek = 1,
     eTimelineChangeReasonCurveEditorSeek = 2,
-};
-
-// when adding more standard channels,
-// update the functions getChannelByName() and getChannelName() in ChannelSet.cpp
-enum Channel
-{
-    Channel_black = 0,
-    Channel_red = 1,
-    Channel_green = 2,
-    Channel_blue = 3,
-    Channel_alpha = 4,
-    Channel_Z = 5,
-    // note: Channel_unused is not a channel per se, it is just the first unused channel,
-    // and its index may thus change between versions
-    Channel_unused = 6
-};
-
-enum ChannelMask
-{
-    Mask_None  = 0,
-    Mask_Red   = 1 << (Channel_red - 1),      //1
-        Mask_Green = 1 << (Channel_green - 1), // 10
-        Mask_Blue  = 1 << (Channel_blue - 1), // 100
-        Mask_Alpha = 1 << (Channel_alpha - 1), // 1000
-        Mask_Z     = 1 << (Channel_Z - 1), //10000
-        Mask_RGB   = Mask_Red | Mask_Green | Mask_Blue, // 111
-        Mask_RGBA  = Mask_RGB | Mask_Alpha, // 1111
-        Mask_All   = 0xFFFFFFFF
 };
 
 enum StatusEnum

@@ -43,7 +43,6 @@
 #include "Engine/Format.h"
 #include "Engine/Log.h"
 #include "Engine/Cache.h"
-#include "Engine/ChannelSet.h"
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
@@ -1344,7 +1343,6 @@ void
 AppManager::registerEngineMetaTypes() const
 {
     qRegisterMetaType<Variant>();
-    qRegisterMetaType<Natron::ChannelSet>();
     qRegisterMetaType<Format>();
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<Natron::StandardButtons>();

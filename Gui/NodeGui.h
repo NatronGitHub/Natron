@@ -333,10 +333,6 @@ public slots:
     /*Updates the preview image no matter what*/
     void forceComputePreview(int time);
 
-    /*Updates the channels tooltip. This is called by Node::validate(),
-       i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip(const Natron::ChannelSet & _channelsPixmap);
-
     void setName(const QString & _nameItem);
 
     void onInternalNameChanged(const QString &);
