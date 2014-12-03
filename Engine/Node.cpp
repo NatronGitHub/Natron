@@ -1650,10 +1650,7 @@ Node::switchInput0And1()
         ///if there's a mask use it as input B for the switch
         if (firstMaskInput != -1) {
             inputBIndex = firstMaskInput;
-        } else {
-            ///there's only 1 input
-            return;
-        }
+        } 
     }
     
     ///If the node is currently rendering, queue the action instead of executing it
