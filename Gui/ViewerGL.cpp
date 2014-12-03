@@ -1080,8 +1080,8 @@ ViewerGL::paintGL()
 
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
-        GLProtectMatrix p(GL_PROJECTION);
+        //GLProtectMatrix m(GL_MODELVIEW);
+        //GLProtectMatrix p(GL_PROJECTION);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();

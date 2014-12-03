@@ -283,6 +283,9 @@ struct NodeGraphPrivate
     NodeBackDrop* _backdropResized; //< the backdrop being resized
     bool _firstMove;
     NodeSelection _selection;
+    
+    std::map<NodeBackDrop*,std::list<boost::shared_ptr<NodeGui> > > _nodesWithinBDAtPenDown;
+    
     QGraphicsRectItem* _selectionRect;
     bool _bendPointsVisible;
     bool _knobLinksVisible;
@@ -327,6 +330,7 @@ struct NodeGraphPrivate
           , _backdropResized(NULL)
           , _firstMove(true)
           , _selection()
+          , _nodesWithinBDAtPenDown()
           , _selectionRect(NULL)
           , _bendPointsVisible(false)
           , _knobLinksVisible(true)
@@ -961,6 +965,17 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             }
         }
     }
+    if (_imp->_evtState == BACKDROP_DRAGGING) {
+        ///build the _nodesWithinBDAtPenDown map
+        _imp->_nodesWithinBDAtPenDown.clear();
+        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
+            if ((*it)->getIsSelected()) {
+                std::list<boost::shared_ptr<NodeGui> > nodesWithin = getNodesWithinBackDrop(*it);
+                _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
+            }
+        }
+    }
+    
     ///Don't forget to reset back to null the _backdropResized pointer
     if (_imp->_evtState != BACKDROP_RESIZING) {
         _imp->_backdropResized = NULL;
@@ -1068,7 +1083,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 
     _imp->_firstMove = true;
     _imp->_evtState = DEFAULT;
-
+    _imp->_nodesWithinBDAtPenDown.clear();
     if (state == ARROW_DRAGGING) {
         
         QRectF sceneR = visibleSceneRect();
@@ -1323,23 +1338,29 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                  ( _imp->_evtState == NODE_DRAGGING) ) {
                 ///For all backdrops also move all the nodes contained within it
                 for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-                    std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = getNodesWithinBackDrop(*it);
-                    for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                        ///add it only if it's not already in the list
-                        bool found = false;
-                        for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
-                             it3 != nodesToMove.end(); ++it3) {
-                            if (it3->node == *it2) {
-                                found = true;
-                                break;
+                    
+                    std::map<NodeBackDrop*,std::list<boost::shared_ptr<NodeGui> > >::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+                    if (foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
+                        
+                        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = foundBd->second.begin();
+                             it2 != foundBd->second.end(); ++it2) {
+                            ///add it only if it's not already in the list
+                            bool found = false;
+                            for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
+                                 it3 != nodesToMove.end(); ++it3) {
+                                if (it3->node == *it2) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                MoveMultipleNodesCommand::NodeToMove n;
+                                n.node = *it2;
+                                n.isWithinBD = true;
+                                nodesToMove.push_back(n);
                             }
                         }
-                        if (!found) {
-                            MoveMultipleNodesCommand::NodeToMove n;
-                            n.node = *it2;
-                            n.isWithinBD = true;
-                            nodesToMove.push_back(n);
-                        }
+
                     }
                 }
             }

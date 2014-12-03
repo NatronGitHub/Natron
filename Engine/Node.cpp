@@ -835,7 +835,7 @@ Node::getInputNames(std::vector<std::string> & inputNames) const
 }
 
 int
-Node::getPreferredInputForConnection() const
+Node::getPreferredInputForConnection() 
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (getMaxInputCount() == 0) {
@@ -1649,10 +1649,7 @@ Node::switchInput0And1()
         ///if there's a mask use it as input B for the switch
         if (firstMaskInput != -1) {
             inputBIndex = firstMaskInput;
-        } else {
-            ///there's only 1 input
-            return;
-        }
+        } 
     }
     
     ///If the node is currently rendering, queue the action instead of executing it
@@ -3516,8 +3513,6 @@ InspectorNode::InspectorNode(AppInstance* app,
                              LibraryBinary* plugin)
 : Node(app,plugin)
 , _inputsCount(1)
-, _activeInput(0)
-, _activeInputMutex()
 {
 }
 
@@ -3559,17 +3554,8 @@ InspectorNode::connectInput(boost::shared_ptr<Node> input,
         addEmptyInput();
     }
     
-    int oldActiveInput;
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        oldActiveInput = _activeInput;
-        _activeInput = inputNumber;
-    }
     if ( !Node::connectInput(input, inputNumber) ) {
-        {
-            QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = oldActiveInput;
-        }
+        
         computeHash();
     }
     tryAddEmptyInput();
@@ -3611,10 +3597,7 @@ InspectorNode::addEmptyInput()
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        _activeInput = _inputsCount - 1;
-    }
+
     ++_inputsCount;
     initializeInputs();
 }
@@ -3647,10 +3630,7 @@ InspectorNode::disconnectInput(int inputNumber)
     
     if (ret != -1) {
         removeEmptyInputs();
-        {
-            QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = _inputsCount - 1;
-        }
+
     }
     
     return ret;
@@ -3671,10 +3651,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     if ( ( inputNb > (_inputsCount - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
         return;
     }
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        _activeInput = inputNb;
-    }
+
     computeHash();
     emit inputChanged(inputNb);
     onInputChanged(inputNb);
@@ -3685,5 +3662,18 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
             oei->renderCurrentFrame(true);
         }
     }
+}
+
+int
+InspectorNode::getPreferredInputForConnection()
+{
+    for (int i = 0; i < _inputsCount; ++i) {
+        if (!getInput(i)) {
+            return i;
+        }
+    }
+    ///No free input, make a new one
+    addEmptyInput();
+    return _inputsCount - 1;
 }
 

@@ -309,7 +309,7 @@ public:
      * empty input if they are all optionals, or -1 if nothing matches the 2 first conditions..
      * if all inputs are connected.
      **/
-    int getPreferredInputForConnection() const;
+    virtual int getPreferredInputForConnection() ;
 
     /**
      * @brief Returns in 'outputs' a map of all nodes connected to this node
@@ -888,8 +888,7 @@ class InspectorNode
     Q_OBJECT
     
     int _inputsCount;
-    int _activeInput;
-    mutable QMutex _activeInputMutex;
+
 
 public:
 
@@ -907,6 +906,7 @@ public:
     virtual int disconnectInput(int inputNumber) OVERRIDE;
     virtual int disconnectInput(Node* input) OVERRIDE;
 
+    virtual int getPreferredInputForConnection()  OVERRIDE FINAL;
 
     bool tryAddEmptyInput();
 
@@ -916,10 +916,6 @@ public:
 
     void setActiveInputAndRefresh(int inputNb);
 
-    int activeInput() const
-    {
-        QMutexLocker l(&_activeInputMutex); return _activeInput;
-    }
 };
 
 #endif // NATRON_ENGINE_NODE_H_

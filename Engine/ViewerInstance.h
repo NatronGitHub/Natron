@@ -93,8 +93,6 @@ public:
 
     void disconnectViewer();
 
-    int activeInput() const WARN_UNUSED_RETURN;
-
     int getLutType() const WARN_UNUSED_RETURN;
 
     double getGain() const WARN_UNUSED_RETURN;

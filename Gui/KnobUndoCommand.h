@@ -151,8 +151,10 @@ private:
 
             boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(dimension);
             //find out if there's already an existing keyframe before calling setValue
-            bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
-            (void)found; // we don't care if it existed or not
+            if (c) {
+                bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
+                (void)found; // we don't care if it existed or not
+            }
 
             bool refreshGui;
             if (_firstRedoCalled) {
