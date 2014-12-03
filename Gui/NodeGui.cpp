@@ -45,7 +45,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
-#include "Engine/ChannelSet.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
@@ -652,6 +651,9 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
+    if (!isVisible()) {
+        return;
+    }
     item->stackBefore(this);
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
@@ -734,19 +736,6 @@ NodeGui::markInputNull(Edge* e)
             _inputEdges[i] = 0;
         }
     }
-}
-
-void
-NodeGui::updateChannelsTooltip(const Natron::ChannelSet & chan)
-{
-    QString tooltip;
-
-    tooltip += "Channels in input: ";
-    foreachChannels( z,chan) {
-        tooltip += "\n";
-        tooltip += Natron::getChannelName(z).c_str();
-    }
-    //_channelsPixmap->setToolTip(Qt::convertFromPlainText(tooltip, Qt::WhiteSpaceNormal));
 }
 
 void
@@ -2381,4 +2370,10 @@ bool
 NodeGui::isSettingsPanelOpened() const
 {
     return _settingsPanel ? !_settingsPanel->isClosed() : false;
+}
+
+void
+NodeGui::setPosition(double x,double y)
+{
+    refreshPosition(x, y, true);
 }

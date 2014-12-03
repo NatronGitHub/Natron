@@ -17,6 +17,7 @@
 
 #ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 
 #include <QMutex>
@@ -97,7 +98,7 @@ class Bezier;
 
 struct BezierCPPrivate
 {
-    Bezier* holder;
+    boost::weak_ptr<Bezier> holder;
 
     ///the animation curves for the position in the 2D plane
     boost::shared_ptr<Curve> curveX,curveY;
@@ -112,7 +113,7 @@ struct BezierCPPrivate
     boost::shared_ptr<Double_Knob> masterTrack; //< is this point linked to a track ?
     SequenceTime offsetTime; //< the time at which the offset must be computed
 
-    BezierCPPrivate(Bezier* curve)
+    BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
         : holder(curve)
           , curveX(new Curve)
           , curveY(new Curve)
@@ -258,9 +259,9 @@ struct BezierPrivate
 class RotoLayer;
 struct RotoItemPrivate
 {
-    RotoContext* context;
+    boost::weak_ptr<RotoContext> context;
     std::string name;
-    RotoLayer* parentLayer;
+    boost::weak_ptr<RotoLayer> parentLayer;
 
     ////This controls whether the item (and all its children if it is a layer)
     ////should be visible/rendered or not at any time.
@@ -271,9 +272,9 @@ struct RotoItemPrivate
     ////A locked item should not be modifiable by the GUI
     bool locked;
 
-    RotoItemPrivate(RotoContext* context,
+    RotoItemPrivate(const boost::shared_ptr<RotoContext> context,
                     const std::string & n,
-                    RotoLayer* parent)
+                    const boost::shared_ptr<RotoLayer>& parent)
         : context(context)
           , name(n)
           , parentLayer(parent)

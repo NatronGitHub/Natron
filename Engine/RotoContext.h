@@ -19,6 +19,7 @@
 #ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/serialization/split_member.hpp>
 #endif
 
@@ -95,7 +96,7 @@ public:
 
     BezierCP(const BezierCP & other);
 
-    BezierCP(Bezier* curve);
+    BezierCP(const boost::shared_ptr<Bezier>& curve);
 
     virtual ~BezierCP();
     
@@ -156,7 +157,7 @@ public:
      * @brief Pointer to the bezier holding this control point. This is not protected by a mutex
      * since it never changes.
      **/
-    Bezier* getBezier() const;
+    boost::shared_ptr<Bezier> getBezier() const;
 
     /**
      * @brief Returns whether a tangent handle is nearby the given coordinates.
@@ -195,7 +196,7 @@ class FeatherPoint
 {
 public:
 
-    FeatherPoint(Bezier* curve)
+    FeatherPoint(const boost::shared_ptr<Bezier>& curve)
         : BezierCP(curve)
     {
     }
@@ -219,13 +220,13 @@ struct Matrix3x3;
 
 struct RotoItemPrivate;
 class RotoItem
-    : public QObject
+: public QObject, public boost::enable_shared_from_this<RotoItem>
 {
 public:
 
-    RotoItem(RotoContext* context,
+    RotoItem(const boost::shared_ptr<RotoContext>& context,
              const std::string & name,
-             RotoLayer* parent = NULL);
+             boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>());
 
     virtual ~RotoItem();
 
@@ -237,18 +238,18 @@ public:
     std::string getName_mt_safe() const;
 
     ///only callable on the main-thread
-    void setParentLayer(RotoLayer* layer);
+    void setParentLayer(boost::shared_ptr<RotoLayer> layer);
 
     ///MT-safe
-    RotoLayer* getParentLayer() const;
+    boost::shared_ptr<RotoLayer> getParentLayer() const;
 
     ///only callable from the main-thread
-    void setGloballyActivated(bool a,bool setChildren);
+    void setGloballyActivated(bool a, bool setChildren);
 
     ///MT-safe
     bool isGloballyActivated() const;
 
-    void isDeactivatedRecursive(bool* ret) const;
+    bool isDeactivatedRecursive() const;
 
     void setLocked(bool l,bool lockChildren);
     bool getLocked() const;
@@ -284,7 +285,7 @@ public:
 
 protected:
 
-    RotoContext* getContext() const;
+    boost::shared_ptr<RotoContext> getContext() const;
 
     ///This mutex protects every-member this class and the derived class might have.
     ///That is for the RotoItem class:
@@ -331,9 +332,9 @@ class RotoDrawableItem
 public:
 
 
-    RotoDrawableItem(RotoContext* context,
+    RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
                      const std::string & name,
-                     RotoLayer* parent);
+                     const boost::shared_ptr<RotoLayer>& parent);
 
     virtual ~RotoDrawableItem();
 
@@ -428,15 +429,15 @@ class RotoLayer
 {
 public:
 
-    RotoLayer(RotoContext* context,
+    RotoLayer(const boost::shared_ptr<RotoContext>& context,
               const std::string & name,
-              RotoLayer* parent);
+              const boost::shared_ptr<RotoLayer>& parent);
 
-    RotoLayer(const RotoLayer & other);
+    explicit RotoLayer(const RotoLayer & other);
 
     virtual ~RotoLayer();
 
-    void clone(const RotoLayer & other);
+    //void clone(const RotoLayer & other);
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -455,20 +456,20 @@ public:
     ///only callable on the main-thread
     ///No check is done to figure out if the item already exists in this layer
     ///this is up to the caller responsability
-    void addItem(const boost::shared_ptr<RotoItem> & item);
+    void addItem(const boost::shared_ptr<RotoItem>& item);
 
     ///Inserts the item into the layer before the indicated index.
     ///The same restrictions as addItem are applied.
-    void insertItem(const boost::shared_ptr<RotoItem> & item,int index);
+    void insertItem(const boost::shared_ptr<RotoItem>& item,int index);
 
     ///only callable on the main-thread
-    void removeItem(const RotoItem* item);
+    void removeItem(const boost::shared_ptr<RotoItem>& item);
 
     ///Returns the index of the given item in the layer, or -1 if not found
-    int getChildIndex(const boost::shared_ptr<RotoItem> & item) const;
+    int getChildIndex(const boost::shared_ptr<RotoItem>& item) const;
 
     ///only callable on the main-thread
-    const std::list< boost::shared_ptr<RotoItem> > & getItems() const;
+    const std::list< boost::shared_ptr<RotoItem> >& getItems() const;
 
     ///MT-safe
     std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
@@ -496,11 +497,14 @@ class Bezier
 
 public:
 
-    Bezier(RotoContext* context,
+    Bezier(const boost::shared_ptr<RotoContext>& context,
            const std::string & name,
-           RotoLayer* parent);
+           const boost::shared_ptr<RotoLayer>& parent);
 
-    Bezier(const Bezier & other);
+    explicit Bezier(const Bezier & other);
+
+    Bezier(const Bezier & other,
+           const boost::shared_ptr<RotoLayer>& parent);
 
     virtual ~Bezier();
 
@@ -853,7 +857,7 @@ private:
 class RotoContextSerialization;
 struct RotoContextPrivate;
 class RotoContext
-    : public QObject
+: public QObject, public boost::enable_shared_from_this<RotoContext>
 {
     Q_OBJECT
 
@@ -913,10 +917,10 @@ public:
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(RotoItem* item,SelectionReason reason = OTHER);
+    void removeItem(const boost::shared_ptr<RotoItem>& item, SelectionReason reason = OTHER);
 
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem> & item,SelectionReason reason);
+    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,SelectionReason reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -1036,9 +1040,9 @@ public:
 
     void setLastItemLocked(const boost::shared_ptr<RotoItem> & item);
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
-    RotoLayer* getDeepestSelectedLayer() const;
+    boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
 
-    void onItemLockedChanged(RotoItem* item);
+    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item);
 
     void emitRefreshViewerOverlays();
 
@@ -1049,7 +1053,7 @@ public:
      **/
     std::string getRotoNodeName() const;
     
-    void onItemNameChanged(RotoItem* item);
+    void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
 
 signals:
 
@@ -1063,13 +1067,13 @@ signals:
 
     void itemInserted(int);
 
-    void itemRemoved(RotoItem*,int);
+    void itemRemoved(const boost::shared_ptr<RotoItem>&,int);
 
     void refreshViewerOverlays();
 
     void itemLockedChanged();
     
-    void itemNameChanged(RotoItem*);
+    void itemNameChanged(const boost::shared_ptr<RotoItem>&);
 
 public slots:
 
@@ -1083,16 +1087,16 @@ public slots:
 
 private:
 
-    void selectInternal(const boost::shared_ptr<RotoItem> & b);
+    void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
 
-    void removeItemRecursively(RotoItem* item,SelectionReason reason);
+    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,SelectionReason reason);
 
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.
      * If nothing is found, it searches through the selected items and find the deepest selected item's layer
      **/
-    RotoLayer* findDeepestSelectedLayer() const;
+    boost::shared_ptr<RotoLayer> findDeepestSelectedLayer() const;
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 

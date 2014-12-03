@@ -1613,6 +1613,8 @@ convertToFormatInternal(const RectI & renderWindow,
         return;
     }
 
+    assert(!intersection.isNull() && intersection.width() > 0 && intersection.height() > 0);
+
     if (channelForAlpha == -1) {
         switch (srcNComps) {
             case 4:
@@ -1648,7 +1650,6 @@ convertToFormatInternal(const RectI & renderWindow,
 
     const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
     const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
-
 
     for (int y = 0; y < intersection.height(); ++y) {
         

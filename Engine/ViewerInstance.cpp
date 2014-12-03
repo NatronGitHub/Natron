@@ -246,12 +246,6 @@ ViewerInstance::onNodeNameChanged(const QString & name)
     }
 }
 
-int
-ViewerInstance::activeInput() const
-{
-    //    InspectorNode::activeInput()  is MT-safe
-    return dynamic_cast<InspectorNode*>( getNode().get() )->activeInput(); // not MT-SAFE!
-}
 
 int
 ViewerInstance::getMaxInputCount() const
@@ -908,6 +902,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     assert(ramBuffer);
     params->ramBuffer = ramBuffer;
+    params->time = time;
     params->rod = rod;
     params->textureRect = textureRect;
     params->srcPremult = srcPremult;
@@ -1553,7 +1548,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     
     uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
                                           params->image,
-                                          params->cachedFrame->getTime(),
+                                          params->time,
                                           params->rod,
                                           params->bytesCount,
                                           params->textureRect,

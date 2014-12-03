@@ -19,6 +19,7 @@
 #include <QList>
 #ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 #include "Global/Macros.h"
 class Bezier;
@@ -519,7 +520,7 @@ private:
 
     RotoPanel* _roto;
     bool _firstRedoCalled;
-    RotoLayer* _parentLayer;
+    boost::shared_ptr<RotoLayer> _parentLayer;
     QTreeWidgetItem* _parentTreeItem;
     QTreeWidgetItem* _treeItem;
     boost::shared_ptr<RotoLayer> _layer;
@@ -535,7 +536,7 @@ public:
     struct Item
     {
         boost::shared_ptr<DroppedTreeItem> dropped;
-        RotoLayer* oldParentLayer;
+        boost::shared_ptr<RotoLayer> oldParentLayer;
         int indexInOldLayer;
         QTreeWidgetItem* oldParentItem;
     };
