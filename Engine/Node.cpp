@@ -23,7 +23,6 @@
 #include <ofxNatron.h>
 
 #include "Engine/Hash64.h"
-#include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxHost.h"

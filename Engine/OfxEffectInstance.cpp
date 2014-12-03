@@ -49,27 +49,6 @@
 
 using namespace Natron;
 using std::cout; using std::endl;
-#if 0
-namespace {
-ChannelSet
-ofxComponentsToNatronChannels(const std::string & comp)
-{
-    ChannelSet out;
-
-    if (comp == kOfxImageComponentAlpha) {
-        out += Channel_alpha;
-    } else if (comp == kOfxImageComponentRGB) {
-        out += Mask_RGB;
-    } else if (comp == kOfxImageComponentRGBA) {
-        out += Mask_RGBA;
-    } else if (comp == kOfxImageComponentYUVA) {
-        out += Mask_RGBA;
-    }
-
-    return out;
-}
-}
-#endif
 
 namespace  {
 /**

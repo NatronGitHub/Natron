@@ -36,7 +36,6 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Global/Macros.h"
 
-#include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
@@ -906,10 +905,6 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     setMouseTracking(true);
 
     QObject::connect( parent->getGui()->getApp()->getProject().get(),SIGNAL( formatChanged(Format) ),this,SLOT( onProjectFormatChanged(Format) ) );
-
-
-
-    _imp->blankViewerInfo.setChannels(Natron::Mask_RGBA);
 
     Format projectFormat;
     parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);

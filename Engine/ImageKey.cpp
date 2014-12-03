@@ -5,6 +5,7 @@ using namespace Natron;
 ImageKey::ImageKey()
 : KeyHelper<U64>()
 , _nodeHashKey(0)
+, _frameVaryingOrAnimated(false)
 , _time(0)
 //, _mipMapLevel(0)
 , _view(0)

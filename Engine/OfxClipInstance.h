@@ -28,7 +28,6 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/ChannelSet.h"
 #include "Engine/Image.h"
 #include "Engine/ThreadStorage.h"
 
