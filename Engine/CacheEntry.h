@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cstdio> // for std::remove
 #include <stdexcept>
 #include <vector>
 #include <fstream>
@@ -156,7 +157,8 @@ public:
                 _backingFile.reset();
                 return true;
             } else {
-                ::remove( _path.c_str() ) ;
+                int ret_code = std::remove( _path.c_str() );
+                (void)ret_code;
                 return false;
             }
         }
