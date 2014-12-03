@@ -246,12 +246,6 @@ ViewerInstance::onNodeNameChanged(const QString & name)
     }
 }
 
-int
-ViewerInstance::activeInput() const
-{
-    //    InspectorNode::activeInput()  is MT-safe
-    return dynamic_cast<InspectorNode*>( getNode().get() )->activeInput(); // not MT-SAFE!
-}
 
 int
 ViewerInstance::getMaxInputCount() const

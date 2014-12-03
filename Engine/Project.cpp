@@ -1584,27 +1584,20 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
             connectAsInput = false;
         }
     }
-
+    
     bool ret = false;
     if (connectAsInput) {
-        ///if the selected node is and inspector, we want to connect the created node on the active input
-        boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>(selected);
-        if (inspector) {
-            int activeInputIndex = inspector->activeInput();
-            bool ok = connectNodes(activeInputIndex, created, selected.get(),true);
+        
+        ///connect it to the first input
+        int selectedInput = selected->getPreferredInputForConnection();
+        if (selectedInput != -1) {
+            bool ok = connectNodes(selectedInput, created, selected.get(),true);
             assert(ok);
             ret = true;
         } else {
-            ///connect it to the first input
-            int selectedInput = selected->getPreferredInputForConnection();
-            if (selectedInput != -1) {
-                bool ok = connectNodes(selectedInput, created, selected.get(),true);
-                assert(ok);
-                ret = true;
-            } else {
-                ret = false;
-            }
+            ret = false;
         }
+        
     } else {
         if ( !created->isOutputNode() ) {
             ///we find all the nodes that were previously connected to the selected node,
