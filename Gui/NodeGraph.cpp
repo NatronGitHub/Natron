@@ -3527,8 +3527,8 @@ NodeGraph::createBackDrop(QVBoxLayout *dockContainer,
                 bbox = bbox.united(nodeBbox);
             }
 
-            int border = 100;
-            int headerHeight = bd->getHeaderHeight();
+            double border = mapToScene(QPoint(50,0)).x();
+            double headerHeight = bd->getHeaderHeight();
             QPointF scenePos(bbox.x() - border, bbox.y() - border);
             
             bd->setPos(bd->mapToParent(bd->mapFromScene(scenePos)));
