@@ -25,6 +25,11 @@ public :
      * @brief Returns whether the settings panel of this node is opened or not.
      **/
     virtual bool isSettingsPanelOpened() const = 0;
+    
+    /**
+     * @brief Set the position of the node in the nodegraph.
+     **/
+    virtual void setPosition(double x,double y) = 0;
 };
 
 #endif // NODEGUII_H

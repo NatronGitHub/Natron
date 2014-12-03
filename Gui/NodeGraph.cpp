@@ -1212,11 +1212,22 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 
                 if (getGui()) {
                     
-                    QRectF selectedNodeRect = selectedNode->mapToParent(selectedNode->boundingRect()).boundingRect();
-                    QRectF mergeHintRect = selectedNode->mapToParent(selectedNode->boundingRect()).boundingRect();
-                    QPointF selectedCenter = selectedNodeRect.center();
-                    QPointF mergeHintCenter = mergeHintRect.center();
-                    QPointF newNodePos((selectedCenter.x() + mergeHintCenter.x()) / 2., (selectedCenter.y() + mergeHintCenter.y()) / 2.);
+                    QRectF selectedNodeBbox = selectedNode->mapToScene(selectedNode->boundingRect()).boundingRect();
+                    QRectF mergeHintNodeBbox = _imp->_mergeHintNode->mapToScene(_imp->_mergeHintNode->boundingRect()).boundingRect();
+                    QPointF mergeHintCenter = mergeHintNodeBbox.center();
+                    
+                    ///Place the selected node on the right of the hint node
+                    selectedNode->setPosition(mergeHintCenter.x() + mergeHintNodeBbox.width() / 2. + NATRON_NODE_DUPLICATE_X_OFFSET,
+                                              mergeHintCenter.y() - selectedNodeBbox.height() / 2.);
+                    
+                    selectedNodeBbox = selectedNode->mapToScene(selectedNode->boundingRect()).boundingRect();
+                    
+                    QPointF selectedNodeCenter = selectedNodeBbox.center();
+                    ///Place the new merge node exactly in the middle of the 2, with an Y offset
+                    QPointF newNodePos((mergeHintCenter.x() + selectedNodeCenter.x()) / 2. - 40,
+                                       std::max((mergeHintCenter.y() + mergeHintNodeBbox.height() / 2.),
+                                                selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+                    
                     
                     CreateNodeArgs args("MergeOFX  [Merge]","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
                                         CreateNodeArgs::DefaultValuesList());
@@ -1226,6 +1237,8 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         mergeNode->connectInput(selectedNode->getNode(), 1);
                         mergeNode->connectInput(_imp->_mergeHintNode->getNode(), 2);
                     }
+                    
+                   
                 }
                 
                 _imp->_mergeHintNode.reset();

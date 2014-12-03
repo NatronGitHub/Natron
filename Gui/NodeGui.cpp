@@ -2385,3 +2385,9 @@ NodeGui::isSettingsPanelOpened() const
 {
     return _settingsPanel ? !_settingsPanel->isClosed() : false;
 }
+
+void
+NodeGui::setPosition(double x,double y)
+{
+    refreshPosition(x, y, true);
+}
