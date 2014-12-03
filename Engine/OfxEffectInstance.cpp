@@ -1495,7 +1495,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
             if (!it->second->isOutput()) {
                 OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
                 assert(natronClip);
-                EffectInstance* inputNode = natronClip->getAssociatedNode();
+                EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
                 if (inputNode) {
                     ret->insert( std::make_pair(inputNode, renderWindow) );
                 }
