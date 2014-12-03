@@ -889,8 +889,9 @@ RotoPanelPrivate::insertItemInternal(int reason,
     }
     if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
         boost::shared_ptr<RotoDrawableItem> drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
-        assert(drawable);
-        publicInterface->makeCustomWidgetsForItem(drawable);
+        if (drawable) {
+            publicInterface->makeCustomWidgetsForItem(drawable);
+        }
 
         return;
     }
