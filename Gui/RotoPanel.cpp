@@ -193,7 +193,7 @@ struct RotoPanelPrivate
                      NodeGui*  n)
         : publicInterface(publicInter)
           , node(n)
-          , context( n->getNode()->getRotoContext().get() )
+          , context( n->getNode()->getRotoContext())
           , editedItem(NULL)
           , lastRightClickedItem(NULL)
           , clipBoard()
