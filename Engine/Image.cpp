@@ -759,7 +759,7 @@ Image::halveRoIForDepth(const RectI & roi,
     int dstRoIHeight = dstRoI.height();
     int srcRowSize = srcBounds.width() * components;
     int dstRowSize = dstBounds.width() * components;
-    
+
     // offset srcData, so that it corrsponds to the pixel at dstData
     const PIX* const srcData = ((const PIX*)pixelAt(srcRoI.x1, srcRoI.y1)
                                 - srcxoffset * components
@@ -774,24 +774,17 @@ Image::halveRoIForDepth(const RectI & roi,
                                    - srcyoffset * srcBmRowSize);
     char* const dstBmData = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
 
-    // Loop with sliding pointers:
-    // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
-    // This is the *good* way to code it, let the optimizer do the rest!
-    // Please don't change this, and don't remove the comments.
     for (int y = 0; y < dstRoIHeight; ++y) {
         const PIX* const srcLineStart    = srcData   + y * 2 * srcRowSize;
         const char* const srcBmLineStart = srcBmData + y * 2 * srcBmRowSize;
         PIX* const dstLineStart          = dstData   + y * dstRowSize;
         char* const dstBmLineStart       = dstBmData + y * dstBmRowSize;
 
-        //if (y * 2 >= srcRoI.height()) {
-        //    break;
-        //}
-
         // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
         // Check that if are within srcBounds.
-        bool pickNextRow = ((y + dstRoI.y1) * 2) < (srcBounds.y2 - 1);;
-        bool pickThisRow = ((y + dstRoI.y1) * 2) >= (srcBounds.y1);
+        int srcy = (y + dstRoI.y1) * 2;
+        bool pickThisRow = srcBounds.y1 <= srcy && srcy < srcBounds.y2;
+        bool pickNextRow = srcBounds.y1 <= (srcy + 1) && (srcy + 1) < srcBounds.y2;
 
         int sumH = (int)pickNextRow + (int)pickThisRow;
         assert(sumH == 1 || sumH == 2);
@@ -804,12 +797,16 @@ Image::halveRoIForDepth(const RectI & roi,
 
             // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
             // Check that if are within srcBounds.
-            bool pickNextCol = ((x + dstRoI.x1) * 2) < (srcBounds.x2 - 1);
-            bool pickThisCol = ((x + dstRoI.x1) * 2) >= (srcBounds.x1);
+            int srcx = (x + dstRoI.x1) * 2;
+            bool pickThisCol = srcBounds.x1 <= srcx && srcx < srcBounds.x2;
+            bool pickNextCol = srcBounds.x1 <= (srcx + 1) && (srcx + 1) < srcBounds.x2;
+
             int sumW = (int)pickThisCol + (int)pickNextCol;
             assert(sumW == 1 || sumW == 2);
             const int sum = sumW * sumH;
-            
+
+            assert(0 < sum && sum <= 4);
+
             for (int k = 0; k < components; ++k) {
                 const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart) : 0;
                 const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + components) : 0;
