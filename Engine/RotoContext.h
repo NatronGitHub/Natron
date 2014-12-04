@@ -230,7 +230,7 @@ public:
 
     virtual ~RotoItem();
 
-    void clone(const RotoItem & other);
+    virtual void clone(const RotoItem*  other);
 
     ///only callable on the main-thread
     void setName(const std::string & name);
@@ -339,7 +339,7 @@ public:
 
     virtual ~RotoDrawableItem();
 
-    void clone(const RotoDrawableItem & other);
+    virtual void clone(const RotoItem*  other);
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -507,7 +507,7 @@ public:
 
     virtual ~Bezier();
 
-    void clone(const Bezier & other);
+    virtual void clone(const RotoItem* other);
     /**
      * @brief Adds a new control point to the curve. A feather point will be added, at the same position.
      * If auto keying is enabled and this is the first point and there's no keyframe a new keyframe will be set at the current time.

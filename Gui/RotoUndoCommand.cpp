@@ -335,7 +335,7 @@ AddPointUndoCommand::AddPointUndoCommand(RotoGui* roto,
       , _t(t)
 {
     _oldCurve.reset( new Bezier(curve->getContext(),curve->getName_mt_safe(),curve->getParentLayer()) );
-    _oldCurve->clone(*curve);
+    _oldCurve->clone(curve.get());
     
 }
 
@@ -346,7 +346,7 @@ AddPointUndoCommand::~AddPointUndoCommand()
 void
 AddPointUndoCommand::undo()
 {
-    _curve->clone(*_oldCurve);
+    _curve->clone(_oldCurve.get());
     _roto->setSelection( _curve, std::make_pair( CpPtr(),CpPtr() ) );
     _roto->evaluate(true);
     setText( QObject::tr("Add point to %1 of %2").arg( _curve->getName_mt_safe().c_str() ).arg( _roto->getNodeName() ) );
@@ -355,7 +355,7 @@ AddPointUndoCommand::undo()
 void
 AddPointUndoCommand::redo()
 {
-    _oldCurve->clone(*_curve);
+    _oldCurve->clone(_curve.get());
     boost::shared_ptr<BezierCP> cp = _curve->addControlPointAfterIndex(_index,_t);
     boost::shared_ptr<BezierCP> newFp = _curve->getFeatherPointAtIndex(_index + 1);
 
@@ -389,7 +389,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
     desc.curve = curve;
     desc.points.push_back(indexToRemove);
     desc.oldCurve.reset( new Bezier(curve->getContext(),curve->getName_mt_safe(),curve->getParentLayer()) );
-    desc.oldCurve->clone(*curve);
+    desc.oldCurve->clone(curve.get());
     _curves.push_back(desc);
 }
 
@@ -432,7 +432,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
             curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getName_mt_safe(),curve->getParentLayer()) );
-            curveDesc.oldCurve->clone(*curve);
+            curveDesc.oldCurve->clone(curve.get());
             _curves.push_back(curveDesc);
         } else {
             foundCurve->points.push_back(indexToRemove);
@@ -455,7 +455,7 @@ RemovePointUndoCommand::undo()
 
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         ///clone the curve
-        it->curve->clone( *(it->oldCurve) );
+        it->curve->clone(it->oldCurve.get());
         if (it->curveRemoved) {
             _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->curve,RotoContext::OVERLAY_INTERACT);
         }
@@ -473,7 +473,7 @@ RemovePointUndoCommand::redo()
 {
     ///clone the curve
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-        it->oldCurve->clone( *(it->curve) );
+        it->oldCurve->clone(it->curve.get());
     }
 
     std::list<boost::shared_ptr<Bezier> > toRemove;
@@ -1129,7 +1129,7 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
         _curveNonExistant = true;
     } else {
         _oldCurve.reset( new Bezier(_newCurve->getContext(),_newCurve->getName_mt_safe(),_newCurve->getParentLayer()) );
-        _oldCurve->clone(*_newCurve);
+        _oldCurve->clone(_newCurve.get());
     }
 }
 
@@ -1143,7 +1143,7 @@ MakeBezierUndoCommand::undo()
     assert(_createdPoint);
     _roto->setCurrentTool(RotoGui::DRAW_BEZIER,true);
     assert(_lastPointAdded != -1);
-    _oldCurve->clone(*_newCurve);
+    _oldCurve->clone(_newCurve.get());
     if (_newCurve->getControlPointsCount() == 1) {
         _curveNonExistant = true;
         _roto->removeCurve(_newCurve);
@@ -1173,18 +1173,18 @@ MakeBezierUndoCommand::redo()
                 _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName);
                 assert(_newCurve);
                 _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getName_mt_safe(), _newCurve->getParentLayer()) );
-                _oldCurve->clone(*_newCurve);
+                _oldCurve->clone(_newCurve.get());
                 _lastPointAdded = 0;
                 _curveNonExistant = false;
             } else {
-                _oldCurve->clone(*_newCurve);
+                _oldCurve->clone(_newCurve.get());
                 _newCurve->addControlPoint(_x, _y);
                 int lastIndex = _newCurve->getControlPointsCount() - 1;
                 assert(lastIndex > 0);
                 _lastPointAdded = lastIndex;
             }
         } else {
-            _oldCurve->clone(*_newCurve);
+            _oldCurve->clone(_newCurve.get());
             int lastIndex = _newCurve->getControlPointsCount() - 1;
             assert(lastIndex >= 0);
             _lastPointAdded = lastIndex;
@@ -1197,7 +1197,7 @@ MakeBezierUndoCommand::redo()
             _indexInLayer = _parentLayer->getChildIndex(_newCurve);
         }
     } else {
-        _newCurve->clone(*_oldCurve);
+        _newCurve->clone(_oldCurve.get());
         if (_curveNonExistant) {
             _roto->getContext()->addItem(_parentLayer, _indexInLayer, _newCurve, RotoContext::OVERLAY_INTERACT);
         }
@@ -1390,7 +1390,7 @@ MakeEllipseUndoCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
     if (_curve != sCmd->_curve) {
-        _curve->clone(*sCmd->_curve);
+        _curve->clone(sCmd->_curve.get());
     }
     _dx += sCmd->_dx;
     _dy += sCmd->_dy;
@@ -1486,7 +1486,7 @@ MakeRectangleUndoCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
     if (_curve != sCmd->_curve) {
-        _curve->clone(*sCmd->_curve);
+        _curve->clone(sCmd->_curve.get());
     }
     _dx += sCmd->_dx;
     _dy += sCmd->_dy;
@@ -1773,7 +1773,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
             if (srcBezier) {
                 boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(),srcBezier->getName_mt_safe(),
                                                            srcBezier->getParentLayer()) );
-                copy->clone(*srcBezier);
+                copy->clone(srcBezier.get());
                 copy->setName( getItemCopyName(roto, it->rotoItem));
                 it->itemCopy = copy;
             } else {
@@ -1799,7 +1799,7 @@ PasteItemUndoCommand::undo()
         assert(_oldTargetItem);
         _roto->getContext()->deselect(_targetItem, RotoContext::OTHER);
         boost::shared_ptr<Bezier> old = boost::dynamic_pointer_cast<Bezier>(_oldTargetItem);
-        isBezier->clone(*old);
+        isBezier->clone(old.get());
         _roto->updateItemGui(_targetTreeItem);
         _roto->getContext()->select(_targetItem, RotoContext::OTHER);
     } else {
@@ -1820,7 +1820,7 @@ PasteItemUndoCommand::redo()
         Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
         assert(isBezier);
         _oldTargetItem.reset( new Bezier(isBezier->getContext(),isBezier->getName_mt_safe(),isBezier->getParentLayer()) );
-        _oldTargetItem->clone(*isBezier);
+        _oldTargetItem->clone(isBezier);
         assert(_pastedItems.size() == 1);
         PastedItem & front = _pastedItems.front();
         Bezier* toCopy = dynamic_cast<Bezier*>( front.rotoItem.get() );
@@ -1828,7 +1828,7 @@ PasteItemUndoCommand::redo()
         ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
         ///have not been refreshed and the selected item is linked to those dirty knobs
         _roto->getContext()->deselect(_targetItem, RotoContext::OTHER);
-        isBezier->clone(*toCopy);
+        isBezier->clone(toCopy);
         isBezier->setName( _oldTargetItem->getName_mt_safe() );
         _roto->updateItemGui(_targetTreeItem);
         _roto->getContext()->select(_targetItem, RotoContext::OTHER);
@@ -1862,7 +1862,7 @@ DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>( _item.item.get() );
     if (isBezier) {
         _item.duplicatedItem.reset( new Bezier(isBezier->getContext(),isBezier->getName_mt_safe(),isBezier->getParentLayer()) );
-        _item.duplicatedItem->clone(*isBezier);
+        _item.duplicatedItem->clone(isBezier);
     } else {
         assert(isLayer);
         _item.duplicatedItem.reset( new RotoLayer(*isLayer) );

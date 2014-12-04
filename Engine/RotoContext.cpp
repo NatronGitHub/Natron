@@ -755,14 +755,14 @@ RotoItem::~RotoItem()
 }
 
 void
-RotoItem::clone(const RotoItem & other)
+RotoItem::clone(const RotoItem*  other)
 {
     QMutexLocker l(&itemMutex);
 
-    _imp->parentLayer = other._imp->parentLayer;
-    _imp->name = other._imp->name;
-    _imp->globallyActivated = other._imp->globallyActivated;
-    _imp->locked = other._imp->locked;
+    _imp->parentLayer = other->_imp->parentLayer;
+    _imp->name = other->_imp->name;
+    _imp->globallyActivated = other->_imp->globallyActivated;
+    _imp->locked = other->_imp->locked;
 }
 
 void
@@ -1044,18 +1044,22 @@ RotoDrawableItem::~RotoDrawableItem()
 }
 
 void
-RotoDrawableItem::clone(const RotoDrawableItem & other)
+RotoDrawableItem::clone(const RotoItem* other)
 {
+    const RotoDrawableItem* otherDrawable = dynamic_cast<const RotoDrawableItem*>(other);
+    if (!otherDrawable) {
+        return;
+    }
     {
-        _imp->activated->clone( other._imp->activated.get() );
-        _imp->feather->clone( other._imp->feather.get() );
-        _imp->featherFallOff->clone( other._imp->featherFallOff.get() );
-        _imp->opacity->clone( other._imp->opacity.get() );
+        _imp->activated->clone( otherDrawable->_imp->activated.get() );
+        _imp->feather->clone( otherDrawable->_imp->feather.get() );
+        _imp->featherFallOff->clone( otherDrawable->_imp->featherFallOff.get() );
+        _imp->opacity->clone( otherDrawable->_imp->opacity.get() );
 #ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->clone( other._imp->inverted.get() );
+        _imp->inverted->clone( otherDrawable->_imp->inverted.get() );
 #endif
         QMutexLocker l(&itemMutex);
-        memcpy(_imp->overlayColor, other._imp->overlayColor, sizeof(double) * 4);
+        memcpy(_imp->overlayColor, otherDrawable->_imp->overlayColor, sizeof(double) * 4);
     }
     RotoItem::clone(other);
 }
@@ -1266,7 +1270,7 @@ RotoLayer::RotoLayer(const RotoLayer & other)
     : RotoItem( other.getContext(),other.getName_mt_safe(),other.getParentLayer() )
       ,_imp( new RotoLayerPrivate() )
 {
-    clone(other);
+    clone(&other);
 }
 
 RotoLayer::~RotoLayer()
@@ -1895,24 +1899,30 @@ Bezier::Bezier(const Bezier & other,
 : RotoDrawableItem( other.getContext(), other.getName_mt_safe(), other.getParentLayer() )
 , _imp( new BezierPrivate() )
 {
-    clone(other);
+    clone(&other);
     setParentLayer(parent);
 }
 
 void
-Bezier::clone(const Bezier & other)
+Bezier::clone(const RotoItem* other)
 {
     boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>(shared_from_this());
     assert(this_shared);
+    
+    const Bezier* otherBezier = dynamic_cast<const Bezier*>(other);
+    if (!otherBezier) {
+        return;
+    }
+    
     emit aboutToClone();
     {
         QMutexLocker l(&itemMutex);
-        assert( other._imp->featherPoints.size() == other._imp->points.size() );
+        assert( otherBezier->_imp->featherPoints.size() == otherBezier->_imp->points.size() );
 
         _imp->featherPoints.clear();
         _imp->points.clear();
-        BezierCPs::const_iterator itF = other._imp->featherPoints.begin();
-        for (BezierCPs::const_iterator it = other._imp->points.begin(); it != other._imp->points.end(); ++it,++itF) {
+        BezierCPs::const_iterator itF = otherBezier->_imp->featherPoints.begin();
+        for (BezierCPs::const_iterator it = otherBezier->_imp->points.begin(); it != otherBezier->_imp->points.end(); ++it,++itF) {
             boost::shared_ptr<BezierCP> cp( new BezierCP(this_shared) );
             boost::shared_ptr<BezierCP> fp( new BezierCP(this_shared) );
             cp->clone(**it);
@@ -1920,7 +1930,7 @@ Bezier::clone(const Bezier & other)
             _imp->featherPoints.push_back(fp);
             _imp->points.push_back(cp);
         }
-        _imp->finished = other._imp->finished;
+        _imp->finished = otherBezier->_imp->finished;
     }
     RotoDrawableItem::clone(other);
     emit cloned();
