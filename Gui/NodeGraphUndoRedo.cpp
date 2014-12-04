@@ -1265,6 +1265,7 @@ ExtractNodeUndoRedoCommand::undo()
         
         ///Connect and move output
         for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+            it2->second->disconnectInput(it2->first);
             it2->second->connectInput(it->output.node->getNode(),it2->first);
         }
         
@@ -1322,13 +1323,43 @@ ExtractNodeUndoRedoCommand::redo()
             viewers.insert(*it2);
         }
         
+        bool outputsAlreadyDisconnected = false;
+
+        ///Reconnect outputs to the input of the input of the ExtractedInputs if inputs.size() == 1
+        if (it->output.outputs.size() == 1 && it->inputs.size() == 1) {
+            const ExtractedInput& selectedInput = it->inputs.front();
+            
+            const std::vector<boost::shared_ptr<Natron::Node> > &inputs = selectedInput.inputs;
+            
+            boost::shared_ptr<Natron::Node> inputToConnectTo ;
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if (inputs[i] && !selectedInput.node->getNode()->getLiveInstance()->isInputOptional(i) &&
+                    !selectedInput.node->getNode()->getLiveInstance()->isInputRotoBrush(i)) {
+                    inputToConnectTo = inputs[i];
+                    break;
+                }
+            }
+            
+            if (inputToConnectTo) {
+                for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+                    it2->second->disconnectInput(it2->first);
+                    it2->second->connectInput(inputToConnectTo, it2->first);
+                }
+                outputsAlreadyDisconnected = true;
+            }
+        }
+        
         ///Disconnect and move output
-        for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
-            it2->second->disconnectInput(it2->first);
+        if (!outputsAlreadyDisconnected) {
+            for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+                it2->second->disconnectInput(it2->first);
+            }
         }
         
         QPointF curPos = it->output.node->getPos_mt_safe();
         it->output.node->refreshPosition(curPos.x() + 200, curPos.y(),true);
+        
+       
         
         ///Disconnect and move inputs
         for (std::list<ExtractedInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
