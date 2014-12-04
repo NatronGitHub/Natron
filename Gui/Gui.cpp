@@ -1430,7 +1430,7 @@ Gui::exportLayout()
 {
     std::vector<std::string> filters;
 
-    filters.push_back("." NATRON_LAYOUT_FILE_EXT);
+    filters.push_back(NATRON_LAYOUT_FILE_EXT);
     SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
@@ -1492,7 +1492,7 @@ Gui::importLayout()
 {
     std::vector<std::string> filters;
 
-    filters.push_back("." NATRON_LAYOUT_FILE_EXT);
+    filters.push_back(NATRON_LAYOUT_FILE_EXT);
     SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
