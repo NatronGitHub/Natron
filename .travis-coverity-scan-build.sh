@@ -89,7 +89,7 @@ echo -e "\033[33;1mTarring Coverity Scan Analysis results...\033[0m"
 RESULTS_ARCHIVE=analysis-results.tgz
 tar czf $RESULTS_ARCHIVE $RESULTS_DIR
 SHA=`git rev-parse --short HEAD`
-VERSION_SHA=$(cat VERSION)#$SHA
+#VERSION_SHA=$(cat VERSION)#$SHA
 
 # Verify Coverity Scan script test mode
 if [ "$coverity_scan_script_test_mode" = true ]; then
@@ -105,5 +105,7 @@ curl \
   --form email=$COVERITY_SCAN_NOTIFICATION_EMAIL \
   --form file=@$RESULTS_ARCHIVE \
   --form version=$SHA \
-  --form description="$VERSION_SHA" \
+  --form description="Travis CI build" \
   $UPLOAD_URL
+
+#  --form description="$VERSION_SHA" \
