@@ -734,7 +734,8 @@ Image::halveRoIForDepth(const RectI & roi,
     const RectI &dstBounds = output->getBounds();
     const RectI &srcBmBounds = _bitmap.getBounds();
     const RectI &dstBmBounds = output->_bitmap.getBounds();
-    assert(srcBmBounds == srcBounds && dstBmBounds == dstBounds);
+    assert(!copyBitMap || usesBitMap());
+    assert(!usesBitMap() ||(srcBmBounds == srcBounds && dstBmBounds == dstBounds));
 
     // the srcRoD of the output should be enclosed in half the roi.
     // It does not have to be exactly half of the input.
@@ -756,10 +757,10 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
 
-    const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1, srcBounds.y1);
-    const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBounds.x1, srcBounds.y1);
-    PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
-    char* const dstBmPixels = output->_bitmap.getBitmapAt(dstBounds.x1, dstBounds.y1);
+    const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
+    const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBmBounds.x1, srcBmBounds.y1);
+    PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1,   dstBounds.y1);
+    char* const dstBmPixels = output->_bitmap.getBitmapAt(dstBmBounds.x1, dstBmBounds.y1);
 
     int srcRowSize = srcBounds.width() * nComponents;
     int dstRowSize = dstBounds.width() * nComponents;
