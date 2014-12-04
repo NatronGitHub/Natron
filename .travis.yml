@@ -74,7 +74,7 @@ addons:
     # Where email notification of build analysis results will be sent
     notification_email: frederic.devernay@m4x.org
     # Commands to prepare for build_command
-    build_command_prepend: ./configure
+    #build_command_prepend: ./configure
     # This command will be added as an argument to "cov-build" to compile
     # the project for analysis
     build_command: "tools/travis/build.sh"
