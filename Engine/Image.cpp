@@ -755,76 +755,77 @@ Image::halveRoIForDepth(const RectI & roi,
 
     int dstRoIWidth = dstRoI.width();
     int dstRoIHeight = dstRoI.height();
-    const PIX* src = (const PIX*)pixelAt(srcRoI.x1, srcRoI.y1);
-    PIX* dst = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
+    const PIX* const srcData = (const PIX*)pixelAt(srcRoI.x1, srcRoI.y1);
+    PIX* const dstData = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
     int srcRowSize = srcBounds.width() * components;
     int dstRowSize = dstBounds.width() * components;
 
     
-    const char* srcBm;
-    char* dstBm;
-    
-    srcBm = _bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1);
-    dstBm = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
-    
+    const char* const srcBmData = _bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1);
+    const int srcBmRowSize = srcBounds.width();
+    char* const dstBmData = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
+    const int dstBmRowSize = dstBounds.width();
+
     // Loop with sliding pointers:
     // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
     // This is the *good* way to code it, let the optimizer do the rest!
     // Please don't change this, and don't remove the comments.
-    for (int y = 0; y < dstRoIHeight;
-         ++y,
-         src += (srcRowSize + srcRowSize) - dstRoIWidth * 2 * components, // two rows minus what was done on previous iteration
-         dst += (dstRowSize) - dstRoIWidth * components, // one row minus what was done on previous iteration
-         srcBm += (srcBounds.width() + srcBounds.width()) - dstRoIWidth * 2,
-         dstBm += (dstBounds.width()) - dstRoIWidth) {
-        
-        if (y * 2 >= srcRoI.height()) {
-            break;
-        }
-        
-        ///Cannot be (y + dstRoI.y1) * 2 since dstRoi.height() * 2 is NOT srcRoi.height()
-        bool pickNextRow = ((y * 2) + srcBounds.y1) < (srcBounds.y2 - 1);
-        bool pickThisRow = ((y * 2) + srcBounds.y1) >= (srcBounds.y1);
+    for (int y = 0; y < dstRoIHeight; ++y) {
+        const PIX* const srcLineStart    = srcData   + y * 2 * srcRowSize;
+        const char* const srcBmLineStart = srcBmData + y * 2 * srcBmRowSize;
+        PIX* const dstLineStart          = dstData   + y * dstRowSize;
+        char* const dstBmLineStart       = dstBmData + y * dstBmRowSize;
+
+        //if (y * 2 >= srcRoI.height()) {
+        //    break;
+        //}
+
+        // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
+        // Check that if are within srcBounds.
+        bool pickNextRow = ((y + dstRoI.y1) * 2) < (srcBounds.y2 - 1);;
+        bool pickThisRow = ((y + dstRoI.y1) * 2) >= (srcBounds.y1);
+
         int sumH = (int)pickNextRow + (int)pickThisRow;
         assert(sumH == 1 || sumH == 2);
         
-        for (int x = 0; x < dstRoIWidth;
-             ++x,
-             src += (components + components) - components, // two pixels minus what was done on previous iteration
-             dst += (components) - components, // one pixel minus what was done on previous iteration
-             ++srcBm) {
-            
-            ///Cannot be (x + dstRoI.x1) * 2 since dstRoi.width() * 2 is NOT srcRoi.width()
-            bool pickNextCol = ((x * 2) + srcBounds.y1) < (srcBounds.x2 - 1);
-            bool pickThisCol = ((x * 2) + srcBounds.y1) >= (srcBounds.x1);
+        for (int x = 0; x < dstRoIWidth; ++x) {
+            const PIX* const srcPixStart    = srcLineStart   + x * 2 * components;
+            const char* const srcBmPixStart = srcBmLineStart + x * 2;
+            PIX* const dstPix               = dstLineStart   + x * components;
+            char* const dstBmPix            = dstBmLineStart + x;
+
+            // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
+            // Check that if are within srcBounds.
+            bool pickNextCol = ((x + dstRoI.x1) * 2) < (srcBounds.x2 - 1);
+            bool pickThisCol = ((x + dstRoI.x1) * 2) >= (srcBounds.x1);
             int sumW = (int)pickThisCol + (int)pickNextCol;
             assert(sumW == 1 || sumW == 2);
+            const int sum = sumW * sumH;
             
-            for (int k = 0; k < components; ++k, ++dst, ++src) {
-                
-                
-                PIX a = (pickThisCol && pickThisRow) ? *src : 0;
-                PIX b = (pickNextCol && pickThisRow) ? *(src + components) : 0;
-                PIX c = (pickThisCol && pickNextRow) ? *(src + srcRowSize): 0;
-                PIX d = (pickNextCol && pickNextRow) ? *(src + srcRowSize  + components)  : 0;
+            for (int k = 0; k < components; ++k) {
+                const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart) : 0;
+                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + components) : 0;
+                const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + srcRowSize): 0;
+                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + srcRowSize  + components)  : 0;
                 
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
-                *dst = (a + b + c + d) / (sumH * sumW);
-
+                *dstPix = (a + b + c + d) / (sumH * sumW);
             }
             
             if (copyBitMap) {
-                
-                PIX a = (pickThisCol && pickThisRow) ? *srcBm : 0;
-                PIX b = (pickNextCol && pickThisRow) ? *(srcBm + 1) : 0;
-                PIX c = (pickThisCol && pickNextRow) ? *(srcBm + srcBounds.width()): 0;
-                PIX d = (pickNextCol && pickNextRow) ? *(srcBm + srcBounds.width()  + 1)  : 0;
-                
-                *dstBm = (a + b + c + d) / (sumH * sumW);
-               
-                ++srcBm;
-                ++dstBm;
+                const char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
+                const char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
+                const char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
+                const char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
+
+                assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
+                assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
+
+                assert(a + b + c + d <= sum); // bitmaps are 0 or 1
+                // the following is an integer division, the result can be 0 or 1
+                *dstBmPix = (a + b + c + d) / (sumH * sumW);
+                assert(*dstBmPix == 0 || *dstBmPix == 1);
             }
         }
         
