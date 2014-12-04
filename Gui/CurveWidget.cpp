@@ -1912,8 +1912,9 @@ CurveWidget::CurveWidget(Gui* gui,
     
     if (parent->objectName() == "CurveEditorSplitter") {
         ///if this is the curve widget associated to the CurveEditor
-        QDesktopWidget* desktop = QApplication::desktop();
-        _imp->sizeH = desktop->screenGeometry().size();
+//        QDesktopWidget* desktop = QApplication::desktop();
+//        _imp->sizeH = desktop->screenGeometry().size();
+        _imp->sizeH = QSize(10000,10000);
 
     } else {
         ///a random parametric param curve editor

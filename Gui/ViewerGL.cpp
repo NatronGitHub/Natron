@@ -217,10 +217,11 @@ struct ViewerGL::Implementation
         assert( qApp && qApp->thread() == QThread::currentThread() );
         menu->setFont( QFont(appFont,appFontSize) );
         
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect r = desktop->screenGeometry();
-        sizeH = r.size();
-
+//        QDesktopWidget* desktop = QApplication::desktop();
+//        QRect r = desktop->screenGeometry();
+//        sizeH = r.size();
+        sizeH.setWidth(10000);
+        sizeH.setHeight(10000);
     }
 
     /////////////////////////////////////////////////////////
@@ -2395,7 +2396,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
         RectI pixelRoD;
         image->getRoD().toPixelEnclosing(0, image->getPixelAspectRatio(), &pixelRoD);
-        _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(pixelRoD, image->getPixelAspectRatio()));
+        {
+            QMutexLocker k(&_imp->projectFormatMutex);
+            _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(_imp->projectFormat, image->getPixelAspectRatio()));
+        }
         {
             QMutexLocker k(&_imp->lastRenderedImageMutex);
             _imp->lastRenderedImage[textureIndex] = image;
