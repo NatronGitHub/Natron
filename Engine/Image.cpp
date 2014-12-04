@@ -710,7 +710,7 @@ Image::getRowElements() const
     return getComponentsCount() * _bounds.width();
 }
 
-// code proofread and fixed by @devernay on 8/8/2014
+// code proofread and fixed by @devernay on 4/12/2014
 template <typename PIX, int maxValue>
 void
 Image::halveRoIForDepth(const RectI & roi,
@@ -732,6 +732,9 @@ Image::halveRoIForDepth(const RectI & roi,
     ///The source rectangle, intersected to this image region of definition in pixels
     const RectI &srcBounds = getBounds();
     const RectI &dstBounds = output->getBounds();
+    const RectI &srcBmBounds = _bitmap.getBounds();
+    const RectI &dstBmBounds = output->_bitmap.getBounds();
+    assert(srcBmBounds == srcBounds && dstBmBounds == dstBounds);
 
     // the srcRoD of the output should be enclosed in half the roi.
     // It does not have to be exactly half of the input.
@@ -743,7 +746,7 @@ Image::halveRoIForDepth(const RectI & roi,
     //           dstRoD.height()*2 <= roi.height());
     assert( getComponents() == output->getComponents() );
 
-    int components = getElementsCountForComponents( getComponents() );
+    int nComponents = getElementsCountForComponents( getComponents() );
     RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
@@ -752,73 +755,75 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.y1 = std::floor(srcRoI.y1 / 2.);
     dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
-    int srcxoffset = dstRoI.x1*2 - srcRoI.x1;
-    int srcyoffset = dstRoI.y1*2 - srcRoI.y1;
-    assert((srcxoffset == 0 || srcxoffset == 1) && (srcyoffset == 0 || srcyoffset == 1));
-    int dstRoIWidth = dstRoI.width();
-    int dstRoIHeight = dstRoI.height();
-    int srcRowSize = srcBounds.width() * components;
-    int dstRowSize = dstBounds.width() * components;
 
-    // offset srcData, so that it corrsponds to the pixel at dstData
-    const PIX* const srcData = ((const PIX*)pixelAt(srcRoI.x1, srcRoI.y1)
-                                - srcxoffset * components
-                                - srcyoffset * srcRowSize);
-    PIX* const dstData = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
+    const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1, srcBounds.y1);
+    const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBounds.x1, srcBounds.y1);
+    PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
+    char* const dstBmPixels = output->_bitmap.getBitmapAt(dstBounds.x1, dstBounds.y1);
 
-    
-    const int srcBmRowSize = srcBounds.width();
-    const int dstBmRowSize = dstBounds.width();
-    const char* const srcBmData = (_bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1)
-                                   - srcxoffset
-                                   - srcyoffset * srcBmRowSize);
-    char* const dstBmData = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
+    int srcRowSize = srcBounds.width() * nComponents;
+    int dstRowSize = dstBounds.width() * nComponents;
 
-    for (int y = 0; y < dstRoIHeight; ++y) {
-        const PIX* const srcLineStart    = srcData   + y * 2 * srcRowSize;
+    // offset pointers so that srcData and dstData correspond to pixel (0,0)
+    const PIX* const srcData = srcPixels - (srcBounds.x1 * nComponents + srcRowSize * srcBounds.y1);
+    PIX* const dstData       = dstPixels - (dstBounds.x1 * nComponents + dstRowSize * dstBounds.y1);
+
+    const int srcBmRowSize = srcBmBounds.width();
+    const int dstBmRowSize = dstBmBounds.width();
+
+    const char* const srcBmData = srcBmPixels - (srcBmBounds.x1 + srcBmRowSize * srcBmBounds.y1);
+    char* const dstBmData       = dstBmPixels - (dstBmBounds.x1 + dstBmRowSize * dstBmBounds.y1);
+
+    for (int y = dstRoI.y1; y < dstRoI.y2; ++y) {
+        const PIX* const srcLineStart    = srcData + y * 2 * srcRowSize;
+        PIX* const dstLineStart          = dstData + y     * dstRowSize;
         const char* const srcBmLineStart = srcBmData + y * 2 * srcBmRowSize;
-        PIX* const dstLineStart          = dstData   + y * dstRowSize;
-        char* const dstBmLineStart       = dstBmData + y * dstBmRowSize;
+        char* const dstBmLineStart       = dstBmData + y     * dstBmRowSize;
 
         // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
         // Check that if are within srcBounds.
-        int srcy = (y + dstRoI.y1) * 2;
-        bool pickThisRow = srcBounds.y1 <= srcy && srcy < srcBounds.y2;
+        int srcy = y * 2;
+        bool pickThisRow = srcBounds.y1 <= (srcy + 0) && (srcy + 0) < srcBounds.y2;
         bool pickNextRow = srcBounds.y1 <= (srcy + 1) && (srcy + 1) < srcBounds.y2;
 
         int sumH = (int)pickNextRow + (int)pickThisRow;
         assert(sumH == 1 || sumH == 2);
         
-        for (int x = 0; x < dstRoIWidth; ++x) {
-            const PIX* const srcPixStart    = srcLineStart   + x * 2 * components;
+        for (int x = dstRoI.x1; x < dstRoI.x2; ++x) {
+            const PIX* const srcPixStart    = srcLineStart   + x * 2 * nComponents;
             const char* const srcBmPixStart = srcBmLineStart + x * 2;
-            PIX* const dstPix               = dstLineStart   + x * components;
-            char* const dstBmPix            = dstBmLineStart + x;
+            PIX* const dstPixStart          = dstLineStart   + x * nComponents;
+            char* const dstBmPixStart       = dstBmLineStart + x;
 
             // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
             // Check that if are within srcBounds.
-            int srcx = (x + dstRoI.x1) * 2;
-            bool pickThisCol = srcBounds.x1 <= srcx && srcx < srcBounds.x2;
+            int srcx = x * 2;
+            bool pickThisCol = srcBounds.x1 <= (srcx + 0) && (srcx + 0) < srcBounds.x2;
             bool pickNextCol = srcBounds.x1 <= (srcx + 1) && (srcx + 1) < srcBounds.x2;
 
             int sumW = (int)pickThisCol + (int)pickNextCol;
             assert(sumW == 1 || sumW == 2);
             const int sum = sumW * sumH;
-
             assert(0 < sum && sum <= 4);
 
-            for (int k = 0; k < components; ++k) {
-                const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart) : 0;
-                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + components) : 0;
-                const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + srcRowSize): 0;
-                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + srcRowSize  + components)  : 0;
+            for (int k = 0; k < nComponents; ++k) {
+                ///a b
+                ///c d
+
+                const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart + k) : 0;
+                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + k + nComponents) : 0;
+                const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + k + srcRowSize): 0;
+                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + nComponents)  : 0;
                 
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
-                *dstPix = (a + b + c + d) / (sumH * sumW);
+                dstPixStart[k] = (a + b + c + d) / sum;
             }
             
             if (copyBitMap) {
+                ///a b
+                ///c d
+
                 const char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
                 const char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
                 const char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
@@ -826,18 +831,13 @@ Image::halveRoIForDepth(const RectI & roi,
 
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
-
                 assert(a + b + c + d <= sum); // bitmaps are 0 or 1
                 // the following is an integer division, the result can be 0 or 1
-                *dstBmPix = (a + b + c + d) / (sumH * sumW);
-                assert(*dstBmPix == 0 || *dstBmPix == 1);
+                dstBmPixStart[0] = (a + b + c + d) / sum;
+                assert(dstBmPixStart[0] == 0 || dstBmPixStart[0] == 1);
             }
         }
-        
-        
-        
     }
-    
 } // halveRoIForDepth
 
 // code proofread and fixed by @devernay on 8/8/2014
