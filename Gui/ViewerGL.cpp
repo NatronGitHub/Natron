@@ -491,45 +491,27 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
 
     const double par = r.par;
-
+    
+    RectD canonicalTexRect;
+    texRect.toCanonical_noClipping(mipMapLevel,par/*, rod*/, &canonicalTexRect);
 
     ///the RoD of the image in canonical coords.
     RectD rod = getRoD(textureIndex);
-    
-    
-//    RectI pixelRod;
-//    rod.toPixelEnclosing(0, par, &pixelRod);
-   
-    
+
     bool clipToDisplayWindow;
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         clipToDisplayWindow = _imp->clipToDisplayWindow;
     }
+    
+    RectD rectClippedToRoI(canonicalTexRect);
+
     if (clipToDisplayWindow) {
         RectD canonicalProjectFormat;
         _imp->getProjectFormatCanonical(canonicalProjectFormat);
         rod.intersect(canonicalProjectFormat, &rod);
-        
-//        ///clip the RoD to the project format.
-//        RectI pixelProjectFormat;
-//        pixelProjectFormat.x1 = _imp->projectFormat.x1;
-//        pixelProjectFormat.x2 = _imp->projectFormat.x2;
-//        pixelProjectFormat.y1 = _imp->projectFormat.y1;
-//        pixelProjectFormat.y2 = _imp->projectFormat.y2;
-//        if ( !pixelRod.intersect(pixelProjectFormat,&pixelRod) ) {
-//            return;
-//        }
+        rectClippedToRoI.intersect(canonicalProjectFormat, &rectClippedToRoI);
     }
-
-    
-    RectD canonicalTexRect;
-    texRect.toCanonical(mipMapLevel,par, rod, &canonicalTexRect);
-    
-//    RectI pixelTexRect_scale1;
-//    canonicalTexRect.toPixelEnclosing(0, par, &pixelTexRect_scale1);
-//    
-//    pixelTexRect_scale1.intersect(pixelRod,&pixelTexRect_scale1);
     
     
     //if user RoI is enabled, clip the rod to that roi
@@ -548,22 +530,17 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     ////So it is in the same coordinates as the bounds.
     ///Edit: we no longer divide by the closestPo2 since the viewer now computes images at lower resolution by itself, the drawing
     ///doesn't need to be scaled.
-    GLfloat texBottom =  0;
-    GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
-    GLfloat texLeft = 0;
-    GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
-    RectD rectClippedToRoI(canonicalTexRect);
+   
     if (userRoiEnabled) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
-            //_imp->userRoI.toPixelEnclosing(0, 1., &pixelUserRoi);
             //if the userRoI isn't intersecting the rod, just don't render anything
             if ( !rod.intersect(_imp->userRoI,&rod) ) {
                 return;
             }
         }
         rectClippedToRoI.intersect(rod, &rectClippedToRoI);
-        clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
+        //clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
 
     if (polygonMode != ALL_PLANE) {
@@ -602,6 +579,9 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     }
 
     if (polygonMode == ALL_PLANE) {
+        
+        
+        
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
             (GLfloat)rod.left(),(GLfloat)rod.top(),    //0
@@ -621,6 +601,17 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
             (GLfloat)rectClippedToRoI.x2,  (GLfloat)rod.bottom(), //14
             (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
         };
+        
+//        GLfloat texBottom =  0;
+//        GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
+//        GLfloat texLeft = 0;
+//        GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
+        GLfloat texBottom = (GLfloat)(rectClippedToRoI.y1 - canonicalTexRect.y1)  / canonicalTexRect.height();
+        GLfloat texTop = (GLfloat)(rectClippedToRoI.y2 - canonicalTexRect.y1)  / canonicalTexRect.height();
+        GLfloat texLeft = (GLfloat)(rectClippedToRoI.x1 - canonicalTexRect.x1)  / canonicalTexRect.width();
+        GLfloat texRight = (GLfloat)(rectClippedToRoI.x2 - canonicalTexRect.x1)  / canonicalTexRect.width();
+
+        
         GLfloat renderingTextureCoordinates[32] = {
             texLeft, texTop,   //0
             texLeft, texTop,   //1
