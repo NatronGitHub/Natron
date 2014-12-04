@@ -752,19 +752,27 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.y1 = std::floor(srcRoI.y1 / 2.);
     dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
-
+    int srcxoffset = dstRoI.x1*2 - srcRoI.x1;
+    int srcyoffset = dstRoI.y1*2 - srcRoI.y1;
+    assert((srcxoffset == 0 || srcxoffset == 1) && (srcyoffset == 0 || srcyoffset == 1));
     int dstRoIWidth = dstRoI.width();
     int dstRoIHeight = dstRoI.height();
-    const PIX* const srcData = (const PIX*)pixelAt(srcRoI.x1, srcRoI.y1);
-    PIX* const dstData = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
     int srcRowSize = srcBounds.width() * components;
     int dstRowSize = dstBounds.width() * components;
+    
+    // offset srcData, so that it corrsponds to the pixel at dstData
+    const PIX* const srcData = ((const PIX*)pixelAt(srcRoI.x1, srcRoI.y1)
+                                - srcxoffset * components
+                                - srcyoffset * srcRowSize);
+    PIX* const dstData = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
 
     
-    const char* const srcBmData = _bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1);
     const int srcBmRowSize = srcBounds.width();
-    char* const dstBmData = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
     const int dstBmRowSize = dstBounds.width();
+    const char* const srcBmData = (_bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1)
+                                   - srcxoffset
+                                   - srcyoffset * srcBmRowSize);
+    char* const dstBmData = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
 
     // Loop with sliding pointers:
     // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
