@@ -2155,6 +2155,9 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 void
 Color_KnobGui::onColorChanged()
 {
+    SpinBox* isSpinbox = qobject_cast<SpinBox*>(sender());
+    
+    
     std::list<double> newValues;
     double r = _rBox->value();
     double g = r;
@@ -2168,6 +2171,10 @@ Color_KnobGui::onColorChanged()
         }
         if (_dimension >= 4) {
             a = _aBox->value();
+        }
+    } else {
+        if (isSpinbox) {
+            _slider->seekScalePosition(r);
         }
     }
     if (_dimension >= 3) {
