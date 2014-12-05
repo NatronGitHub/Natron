@@ -649,6 +649,13 @@ SequenceFileDialog::restoreState(const QByteArray & state)
             
             for (U32 j = 0;j < stdBookMarks.size();++j) {
                 QString otherUrl = stdBookMarks[j].path();
+                // On windows url.path() will return something starting with a /
+#ifdef __NATRON_WIN32__
+                if (otherUrl.startsWith("/")) {
+                    otherUrl.remove(0,1);
+                }
+#endif
+                
                 if (otherUrl.size() > 1 && (otherUrl.endsWith('/') || otherUrl.endsWith('\\'))) {
                     otherUrl = otherUrl.remove(otherUrl.size() - 1, 1);
                 }
