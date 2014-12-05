@@ -3682,6 +3682,9 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, mipMapLevel, rod);
     if (foundInCache) {
         *isProjectFormat = false;
+        if (rod->isNull()) {
+            return Natron::eStatusFailed;
+        }
         return Natron::eStatusOK;
     } else {
         
@@ -3705,10 +3708,14 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
+                _imp->actionsCache.invalidateAll(hash);
+                _imp->actionsCache.setRoDResult(time, mipMapLevel, RectD());
                 return ret;
             }
             
             if (rod->isNull()) {
+                _imp->actionsCache.invalidateAll(hash);
+                _imp->actionsCache.setRoDResult(time, mipMapLevel, RectD());
                 return eStatusFailed;
             }
             
