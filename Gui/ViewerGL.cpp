@@ -3363,9 +3363,9 @@ ViewerGL::onProjectFormatChanged(const Format & format)
         _imp->projectFormat = format;
     }
     _imp->currentViewerInfo_resolutionOverlay.clear();
-    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.width()) ) );
+    _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.width() ) );
     _imp->currentViewerInfo_resolutionOverlay.append("x");
-    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.height()) ) );
+    _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.height() ) );
 
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     if ( !loadingProject ) {
