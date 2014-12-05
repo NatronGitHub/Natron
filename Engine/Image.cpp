@@ -12,7 +12,9 @@
 #include "Image.h"
 
 #include <QDebug>
-
+#ifndef Q_MOC_RUN
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif
 #include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 
@@ -564,14 +566,14 @@ Image::pixelAt(int x,
 {
     int compsCount = getElementsCountForComponents( getComponents() );
 
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
-
-        return (unsigned char*)(this->_data.writable())
-               + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-               + ( x - _bounds.left() ) * compDataSize;
-    } else {
+    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
+    } else {
+        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
+        
+        return (unsigned char*)(this->_data.writable())
+        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + ( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -580,15 +582,15 @@ Image::pixelAt(int x,
                int y) const
 {
     int compsCount = getElementsCountForComponents( getComponents() );
-
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
-
-        return (const unsigned char*)(this->_data.readable())
-               + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-               + ( x - _bounds.left() ) * compDataSize;
-    } else {
+    
+    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
+    } else {
+        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
+        
+        return (unsigned char*)(this->_data.readable())
+        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + ( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -839,6 +841,7 @@ Image::halveRoIForDepth(const RectI & roi,
             }
         }
     }
+
 } // halveRoIForDepth
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -968,6 +971,32 @@ Image::downscaleMipMap(const RectI & roi,
 
     ///Now copy the result of tmpImg into the output image
     output->pasteFrom(*tmpImg, dstRoI, copyBitMap);
+}
+
+
+void
+Image::checkForNaNs(const RectI& roi)
+{
+    if (getBitDepth() != eImageBitDepthFloat) {
+        return;
+    }
+    
+    unsigned int compsCount = getComponentsCount();
+    
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        
+        float* pix = (float*)pixelAt(roi.x1, roi.y1);
+        float* const end = pix +  compsCount * roi.width();
+        
+        for (;pix < end; ++pix) {
+            assert(!boost::math::isnan(*pix) && !boost::math::isinf(*pix));
+            if (boost::math::isnan(*pix) || boost::math::isinf(*pix)) {
+                *pix = 1.;
+            }
+        }
+    }
+
+
 }
 
 // code proofread and fixed by @devernay on 8/8/2014

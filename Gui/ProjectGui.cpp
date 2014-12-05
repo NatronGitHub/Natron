@@ -454,8 +454,9 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     
     if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
         _gui->getNodeGraph()->clearSelection();
-        _gui->getNodeGraph()->centerOnAllNodes();
     }
+    
+    _gui->getNodeGraph()->centerOnAllNodes();
 } // load
 
 std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const

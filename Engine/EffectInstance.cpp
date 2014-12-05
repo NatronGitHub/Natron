@@ -3063,6 +3063,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     if ( !aborted() ) {
         renderMappedImage->markForRendered(renderRectToRender);
         
+        //Check for NaNs
+        renderMappedImage->checkForNaNs(renderRectToRender);
         
         ///copy the rectangle rendered in the full scale image to the downscaled output
         if (renderFullScaleThenDownscale) {

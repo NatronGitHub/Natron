@@ -2499,32 +2499,36 @@ ViewerCurrentFrameRequestScheduler::run()
         if (firstRequest) {
             
             ///Wait for the work to be done
-            QMutexLocker k(&_imp->producedQueueMutex);
-            
-            std::list<ProducedFrame>::iterator found = _imp->producedQueue.end();
-            for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
-                if (it->request == firstRequest) {
-                    found = it;
-                    break;
-                }
-            }
-            
-            while (found == _imp->producedQueue.end()) {
-                _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
+            BufferableObjectList frames;
+            {
+                QMutexLocker k(&_imp->producedQueueMutex);
                 
+                std::list<ProducedFrame>::iterator found = _imp->producedQueue.end();
                 for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
                     if (it->request == firstRequest) {
                         found = it;
                         break;
                     }
                 }
+                
+                while (found == _imp->producedQueue.end()) {
+                    _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
+                    
+                    for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
+                        if (it->request == firstRequest) {
+                            found = it;
+                            break;
+                        }
+                    }
+                }
+                
+                assert(found != _imp->producedQueue.end());
+                
+                delete found->request;
+                found->request = 0;
+                frames = found->frames;
+                _imp->producedQueue.erase(found);
             }
-            
-            assert(found != _imp->producedQueue.end());
-            
-            delete found->request;
-            found->request = 0;
-            
             if (_imp->checkForExit()) {
                 return;
             }
@@ -2532,14 +2536,13 @@ ViewerCurrentFrameRequestScheduler::run()
             {
                 QMutexLocker treatLocker(&_imp->treatMutex);
                 _imp->treatRunning = true;
-                emit s_treatProducedFrameOnMainThread(found->frames);
+                emit s_treatProducedFrameOnMainThread(frames);
                 
                 while (_imp->treatRunning && !_imp->checkForAbortion()) {
                     _imp->treatCondition.wait(&_imp->treatMutex);
                 }
             }
             
-            _imp->producedQueue.erase(found);
         }
         
         
