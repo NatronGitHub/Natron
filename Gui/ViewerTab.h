@@ -165,6 +165,8 @@ public:
     void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
 
     bool isFrameRangeLocked() const;
+    
+    bool isFPSLocked() const;
 
     void connectToViewerCache();
 
@@ -258,8 +260,11 @@ public slots:
 
     void onFrameRangeEditingFinished();
 
-    void onLockFrameRangeButtonClicked(bool toggled);
+    void onCanSetFrameRangeButtonClicked(bool toggled);
     void setFrameRangeLocked(bool toggled);
+    
+    void onCanSetFPSClicked(bool toggled);
+    void setFPSLocked(bool fpsLocked);
 
     void onTimelineBoundariesChanged(SequenceTime,SequenceTime,int);
     
@@ -295,6 +300,7 @@ public slots:
     
     void setTurboButtonDown(bool down);
     
+    void onClipPreferencesChanged();
 private:
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);

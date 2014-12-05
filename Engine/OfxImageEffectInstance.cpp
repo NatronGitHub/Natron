@@ -254,10 +254,8 @@ OfxImageEffectInstance::getEffectDuration() const
 double
 OfxImageEffectInstance::getFrameRate() const
 {
-    assert( getOfxEffectInstance() );
-#pragma message WARN("Add a frame rate parameter to the project")
-
-    return 25.0;
+    assert( getOfxEffectInstance() && getOfxEffectInstance()->getApp() );
+    return getOfxEffectInstance()->getApp()->getProjectFrameRate();
 }
 
 /// This is called whenever a param is changed by the plugin so that

@@ -816,6 +816,16 @@ Project::initializeKnobs()
     _imp->colorSpace32bits->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32bits);
     
+    _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame rate");
+    _imp->frameRate->setName("frameRate");
+    _imp->frameRate->setHintToolTip("The frame rate of the project. This will serve as a default value for all effects that don't produce "
+                                    "special frame rates.");
+    _imp->frameRate->setAnimationEnabled(false);
+    _imp->frameRate->setDefaultValue(24.);
+    _imp->frameRate->setDisplayMinimum(0.);
+    _imp->frameRate->setDisplayMaximum(50.);
+    page->addKnob(_imp->frameRate);
+    
     boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, "Info");
     
     _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
@@ -2152,5 +2162,12 @@ Project::setAllNodesAborted(bool aborted)
         _imp->currentNodes[i]->setAborted(aborted);
     }
 }
+double
+Project::getProjectFrameRate() const
+{
+    return _imp->frameRate->getValue();
+}
     
 } //namespace Natron
+
+

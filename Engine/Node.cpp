@@ -2984,18 +2984,6 @@ Node::onParentMultiInstanceInputChanged(int input)
     _imp->duringInputChangedAction = false;
 }
 
-void
-Node::onMultipleInputChanged()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->duringInputChangedAction = true;
-    for (std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.begin(); it != _imp->enableMaskKnob.end(); ++it) {
-        boost::shared_ptr<Node> inp = getInput(it->first);
-        it->second->setValue(inp ? true : false, 0);
-    }
-    _imp->liveInstance->onMultipleInputsChanged();
-    _imp->duringInputChangedAction = false;
-}
 
 bool
 Node::duringInputChangedAction() const
@@ -3505,6 +3493,33 @@ Node::isSettingsPanelOpened() const
         }
     }
     return _imp->guiPointer->isSettingsPanelOpened();
+    
+}
+
+void
+Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
+{
+    std::list<Natron::Node*>::const_iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    
+    InputsV inputs;
+    
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        inputs = _imp->inputs;
+    }
+    
+    
+    for (InputsV::iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        if ((*it)) {
+            (*it)->restoreClipPreferencesRecursive(markedNodes);
+        }
+    }
+    
+    _imp->liveInstance->restoreClipPreferences();
+    markedNodes.push_back(this);
     
 }
 

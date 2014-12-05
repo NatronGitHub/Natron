@@ -583,8 +583,6 @@ public:
 
     void onInputChanged(int inputNb);
 
-    void onMultipleInputChanged();
-
     void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;
@@ -731,6 +729,8 @@ public:
     void getPersistentMessage(QString* message,int* type) const;
 
     bool isForceCachingEnabled() const;
+    
+    void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
 public slots:
 

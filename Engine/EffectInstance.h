@@ -535,6 +535,8 @@ public:
      **/
     virtual double getPreferredAspectRatio() const { return 1.; }
 
+    virtual double getPreferredFrameRate() const;
+
     virtual void lock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL;
     virtual void unlock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL ;
 
@@ -966,9 +968,9 @@ public:
     }
 
     /**
-     * @brief Same as onInputChanged but called once for many changes.
+     * @brief Called after the project has restored all nodes and their links, to set clip preferences.
      **/
-    virtual void onMultipleInputsChanged()
+    virtual void restoreClipPreferences()
     {
     }
 

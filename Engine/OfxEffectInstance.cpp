@@ -1163,7 +1163,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
 } // checkOFXClipPreferences
 
 void
-OfxEffectInstance::onMultipleInputsChanged()
+OfxEffectInstance::restoreClipPreferences()
 {
     assert(_context != eContextNone);
 
@@ -2694,6 +2694,23 @@ OfxEffectInstance::getPreferredAspectRatio() const
 
     }
 }
+
+double
+OfxEffectInstance::getPreferredFrameRate() const
+{
+    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    assert(clip);
+    
+    if (getRecursionLevel() > 0) {
+        return clip->getFrameRate();
+    } else {
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        return clip->getFrameRate();
+        
+    }
+}
+
 
 bool
 OfxEffectInstance::getCanTransform() const

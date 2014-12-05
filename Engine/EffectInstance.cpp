@@ -4343,4 +4343,10 @@ OutputEffectInstance::createRenderEngine()
     return new RenderEngine(this);
 }
 
+double
+EffectInstance::getPreferredFrameRate() const
+{
+    return getApp()->getProjectFrameRate();
+}
+
 

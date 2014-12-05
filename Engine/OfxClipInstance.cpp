@@ -244,8 +244,18 @@ OfxClipInstance::setAspectRatio(double par)
 double
 OfxClipInstance::getFrameRate() const
 {
-    return _effect->getFrameRate();
+    assert(_nodeInstance);
+    if (isOutput()) {
+        return _nodeInstance->effectInstance()->getOutputFrameRate();
+    }
+    
+    EffectInstance* input = getAssociatedNode();
+    if (input) {
+        return input->getPreferredFrameRate();
+    }
+    return 24.;
 }
+
 
 // Frame Range (startFrame, endFrame) -
 //

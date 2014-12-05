@@ -275,6 +275,8 @@ public:
     Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
 
     int getMainView() const;
+    
+    double getProjectFrameRate() const;
 
     /**
      * @brief Clears any shared ptr to NodeGuis left

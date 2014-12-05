@@ -1798,6 +1798,22 @@ ViewerInstance::onInputChanged(int inputNb)
 }
 
 void
+ViewerInstance::restoreClipPreferences()
+{
+    emit clipPreferencesChanged();
+}
+
+void
+ViewerInstance::checkOFXClipPreferences(double /*time*/,
+                             const RenderScale & /*scale*/,
+                             const std::string & /*reason*/,
+                             bool /*forceGetClipPrefAction*/,
+                             bool /*recurse*/)
+{
+    emit clipPreferencesChanged();
+}
+
+void
 ViewerInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
