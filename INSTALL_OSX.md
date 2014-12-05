@@ -71,7 +71,7 @@ To install the openfx-io and openfx-misc sets of plugin, you also need the follo
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 	
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
 	
 ## Add the config.pri file
 
