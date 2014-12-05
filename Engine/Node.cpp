@@ -1881,7 +1881,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     }
     
     //first tell the gui to clear any persistent message linked to this node
-    clearPersistentMessage();
+    clearPersistentMessage(false);
     
     ///For all knobs that have listeners, kill expressions
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
@@ -2497,6 +2497,13 @@ Node::setPersistentMessage(MessageTypeEnum type,
     }
 }
 
+bool
+Node::hasPersistentMessage() const
+{
+    QMutexLocker k(&_imp->persistentMessageMutex);
+    return !_imp->persistentMessage.isEmpty();
+}
+
 void
 Node::getPersistentMessage(QString* message,int* type) const
 {
@@ -2506,7 +2513,7 @@ Node::getPersistentMessage(QString* message,int* type) const
 }
 
 void
-Node::clearPersistentMessage()
+Node::clearPersistentMessage(bool recurse)
 {
     if ( !appPTR->isBackground() ) {
         {
@@ -2519,11 +2526,13 @@ Node::clearPersistentMessage()
         }
     }
     
-    QMutexLocker l(&_imp->inputsMutex);
-    ///No need to lock, guiInputs is only written to by the main-thread
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->clearPersistentMessage();
+    if (recurse) {
+        QMutexLocker l(&_imp->inputsMutex);
+        ///No need to lock, guiInputs is only written to by the main-thread
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                _imp->inputs[i]->clearPersistentMessage(true);
+            }
         }
     }
     

@@ -1795,6 +1795,7 @@ ViewerInstance::onInputChanged(int inputNb)
     }
     emit activeInputsChanged();
     emit refreshOptionalState();
+    emit clipPreferencesChanged();
 }
 
 void
@@ -1807,8 +1808,7 @@ void
 ViewerInstance::checkOFXClipPreferences(double /*time*/,
                              const RenderScale & /*scale*/,
                              const std::string & /*reason*/,
-                             bool /*forceGetClipPrefAction*/,
-                             bool /*recurse*/)
+                             bool /*forceGetClipPrefAction*/)
 {
     emit clipPreferencesChanged();
 }

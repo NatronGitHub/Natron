@@ -524,12 +524,27 @@ public:
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
      **/
+    void checkOFXClipPreferences_public(double time,
+                                     const RenderScale & scale,
+                                     const std::string & reason,
+                                     bool forceGetClipPrefAction,
+                                     bool recurse);
+
+protected:
+
+    void checkOFXClipPreferences_recursive(double time,
+                                                   const RenderScale & scale,
+                                                   const std::string & reason,
+                                                   bool forceGetClipPrefAction,
+                                           std::list<Natron::Node*>& markedNodes) ;
+
     virtual void checkOFXClipPreferences(double /*time*/,
-                                         const RenderScale & /*scale*/,
-                                         const std::string & /*reason*/,
-                                        bool /*forceGetClipPrefAction*/,
-                                        bool /*recurse*/) {}
-    
+                                            const RenderScale & /*scale*/,
+                                            const std::string & /*reason*/,
+                                            bool /*forceGetClipPrefAction*/) {}
+
+public:
+
     /**
      * @brief Returns the output aspect ratio to render with
      **/
@@ -873,7 +888,7 @@ public:
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
      **/
-    void clearPersistentMessage();
+    void clearPersistentMessage(bool recurse);
 
     /**
      * @brief Does this effect supports tiling ?

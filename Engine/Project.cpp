@@ -821,7 +821,7 @@ Project::initializeKnobs()
     _imp->frameRate->setHintToolTip("The frame rate of the project. This will serve as a default value for all effects that don't produce "
                                     "special frame rates.");
     _imp->frameRate->setAnimationEnabled(false);
-    _imp->frameRate->setDefaultValue(24.);
+    _imp->frameRate->setDefaultValue(24);
     _imp->frameRate->setDisplayMinimum(0.);
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);

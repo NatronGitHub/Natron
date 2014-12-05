@@ -153,8 +153,7 @@ public:
     virtual void checkOFXClipPreferences(double time,
                                          const RenderScale & scale,
                                          const std::string & reason,
-                                         bool forceGetClipPrefAction,
-                                         bool recurse) OVERRIDE FINAL;
+                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 

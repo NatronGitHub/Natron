@@ -297,7 +297,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-        checkOFXClipPreferences(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
+        checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
         
       
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
@@ -867,7 +867,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
         }
         if ( !getApp()->getProject()->isLoadingProject() ) {
-            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true, true);
+            checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, true);
         }
     }
     
@@ -1046,19 +1046,15 @@ clipPrefsProxy(OfxEffectInstance* self,
     
 } //endCheckOFXClipPreferences
 
+
+
 void
-OfxEffectInstance::checkOFXClipPref_recursive(double time,
-                                              const RenderScale & scale,
-                                              const std::string & reason,
-                                              bool forceGetClipPrefAction,
-                                              bool recurse,
-                                              std::list<Natron::Node*>& markedNodes)
+OfxEffectInstance::checkOFXClipPreferences(double time,
+                                           const RenderScale & scale,
+                                           const std::string & reason,
+                                           bool forceGetClipPrefAction)
 {
-    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(),markedNodes.end(),_node.get());
-    if (found != markedNodes.end()) {
-        return;
-    }
-    
+        
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
     
@@ -1132,34 +1128,6 @@ OfxEffectInstance::checkOFXClipPref_recursive(double time,
     }
     
     
-    ////////////////////////////////////////////////////////////////
-    ////////////////////////////////
-    //////////////// STEP 5: Recursion down-stream
-    if (recurse) {
-        markedNodes.push_back(_node.get());
-
-        ///Finally call recursively this function on all outputs to propagate it along the tree.
-        const std::list<Natron::Node* >& outputs = _node->getOutputs();
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-            ///Force a call to getClipPrefs on outputs because they are obviously not dirty
-            (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason, true, recurse);
-        }
-    }
-
-}
-
-void
-OfxEffectInstance::checkOFXClipPreferences(double time,
-                                           const RenderScale & scale,
-                                           const std::string & reason,
-                                           bool forceGetClipPrefAction,
-                                           bool recurse)
-{
-    std::list<Natron::Node*> markedNodes;
-    checkOFXClipPref_recursive(time, scale, reason, forceGetClipPrefAction, recurse, markedNodes);
-    
-    
-    
 } // checkOFXClipPreferences
 
 void
@@ -1196,7 +1164,7 @@ OfxEffectInstance::restoreClipPreferences()
         }
 
         
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true, false);
+        checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, false);
     }
 }
 
@@ -2410,7 +2378,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
         RECURSIVE_ACTION();
-        checkOFXClipPreferences(time, renderScale, ofxReason,false, true);
+        checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
     }
     if (_overlayInteract) {
         std::vector<std::string> params;

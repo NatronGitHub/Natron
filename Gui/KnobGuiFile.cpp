@@ -140,7 +140,7 @@ File_KnobGui::onReloadClicked()
         EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
         if (effect) {
             effect->purgeCaches();
-            effect->clearPersistentMessage();
+            effect->clearPersistentMessage(false);
         }
         _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
     }

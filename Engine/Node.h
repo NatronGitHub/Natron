@@ -524,7 +524,7 @@ public:
      * @brief Clears any message posted previously by setPersistentMessage.
      * This function will also be called on all inputs
      **/
-    void clearPersistentMessage();
+    void clearPersistentMessage(bool recurse);
 
     void purgeAllInstancesCaches();
 
@@ -726,6 +726,8 @@ public:
      * @brief Returns true if the parallel render args thread-storage is set
      **/
     bool isNodeRendering() const;
+    
+    bool hasPersistentMessage() const;
     
     void getPersistentMessage(QString* message,int* type) const;
 

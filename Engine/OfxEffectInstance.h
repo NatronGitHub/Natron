@@ -255,15 +255,8 @@ public:
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
-                                         bool forceGetClipPrefAction,
-                                         bool recurse) OVERRIDE FINAL;
-private:
-    void checkOFXClipPref_recursive(double time,
-                                    const RenderScale & scale,
-                                    const std::string & reason,
-                                    bool forceGetClipPrefAction,
-                                    bool recurse,
-                                    std::list<Natron::Node*>& markedNodes);
+                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
+
 public:
 
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
