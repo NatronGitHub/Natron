@@ -1529,23 +1529,21 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
         if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
             
-            bool inputPARSet = false;
-            double inputPAR = 1.;
+            double inputPAR = input->getLiveInstance()->getPreferredAspectRatio();
+            
+            double inputFPS = input->getLiveInstance()->getPreferredFrameRate();
+            
             for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
                 if (*it) {
-                    if (!inputPARSet) {
-                        inputPAR = (*it)->getLiveInstance()->getPreferredAspectRatio();
-                        inputPARSet = true;
-                    } else {
-                        if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
-                            return eCanConnectInput_differentPars;
-                        }
+                    if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                        return eCanConnectInput_differentPars;
                     }
+                    
+                    if ((*it)->getLiveInstance()->getPreferredFrameRate() != inputFPS) {
+                        return eCanConnectInput_differentFPS;
+                    }
+                    
                 }
-            }
-            
-            if (inputPARSet && inputPAR != input->getLiveInstance()->getPreferredAspectRatio()) {
-                return eCanConnectInput_differentPars;
             }
         }
     }

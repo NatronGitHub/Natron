@@ -335,7 +335,8 @@ public:
         eCanConnectInput_inputAlreadyConnected,
         eCanConnectInput_givenNodeNotConnectable,
         eCanConnectInput_graphCycles,
-        eCanConnectInput_differentPars
+        eCanConnectInput_differentPars,
+        eCanConnectInput_differentFPS
     };
     /**
      * @brief Returns true if a connection is possible for the given input number of the current node 
