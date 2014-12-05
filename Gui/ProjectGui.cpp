@@ -17,6 +17,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSplitter>
+#include <QTimer>
 #include <QDebug>
 #include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_ON(deprecated)
@@ -458,8 +459,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
         _gui->getNodeGraph()->clearSelection();
     }
-    
-    _gui->getNodeGraph()->centerOnAllNodes();
+    QTimer::singleShot( 25, _gui->getNodeGraph(), SLOT(centerOnAllNodes()));
 } // load
 
 std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const
