@@ -3063,6 +3063,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     if ( !aborted() ) {
         renderMappedImage->markForRendered(renderRectToRender);
         
+        //Check for NaNs
+        renderMappedImage->checkForNaNs(renderRectToRender);
         
         ///copy the rectangle rendered in the full scale image to the downscaled output
         if (renderFullScaleThenDownscale) {
@@ -3233,9 +3235,9 @@ EffectInstance::setPersistentMessage(Natron::MessageTypeEnum type,
 }
 
 void
-EffectInstance::clearPersistentMessage()
+EffectInstance::clearPersistentMessage(bool recurse)
 {
-    _node->clearPersistentMessage();
+    _node->clearPersistentMessage(recurse);
 }
 
 int
@@ -4339,6 +4341,50 @@ RenderEngine*
 OutputEffectInstance::createRenderEngine()
 {
     return new RenderEngine(this);
+}
+
+double
+EffectInstance::getPreferredFrameRate() const
+{
+    return getApp()->getProjectFrameRate();
+}
+
+void
+EffectInstance::checkOFXClipPreferences_recursive(double time,
+                                       const RenderScale & scale,
+                                       const std::string & reason,
+                                       bool forceGetClipPrefAction,
+                                       std::list<Natron::Node*>& markedNodes)
+{
+    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), _node.get());
+    if (found != markedNodes.end()) {
+        return;
+    }
+    
+    checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    markedNodes.push_back(_node.get());
+    
+    const std::list<Natron::Node*> & outputs = _node->getOutputs();
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        (*it)->getLiveInstance()->checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction,markedNodes);
+    }
+}
+
+void
+EffectInstance::checkOFXClipPreferences_public(double time,
+                                    const RenderScale & scale,
+                                    const std::string & reason,
+                                    bool forceGetClipPrefAction,
+                                    bool recurse)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (recurse) {
+        std::list<Natron::Node*> markedNodes;
+        checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+    } else {
+        checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    }
 }
 
 

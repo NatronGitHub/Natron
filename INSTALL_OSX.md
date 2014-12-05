@@ -5,7 +5,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 
 ## Checkout sources
 
-	git checkout https://github.com/MrKepzie/Natron.git
+	git clone https://github.com/MrKepzie/Natron.git
 	cd Natron
 
 If you want to compile the bleeding edge version, use the workshop

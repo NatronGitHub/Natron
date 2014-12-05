@@ -335,7 +335,8 @@ public:
         eCanConnectInput_inputAlreadyConnected,
         eCanConnectInput_givenNodeNotConnectable,
         eCanConnectInput_graphCycles,
-        eCanConnectInput_differentPars
+        eCanConnectInput_differentPars,
+        eCanConnectInput_differentFPS
     };
     /**
      * @brief Returns true if a connection is possible for the given input number of the current node 
@@ -523,7 +524,7 @@ public:
      * @brief Clears any message posted previously by setPersistentMessage.
      * This function will also be called on all inputs
      **/
-    void clearPersistentMessage();
+    void clearPersistentMessage(bool recurse);
 
     void purgeAllInstancesCaches();
 
@@ -582,8 +583,6 @@ public:
     boost::shared_ptr<Natron::Image> getImageBeingRendered(int time,unsigned int mipMapLevel,int view);
 
     void onInputChanged(int inputNb);
-
-    void onMultipleInputChanged();
 
     void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReasonEnum reason);
 
@@ -728,9 +727,13 @@ public:
      **/
     bool isNodeRendering() const;
     
+    bool hasPersistentMessage() const;
+    
     void getPersistentMessage(QString* message,int* type) const;
 
     bool isForceCachingEnabled() const;
+    
+    void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
 public slots:
 

@@ -3720,16 +3720,15 @@ ViewerGL::updatePersistentMessageToWidth(int w)
         int nType;
         (*it)->getPersistentMessage(&mess, &nType);
         if (!mess.isEmpty()) {
-            allMessages.append(mess);
+             allMessages.append(mess);
             ++nbNonEmpty;
         }
         if (next != nodes.rend()) {
             ++next;
         }
-        if (nbNonEmpty == 1 && nType == 2) {
-            type = 2;
-        } else {
-            type = 1;
+        
+        if (!mess.isEmpty()) {
+            type = (nbNonEmpty == 1 && nType == 2) ? 2 : 1;
         }
     }
     _imp->persistentMessageType = type;

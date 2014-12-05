@@ -557,3 +557,8 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
     _imp->_currentProject->onOCIOConfigPathChanged(path,false);
 }
 
+double
+AppInstance::getProjectFrameRate() const
+{
+    return _imp->_currentProject->getProjectFrameRate();
+}

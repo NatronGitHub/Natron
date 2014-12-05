@@ -385,7 +385,10 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
-                tab->setDesiredFps(found->second.fps);
+                if (!found->second.fpsLocked) {
+                    tab->setDesiredFps(found->second.fps);
+                }
+                tab->setFPSLocked(found->second.fpsLocked);
             }
         }
 
@@ -454,8 +457,9 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     
     if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
         _gui->getNodeGraph()->clearSelection();
-        _gui->getNodeGraph()->centerOnAllNodes();
     }
+    
+    _gui->getNodeGraph()->centerOnAllNodes();
 } // load
 
 std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const

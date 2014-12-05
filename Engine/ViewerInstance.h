@@ -133,6 +133,8 @@ public:
     void onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace);
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+    
+    virtual void restoreClipPreferences() OVERRIDE FINAL;
 
     void setInputA(int inputNb);
 
@@ -147,6 +149,11 @@ public:
     boost::shared_ptr<TimeLine> getTimeline() const;
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
+    
+    virtual void checkOFXClipPreferences(double time,
+                                         const RenderScale & scale,
+                                         const std::string & reason,
+                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 
@@ -178,6 +185,8 @@ signals:
     void refreshOptionalState();
 
     void activeInputsChanged();
+    
+    void clipPreferencesChanged();
 
     void disconnectTextureRequest(int index);
     

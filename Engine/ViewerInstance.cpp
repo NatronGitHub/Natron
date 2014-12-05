@@ -1795,6 +1795,22 @@ ViewerInstance::onInputChanged(int inputNb)
     }
     emit activeInputsChanged();
     emit refreshOptionalState();
+    emit clipPreferencesChanged();
+}
+
+void
+ViewerInstance::restoreClipPreferences()
+{
+    emit clipPreferencesChanged();
+}
+
+void
+ViewerInstance::checkOFXClipPreferences(double /*time*/,
+                             const RenderScale & /*scale*/,
+                             const std::string & /*reason*/,
+                             bool /*forceGetClipPrefAction*/)
+{
+    emit clipPreferencesChanged();
 }
 
 void

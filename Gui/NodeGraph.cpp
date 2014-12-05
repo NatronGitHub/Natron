@@ -1121,6 +1121,15 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             .arg(n->getNode()->getLiveInstance()->getPreferredAspectRatio());
                             Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                 error.toStdString());
+                        } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
+                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
+                            .arg(nodeHoldingEdge->getNode()->getName().c_str())
+                            .arg(n->getNode()->getName().c_str())
+                            .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
+                            .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
+                            Natron::errorDialog(tr("Different frame rate").toStdString(),
+                                                error.toStdString());
+
                         }
                         break;
                     }
@@ -1146,6 +1155,15 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                 .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredAspectRatio());
                                 Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                     error.toStdString());
+                            } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
+                                QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
+                                .arg(nodeHoldingEdge->getNode()->getName().c_str())
+                                .arg(n->getNode()->getName().c_str())
+                                .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
+                                .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
+                                Natron::errorDialog(tr("Different frame rate").toStdString(),
+                                                    error.toStdString());
+
                             }
 
                             
