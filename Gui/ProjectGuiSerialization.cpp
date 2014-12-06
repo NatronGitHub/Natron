@@ -74,6 +74,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.timelineVisible = tab->isTimelineVisible();
                 viewerData.checkerboardEnabled = tab->isCheckerboardEnabled();
                 viewerData.fps = tab->getDesiredFps();
+                viewerData.fpsLocked = tab->isFPSLocked();
                 _viewersData.insert( std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData) );
             }
         }

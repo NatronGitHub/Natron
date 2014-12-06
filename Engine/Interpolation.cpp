@@ -95,7 +95,7 @@ cubicDerive(double /*c0*/,
 static int
 isZero(double x)
 {
-    return x == 0. || (x > -EQN_EPS && x < EQN_EPS);
+    return (x > -EQN_EPS && x < EQN_EPS);
 }
 
 /// solve linear equation c0 + c1*x = 0.
@@ -107,7 +107,7 @@ Natron::solveLinear(double c0,
                     double s[1],
                     int o[1])
 {
-    if ( isZero(c1) ) {
+    if ( c1 == 0. || isZero(c1) ) {
         // it's a constant equation
 
         // there may be an infinity of solutions (if b=0) , but we always return none
@@ -133,7 +133,7 @@ Natron::solveQuadric(double c0,
                      double s[2],
                      int o[2])
 {
-    if ( isZero(c2) ) {
+    if ( c2 == 0. || isZero(c2) ) {
         // it's at most a linear equation
         return solveLinear(c0, c1, s, o);
     }
@@ -144,7 +144,7 @@ Natron::solveQuadric(double c0,
     double q = c0 / c2;
     double D = p * p - q;
 
-    if ( isZero(D) ) {
+    if ( D == 0. || isZero(D) ) {
         // one double root
         s[0] = -p;
         o[0] = 2;
@@ -176,7 +176,7 @@ Natron::solveCubic(double c0,
                    double s[3],
                    int o[3])
 {
-    if ( isZero(c3) ) {
+    if ( c3 == 0. || isZero(c3) ) {
         // it's at most a second-degree polynomial
         return solveQuadric(c0, c1, c2, s, o);
     }
@@ -195,8 +195,8 @@ Natron::solveCubic(double c0,
     double cb_p = p * p * p;
     double D = q * q + cb_p;
     int num;
-    if ( isZero(D) ) {
-        if ( isZero(q) ) {
+    if ( D == 0. || isZero(D) ) {
+        if ( q == 0. || isZero(q) ) {
             // one triple solution
             s[0] = 0.;
             o[0] = 3;
@@ -254,7 +254,7 @@ Natron::solveQuartic(double c0,
                      double s[4],
                      int o[4])
 {
-    if ( isZero(c4) ) {
+    if ( c4 == 0. || isZero(c4) ) {
         // it's at most a third-degree polynomial
         return solveCubic(c0, c1, c2, c3, s, o);
     }
@@ -273,7 +273,7 @@ Natron::solveQuartic(double c0,
     double r = -3.0 / 256.0 * sq_A * sq_A + 1.0 / 16.0 * sq_A * B - 1.0 / 4.0 * A * C + D;
     int num;
 
-    if ( isZero(r) ) {
+    if ( r == 0. || isZero(r) ) {
         // no absolute term:y(y ^ 3 + py + q) = 0
         num = solveCubic(q, p, 0., 1., s, o);
         // if q = 0, this should be within the previously computed solutions,
@@ -293,7 +293,7 @@ Natron::solveQuartic(double c0,
         double u = z * z - r;
         double v = 2.0 * z - p;
 
-        if ( isZero(u) ) {
+        if ( u == 0. || isZero(u) ) {
             u = 0.0;
         } else if (u > 0.0) {
             u = sqrt(u);

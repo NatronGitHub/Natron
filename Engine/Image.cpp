@@ -12,7 +12,9 @@
 #include "Image.h"
 
 #include <QDebug>
-
+#ifndef Q_MOC_RUN
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif
 #include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 
@@ -564,14 +566,14 @@ Image::pixelAt(int x,
 {
     int compsCount = getElementsCountForComponents( getComponents() );
 
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
-
-        return (unsigned char*)(this->_data.writable())
-               + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-               + ( x - _bounds.left() ) * compDataSize;
-    } else {
+    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
+    } else {
+        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
+        
+        return (unsigned char*)(this->_data.writable())
+        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + ( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -580,15 +582,15 @@ Image::pixelAt(int x,
                int y) const
 {
     int compsCount = getElementsCountForComponents( getComponents() );
-
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
-
-        return (const unsigned char*)(this->_data.readable())
-               + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-               + ( x - _bounds.left() ) * compDataSize;
-    } else {
+    
+    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
+    } else {
+        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
+        
+        return (unsigned char*)(this->_data.readable())
+        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + ( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -710,7 +712,7 @@ Image::getRowElements() const
     return getComponentsCount() * _bounds.width();
 }
 
-// code proofread and fixed by @devernay on 8/8/2014
+// code proofread and fixed by @devernay on 4/12/2014
 template <typename PIX, int maxValue>
 void
 Image::halveRoIForDepth(const RectI & roi,
@@ -732,6 +734,10 @@ Image::halveRoIForDepth(const RectI & roi,
     ///The source rectangle, intersected to this image region of definition in pixels
     const RectI &srcBounds = getBounds();
     const RectI &dstBounds = output->getBounds();
+    const RectI &srcBmBounds = _bitmap.getBounds();
+    const RectI &dstBmBounds = output->_bitmap.getBounds();
+    assert(!copyBitMap || usesBitMap());
+    assert(!usesBitMap() ||(srcBmBounds == srcBounds && dstBmBounds == dstBounds));
 
     // the srcRoD of the output should be enclosed in half the roi.
     // It does not have to be exactly half of the input.
@@ -743,7 +749,7 @@ Image::halveRoIForDepth(const RectI & roi,
     //           dstRoD.height()*2 <= roi.height());
     assert( getComponents() == output->getComponents() );
 
-    int components = getElementsCountForComponents( getComponents() );
+    int nComponents = getElementsCountForComponents( getComponents() );
     RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
@@ -753,83 +759,89 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
 
-    int dstRoIWidth = dstRoI.width();
-    int dstRoIHeight = dstRoI.height();
-    const PIX* src = (const PIX*)pixelAt(srcRoI.x1, srcRoI.y1);
-    PIX* dst = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
-    int srcRowSize = srcBounds.width() * components;
-    int dstRowSize = dstBounds.width() * components;
+    const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
+    const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBmBounds.x1, srcBmBounds.y1);
+    PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1,   dstBounds.y1);
+    char* const dstBmPixels = output->_bitmap.getBitmapAt(dstBmBounds.x1, dstBmBounds.y1);
 
-    
-    const char* srcBm;
-    char* dstBm;
-    
-    srcBm = _bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1);
-    dstBm = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
-    
-    // Loop with sliding pointers:
-    // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
-    // This is the *good* way to code it, let the optimizer do the rest!
-    // Please don't change this, and don't remove the comments.
-    for (int y = 0; y < dstRoIHeight;
-         ++y,
-         src += (srcRowSize + srcRowSize) - dstRoIWidth * 2 * components, // two rows minus what was done on previous iteration
-         dst += (dstRowSize) - dstRoIWidth * components, // one row minus what was done on previous iteration
-         srcBm += (srcBounds.width() + srcBounds.width()) - dstRoIWidth * 2,
-         dstBm += (dstBounds.width()) - dstRoIWidth) {
-        
-        if (y * 2 >= srcRoI.height()) {
-            break;
-        }
-        
-        bool pickNextRow = (y * 2) < (srcBounds.y2 - 1);
-        bool pickThisRow = (y * 2) >= (srcBounds.y1);
+    int srcRowSize = srcBounds.width() * nComponents;
+    int dstRowSize = dstBounds.width() * nComponents;
+
+    // offset pointers so that srcData and dstData correspond to pixel (0,0)
+    const PIX* const srcData = srcPixels - (srcBounds.x1 * nComponents + srcRowSize * srcBounds.y1);
+    PIX* const dstData       = dstPixels - (dstBounds.x1 * nComponents + dstRowSize * dstBounds.y1);
+
+    const int srcBmRowSize = srcBmBounds.width();
+    const int dstBmRowSize = dstBmBounds.width();
+
+    const char* const srcBmData = srcBmPixels - (srcBmBounds.x1 + srcBmRowSize * srcBmBounds.y1);
+    char* const dstBmData       = dstBmPixels - (dstBmBounds.x1 + dstBmRowSize * dstBmBounds.y1);
+
+    for (int y = dstRoI.y1; y < dstRoI.y2; ++y) {
+        const PIX* const srcLineStart    = srcData + y * 2 * srcRowSize;
+        PIX* const dstLineStart          = dstData + y     * dstRowSize;
+        const char* const srcBmLineStart = srcBmData + y * 2 * srcBmRowSize;
+        char* const dstBmLineStart       = dstBmData + y     * dstBmRowSize;
+
+        // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
+        // Check that if are within srcBounds.
+        int srcy = y * 2;
+        bool pickThisRow = srcBounds.y1 <= (srcy + 0) && (srcy + 0) < srcBounds.y2;
+        bool pickNextRow = srcBounds.y1 <= (srcy + 1) && (srcy + 1) < srcBounds.y2;
+
         int sumH = (int)pickNextRow + (int)pickThisRow;
         assert(sumH == 1 || sumH == 2);
         
-        for (int x = 0; x < dstRoIWidth;
-             ++x,
-             src += (components + components) - components, // two pixels minus what was done on previous iteration
-             dst += (components) - components, // one pixel minus what was done on previous iteration
-             ++srcBm) {
-            
-            bool pickNextCol = (x * 2) < (srcBounds.x2 - 1);
-            bool pickThisCol = (x * 2) >= (srcBounds.x1);
+        for (int x = dstRoI.x1; x < dstRoI.x2; ++x) {
+            const PIX* const srcPixStart    = srcLineStart   + x * 2 * nComponents;
+            const char* const srcBmPixStart = srcBmLineStart + x * 2;
+            PIX* const dstPixStart          = dstLineStart   + x * nComponents;
+            char* const dstBmPixStart       = dstBmLineStart + x;
+
+            // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
+            // Check that if are within srcBounds.
+            int srcx = x * 2;
+            bool pickThisCol = srcBounds.x1 <= (srcx + 0) && (srcx + 0) < srcBounds.x2;
+            bool pickNextCol = srcBounds.x1 <= (srcx + 1) && (srcx + 1) < srcBounds.x2;
+
             int sumW = (int)pickThisCol + (int)pickNextCol;
             assert(sumW == 1 || sumW == 2);
-            
-            for (int k = 0; k < components; ++k, ++dst, ++src) {
-                
-                
-                PIX a = (pickThisCol && pickThisRow) ? *src : 0;
-                PIX b = (pickNextCol && pickThisRow) ? *(src + components) : 0;
-                PIX c = (pickThisCol && pickNextRow) ? *(src + srcRowSize): 0;
-                PIX d = (pickNextCol && pickNextRow) ? *(src + srcRowSize  + components)  : 0;
+            const int sum = sumW * sumH;
+            assert(0 < sum && sum <= 4);
+
+            for (int k = 0; k < nComponents; ++k) {
+                ///a b
+                ///c d
+
+                const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart + k) : 0;
+                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + k + nComponents) : 0;
+                const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + k + srcRowSize): 0;
+                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + nComponents)  : 0;
                 
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
-                *dst = (a + b + c + d) / (sumH * sumW);
-
+                dstPixStart[k] = (a + b + c + d) / sum;
             }
             
             if (copyBitMap) {
-                
-                PIX a = (pickThisCol && pickThisRow) ? *srcBm : 0;
-                PIX b = (pickNextCol && pickThisRow) ? *(srcBm + 1) : 0;
-                PIX c = (pickThisCol && pickNextRow) ? *(srcBm + srcBounds.width()): 0;
-                PIX d = (pickNextCol && pickNextRow) ? *(srcBm + srcBounds.width()  + 1)  : 0;
-                
-                *dstBm = (a + b + c + d) / (sumH * sumW);
-               
-                ++srcBm;
-                ++dstBm;
+                ///a b
+                ///c d
+
+                const char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
+                const char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
+                const char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
+                const char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
+
+                assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
+                assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
+                assert(a + b + c + d <= sum); // bitmaps are 0 or 1
+                // the following is an integer division, the result can be 0 or 1
+                dstBmPixStart[0] = (a + b + c + d) / sum;
+                assert(dstBmPixStart[0] == 0 || dstBmPixStart[0] == 1);
             }
         }
-        
-        
-        
     }
-    
+
 } // halveRoIForDepth
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -959,6 +971,32 @@ Image::downscaleMipMap(const RectI & roi,
 
     ///Now copy the result of tmpImg into the output image
     output->pasteFrom(*tmpImg, dstRoI, copyBitMap);
+}
+
+
+void
+Image::checkForNaNs(const RectI& roi)
+{
+    if (getBitDepth() != eImageBitDepthFloat) {
+        return;
+    }
+    
+    unsigned int compsCount = getComponentsCount();
+    
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        
+        float* pix = (float*)pixelAt(roi.x1, roi.y1);
+        float* const end = pix +  compsCount * roi.width();
+        
+        for (;pix < end; ++pix) {
+            assert(!boost::math::isnan(*pix) && !boost::math::isinf(*pix));
+            if (boost::math::isnan(*pix) || boost::math::isinf(*pix)) {
+                *pix = 1.;
+            }
+        }
+    }
+
+
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -1613,6 +1651,8 @@ convertToFormatInternal(const RectI & renderWindow,
         return;
     }
 
+    assert(!intersection.isNull() && intersection.width() > 0 && intersection.height() > 0);
+
     if (channelForAlpha == -1) {
         switch (srcNComps) {
             case 4:
@@ -1648,7 +1688,6 @@ convertToFormatInternal(const RectI & renderWindow,
 
     const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
     const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
-
 
     for (int y = 0; y < intersection.height(); ++y) {
         

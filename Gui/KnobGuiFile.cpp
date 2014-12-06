@@ -140,7 +140,7 @@ File_KnobGui::onReloadClicked()
         EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
         if (effect) {
             effect->purgeCaches();
-            effect->clearPersistentMessage();
+            effect->clearPersistentMessage(false);
         }
         _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
     }
@@ -160,7 +160,8 @@ File_KnobGui::open_file()
             filters = effect->supportedFileFormats();
         }
     }
-    std::string currentPattern = _knob->getValue();
+    std::string oldPattern = _knob->getValue();
+    std::string currentPattern = oldPattern;
     std::string path = SequenceParsing::removePath(currentPattern);
     QString pathWhereToOpen;
     if ( path.empty() ) {
@@ -179,7 +180,7 @@ File_KnobGui::open_file()
         path = SequenceParsing::removePath(selectedFile);
         updateLastOpened( path.c_str() );
         
-        pushUndoCommand( new KnobUndoCommand<std::string>(this,currentPattern,originalSelectedFile) );
+        pushUndoCommand( new KnobUndoCommand<std::string>(this,oldPattern,originalSelectedFile) );
     }
 }
 

@@ -308,9 +308,19 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     ///The next for loop is about 50% of loading time of a project
     
     ///Now that everything is connected, check clip preferences on all OpenFX effects
+    std::list<Natron::Node*> markedNodes;
+    std::list<Natron::Node*> nodesToRestorePreferences;
     for (U32 i = 0; i < currentNodes.size(); ++i) {
-        currentNodes[i]->getLiveInstance()->onMultipleInputsChanged();
-        _publicInterface->getApp()->progressUpdate(_publicInterface, ((double)(i+1) / (double)currentNodes.size()) * 0.5 + 0.25);
+        if (currentNodes[i]->isOutputNode()) {
+            nodesToRestorePreferences.push_back(currentNodes[i].get());
+        }
+    }
+    
+    int count = 0;
+    for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it,++count) {
+        (*it)->restoreClipPreferencesRecursive(markedNodes);
+        _publicInterface->getApp()->progressUpdate(_publicInterface,
+                                                   ((double)(count+1) / (double)nodesToRestorePreferences.size()) * 0.5 + 0.25);
     }
     
     ///We should be now at 75% progress...

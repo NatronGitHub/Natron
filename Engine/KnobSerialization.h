@@ -463,6 +463,7 @@ public:
     ///this the deserialization will not succeed.
     KnobSerialization()
         : _knob()
+        , _dimension(0)
         , _extraData(NULL)
     {
     }

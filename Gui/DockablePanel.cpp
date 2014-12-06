@@ -541,11 +541,30 @@ DockablePanel::getHolder() const
     return _imp->_holder;
 }
 
+class NoWheelTabBar : public QTabBar
+{
+public:
+    
+    NoWheelTabBar(QWidget* parent) : QTabBar(parent) {}
+    
+private:
+    
+    virtual void wheelEvent(QWheelEvent* event) OVERRIDE FINAL
+    {
+        //ignore wheel events so it doesn't scroll the tabs
+        QWidget::wheelEvent(event);
+    }
+};
+
+
 DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,QWidget* parent)
     : QTabWidget(parent)
     , _gui(gui)
 {
     setFocusPolicy(Qt::StrongFocus);
+    QTabBar* tabbar = new NoWheelTabBar(this);
+    tabbar->setFocusPolicy(Qt::ClickFocus);
+    setTabBar(tabbar);
 }
 
 void
@@ -1015,9 +1034,15 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout->addWidget(fieldContainer,rowIndex,1, 1, 1);
                     layout->addWidget(label, rowIndex, 0, 1, 1, Qt::AlignRight);
                 }
+                
             }
             
             ret->setSecret();
+            
+            if (!knob->isNewLineTurnedOff() && ret->shouldAddStretch()) {
+                fieldLayout->addStretch();
+            }
+
 
             
             ///increment the row count

@@ -198,10 +198,14 @@ struct ViewerTabPrivate
     Button* nextIncrement_Button;
     Button* playbackMode_Button;
     LineEdit* frameRangeEdit;
-    Button* lockFrameRangeButton;
+    QCheckBox* canEditFrameRangeBox;
+    QLabel* canEditFrameRangeLabel;
     mutable QMutex frameRangeLockedMutex;
     bool frameRangeLocked;
-    QLabel* fpsName;
+    QCheckBox* canEditFpsBox;
+    QLabel* canEditFpsLabel;
+    mutable QMutex fpsLockedMutex;
+    bool fpsLocked;
     SpinBox* fpsBox;
     Button* turboButton;
 
@@ -289,10 +293,14 @@ struct ViewerTabPrivate
         , nextIncrement_Button(NULL)
         , playbackMode_Button(NULL)
         , frameRangeEdit(NULL)
-        , lockFrameRangeButton(NULL)
+        , canEditFrameRangeBox(NULL)
+        , canEditFrameRangeLabel(NULL)
         , frameRangeLockedMutex()
         , frameRangeLocked(true)
-        , fpsName(NULL)
+        , canEditFpsBox(NULL)
+        , canEditFpsLabel(NULL)
+        , fpsLockedMutex()
+        , fpsLocked(true)
         , fpsBox(NULL)
         , turboButton(NULL)
         , timeLineGui(NULL)
@@ -777,6 +785,26 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
 
     _imp->playerLayout->addStretch();
+    
+    _imp->canEditFrameRangeBox = new QCheckBox(_imp->playerButtonsContainer);
+    QString canEditFRTooltip = Qt::convertFromPlainText(tr("When unchecked, the timeline bounds will be automatically set by "
+                                                           "%1 as "
+                                                           "informed by the Readers upstream. When checked, the bounds will no longer "
+                                                           "be automatically set, and you're free to set them in the edit line "
+                                                           "on the right or by dragging the timeline markers.").arg(NATRON_APPLICATION_NAME)
+                                                        ,Qt::WhiteSpaceNormal);
+    _imp->canEditFrameRangeBox->setToolTip(canEditFRTooltip);
+    QObject::connect( _imp->canEditFrameRangeBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFrameRangeButtonClicked(bool) ) );
+    _imp->canEditFrameRangeBox->setChecked(!_imp->frameRangeLocked);
+    _imp->canEditFrameRangeBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    QFont font(appFont,appFontSize);
+    
+    _imp->canEditFrameRangeLabel = new QLabel(tr("Frame-range"),_imp->playerButtonsContainer);
+    _imp->canEditFrameRangeLabel->setToolTip(canEditFRTooltip);
+    _imp->canEditFrameRangeLabel->setFont(font);
+    
+    _imp->playerLayout->addWidget(_imp->canEditFrameRangeBox);
+    _imp->playerLayout->addWidget(_imp->canEditFrameRangeLabel);
 
     _imp->frameRangeEdit = new LineEdit(_imp->playerButtonsContainer);
     QObject::connect( _imp->frameRangeEdit,SIGNAL( editingFinished() ),this,SLOT( onFrameRangeEditingFinished() ) );
@@ -791,31 +819,30 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->playerLayout->addWidget(_imp->frameRangeEdit);
 
-    QPixmap pixRangeLocked,pixRangeUnlocked;
-    appPTR->getIcon(NATRON_PIXMAP_LOCKED, &pixRangeLocked);
-    appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, &pixRangeUnlocked);
-    QIcon rangeLockedIC;
-    rangeLockedIC.addPixmap(pixRangeLocked,QIcon::Normal,QIcon::On);
-    rangeLockedIC.addPixmap(pixRangeUnlocked,QIcon::Normal,QIcon::Off);
-    _imp->lockFrameRangeButton = new Button(rangeLockedIC,"",_imp->playerButtonsContainer);
-    _imp->lockFrameRangeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->lockFrameRangeButton->setCheckable(true);
-    _imp->lockFrameRangeButton->setChecked(true);
-    _imp->lockFrameRangeButton->setDown(true);
-    _imp->lockFrameRangeButton->setToolTip( Qt::convertFromPlainText(tr("When locked, the timeline bounds will be automatically set by "
-                                                                        "%1 so it defines the real frame range as "
-                                                                        "informed by the Readers. When unchecked, the bounds will no longer "
-                                                                        "be automatically set, and you're free to set them in the edit line "
-                                                                        "on the left or by dragging the timeline markers.").arg(NATRON_APPLICATION_NAME)
-                                                                     ,Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->lockFrameRangeButton,SIGNAL( clicked(bool) ),this,SLOT( onLockFrameRangeButtonClicked(bool) ) );
-    _imp->playerLayout->addWidget(_imp->lockFrameRangeButton);
 
     _imp->playerLayout->addStretch();
 
-    _imp->fpsName = new QLabel(tr("fps"),_imp->playerButtonsContainer);
-    _imp->playerLayout->addWidget(_imp->fpsName);
+    _imp->canEditFpsBox = new QCheckBox(_imp->playerButtonsContainer);
+    
+    QString canEditFpsBoxTT = Qt::convertFromPlainText(tr("When unchecked, the frame rate will be automatically set by "
+                                                          " the informations of the input stream of the Viewer.  "
+                                                          "When checked, you're free to set the frame rate of the Viewer.")
+                                                       ,Qt::WhiteSpaceNormal);
+    
+    _imp->canEditFpsBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->canEditFpsBox->setToolTip(canEditFpsBoxTT);
+    _imp->canEditFpsBox->setChecked(!_imp->fpsLocked);
+    QObject::connect( _imp->canEditFpsBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFPSClicked(bool) ) );
+    
+    _imp->canEditFpsLabel = new QLabel(tr("fps"),_imp->playerButtonsContainer);
+    _imp->canEditFpsLabel->setToolTip(canEditFpsBoxTT);
+    _imp->canEditFpsLabel->setFont(font);
+    
+    _imp->playerLayout->addWidget(_imp->canEditFpsBox);
+    _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
+    
     _imp->fpsBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
+    _imp->fpsBox->setReadOnly(_imp->fpsLocked);
     _imp->fpsBox->decimals(1);
     _imp->fpsBox->setValue(24.0);
     _imp->fpsBox->setIncrement(0.1);
@@ -961,6 +988,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     boost::shared_ptr<Node> wrapperNode = _imp->viewerNode->getNode();
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );
     QObject::connect( wrapperNode.get(),SIGNAL( inputNameChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
+    QObject::connect( _imp->viewerNode,SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()));
     QObject::connect( _imp->viewerNode,SIGNAL( activeInputsChanged() ),this,SLOT( onActiveInputsChanged() ) );
     QObject::connect( _imp->viewerColorSpace, SIGNAL( currentIndexChanged(int) ), this,
                       SLOT( onColorSpaceComboBoxChanged(int) ) );
@@ -2683,6 +2711,32 @@ ViewerTab::onActiveInputsChanged()
         _imp->viewer->resetWipeControls();
         setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
     }
+    
+}
+
+void
+ViewerTab::onClipPreferencesChanged()
+{
+    //Try to set auto-fps if it is enabled
+    if (_imp->fpsLocked) {
+        
+        int activeInputs[2];
+        
+        _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
+        EffectInstance* input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : 0;
+        if (input0) {
+            _imp->fpsBox->setValue(input0->getPreferredFrameRate());
+        } else {
+            EffectInstance* input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : 0;
+            if (input1) {
+                _imp->fpsBox->setValue(input1->getPreferredFrameRate());
+            } else {
+                _imp->fpsBox->setValue(getGui()->getApp()->getProjectFrameRate());
+            }
+        }
+        onSpinboxFpsChanged(_imp->fpsBox->value());
+    }
+
 }
 
 void
@@ -2814,21 +2868,38 @@ ViewerTab::onFrameRangeEditingFinished()
 }
 
 void
-ViewerTab::onLockFrameRangeButtonClicked(bool toggled)
+ViewerTab::onCanSetFrameRangeButtonClicked(bool toggled)
 {
-    _imp->lockFrameRangeButton->setDown(toggled);
-    _imp->frameRangeEdit->setReadOnly(toggled);
+    _imp->frameRangeEdit->setReadOnly(!toggled);
     {
         QMutexLocker l(&_imp->frameRangeLockedMutex);
-        _imp->frameRangeLocked = toggled;
+        _imp->frameRangeLocked = !toggled;
     }
 }
 
 void
 ViewerTab::setFrameRangeLocked(bool toggled)
 {
-    _imp->lockFrameRangeButton->setChecked(toggled);
-    onLockFrameRangeButtonClicked(toggled);
+    _imp->canEditFrameRangeBox->setChecked(!toggled);
+    onCanSetFrameRangeButtonClicked(!toggled);
+}
+
+void
+ViewerTab::onCanSetFPSClicked(bool toggled)
+{
+    _imp->fpsBox->setReadOnly(!toggled);
+    {
+        QMutexLocker l(&_imp->fpsLockedMutex);
+        _imp->fpsLocked = !toggled;
+    }
+
+}
+
+void
+ViewerTab::setFPSLocked(bool fpsLocked)
+{
+    _imp->canEditFpsBox->setChecked(!fpsLocked);
+    onCanSetFPSClicked(!fpsLocked);
 }
 
 void
@@ -2848,6 +2919,14 @@ ViewerTab::isFrameRangeLocked() const
     QMutexLocker l(&_imp->frameRangeLockedMutex);
 
     return _imp->frameRangeLocked;
+}
+
+bool
+ViewerTab::isFPSLocked() const
+{
+    QMutexLocker k(&_imp->fpsLockedMutex);
+    
+    return _imp->fpsLocked;
 }
 
 void

@@ -208,7 +208,7 @@ class BezierCPCurveGui : public CurveGui
 public:
     
     BezierCPCurveGui(const CurveWidget *curveWidget,
-                 Bezier* bezier,
+                 const boost::shared_ptr<Bezier>& bezier,
                  const boost::shared_ptr<RotoContext>& roto,
                  const QString & name,
                  const QColor & color,
@@ -218,7 +218,7 @@ public:
     
     boost::shared_ptr<RotoContext> getRotoContext() const { return _rotoContext; }
     
-    Bezier* getBezier() const ;
+    boost::shared_ptr<Bezier> getBezier() const ;
     
     virtual double evaluate(double x) const;
     virtual std::pair<double,double> getCurveYRange() const;
@@ -231,7 +231,7 @@ public:
 private:
     
     
-    Bezier* _bezier;
+    boost::shared_ptr<Bezier> _bezier;
     boost::shared_ptr<RotoContext> _rotoContext;
 };
 

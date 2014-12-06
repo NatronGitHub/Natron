@@ -239,7 +239,7 @@ struct RotoGui::RotoGuiPrivate
 
     void onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem> & item,bool* ret);
 
-    bool removeBezierFromSelection(const Bezier* b);
+    bool removeBezierFromSelection(const boost::shared_ptr<Bezier>& b);
 
     void computeSelectedCpsBBOX();
 
@@ -1343,10 +1343,10 @@ RotoGui::RotoGuiPrivate::clearBeziersSelection()
 }
 
 bool
-RotoGui::RotoGuiPrivate::removeBezierFromSelection(const Bezier* b)
+RotoGui::RotoGuiPrivate::removeBezierFromSelection(const boost::shared_ptr<Bezier>& b)
 {
     for (SelectedBeziers::iterator fb = rotoData->selectedBeziers.begin(); fb != rotoData->selectedBeziers.end(); ++fb) {
-        if (fb->get() == b) {
+        if (*fb == b) {
             context->deselect(*fb,RotoContext::OVERLAY_INTERACT);
             rotoData->selectedBeziers.erase(fb);
 
@@ -1628,7 +1628,7 @@ RotoGui::penDown(double /*scaleX*/,
                 _imp->rotoData->featherBarBeingDragged = featherBarSel;
 
                 ///Also select the point only if the curve is the same!
-                if ( featherBarSel.first->getBezier() == nearbyBezier.get() ) {
+                if ( featherBarSel.first->getBezier() == nearbyBezier ) {
                     _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged, e);
                     _imp->handleBezierSelection(nearbyBezier, e);
                 }
@@ -1701,7 +1701,7 @@ RotoGui::penDown(double /*scaleX*/,
         break;
     case REMOVE_POINTS:
         if (nearbyCP.first) {
-            assert( nearbyBezier && nearbyBezier.get() == nearbyCP.first->getBezier() );
+            assert( nearbyBezier && nearbyBezier == nearbyCP.first->getBezier() );
             if ( nearbyCP.first->isFeatherPoint() ) {
                 pushUndoCommand( new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.second) );
             } else {
@@ -2248,9 +2248,9 @@ RotoGui::penUp(double /*scaleX*/,
 }
 
 void
-RotoGui::removeCurve(Bezier* curve)
+RotoGui::removeCurve(const boost::shared_ptr<Bezier>& curve)
 {
-    if ( curve == _imp->rotoData->builtBezier.get() ) {
+    if ( curve == _imp->rotoData->builtBezier ) {
         _imp->rotoData->builtBezier.reset();
     }
     _imp->context->removeItem(curve);

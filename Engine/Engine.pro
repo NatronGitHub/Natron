@@ -49,7 +49,6 @@ SOURCES += \
     AppInstanceWrapper.cpp \
     AppManager.cpp \
     BlockingBackgroundRender.cpp \
-    ChannelSet.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
     DiskCacheNode.cpp \
@@ -143,7 +142,6 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
-    ChannelSet.h \
     DockablePanelI.h \
     DiskCacheNode.h \
     EffectInstance.h \

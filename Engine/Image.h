@@ -402,6 +402,9 @@ namespace Natron {
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
+        
+        void checkForNaNs(const RectI& roi);
+
 
     private:
 
@@ -418,6 +421,7 @@ namespace Natron {
      * If the RoI bounds are odd, the largest enclosing RoI with even bounds will be considered.
      **/
         void halveRoI(const RectI & roi, bool copyBitMap, Natron::Image* output) const;
+        
 
         template <typename PIX, int maxValue>
         void halveRoIForDepth(const RectI & roi, bool copyBitMap, Natron::Image* output) const;

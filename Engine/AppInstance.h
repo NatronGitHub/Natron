@@ -276,6 +276,8 @@ public:
     Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
 
     int getMainView() const;
+    
+    double getProjectFrameRate() const;
 
     /**
      * @brief Clears any shared ptr to NodeGuis left
@@ -311,10 +313,7 @@ public slots:
 
     void quit();
 
-    /* The following methods are forwarded to the model */
-    void checkViewersConnection();
-
-    void redrawAllViewers();
+    virtual void redrawAllViewers() {}
 
     void triggerAutoSave();
 

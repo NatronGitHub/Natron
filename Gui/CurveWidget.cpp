@@ -571,7 +571,7 @@ KnobCurveGui::getInternalKnob() const
 }
 
 BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
-                                   Bezier* bezier,
+                                   const boost::shared_ptr<Bezier>& bezier,
                                    const boost::shared_ptr<RotoContext>& roto,
                                    const QString & name,
                                    const QColor & color,
@@ -586,7 +586,7 @@ BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
     }
 }
 
-Bezier*
+boost::shared_ptr<Bezier>
 BezierCPCurveGui::getBezier() const
 {
     return _bezier;
@@ -1912,8 +1912,9 @@ CurveWidget::CurveWidget(Gui* gui,
     
     if (parent->objectName() == "CurveEditorSplitter") {
         ///if this is the curve widget associated to the CurveEditor
-        QDesktopWidget* desktop = QApplication::desktop();
-        _imp->sizeH = desktop->screenGeometry().size();
+//        QDesktopWidget* desktop = QApplication::desktop();
+//        _imp->sizeH = desktop->screenGeometry().size();
+        _imp->sizeH = QSize(10000,10000);
 
     } else {
         ///a random parametric param curve editor

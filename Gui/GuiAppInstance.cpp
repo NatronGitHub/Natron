@@ -771,3 +771,9 @@ GuiAppInstance::clearViewersLastRenderedTexture()
         (*it)->getViewer()->clearLastRenderedTexture();
     }
 }
+
+void
+GuiAppInstance::redrawAllViewers()
+{
+    _imp->_gui->redrawAllViewers();
+}

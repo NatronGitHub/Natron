@@ -182,7 +182,7 @@ public:
     
     BezierEditorContext(QTreeWidget* tree,
                         CurveWidget* widget,
-                        Bezier* curve,
+                        const boost::shared_ptr<Bezier>& curve,
                         RotoCurveEditorContext* context);
     
     virtual ~BezierEditorContext() OVERRIDE;
@@ -191,7 +191,7 @@ public:
     //the tree items to be deleted twice due to Qt's parenting
     void preventItemDeletion();
     
-    Bezier* getBezier() const;
+    boost::shared_ptr<Bezier> getBezier() const;
     
     QTreeWidgetItem* getItem() const;
     
@@ -242,11 +242,11 @@ public slots:
     
     void onNameChanged(const QString & name);
     
-    void onItemNameChanged(RotoItem* item);
+    void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
     
     void itemInserted(int);
     
-    void onItemRemoved(RotoItem* item,int);
+    void onItemRemoved(const boost::shared_ptr<RotoItem>& item, int);
 
 private:
 

@@ -197,7 +197,7 @@ public:
      * @brief Calls RotoContext::removeItem but also clears some pointers if they point to
      * this curve. For undo/redo purpose.
      **/
-    void removeCurve(Bezier* curve);
+    void removeCurve(const boost::shared_ptr<Bezier>& curve);
 
     bool isFeatherVisible() const;
 

@@ -78,6 +78,7 @@ public:
         : ramBuffer(NULL)
           , mustFreeRamBuffer(false)
           , textureIndex(0)
+          , time(0)
           , textureRect()
           , bytesCount(0)
           , gain(1.)
@@ -104,6 +105,7 @@ public:
     unsigned char* ramBuffer;
     bool mustFreeRamBuffer; //< set to true when !cachedFrame
     int textureIndex;
+    int time;
     TextureRect textureRect;
     Natron::ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;

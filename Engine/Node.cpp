@@ -24,7 +24,6 @@
 #include <ofxNatron.h>
 
 #include "Engine/Hash64.h"
-#include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxHost.h"
@@ -63,15 +62,22 @@ namespace { // protect local classes in anonymous namespace
     typedef std::list<Node::KnobLink> KnobLinkList;
     typedef std::vector<boost::shared_ptr<Node> > InputsV;
     
+    enum InputActionEnum
+    {
+        eInputActionConnect,
+        eInputActionDisconnect,
+        eInputActionReplace
+    };
+    
     struct ConnectInputAction
     {
         boost::shared_ptr<Natron::Node> node;
-        bool isConnect;
+        InputActionEnum type;
         int inputNb;
         
-        ConnectInputAction(const boost::shared_ptr<Natron::Node>& input,bool isConnect,int inputNb)
+        ConnectInputAction(const boost::shared_ptr<Natron::Node>& input,InputActionEnum type,int inputNb)
         : node(input)
-        , isConnect(isConnect)
+        , type(type)
         , inputNb(inputNb)
         {
         }
@@ -313,6 +319,7 @@ Node::createRotoContextConditionnally()
     ///Initialize the roto context if any
     if ( isRotoNode() ) {
         _imp->rotoContext.reset( new RotoContext(this) );
+        _imp->rotoContext->createBaseLayer();
     }
 }
 
@@ -843,7 +850,7 @@ Node::getInputNames(std::vector<std::string> & inputNames) const
 }
 
 int
-Node::getPreferredInputForConnection() const
+Node::getPreferredInputForConnection() 
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (getMaxInputCount() == 0) {
@@ -1122,7 +1129,7 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
     loadKnob(_imp->nodeLabelKnob, serialization);
     
-    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Force caching");
+    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Force caching", 1, false);
     _imp->forceCaching->setName("forceCaching");
     _imp->forceCaching->setDefaultValue(false);
     _imp->forceCaching->setAnimationEnabled(false);
@@ -1564,23 +1571,21 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
         if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
             
-            bool inputPARSet = false;
-            double inputPAR = 1.;
+            double inputPAR = input->getLiveInstance()->getPreferredAspectRatio();
+            
+            double inputFPS = input->getLiveInstance()->getPreferredFrameRate();
+            
             for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
                 if (*it) {
-                    if (!inputPARSet) {
-                        inputPAR = (*it)->getLiveInstance()->getPreferredAspectRatio();
-                        inputPARSet = true;
-                    } else {
-                        if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
-                            return eCanConnectInput_differentPars;
-                        }
+                    if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                        return eCanConnectInput_differentPars;
                     }
+                    
+                    if ((*it)->getLiveInstance()->getPreferredFrameRate() != inputFPS) {
+                        return eCanConnectInput_differentFPS;
+                    }
+                    
                 }
-            }
-            
-            if (inputPARSet && inputPAR != input->getLiveInstance()->getPreferredAspectRatio()) {
-                return eCanConnectInput_differentPars;
             }
         }
     }
@@ -1589,7 +1594,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
 }
 
 bool
-Node::connectInput(boost::shared_ptr<Node> input,
+Node::connectInput(const boost::shared_ptr<Node> & input,
                    int inputNumber)
 {
     ////Only called by the main-thread
@@ -1608,7 +1613,7 @@ Node::connectInput(boost::shared_ptr<Node> input,
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] != NULL) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
             return false;
         }
         
@@ -1616,7 +1621,7 @@ Node::connectInput(boost::shared_ptr<Node> input,
         {
             QMutexLocker k(&_imp->nodeIsRenderingMutex);
             if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(input,true,inputNumber);
+                ConnectInputAction action(input,eInputActionConnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return true;
@@ -1640,6 +1645,63 @@ Node::connectInput(boost::shared_ptr<Node> input,
     ///Recompute the hash
     computeHash();
     
+    return true;
+}
+
+bool
+Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    assert(_imp->inputsInitialized);
+    assert(input);
+    
+    ///Check for cycles: they are forbidden in the graph
+    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+        return false;
+    }
+    if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
+        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        return false;
+    }
+    {
+        ///Check for invalid index
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) ) {
+            return false;
+        }
+        
+        ///If the node is currently rendering, queue the action instead of executing it
+        {
+            QMutexLocker k(&_imp->nodeIsRenderingMutex);
+            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+                ConnectInputAction action(input,eInputActionReplace,inputNumber);
+                QMutexLocker cql(&_imp->connectionQueueMutex);
+                _imp->connectionQueue.push_back(action);
+                return true;
+            }
+        }
+        
+        ///Set the input
+        if (_imp->inputs[inputNumber]) {
+            QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+            _imp->inputs[inputNumber]->disconnectOutput(this);
+        }
+        _imp->inputs[inputNumber] = input;
+        input->connectOutput(this);
+    }
+    
+    ///Get notified when the input name has changed
+    QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+    
+    ///Notify the GUI
+    emit inputChanged(inputNumber);
+    
+    ///Call the instance changed action with a reason clip changed
+    onInputChanged(inputNumber);
+    
+    ///Recompute the hash
+    computeHash();
     return true;
 }
 
@@ -1685,10 +1747,7 @@ Node::switchInput0And1()
         ///if there's a mask use it as input B for the switch
         if (firstMaskInput != -1) {
             inputBIndex = firstMaskInput;
-        } else {
-            ///there's only 1 input
-            return;
-        }
+        } 
     }
     
     ///If the node is currently rendering, queue the action instead of executing it
@@ -1696,27 +1755,15 @@ Node::switchInput0And1()
         QMutexLocker k(&_imp->nodeIsRenderingMutex);
         if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
             QMutexLocker cql(&_imp->connectionQueueMutex);
-            ///Disonnect input A
+            ///Replace input A
             {
-                ConnectInputAction action(_imp->inputs[inputAIndex],false,inputAIndex);
+                ConnectInputAction action(_imp->inputs[inputBIndex],eInputActionReplace,inputAIndex);
                 _imp->connectionQueue.push_back(action);
             }
             
-            ///Disconnect input B
+            ///Replace input B
             {
-                ConnectInputAction action(_imp->inputs[inputBIndex],false,inputBIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            ///Connect input A
-            {
-                ConnectInputAction action(_imp->inputs[inputBIndex],true,inputAIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            ///Connect input B
-            {
-                ConnectInputAction action(_imp->inputs[inputAIndex],true,inputBIndex);
+                ConnectInputAction action(_imp->inputs[inputAIndex],eInputActionReplace,inputBIndex);
                 _imp->connectionQueue.push_back(action);
             }
             
@@ -1793,7 +1840,7 @@ Node::disconnectInput(int inputNumber)
         {
             QMutexLocker k(&_imp->nodeIsRenderingMutex);
             if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(_imp->inputs[inputNumber],false,inputNumber);
+                ConnectInputAction action(_imp->inputs[inputNumber],eInputActionDisconnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return inputNumber;
@@ -1827,7 +1874,7 @@ Node::disconnectInput(Node* input)
                 {
                     QMutexLocker k(&_imp->nodeIsRenderingMutex);
                     if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                        ConnectInputAction action(_imp->inputs[i],false,i);
+                        ConnectInputAction action(_imp->inputs[i],eInputActionDisconnect,i);
                         QMutexLocker cql(&_imp->connectionQueueMutex);
                         _imp->connectionQueue.push_back(action);
                         return i;
@@ -1921,7 +1968,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     }
     
     //first tell the gui to clear any persistent message linked to this node
-    clearPersistentMessage();
+    clearPersistentMessage(false);
     
     ///For all knobs that have listeners, kill expressions
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
@@ -2550,6 +2597,13 @@ Node::setPersistentMessage(MessageTypeEnum type,
     }
 }
 
+bool
+Node::hasPersistentMessage() const
+{
+    QMutexLocker k(&_imp->persistentMessageMutex);
+    return !_imp->persistentMessage.isEmpty();
+}
+
 void
 Node::getPersistentMessage(QString* message,int* type) const
 {
@@ -2559,7 +2613,7 @@ Node::getPersistentMessage(QString* message,int* type) const
 }
 
 void
-Node::clearPersistentMessage()
+Node::clearPersistentMessage(bool recurse)
 {
     if ( !appPTR->isBackground() ) {
         {
@@ -2572,11 +2626,13 @@ Node::clearPersistentMessage()
         }
     }
     
-    QMutexLocker l(&_imp->inputsMutex);
-    ///No need to lock, guiInputs is only written to by the main-thread
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->clearPersistentMessage();
+    if (recurse) {
+        QMutexLocker l(&_imp->inputsMutex);
+        ///No need to lock, guiInputs is only written to by the main-thread
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                _imp->inputs[i]->clearPersistentMessage(true);
+            }
         }
     }
     
@@ -3038,18 +3094,6 @@ Node::onParentMultiInstanceInputChanged(int input)
     _imp->duringInputChangedAction = false;
 }
 
-void
-Node::onMultipleInputChanged()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->duringInputChangedAction = true;
-    for (std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.begin(); it != _imp->enableMaskKnob.end(); ++it) {
-        boost::shared_ptr<Node> inp = getInput(it->first);
-        it->second->setValue(inp ? true : false, 0);
-    }
-    _imp->liveInstance->onMultipleInputsChanged();
-    _imp->duringInputChangedAction = false;
-}
 
 bool
 Node::duringInputChangedAction() const
@@ -3486,12 +3530,18 @@ Node::dequeueActions()
     
     for (std::list<ConnectInputAction>::iterator it = queue.begin(); it!= queue.end(); ++it) {
         
-        if (it->isConnect) {
-            connectInput(it->node, it->inputNb);
-        } else {
-            disconnectInput(it->inputNb);
+        switch (it->type) {
+            case eInputActionConnect:
+                connectInput(it->node, it->inputNb);
+                break;
+            case eInputActionDisconnect:
+                disconnectInput(it->inputNb);
+                break;
+            case eInputActionReplace:
+                replaceInput(it->node, it->inputNb);
+                break;
         }
-        
+
     }
     
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
@@ -3588,14 +3638,39 @@ Node::isSettingsPanelOpened() const
     
 }
 
+void
+Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
+{
+    std::list<Natron::Node*>::const_iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    
+    InputsV inputs;
+    
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        inputs = _imp->inputs;
+    }
+    
+    
+    for (InputsV::iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        if ((*it)) {
+            (*it)->restoreClipPreferencesRecursive(markedNodes);
+        }
+    }
+    
+    _imp->liveInstance->restoreClipPreferences();
+    markedNodes.push_back(this);
+    
+}
+
 //////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,
                              LibraryBinary* plugin)
 : Node(app,plugin)
 , _inputsCount(1)
-, _activeInput(0)
-, _activeInputMutex()
 {
 }
 
@@ -3604,7 +3679,7 @@ InspectorNode::~InspectorNode()
 }
 
 bool
-InspectorNode::connectInput(boost::shared_ptr<Node> input,
+InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
                             int inputNumber)
 {
     ///Only called by the main-thread
@@ -3637,17 +3712,8 @@ InspectorNode::connectInput(boost::shared_ptr<Node> input,
         addEmptyInput();
     }
     
-    int oldActiveInput;
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        oldActiveInput = _activeInput;
-        _activeInput = inputNumber;
-    }
     if ( !Node::connectInput(input, inputNumber) ) {
-        {
-            QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = oldActiveInput;
-        }
+        
         computeHash();
     }
     tryAddEmptyInput();
@@ -3689,10 +3755,7 @@ InspectorNode::addEmptyInput()
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        _activeInput = _inputsCount - 1;
-    }
+
     ++_inputsCount;
     initializeInputs();
 }
@@ -3725,10 +3788,7 @@ InspectorNode::disconnectInput(int inputNumber)
     
     if (ret != -1) {
         removeEmptyInputs();
-        {
-            QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = _inputsCount - 1;
-        }
+
     }
     
     return ret;
@@ -3749,15 +3809,29 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     if ( ( inputNb > (_inputsCount - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
         return;
     }
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        _activeInput = inputNb;
-    }
+
     computeHash();
     emit inputChanged(inputNb);
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
-        dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame(true);
+        Natron::OutputEffectInstance* oei = dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() );
+        assert(oei);
+        if (oei) {
+            oei->renderCurrentFrame(true);
+        }
     }
+}
+
+int
+InspectorNode::getPreferredInputForConnection()
+{
+    for (int i = 0; i < _inputsCount; ++i) {
+        if (!getInput(i)) {
+            return i;
+        }
+    }
+    ///No free input, make a new one
+    addEmptyInput();
+    return _inputsCount - 1;
 }
 

@@ -1030,18 +1030,30 @@ Knob<std::string>::unSlave(int dimension,
         cloneExtraData( master.second.get() );
     }
     KnobHelper* helper = dynamic_cast<KnobHelper*>( master.second.get() );
-    QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(),
-                         SLOT( onMasterChanged(int) ) );
-    QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
-                        _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
-    QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
-                        _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(SequenceTime,int,int)) );
-    
-    QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(int,int,int) ),
-                        _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,int,int) ) );
-    QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int) ),
-                        _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
-    
+    assert(helper);
+    if (helper) {
+        QObject::disconnect( helper->getSignalSlotHandler().get(),
+                            SIGNAL( updateSlaves(int) ),
+                            _signalSlotHandler.get(),
+                            SLOT( onMasterChanged(int) ) );
+        QObject::disconnect( helper->getSignalSlotHandler().get(),
+                            SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
+                            _signalSlotHandler.get(),
+                            SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
+        QObject::disconnect( helper->getSignalSlotHandler().get(),
+                            SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
+                            _signalSlotHandler.get(),
+                            SLOT( onMasterKeyFrameRemoved(SequenceTime,int,int)) );
+
+        QObject::disconnect( helper->getSignalSlotHandler().get(),
+                            SIGNAL( keyFrameMoved(int,int,int) ),
+                            _signalSlotHandler.get(),
+                            SLOT( onMasterKeyFrameMoved(int,int,int) ) );
+        QObject::disconnect( helper->getSignalSlotHandler().get(),
+                            SIGNAL(animationRemoved(int) ),
+                            _signalSlotHandler.get(),
+                            SLOT(onMasterAnimationRemoved(int)) );
+    }
     resetMaster(dimension);
 
     _signalSlotHandler->s_valueChanged(dimension,reason);
@@ -1051,7 +1063,9 @@ Knob<std::string>::unSlave(int dimension,
     if (reason == Natron::eValueChangedReasonPluginEdited) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
     }
-    helper->removeListener(this);
+    if (helper) {
+        helper->removeListener(this);
+    }
 }
 
 template<typename T>
@@ -1249,21 +1263,30 @@ bool
 Knob<T>::isTypeCompatible(const boost::shared_ptr<KnobI> & other) const
 {
     assert(other);
+    const Knob<int>* isInt = dynamic_cast<const Knob<int>* >(this);
+    const Knob<bool>* isBool = dynamic_cast<const Knob<bool>* >(this);
+    const Knob<double>* isDouble = dynamic_cast<const Knob<double>* >(this);
+    const Knob<std::string>* isString = dynamic_cast<const Knob<std::string>* >(this);
     bool isPod = false;
-    if ( dynamic_cast<const Knob<int>* >(this) || dynamic_cast<const Knob<bool>* >(this) || dynamic_cast<const Knob<double>* >(this) ) {
+    if (isInt || isBool || isDouble) {
         isPod = true;
-    } else if ( dynamic_cast<const Knob<std::string>* >(this) ) {
+    } else if (isString) {
         isPod = false;
     } else {
         ///unrecognized type
         assert(false);
     }
 
+    // No need to use dynamic_pointer_cast here, we don't need to create another shared_ptr,
+    // we just need to check the type.
+    const Knob<int>* otherIsInt = dynamic_cast<const Knob<int>* >(other.get());
+    const Knob<bool>* otherIsBool = dynamic_cast<const Knob<bool>* >(other.get());
+    const Knob<double>* otherIsDouble = dynamic_cast<const Knob<double>* >(other.get());
+    const Knob<std::string>* otherIsString = dynamic_cast<const Knob<std::string>* >(other.get());
     bool otherIsPod = false;
-    if ( boost::dynamic_pointer_cast< Knob<int> >(other) || boost::dynamic_pointer_cast< Knob<bool> >(other) ||
-         boost::dynamic_pointer_cast< Knob<double> >(other) ) {
+    if (otherIsInt || otherIsBool || otherIsDouble) {
         otherIsPod = true;
-    } else if ( boost::dynamic_pointer_cast< Knob<std::string> >(other) ) {
+    } else if (otherIsString) {
         otherIsPod = false;
     } else {
         ///unrecognized type

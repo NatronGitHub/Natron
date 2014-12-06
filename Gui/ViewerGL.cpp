@@ -36,7 +36,6 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Global/Macros.h"
 
-#include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
@@ -218,10 +217,11 @@ struct ViewerGL::Implementation
         assert( qApp && qApp->thread() == QThread::currentThread() );
         menu->setFont( QFont(appFont,appFontSize) );
         
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect r = desktop->screenGeometry();
-        sizeH = r.size();
-
+//        QDesktopWidget* desktop = QApplication::desktop();
+//        QRect r = desktop->screenGeometry();
+//        sizeH = r.size();
+        sizeH.setWidth(10000);
+        sizeH.setHeight(10000);
     }
 
     /////////////////////////////////////////////////////////
@@ -492,45 +492,27 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
 
     const double par = r.par;
-
+    
+    RectD canonicalTexRect;
+    texRect.toCanonical_noClipping(mipMapLevel,par/*, rod*/, &canonicalTexRect);
 
     ///the RoD of the image in canonical coords.
     RectD rod = getRoD(textureIndex);
-    
-    
-//    RectI pixelRod;
-//    rod.toPixelEnclosing(0, par, &pixelRod);
-   
-    
+
     bool clipToDisplayWindow;
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         clipToDisplayWindow = _imp->clipToDisplayWindow;
     }
+    
+    RectD rectClippedToRoI(canonicalTexRect);
+
     if (clipToDisplayWindow) {
         RectD canonicalProjectFormat;
         _imp->getProjectFormatCanonical(canonicalProjectFormat);
         rod.intersect(canonicalProjectFormat, &rod);
-        
-//        ///clip the RoD to the project format.
-//        RectI pixelProjectFormat;
-//        pixelProjectFormat.x1 = _imp->projectFormat.x1;
-//        pixelProjectFormat.x2 = _imp->projectFormat.x2;
-//        pixelProjectFormat.y1 = _imp->projectFormat.y1;
-//        pixelProjectFormat.y2 = _imp->projectFormat.y2;
-//        if ( !pixelRod.intersect(pixelProjectFormat,&pixelRod) ) {
-//            return;
-//        }
+        rectClippedToRoI.intersect(canonicalProjectFormat, &rectClippedToRoI);
     }
-
-    
-    RectD canonicalTexRect;
-    texRect.toCanonical(mipMapLevel,par, rod, &canonicalTexRect);
-    
-//    RectI pixelTexRect_scale1;
-//    canonicalTexRect.toPixelEnclosing(0, par, &pixelTexRect_scale1);
-//    
-//    pixelTexRect_scale1.intersect(pixelRod,&pixelTexRect_scale1);
     
     
     //if user RoI is enabled, clip the rod to that roi
@@ -549,22 +531,17 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     ////So it is in the same coordinates as the bounds.
     ///Edit: we no longer divide by the closestPo2 since the viewer now computes images at lower resolution by itself, the drawing
     ///doesn't need to be scaled.
-    GLfloat texBottom =  0;
-    GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
-    GLfloat texLeft = 0;
-    GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
-    RectD rectClippedToRoI(canonicalTexRect);
+   
     if (userRoiEnabled) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
-            //_imp->userRoI.toPixelEnclosing(0, 1., &pixelUserRoi);
             //if the userRoI isn't intersecting the rod, just don't render anything
             if ( !rod.intersect(_imp->userRoI,&rod) ) {
                 return;
             }
         }
         rectClippedToRoI.intersect(rod, &rectClippedToRoI);
-        clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
+        //clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
 
     if (polygonMode != ALL_PLANE) {
@@ -603,6 +580,9 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     }
 
     if (polygonMode == ALL_PLANE) {
+        
+        
+        
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
             (GLfloat)rod.left(),(GLfloat)rod.top(),    //0
@@ -622,6 +602,17 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
             (GLfloat)rectClippedToRoI.x2,  (GLfloat)rod.bottom(), //14
             (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
         };
+        
+//        GLfloat texBottom =  0;
+//        GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
+//        GLfloat texLeft = 0;
+//        GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
+        GLfloat texBottom = (GLfloat)(rectClippedToRoI.y1 - canonicalTexRect.y1)  / canonicalTexRect.height();
+        GLfloat texTop = (GLfloat)(rectClippedToRoI.y2 - canonicalTexRect.y1)  / canonicalTexRect.height();
+        GLfloat texLeft = (GLfloat)(rectClippedToRoI.x1 - canonicalTexRect.x1)  / canonicalTexRect.width();
+        GLfloat texRight = (GLfloat)(rectClippedToRoI.x2 - canonicalTexRect.x1)  / canonicalTexRect.width();
+
+        
         GLfloat renderingTextureCoordinates[32] = {
             texLeft, texTop,   //0
             texLeft, texTop,   //1
@@ -907,10 +898,6 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 
     QObject::connect( parent->getGui()->getApp()->getProject().get(),SIGNAL( formatChanged(Format) ),this,SLOT( onProjectFormatChanged(Format) ) );
 
-
-
-    _imp->blankViewerInfo.setChannels(Natron::Mask_RGBA);
-
     Format projectFormat;
     parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
 
@@ -1085,8 +1072,8 @@ ViewerGL::paintGL()
 
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
-        GLProtectMatrix p(GL_PROJECTION);
+        //GLProtectMatrix m(GL_MODELVIEW);
+        //GLProtectMatrix p(GL_PROJECTION);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
@@ -2409,7 +2396,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
         RectI pixelRoD;
         image->getRoD().toPixelEnclosing(0, image->getPixelAspectRatio(), &pixelRoD);
-        _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(pixelRoD, image->getPixelAspectRatio()));
+        {
+            QMutexLocker k(&_imp->projectFormatMutex);
+            _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(_imp->projectFormat, image->getPixelAspectRatio()));
+        }
         {
             QMutexLocker k(&_imp->lastRenderedImageMutex);
             _imp->lastRenderedImage[textureIndex] = image;
@@ -3373,9 +3363,9 @@ ViewerGL::onProjectFormatChanged(const Format & format)
         _imp->projectFormat = format;
     }
     _imp->currentViewerInfo_resolutionOverlay.clear();
-    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.width()) ) );
+    _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.width() ) );
     _imp->currentViewerInfo_resolutionOverlay.append("x");
-    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( std::ceil(format.height()) ) );
+    _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.height() ) );
 
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     if ( !loadingProject ) {
@@ -3730,16 +3720,15 @@ ViewerGL::updatePersistentMessageToWidth(int w)
         int nType;
         (*it)->getPersistentMessage(&mess, &nType);
         if (!mess.isEmpty()) {
-            allMessages.append(mess);
+             allMessages.append(mess);
             ++nbNonEmpty;
         }
         if (next != nodes.rend()) {
             ++next;
         }
-        if (nbNonEmpty == 1 && nType == 2) {
-            type = 2;
-        } else {
-            type = 1;
+        
+        if (!mess.isEmpty()) {
+            type = (nbNonEmpty == 1 && nType == 2) ? 2 : 1;
         }
     }
     _imp->persistentMessageType = type;

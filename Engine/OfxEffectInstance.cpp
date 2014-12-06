@@ -49,27 +49,6 @@
 
 using namespace Natron;
 using std::cout; using std::endl;
-#if 0
-namespace {
-ChannelSet
-ofxComponentsToNatronChannels(const std::string & comp)
-{
-    ChannelSet out;
-
-    if (comp == kOfxImageComponentAlpha) {
-        out += Channel_alpha;
-    } else if (comp == kOfxImageComponentRGB) {
-        out += Mask_RGB;
-    } else if (comp == kOfxImageComponentRGBA) {
-        out += Mask_RGBA;
-    } else if (comp == kOfxImageComponentYUVA) {
-        out += Mask_RGBA;
-    }
-
-    return out;
-}
-}
-#endif
 
 namespace  {
 /**
@@ -318,7 +297,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-        checkOFXClipPreferences(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
+        checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
         
       
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
@@ -888,7 +867,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
         }
         if ( !getApp()->getProject()->isLoadingProject() ) {
-            checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true, true);
+            checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, true);
         }
     }
     
@@ -1067,19 +1046,15 @@ clipPrefsProxy(OfxEffectInstance* self,
     
 } //endCheckOFXClipPreferences
 
+
+
 void
-OfxEffectInstance::checkOFXClipPref_recursive(double time,
-                                              const RenderScale & scale,
-                                              const std::string & reason,
-                                              bool forceGetClipPrefAction,
-                                              bool recurse,
-                                              std::list<Natron::Node*>& markedNodes)
+OfxEffectInstance::checkOFXClipPreferences(double time,
+                                           const RenderScale & scale,
+                                           const std::string & reason,
+                                           bool forceGetClipPrefAction)
 {
-    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(),markedNodes.end(),_node.get());
-    if (found != markedNodes.end()) {
-        return;
-    }
-    
+        
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
     
@@ -1153,38 +1128,10 @@ OfxEffectInstance::checkOFXClipPref_recursive(double time,
     }
     
     
-    ////////////////////////////////////////////////////////////////
-    ////////////////////////////////
-    //////////////// STEP 5: Recursion down-stream
-    if (recurse) {
-        markedNodes.push_back(_node.get());
-
-        ///Finally call recursively this function on all outputs to propagate it along the tree.
-        const std::list<Natron::Node* >& outputs = _node->getOutputs();
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-            ///Force a call to getClipPrefs on outputs because they are obviously not dirty
-            (*it)->getLiveInstance()->checkOFXClipPreferences(time, scale, reason, true, recurse);
-        }
-    }
-
-}
-
-void
-OfxEffectInstance::checkOFXClipPreferences(double time,
-                                           const RenderScale & scale,
-                                           const std::string & reason,
-                                           bool forceGetClipPrefAction,
-                                           bool recurse)
-{
-    std::list<Natron::Node*> markedNodes;
-    checkOFXClipPref_recursive(time, scale, reason, forceGetClipPrefAction, recurse, markedNodes);
-    
-    
-    
 } // checkOFXClipPreferences
 
 void
-OfxEffectInstance::onMultipleInputsChanged()
+OfxEffectInstance::restoreClipPreferences()
 {
     assert(_context != eContextNone);
 
@@ -1217,7 +1164,7 @@ OfxEffectInstance::onMultipleInputsChanged()
         }
 
         
-        checkOFXClipPreferences(time,s,kOfxChangeUserEdited,true, false);
+        checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, false);
     }
 }
 
@@ -1475,17 +1422,21 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
     if (stat != kOfxStatReplyDefault) {
         
         for (std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin(); it != inputRois.end(); ++it) {
-            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-            RectD inputRoi; // input RoI in canonical coordinates
-            inputRoi.x1 = it->second.x1;
-            inputRoi.x2 = it->second.x2;
-            inputRoi.y1 = it->second.y1;
-            inputRoi.y2 = it->second.y2;
-            
-            ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
-            ///infinite rod.
-            ifInfiniteclipRectToProjectDefault(&inputRoi);
-            ret->insert( std::make_pair(inputNode,inputRoi) );
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+            assert(clip);
+            if (clip) {
+                EffectInstance* inputNode = clip->getAssociatedNode();
+                RectD inputRoi; // input RoI in canonical coordinates
+                inputRoi.x1 = it->second.x1;
+                inputRoi.x2 = it->second.x2;
+                inputRoi.y1 = it->second.y1;
+                inputRoi.y2 = it->second.y2;
+
+                ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
+                ///infinite rod.
+                ifInfiniteclipRectToProjectDefault(&inputRoi);
+                ret->insert( std::make_pair(inputNode,inputRoi) );
+            }
         }
         
     } else if (stat == kOfxStatReplyDefault) {
@@ -1495,7 +1446,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
             if (!it->second->isOutput()) {
                 OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
                 assert(natronClip);
-                EffectInstance* inputNode = natronClip->getAssociatedNode();
+                EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
                 if (inputNode) {
                     ret->insert( std::make_pair(inputNode, renderWindow) );
                 }
@@ -1528,9 +1479,13 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time)
         Natron::errorDialog( getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
-            int inputNb = dynamic_cast<OfxClipInstance*>(it->first)->getInputNb();
-            if (inputNb != -1) {
-                ret.insert( std::make_pair(inputNb,it->second) );
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+            assert(clip);
+            if (clip) {
+                int inputNb = clip->getInputNb();
+                if (inputNb != -1) {
+                    ret.insert( std::make_pair(inputNb,it->second) );
+                }
             }
         }
     } else if (stat == kOfxStatReplyDefault) {
@@ -1721,10 +1676,15 @@ OfxEffectInstance::isIdentity(SequenceTime time,
             // this is a plugin-side error, don't crash
             qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
 
-            return eStatusFailed;
+            return false;
         }
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
+        if (!natronClip) {
+            qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
+
+            return false;
+        }
         *inputTime = inputTimeOfx;
 
         if ( natronClip->isOutput() ) {
@@ -2418,7 +2378,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
         RECURSIVE_ACTION();
-        checkOFXClipPreferences(time, renderScale, ofxReason,false, true);
+        checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
     }
     if (_overlayInteract) {
         std::vector<std::string> params;
@@ -2703,6 +2663,23 @@ OfxEffectInstance::getPreferredAspectRatio() const
     }
 }
 
+double
+OfxEffectInstance::getPreferredFrameRate() const
+{
+    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    assert(clip);
+    
+    if (getRecursionLevel() > 0) {
+        return clip->getFrameRate();
+    } else {
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        return clip->getFrameRate();
+        
+    }
+}
+
+
 bool
 OfxEffectInstance::getCanTransform() const
 {   //use OFX_EXTENSIONS_NUKE
@@ -2774,7 +2751,9 @@ OfxEffectInstance::getTransform(SequenceTime time,
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
     assert(clip);
     OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
-    
+    if (!natronClip) {
+        return Natron::eStatusFailed;
+    }
     *inputToTransform = natronClip->getAssociatedNode();
     
     return Natron::eStatusOK;

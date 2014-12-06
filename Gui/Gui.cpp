@@ -643,8 +643,8 @@ Gui::abortProject(bool quitApp)
 
         assert(_imp->_appInstance);
 
-        _imp->notifyGuiClosing();
         _imp->_appInstance->getProject()->closeProject();
+        _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {
         _imp->_appInstance->resetPreviewProvider();
@@ -1430,7 +1430,7 @@ Gui::exportLayout()
 {
     std::vector<std::string> filters;
 
-    filters.push_back("." NATRON_LAYOUT_FILE_EXT);
+    filters.push_back(NATRON_LAYOUT_FILE_EXT);
     SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
@@ -1492,7 +1492,7 @@ Gui::importLayout()
 {
     std::vector<std::string> filters;
 
-    filters.push_back("." NATRON_LAYOUT_FILE_EXT);
+    filters.push_back(NATRON_LAYOUT_FILE_EXT);
     SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
@@ -1991,6 +1991,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             if ( it != _imp->_viewerTabs.end() ) {
                 _imp->_viewerTabs.erase(it);
             }
+            tab->notifyAppClosing();
             tab->deleteLater();
         }
     }
@@ -4478,6 +4479,17 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                     }
                 }
             }
+        }
+    }
+}
+
+void
+Gui::redrawAllViewers()
+{
+    QMutexLocker k(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        if ((*it)->isVisible()) {
+            (*it)->getViewer()->redraw();
         }
     }
 }

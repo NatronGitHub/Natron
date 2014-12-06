@@ -253,8 +253,9 @@ Histogram::Histogram(Gui* gui,
     QObject::connect( &_imp->histogramThread, SIGNAL( histogramProduced() ), this, SLOT( onCPUHistogramComputed() ) );
 #endif
 
-    QDesktopWidget* desktop = QApplication::desktop();
-    _imp->sizeH = desktop->screenGeometry().size();
+//    QDesktopWidget* desktop = QApplication::desktop();
+//    _imp->sizeH = desktop->screenGeometry().size();
+    _imp->sizeH = QSize(10000,10000);
     
     _imp->rightClickMenu = new QMenu(this);
     _imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );

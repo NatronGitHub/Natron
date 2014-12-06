@@ -5,7 +5,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 
 ## Checkout sources
 
-	git checkout https://github.com/MrKepzie/Natron.git
+	git clone https://github.com/MrKepzie/Natron.git
 	cd Natron
 
 If you want to compile the bleeding edge version, use the workshop
@@ -71,7 +71,7 @@ To install the openfx-io and openfx-misc sets of plugin, you also need the follo
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 	
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
 	
 ## Add the config.pri file
 

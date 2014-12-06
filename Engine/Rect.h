@@ -341,11 +341,7 @@ public:
     bool intersect(const RectI & r,
                    RectI* intersection) const
     {
-        if ( isNull() || r.isNull() ) {
-            return false;
-        }
-
-        if ( (x1 > r.x2) || (r.x1 > x2) || (y1 > r.y2) || (r.y1 > y2) ) {
+        if ( !intersects(r) ) {
             return false;
         }
 
@@ -356,6 +352,8 @@ public:
         // the region must be *at least* empty, thus the maximin.
         intersection->y2 = std::max(intersection->y1,std::min(y2,r.y2));
 
+        assert(!intersection->isNull());
+        
         return true;
     }
 
@@ -374,7 +372,7 @@ public:
         if ( isNull() || r.isNull() ) {
             return false;
         }
-        if ( (x1 > r.x2) || (r.x1 > x2) || (y1 > r.y2) || (r.y1 > y2) ) {
+        if ( (r.x2 <= x1) || (x2 <= r.x1) || (r.y2 <= y1) || (y2 <= r.y1) ) {
             return false;
         }
 

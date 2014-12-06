@@ -45,9 +45,9 @@ generateStringFromFormat(const Format & f)
 
     formatStr.append(f.getName().c_str());
     formatStr.append("  ");
-    formatStr.append(QString::number(std::ceil(f.width())));
+    formatStr.append(QString::number(f.width()));
     formatStr.append(" x ");
-    formatStr.append(QString::number(std::ceil(f.height())));
+    formatStr.append(QString::number(f.height()));
     formatStr.append("  ");
     formatStr.append(QString::number(f.getPixelAspectRatio()));
 
@@ -79,6 +79,7 @@ struct ProjectPrivate
     boost::shared_ptr<Int_Knob> mainView;
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
     boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
+    boost::shared_ptr<Double_Knob> frameRate;
     
     boost::shared_ptr<String_Knob> natronVersion;
     boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;

@@ -816,6 +816,16 @@ Project::initializeKnobs()
     _imp->colorSpace32bits->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32bits);
     
+    _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame rate");
+    _imp->frameRate->setName("frameRate");
+    _imp->frameRate->setHintToolTip("The frame rate of the project. This will serve as a default value for all effects that don't produce "
+                                    "special frame rates.");
+    _imp->frameRate->setAnimationEnabled(false);
+    _imp->frameRate->setDefaultValue(24);
+    _imp->frameRate->setDisplayMinimum(0.);
+    _imp->frameRate->setDisplayMaximum(50.);
+    page->addKnob(_imp->frameRate);
+    
     boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, "Info");
     
     _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
@@ -1281,7 +1291,22 @@ Project::onKnobValueChanged(KnobI* knob,
         emit mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
         emit autoPreviewChanged( _imp->previewMode->getValue() );
-    } 
+    }  else if ( knob == _imp->frameRate.get() ) {
+        std::vector< boost::shared_ptr<Natron::Node> > nodes ;
+        {
+            QMutexLocker k(&_imp->nodesLock);
+            nodes = _imp->currentNodes;
+        }
+        std::list <Natron::Node*> markedNodes;
+        for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin();
+             it != nodes.end();++it)  {
+            if ((*it)->isOutputNode()) {
+                (*it)->restoreClipPreferencesRecursive(markedNodes);
+            }
+                
+        }
+
+    }
 }
 
 bool
@@ -1585,27 +1610,20 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
             connectAsInput = false;
         }
     }
-
+    
     bool ret = false;
     if (connectAsInput) {
-        ///if the selected node is and inspector, we want to connect the created node on the active input
-        boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>(selected);
-        if (inspector) {
-            int activeInputIndex = inspector->activeInput();
-            bool ok = connectNodes(activeInputIndex, created, selected.get(),true);
+        
+        ///connect it to the first input
+        int selectedInput = selected->getPreferredInputForConnection();
+        if (selectedInput != -1) {
+            bool ok = connectNodes(selectedInput, created, selected.get(),true);
             assert(ok);
             ret = true;
         } else {
-            ///connect it to the first input
-            int selectedInput = selected->getPreferredInputForConnection();
-            if (selectedInput != -1) {
-                bool ok = connectNodes(selectedInput, created, selected.get(),true);
-                assert(ok);
-                ret = true;
-            } else {
-                ret = false;
-            }
+            ret = false;
         }
+        
     } else {
         if ( !created->isOutputNode() ) {
             ///we find all the nodes that were previously connected to the selected node,
@@ -2160,5 +2178,12 @@ Project::setAllNodesAborted(bool aborted)
         _imp->currentNodes[i]->setAborted(aborted);
     }
 }
+double
+Project::getProjectFrameRate() const
+{
+    return _imp->frameRate->getValue();
+}
     
 } //namespace Natron
+
+

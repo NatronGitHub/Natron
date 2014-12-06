@@ -442,140 +442,97 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
 void
 ConnectCommand::undo()
 {
-    boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>( _dst->getNode() );
-
-	boost::shared_ptr<Natron::Node> internalDst =  _edge->getDest()->getNode();
-	if (_oldSrc) {
-		setText( QObject::tr("Connect %1 to %2")
-			.arg(internalDst->getName().c_str() ).arg( _oldSrc->getNode()->getName().c_str() ) );
-	} else {
-		setText( QObject::tr("Disconnect %1")
-			.arg(internalDst->getName().c_str() ) );
-	}
-
-    if (inspector) {
-        ///if the node is an inspector, the redo() action might have disconnect the dst and src nodes
-        ///hence the _edge ptr might have been invalidated, recreate it
-        NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
-        while ( it == _dst->getInputsArrows().end() ) {
-            inspector->addEmptyInput();
-            it = _dst->getInputsArrows().find(_inputNb);
-        }
-        _edge = it->second;
-    }
-
-    if (_oldSrc) {
-        _graph->getGui()->getApp()->getProject()->connectNodes( _edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode().get() );
-        _oldSrc->refreshOutputEdgeVisibility();
-    }
-    if (_newSrc) {
-        _graph->getGui()->getApp()->getProject()->disconnectNodes( _newSrc->getNode().get(), _edge->getDest()->getNode().get() );
-        _newSrc->refreshOutputEdgeVisibility();
-        ///if the node is an inspector, when disconnecting the active input just activate another input instead
-        if (inspector) {
-            const std::vector<boost::shared_ptr<Natron::Node> > & inputs = inspector->getInputs_mt_safe();
-            ///set as active input the first non null input
-            for (U32 i = 0; i < inputs.size(); ++i) {
-                if (inputs[i]) {
-                    inspector->setActiveInputAndRefresh(i);
-                    break;
-                }
-            }
-        }
-    }
-
-
-    _graph->getGui()->getApp()->triggerAutoSave();
-    std::list<ViewerInstance* > viewers;
-    internalDst->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
+    doConnect(_newSrc ? _newSrc->getNode() : boost::shared_ptr<Natron::Node>(),
+              _oldSrc ? _oldSrc->getNode() : boost::shared_ptr<Natron::Node>());
    
 } // undo
 
 void
 ConnectCommand::redo()
 {
-    boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>( _dst->getNode() );
-
-    _inputNb = _edge->getInputNumber();
-
-	boost::shared_ptr<Natron::Node> internalDst =  _edge->getDest()->getNode();
-
-	if (_newSrc) {
-		setText( QObject::tr("Connect %1 to %2")
-			.arg(internalDst->getName().c_str() ).arg( _newSrc->getNode()->getName().c_str() ) );
-	} else {
-		setText( QObject::tr("Disconnect %1")
-			.arg(internalDst->getName().c_str() ) );
-	}
-
-    if (inspector) {
-        ///if the node is an inspector we have to do things differently
-
-        if (!_newSrc) {
-            if (_oldSrc) {
-                ///we want to connect to nothing, hence disconnect
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode().get(),inspector.get());
-                _oldSrc->refreshOutputEdgeVisibility();
-            }
-        } else {
-            ///disconnect any connection already existing with the _oldSrc
-            if (_oldSrc) {
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode().get(),inspector.get());
-                _oldSrc->refreshOutputEdgeVisibility();
-            }
-            ///also disconnect any current connection between the inspector and the _newSrc
-            _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode().get(),inspector.get());
+    doConnect(_oldSrc ? _oldSrc->getNode() : boost::shared_ptr<Natron::Node>(),
+              _newSrc ? _newSrc->getNode() : boost::shared_ptr<Natron::Node>());
+} // redo
 
 
-            ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
-            NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
-            while ( it == _dst->getInputsArrows().end() ) {
-                inspector->addEmptyInput();
-                it = _dst->getInputsArrows().find(_inputNb);
-            }
-            _edge = it->second;
 
-            ///and connect the inspector to the _newSrc
-            _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), inspector.get());
-            _newSrc->refreshOutputEdgeVisibility();
-        }
+void
+ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
+               const boost::shared_ptr<Natron::Node> & newSrc)
+{
+    boost::shared_ptr<Natron::Node> internalDst =  _dst->getNode();
+    InspectorNode* inspector = dynamic_cast<InspectorNode*>(internalDst.get());
+    
+    if (newSrc) {
+        setText( QObject::tr("Connect %1 to %2")
+                .arg(internalDst->getName().c_str() ).arg( newSrc->getName().c_str() ) );
     } else {
-        _edge->setSource(_newSrc);
-        if (_oldSrc) {
-            if ( !_graph->getGui()->getApp()->getProject()->disconnectNodes( _oldSrc->getNode().get(), _dst->getNode().get() ) ) {
-                qDebug() << "Failed to disconnect (input) " << _oldSrc->getNode()->getName().c_str()
-                         << " to (output) " << _dst->getNode()->getName().c_str();
-            }
-            _oldSrc->refreshOutputEdgeVisibility();
-        }
-        if (_newSrc) {
-            if ( !_graph->getGui()->getApp()->getProject()->connectNodes( _inputNb, _newSrc->getNode(), _dst->getNode().get() ) ) {
-                qDebug() << "Failed to connect (input) " << _newSrc->getNode()->getName().c_str()
-                         << " to (output) " << _dst->getNode()->getName().c_str();
-            }
-            _newSrc->refreshOutputEdgeVisibility();
-        }
+        setText( QObject::tr("Disconnect %1")
+                .arg(internalDst->getName().c_str() ) );
     }
 
+    
+    if (inspector) {
+        ///if the node is an inspector we have to do things differently
+        
+        if (oldSrc && newSrc) {
+            
+            ///also disconnect any current connection between the inspector and the _newSrc
+            _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
+            inspector->replaceInput(newSrc, _inputNb);
+            
+        } else {
+            if (oldSrc) {
+                ///we want to connect to nothing, hence disconnect
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(oldSrc.get(),inspector);
+            }
+            if (newSrc) {
+                ///also disconnect any current connection between the inspector and the _newSrc
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
+                _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, newSrc, inspector);
+            }
+        }
+        ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
+        NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
+        while ( it == _dst->getInputsArrows().end() ) {
+            inspector->addEmptyInput();
+            it = _dst->getInputsArrows().find(_inputNb);
+        }
+        _edge = it->second;
+        _inputNb = _edge->getInputNumber();
+
+        
+    } else {
+        //_edge->setSource(_newSrc);
+        
+        if (oldSrc && newSrc) {
+            internalDst->replaceInput(newSrc, _inputNb);
+        } else {
+            if (oldSrc) {
+                _graph->getGui()->getApp()->getProject()->disconnectNodes( oldSrc.get(), internalDst.get() );
+            }
+            if (newSrc) {
+                _graph->getGui()->getApp()->getProject()->connectNodes( _inputNb, newSrc, internalDst.get() );
+            }
+        }
+    }
+    
     assert(_dst);
     _dst->refreshEdges();
 
-   
     ///if the node has no inputs, all the viewers attached to that node should be black.
     std::list<ViewerInstance* > viewers;
     internalDst->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
-
+    
     ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(internalDst->getLiveInstance() );
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
-} // redo
+
+}
 
 ResizeBackDropCommand::ResizeBackDropCommand(NodeBackDrop* bd,
                                              int w,
@@ -702,6 +659,7 @@ public:
     }
 
     void buildTree(const NodeGuiPtr & output,
+                   const std::list<NodeGuiPtr>& selectedNodes,
                    std::list<NodeGui*> & usedNodes)
     {
         QPointF outputPos = output->pos();
@@ -710,7 +668,7 @@ public:
         outputPos += QPointF(nodeSize.width() / 2.,nodeSize.height() / 2.);
         addNode(output, outputPos);
 
-        buildTreeInternal(output.get(),output->mapToScene( output->mapFromParent(outputPos) ), usedNodes);
+        buildTreeInternal(selectedNodes, output.get(),output->mapToScene( output->mapFromParent(outputPos) ), usedNodes);
     }
 
     const std::list<TreeNode> & getNodes() const
@@ -738,13 +696,15 @@ private:
         nodes.push_back( std::make_pair(node, point) );
     }
 
-    void buildTreeInternal(NodeGui* currentNode,const QPointF & currentNodeScenePos,std::list<NodeGui*> & usedNodes);
+    void buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
+                           NodeGui* currentNode,const QPointF & currentNodeScenePos,std::list<NodeGui*> & usedNodes);
 };
 
 typedef std::list< boost::shared_ptr<Tree> > TreeList;
 
 void
-Tree::buildTreeInternal(NodeGui* currentNode,
+Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
+                        NodeGui* currentNode,
                         const QPointF & currentNodeScenePos,
                         std::list<NodeGui*> & usedNodes)
 {
@@ -757,6 +717,13 @@ Tree::buildTreeInternal(NodeGui* currentNode,
 
     for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodeGuiPtr source = it->second->getSource();
+        
+        ///Check if the source is selected
+        std::list<NodeGuiPtr>::const_iterator foundSelected = std::find(selectedNodes.begin(),selectedNodes.end(),source);
+        if (foundSelected == selectedNodes.end()) {
+            continue;
+        }
+        
         if (source) {
             bool isMask = internalNode->getLiveInstance()->isInputMask(it->first);
             if (!firstNonMaskInput && !isMask) {
@@ -845,17 +812,17 @@ Tree::buildTreeInternal(NodeGui* currentNode,
 
         ///Now that we built the tree at this level, call this function again on the inputs that we just treated
         if (firstNonMaskInput) {
-            buildTreeInternal(firstNonMaskInput.get(),firstNonMaskInputPos, usedNodes);
+            buildTreeInternal(selectedNodes, firstNonMaskInput.get(),firstNonMaskInputPos, usedNodes);
         }
 
         std::list<QPointF>::iterator pointsIt = otherNonMaskInputsPos.begin();
         for (std::list<NodeGuiPtr>::iterator it = otherNonMaskInputs.begin(); it != otherNonMaskInputs.end(); ++it,++pointsIt) {
-            buildTreeInternal(it->get(),*pointsIt, usedNodes);
+            buildTreeInternal(selectedNodes, it->get(),*pointsIt, usedNodes);
         }
 
         pointsIt = maskInputsPos.begin();
         for (std::list<NodeGuiPtr>::iterator it = maskInputs.begin(); it != maskInputs.end(); ++it,++pointsIt) {
-            buildTreeInternal(it->get(),*pointsIt, usedNodes);
+            buildTreeInternal(selectedNodes, it->get(),*pointsIt, usedNodes);
         }
     }
     ///update the top level node center if the node doesn't have any input
@@ -866,6 +833,44 @@ Tree::buildTreeInternal(NodeGui* currentNode,
         }
     }
 } // buildTreeInternal
+    
+    
+    static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
+    {
+        const std::list<Natron::Node*>& outputs = node->getNode()->getOutputs();
+        
+        bool foundOutput = false;
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            if (*it != node) {
+                boost::shared_ptr<Natron::Node> n = (*it)->getNode();
+                
+                std::list<Natron::Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),n.get());
+                if (found != outputs.end()) {
+                    foundOutput = true;
+                    break;
+                }
+            }
+        }
+        return foundOutput;
+    }
+    
+    static bool hasNodeInputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
+    {
+        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getNode()->getInputs_mt_safe();
+        
+        bool foundInput = false;
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            if (*it != node) {
+                boost::shared_ptr<Natron::Node> n = (*it)->getNode();
+                std::vector<boost::shared_ptr<Natron::Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),n);
+                if (found != inputs.end()) {
+                    foundInput = true;
+                    break;
+                }
+            }
+        }
+        return foundInput;
+    }
 }
 RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
                                              QUndoCommand *parent)
@@ -891,10 +896,9 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<N
     TreeList trees;
 
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        const std::list<Natron::Node*> & outputs = (*it)->getNode()->getOutputs();
-        if ( outputs.empty() ) {
+        if (!hasNodeOutputsInList(nodes, (*it))) {
             boost::shared_ptr<Tree> newTree(new Tree);
-            newTree->buildTree(*it, usedNodes);
+            newTree->buildTree(*it, nodes, usedNodes);
             trees.push_back(newTree);
         }
     }
@@ -1140,42 +1144,8 @@ void RenameNodeUndoRedoCommand::redo()
     setText(QObject::tr("Rename node"));
 }
 
-static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
-{
-    const std::list<Natron::Node*>& outputs = node->getNode()->getOutputs();
-    
-    bool foundOutput = false;
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        if (*it != node) {
-            boost::shared_ptr<Natron::Node> n = (*it)->getNode();
-            
-            std::list<Natron::Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),n.get());
-            if (found != outputs.end()) {
-                foundOutput = true;
-                break;
-            }
-        }
-    }
-    return foundOutput;
-}
 
-static bool hasNodeInputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
-{
-    const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getNode()->getInputs_mt_safe();
-    
-    bool foundInput = false;
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        if (*it != node) {
-            boost::shared_ptr<Natron::Node> n = (*it)->getNode();
-            std::vector<boost::shared_ptr<Natron::Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),n);
-            if (found != inputs.end()) {
-                foundInput = true;
-                break;
-            }
-        }
-    }
-    return foundInput;
-}
+
 
 static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node,ExtractNodeUndoRedoCommand::ExtractedTree& tree,
                           std::list<boost::shared_ptr<NodeGui> >& markedNodes)
@@ -1265,6 +1235,7 @@ ExtractNodeUndoRedoCommand::undo()
         
         ///Connect and move output
         for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+            it2->second->disconnectInput(it2->first);
             it2->second->connectInput(it->output.node->getNode(),it2->first);
         }
         
@@ -1322,13 +1293,43 @@ ExtractNodeUndoRedoCommand::redo()
             viewers.insert(*it2);
         }
         
+        bool outputsAlreadyDisconnected = false;
+
+        ///Reconnect outputs to the input of the input of the ExtractedInputs if inputs.size() == 1
+        if (it->output.outputs.size() == 1 && it->inputs.size() == 1) {
+            const ExtractedInput& selectedInput = it->inputs.front();
+            
+            const std::vector<boost::shared_ptr<Natron::Node> > &inputs = selectedInput.inputs;
+            
+            boost::shared_ptr<Natron::Node> inputToConnectTo ;
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if (inputs[i] && !selectedInput.node->getNode()->getLiveInstance()->isInputOptional(i) &&
+                    !selectedInput.node->getNode()->getLiveInstance()->isInputRotoBrush(i)) {
+                    inputToConnectTo = inputs[i];
+                    break;
+                }
+            }
+            
+            if (inputToConnectTo) {
+                for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+                    it2->second->disconnectInput(it2->first);
+                    it2->second->connectInput(inputToConnectTo, it2->first);
+                }
+                outputsAlreadyDisconnected = true;
+            }
+        }
+        
         ///Disconnect and move output
-        for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
-            it2->second->disconnectInput(it2->first);
+        if (!outputsAlreadyDisconnected) {
+            for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+                it2->second->disconnectInput(it2->first);
+            }
         }
         
         QPointF curPos = it->output.node->getPos_mt_safe();
         it->output.node->refreshPosition(curPos.x() + 200, curPos.y(),true);
+        
+       
         
         ///Disconnect and move inputs
         for (std::list<ExtractedInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {

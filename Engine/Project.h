@@ -302,6 +302,8 @@ public:
 
     void setAllNodesAborted(bool aborted);
     
+    double getProjectFrameRate() const;
+    
 public slots:
 
     void onAutoSaveTimerTriggered();

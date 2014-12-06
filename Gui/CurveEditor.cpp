@@ -722,14 +722,16 @@ struct BezierEditorContextPrivate {
     
     CurveWidget* widget;
     RotoCurveEditorContext* context;
-    Bezier* curve;
+    boost::shared_ptr<Bezier> curve;
     QTreeWidgetItem* nameItem;
     QTreeWidgetItem* curveItem;
     BezierCPCurveGui* animCurve;
     std::list<NodeCurveEditorElement*> knobs;
     bool doDeleteItem;
     
-    BezierEditorContextPrivate(CurveWidget* widget,Bezier* curve,RotoCurveEditorContext* context)
+    BezierEditorContextPrivate(CurveWidget* widget,
+                               const boost::shared_ptr<Bezier>& curve,
+                               RotoCurveEditorContext* context)
     : widget(widget)
     , context(context)
     , curve(curve)
@@ -745,21 +747,21 @@ struct BezierEditorContextPrivate {
 
 BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
                                          CurveWidget* widget,
-                                         Bezier* curve,
+                                         const boost::shared_ptr<Bezier>& curve,
                     RotoCurveEditorContext* context)
 : _imp(new BezierEditorContextPrivate(widget,curve,context))
 {
     _imp->nameItem = new QTreeWidgetItem(_imp->context->getItem());
     QString name(_imp->curve->getName_mt_safe().c_str());
     _imp->nameItem->setText(0, name);
-    QObject::connect(curve, SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
-    QObject::connect(curve, SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
+    QObject::connect(curve.get(), SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
+    QObject::connect(curve.get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
     
     _imp->curveItem = new QTreeWidgetItem(_imp->nameItem);
     _imp->curveItem->setText(0, "Animation");
     
     boost::shared_ptr<RotoContext> roto = context->getNode()->getNode()->getRotoContext();
-    _imp->animCurve = new BezierCPCurveGui(widget,curve,roto,name,QColor(255,255,255),1.);
+    _imp->animCurve = new BezierCPCurveGui(widget, curve, roto, name, QColor(255,255,255), 1.);
     _imp->animCurve->setVisible(false);
     widget->addCurveAndSetColor(_imp->animCurve);
     
@@ -791,7 +793,7 @@ BezierEditorContext::preventItemDeletion()
     _imp->doDeleteItem = false;
 }
 
-Bezier*
+boost::shared_ptr<Bezier>
 BezierEditorContext::getBezier() const
 {
     return _imp->curve;
@@ -921,14 +923,15 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     _imp->nameItem = new QTreeWidgetItem(tree);
     _imp->nameItem->setText( 0,_imp->node->getNode()->getName().c_str() );
     QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
-    QObject::connect( rotoCtx.get(),SIGNAL( itemRemoved(RotoItem*,int) ),this,SLOT( onItemRemoved(RotoItem*,int) ) );
+    QObject::connect( rotoCtx.get(),SIGNAL( itemRemoved(boost::shared_ptr<RotoItem>,int) ),this,
+                     SLOT( onItemRemoved(boost::shared_ptr<RotoItem>,int) ) );
     QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );
-    QObject::connect( rotoCtx.get(),SIGNAL( itemNameChanged(RotoItem*) ),this,SLOT( onItemNameChanged(RotoItem*) ) );
+    QObject::connect( rotoCtx.get(),SIGNAL( itemNameChanged(boost::shared_ptr<RotoItem>) ),this,SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
     
     std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
     
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
-        BezierEditorContext* c = new BezierEditorContext(tree,widget,it->get(),this);
+        BezierEditorContext* c = new BezierEditorContext(tree, widget, *it, this);
         _imp->curves.push_back(c);
     }
 }
@@ -962,7 +965,7 @@ RotoCurveEditorContext::onNameChanged(const QString & name)
 }
 
 void
-RotoCurveEditorContext::onItemNameChanged(RotoItem* item)
+RotoCurveEditorContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& item)
 {
     for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         if ((*it)->getBezier() == item) {
@@ -972,7 +975,7 @@ RotoCurveEditorContext::onItemNameChanged(RotoItem* item)
 }
 
 void
-RotoCurveEditorContext::onItemRemoved(RotoItem* item,int)
+RotoCurveEditorContext::onItemRemoved(const boost::shared_ptr<RotoItem>& item, int)
 {
     for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         if ((*it)->getBezier() == item) {
@@ -989,9 +992,9 @@ RotoCurveEditorContext::itemInserted(int)
     boost::shared_ptr<RotoContext> roto = _imp->node->getNode()->getRotoContext();
     assert(roto);
     boost::shared_ptr<RotoItem> item = roto->getLastInsertedItem();
-    Bezier* isBezier = dynamic_cast<Bezier*>(item.get());
+    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
     if (isBezier) {
-        BezierEditorContext* b = new BezierEditorContext(_imp->tree,_imp->widget,isBezier,this);
+        BezierEditorContext* b = new BezierEditorContext(_imp->tree, _imp->widget, isBezier, this);
         _imp->curves.push_back(b);
     }
 }
@@ -1038,7 +1041,7 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
     for (std::list<BezierEditorContext*>::const_iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         
         for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = selectedBeziers.begin(); it2 != selectedBeziers.end(); ++it2) {
-            if (it2->get() == (*it)->getBezier()) {
+            if (*it2 == (*it)->getBezier()) {
                 NodeCurveEditorElement* found = (*it)->findElement(knob, dimension);
                 if (found) {
                     ret.push_back(found);

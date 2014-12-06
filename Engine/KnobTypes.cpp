@@ -357,12 +357,12 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
                 break;
             }
-            Bezier* isBezier = dynamic_cast<Bezier*>( item.get() );
+            boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
             assert(isBezier);
             
-            boost::shared_ptr<BezierCP> point = it->isFeather ?
-            isBezier->getFeatherPointAtIndex(it->cpIndex)
-            : isBezier->getControlPointAtIndex(it->cpIndex);
+            boost::shared_ptr<BezierCP> point = (it->isFeather ?
+                                                 isBezier->getFeatherPointAtIndex(it->cpIndex)
+                                                 : isBezier->getControlPointAtIndex(it->cpIndex));
             
             if (!point) {
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();

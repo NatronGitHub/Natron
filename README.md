@@ -1,8 +1,8 @@
-Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=workshop)](https://coveralls.io/r/MrKepzie/Natron?branch=workshop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/MrKepzie/Natron/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=workshop)](https://coveralls.io/r/MrKepzie/Natron?branch=workshop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge")
 ======
 
 
-Natron is an Open-Source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
+Natron is a free open-source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
 
 It is portable and cross-platform (Linux, OS X, Microsoft Windows).
 
@@ -70,7 +70,7 @@ with a very accurate and intuitive curve editor.
  from ssh on a computer without any display. Hence it is possible to use a render farm
   to render Natron's projects. 
   
-- Rotoscoping support
+- Rotoscoping & Tracking support
   
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate
 the views at any time with the SplitViews node. Note that currently Natron does not allow to split the 
@@ -96,17 +96,26 @@ The system must support one of these OpenGL configurations:
 Planned features
 ----------------
 
-### Features planned for next major version
+### Features planned for Natron 1.1
 
-- Python scripting
+- Python 3 scripting integration. This feature is already half-way of being implemented
+    * Parameters expressions
+    * User-defined parameters
+    * Nodes groups (Same as Gizmos in Nuke) but that will be written as Python scripts 
+    * Script editor to control the application overall
+    * User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
+    * Integration of Pyside to the GUI so that the interface will be extensible with new menus and windows
+
+- Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
+
+- Natural matting: process of extracting a foreground without necessarily a green/blue-screen as background
 
 ### Features planned for future versions
 
 - Dope sheet: Well this is time we implement this, it can be very tedious to organise image sequences 
 without this very useful tool.
 
-- Templates/Groups: Template nodes are an aggregation of several nodes put together as a graph that act
-like a simple node. Share your templates and save time re-using them as part of other graphs.
+- GMIC http://gmic.eu integration as an OpenFX plug-in
 
 - Deep data: Support for deep data (multiple samples per pixel)
 

@@ -28,7 +28,6 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/ChannelSet.h"
 #include "Engine/Image.h"
 #include "Engine/ThreadStorage.h"
 
@@ -96,7 +95,7 @@ public:
     //
     //  The frame rate of a clip or instance's project.
     virtual double getFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    
     // Frame Range (startFrame, endFrame) -
     //
     //  The frame range over which a clip has images.
@@ -198,7 +197,6 @@ private:
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
     double _aspectRatio;
-    
     /**
      * @brief These are datas that are local to an action call but that we need in order to perform the API call like
      * clipGetRegionOfDefinition or clipGetFrameRange, etc...

@@ -236,10 +236,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         createAnimationButton(layout);
     }
     
-    if (!knob->isNewLineTurnedOff() && shouldAddStretch()) {
-        layout->addStretch();
-    }
-
+   
     _imp->widgetCreated = true;
 
     for (int i = 0; i < knob->getDimension(); ++i) {

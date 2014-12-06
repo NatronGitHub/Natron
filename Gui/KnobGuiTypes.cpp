@@ -142,6 +142,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     for (int i = 0; i < dim; ++i) {
 
         QWidget *boxContainer = new QWidget( container );
+        boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -820,6 +821,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     for (int i = 0; i < dim; ++i) {
 
         QWidget *boxContainer = new QWidget( container );
+        boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -922,7 +924,8 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             _slider->hide();
             _dimensionSwitchButton->setChecked(true);
         } else {
-            foldAllDimensions();        }
+            foldAllDimensions();
+        }
 
         QObject::connect( _dimensionSwitchButton, SIGNAL( clicked(bool) ), this, SLOT( onDimensionSwitchClicked() ) );
 
@@ -2274,6 +2277,9 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 void
 Color_KnobGui::onColorChanged()
 {
+    SpinBox* isSpinbox = qobject_cast<SpinBox*>(sender());
+    
+    
     std::list<double> newValues;
     double r = _rBox->value();
     double g = r;
@@ -2287,6 +2293,10 @@ Color_KnobGui::onColorChanged()
         }
         if (_dimension >= 4) {
             a = _aBox->value();
+        }
+    } else {
+        if (isSpinbox) {
+            _slider->seekScalePosition(r);
         }
     }
     if (_dimension >= 3) {
