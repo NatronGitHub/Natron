@@ -1089,7 +1089,7 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
     loadKnob(_imp->nodeLabelKnob, serialization);
     
-    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Force caching");
+    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Force caching", 1, false);
     _imp->forceCaching->setName("forceCaching");
     _imp->forceCaching->setDefaultValue(false);
     _imp->forceCaching->setAnimationEnabled(false);
