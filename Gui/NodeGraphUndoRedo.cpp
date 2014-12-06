@@ -659,6 +659,7 @@ public:
     }
 
     void buildTree(const NodeGuiPtr & output,
+                   const std::list<NodeGuiPtr>& selectedNodes,
                    std::list<NodeGui*> & usedNodes)
     {
         QPointF outputPos = output->pos();
@@ -667,7 +668,7 @@ public:
         outputPos += QPointF(nodeSize.width() / 2.,nodeSize.height() / 2.);
         addNode(output, outputPos);
 
-        buildTreeInternal(output.get(),output->mapToScene( output->mapFromParent(outputPos) ), usedNodes);
+        buildTreeInternal(selectedNodes, output.get(),output->mapToScene( output->mapFromParent(outputPos) ), usedNodes);
     }
 
     const std::list<TreeNode> & getNodes() const
@@ -695,13 +696,15 @@ private:
         nodes.push_back( std::make_pair(node, point) );
     }
 
-    void buildTreeInternal(NodeGui* currentNode,const QPointF & currentNodeScenePos,std::list<NodeGui*> & usedNodes);
+    void buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
+                           NodeGui* currentNode,const QPointF & currentNodeScenePos,std::list<NodeGui*> & usedNodes);
 };
 
 typedef std::list< boost::shared_ptr<Tree> > TreeList;
 
 void
-Tree::buildTreeInternal(NodeGui* currentNode,
+Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
+                        NodeGui* currentNode,
                         const QPointF & currentNodeScenePos,
                         std::list<NodeGui*> & usedNodes)
 {
@@ -714,6 +717,13 @@ Tree::buildTreeInternal(NodeGui* currentNode,
 
     for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodeGuiPtr source = it->second->getSource();
+        
+        ///Check if the source is selected
+        std::list<NodeGuiPtr>::const_iterator foundSelected = std::find(selectedNodes.begin(),selectedNodes.end(),source);
+        if (foundSelected == selectedNodes.end()) {
+            continue;
+        }
+        
         if (source) {
             bool isMask = internalNode->getLiveInstance()->isInputMask(it->first);
             if (!firstNonMaskInput && !isMask) {
@@ -802,17 +812,17 @@ Tree::buildTreeInternal(NodeGui* currentNode,
 
         ///Now that we built the tree at this level, call this function again on the inputs that we just treated
         if (firstNonMaskInput) {
-            buildTreeInternal(firstNonMaskInput.get(),firstNonMaskInputPos, usedNodes);
+            buildTreeInternal(selectedNodes, firstNonMaskInput.get(),firstNonMaskInputPos, usedNodes);
         }
 
         std::list<QPointF>::iterator pointsIt = otherNonMaskInputsPos.begin();
         for (std::list<NodeGuiPtr>::iterator it = otherNonMaskInputs.begin(); it != otherNonMaskInputs.end(); ++it,++pointsIt) {
-            buildTreeInternal(it->get(),*pointsIt, usedNodes);
+            buildTreeInternal(selectedNodes, it->get(),*pointsIt, usedNodes);
         }
 
         pointsIt = maskInputsPos.begin();
         for (std::list<NodeGuiPtr>::iterator it = maskInputs.begin(); it != maskInputs.end(); ++it,++pointsIt) {
-            buildTreeInternal(it->get(),*pointsIt, usedNodes);
+            buildTreeInternal(selectedNodes, it->get(),*pointsIt, usedNodes);
         }
     }
     ///update the top level node center if the node doesn't have any input
@@ -888,7 +898,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<N
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (!hasNodeOutputsInList(nodes, (*it))) {
             boost::shared_ptr<Tree> newTree(new Tree);
-            newTree->buildTree(*it, usedNodes);
+            newTree->buildTree(*it, nodes, usedNodes);
             trees.push_back(newTree);
         }
     }
