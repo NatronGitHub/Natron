@@ -3540,6 +3540,14 @@ NodeGraph::centerOnAllNodes()
     }
     QRectF rect( xmin,ymin,(xmax - xmin),(ymax - ymin) );
     fitInView(rect,Qt::KeepAspectRatio);
+    
+    double currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();
+
+    if (currentZoomFactor < 0.4) {
+        setVisibleNodeDetails(false);
+    } else if (currentZoomFactor >= 0.4) {
+        setVisibleNodeDetails(true);
+    }
 
     _imp->_refreshOverlays = true;
     update();
