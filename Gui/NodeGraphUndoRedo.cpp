@@ -823,6 +823,44 @@ Tree::buildTreeInternal(NodeGui* currentNode,
         }
     }
 } // buildTreeInternal
+    
+    
+    static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
+    {
+        const std::list<Natron::Node*>& outputs = node->getNode()->getOutputs();
+        
+        bool foundOutput = false;
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            if (*it != node) {
+                boost::shared_ptr<Natron::Node> n = (*it)->getNode();
+                
+                std::list<Natron::Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),n.get());
+                if (found != outputs.end()) {
+                    foundOutput = true;
+                    break;
+                }
+            }
+        }
+        return foundOutput;
+    }
+    
+    static bool hasNodeInputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
+    {
+        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getNode()->getInputs_mt_safe();
+        
+        bool foundInput = false;
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            if (*it != node) {
+                boost::shared_ptr<Natron::Node> n = (*it)->getNode();
+                std::vector<boost::shared_ptr<Natron::Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),n);
+                if (found != inputs.end()) {
+                    foundInput = true;
+                    break;
+                }
+            }
+        }
+        return foundInput;
+    }
 }
 RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
                                              QUndoCommand *parent)
@@ -848,8 +886,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<N
     TreeList trees;
 
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        const std::list<Natron::Node*> & outputs = (*it)->getNode()->getOutputs();
-        if ( outputs.empty() ) {
+        if (!hasNodeOutputsInList(nodes, (*it))) {
             boost::shared_ptr<Tree> newTree(new Tree);
             newTree->buildTree(*it, usedNodes);
             trees.push_back(newTree);
@@ -1097,42 +1134,8 @@ void RenameNodeUndoRedoCommand::redo()
     setText(QObject::tr("Rename node"));
 }
 
-static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
-{
-    const std::list<Natron::Node*>& outputs = node->getNode()->getOutputs();
-    
-    bool foundOutput = false;
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        if (*it != node) {
-            boost::shared_ptr<Natron::Node> n = (*it)->getNode();
-            
-            std::list<Natron::Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),n.get());
-            if (found != outputs.end()) {
-                foundOutput = true;
-                break;
-            }
-        }
-    }
-    return foundOutput;
-}
 
-static bool hasNodeInputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
-{
-    const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getNode()->getInputs_mt_safe();
-    
-    bool foundInput = false;
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        if (*it != node) {
-            boost::shared_ptr<Natron::Node> n = (*it)->getNode();
-            std::vector<boost::shared_ptr<Natron::Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),n);
-            if (found != inputs.end()) {
-                foundInput = true;
-                break;
-            }
-        }
-    }
-    return foundInput;
-}
+
 
 static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node,ExtractNodeUndoRedoCommand::ExtractedTree& tree,
                           std::list<boost::shared_ptr<NodeGui> >& markedNodes)
