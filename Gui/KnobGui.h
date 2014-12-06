@@ -68,6 +68,7 @@ protected:
      **/
     virtual void removeSpecificGui() = 0;
     
+    
 public:
 
     /**

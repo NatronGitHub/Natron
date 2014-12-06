@@ -1577,6 +1577,7 @@ public:
      **/
     void removeDynamicKnob(KnobI* knob);
     
+    //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     void moveKnobOneStepUp(KnobI* knob);
     void moveKnobOneStepDown(KnobI* knob);
 

@@ -2459,6 +2459,9 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
 void
 KnobHolder::moveKnobOneStepUp(KnobI* knob)
 {
+    if (!knob->isUserKnob()) {
+        return;
+    }
     boost::shared_ptr<KnobI> parent = knob->getParentKnob();
     Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parent.get());
     Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parent.get());
@@ -2468,31 +2471,33 @@ KnobHolder::moveKnobOneStepUp(KnobI* knob)
         parentIsGrp->moveOneStepUp(knob);
     } else if (parentIsPage) {
         parentIsPage->moveOneStepUp(knob);
-    } else {
-        
-        QMutexLocker k(&_imp->knobsMutex);
-        int prevTopLevel = -1;
-        for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-            if (_imp->knobs[i].get() == knob) {
-                if (prevTopLevel != -1) {
-                    boost::shared_ptr<KnobI> tmp = _imp->knobs[prevTopLevel];
-                    _imp->knobs[prevTopLevel] = _imp->knobs[i];
-                    _imp->knobs[i] = tmp;
-                }
-                break;
-            } else {
-                boost::shared_ptr<KnobI> parent = _imp->knobs[i]->getParentKnob();
-                if (!parent) {
-                    prevTopLevel = i;
-                }
+    }
+    
+    QMutexLocker k(&_imp->knobsMutex);
+    int prevInPage = -1;
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+        if (_imp->knobs[i].get() == knob) {
+            if (prevInPage != -1) {
+                boost::shared_ptr<KnobI> tmp = _imp->knobs[prevInPage];
+                _imp->knobs[prevInPage] = _imp->knobs[i];
+                _imp->knobs[i] = tmp;
+            }
+            break;
+        } else {
+            if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == knob->getParentKnob())) {
+                prevInPage = i;
             }
         }
     }
+    
 }
 
 void
 KnobHolder::moveKnobOneStepDown(KnobI* knob)
 {
+    if (!knob->isUserKnob()) {
+        return;
+    }
     boost::shared_ptr<KnobI> parent = knob->getParentKnob();
     Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parent.get());
     Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parent.get());
@@ -2502,27 +2507,27 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
         parentIsGrp->moveOneStepDown(knob);
     } else if (parentIsPage) {
         parentIsPage->moveOneStepDown(knob);
-    } else {
-        
-        QMutexLocker k(&_imp->knobsMutex);        
-        int foundIndex = - 1;
-        for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-            if (_imp->knobs[i].get() == knob) {
-                foundIndex = i;
-                break;
-            }
-        }
-        assert(foundIndex != -1);
-        for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
-            boost::shared_ptr<KnobI> parent = _imp->knobs[i]->getParentKnob();
-            if (!parent) {
-                boost::shared_ptr<KnobI> tmp = _imp->knobs[foundIndex];
-                _imp->knobs[foundIndex] = _imp->knobs[i];
-                _imp->knobs[i] = tmp;
-                break;
-            }
+    }
+    
+    
+    QMutexLocker k(&_imp->knobsMutex);
+    int foundIndex = - 1;
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+        if (_imp->knobs[i].get() == knob) {
+            foundIndex = i;
+            break;
         }
     }
+    assert(foundIndex != -1);
+    for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
+        if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == knob->getParentKnob())) {
+            boost::shared_ptr<KnobI> tmp = _imp->knobs[foundIndex];
+            _imp->knobs[foundIndex] = _imp->knobs[i];
+            _imp->knobs[i] = tmp;
+            break;
+        }
+    }
+    
 }
 
 boost::shared_ptr<Int_Knob>

@@ -118,6 +118,16 @@ struct KnobGui::KnobGuiPrivate
     {
         copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
     }
+    
+    void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
+    {
+        for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
+            if (*it == knob) {
+                knobsOnSameLine.erase(it);
+                break;
+            }
+        }
+    }
 };
 
 /////////////// KnobGui
@@ -162,15 +172,24 @@ KnobGui::~KnobGui()
 void
 KnobGui::removeGui()
 {
-    delete _imp->descriptionLabel;
-    _imp->knobsOnSameLine.clear();
-    if (_imp->isOnNewLine) {
+    for (std::vector< boost::shared_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it!=_imp->knobsOnSameLine.end(); ++it) {
+        KnobGui* kg = _imp->container->getKnobGui(*it);
+        assert(kg);
+        kg->_imp->removeFromKnobsOnSameLineVector(getKnob());
+    }
+    
+    if (_imp->knobsOnSameLine.empty()) {
+        if (_imp->isOnNewLine) {
+            delete _imp->descriptionLabel;
+        }
         delete _imp->field;
     } else {
-        removeSpecificGui();
+        delete _imp->descriptionLabel;
         delete _imp->animationMenu;
+        delete _imp->animationButton;
+        removeSpecificGui();
     }
-
+ 
 }
 
 Gui*
@@ -2134,6 +2153,8 @@ KnobGui::onExprChanged(int dimension)
 void
 KnobGui::onHelpChanged()
 {
-    _imp->descriptionLabel->setToolTip( toolTip() );
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setToolTip( toolTip() );
+    }
     updateToolTip();
 }

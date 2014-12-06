@@ -664,6 +664,46 @@ DockablePanel::onLineEditNameEditingFinished()
    
 }
 
+static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& knobs,
+                                bool onlyTopLevel,
+                                const boost::shared_ptr<KnobI>& ref,
+                                std::vector<boost::shared_ptr<KnobI> >& knobsOnSameLine)
+{
+    int idx = -1;
+    for (U32 k = 0; k < knobs.size() ; ++k) {
+        if (knobs[k] == ref) {
+            idx = k;
+            break;
+        }
+    }
+    assert(idx != -1);
+    
+    ///find all knobs backward that are on the same line.
+    int k = idx - 1;
+    while ( k >= 0 && knobs[k]->isNewLineTurnedOff()) {
+        if (!dynamic_cast<Page_Knob*>(knobs[k].get()) &&
+            !dynamic_cast<Group_Knob*>(knobs[k].get())) {
+            if ((onlyTopLevel && !knobs[k]->getParentKnob()) || !onlyTopLevel) {
+                knobsOnSameLine.push_back(knobs[k]);
+            }
+        }
+        --k;
+    }
+    
+    ///find all knobs forward that are on the same line.
+    k = idx;
+    while ( k < (int)(knobs.size() - 1) && knobs[k]->isNewLineTurnedOff()) {
+        if (!dynamic_cast<Page_Knob*>(knobs[k + 1].get()) &&
+            !dynamic_cast<Group_Knob*>(knobs[k + 1].get())) {
+            if ((onlyTopLevel && !knobs[k + 1]->getParentKnob()) || !onlyTopLevel) {
+                knobsOnSameLine.push_back(knobs[k + 1]);
+            }
+        }
+        ++k;
+    }
+
+}
+
 void
 DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
                                            QWidget* lastRowWidget,
@@ -681,7 +721,8 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
             
             //If the knob is dynamic (i:e created after the initial creation of knobs)
             //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
-            Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(knobs[i]->getParentKnob().get());
+            boost::shared_ptr<KnobI> parentKnob = knobs[i]->getParentKnob();
+            Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(parentKnob.get());
             if (knobs[i]->isDynamicallyCreated() && isParentGroup) {
                 Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(knobs[i]->getParentKnob(), false, lastRowWidget));
                 assert(parentGui);
@@ -695,7 +736,10 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
                         ++it;
                         for (; it != children.rend(); ++it) {
                             if ((*it)->getKnob()->isNewLineTurnedOff()) {
-                                knobsOnSameLine.push_back((*it)->getKnob());
+                                if (!dynamic_cast<Page_Knob*>((*it)->getKnob().get()) &&
+                                    !dynamic_cast<Group_Knob*>((*it)->getKnob().get())) {
+                                    knobsOnSameLine.push_back((*it)->getKnob());
+                                }
                             } else {
                                 break;
                             }
@@ -709,19 +753,18 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
                 if ( (i > 0) && knobs[i - 1]->isNewLineTurnedOff() ) {
                     makeNewLine = false;
                 }
-                ///find all knobs backward that are on the same line.
-                int k = i - 1;
-                while ( k >= 0 && knobs[k]->isNewLineTurnedOff() ) {
-                    knobsOnSameLine.push_back(knobs[k]);
-                    --k;
+                
+                Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+                if (isParentPage) {
+                    const std::vector<boost::shared_ptr<KnobI> > & children = isParentPage->getChildren();
+                    findKnobsOnSameLine(children, false, knobs[i], knobsOnSameLine);
+                } else if (isParentGroup) {
+                    const std::vector<boost::shared_ptr<KnobI> > & children = isParentGroup->getChildren();
+                    findKnobsOnSameLine(children, false, knobs[i], knobsOnSameLine);
+                } else {
+                    findKnobsOnSameLine(knobs, true, knobs[i], knobsOnSameLine);
                 }
-
-                ///find all knobs forward that are on the same line.
-                k = i;
-                while ( k < (int)(knobs.size() - 1) && knobs[k]->isNewLineTurnedOff() ) {
-                    knobsOnSameLine.push_back(knobs[k + 1]);
-                    ++k;
-                }
+                
             }
 
             KnobGui* newGui = findKnobGuiOrCreate(knobs[i],makeNewLine,lastRowWidget,knobsOnSameLine);
@@ -2029,14 +2072,20 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     
     QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()),this,SLOT(onSelectionChanged()));
     
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = panel->getKnobs();
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if (it->first->isUserKnob()) {
-            TreeItem i;
-            i.knob = it->first;
-            i.item = new QTreeWidgetItem(_imp->tree);
-            i.item->setText(0, it->first->getName().c_str());
-            _imp->items.push_back(i);
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = panel->getHolder()->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ((*it)->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            Page_Knob* page = dynamic_cast<Page_Knob*>(it->get());
+            assert(page);
+            const std::vector<boost::shared_ptr<KnobI> >& children = page->getChildren();
+            
+            for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                TreeItem i;
+                i.knob = *it2;
+                i.item = new QTreeWidgetItem(_imp->tree);
+                i.item->setText(0, (*it2)->getName().c_str());
+                _imp->items.push_back(i);
+            }
         }
     }
     
@@ -2083,11 +2132,12 @@ ManageUserParamsDialog::~ManageUserParamsDialog()
 boost::shared_ptr<Page_Knob>
 ManageUserParamsDialogPrivate::getUserPageKnob() const
 {
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = panel->getKnobs();
     
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if (it->first->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-            return boost::dynamic_pointer_cast<Page_Knob>(it->first);
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = panel->getHolder()->getKnobs();
+    
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ((*it)->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            return boost::dynamic_pointer_cast<Page_Knob>(*it);
         }
     }
     
@@ -2166,7 +2216,17 @@ ManageUserParamsDialog::onUpClicked()
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
                 if (it->item == selection[i]) {
+                    int index = _imp->tree->indexOfTopLevelItem(it->item);
+                    if (index == 0) {
+                        break;
+                    }
                     _imp->panel->getHolder()->moveKnobOneStepUp(it->knob.get());
+                    delete it->item;
+                    it->item = new QTreeWidgetItem;
+                    it->item->setText(0, it->knob->getName().c_str());
+                    _imp->tree->insertTopLevelItem(index - 1, it->item);
+                    _imp->tree->clearSelection();
+                    it->item->setSelected(true);
                     break;
                 }
             }
@@ -2184,7 +2244,17 @@ ManageUserParamsDialog::onDownClicked()
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
                 if (it->item == selection[i]) {
+                    int index = _imp->tree->indexOfTopLevelItem(it->item);
+                    if (index == _imp->tree->topLevelItemCount() - 1) {
+                        break;
+                    }
                     _imp->panel->getHolder()->moveKnobOneStepDown(it->knob.get());
+                    delete it->item;
+                    it->item = new QTreeWidgetItem;
+                    it->item->setText(0, it->knob->getName().c_str());
+                    _imp->tree->insertTopLevelItem(index + 1, it->item);
+                    _imp->tree->clearSelection();
+                    it->item->setSelected(true);
                     break;
                 }
             }
@@ -2798,7 +2868,7 @@ AddKnobDialogPrivate::createKnobFromSelection()
             QTextStream stream(&entriesRaw);
             std::vector<std::string> entries,helps;
 
-            while (stream.atEnd()) {
+            while (!stream.atEnd()) {
                 QString line = stream.readLine();
                 int foundHelp = line.indexOf("<?>");
                 if (foundHelp) {

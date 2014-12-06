@@ -909,6 +909,7 @@ Group_Knob::moveOneStepUp(KnobI* k)
             boost::shared_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
+            break;
         }
     }
 }
@@ -924,6 +925,7 @@ Group_Knob::moveOneStepDown(KnobI* k)
             boost::shared_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
+            break;
         }
     }
 }
@@ -998,6 +1000,7 @@ Page_Knob::moveOneStepUp(KnobI* k)
             boost::shared_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
+            break;
         }
     }
 }
@@ -1013,6 +1016,7 @@ Page_Knob::moveOneStepDown(KnobI* k)
             boost::shared_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
+            break;
         }
     }
 }
