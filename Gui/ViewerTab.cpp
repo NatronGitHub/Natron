@@ -791,7 +791,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                                            "%1 as "
                                                            "informed by the Readers upstream. When checked, the bounds will no longer "
                                                            "be automatically set, and you're free to set them in the edit line "
-                                                           "on the left or by dragging the timeline markers.").arg(NATRON_APPLICATION_NAME)
+                                                           "on the right or by dragging the timeline markers.").arg(NATRON_APPLICATION_NAME)
                                                         ,Qt::WhiteSpaceNormal);
     _imp->canEditFrameRangeBox->setToolTip(canEditFRTooltip);
     QObject::connect( _imp->canEditFrameRangeBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFrameRangeButtonClicked(bool) ) );
