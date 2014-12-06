@@ -61,15 +61,22 @@ namespace { // protect local classes in anonymous namespace
     typedef std::list<Node::KnobLink> KnobLinkList;
     typedef std::vector<boost::shared_ptr<Node> > InputsV;
     
+    enum InputActionEnum
+    {
+        eInputActionConnect,
+        eInputActionDisconnect,
+        eInputActionReplace
+    };
+    
     struct ConnectInputAction
     {
         boost::shared_ptr<Natron::Node> node;
-        bool isConnect;
+        InputActionEnum type;
         int inputNb;
         
-        ConnectInputAction(const boost::shared_ptr<Natron::Node>& input,bool isConnect,int inputNb)
+        ConnectInputAction(const boost::shared_ptr<Natron::Node>& input,InputActionEnum type,int inputNb)
         : node(input)
-        , isConnect(isConnect)
+        , type(type)
         , inputNb(inputNb)
         {
         }
@@ -1552,7 +1559,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
 }
 
 bool
-Node::connectInput(boost::shared_ptr<Node> input,
+Node::connectInput(const boost::shared_ptr<Node> & input,
                    int inputNumber)
 {
     ////Only called by the main-thread
@@ -1571,7 +1578,7 @@ Node::connectInput(boost::shared_ptr<Node> input,
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] != NULL) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
             return false;
         }
         
@@ -1579,7 +1586,7 @@ Node::connectInput(boost::shared_ptr<Node> input,
         {
             QMutexLocker k(&_imp->nodeIsRenderingMutex);
             if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(input,true,inputNumber);
+                ConnectInputAction action(input,eInputActionConnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return true;
@@ -1603,6 +1610,63 @@ Node::connectInput(boost::shared_ptr<Node> input,
     ///Recompute the hash
     computeHash();
     
+    return true;
+}
+
+bool
+Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    assert(_imp->inputsInitialized);
+    assert(input);
+    
+    ///Check for cycles: they are forbidden in the graph
+    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+        return false;
+    }
+    if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
+        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        return false;
+    }
+    {
+        ///Check for invalid index
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) ) {
+            return false;
+        }
+        
+        ///If the node is currently rendering, queue the action instead of executing it
+        {
+            QMutexLocker k(&_imp->nodeIsRenderingMutex);
+            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+                ConnectInputAction action(input,eInputActionReplace,inputNumber);
+                QMutexLocker cql(&_imp->connectionQueueMutex);
+                _imp->connectionQueue.push_back(action);
+                return true;
+            }
+        }
+        
+        ///Set the input
+        if (_imp->inputs[inputNumber]) {
+            QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+            _imp->inputs[inputNumber]->disconnectOutput(this);
+        }
+        _imp->inputs[inputNumber] = input;
+        input->connectOutput(this);
+    }
+    
+    ///Get notified when the input name has changed
+    QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+    
+    ///Notify the GUI
+    emit inputChanged(inputNumber);
+    
+    ///Call the instance changed action with a reason clip changed
+    onInputChanged(inputNumber);
+    
+    ///Recompute the hash
+    computeHash();
     return true;
 }
 
@@ -1656,27 +1720,15 @@ Node::switchInput0And1()
         QMutexLocker k(&_imp->nodeIsRenderingMutex);
         if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
             QMutexLocker cql(&_imp->connectionQueueMutex);
-            ///Disonnect input A
+            ///Replace input A
             {
-                ConnectInputAction action(_imp->inputs[inputAIndex],false,inputAIndex);
+                ConnectInputAction action(_imp->inputs[inputBIndex],eInputActionReplace,inputAIndex);
                 _imp->connectionQueue.push_back(action);
             }
             
-            ///Disconnect input B
+            ///Replace input B
             {
-                ConnectInputAction action(_imp->inputs[inputBIndex],false,inputBIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            ///Connect input A
-            {
-                ConnectInputAction action(_imp->inputs[inputBIndex],true,inputAIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            ///Connect input B
-            {
-                ConnectInputAction action(_imp->inputs[inputAIndex],true,inputBIndex);
+                ConnectInputAction action(_imp->inputs[inputAIndex],eInputActionReplace,inputBIndex);
                 _imp->connectionQueue.push_back(action);
             }
             
@@ -1753,7 +1805,7 @@ Node::disconnectInput(int inputNumber)
         {
             QMutexLocker k(&_imp->nodeIsRenderingMutex);
             if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(_imp->inputs[inputNumber],false,inputNumber);
+                ConnectInputAction action(_imp->inputs[inputNumber],eInputActionDisconnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return inputNumber;
@@ -1787,7 +1839,7 @@ Node::disconnectInput(Node* input)
                 {
                     QMutexLocker k(&_imp->nodeIsRenderingMutex);
                     if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                        ConnectInputAction action(_imp->inputs[i],false,i);
+                        ConnectInputAction action(_imp->inputs[i],eInputActionDisconnect,i);
                         QMutexLocker cql(&_imp->connectionQueueMutex);
                         _imp->connectionQueue.push_back(action);
                         return i;
@@ -3427,12 +3479,18 @@ Node::dequeueActions()
     
     for (std::list<ConnectInputAction>::iterator it = queue.begin(); it!= queue.end(); ++it) {
         
-        if (it->isConnect) {
-            connectInput(it->node, it->inputNb);
-        } else {
-            disconnectInput(it->inputNb);
+        switch (it->type) {
+            case eInputActionConnect:
+                connectInput(it->node, it->inputNb);
+                break;
+            case eInputActionDisconnect:
+                disconnectInput(it->inputNb);
+                break;
+            case eInputActionReplace:
+                replaceInput(it->node, it->inputNb);
+                break;
         }
-        
+
     }
     
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
@@ -3544,7 +3602,7 @@ InspectorNode::~InspectorNode()
 }
 
 bool
-InspectorNode::connectInput(boost::shared_ptr<Node> input,
+InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
                             int inputNumber)
 {
     ///Only called by the main-thread

@@ -350,7 +350,7 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber);
+    virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber);
 
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
@@ -362,6 +362,14 @@ public:
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
     virtual int disconnectInput(Node* input);
+    
+    /**
+     * @brief Same as:
+      disconnectInput(inputNumber);
+      connectInput(input,inputNumber);
+     * Except that it is atomic
+     **/
+    bool replaceInput(const boost::shared_ptr<Node>& input,int inputNumber);
     
     void setNodeGuiPointer(NodeGuiI* gui);
 
@@ -905,9 +913,11 @@ public:
         return _inputsCount;
     }
 
-    virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber) OVERRIDE;
+    virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
     virtual int disconnectInput(int inputNumber) OVERRIDE;
     virtual int disconnectInput(Node* input) OVERRIDE;
+
+
 
     virtual int getPreferredInputForConnection()  OVERRIDE FINAL;
 

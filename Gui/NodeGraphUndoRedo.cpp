@@ -442,140 +442,97 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
 void
 ConnectCommand::undo()
 {
-    boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>( _dst->getNode() );
-
-	boost::shared_ptr<Natron::Node> internalDst =  _edge->getDest()->getNode();
-	if (_oldSrc) {
-		setText( QObject::tr("Connect %1 to %2")
-			.arg(internalDst->getName().c_str() ).arg( _oldSrc->getNode()->getName().c_str() ) );
-	} else {
-		setText( QObject::tr("Disconnect %1")
-			.arg(internalDst->getName().c_str() ) );
-	}
-
-    if (inspector) {
-        ///if the node is an inspector, the redo() action might have disconnect the dst and src nodes
-        ///hence the _edge ptr might have been invalidated, recreate it
-        NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
-        while ( it == _dst->getInputsArrows().end() ) {
-            inspector->addEmptyInput();
-            it = _dst->getInputsArrows().find(_inputNb);
-        }
-        _edge = it->second;
-    }
-
-    if (_oldSrc) {
-        _graph->getGui()->getApp()->getProject()->connectNodes( _edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode().get() );
-        _oldSrc->refreshOutputEdgeVisibility();
-    }
-    if (_newSrc) {
-        _graph->getGui()->getApp()->getProject()->disconnectNodes( _newSrc->getNode().get(), _edge->getDest()->getNode().get() );
-        _newSrc->refreshOutputEdgeVisibility();
-        ///if the node is an inspector, when disconnecting the active input just activate another input instead
-        if (inspector) {
-            const std::vector<boost::shared_ptr<Natron::Node> > & inputs = inspector->getInputs_mt_safe();
-            ///set as active input the first non null input
-            for (U32 i = 0; i < inputs.size(); ++i) {
-                if (inputs[i]) {
-                    inspector->setActiveInputAndRefresh(i);
-                    break;
-                }
-            }
-        }
-    }
-
-
-    _graph->getGui()->getApp()->triggerAutoSave();
-    std::list<ViewerInstance* > viewers;
-    internalDst->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
+    doConnect(_newSrc ? _newSrc->getNode() : boost::shared_ptr<Natron::Node>(),
+              _oldSrc ? _oldSrc->getNode() : boost::shared_ptr<Natron::Node>());
    
 } // undo
 
 void
 ConnectCommand::redo()
 {
-    boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>( _dst->getNode() );
-
-    _inputNb = _edge->getInputNumber();
-
-	boost::shared_ptr<Natron::Node> internalDst =  _edge->getDest()->getNode();
-
-	if (_newSrc) {
-		setText( QObject::tr("Connect %1 to %2")
-			.arg(internalDst->getName().c_str() ).arg( _newSrc->getNode()->getName().c_str() ) );
-	} else {
-		setText( QObject::tr("Disconnect %1")
-			.arg(internalDst->getName().c_str() ) );
-	}
-
-    if (inspector) {
-        ///if the node is an inspector we have to do things differently
-
-        if (!_newSrc) {
-            if (_oldSrc) {
-                ///we want to connect to nothing, hence disconnect
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode().get(),inspector.get());
-                _oldSrc->refreshOutputEdgeVisibility();
-            }
-        } else {
-            ///disconnect any connection already existing with the _oldSrc
-            if (_oldSrc) {
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode().get(),inspector.get());
-                _oldSrc->refreshOutputEdgeVisibility();
-            }
-            ///also disconnect any current connection between the inspector and the _newSrc
-            _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode().get(),inspector.get());
+    doConnect(_oldSrc ? _oldSrc->getNode() : boost::shared_ptr<Natron::Node>(),
+              _newSrc ? _newSrc->getNode() : boost::shared_ptr<Natron::Node>());
+} // redo
 
 
-            ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
-            NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
-            while ( it == _dst->getInputsArrows().end() ) {
-                inspector->addEmptyInput();
-                it = _dst->getInputsArrows().find(_inputNb);
-            }
-            _edge = it->second;
 
-            ///and connect the inspector to the _newSrc
-            _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), inspector.get());
-            _newSrc->refreshOutputEdgeVisibility();
-        }
+void
+ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
+               const boost::shared_ptr<Natron::Node> & newSrc)
+{
+    boost::shared_ptr<Natron::Node> internalDst =  _dst->getNode();
+    InspectorNode* inspector = dynamic_cast<InspectorNode*>(internalDst.get());
+    
+    if (newSrc) {
+        setText( QObject::tr("Connect %1 to %2")
+                .arg(internalDst->getName().c_str() ).arg( newSrc->getName().c_str() ) );
     } else {
-        _edge->setSource(_newSrc);
-        if (_oldSrc) {
-            if ( !_graph->getGui()->getApp()->getProject()->disconnectNodes( _oldSrc->getNode().get(), _dst->getNode().get() ) ) {
-                qDebug() << "Failed to disconnect (input) " << _oldSrc->getNode()->getName().c_str()
-                         << " to (output) " << _dst->getNode()->getName().c_str();
-            }
-            _oldSrc->refreshOutputEdgeVisibility();
-        }
-        if (_newSrc) {
-            if ( !_graph->getGui()->getApp()->getProject()->connectNodes( _inputNb, _newSrc->getNode(), _dst->getNode().get() ) ) {
-                qDebug() << "Failed to connect (input) " << _newSrc->getNode()->getName().c_str()
-                         << " to (output) " << _dst->getNode()->getName().c_str();
-            }
-            _newSrc->refreshOutputEdgeVisibility();
-        }
+        setText( QObject::tr("Disconnect %1")
+                .arg(internalDst->getName().c_str() ) );
     }
 
+    
+    if (inspector) {
+        ///if the node is an inspector we have to do things differently
+        
+        if (oldSrc && newSrc) {
+            
+            ///also disconnect any current connection between the inspector and the _newSrc
+            _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
+            inspector->replaceInput(newSrc, _inputNb);
+            
+        } else {
+            if (oldSrc) {
+                ///we want to connect to nothing, hence disconnect
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(oldSrc.get(),inspector);
+            }
+            if (newSrc) {
+                ///also disconnect any current connection between the inspector and the _newSrc
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
+                _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, newSrc, inspector);
+            }
+        }
+        ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
+        NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
+        while ( it == _dst->getInputsArrows().end() ) {
+            inspector->addEmptyInput();
+            it = _dst->getInputsArrows().find(_inputNb);
+        }
+        _edge = it->second;
+        _inputNb = _edge->getInputNumber();
+
+        
+    } else {
+        //_edge->setSource(_newSrc);
+        
+        if (oldSrc && newSrc) {
+            internalDst->replaceInput(newSrc, _inputNb);
+        } else {
+            if (oldSrc) {
+                _graph->getGui()->getApp()->getProject()->disconnectNodes( oldSrc.get(), internalDst.get() );
+            }
+            if (newSrc) {
+                _graph->getGui()->getApp()->getProject()->connectNodes( _inputNb, newSrc, internalDst.get() );
+            }
+        }
+    }
+    
     assert(_dst);
     _dst->refreshEdges();
 
-   
     ///if the node has no inputs, all the viewers attached to that node should be black.
     std::list<ViewerInstance* > viewers;
     internalDst->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
-
+    
     ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(internalDst->getLiveInstance() );
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
-} // redo
+
+}
 
 ResizeBackDropCommand::ResizeBackDropCommand(NodeBackDrop* bd,
                                              int w,
