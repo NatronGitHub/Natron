@@ -1290,7 +1290,22 @@ Project::onKnobValueChanged(KnobI* knob,
         emit mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
         emit autoPreviewChanged( _imp->previewMode->getValue() );
-    } 
+    }  else if ( knob == _imp->frameRate.get() ) {
+        std::vector< boost::shared_ptr<Natron::Node> > nodes ;
+        {
+            QMutexLocker k(&_imp->nodesLock);
+            nodes = _imp->currentNodes;
+        }
+        std::list <Natron::Node*> markedNodes;
+        for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin();
+             it != nodes.end();++it)  {
+            if ((*it)->isOutputNode()) {
+                (*it)->restoreClipPreferencesRecursive(markedNodes);
+            }
+                
+        }
+
+    }
 }
 
 bool
