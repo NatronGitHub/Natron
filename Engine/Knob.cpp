@@ -960,7 +960,7 @@ KnobHelper::evaluateValueChange(int dimension,
             _imp->holder->onKnobValueChanged_public(this, reason, time);
             
             
-            if (reason != Natron::eValueChangedReasonSlaveRefresh && !guiFrozen) {
+            if (/*reason != Natron::eValueChangedReasonSlaveRefresh &&*/ !guiFrozen) {
                 ///Evaluate the change only if the reason is not time changed or slave refresh
                 _imp->holder->evaluate_public(this, _imp->EvaluateOnChange, reason);
             }
