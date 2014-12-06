@@ -643,8 +643,8 @@ Gui::abortProject(bool quitApp)
 
         assert(_imp->_appInstance);
 
-        _imp->notifyGuiClosing();
         _imp->_appInstance->getProject()->closeProject();
+        _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {
         _imp->_appInstance->resetPreviewProvider();
@@ -1990,6 +1990,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             if ( it != _imp->_viewerTabs.end() ) {
                 _imp->_viewerTabs.erase(it);
             }
+            tab->notifyAppClosing();
             tab->deleteLater();
         }
     }
