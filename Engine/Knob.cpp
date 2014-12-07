@@ -3186,13 +3186,16 @@ KnobHolder::setHasAnimation(bool hasAnimation)
 void
 KnobHolder::updateHasAnimation()
 {
-    assert(QThread::currentThread() == qApp->thread());
     
     bool hasAnimation = false;
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        if ((*it)->hasAnimation()) {
-            hasAnimation = true;
-            break;
+    {
+        QMutexLocker l(&_imp->knobsMutex);
+        
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+            if ((*it)->hasAnimation()) {
+                hasAnimation = true;
+                break;
+            }
         }
     }
     QMutexLocker k(&_imp->hasAnimationMutex);
