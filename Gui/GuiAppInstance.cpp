@@ -386,7 +386,8 @@ GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
 
 void
 GuiAppInstance::errorDialog(const std::string & title,
-                            const std::string & message) const
+                            const std::string & message,
+                            bool useHtml) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -395,7 +396,7 @@ GuiAppInstance::errorDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    _imp->_gui->errorDialog(title, message);
+    _imp->_gui->errorDialog(title, message, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -403,7 +404,7 @@ GuiAppInstance::errorDialog(const std::string & title,
 }
 
 void
-GuiAppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+GuiAppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -412,25 +413,7 @@ GuiAppInstance::errorDialog(const std::string & title,const std::string & messag
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    _imp->_gui->errorDialog(title, message, stopAsking);
-    {
-        QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
-    }
-}
-
-void
-GuiAppInstance::warningDialog(const std::string & title,
-                              const std::string & message) const
-{
-    if (appPTR->isSplashcreenVisible()) {
-        appPTR->hideSplashScreen();
-    }
-    {
-        QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
-    }
-    _imp->_gui->warningDialog(title, message);
+    _imp->_gui->errorDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -440,7 +423,7 @@ GuiAppInstance::warningDialog(const std::string & title,
 void
 GuiAppInstance::warningDialog(const std::string & title,
                               const std::string & message,
-                              bool* stopAsking) const
+                              bool useHtml) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -449,7 +432,7 @@ GuiAppInstance::warningDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    _imp->_gui->warningDialog(title, message, stopAsking);
+    _imp->_gui->warningDialog(title, message, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -457,8 +440,10 @@ GuiAppInstance::warningDialog(const std::string & title,
 }
 
 void
-GuiAppInstance::informationDialog(const std::string & title,
-                                  const std::string & message) const
+GuiAppInstance::warningDialog(const std::string & title,
+                              const std::string & message,
+                              bool* stopAsking,
+                              bool useHtml) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -467,7 +452,7 @@ GuiAppInstance::informationDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    _imp->_gui->informationDialog(title, message);
+    _imp->_gui->warningDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -477,7 +462,7 @@ GuiAppInstance::informationDialog(const std::string & title,
 void
 GuiAppInstance::informationDialog(const std::string & title,
                                   const std::string & message,
-                                  bool* stopAsking) const
+                                  bool useHtml) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -486,7 +471,27 @@ GuiAppInstance::informationDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    _imp->_gui->informationDialog(title, message, stopAsking);
+    _imp->_gui->informationDialog(title, message, useHtml);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+}
+
+void
+GuiAppInstance::informationDialog(const std::string & title,
+                                  const std::string & message,
+                                  bool* stopAsking,
+                                  bool useHtml) const
+{
+    if (appPTR->isSplashcreenVisible()) {
+        appPTR->hideSplashScreen();
+    }
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    _imp->_gui->informationDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -496,6 +501,7 @@ GuiAppInstance::informationDialog(const std::string & title,
 Natron::StandardButtonEnum
 GuiAppInstance::questionDialog(const std::string & title,
                                const std::string & message,
+                               bool useHtml,
                                Natron::StandardButtons buttons,
                                Natron::StandardButtonEnum defaultButton) const
 {
@@ -506,7 +512,7 @@ GuiAppInstance::questionDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton);
+    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -518,6 +524,7 @@ GuiAppInstance::questionDialog(const std::string & title,
 Natron::StandardButtonEnum
 GuiAppInstance::questionDialog(const std::string & title,
                                const std::string & message,
+                               bool useHtml,
                                Natron::StandardButtons buttons,
                                Natron::StandardButtonEnum defaultButton,
                                bool* stopAsking)
@@ -529,7 +536,7 @@ GuiAppInstance::questionDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton,stopAsking);
+    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton,stopAsking);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -589,7 +596,7 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
         }
         if (firstFrame > lastFrame) {
             Natron::errorDialog( w.writer->getNode()->getName_mt_safe(),
-                                tr("First frame in the sequence is greater than the last frame").toStdString() );
+                                tr("First frame in the sequence is greater than the last frame").toStdString(), false );
             
             return;
         }
@@ -626,9 +633,9 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
                 _imp->_activeBgProcesses.push_back(process);
             }
         } catch (const std::exception & e) {
-            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString() + ": " + e.what() );
+            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString() + ": " + e.what(), false );
         } catch (...) {
-            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString() );
+            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString(),false  );
         }
     } else {
         _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, w.writer);

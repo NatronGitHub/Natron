@@ -575,7 +575,7 @@ ShortCutEditor::onRestoreDefaultsButtonClicked()
 {
     Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
                                                                                                     "will wipe all the current configuration "
-                                                                                                    "are you sure you want to do this?").toStdString() );
+                                                                                                    "are you sure you want to do this?").toStdString(), false );
 
     if (reply == Natron::eStandardButtonYes) {
         appPTR->restoreDefaultShortcuts();

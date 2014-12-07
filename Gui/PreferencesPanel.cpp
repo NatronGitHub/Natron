@@ -76,7 +76,7 @@ void
 PreferencesPanel::restoreDefaults()
 {
     Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Preferences").toStdString(),
-                                                           tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString() );
+                                                           tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
 
     if (reply == Natron::eStandardButtonYes) {
         _settings->restoreDefault();

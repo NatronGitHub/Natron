@@ -174,7 +174,7 @@ AppInstance::newVersionCheckDownloaded()
         }
     }
     
-    if (fileVersionTag.isEmpty() || fileVersionTag.toInt() < NATRON_LAST_VERSION_FILE_VERSION) {
+    if (extractedFileVersionStr.isEmpty() || extractedFileVersionStr.toInt() < NATRON_LAST_VERSION_FILE_VERSION) {
         //The file cannot be decoded here
         downloader->deleteLater();
         return;
@@ -202,12 +202,37 @@ AppInstance::newVersionCheckDownloaded()
     if (versionEncoded > NATRON_VERSION_ENCODED ||
         (versionEncoded == NATRON_VERSION_ENCODED &&
          (devStatCompare > 0 || (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER)))) {
-        QString text( QObject::tr("Updates for %1 are now available for download. "
-                                  "You are currently using %1 version %2 - %3"
-                                  ". The latest version of %1 is version ").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING).arg(NATRON_DEVELOPMENT_STATUS) + data +
-                      QObject::tr(". You can download it from") + QString("<a href='http://sourceforge.net/projects/natron/'>"
-                                                                          "<font color=\"orange\">Sourceforge</a>.") );
-        Natron::informationDialog( "New version",text.toStdString() );
+            
+            QString text;
+            if (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER && versionEncoded == NATRON_VERSION_ENCODED) {
+                ///show build number in version
+                text =  QObject::tr("<p>Updates for %1 are now available for download. "
+                                    "You are currently using %1 version %2 - %3 - build %4. "
+                                    "The latest version of %1 is version %5 - %6 - build %7.</p> ")
+                .arg(NATRON_APPLICATION_NAME)
+                .arg(NATRON_VERSION_STRING)
+                .arg(NATRON_DEVELOPMENT_STATUS)
+                .arg(NATRON_BUILD_NUMBER)
+                .arg(extractedSoftwareVersionStr)
+                .arg(extractedDevStatusStr)
+                .arg(extractedBuildNumberStr) +
+                QObject::tr("<p>You can download it from ") + QString("<a href='http://sourceforge.net/projects/natron/'>"
+                                                                     "<font color=\"orange\">Sourceforge</a>. </p>");
+            } else {
+                text =  QObject::tr("<p>Updates for %1 are now available for download. "
+                                    "You are currently using %1 version %2 - %3. "
+                                    "The latest version of %1 is version %4 - %5.</p> ")
+                .arg(NATRON_APPLICATION_NAME)
+                .arg(NATRON_VERSION_STRING)
+                .arg(NATRON_DEVELOPMENT_STATUS)
+                .arg(extractedSoftwareVersionStr)
+                .arg(extractedDevStatusStr) +
+                QObject::tr("<p>You can download it from ") + QString("<a href='http://sourceforge.net/projects/natron/'>"
+                                                                    "<font color=\"orange\">Sourceforge</a>. </p>");
+
+            }
+        
+            Natron::informationDialog( "New version",text.toStdString(), true );
     }
     downloader->deleteLater();
 }
@@ -232,7 +257,7 @@ AppInstance::load(const QString & projectName,
         bool checkUpdates = true;
         if ( !settings.contains("checkForUpdates") ) {
             Natron::StandardButtonEnum reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
-                                                                  "on launch of the application ?");
+                                                                  "on launch of the application ?", false);
             if (reply == Natron::eStandardButtonNo) {
                 checkUpdates = false;
             }
@@ -295,7 +320,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     try {
         pluginBinary = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
     } catch (const std::exception & e) {
-        Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e.what() );
+        Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e.what(), false );
 
         return node;
     }
@@ -313,7 +338,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
                                                                      "is known not to work well when this setting is checked. "
-                                                                     "Would you like to turn it off ? ").toStdString());
+                                                                     "Would you like to turn it off ? ").toStdString(), false);
             if (reply == Natron::eStandardButtonYes) {
                 appPTR->getCurrentSettings()->setUseGlobalThreadPool(false);
             }
@@ -326,14 +351,14 @@ AppInstance::createNodeInternal(const QString & pluginID,
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
         qDebug() << message.c_str();
-        errorDialog(title, message);
+        errorDialog(title, message, false);
 
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString();
         qDebug() << message.c_str();
-        errorDialog(title, message);
+        errorDialog(title, message, false);
 
         return boost::shared_ptr<Natron::Node>();
     }
@@ -437,13 +462,14 @@ AppInstance::getTimeLine() const
 
 void
 AppInstance::errorDialog(const std::string & title,
-                         const std::string & message) const
+                         const std::string & message,
+                         bool /*useHtml*/) const
 {
     std::cout << "ERROR: " << title + ": " << message << std::endl;
 }
 
 void
-AppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+AppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking,bool /*useHtml*/) const
 {
     std::cout << "ERROR: " << title + ": " << message << std::endl;
     *stopAsking = false;
@@ -451,13 +477,15 @@ AppInstance::errorDialog(const std::string & title,const std::string & message,b
 
 void
 AppInstance::warningDialog(const std::string & title,
-                           const std::string & message) const
+                           const std::string & message,
+                           bool /*useHtml*/) const
 {
     std::cout << "WARNING: " << title + ": " << message << std::endl;
 }
 
 void
-AppInstance::warningDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+AppInstance::warningDialog(const std::string & title,const std::string & message,bool* stopAsking,
+                           bool /*useHtml*/) const
 {
     std::cout << "WARNING: " << title + ": " << message << std::endl;
     *stopAsking = false;
@@ -466,13 +494,15 @@ AppInstance::warningDialog(const std::string & title,const std::string & message
 
 void
 AppInstance::informationDialog(const std::string & title,
-                               const std::string & message) const
+                               const std::string & message,
+                               bool /*useHtml*/) const
 {
     std::cout << "INFO: " << title + ": " << message << std::endl;
 }
 
 void
-AppInstance::informationDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+AppInstance::informationDialog(const std::string & title,const std::string & message,bool* stopAsking,
+                               bool /*useHtml*/) const
 {
     std::cout << "INFO: " << title + ": " << message << std::endl;
     *stopAsking = false;
@@ -482,14 +512,11 @@ AppInstance::informationDialog(const std::string & title,const std::string & mes
 Natron::StandardButtonEnum
 AppInstance::questionDialog(const std::string & title,
                             const std::string & message,
+                            bool /*useHtml*/,
                             Natron::StandardButtons /*buttons*/,
                             Natron::StandardButtonEnum /*defaultButton*/) const
 {
     std::cout << "QUESTION: " << title + ": " << message << std::endl;
-
-    ///FIXME: maybe we could use scanf here... but we have to translat all the standard buttons to strings...i'm lazy
-
-    ///to do this now.
     return Natron::eStandardButtonYes;
 }
 

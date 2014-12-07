@@ -3181,7 +3181,7 @@ EffectInstance::evaluate(KnobI* knob,
                                                                             "to render all the views of the project. "
                                                                             "Only the main view of the project will be rendered, you can "
                                                                             "change the main view in the project settings. Would you like "
-                                                                            "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString() );
+                                                                            "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString(),false );
                         if (answer != Natron::eStandardButtonYes) {
                             return;
                         }

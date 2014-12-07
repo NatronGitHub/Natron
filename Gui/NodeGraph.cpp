@@ -2254,7 +2254,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "remove these expressions pluginsly "
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
-                                                                   .toStdString() );
+                                                                   .toStdString(), false );
             if (reply == Natron::eStandardButtonNo) {
                 return;
             }
@@ -2312,7 +2312,7 @@ NodeGraph::deleteSelection()
                                                                               "remove these expressions pluginsly "
                                                                               "and undoing the action will not recover "
                                                                               "them. Do you wish to continue ?")
-                                                                           .toStdString() );
+                                                                           .toStdString(), false );
                     if (reply == Natron::eStandardButtonNo) {
                         return;
                     }

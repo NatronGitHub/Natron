@@ -2505,7 +2505,7 @@ Node::message(MessageTypeEnum type,
             return true;
         case eMessageTypeQuestion:
             
-            return questionDialog(getName_mt_safe(), content) == eStandardButtonYes;
+            return questionDialog(getName_mt_safe(), content, false) == eStandardButtonYes;
         default:
             
             return false;

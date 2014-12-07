@@ -501,10 +501,10 @@ Gui::Gui(GuiAppInstance* app,
       , _imp( new GuiPrivate(app,this) )
 
 {
-    QObject::connect( this,SIGNAL( doDialog(int,QString,QString,Natron::StandardButtons,int) ),this,
-                      SLOT( onDoDialog(int,QString,QString,Natron::StandardButtons,int) ) );
-    QObject::connect( this,SIGNAL( doDialogWithStopAskingCheckbox(int,QString,QString,Natron::StandardButtons,int) ),this,
-                     SLOT( onDoDialogWithStopAskingCheckbox(int,QString,QString,Natron::StandardButtons,int) ) );
+    QObject::connect( this,SIGNAL( doDialog(int,QString,QString,bool,Natron::StandardButtons,int) ),this,
+                      SLOT( onDoDialog(int,QString,QString,bool,Natron::StandardButtons,int) ) );
+    QObject::connect( this,SIGNAL( doDialogWithStopAskingCheckbox(int,QString,QString,bool,Natron::StandardButtons,int) ),this,
+                     SLOT( onDoDialogWithStopAskingCheckbox(int,QString,QString,bool,Natron::StandardButtons,int) ) );
 
     QObject::connect( app,SIGNAL( pluginsPopulated() ),this,SLOT( addToolButttonsToToolBar() ) );
 }
@@ -662,7 +662,7 @@ Gui::toggleFullScreen()
 {
     QWidget* activeWin = qApp->activeWindow();
     if (!activeWin) {
-        Natron::errorDialog("FullScreen", tr("Please select a window first").toStdString());
+        Natron::errorDialog("FullScreen", tr("Please select a window first").toStdString(),false);
         return;
     }
     
@@ -1446,14 +1446,14 @@ Gui::exportLayout()
             ofile.open(filename.c_str(),std::ofstream::out);
         } catch (const std::ofstream::failure & e) {
             Natron::errorDialog( tr("Error").toStdString()
-                                 , tr("Exception occured when opening file").toStdString() );
+                                 , tr("Exception occured when opening file").toStdString(), false );
 
             return;
         }
 
         if ( !ofile.good() ) {
             Natron::errorDialog( tr("Error").toStdString()
-                                 , tr("Failure to open the file").toStdString() );
+                                 , tr("Failure to open the file").toStdString(),false );
 
             return;
         }
@@ -1465,7 +1465,7 @@ Gui::exportLayout()
             oArchive << boost::serialization::make_nvp("Layout",s);
         }catch (...) {
             Natron::errorDialog( tr("Error").toStdString()
-                                 , tr("Failure when saving the layout").toStdString() );
+                                 , tr("Failure when saving the layout").toStdString(),false );
             ofile.close();
 
             return;
@@ -1502,7 +1502,7 @@ Gui::importLayout()
             ifile.open(filename.c_str(),std::ifstream::in);
         } catch (const std::ifstream::failure & e) {
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString() );
+            Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString(),false );
 
             return;
         }
@@ -1515,13 +1515,13 @@ Gui::importLayout()
         } catch (const boost::archive::archive_exception & e) {
             ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString() );
+            Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString(),false );
 
             return;
         } catch (const std::exception & e) {
             ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString() );
+            Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString(),false );
 
             return;
         }
@@ -1552,13 +1552,13 @@ Gui::createDefaultLayoutInternal(bool wipePrevious)
             } catch (const boost::archive::archive_exception & e) {
                 ifile.close();
                 QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
-                Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString() );
+                Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString(),false );
 
                 return;
             } catch (const std::exception & e) {
                 ifile.close();
                 QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
-                Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString() );
+                Natron::errorDialog( tr("Error").toStdString(),tr( err.toStdString().c_str() ).toStdString(),false );
 
                 return;
             }
@@ -2659,7 +2659,7 @@ Gui::createReader()
         std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
         if ( found == readersForFormat.end() ) {
-            errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString() );
+            errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString() ,false);
         } else {
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
@@ -2710,7 +2710,7 @@ Gui::createWriter()
                 return ret;
             }
         } else {
-            errorDialog( tr("Writer").toStdString(), tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString() );
+            errorDialog( tr("Writer").toStdString(), tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
         }
     }
 
@@ -2816,7 +2816,8 @@ Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
 
 void
 Gui::errorDialog(const std::string & title,
-                 const std::string & text)
+                 const std::string & text,
+                 bool useHtml)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -2832,20 +2833,21 @@ Gui::errorDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
+        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml, buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
+        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
 void
 Gui::errorDialog(const std::string & title,
                  const std::string & text,
-                 bool* stopAsking)
+                 bool* stopAsking,
+                 bool useHtml)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -2860,21 +2862,22 @@ Gui::errorDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
         emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,
-                                            QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+                                            QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
 void
 Gui::warningDialog(const std::string & title,
-                   const std::string & text)
+                   const std::string & text,
+                   bool useHtml)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -2889,20 +2892,21 @@ Gui::warningDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
+        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
+        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
 void
 Gui::warningDialog(const std::string & title,
                    const std::string & text,
-                   bool* stopAsking)
+                   bool* stopAsking,
+                   bool useHtml)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -2917,21 +2921,22 @@ Gui::warningDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
         emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,
-                                            QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+                                            QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
 void
 Gui::informationDialog(const std::string & title,
-                       const std::string & text)
+                       const std::string & text,
+                       bool useHtml)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -2946,20 +2951,21 @@ Gui::informationDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
+        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),buttons,(int)Natron::eStandardButtonYes);
+        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
 void
 Gui::informationDialog(const std::string & title,
                        const std::string & message,
-                       bool* stopAsking)
+                       bool* stopAsking,
+                       bool useHtml)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -2974,13 +2980,13 @@ Gui::informationDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)Natron::eStandardButtonOk);
+        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -2989,10 +2995,11 @@ void
 Gui::onDoDialog(int type,
                 const QString & title,
                 const QString & content,
+                bool useHtml,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
-    QString msg = Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
 
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -3031,6 +3038,7 @@ Gui::onDoDialog(int type,
 Natron::StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
+                    bool useHtml,
                     Natron::StandardButtons buttons,
                     Natron::StandardButtonEnum defaultButton)
 {
@@ -3046,13 +3054,13 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
     }
 
     return _imp->_lastQuestionDialogAnswer;
@@ -3061,6 +3069,7 @@ Gui::questionDialog(const std::string & title,
 Natron::StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
+                    bool useHtml,
                     Natron::StandardButtons buttons,
                     Natron::StandardButtonEnum defaultButton,
                     bool* stopAsking)
@@ -3078,14 +3087,14 @@ Gui::questionDialog(const std::string & title,
         _imp->_uiUsingMainThread = true;
         locker.unlock();
         emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
-                                              QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+                                              QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
         emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
-                                              QString( title.c_str() ),QString( message.c_str() ),buttons,(int)defaultButton);
+                                              QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
     }
     
     *stopAsking = _imp->_lastStopAskingAnswer;
@@ -3094,9 +3103,9 @@ Gui::questionDialog(const std::string & title,
 
 
 void
-Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB)
+Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB)
 {
-    
+    QString message = useHtml ? content : Qt::convertFromPlainText(content,Qt::WhiteSpaceNormal);
     Natron::MessageBox dialog(title,content,(Natron::MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
     
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
