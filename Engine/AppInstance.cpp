@@ -85,32 +85,123 @@ AppInstance::checkForNewVersion() const
     loop.exec();
 }
 
+//return -1 if a < b, 0 if a == b and 1 if a > b
+//Returns -2 if not understood
+int compareDevStatus(const QString& a,const QString& b)
+{
+    if (a == NATRON_DEVELOPMENT_ALPHA) {
+        if (b == NATRON_DEVELOPMENT_ALPHA) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else if (a == NATRON_DEVELOPMENT_BETA) {
+        if (b == NATRON_DEVELOPMENT_ALPHA) {
+            return 1;
+        } else if (b == NATRON_DEVELOPMENT_BETA) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else if (a == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        if (b == NATRON_DEVELOPMENT_ALPHA) {
+            return 1;
+        } else if (b == NATRON_DEVELOPMENT_BETA) {
+            return 1;
+        } else if (b == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else if (a == NATRON_DEVELOPMENT_RELEASE_STABLE) {
+        if (b == NATRON_DEVELOPMENT_RELEASE_STABLE) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+    assert(false);
+    return -2;
+}
+
 void
 AppInstance::newVersionCheckDownloaded()
 {
     FileDownloader* downloader = qobject_cast<FileDownloader*>( sender() );
-
     assert(downloader);
+    
+    QString extractedFileVersionStr,extractedSoftwareVersionStr,extractedDevStatusStr,extractedBuildNumberStr;
+    
+    QString fileVersionTag("File version: ");
+    QString softwareVersionTag("Software version: ");
+    QString devStatusTag("Development status: ");
+    QString buildNumberTag("Build number: ");
+    
     QString data( downloader->downloadedData() );
-    data = data.remove("Natron latest version: ");
-    QString versionStr;
-    int i = 0;
-    while ( i < data.size() && data.at(i) != QChar(' ') ) {
-        versionStr.push_back( data.at(i) );
-        ++i;
+    QTextStream ts(&data);
+    
+    while (!ts.atEnd()) {
+        QString line = ts.readLine();
+        if (line.startsWith(QChar('#')) || line.startsWith(QChar('\n'))) {
+            continue;
+        }
+        
+        if (line.startsWith(fileVersionTag)) {
+            int i = fileVersionTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+                extractedFileVersionStr.push_back( line.at(i) );
+                ++i;
+            }
+        } else if (line.startsWith(softwareVersionTag)) {
+            int i = softwareVersionTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+                extractedSoftwareVersionStr.push_back( line.at(i) );
+                ++i;
+            }
+        } else if (line.startsWith(devStatusTag)) {
+            int i = devStatusTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+            extractedDevStatusStr.push_back( line.at(i) );
+                ++i;
+            }
+        } else if (line.startsWith(buildNumberTag)) {
+            int i = buildNumberTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+                extractedBuildNumberStr.push_back( line.at(i) );
+                ++i;
+            }
+
+        }
     }
-    QStringList versionDigits = versionStr.split( QChar('.') );
+    
+    if (fileVersionTag.isEmpty() || fileVersionTag.toInt() < NATRON_LAST_VERSION_FILE_VERSION) {
+        //The file cannot be decoded here
+        downloader->deleteLater();
+        return;
+    }
+    
+    
+    
+    QStringList versionDigits = extractedSoftwareVersionStr.split( QChar('.') );
 
     ///we only understand 3 digits formed version numbers
     if (versionDigits.size() != 3) {
+        downloader->deleteLater();
         return;
     }
+    
+    int buildNumber = extractedBuildNumberStr.toInt();
 
     int major = versionDigits[0].toInt();
     int minor = versionDigits[1].toInt();
     int revision = versionDigits[2].toInt();
+    
+    int devStatCompare = compareDevStatus(extractedDevStatusStr, QString(NATRON_DEVELOPMENT_STATUS));
+    
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
-    if (versionEncoded > NATRON_VERSION_ENCODED) {
+    if (versionEncoded > NATRON_VERSION_ENCODED ||
+        (versionEncoded == NATRON_VERSION_ENCODED &&
+         (devStatCompare > 0 || (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER)))) {
         QString text( QObject::tr("Updates for %1 are now available for download. "
                                   "You are currently using %1 version %2 - %3"
                                   ". The latest version of %1 is version ").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING).arg(NATRON_DEVELOPMENT_STATUS) + data +
