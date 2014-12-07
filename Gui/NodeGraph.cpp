@@ -3542,7 +3542,16 @@ NodeGraph::centerOnAllNodes()
     fitInView(rect,Qt::KeepAspectRatio);
     
     double currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();
-
+    assert(currentZoomFactor != 0);
+    //we want to fit at scale 1 at most
+    if (currentZoomFactor > 1.) {
+        double scaleFactor = 1. / currentZoomFactor;
+        setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+        scale(scaleFactor,scaleFactor);
+        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    }
+    
+    currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();
     if (currentZoomFactor < 0.4) {
         setVisibleNodeDetails(false);
     } else if (currentZoomFactor >= 0.4) {
