@@ -357,12 +357,12 @@ KnobHelper::deleteKnob()
     if (isGrp) {
         std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
-            dynamic_cast<KnobHelper*>(it->get())->deleteKnob();
+            _imp->holder->removeDynamicKnob(it->get());
         }
     } else if (isPage) {
         std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
-            dynamic_cast<KnobHelper*>(it->get())->deleteKnob();
+            _imp->holder->removeDynamicKnob(it->get());
         }
     }
     if (_signalSlotHandler) {
@@ -2446,14 +2446,28 @@ KnobHolder::refreshKnobs()
 void
 KnobHolder::removeDynamicKnob(KnobI* knob)
 {
-    QMutexLocker k(&_imp->knobsMutex);
-    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+    std::vector<boost::shared_ptr<KnobI> > knobs;
+    {
+        QMutexLocker k(&_imp->knobsMutex);
+        knobs = _imp->knobs;
+    }
+    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if (it->get() == knob && (*it)->isDynamicallyCreated()) {
             (*it)->deleteKnob();
-            _imp->knobs.erase(it);
             break;
         }
     }
+    
+    {
+        QMutexLocker k(&_imp->knobsMutex);
+        for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+            if (it2->get() == knob && (*it2)->isDynamicallyCreated()) {
+                _imp->knobs.erase(it2);
+                return;
+            }
+        }
+    }
+    
 }
 
 void

@@ -116,6 +116,24 @@ struct Page
 typedef std::map<QString,Page> PageMap;
 }
 
+static Page_Knob* getTopLevelPageForKnob(KnobI* knob)
+{
+    boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+    KnobI* parentKnobTmp = parentKnob.get();
+    while (parentKnobTmp) {
+        boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
+        if (!parent) {
+            break;
+        } else {
+            parentKnobTmp = parent.get();
+        }
+    }
+    
+    ////find in which page the knob should be
+    Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
+    return isTopLevelParentAPage;
+}
+
 struct DockablePanelPrivate
 {
     DockablePanel* _publicInterface;
@@ -522,6 +540,13 @@ DockablePanel::setUserPageActiveIndex()
         }
     }
 }
+
+int
+DockablePanel::getPagesCount() const
+{
+    return _imp->_pages.size();
+}
+
 
 void
 DockablePanel::onGuiClosing()
@@ -2050,7 +2075,7 @@ struct ManageUserParamsDialogPrivate
     
     boost::shared_ptr<Page_Knob> getUserPageKnob() const;
     
-    void rebuildUserPage();
+    void rebuildUserPages();
 };
 
 ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* parent)
@@ -2062,29 +2087,47 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->tree = new QTreeWidget(this);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->tree->setSelectionBehavior(QAbstractItemView::SelectRows);
-    _imp->tree->setRootIsDecorated(false);
-    _imp->tree->setItemsExpandable(false);
+    //_imp->tree->setRootIsDecorated(false);
+    _imp->tree->setItemsExpandable(true);
     _imp->tree->header()->setStretchLastSection(false);
     _imp->tree->setTextElideMode(Qt::ElideMiddle);
     _imp->tree->setContextMenuPolicy(Qt::CustomContextMenu);
     _imp->tree->header()->setStretchLastSection(true);
     _imp->tree->header()->hide();
     
+    TreeItem userPageItem;
+    userPageItem.item = new QTreeWidgetItem(_imp->tree);
+    userPageItem.item->setText(0, NATRON_USER_MANAGED_KNOBS_PAGE);
+    _imp->items.push_back(userPageItem);
+    
     QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()),this,SLOT(onSelectionChanged()));
     
     const std::vector<boost::shared_ptr<KnobI> >& knobs = panel->getHolder()->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ((*it)->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-            Page_Knob* page = dynamic_cast<Page_Knob*>(it->get());
-            assert(page);
-            const std::vector<boost::shared_ptr<KnobI> >& children = page->getChildren();
+        if ((*it)->isUserKnob()) {
             
-            for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = children.begin(); it2!=children.end(); ++it2) {
-                TreeItem i;
-                i.knob = *it2;
-                i.item = new QTreeWidgetItem(_imp->tree);
-                i.item->setText(0, (*it2)->getName().c_str());
-                _imp->items.push_back(i);
+            Page_Knob* page = dynamic_cast<Page_Knob*>(it->get());
+            if (page) {
+                
+                TreeItem pageItem;
+                if (page->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
+                    pageItem.item = userPageItem.item;
+                } else {
+                    pageItem.item = new QTreeWidgetItem(_imp->tree);
+                    pageItem.item->setText(0, page->getName().c_str());
+                    pageItem.knob = *it;
+                }
+                _imp->items.push_back(pageItem);
+                
+                const std::vector<boost::shared_ptr<KnobI> >& children = page->getChildren();
+                
+                for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                    TreeItem i;
+                    i.knob = *it2;
+                    i.item = new QTreeWidgetItem(pageItem.item);
+                    i.item->setText(0, (*it2)->getName().c_str());
+                    _imp->items.push_back(i);
+                }
             }
         }
     }
@@ -2126,14 +2169,15 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
 
 ManageUserParamsDialog::~ManageUserParamsDialog()
 {
-    
+//    for (std::list<TreeItem>::iterator it = _imp->items.begin() ;it != _imp->items.end(); ++it) {
+//        delete it->item;
+//    }
 }
 
 boost::shared_ptr<Page_Knob>
-ManageUserParamsDialogPrivate::getUserPageKnob() const
+DockablePanel::getUserPageKnob() const
 {
-    
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = panel->getHolder()->getKnobs();
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
     
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ((*it)->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
@@ -2141,22 +2185,48 @@ ManageUserParamsDialogPrivate::getUserPageKnob() const
         }
     }
     
-    boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(panel->getHolder(),NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
+    boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(_imp->_holder,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
     return ret;
 }
 
-void
-ManageUserParamsDialogPrivate::rebuildUserPage()
+boost::shared_ptr<Page_Knob>
+ManageUserParamsDialogPrivate::getUserPageKnob() const
 {
-    boost::shared_ptr<Page_Knob> page = getUserPageKnob();
-    std::vector<boost::shared_ptr<KnobI> > children = page->getChildren();
+    return panel->getUserPageKnob();
+}
 
-    
-    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
-        panel->deleteKnobGui(*it);
+void
+DockablePanel::getUserPages(std::list<Page_Knob*>& userPages) const
+{
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getHolder()->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ((*it)->isUserKnob()) {
+            Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->get());
+            if (isPage) {
+                userPages.push_back(isPage);
+            }
+        }
     }
+}
+
+void
+ManageUserParamsDialogPrivate::rebuildUserPages()
+{
+    
+    std::list<Page_Knob*> userPages;
+    panel->getUserPages(userPages);
+    
+    boost::shared_ptr<Page_Knob> page = getUserPageKnob();
+    
+    for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
+        std::vector<boost::shared_ptr<KnobI> > children = page->getChildren();
+        for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
+            panel->deleteKnobGui(*it);
+        }
+    }
+    
     panel->scanForNewKnobs();
     
     ///Refresh the curve editor with potential new animated knobs
@@ -2174,19 +2244,48 @@ ManageUserParamsDialog::onAddClicked()
 {
     AddKnobDialog dialog(_imp->panel,boost::shared_ptr<KnobI>(),this);
     if (dialog.exec()) {
+        //Ensure the user page knob exists
+        boost::shared_ptr<Page_Knob> userPageKnob = _imp->panel->getUserPageKnob();
+        
         boost::shared_ptr<KnobI> knob = dialog.getKnob();
-  
+        QTreeWidgetItem* parent = 0;
+        
+        if (knob->getParentKnob()) {
+            Page_Knob* page = getTopLevelPageForKnob(knob.get());
+            assert(page);
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+                if (it->knob.get() == page) {
+                    parent = it->item;
+                    break;
+                }
+            }
+        }
+        if (!parent) {
+            Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
+            if (!isPage) {
+                //Default to user page
+                for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+                    if (it->item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                        parent = it->item;
+                        break;
+                    }
+                }
+            }
+
+        }
         TreeItem i;
         i.knob = knob;
-        i.item = new QTreeWidgetItem(_imp->tree);
+        i.item = new QTreeWidgetItem;
+        if (parent) {
+            parent->addChild(i.item);
+            parent->setExpanded(true);
+        } else {
+            _imp->tree->addTopLevelItem(i.item);
+        }
         i.item->setText(0, knob->getName().c_str());
         _imp->items.push_back(i);
-        
-        boost::shared_ptr<Page_Knob> userPage = _imp->getUserPageKnob();
-        userPage->addKnob(knob);
-        _imp->panel->setUserPageActiveIndex();
     }
-    _imp->rebuildUserPage();
+    _imp->rebuildUserPages();
 }
 
 void
@@ -2200,6 +2299,7 @@ ManageUserParamsDialog::onDeleteClicked()
                     it->knob->getHolder()->removeDynamicKnob(it->knob.get());
                     delete it->item;
                     _imp->items.erase(it);
+                    
                     boost::shared_ptr<Page_Knob> userPage = _imp->getUserPageKnob();
                     if (userPage->getChildren().empty()) {
                         userPage->getHolder()->removeDynamicKnob(userPage.get());
@@ -2223,11 +2323,7 @@ ManageUserParamsDialog::onEditClicked()
                     if (dialog.exec()) {
                         it->knob = dialog.getKnob();
                         it->item->setText(0, it->knob->getName().c_str());
-                        
-                        boost::shared_ptr<Page_Knob> userPage = _imp->getUserPageKnob();
-                        userPage->addKnob(it->knob);
-                        _imp->panel->setUserPageActiveIndex();
-                        _imp->rebuildUserPage();
+                        _imp->rebuildUserPages();
                         break;
                     }
                 }
@@ -2246,15 +2342,45 @@ ManageUserParamsDialog::onUpClicked()
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
                 if (it->item == selection[i]) {
-                    int index = _imp->tree->indexOfTopLevelItem(it->item);
+                    
+                    if (dynamic_cast<Page_Knob*>(it->knob.get())) {
+                        break;
+                    }
+                    QTreeWidgetItem* parent = 0;
+                    if (it->knob->getParentKnob()) {
+                        Page_Knob* page = getTopLevelPageForKnob(it->knob.get());
+                        if (page->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
+                            page = _imp->panel->getUserPageKnob().get();
+                        } else {
+                            assert(page);
+                            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+                                if (it->knob.get() == page) {
+                                    parent = it->item;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    int index;
+                    if (!parent) {
+                        index = _imp->tree->indexOfTopLevelItem(it->item);
+                    } else {
+                        index = parent->indexOfChild(it->item);
+                    }
                     if (index == 0) {
                         break;
                     }
                     _imp->panel->getHolder()->moveKnobOneStepUp(it->knob.get());
                     delete it->item;
+                    
                     it->item = new QTreeWidgetItem;
                     it->item->setText(0, it->knob->getName().c_str());
-                    _imp->tree->insertTopLevelItem(index - 1, it->item);
+                    if (!parent) {
+                        _imp->tree->insertTopLevelItem(index - 1, it->item);
+                    } else {
+                        parent->insertChild(index - 1, it->item);
+                    }
                     _imp->tree->clearSelection();
                     it->item->setSelected(true);
                     break;
@@ -2262,7 +2388,7 @@ ManageUserParamsDialog::onUpClicked()
             }
             
         }
-        _imp->rebuildUserPage();
+        _imp->rebuildUserPages();
     }
 }
 
@@ -2274,15 +2400,53 @@ ManageUserParamsDialog::onDownClicked()
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
                 if (it->item == selection[i]) {
-                    int index = _imp->tree->indexOfTopLevelItem(it->item);
-                    if (index == _imp->tree->topLevelItemCount() - 1) {
+                    if (dynamic_cast<Page_Knob*>(it->knob.get())) {
                         break;
                     }
+
+                    QTreeWidgetItem* parent = 0;
+                    if (it->knob->getParentKnob()) {
+                        Page_Knob* page = getTopLevelPageForKnob(it->knob.get());
+                        if (page->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
+                            page = _imp->panel->getUserPageKnob().get();
+                        } else {
+                            
+                            assert(page);
+                            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+                                if (it->knob.get() == page) {
+                                    parent = it->item;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    int index;
+                    
+                    if (!parent) {
+                        index = _imp->tree->indexOfTopLevelItem(it->item);
+                        if (index == _imp->tree->topLevelItemCount() - 1) {
+                            break;
+                        }
+                    } else {
+                        index = parent->indexOfChild(it->item);
+                        if (index == parent->childCount() - 1) {
+                            break;
+                        }
+                    }
+                    
                     _imp->panel->getHolder()->moveKnobOneStepDown(it->knob.get());
                     delete it->item;
+                    
+                    
                     it->item = new QTreeWidgetItem;
+                    if (parent) {
+                        parent->insertChild(index, it->item);
+                    } else {
+                        _imp->tree->insertTopLevelItem(index + 1, it->item);
+                    }
                     it->item->setText(0, it->knob->getName().c_str());
-                    _imp->tree->insertTopLevelItem(index + 1, it->item);
+                    
                     _imp->tree->clearSelection();
                     it->item->setSelected(true);
                     break;
@@ -2290,7 +2454,7 @@ ManageUserParamsDialog::onDownClicked()
             }
             
         }
-        _imp->rebuildUserPage();
+        _imp->rebuildUserPages();
     }
 }
 
@@ -2304,10 +2468,29 @@ void
 ManageUserParamsDialog::onSelectionChanged()
 {
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
-    _imp->removeButton->setEnabled(!selection.empty());
-    _imp->editButton->setEnabled(!selection.empty());
-    _imp->upButton->setEnabled(!selection.empty());
-    _imp->downButton->setEnabled(!selection.empty());
+    bool canEdit = true;
+    bool canMove = true;
+    if (!selection.isEmpty()) {
+        QTreeWidgetItem* item = selection[0];
+        if (item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            canEdit = false;
+            canMove = false;
+        }
+        for (std::list<TreeItem>::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
+            if (it->item == item) {
+                Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->knob.get());
+                if (isPage) {
+                    canMove = false;
+                }
+                break;
+            }
+        }
+    }
+    
+    _imp->removeButton->setEnabled(selection.size() == 1 && canEdit);
+    _imp->editButton->setEnabled(selection.size() == 1 && canEdit);
+    _imp->upButton->setEnabled(selection.size() == 1 && canMove);
+    _imp->downButton->setEnabled(selection.size() == 1 && canMove);
 }
 
 struct AddKnobDialogPrivate
@@ -2373,7 +2556,11 @@ struct AddKnobDialogPrivate
     QLabel* parentGroupLabel;
     ComboBox* parentGroup;
     
+    QLabel* parentPageLabel;
+    ComboBox* parentPage;
+    
     std::list<Group_Knob*> userGroups;
+    std::list<Page_Knob*> userPages; //< all user pages except the "User" one
     
     AddKnobDialogPrivate(DockablePanel* panel)
     : knob()
@@ -2416,7 +2603,10 @@ struct AddKnobDialogPrivate
     , groupAsTab(0)
     , parentGroupLabel(0)
     , parentGroup(0)
+    , parentPageLabel(0)
+    , parentPage(0)
     , userGroups()
+    , userPages()
     {
         
     }
@@ -2444,6 +2634,8 @@ struct AddKnobDialogPrivate
     void setVisibleGrpAsTab(bool visible);
     
     void setVisibleParent(bool visible);
+    
+    void setVisiblePage(bool visible);
     
     void createKnobFromSelection(int type);
 };
@@ -2517,6 +2709,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
 {
     
     _imp->knob = knob;
+    assert(!knob || knob->isUserKnob());
     
     QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
     
@@ -2835,6 +3028,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->mainLayout->addRow(_imp->minLabel, minMaxContainer);
     }
+    
+    
     const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if (it->first->isUserKnob()) {
@@ -2844,6 +3039,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             }
         }
     }
+    
+    
     
     if (!_imp->userGroups.empty()) {
         QWidget* optContainer = new QWidget(this);
@@ -2880,6 +3077,55 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->mainLayout->addRow(_imp->parentGroupLabel, optContainer);
     }
+    
+    if (!knob) {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+        _imp->parentPageLabel = new QLabel(tr("Page:"),optContainer);
+        _imp->parentPageLabel->setFont(font);
+        _imp->parentPage = new ComboBox(optContainer);
+        _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
+        
+        const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ;it != knobs.end(); ++it) {
+            if ((*it)->isUserKnob()) {
+                Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->get());
+                if (isPage && isPage->getName() != std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                    _imp->userPages.push_back(isPage);
+                }
+            }
+        }
+        
+        for (std::list<Page_Knob*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+            _imp->parentPage->addItem((*it)->getName().c_str());
+        }
+        _imp->parentPage->setToolTip(tr("The tab  under which this parameter will appear"));
+        optLayout->addWidget(_imp->parentPage);
+        if (knob) {
+            ////find in which page the knob should be
+            Page_Knob* isTopLevelParentAPage = getTopLevelPageForKnob(knob.get());
+            assert(isTopLevelParentAPage);
+            if (isTopLevelParentAPage->getName() != std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                int index = 1; // 1 because of the "User" item
+                bool found = false;
+                for (std::list<Page_Knob*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+                    if ((*it) == isTopLevelParentAPage) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    _imp->parentPage->setCurrentIndex(index);
+                }
+            }
+                
+            
+        }
+        
+        _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
+
+    }
     QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),Qt::Horizontal,this);
     QObject::connect(buttons,SIGNAL(rejected()), this, SLOT(reject()));
     QObject::connect(buttons,SIGNAL(accepted()), this, SLOT(onOkClicked()));
@@ -2903,6 +3149,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
 void
 AddKnobDialog::onTypeCurrentIndexChanged(int index)
 {
+    _imp->setVisiblePage(index != 16);
     switch (index) {
         case 0: // int
         case 1: // int 2D
@@ -3205,6 +3452,24 @@ AddKnobDialogPrivate::createKnobFromSelection(int index)
             }
         }
     }
+    
+    
+    if (index != 16 && parentPage) {
+        std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
+        if (selectedItem == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            boost::shared_ptr<Page_Knob> userPage = panel->getUserPageKnob();
+            userPage->addKnob(knob);
+            panel->setUserPageActiveIndex();
+        } else {
+            for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
+                if ((*it)->getName() == selectedItem) {
+                    (*it)->addKnob(knob);
+                    break;
+                }
+            }
+
+        }
+    }
 }
 
 void
@@ -3226,6 +3491,16 @@ AddKnobDialog::onOkClicked()
                 badFormat = true;
                 break;
             }
+        }
+    }
+    
+    //check if another knob has the same script name
+    std::string stdName = name.toStdString();
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ;it != knobs.end(); ++it) {
+        if ((*it)->getName() == stdName && (*it) != _imp->knob) {
+            badFormat = true;
+            break;
         }
     }
     
@@ -3380,5 +3655,14 @@ AddKnobDialogPrivate::setVisibleParent(bool visible)
         assert(parentGroup);
         parentGroup->setVisible(visible);
         parentGroupLabel->setVisible(visible);
+    }
+}
+
+void
+AddKnobDialogPrivate::setVisiblePage(bool visible)
+{
+    if (parentPage) {
+        parentPage->setVisible(visible);
+        parentPageLabel->setVisible(visible);
     }
 }

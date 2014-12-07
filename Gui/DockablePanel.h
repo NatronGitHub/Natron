@@ -35,6 +35,7 @@ class KnobGui;
 class KnobHolder;
 class NodeGui;
 class Gui;
+class Page_Knob;
 class QVBoxLayout;
 class Button;
 class QUndoStack;
@@ -187,7 +188,13 @@ public:
     
     void setUserPageActiveIndex();
     
+    boost::shared_ptr<Page_Knob> getUserPageKnob() const;
+    
+    void getUserPages(std::list<Page_Knob*>& userPages) const;
+    
     void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
+    
+    int getPagesCount() const;
     
 public slots:
 
