@@ -46,6 +46,8 @@
 #define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"
 #define NATRON_CUSTOM_HTML_TAG_END "</" NATRON_APPLICATION_NAME ">"
+
+//////////////////////////////////////////Natron version/////////////////////////////////////////////
 #define NATRON_VERSION_MAJOR 1
 #define NATRON_VERSION_MINOR 0
 #define NATRON_VERSION_REVISION 0
@@ -53,31 +55,8 @@
 ///For example RC 1, RC 2 etc...
 #define NATRON_BUILD_NUMBER 0
 
-///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
-#define NATRON_CUSTOM_BUILD_USER_NAME ""
-
-#define NATRON_VERSION_ENCODE(major,minor,revision) ( \
-        ( (major) * 10000 ) \
-        + ( (minor) * 100 )  \
-        + ( (revision) * 1 ) )
-
-#define NATRON_VERSION_ENCODED NATRON_VERSION_ENCODE( \
-        NATRON_VERSION_MAJOR, \
-        NATRON_VERSION_MINOR, \
-        NATRON_VERSION_REVISION)
-
-#define NATRON_VERSION_STRINGIZE_(major,minor,revision) \
-    # major "." # minor "." # revision
-
-#define NATRON_VERSION_STRINGIZE(major,minor,revision) \
-    NATRON_VERSION_STRINGIZE_(major,minor,revision)
-
-#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE( \
-        NATRON_VERSION_MAJOR, \
-        NATRON_VERSION_MINOR, \
-        NATRON_VERSION_REVISION)
-
-#define NATRON_LAST_VERSION_URL "https://github.com/MrKepzie/Natron/blob/master/LATEST_VERSION.txt"
+#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
+#define NATRON_LAST_VERSION_FILE_VERSION 1
 
 #define NATRON_DEVELOPMENT_ALPHA "Alpha"
 #define NATRON_DEVELOPMENT_BETA "Beta"
@@ -86,7 +65,30 @@
 
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_STABLE
 
+///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
+#define NATRON_CUSTOM_BUILD_USER_NAME ""
 
+#define NATRON_VERSION_ENCODE(major,minor,revision) ( \
+( (major) * 10000 ) \
++ ( (minor) * 100 )  \
++ ( (revision) * 1 ) )
+
+#define NATRON_VERSION_ENCODED NATRON_VERSION_ENCODE( \
+NATRON_VERSION_MAJOR, \
+NATRON_VERSION_MINOR, \
+NATRON_VERSION_REVISION)
+
+#define NATRON_VERSION_STRINGIZE_(major,minor,revision) \
+# major "." # minor "." # revision
+
+#define NATRON_VERSION_STRINGIZE(major,minor,revision) \
+NATRON_VERSION_STRINGIZE_(major,minor,revision)
+
+#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE( \
+NATRON_VERSION_MAJOR, \
+NATRON_VERSION_MINOR, \
+NATRON_VERSION_REVISION)
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define NATRON_ROOT "/"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"

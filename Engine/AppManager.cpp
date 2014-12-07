@@ -601,13 +601,13 @@ AppManager::newAppInstance(const QString & projectName,
         }
         instance->load(projectName,renderWorks);
     } catch (const std::exception & e) {
-        Natron::errorDialog( NATRON_APPLICATION_NAME,e.what() );
+        Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
         delete instance;
 
         return NULL;
     } catch (...) {
-        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString() );
+        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
         removeInstance(_imp->_availableID);
         delete instance;
 
@@ -2039,12 +2039,13 @@ AppManager::wasProjectCreatedDuringRC2Or3() const
 namespace Natron {
 void
 errorDialog(const std::string & title,
-            const std::string & message)
+            const std::string & message,
+            bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->errorDialog(title,message);
+        topLvlInstance->errorDialog(title,message,useHtml);
     } else {
         std::cout << "ERROR: " << title << " :" <<  message << std::endl;
     }
@@ -2053,12 +2054,13 @@ errorDialog(const std::string & title,
 void
 errorDialog(const std::string & title,
             const std::string & message,
-            bool* stopAsking)
+            bool* stopAsking,
+            bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->errorDialog(title,message,stopAsking);
+        topLvlInstance->errorDialog(title,message,stopAsking,useHtml);
     } else {
         std::cout << "ERROR: " << title << " :" <<  message << std::endl;
     }
@@ -2066,12 +2068,13 @@ errorDialog(const std::string & title,
 
 void
 warningDialog(const std::string & title,
-              const std::string & message)
+              const std::string & message,
+              bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->warningDialog(title,message);
+        topLvlInstance->warningDialog(title,message,useHtml);
     } else {
         std::cout << "WARNING: " << title << " :" << message << std::endl;
     }
@@ -2079,12 +2082,13 @@ warningDialog(const std::string & title,
 void
 warningDialog(const std::string & title,
               const std::string & message,
-              bool* stopAsking)
+              bool* stopAsking,
+              bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->warningDialog(title,message, stopAsking);
+        topLvlInstance->warningDialog(title,message, stopAsking,useHtml);
     } else {
         std::cout << "WARNING: " << title << " :" << message << std::endl;
     }
@@ -2093,12 +2097,13 @@ warningDialog(const std::string & title,
 
 void
 informationDialog(const std::string & title,
-                  const std::string & message)
+                  const std::string & message,
+                  bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->informationDialog(title,message);
+        topLvlInstance->informationDialog(title,message,useHtml);
     } else {
         std::cout << "INFO: " << title << " :" << message << std::endl;
     }
@@ -2107,12 +2112,13 @@ informationDialog(const std::string & title,
 void
 informationDialog(const std::string & title,
                   const std::string & message,
-                  bool* stopAsking)
+                  bool* stopAsking,
+                  bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->informationDialog(title,message,stopAsking);
+        topLvlInstance->informationDialog(title,message,stopAsking,useHtml);
     } else {
         std::cout << "INFO: " << title << " :" << message << std::endl;
     }
@@ -2122,13 +2128,14 @@ informationDialog(const std::string & title,
 Natron::StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
+               bool useHtml,
                Natron::StandardButtons buttons,
                Natron::StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
+        return topLvlInstance->questionDialog(title,message,useHtml,buttons,defaultButton);
     } else {
         std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
@@ -2140,6 +2147,7 @@ questionDialog(const std::string & title,
 Natron::StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
+               bool useHtml,
                Natron::StandardButtons buttons,
                Natron::StandardButtonEnum defaultButton,
                bool* stopAsking)
@@ -2147,7 +2155,7 @@ questionDialog(const std::string & title,
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        return topLvlInstance->questionDialog(title,message,buttons,defaultButton,stopAsking);
+        return topLvlInstance->questionDialog(title,message,useHtml,buttons,defaultButton,stopAsking);
     } else {
         std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;

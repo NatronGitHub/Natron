@@ -162,33 +162,38 @@ public:
     /**
      * @brief An error dialog with title and text customizable
      **/
-    void errorDialog(const std::string & title,const std::string & text);
+    void errorDialog(const std::string & title,const std::string & text,bool useHtml);
     
     void errorDialog(const std::string & title,
                      const std::string & text,
-                     bool* stopAsking);
+                     bool* stopAsking,
+                     bool useHtml);
     
     
 
-    void warningDialog(const std::string & title,const std::string & text);
+    void warningDialog(const std::string & title,const std::string & text,bool useHtml);
     
     void warningDialog(const std::string & title,
                        const std::string & text,
-                       bool* stopAsking);
+                       bool* stopAsking,
+                       bool useHtml);
 
-    void informationDialog(const std::string & title,const std::string & text);
+    void informationDialog(const std::string & title,const std::string & text,bool useHtml);
     
     void informationDialog(const std::string & title,
                            const std::string & message,
-                           bool* stopAsking);
+                           bool* stopAsking,
+                           bool useHtml);
 
     Natron::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
+                                              bool useHtml,
                                               Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                               Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
     
     Natron::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
+                                              bool useHtml,
                                               Natron::StandardButtons buttons,
                                               Natron::StandardButtonEnum defaultButton,
                                               bool* stopAsking);
@@ -444,9 +449,9 @@ public:
     
 signals:
 
-    void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
+    void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
     
-    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
+    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
 
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
@@ -489,9 +494,9 @@ public slots:
     void showView8();
     void showView9();
 
-    void onDoDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
 
-    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save

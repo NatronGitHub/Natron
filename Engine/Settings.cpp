@@ -2104,7 +2104,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         }
         
         bool stopAsking = false;
-        Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),
+        Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),false,
                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                      Natron::eStandardButtonYes,
                                     &stopAsking);

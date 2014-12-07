@@ -611,7 +611,7 @@ Project::findAndTryLoadAutoSave()
             appPTR->hideSplashScreen();
 
             Natron::StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
-                                                                text.toStdString(),Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                                text.toStdString(),false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                                                 Natron::eStandardButtonYes);
             if ( (ret == Natron::eStandardButtonNo) || (ret == Natron::eStandardButtonEscape) ) {
                 removeAutoSaves();
