@@ -4995,7 +4995,8 @@ RotoContext::renderMask(bool useCache,
     ImagePtr image;
     
     if (!byPassCache) {
-        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components, 3,nodeRoD, inputImages, &image);
+        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components,
+                                                                           depth, components, 3,nodeRoD, inputImages, &image);
         if (image) {
             params = image->getParams();
         }

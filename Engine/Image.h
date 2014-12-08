@@ -42,7 +42,7 @@ namespace Natron {
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
             // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
             //assert(!rod.isNull());
-            clear();
+            std::fill(_map.begin(), _map.end(), 0);
         }
 
         Bitmap()
@@ -56,17 +56,14 @@ namespace Natron {
             assert(_map.size() == 0);
             _bounds = bounds;
             _map.resize( _bounds.area() );
-            clear();
+
+            std::fill(_map.begin(), _map.end(), 0);
         }
 
         ~Bitmap()
         {
         }
 
-        void clear()
-        {
-            std::fill(_map.begin(), _map.end(), 0);
-        }
         
         void setTo1()
         {
@@ -96,7 +93,11 @@ namespace Natron {
 
         const char* getBitmapAt(int x,int y) const;
         char* getBitmapAt(int x,int y);
-
+        
+        void copyRowPortion(int x1,int x2,int y,const Bitmap& other);
+        
+        void copyBitmapPortion(const RectI& roi, const Bitmap& other);
+        
     private:
         RectI _bounds;
         std::vector<char> _map;
@@ -258,12 +259,6 @@ namespace Natron {
         }
 
         /**
-     * @brief Zeroes out the bitmap so the image is considered to be as though nothing
-     * had been rendered.
-     **/
-        void clearBitmap();
-
-        /**
      * @brief Returns a list of portions of image that are not yet rendered within the
      * region of interest given. This internally uses the bitmap to know what portion
      * are already rendered in the image. It aims to return the minimal
@@ -405,9 +400,13 @@ namespace Natron {
         
         void checkForNaNs(const RectI& roi);
 
+        void copyBitmapRowPortion(int x1, int x2,int y, const Image& other);
 
+        void copyBitmapPortion(const RectI& roi, const Image& other);
+        
     private:
 
+        
         /**
      * @brief Given the output buffer,the region of interest and the mip map level, this
      * function computes the mip map of this image in the given roi.

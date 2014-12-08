@@ -1603,11 +1603,11 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         
         if (getRecursionLevel() > 1) {
             
-#ifdef DEBUG
-            if (QThread::currentThread() != qApp->thread()) {
-                qDebug() << "isIdentity cannot be called recursively as an action. Please check this.";
-            }
-#endif
+//#ifdef DEBUG
+//            if (QThread::currentThread() != qApp->thread()) {
+//                qDebug() << "isIdentity cannot be called recursively as an action. Please check this.";
+//            }
+//#endif
             skipDiscarding = true;
         }
         
@@ -2354,7 +2354,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                                 view,
                                                 true, //< setmipmaplevel?
                                                 0);
-
+            
             ///This action as all the overlay interacts actions can trigger recursive actions, such as
             ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
             ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
@@ -2370,23 +2370,28 @@ OfxEffectInstance::knobChanged(KnobI* k,
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         QString err( QString( getNode()->getName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
-                     k->getDescription().c_str() );
+                    k->getDescription().c_str() );
         appPTR->writeToOfxLog_mt_safe(err);
-
+        
         return;
     }
-
-    if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
-        RECURSIVE_ACTION();
-        checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
-    }
-    if (_overlayInteract) {
-        std::vector<std::string> params;
-        _overlayInteract->getSlaveToParam(params);
-        for (U32 i = 0; i < params.size(); ++i) {
-            if ( params[i] == k->getName() ) {
-                stat = _overlayInteract->redraw();
-                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    
+    if (QThread::currentThread() == qApp->thread()) {
+        
+        ///Run the following only in the main-thread
+        
+        if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
+            RECURSIVE_ACTION();
+            checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
+        }
+        if (_overlayInteract) {
+            std::vector<std::string> params;
+            _overlayInteract->getSlaveToParam(params);
+            for (U32 i = 0; i < params.size(); ++i) {
+                if ( params[i] == k->getName() ) {
+                    stat = _overlayInteract->redraw();
+                    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+                }
             }
         }
     }
