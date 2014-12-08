@@ -764,6 +764,11 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.top(), 3);
+    
+    //pluginsSeenBounds must be contained in pixelRod
+    assert(pluginsSeenBounds.left() >= pixelRod.left() && pluginsSeenBounds.right() <= pixelRod.right() &&
+           pluginsSeenBounds.bottom() >= pixelRod.bottom() && pluginsSeenBounds.top() <= pixelRod.top());
+    
     // row bytes
     setIntProperty( kOfxImagePropRowBytes, bounds.width() *
                     Natron::getElementsCountForComponents( internalImage->getComponents() ) *

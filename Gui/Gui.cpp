@@ -2787,6 +2787,7 @@ Gui::saveWarning()
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
         Natron::StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                                              _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
+                                                                 false, 
                                                              Natron::StandardButtons(Natron::eStandardButtonSave | Natron::eStandardButtonDiscard | Natron::eStandardButtonCancel), Natron::eStandardButtonSave);
         if ( (ret == Natron::eStandardButtonEscape) || (ret == Natron::eStandardButtonCancel) ) {
             return 2;

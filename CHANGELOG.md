@@ -71,6 +71,9 @@ to avoid creating new beziers by mistake
 
 - Backdrop: only move nodes which are initially within the backdrop, not the ones that are crossed when moving it.
 
+- Nodegraph: zooming is now done under the mouse cursor
+
+
 - Readers: when a file changes externally, don't reload it automatically, instead a warning is displayed on the viewer and it is up to the user to reload it with the button created specifically
 for the occasion. The warning notification can be disabled in the preferences of Natron. The tooltip of the field with the filename now indicates the last modification date of the file.
 
