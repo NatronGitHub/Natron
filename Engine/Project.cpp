@@ -1259,7 +1259,8 @@ Project::endKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
 void
 Project::onKnobValueChanged(KnobI* knob,
                             Natron::ValueChangedReasonEnum reason,
-                            SequenceTime /*time*/)
+                            SequenceTime /*time*/,
+                            bool /*originatedFromMainThread*/)
 {
     if ( knob == _imp->viewsCount.get() ) {
         int viewsCount = _imp->viewsCount->getValue();

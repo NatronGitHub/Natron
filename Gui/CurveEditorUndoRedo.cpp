@@ -679,7 +679,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
         }
         
         if (_firstRedoCalled || _updateOnFirstRedo) {
-            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
+            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited, true);
         }
         _widget->refreshDisplayedTangents();
     }

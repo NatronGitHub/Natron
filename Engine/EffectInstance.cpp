@@ -604,10 +604,11 @@ EffectInstance::setParallelRenderArgs(int time,
                                       bool canAbort,
                                       U64 nodeHash,
                                       U64 rotoAge,
+                                      bool canSetValue,
                                       const TimeLine* timeline)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
-    
+    args.canSetValue = canSetValue;
     args.time = time;
     args.timeline = timeline;
     args.view = view;
@@ -623,14 +624,16 @@ EffectInstance::setParallelRenderArgs(int time,
     
 }
 
-void
+bool
 EffectInstance::invalidateParallelRenderArgs()
 {
     if (_imp->frameRenderArgs.hasLocalData()) {
         ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
         --args.validArgs;
+        return args.canSetValue;
     } else {
         qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+        return true;
     }
 }
 
@@ -3061,6 +3064,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                                   frameArgs.isSequentialRender,
                                                                   frameArgs.canAbort,
                                                                   frameArgs.nodeHash,
+                                                                  frameArgs.canSetValue,
                                                                   frameArgs.timeline) );
         
         scopedInputImages.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
@@ -3907,7 +3911,8 @@ EffectInstance::isMaskEnabled(int inputNb) const
 void
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    Natron::ValueChangedReasonEnum /*reason*/,
-                                   SequenceTime /*time*/)
+                                   SequenceTime /*time*/,
+                                   bool /*originatedFromMainThread*/)
 {
 }
 
@@ -3953,7 +3958,8 @@ EffectInstance::updateThreadLocalRenderTime(int time)
 void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           Natron::ValueChangedReasonEnum reason,
-                                          SequenceTime time)
+                                          SequenceTime time,
+                                          bool originatedFromMainThread)
 {
 
     if ( isEvaluationBlocked() ) {
@@ -3975,10 +3981,11 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                        false,
                                                        false,
                                                        getHash(),
+                                                       true,
                                                        getApp()->getTimeLine().get());
 
         RECURSIVE_ACTION();
-        knobChanged(k, reason, /*view*/ 0, time);
+        knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
     
     ///Clear input images pointers that were stored in getImage() for the main-thread.

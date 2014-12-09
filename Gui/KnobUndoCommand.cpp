@@ -314,7 +314,7 @@ MultipleKnobEditsUndoCommand::undo()
     if (holder) {
         int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
         for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame);
+            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
         }
 
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
@@ -348,7 +348,7 @@ MultipleKnobEditsUndoCommand::redo()
 
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
                 int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
-                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame);
+                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
             }
         }
     } else {

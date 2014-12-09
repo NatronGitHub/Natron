@@ -100,7 +100,8 @@ public:
                                   bool /*isSequentialRender*/,
                                   bool /*isRenderResponseToUserInteraction*/,
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE FINAL;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+                             bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
         return Natron::EffectInstance::eRenderSafetyInstanceSafe;

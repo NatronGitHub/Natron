@@ -194,7 +194,7 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
             if (i == dims - 1) {
                 to->unblockEvaluation();
             }
-            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited);
+            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited, true);
         }
     }
 

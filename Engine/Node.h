@@ -702,6 +702,7 @@ public:
                                bool isSequential,
                                bool canAbort,
                                U64 nodeHash,
+                               bool canSetValue,
                                const TimeLine* timeline);
     
     void invalidateParallelRenderArgs();
@@ -718,10 +719,11 @@ public:
                                  bool isSequential,
                                  bool canAbort,
                                  U64 nodeHash,
+                                 bool canSetValue,
                                  const TimeLine* timeline)
         : node(n)
         {
-            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,timeline);
+            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,canSetValue,timeline);
         }
         
         ~ParallelRenderArgsSetter()
@@ -868,6 +870,7 @@ private:
                                        bool isSequential,
                                        U64 nodeHash,
                                        bool canAbort,
+                                       bool canSetValue,
                                        const TimeLine* timeline,
                                        std::list<Natron::Node*>& markedNodes);
     

@@ -1783,6 +1783,7 @@ private:
                                                                    canOnlyHandleOneView, // is this sequential ?
                                                                    true,
                                                                    activeInputToRenderHash,
+                                                                   false,
                                                                    _imp->output->getApp()->getTimeLine().get());
                     
                     boost::shared_ptr<Natron::Image> img =
@@ -1862,6 +1863,7 @@ DefaultScheduler::treatFrame(const BufferedFrame& frame)
                                                    canOnlyHandleOneView, // is this sequential ?
                                                    true,
                                                    hash,
+                                                   false,
                                                    _effect->getApp()->getTimeLine().get());
     
     

@@ -114,6 +114,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
       , _isOutput(false)
       , _penDown(false)
       , _overlayInteract(0)
+      , _overlaySlaves()
       , _created(false)
       , _initialized(false)
       , _renderButton()
@@ -326,14 +327,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
         assert(knob);
         for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
+            knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited, true);
         }
     }
     
     if (!images.empty()) {
         boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (fileNameKnob) {
-            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited);
+            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited, true);
         }
     }
     
@@ -405,8 +406,21 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
                 _overlayInteract->createInstanceAction();
             }
         }
+        
+        ///Fetch all parameters that are overlay slave
+        std::vector<std::string> slaveParams;
+        _overlayInteract->getSlaveToParam(slaveParams);
+        for (U32 i = 0; i < slaveParams.size(); ++i) {
+            boost::shared_ptr<KnobI> param = getKnobByName(slaveParams[i]);
+            assert(param);
+            _overlaySlaves.push_back((void*)param.get());
+        }
+        
         getApp()->redrawAllViewers();
     }
+    
+    
+    
     ///for each param, if it has a valid custom interact, create it
     const std::list<OFX::Host::Param::Instance*> & params = effectInstance()->getParamList();
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
@@ -839,6 +853,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                                    false,
                                                    false,
                                                    getHash(),
+                                                   true,
                                                    getApp()->getTimeLine().get());
     
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
@@ -2013,7 +2028,11 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
         SET_CAN_SET_VALUE(true);
 
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
-
+        
+        if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
+            stat = _overlayInteract->redraw();
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
 
         if (stat == kOfxStatOK) {
             _penDown = true;
@@ -2059,6 +2078,11 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
         SET_CAN_SET_VALUE(true);
         stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         /*}*/
+        
+        if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
+            stat = _overlayInteract->redraw();
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
 
         if (stat == kOfxStatOK) {
             return true;
@@ -2100,6 +2124,11 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
 
+        if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
+            stat = _overlayInteract->redraw();
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
+        
         if (stat == kOfxStatOK) {
             _penDown = false;
 
@@ -2136,6 +2165,11 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->keyDownAction( time, rs, (int)key, keyStr.data() );
 
+        if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
+            stat = _overlayInteract->redraw();
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
+        
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2171,6 +2205,11 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->keyUpAction( time, rs, (int)key, keyStr.data() );
 
+        if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
+            stat = _overlayInteract->redraw();
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
+        
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -2207,6 +2246,11 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->keyRepeatAction( time, rs, (int)key, keyStr.data() );
 
+        if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
+            stat = _overlayInteract->redraw();
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
+        
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2318,7 +2362,8 @@ void
 OfxEffectInstance::knobChanged(KnobI* k,
                                Natron::ValueChangedReasonEnum reason,
                                int view,
-                               SequenceTime time)
+                               SequenceTime time,
+                               bool originatedFromMainThread)
 {
     if (!_initialized) {
         return;
@@ -2344,9 +2389,11 @@ OfxEffectInstance::knobChanged(KnobI* k,
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1;
     OfxStatus stat = kOfxStatOK;
+    
+    int recursionLevel = getRecursionLevel();
 
     if (canCallInstanceChangedAction) {
-        if (getRecursionLevel() == 1) {
+        if (recursionLevel == 1) {
             SET_CAN_SET_VALUE(true);
             ClipsThreadStorageSetter clipSetter(effectInstance(),
                                                 false,
@@ -2376,7 +2423,8 @@ OfxEffectInstance::knobChanged(KnobI* k,
         return;
     }
     
-    if (QThread::currentThread() == qApp->thread()) {
+    if (QThread::currentThread() == qApp->thread() &&
+        originatedFromMainThread) { //< change didnt occur in main-thread in the first, palce don't attempt to draw the overlay
         
         ///Run the following only in the main-thread
         
@@ -2385,14 +2433,16 @@ OfxEffectInstance::knobChanged(KnobI* k,
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }
         if (_overlayInteract) {
-            std::vector<std::string> params;
-            _overlayInteract->getSlaveToParam(params);
-            for (U32 i = 0; i < params.size(); ++i) {
-                if ( params[i] == k->getName() ) {
-                    stat = _overlayInteract->redraw();
-                    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-                }
+            if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
+                
+                incrementRedrawNeededCounter();
+                
             }
+        }
+        
+        if (recursionLevel == 1 && checkIfOverlayRedrawNeeded()) {
+            stat = _overlayInteract->redraw();
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         }
     }
 } // knobChanged

@@ -103,7 +103,8 @@ DiskCacheNode::initializeKnobs()
 }
 
 void
-DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, int /*view*/, SequenceTime /*time*/)
+DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, int /*view*/, SequenceTime /*time*/,
+                           bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.get() == k) {
         int idx = _imp->frameRange->getValue();

@@ -2133,7 +2133,7 @@ Color_KnobGui::showColorDialog()
         _knob->unblockEvaluation();
 
     }
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
 } // showColorDialog
 
 void
@@ -2149,7 +2149,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
         }
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
 }
 
 void

@@ -1408,14 +1408,15 @@ MultiInstancePanel::onButtonTriggered(Button_Knob* button)
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName( button->getName() );
         assert( k && dynamic_cast<Button_Knob*>( k.get() ) );
-        (*it)->getLiveInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited,time);
+        (*it)->getLiveInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited,time, true);
     }
 }
 
 void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        Natron::ValueChangedReasonEnum reason,
-                                       SequenceTime time)
+                                       SequenceTime time,
+                                       bool /*originatedFromMainThread*/)
 {
     if ( !k->isDeclaredByPlugin() ) {
         if (k->getName() == kDisableNodeKnobName) {
@@ -1448,7 +1449,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                         isString->clone(k);
                     }
 
-                    sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time);
+                    sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time, true);
                 }
             }
         }
@@ -1741,7 +1742,8 @@ handleTrackNextAndPrevious(Button_Knob* selectedInstance,
 //        } else {
 //            reason = eValueChangedReasonNatronInternalEdited;
 //        }
-        selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance,eValueChangedReasonNatronInternalEdited,currentFrame);
+        selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance,eValueChangedReasonNatronInternalEdited,currentFrame,
+                                                                 true);
 }
 
 void

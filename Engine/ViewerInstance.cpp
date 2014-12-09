@@ -713,6 +713,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
                                                            isSequentialRender, // is this sequential ?
                                                            canAbort,
                                                            inputNodeHash,
+                                                           false,
                                                            getTimeline().get());
             
             

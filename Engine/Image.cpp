@@ -1552,14 +1552,15 @@ Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
     assert(roi.x1 >= _bounds.x1 && roi.x2 <= _bounds.x2 && roi.y1 >= _bounds.y1 && roi.y2 <= _bounds.y2);
     assert(roi.x1 >= other._bounds.x1 && roi.x2 <= other._bounds.x2 && roi.y1 >= other._bounds.y1 && roi.y2 <= other._bounds.y2);
     
-    int rowSize = _bounds.width();
+    int srcRowSize = other._bounds.width();
+    int dstRowSize = _bounds.width();
     
     const char* srcBitmap = other.getBitmapAt(roi.x1, roi.y1);
     char* dstBitmap = getBitmapAt(roi.x1, roi.y1);
     
     for (int y = roi.y1; y < roi.y2; ++y,
-         srcBitmap += rowSize,
-         dstBitmap += rowSize) {
+         srcBitmap += srcRowSize,
+         dstBitmap += dstRowSize) {
         memcpy(dstBitmap, srcBitmap, roi.width());
     }
 }

@@ -707,6 +707,11 @@ void
 OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     _ofxEffectInstance->updateThreadLocalRenderTime( (int)t );
+    
+    ///Calling seek will force a re-render of the frame T so we wipe the overlay redraw needed counter
+    bool redrawNeeded = _ofxEffectInstance->checkIfOverlayRedrawNeeded();
+    (void)redrawNeeded;
+    
     _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t,NULL, Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
@@ -925,4 +930,10 @@ OfxImageEffectInstance::getCanApplyTransform(OfxClipInstance** clip) const
         }
     }
     return false;
+}
+
+bool
+OfxImageEffectInstance::isInAnalysis() const
+{
+    return _properties.getIntProperty(kOfxImageEffectPropInAnalysis) == 1;
 }

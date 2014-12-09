@@ -75,6 +75,9 @@ struct ParallelRenderArgs
     /// True if this frame can be aborted (false for preview and tracking)
     bool canAbort;
     
+    ///Can the plug-in call setValue while the action is active
+    bool canSetValue;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -85,6 +88,7 @@ struct ParallelRenderArgs
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
+    , canSetValue(false)
     {
         
     }
@@ -494,14 +498,18 @@ public:
                                bool canAbort,
                                U64 nodeHash,
                                U64 rotoAge,
+                               bool canSetValue,
                                const TimeLine* timeline);
 
-    void invalidateParallelRenderArgs();
+    /**
+     *@returns whether the effect was flagged with canSetValue = true or false
+     **/
+    bool invalidateParallelRenderArgs();
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -1046,7 +1054,8 @@ protected:
     virtual void knobChanged(KnobI* /*k*/,
                              Natron::ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
-                             SequenceTime /*time*/)
+                             SequenceTime /*time*/,
+                             bool /*originatedFromMainThread*/)
     {
     }
 
@@ -1077,7 +1086,8 @@ protected:
 public:
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason,SequenceTime time,
+                                    bool originatedFromMainThread) OVERRIDE FINAL;
     Natron::StatusEnum beginSequenceRender_public(SequenceTime first, SequenceTime last,
                                               SequenceTime step, bool interactive, const RenderScale & scale,
                                               bool isSequentialRender, bool isRenderResponseToUserInteraction,
