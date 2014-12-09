@@ -508,6 +508,7 @@ public:
         assert(index != -1);
         _panel->removeRow(index);
         _node->deactivate();
+        _panel->getMainInstance()->getApp()->redrawAllViewers();
         setText( QObject::tr("Add %1").arg( _node->getName().c_str() ) );
     }
 
@@ -517,6 +518,7 @@ public:
             _node->activate();
             _panel->addRow(_node);
         }
+        _panel->getMainInstance()->getApp()->redrawAllViewers();
         _firstRedoCalled = true;
         setText( QObject::tr("Add %1").arg( _node->getName().c_str() ) );
     }
@@ -948,14 +950,15 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
     _imp->getNodesFromSelection(newIndexes, &newlySelectedInstances);
 
     ///Don't consider items that are in both previouslySelectedInstances && newlySelectedInstances
-
-
+    
     QModelIndexList rows = _imp->view->selectionModel()->selectedRows();
     bool setDirty = rows.count() > 1;
     std::list<std::pair<Node*,bool> >::iterator nextPreviouslySelected = previouslySelectedInstances.begin();
 	if (!previouslySelectedInstances.empty()) {
 		++nextPreviouslySelected;
 	}
+    
+    
     for (std::list<std::pair<Node*,bool> >::iterator it = previouslySelectedInstances.begin();
          it != previouslySelectedInstances.end(); ++it,++nextPreviouslySelected) {
         ///if the item is in the new selection, don't consider it
@@ -973,7 +976,8 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
         }
 
         it->first->hideKeyframesFromTimeline( nextPreviouslySelected == previouslySelectedInstances.end() );
-
+        
+        it->first->getLiveInstance()->blockEvaluation();
         const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             if ( knobs[i]->isDeclaredByPlugin() && !knobs[i]->isInstanceSpecific() && !knobs[i]->getIsSecret() ) {
@@ -984,6 +988,8 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                 }
             }
         }
+        it->first->getLiveInstance()->unblockEvaluation();
+
         for (Nodes::iterator it2 = _imp->instances.begin(); it2 != _imp->instances.end(); ++it2) {
             if (it2->first.get() == it->first) {
                 it2->second = false;
@@ -994,8 +1000,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
 			--nextPreviouslySelected;
 		}
     }
-
-
+    
     std::list<SequenceTime> allKeysToAdd;
     std::list<std::pair<Node*,bool> >::iterator nextNewlySelected = newlySelectedInstances.begin();
 	if (!newlySelectedInstances.empty()) {

@@ -36,7 +36,7 @@
 
 
 #include "Timer.h"
-
+#include <iostream>
 #include <time.h>
 #include <QMutexLocker>
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
@@ -197,3 +197,56 @@ Timer::getDesiredFrameRate() const
     return 1.f / _spf;
 }
 
+
+TimeLapse::TimeLapse()
+{
+    gettimeofday(&prev, 0);
+    constructorTime = prev;
+}
+
+TimeLapse::~TimeLapse()
+{
+    
+    
+}
+
+double
+TimeLapse::getTimeElapsedReset()
+{
+    timeval now;
+    gettimeofday(&now, 0);
+    
+    double dt =  now.tv_sec  - prev.tv_sec +
+    (now.tv_usec - prev.tv_usec) * 1e-6f;
+    
+    prev = now;
+    return dt;
+}
+
+double
+TimeLapse::getTimeSinceCreation() const
+{
+    timeval now;
+    gettimeofday(&now, 0);
+    
+    double dt =  now.tv_sec  - constructorTime.tv_sec +
+    (now.tv_usec - constructorTime.tv_usec) * 1e-6f;
+    
+    return dt;
+
+}
+
+TimeLapseReporter::TimeLapseReporter()
+{
+    gettimeofday(&prev, 0);
+}
+
+TimeLapseReporter::~TimeLapseReporter()
+{
+    timeval now;
+    gettimeofday(&now, 0);
+    
+    double dt =  now.tv_sec  - prev.tv_sec +
+    (now.tv_usec - prev.tv_usec) * 1e-6f;
+    std::cout << dt << std::endl;
+}
