@@ -30,6 +30,8 @@ of Natron. You can configure the location and maximum size of the cache in the p
 
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
 
+- Tracker: all tracks are now multi-threaded for better performances. Also fixed a bug where the overlay displayed while tracking wasn't matching the underlying displayed image.
+
 - Roto: Selected points can now be dragged from everywhere within the bounding box instead of only the cross-hair.
 - Roto: It is now possible to move a bezier just by dragging a part of the curve where there is no control point.
 - Roto: Holding shift while dragging a scale handle of the bounding box will now scale only the half of the shape on the side of the handle

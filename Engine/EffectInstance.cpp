@@ -2632,7 +2632,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
     
-#ifndef NDEBUG
+#if !defined(NDEBUG) || defined(DEBUG)
     RenderScale renderMappedScale;
     renderMappedScale.x = Image::getScaleFromMipMapLevel(renderMappedImage->getMipMapLevel());
     renderMappedScale.y = renderMappedScale.x;
