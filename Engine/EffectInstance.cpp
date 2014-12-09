@@ -2090,7 +2090,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ///If the effect doesn't support tiles and it has something left to render, just render the bounds again
         ///Note that it should NEVER happen because if it doesn't support tiles in the first place, it would
         ///have rendered the rod already.
-        if (!tilesSupported && !rectsToRender.empty()) {
+        if (!tilesSupported && !rectsToRender.empty() && image) {
             ///if the effect doesn't support tiles, just render the whole rod again even though
             rectsToRender.clear();
             rectsToRender.push_back( image->getBounds() );
