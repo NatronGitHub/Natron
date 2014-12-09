@@ -859,7 +859,6 @@ OfxClipInstance::setRenderedView(int view)
 #endif
         args.view = view;
         args.isViewValid =  true;
-        _lastActionData.setLocalData(args);
     } else {
         ActionLocalData args;
         args.view = view;
@@ -889,7 +888,6 @@ OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
 #endif
         args.mipMapLevel = mipMapLevel;
         args.isMipmapLevelValid =  true;
-        _lastActionData.setLocalData(args);
     } else {
         ActionLocalData args;
         args.mipMapLevel = mipMapLevel;
