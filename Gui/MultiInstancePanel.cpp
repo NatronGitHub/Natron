@@ -1154,6 +1154,8 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
     if (modelIndex.column() == 0) {
         return;
     }
+    int time = getApp()->getTimeLine()->currentFrame();
+    
     assert( modelIndex.row() < (int)_imp->instances.size() );
     Nodes::iterator nIt = _imp->instances.begin();
     std::advance( nIt, modelIndex.row() );
@@ -1169,18 +1171,32 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     Double_Knob* isDouble = dynamic_cast<Double_Knob*>( knobs[i].get() );
                     Color_Knob* isColor = dynamic_cast<Color_Knob*>( knobs[i].get() );
                     String_Knob* isString = dynamic_cast<String_Knob*>( knobs[i].get() );
-                    if (isInt) {
-                        isInt->setValue(data.toInt(), j,true);
-                    } else if (isBool) {
-                        isBool->setValue(data.toBool(), j,true);
-                    } else if (isDouble) {
-                        isDouble->setValue(data.toDouble(), j,true);
-                    } else if (isColor) {
-                        isColor->setValue(data.toDouble(), j,true);
-                    } else if (isString) {
-                        isString->setValue(data.toString().toStdString(), j,true);
+                    
+                    if (knobs[i]->isAnimationEnabled()) {
+                        if (isInt) {
+                            isInt->setValueAtTime(time, data.toInt(), j);
+                        } else if (isBool) {
+                            isBool->setValueAtTime(time, data.toBool(), j);
+                        } else if (isDouble) {
+                            isDouble->setValueAtTime(time, data.toDouble(), j);
+                        } else if (isColor) {
+                            isColor->setValueAtTime(time, data.toDouble(), j);
+                        } else if (isString) {
+                            isString->setValueAtTime(time, data.toString().toStdString(), j);
+                        }
+                    } else {
+                        if (isInt) {
+                            isInt->setValue(data.toInt(), j, true);
+                        } else if (isBool) {
+                            isBool->setValue(data.toBool(), j, true);
+                        } else if (isDouble) {
+                            isDouble->setValue(data.toDouble(), j, true);
+                        } else if (isColor) {
+                            isColor->setValue(data.toDouble(), j, true);
+                        } else if (isString) {
+                            isString->setValue(data.toString().toStdString(), j, true);
+                        }
                     }
-         
                     return;
                 }
                 ++instanceSpecificIndex;
