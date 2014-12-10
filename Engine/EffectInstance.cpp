@@ -1356,7 +1356,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     Natron::ImageBitDepthEnum nodePrefDepth,
                                                     Natron::ImageComponentsEnum nodePrefComps,
                                                     int /*channelForAlpha*/,
-                                                    const RectD& rod,
+                                                    /*const RectD& rod,*/
                                                     const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
@@ -1502,7 +1502,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
                 
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
-                                                                               rod,
+                                                                               oldParams->getRoD(),/*rod,*/
                                                                                oldParams->getPixelAspectRatio(),
                                                                                mipMapLevel,
                                                                                oldParams->isRodProjectFormat(),
@@ -1950,13 +1950,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
     }
     
+    bool tilesSupported = supportsTiles();
+
+    
     Natron::ImageBitDepthEnum outputDepth;
     Natron::ImageComponentsEnum outputComponents;
     getPreferredDepthAndComponents(-1, &outputComponents, &outputDepth);
 
     boost::shared_ptr<ImageParams> cachedImgParams;
     getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,args.bitdepth, args.components,
-                                        outputDepth, outputComponents,args.channelForAlpha,rod,args.inputImagesList, &image);
+                                        outputDepth, outputComponents,args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
 
     
     if (byPassCache) {
@@ -1971,6 +1974,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
     if (image) {
         cachedImgParams = image->getParams();
+        
+        //Overwrite the RoD with the RoD contained in the image.
+        //This is to deal with the situation with an image rendered at scale 1 in the cache, but a new render asking for the same
+        //image at scale 0.5. The RoD will then be slightly larger at scale 0.5 thus re-rendering a few pixels. If the effect
+        //wouldn't support tiles, then it'b problematic as it would need to render the whole frame again just for a few pixels.
+        if (!tilesSupported) {
+            rod = image->getRoD();
+        }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End cache lookup//////////////////////////////////////////////////////////
@@ -2019,7 +2030,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     rod.toPixelEnclosing(0, par, &upscaledImageBounds);
     
 
-    bool tilesSupported = supportsTiles();
 
     ///Make sure the RoI falls within the image bounds
     ///Intersection will be in pixel coordinates
@@ -2109,7 +2119,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                             args.bitdepth, args.components,
                                             outputDepth,outputComponents,
-                                            args.channelForAlpha,rod,args.inputImagesList, &image);
+                                            args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
         if (image) {
             cachedImgParams = image->getParams();
             ///We check what is left to render.
