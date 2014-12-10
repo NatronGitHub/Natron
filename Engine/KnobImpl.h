@@ -1237,7 +1237,7 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
         
         if (_signalSlotHandler && isAnimated(i)) {
             _signalSlotHandler->s_valueChanged(i, Natron::eValueChangedReasonTimeChanged);
-            _signalSlotHandler->s_updateSlaves(i);
+            //_signalSlotHandler->s_updateSlaves(i);
         }
         checkAnimationLevel(i);
     }
