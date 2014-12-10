@@ -2483,7 +2483,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         _mainLayout->addWidget(_textEdit);
 
-        QObject::connect( _textEdit, SIGNAL( textChanged() ), this, SLOT( onTextChanged() ) );
+        QObject::connect( _textEdit, SIGNAL( editingFinished() ), this, SLOT( onTextChanged() ) );
        // layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
