@@ -951,17 +951,18 @@ Image::downscaleMipMap(const RectI & roi,
 
     assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
            _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
+    double par = getPixelAspectRatio();
 //    RectD roiCanonical;
-//    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
+//    roi.toCanonical(fromLevel, par , getRoD(), &roiCanonical);
 //    RectI dstRoI;
-//    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
+//    roiCanonical.toPixelEnclosing(toLevel, par , &dstRoI);
     unsigned int downscaleLvls = toLevel - fromLevel;
 
     assert(!copyBitMap || _bitmap.getBitmap());
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() , true) );
+    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, par, getBitDepth() , true) );
 
     buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 

@@ -3788,10 +3788,15 @@ EffectInstance::getFramesNeeded_public(SequenceTime time)
 void
 EffectInstance::getFrameRange_public(U64 hash,
                                      SequenceTime *first,
-                                     SequenceTime *last)
+                                     SequenceTime *last,
+                                     bool bypasscache)
 {
+    
     double fFirst,fLast;
-    bool foundInCache = _imp->actionsCache.getTimeDomainResult(hash, &fFirst, &fLast);
+    bool foundInCache = false;
+    if (!bypasscache) {
+        foundInCache = _imp->actionsCache.getTimeDomainResult(hash, &fFirst, &fLast);
+    }
     if (foundInCache) {
         *first = std::floor(fFirst+0.5);
         *last = std::floor(fLast+0.5);

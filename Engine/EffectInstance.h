@@ -804,7 +804,7 @@ public:
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 
-    void getFrameRange_public(U64 hash,SequenceTime *first,SequenceTime *last);
+    void getFrameRange_public(U64 hash,SequenceTime *first,SequenceTime *last, bool bypasscache = false);
 
     /**
      * @brief Override to initialize the overlay interact. It is called only on the
