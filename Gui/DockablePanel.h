@@ -423,6 +423,8 @@ public:
 
 public slots:
     
+    void onPageCurrentIndexChanged(int index);
+    
     void onTypeCurrentIndexChanged(int index);
     
     void onOkClicked();
