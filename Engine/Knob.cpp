@@ -191,7 +191,9 @@ struct KnobHelper::KnobHelperPrivate
     bool IsSecret;
     std::vector<bool> enabled;
     bool CanUndo;
-    bool EvaluateOnChange; //< if true, a value change will never trigger an evaluation
+    
+    QMutex evaluateOnChangeMutex;
+    bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
     bool IsPersistant; //will it be serialized?
     std::string tooltipHint;
     bool isAnimationEnabled;
@@ -250,7 +252,8 @@ struct KnobHelper::KnobHelperPrivate
           , IsSecret(false)
           , enabled(dimension_)
           , CanUndo(true)
-          , EvaluateOnChange(true)
+          , evaluateOnChangeMutex()
+          , evaluateOnChange(true)
           , IsPersistant(true)
           , tooltipHint()
           , isAnimationEnabled(true)
@@ -937,7 +940,11 @@ KnobHelper::evaluateValueChange(int dimension,
                                 Natron::ValueChangedReasonEnum reason,bool originatedFromMainThread)
 {
     
-    if ( QThread::currentThread() != qApp->thread() ) {
+    ///If not main-thread that is because the plug-in called setValue/setValueATime either during the render action
+    ///or while tracking
+    bool isMainThread = QThread::currentThread() == qApp->thread();
+    
+    if ( _imp->holder && !_imp->holder->canHandleEvaluateOnChangeInOtherThread() && !isMainThread ) {
         _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason);
 
         return;
@@ -967,9 +974,9 @@ KnobHelper::evaluateValueChange(int dimension,
             _imp->holder->onKnobValueChanged_public(this, reason, time, originatedFromMainThread);
             
             
-            if (/*reason != Natron::eValueChangedReasonSlaveRefresh &&*/ !guiFrozen) {
+            if (/*reason != Natron::eValueChangedReasonSlaveRefresh &&*/isMainThread && !guiFrozen) {
                 ///Evaluate the change only if the reason is not time changed or slave refresh
-                _imp->holder->evaluate_public(this, _imp->EvaluateOnChange, reason);
+                _imp->holder->evaluate_public(this, getEvaluateOnChange(), reason);
             }
             
             
@@ -1157,8 +1164,8 @@ KnobHelper::setDirty(bool d)
 void
 KnobHelper::setEvaluateOnChange(bool b)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->EvaluateOnChange = b;
+    QMutexLocker k(&_imp->evaluateOnChangeMutex);
+    _imp->evaluateOnChange = b;
 }
 
 bool
@@ -1188,7 +1195,8 @@ KnobHelper::getCanUndo() const
 bool
 KnobHelper::getEvaluateOnChange() const
 {
-    return _imp->EvaluateOnChange;
+    QMutexLocker k(&_imp->evaluateOnChangeMutex);
+    return _imp->evaluateOnChange;
 }
 
 void

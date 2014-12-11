@@ -609,7 +609,7 @@ Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
         switch (to) {
         case eImageComponentRGBA:
 
-            return false;
+            return true; //< let RGB fill the alpha with 0
         case eImageComponentRGB:
 
             return true;

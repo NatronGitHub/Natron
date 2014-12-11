@@ -1483,6 +1483,11 @@ public:
      **/
     void updateHasAnimation();
     
+    /**
+     * @brief Returns whether the onKnobValueChanged can be called by a separate thread
+     **/
+    virtual bool canHandleEvaluateOnChangeInOtherThread() const { return false; }
+    
 protected:
 
     bool isEvaluationBlocked() const;

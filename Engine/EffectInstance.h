@@ -184,6 +184,9 @@ public:
 
     virtual ~EffectInstance();
 
+    
+    virtual bool canHandleEvaluateOnChangeInOtherThread() const { return true; }
+    
     /**
      * @brief Returns true once the effect has been fully initialized and is ready to have its actions called apart from
      * the createInstanceAction
@@ -1263,9 +1266,6 @@ private:
                                           const double par,
                                           const boost::shared_ptr<Image> & image,
                                           const boost::shared_ptr<Image> & downscaledImage,
-                                          const boost::shared_ptr<Image>& fullScaleMappedImage,
-                                          const boost::shared_ptr<Image>& downscaledMappedImage,
-                                          const boost::shared_ptr<Image>& renderMappedImage,
                                           bool outputUseImage,
                                           bool isSequentialRender,
                                           bool isRenderMadeInResponseToUserInteraction,
@@ -1355,8 +1355,6 @@ private:
         double par;
         boost::shared_ptr<Natron::Image>  downscaledImage;
         boost::shared_ptr<Natron::Image>  fullScaleImage;
-        boost::shared_ptr<Natron::Image>  downscaledMappedImage;
-        boost::shared_ptr<Natron::Image>  fullScaleMappedImage;
         boost::shared_ptr<Natron::Image>  renderMappedImage;
     };
     ///These are the image passed to the plug-in to render
@@ -1383,7 +1381,7 @@ private:
     Natron::StatusEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                              const ParallelRenderArgs& frameArgs,
                                              bool setThreadLocalStorage,
-                                             const RectI & roi );
+                                             const RectI & downscaledRectToRender );
 
     Natron::StatusEnum tiledRenderingFunctor(const RenderArgs & args,
                                              const ParallelRenderArgs& frameArgs,
@@ -1393,12 +1391,10 @@ private:
                                              bool renderUseScaleOneInputs,
                                              bool isSequentialRender,
                                              bool isRenderResponseToUserInteraction,
-                                             const RectI & roi,
+                                             const RectI & downscaledRectToRender,
                                              const double par,
                                              const boost::shared_ptr<Natron::Image> & downscaledImage,
                                              const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                             const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                             const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
                                              const boost::shared_ptr<Natron::Image> & renderMappedImage);
 
     /**
