@@ -12,12 +12,14 @@
 #define PROJECTPRIVATE_H
 
 #include <map>
-
+#include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDateTime>
 #include <QString>
+#include <QFuture>
+#include <QFutureWatcher>
 #include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -99,6 +101,7 @@ struct ProjectPrivate
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
+    std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
 
     
     ProjectPrivate(Natron::Project* project);

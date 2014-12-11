@@ -314,6 +314,8 @@ public slots:
         reset();
     }
 
+    void onAutoSaveFutureFinished();
+
 signals:
 
     void mustCreateFormat();
@@ -327,6 +329,7 @@ signals:
     void projectNameChanged(QString);
 
     void knobsInitialized();
+    
 
 private:
 

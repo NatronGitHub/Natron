@@ -441,35 +441,7 @@ static const GLubyte triangleStrip[28] = {
  |/  |/  |/  |
  12--13--14--15
  */
-static GLfloat
-clipTexCoord(const double clippedSize,
-             const double size,
-             const double texCoordRange)
-{
-    return clippedSize / size * texCoordRange;
-}
 
-/**
- * @brief Clips texBottom,texTop,texLeft,texRight (which are tex coordinates expressed in normalized
- * coordinates of "rect") against "clippedRect" which is a clipped portion of rect.
- **/
-template <typename RECT>
-void
-clipTexCoords(const RECT & rect,
-              const RECT & clippedRect,
-              GLfloat & texBottom,
-              GLfloat & texTop,
-              GLfloat & texLeft,
-              GLfloat & texRight)
-{
-    const double texHeight = texTop - texBottom;
-    const double texWidth = texRight - texLeft;
-
-    texBottom = clipTexCoord(clippedRect.y1 - rect.y1,rect.height(),texHeight);
-    texTop = clipTexCoord(clippedRect.y2 - rect.y1,rect.height(),texHeight);
-    texLeft = clipTexCoord(clippedRect.x1 - rect.x1,rect.width(),texWidth);
-    texRight = clipTexCoord(clippedRect.x2 - rect.x1,rect.width(),texWidth);
-}
 
 void
 ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
