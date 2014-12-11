@@ -121,7 +121,7 @@ KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension,
                                                            int reason)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    k->evaluateValueChange(dimension, (Natron::ValueChangedReasonEnum)reason);
+    k->evaluateValueChange(dimension, (Natron::ValueChangedReasonEnum)reason, false);
 }
 
 /***************** KNOBI**********************/
@@ -217,7 +217,9 @@ struct KnobHelperPrivate
     bool IsSecret;
     std::vector<bool> enabled;
     bool CanUndo;
-    bool EvaluateOnChange; //< if true, a value change will never trigger an evaluation
+    
+    QMutex evaluateOnChangeMutex;
+    bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
     bool IsPersistant; //will it be serialized?
     std::string tooltipHint;
     bool isAnimationEnabled;
@@ -281,7 +283,8 @@ struct KnobHelperPrivate
     , IsSecret(false)
     , enabled(dimension_)
     , CanUndo(true)
-    , EvaluateOnChange(true)
+    , evaluateOnChangeMutex()
+    , evaluateOnChange(true)
     , IsPersistant(true)
     , tooltipHint()
     , isAnimationEnabled(true)
@@ -546,6 +549,7 @@ KnobHelper::deleteValueAtTime(int time,
                               int dimension,
                               Natron::ValueChangedReasonEnum reason)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
@@ -590,7 +594,7 @@ KnobHelper::deleteValueAtTime(int time,
         }
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(dimension);
-        evaluateValueChange(dimension,reason);
+        evaluateValueChange(dimension,reason, true);
     }
     
     if (_signalSlotHandler) {
@@ -608,6 +612,8 @@ KnobHelper::onKeyFrameRemoved(SequenceTime time,int dimension)
 bool
 KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
         throw std::invalid_argument("KnobHelper::moveValueAtTime(): Dimension out of range");
     }
@@ -682,7 +688,7 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited, true);
         guiCurveCloneInternalCurve(dimension);
     }
     return true;
@@ -692,6 +698,7 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
 bool
 KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
@@ -721,7 +728,7 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
     *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited, true);
         guiCurveCloneInternalCurve(dimension);
     } else {
         if (_signalSlotHandler) {
@@ -737,6 +744,7 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
 bool
 KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double right)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
@@ -768,7 +776,7 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
     curve->setKeyFrameDerivatives(left, right, keyIndex);
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited, true);
         guiCurveCloneInternalCurve(dimension);
     } else {
         if (_signalSlotHandler) {
@@ -784,6 +792,7 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
 bool
 KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
@@ -818,7 +827,7 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited, true);
         guiCurveCloneInternalCurve(dimension);
     } else {
         if (_signalSlotHandler) {
@@ -835,6 +844,7 @@ void
 KnobHelper::removeAnimation(int dimension,
                             Natron::ValueChangedReasonEnum reason)
 {
+    assert(QThread::currentThread() == qApp->thread());
     assert(0 <= dimension);
     if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
         throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
@@ -887,7 +897,7 @@ KnobHelper::removeAnimation(int dimension,
     
     if (!useGuiCurve) {
         //virtual portion
-        evaluateValueChange(dimension, reason);
+        evaluateValueChange(dimension, reason, true);
         guiCurveCloneInternalCurve(dimension);
     } else {
         if (_signalSlotHandler) {
@@ -1035,10 +1045,14 @@ KnobHelper::unblockEvaluation()
 
 void
 KnobHelper::evaluateValueChange(int dimension,
-                                Natron::ValueChangedReasonEnum reason)
+                                Natron::ValueChangedReasonEnum reason,bool originatedFromMainThread)
 {
     
-    if ( QThread::currentThread() != qApp->thread() ) {
+    ///If not main-thread that is because the plug-in called setValue/setValueATime either during the render action
+    ///or while tracking
+    bool isMainThread = QThread::currentThread() == qApp->thread();
+    
+    if ( _imp->holder && !_imp->holder->canHandleEvaluateOnChangeInOtherThread() && !isMainThread ) {
         _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason);
         
         return;
@@ -1065,12 +1079,12 @@ KnobHelper::evaluateValueChange(int dimension,
             
             ///Notify that a value has changed, this may lead to this function being called recursively because it calls the plugin's
             ///instance changed action.
-            _imp->holder->onKnobValueChanged_public(this, reason, time);
+            _imp->holder->onKnobValueChanged_public(this, reason, time, originatedFromMainThread);
             
             
-            if (/*reason != Natron::eValueChangedReasonSlaveRefresh &&*/ !guiFrozen) {
+            if (/*reason != Natron::eValueChangedReasonSlaveRefresh &&*/isMainThread && !guiFrozen) {
                 ///Evaluate the change only if the reason is not time changed or slave refresh
-                _imp->holder->evaluate_public(this, _imp->EvaluateOnChange, reason);
+                _imp->holder->evaluate_public(this, getEvaluateOnChange(), reason);
             }
             
             
@@ -1751,8 +1765,8 @@ KnobHelper::setDirty(bool d)
 void
 KnobHelper::setEvaluateOnChange(bool b)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->EvaluateOnChange = b;
+    QMutexLocker k(&_imp->evaluateOnChangeMutex);
+    _imp->evaluateOnChange = b;
 }
 
 bool
@@ -1782,7 +1796,8 @@ KnobHelper::getCanUndo() const
 bool
 KnobHelper::getEvaluateOnChange() const
 {
-    return _imp->EvaluateOnChange;
+    QMutexLocker k(&_imp->evaluateOnChangeMutex);
+    return _imp->evaluateOnChange;
 }
 
 void
@@ -1922,7 +1937,7 @@ KnobHelper::slaveTo(int dimension,
 {
     assert( 0 <= dimension && dimension < (int)_imp->masters.size() );
     assert( !other->isSlave(otherDimension) );
-    
+
     {
         QWriteLocker l(&_imp->mastersMutex);
         if (_imp->masters[dimension].second) {
@@ -1959,8 +1974,9 @@ KnobHelper::slaveTo(int dimension,
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
     }
-    evaluateValueChange(dimension, reason);
-    
+
+    evaluateValueChange(dimension, reason, true);
+
     ///Register this as a listener of the master
     if (helper) {
         helper->addListener(false,dimension,this);
@@ -2182,7 +2198,7 @@ KnobHelper::onMasterChanged(KnobI* master,
                             int masterDimension)
 {
     ///Map to the good dimension
-    
+    assert(QThread::currentThread() == qApp->thread());
     MastersMap masters;
     {
         QReadLocker l(&_imp->mastersMutex);
@@ -2195,7 +2211,7 @@ KnobHelper::onMasterChanged(KnobI* master,
             ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
             clone(master,i);
             
-            evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
+            evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh, true);
             
             return;
         }
@@ -2220,7 +2236,7 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
         }
     }
     assert(dim != -1);
-    evaluateValueChange(dim, Natron::eValueChangedReasonSlaveRefresh);
+    evaluateValueChange(dim, Natron::eValueChangedReasonSlaveRefresh, true);
     
 }
 
@@ -2343,7 +2359,12 @@ struct KnobHolder::KnobHolderPrivate
      
      */
     ThreadStorage<int> actionsRecursionLevel;
-    
+
+    ///Count how many times an overlay needs to be redrawn for the instanceChanged/penMotion/penDown etc... actions
+    ///to just redraw it once when the recursion level is back to 0
+    QMutex overlayRedrawStackMutex;
+    int overlayRedrawStack;
+
     ///If true, when the actionsRecursionLevel hit 0, it will trigger an evaluation.
     struct EvaluationRequest
     {
@@ -2371,21 +2392,24 @@ struct KnobHolder::KnobHolderPrivate
     DockablePanelI* settingsPanel;
     
     KnobHolderPrivate(AppInstance* appInstance_)
-        : app(appInstance_)
-          , knobsMutex()
-          , knobs()
-          , knobsInitialized(false)
-          , isSlave(false)
-          , actionsRecursionLevel()
-          , evaluateQueue()
-          , paramsEditLevel(PARAM_EDIT_OFF)
-          , evaluationBlockedMutex(QMutex::Recursive)
-          , evaluationBlocked(0)
-          , knobsFrozenMutex()
-          , knobsFrozen(false)
-          , hasAnimationMutex()
-          , hasAnimation(false)
-          , settingsPanel(0)
+    : app(appInstance_)
+    , knobsMutex()
+    , knobs()
+    , knobsInitialized(false)
+    , isSlave(false)
+    , actionsRecursionLevel()
+    , overlayRedrawStackMutex()
+    , overlayRedrawStack(0)
+    , evaluateQueue()
+    , paramsEditLevel(PARAM_EDIT_OFF)
+    , evaluationBlockedMutex(QMutex::Recursive)
+    , evaluationBlocked(0)
+    , knobsFrozenMutex()
+    , knobsFrozen(false)
+    , hasAnimationMutex()
+    , hasAnimation(false)
+    , settingsPanel(0)
+
     {
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
@@ -2991,7 +3015,8 @@ KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason)
 void
 KnobHolder::onKnobValueChanged_public(KnobI* k,
                                       Natron::ValueChangedReasonEnum reason,
-                                      SequenceTime time)
+                                      SequenceTime time,
+                                      bool originatedFromMainThread)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
@@ -2999,7 +3024,7 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
         return;
     }
     RECURSIVE_ACTION();
-    onKnobValueChanged(k, reason,time);
+    onKnobValueChanged(k, reason,time, originatedFromMainThread);
 }
 
 void
@@ -3060,6 +3085,26 @@ KnobHolder::assertActionIsNotRecursive() const
         }
     }
 # endif // DEBUG
+}
+
+void
+KnobHolder::incrementRedrawNeededCounter()
+{
+    {
+        QMutexLocker k(&_imp->overlayRedrawStackMutex);
+        ++_imp->overlayRedrawStack;
+    }
+}
+
+bool
+KnobHolder::checkIfOverlayRedrawNeeded()
+{
+    {
+        QMutexLocker k(&_imp->overlayRedrawStackMutex);
+        bool ret = _imp->overlayRedrawStack > 0;
+        _imp->overlayRedrawStack = 0;
+        return ret;
+    }
 }
 
 void

@@ -766,6 +766,11 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.top(), 3);
+    
+    //pluginsSeenBounds must be contained in pixelRod
+    assert(pluginsSeenBounds.left() >= pixelRod.left() && pluginsSeenBounds.right() <= pixelRod.right() &&
+           pluginsSeenBounds.bottom() >= pixelRod.bottom() && pluginsSeenBounds.top() <= pixelRod.top());
+    
     // row bytes
     setIntProperty( kOfxImagePropRowBytes, bounds.width() *
                     Natron::getElementsCountForComponents( internalImage->getComponents() ) *
@@ -857,7 +862,6 @@ OfxClipInstance::setRenderedView(int view)
 #endif
         args.view = view;
         args.isViewValid =  true;
-        _lastActionData.setLocalData(args);
     } else {
         ActionLocalData args;
         args.view = view;
@@ -887,7 +891,6 @@ OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
 #endif
         args.mipMapLevel = mipMapLevel;
         args.isMipmapLevelValid =  true;
-        _lastActionData.setLocalData(args);
     } else {
         ActionLocalData args;
         args.mipMapLevel = mipMapLevel;

@@ -190,7 +190,8 @@ public:
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+                             bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::StatusEnum render(SequenceTime time,
                                       const RenderScale& originalScale,
@@ -384,6 +385,8 @@ private:
     bool _isOutput; //if the OfxNode can output a file somehow
     bool _penDown; // true when the overlay trapped a penDow action
     Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
+    std::list< void* > _overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
+
     bool _created; // true after the call to createInstance
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers

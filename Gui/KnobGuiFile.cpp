@@ -142,7 +142,7 @@ File_KnobGui::onReloadClicked()
             effect->purgeCaches();
             effect->clearPersistentMessage(false);
         }
-        _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
+        _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited, true);
     }
 }
 
@@ -281,7 +281,7 @@ File_KnobGui::watchedFileChanged()
                 }
                 
             } else {
-                 _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
+                 _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited, true);
             }
         }
         

@@ -2313,6 +2313,7 @@ Node::makePreviewImage(SequenceTime time,
                                              false,
                                              false,
                                              nodeHash,
+                                             false,
                                              getApp()->getTimeLine().get());
     
     // Exceptions are caught because the program can run without a preview,
@@ -3375,10 +3376,11 @@ Node::setParallelRenderArgs(int time,
                             bool isSequential,
                             bool canAbort,
                             U64 nodeHash,
+                            bool canSetValue,
                             const TimeLine* timeline)
 {
     std::list<Natron::Node*> marked;
-    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, timeline, marked);
+    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, canSetValue, timeline, marked);
 }
 
 void
@@ -3396,17 +3398,22 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     if (found != markedNodes.end()) {
         return;
     }
-    _imp->liveInstance->invalidateParallelRenderArgs();
+    bool wasCanSetValueSet = _imp->liveInstance->invalidateParallelRenderArgs();
     
     bool mustDequeue ;
     {
         int nodeIsRendering;
         if (QThread::currentThread() != qApp->thread()) {
-            ///Decrement the node is rendering counter
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            --_imp->nodeIsRendering;
-            assert(_imp->nodeIsRendering >= 0);
-            nodeIsRendering = _imp->nodeIsRendering;
+            
+            if (!wasCanSetValueSet) {
+                ///Decrement the node is rendering counter
+                QMutexLocker k(&_imp->nodeIsRenderingMutex);
+                --_imp->nodeIsRendering;
+                assert(_imp->nodeIsRendering >= 0);
+                nodeIsRendering = _imp->nodeIsRendering;
+            } else {
+                nodeIsRendering = 0;
+            }
         } else {
             nodeIsRendering = 0;
         }
@@ -3447,6 +3454,7 @@ Node::setParallelRenderArgsInternal(int time,
                                     bool isSequential,
                                     U64 nodeHash,
                                     bool canAbort,
+                                    bool canSetValue,
                                     const TimeLine* timeline,
                                     std::list<Natron::Node*>& markedNodes)
 {
@@ -3463,7 +3471,7 @@ Node::setParallelRenderArgsInternal(int time,
         rotoAge = 0;
     }
     
-    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge, timeline);
+    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge,canSetValue, timeline);
     
     
     ///Wait for the main-thread to be done dequeuing the connect actions queue
@@ -3481,9 +3489,11 @@ Node::setParallelRenderArgsInternal(int time,
                 mustQuitProcessing = _imp->mustQuitProcessing;
             }
         }
-        ///Increment the node is rendering counter
-        QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
-        ++_imp->nodeIsRendering;
+        if (!canSetValue) {
+            ///Increment the node is rendering counter
+            QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
+            ++_imp->nodeIsRendering;
+        }
     }
     
     ///mark this
@@ -3496,8 +3506,7 @@ Node::setParallelRenderArgsInternal(int time,
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
-            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort, timeline,
-                                                 markedNodes);
+            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort, canSetValue,  timeline, markedNodes);
             
         }
     }

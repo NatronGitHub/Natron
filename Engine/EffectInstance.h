@@ -75,6 +75,9 @@ struct ParallelRenderArgs
     /// True if this frame can be aborted (false for preview and tracking)
     bool canAbort;
     
+    ///Can the plug-in call setValue while the action is active
+    bool canSetValue;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -85,6 +88,7 @@ struct ParallelRenderArgs
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
+    , canSetValue(false)
     {
         
     }
@@ -180,6 +184,9 @@ public:
 
     virtual ~EffectInstance();
 
+    
+    virtual bool canHandleEvaluateOnChangeInOtherThread() const { return true; }
+    
     /**
      * @brief Returns true once the effect has been fully initialized and is ready to have its actions called apart from
      * the createInstanceAction
@@ -451,8 +458,10 @@ public:
                                              unsigned int mipMapLevel,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              Natron::ImageComponentsEnum components,
+                                             Natron::ImageBitDepthEnum nodeBitDepthPref,
+                                             Natron::ImageComponentsEnum nodeComponentsPref,
                                              int channelForAlpha,
-                                             const RectD& rod,
+                                             /*const RectD& rod,*/
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
@@ -492,14 +501,18 @@ public:
                                bool canAbort,
                                U64 nodeHash,
                                U64 rotoAge,
+                               bool canSetValue,
                                const TimeLine* timeline);
 
-    void invalidateParallelRenderArgs();
+    /**
+     *@returns whether the effect was flagged with canSetValue = true or false
+     **/
+    bool invalidateParallelRenderArgs();
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -796,7 +809,7 @@ public:
 
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
 
-    void getFrameRange_public(U64 hash,SequenceTime *first,SequenceTime *last);
+    void getFrameRange_public(U64 hash,SequenceTime *first,SequenceTime *last, bool bypasscache = false);
 
     /**
      * @brief Override to initialize the overlay interact. It is called only on the
@@ -1034,7 +1047,8 @@ protected:
     virtual void knobChanged(KnobI* /*k*/,
                              Natron::ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
-                             SequenceTime /*time*/)
+                             SequenceTime /*time*/,
+                             bool /*originatedFromMainThread*/)
     {
     }
 
@@ -1065,7 +1079,8 @@ protected:
 public:
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason,SequenceTime time,
+                                    bool originatedFromMainThread) OVERRIDE FINAL;
     Natron::StatusEnum beginSequenceRender_public(SequenceTime first, SequenceTime last,
                                               SequenceTime step, bool interactive, const RenderScale & scale,
                                               bool isSequentialRender, bool isRenderResponseToUserInteraction,
@@ -1332,8 +1347,6 @@ private:
         double par;
         boost::shared_ptr<Natron::Image>  downscaledImage;
         boost::shared_ptr<Natron::Image>  fullScaleImage;
-        boost::shared_ptr<Natron::Image>  downscaledMappedImage;
-        boost::shared_ptr<Natron::Image>  fullScaleMappedImage;
         boost::shared_ptr<Natron::Image>  renderMappedImage;
     };
     ///These are the image passed to the plug-in to render
@@ -1360,7 +1373,7 @@ private:
     Natron::StatusEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                              const ParallelRenderArgs& frameArgs,
                                              bool setThreadLocalStorage,
-                                             const RectI & roi );
+                                             const RectI & downscaledRectToRender );
 
     Natron::StatusEnum tiledRenderingFunctor(const RenderArgs & args,
                                              const ParallelRenderArgs& frameArgs,
@@ -1370,12 +1383,10 @@ private:
                                              bool renderUseScaleOneInputs,
                                              bool isSequentialRender,
                                              bool isRenderResponseToUserInteraction,
-                                             const RectI & roi,
+                                             const RectI & downscaledRectToRender,
                                              const double par,
                                              const boost::shared_ptr<Natron::Image> & downscaledImage,
                                              const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                             const boost::shared_ptr<Natron::Image> & downscaledMappedImage,
-                                             const boost::shared_ptr<Natron::Image> & fullScaleMappedImage,
                                              const boost::shared_ptr<Natron::Image> & renderMappedImage);
 
     /**

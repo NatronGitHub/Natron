@@ -97,6 +97,11 @@ Project::Project(AppInstance* appInstance)
 
 Project::~Project()
 {
+    ///wait for all autosaves to finish
+    for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
+        (*it)->waitForFinished();
+    }
+    
     ///Don't clear autosaves if the program is shutting down by user request.
     ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
     //removeAutoSaves();
@@ -556,11 +561,26 @@ Project::onAutoSaveTimerTriggered()
     }
 
     if (canAutoSave) {
-        QtConcurrent::run(this,&Project::autoSave);
+        boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
+        QObject::connect(watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()));
+        watcher->setFuture(QtConcurrent::run(this,&Project::autoSave));
+        _imp->autoSaveFutures.push_back(watcher);
     } else {
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
         ///We don't use the user-provided timeout interval here because it could be an inapropriate value.
         _imp->autoSaveTimer->start(2000);
+    }
+}
+    
+void Project::onAutoSaveFutureFinished()
+{
+    QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>(sender());
+    assert(future);
+    for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
+        if (it->get() == future) {
+            _imp->autoSaveFutures.erase(it);
+            break;
+        }
     }
 }
 
@@ -1260,7 +1280,8 @@ Project::endKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
 void
 Project::onKnobValueChanged(KnobI* knob,
                             Natron::ValueChangedReasonEnum reason,
-                            SequenceTime /*time*/)
+                            SequenceTime /*time*/,
+                            bool /*originatedFromMainThread*/)
 {
     if ( knob == _imp->viewsCount.get() ) {
         int viewsCount = _imp->viewsCount->getValue();

@@ -413,7 +413,8 @@ NodeBackDrop::getSize(int & w,
 void
 NodeBackDrop::onKnobValueChanged(KnobI* k,
                                  Natron::ValueChangedReasonEnum /*reason*/,
-                                 SequenceTime /*time*/)
+                                 SequenceTime /*time*/,
+                                 bool /*originatedFromMainThread*/)
 {
     if ( k == _imp->knobLabel.get() ) {
         QString text( _imp->knobLabel->getValue().c_str() );

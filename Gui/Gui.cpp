@@ -2788,6 +2788,7 @@ Gui::saveWarning()
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
         Natron::StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                                              _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
+                                                                 false,
                                                              Natron::StandardButtons(Natron::eStandardButtonSave | Natron::eStandardButtonDiscard | Natron::eStandardButtonCancel), Natron::eStandardButtonSave);
         if ( (ret == Natron::eStandardButtonEscape) || (ret == Natron::eStandardButtonCancel) ) {
             return 2;
@@ -4468,7 +4469,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                 if (multiInstance) {
                     const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
                     for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        if (node->isSettingsPanelVisible() && it->first->isActivated()&& it->second) {
+                        if (node->isSettingsPanelVisible() && it->first->isActivated() && it->second && !it->first->isNodeDisabled()) {
                             nodes.push_back(it->first);
                         }
                     }

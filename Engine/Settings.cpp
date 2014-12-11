@@ -1107,7 +1107,8 @@ Settings::tryLoadOpenColorIOConfig()
 void
 Settings::onKnobValueChanged(KnobI* k,
                              Natron::ValueChangedReasonEnum /*reason*/,
-                             SequenceTime /*time*/)
+                             SequenceTime /*time*/,
+                             bool /*originatedFromMainThread*/)
 {
     _wereChangesMadeSinceLastSave = true;
 

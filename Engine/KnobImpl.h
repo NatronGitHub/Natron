@@ -812,7 +812,7 @@ Knob<T>::setValue(const T & v,
     }
 
     if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
-        evaluateValueChange(dimension,reason);
+        evaluateValueChange(dimension,reason, true);
     }
     {
         QMutexLocker l(&_setValueRecursionLevelMutex);
@@ -952,7 +952,7 @@ Knob<T>::setValueAtTime(int time,
     if (_signalSlotHandler && ret) {
         _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
     }
-    evaluateValueChange(dimension, reason);
+    evaluateValueChange(dimension, reason, true);
 
     return ret;
 } // setValueAtTime
@@ -998,7 +998,7 @@ Knob<T>::unSlave(int dimension,
     if (getHolder() && _signalSlotHandler) {
         getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
     }
-    evaluateValueChange(dimension, reason);
+    evaluateValueChange(dimension, reason, true);
 }
 
 template<>
@@ -1319,7 +1319,7 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(dimension);
-        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited, true);
     }
     return ret;
 }
@@ -1343,7 +1343,7 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(dimension);
-        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited, true);
     }
     return ret;
 }
@@ -1361,7 +1361,6 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
         
         if (_signalSlotHandler && isAnimated(i)) {
             _signalSlotHandler->s_valueChanged(i, Natron::eValueChangedReasonTimeChanged);
-            _signalSlotHandler->s_updateDependencies(i);
         }
         checkAnimationLevel(i);
     }
@@ -1809,7 +1808,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 unblockEvaluation();
             }
             
-            evaluateValueChange(*it, Natron::eValueChangedReasonNatronInternalEdited);
+            evaluateValueChange(*it, Natron::eValueChangedReasonNatronInternalEdited, true);
             
             if (next != dimensionChanged.end()) {
                 ++next;

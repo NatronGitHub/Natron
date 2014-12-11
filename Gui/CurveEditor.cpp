@@ -288,7 +288,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                                                const boost::shared_ptr<NodeGui> &node)
     : _node(node)
       , _nodeElements()
-      , _nameItem()
+      , _nameItem(0)
 {
     QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
 
@@ -312,10 +312,11 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
         if (!hasAtLeast1KnobWithACurveShown) {
             nameItem->setHidden(true);
         }
-        _nameItem = nameItem;
     } else {
         nameItem->setHidden(true);
     }
+    _nameItem = nameItem;
+
 }
 
 NodeCurveEditorContext::~NodeCurveEditorContext()

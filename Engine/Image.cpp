@@ -460,17 +460,14 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     assert( getComponents() == srcImg.getComponents() );
     int components = getElementsCountForComponents( getComponents() );
 
+    if (copyBitmap) {
+        copyBitmapPortion(roi, srcImg);
+    }
     // now we're safe: both images contain the area in roi
     for (int y = roi.y1; y < roi.y2; ++y) {
         const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, y);
         PIX* dst = (PIX*)pixelAt(roi.x1, y);
         memcpy(dst, src, roi.width() * sizeof(PIX) * components);
-
-        if (copyBitmap) {
-            const char* srcBm = srcImg.getBitmapAt(roi.x1, y);
-            char* dstBm = getBitmapAt(roi.x1, y);
-            memcpy( dstBm, srcBm, roi.width() );
-        }
     }
 }
 
@@ -612,7 +609,7 @@ Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
         switch (to) {
         case eImageComponentRGBA:
 
-            return false;
+            return true; //< let RGB fill the alpha with 0
         case eImageComponentRGB:
 
             return true;
@@ -759,6 +756,11 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
 
+    
+    /// Take the lock for both bitmaps since we're about to read/write from them!
+    QWriteLocker k1(&output->_lock);
+    QReadLocker k2(&_lock);
+    
     const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
     const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBmBounds.x1, srcBmBounds.y1);
     PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1,   dstBounds.y1);
@@ -949,17 +951,18 @@ Image::downscaleMipMap(const RectI & roi,
 
     assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
            _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
+    double par = getPixelAspectRatio();
 //    RectD roiCanonical;
-//    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
+//    roi.toCanonical(fromLevel, par , getRoD(), &roiCanonical);
 //    RectI dstRoI;
-//    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
+//    roiCanonical.toPixelEnclosing(toLevel, par , &dstRoI);
     unsigned int downscaleLvls = toLevel - fromLevel;
 
     assert(!copyBitMap || _bitmap.getBitmap());
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() , true) );
+    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, par, getBitDepth() , true) );
 
     buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -1425,13 +1428,6 @@ Image::getLevelFromScale(double s)
     return retval;
 }
 
-void
-Image::clearBitmap()
-{
-    QWriteLocker locker(&_lock);
-    _bitmap.clear();
-}
-
 namespace Natron {
 ///explicit template instantiations
 
@@ -1523,6 +1519,51 @@ lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
     }
 
     return lut;
+}
+
+void
+Image::copyBitmapRowPortion(int x1, int x2,int y, const Image& other)
+{
+    QWriteLocker k1(&_lock);
+    QReadLocker k2(&other._lock);
+    _bitmap.copyRowPortion(x1, x2, y, other._bitmap);
+}
+
+void
+Bitmap::copyRowPortion(int x1,int x2,int y,const Bitmap& other)
+{
+    const char* srcBitmap = other.getBitmapAt(x1, y);
+    char* dstBitmap = getBitmapAt(x1, y);
+    memcpy( dstBitmap, srcBitmap, x2 - x1 );
+    
+}
+
+void
+Image::copyBitmapPortion(const RectI& roi, const Image& other)
+{
+    QWriteLocker k1(&_lock);
+    QReadLocker k2(&other._lock);
+    _bitmap.copyBitmapPortion(roi, other._bitmap);
+
+}
+
+void
+Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
+{
+    assert(roi.x1 >= _bounds.x1 && roi.x2 <= _bounds.x2 && roi.y1 >= _bounds.y1 && roi.y2 <= _bounds.y2);
+    assert(roi.x1 >= other._bounds.x1 && roi.x2 <= other._bounds.x2 && roi.y1 >= other._bounds.y1 && roi.y2 <= other._bounds.y2);
+    
+    int srcRowSize = other._bounds.width();
+    int dstRowSize = _bounds.width();
+    
+    const char* srcBitmap = other.getBitmapAt(roi.x1, roi.y1);
+    char* dstBitmap = getBitmapAt(roi.x1, roi.y1);
+    
+    for (int y = roi.y1; y < roi.y2; ++y,
+         srcBitmap += srcRowSize,
+         dstBitmap += dstRowSize) {
+        memcpy(dstBitmap, srcBitmap, roi.width());
+    }
 }
 
 ///Fast version when components are the same
@@ -1625,9 +1666,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
         }
 
         if (copyBitmap) {
-            const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            memcpy( dstBitmap, srcBitmap, intersection.width() );
+            dstImg.copyBitmapRowPortion(intersection.x1, intersection.x2, intersection.y1 + y, srcImg);
         }
     }
 } // convertToFormatInternal_sameComps
@@ -1673,14 +1712,12 @@ convertToFormatInternal(const RectI & renderWindow,
     if ( dstNComps == 1 && (channelForAlpha == -1) ) {
         DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1, intersection.y1);
 
+        if (copyBitmap) {
+            dstImg.copyBitmapPortion(intersection, srcImg);
+        }
         for ( int y = 0; y < intersection.height();
               ++y, dstPixels += (r.width() * dstNComps) ) {
             std::fill(dstPixels, dstPixels + intersection.width() * dstNComps, 0.);
-            if (copyBitmap) {
-                const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-                char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-                memcpy( dstBitmap, srcBitmap, intersection.width() );
-            }
         }
 
         return;
@@ -1688,7 +1725,7 @@ convertToFormatInternal(const RectI & renderWindow,
 
     const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
     const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
-
+    
     for (int y = 0; y < intersection.height(); ++y) {
         
         ///Start of the line for error diffusion
@@ -1826,15 +1863,14 @@ convertToFormatInternal(const RectI & renderWindow,
             srcPixels = srcStart - srcNComps;
             dstPixels = dstStart - dstNComps;
         }
-
-        ///Copy bitmap if needed
-        if (copyBitmap) {
-            const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            memcpy( dstBitmap, srcBitmap, intersection.width() );
-        }
+    }
+    
+    if (copyBitmap) {
+        dstImg.copyBitmapPortion(intersection, srcImg);
     }
 } // convertToFormatInternal
+
+
 
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
 void

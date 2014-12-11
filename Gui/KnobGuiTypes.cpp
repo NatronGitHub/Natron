@@ -2255,7 +2255,7 @@ Color_KnobGui::showColorDialog()
         _knob->unblockEvaluation();
 
     }
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
 } // showColorDialog
 
 void
@@ -2271,7 +2271,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
         }
     }
     _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
 }
 
 void
@@ -2598,7 +2598,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         _mainLayout->addWidget(_textEdit);
 
-        QObject::connect( _textEdit, SIGNAL( textChanged() ), this, SLOT( onTextChanged() ) );
+        QObject::connect( _textEdit, SIGNAL( editingFinished() ), this, SLOT( onTextChanged() ) );
        // layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 

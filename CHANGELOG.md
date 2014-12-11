@@ -30,6 +30,8 @@ of Natron. You can configure the location and maximum size of the cache in the p
 
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
 
+- Tracker: all tracks are now multi-threaded for better performances. Also fixed a bug where the overlay displayed while tracking wasn't matching the underlying displayed image.
+
 - Roto: Selected points can now be dragged from everywhere within the bounding box instead of only the cross-hair.
 - Roto: It is now possible to move a bezier just by dragging a part of the curve where there is no control point.
 - Roto: Holding shift while dragging a scale handle of the bounding box will now scale only the half of the shape on the side of the handle
@@ -70,6 +72,9 @@ to avoid creating new beziers by mistake
 - Fixed a bug where the extra OpenFX plug-ins search paths would be ignored
 
 - Backdrop: only move nodes which are initially within the backdrop, not the ones that are crossed when moving it.
+
+- Nodegraph: zooming is now done under the mouse cursor
+
 
 - Readers: when a file changes externally, don't reload it automatically, instead a warning is displayed on the viewer and it is up to the user to reload it with the button created specifically
 for the occasion. The warning notification can be disabled in the preferences of Natron. The tooltip of the field with the filename now indicates the last modification date of the file.
