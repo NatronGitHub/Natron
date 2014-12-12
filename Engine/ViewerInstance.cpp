@@ -760,6 +760,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///to clear portions of the texture, just the last one.
         RectI roiAfterRender = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
         if (roi != roiAfterRender) {
+            params->cachedFrame->setAborted(true);
+            appPTR->removeFromViewerCache(params->cachedFrame);
+
             return eStatusOK;
         }
 

@@ -2371,6 +2371,10 @@ TrackScheduler::run()
 void
 TrackScheduler::track(int startingFrame,int end,bool forward, const std::list<Button_Knob*> & selectedInstances)
 {
+    if ((forward && startingFrame >= end) || (!forward && startingFrame <= end)) {
+        emit trackingFinished();
+        return;
+    }
     {
         QMutexLocker k(&_imp->argsMutex);
         _imp->requestedArgs.start = startingFrame;
