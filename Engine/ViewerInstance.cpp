@@ -645,59 +645,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         ///Notify the gui we're rendering.
         ViewerRenderingStarted_RAII renderingNotifier(this);
         
-        ///Don't different threads to write the texture entry
-        FrameEntryLocker entryLocker(_imp.get());
-        
-        ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
-        ///is very low, we better render again (and let the NodeCache do the work) rather than just
-        ///overload the ViewerCache which may become slowe
-        assert(_imp->uiContext);
-        if (forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
-            
-            assert(!params->cachedFrame);
-            params->mustFreeRamBuffer = true;
-            params->ramBuffer =  (unsigned char*)malloc(bytesCount);
-            ramBuffer = (params->ramBuffer);
-            
-        } else {
-            
-          
-            
-            boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
-                FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);
-            bool textureIsCached = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &entryLocker, &params->cachedFrame);
-            if (!params->cachedFrame) {
-                std::stringstream ss;
-                ss << "Failed to allocate a texture of ";
-                ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
-                Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-
-                return eStatusFailed;
-            }
-            
-            if (textureIsCached) {
-                entryLocker.lock(params->cachedFrame);
-            } else {
-                ///The entry has already been locked by the cache
-                params->cachedFrame->allocateMemory();
-            }
-
-            assert(params->cachedFrame);
-            // how do you make sure cachedFrame->data() is not freed after this line?
-            ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
-            ///Since it is used during the whole function scope it is guaranteed not to be freed before
-            ///The viewer is actually done with it.
-            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-            ramBuffer = params->cachedFrame->data();
-
-            {
-                QMutexLocker l(&_imp->lastRenderedHashMutex);
-                _imp->lastRenderedHashValid = true;
-                _imp->lastRenderedHash = viewerHash;
-            }
-        }
-        assert(ramBuffer);
-
         ///intersect the image render window to the actual image region of definition.
         roi.intersect(bounds, &roi);
 
@@ -753,20 +700,73 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             
         
         } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
-        
-        
-        if (!params->image) {
-            //if render was aborted, remove the frame from the cache as it contains only garbage)
-            if (params->cachedFrame) {
-                params->cachedFrame->setAborted(true);
-                appPTR->removeFromViewerCache(params->cachedFrame);
-            }
-        
-            return eStatusFailed;
+
+        ///Re-check the RoI of the viewer after we rendered. If the user was zooming in/out, it might have changed
+        ///and we don't want to erase all the texture for nothing. E.g: when the user is currently zoomed in on a few
+        ///pixels of the image, when dezooming, several renders will be triggered, but we don't want the intermediate renders
+        ///to clear portions of the texture, just the last one.
+        RectI roiAfterRender = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
+        if (roi != roiAfterRender) {
+            return eStatusOK;
         }
 
-
         abortCheck(activeInputToRender);
+        
+        
+        ///Don't allow different threads to write the texture entry
+        FrameEntryLocker entryLocker(_imp.get());
+        
+        ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
+        ///is very low, we better render again (and let the NodeCache do the work) rather than just
+        ///overload the ViewerCache which may become slowe
+        assert(_imp->uiContext);
+        if (forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
+            
+            assert(!params->cachedFrame);
+            params->mustFreeRamBuffer = true;
+            params->ramBuffer =  (unsigned char*)malloc(bytesCount);
+            ramBuffer = (params->ramBuffer);
+            
+        } else {
+            
+            
+            
+            boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
+            FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);
+            bool textureIsCached = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &entryLocker, &params->cachedFrame);
+            if (!params->cachedFrame) {
+                std::stringstream ss;
+                ss << "Failed to allocate a texture of ";
+                ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
+                Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+                
+                return eStatusFailed;
+            }
+            
+            if (textureIsCached) {
+                entryLocker.lock(params->cachedFrame);
+            } else {
+                ///The entry has already been locked by the cache
+                params->cachedFrame->allocateMemory();
+            }
+            
+            assert(params->cachedFrame);
+            // how do you make sure cachedFrame->data() is not freed after this line?
+            ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
+            ///Since it is used during the whole function scope it is guaranteed not to be freed before
+            ///The viewer is actually done with it.
+            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+            ramBuffer = params->cachedFrame->data();
+            
+            {
+                QMutexLocker l(&_imp->lastRenderedHashMutex);
+                _imp->lastRenderedHashValid = true;
+                _imp->lastRenderedHash = viewerHash;
+            }
+        }
+        assert(ramBuffer);
+        
+
 
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( params->image->getBitDepth() );
         

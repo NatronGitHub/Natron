@@ -1386,8 +1386,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         ///A ptr to a higher resolution of the image or an image with different comps/bitdepth
         ImagePtr imageToConvert;
         
-        bool imageConversionNeeded = false;
-        
         for (ImageList::iterator it = cachedImages.begin(); it!=cachedImages.end(); ++it) {
             unsigned int imgMMlevel = (*it)->getMipMapLevel();
             ImageComponentsEnum imgComps = (*it)->getComponents();
@@ -1427,31 +1425,21 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     continue;
                 }
                 
-                
-                ///Same resolution but different comps/bitdepth
-                if (imgMMlevel == mipMapLevel) {
-                    imageConversionNeeded = true;
-                    imageToConvert = *it;
-                    break;
-                }
-                
                 assert(imgMMlevel < mipMapLevel);
                 
                 if (!imageToConvert) {
                     imageToConvert = *it;
-                    imageConversionNeeded = false;//imgComps != components || imgDepth != bitdepth;
 
                 } else {
-                    if (imgMMlevel < imageToConvert->getMipMapLevel()) {
+                    ///We found an image which scale is closer to the requested mipmap level we want, use it instead
+                    if (imgMMlevel > imageToConvert->getMipMapLevel()) {
                         imageToConvert = *it;
-                        imageConversionNeeded = false;//imgComps != components || imgDepth != bitdepth;
-
                     }
                 }
                 
                 
             }
-        }
+        } //end for
         
         if (imageToConvert && !*image) {
 
@@ -1462,45 +1450,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
             ImageLocker locker(this, imageToConvert);
 
-            ///Edit: don't try to convert now, instead continue rendering the original image and convert afterwards
-//            if (imageConversionNeeded) {
-//                
-//                boost::shared_ptr<ImageParams> imageParams(new ImageParams(*imageToConvert->getParams()));
-//                imageParams->setComponents(components);
-//                imageParams->setBitDepth(bitdepth);
-//                
-//                
-//                ///Allocate the image in the cache, it may be useful later
-//                ImageLocker imageLock(this);
-//                
-//                boost::shared_ptr<Image> img;
-//                if (useCache) {
-//                    bool cached = !useDiskCache ? Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img) :
-//                                                  Natron::getImageFromDiskCacheOrCreate(key, imageParams, &imageLock, &img);
-//                    assert(img);
-//                    
-//                    if (!cached) {
-//                        img->allocateMemory();
-//                    } else {
-//                        ///lock the image because it might not be allocated yet
-//                        imageLock.lock(img);
-//                    }
-//                } else {
-//                    img.reset(new Image(key,imageParams));
-//                }
-//                
-//                bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
-//                
-//                imageToConvert->convertToFormat(imageToConvert->getBounds(),
-//                                                               getApp()->getDefaultColorSpaceForBitDepth( imageToConvert->getBitDepth() ),
-//                                                               getApp()->getDefaultColorSpaceForBitDepth(bitdepth), channelForAlpha, false,
-//                                                useCache  && imageToConvert->usesBitMap(),
-//                                                unPremultIfNeeded, img.get());
-//                
-//                imageToConvert = img;
-//                
-//            }
-            
             if (imageToConvert->getMipMapLevel() != mipMapLevel) {
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
                 
