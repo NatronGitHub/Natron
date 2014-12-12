@@ -3084,28 +3084,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->parentGroupLabel = new QLabel(tr("Group:"),optContainer);
         _imp->parentGroupLabel->setFont(font);
         _imp->parentGroup = new ComboBox(optContainer);
-        //_imp->parentGroup->addItem("-");
         
         _imp->parentGroup->setToolTip(tr("The name of the group under which this parameter will appear"));
         optLayout->addWidget(_imp->parentGroup);
-        
-        if (knob) {
-            boost::shared_ptr<KnobI> parent = knob->getParentKnob();
-            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(parent.get());
-            if (isGrp) {
-                int index = 1; // 1 because of the "-" item
-                bool found = false;
-                for (std::list<Group_Knob*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it, ++index) {
-                    if ((*it) == isGrp) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    _imp->parentGroup->setCurrentIndex(index);
-                }
-            }
-        }
         
         _imp->mainLayout->addRow(_imp->parentGroupLabel, optContainer);
     }
@@ -3151,13 +3132,37 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
                     _imp->parentPage->setCurrentIndex(index);
                 }
             }
-                
+            
             
         }
         
         _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
         onPageCurrentIndexChanged(0);
+    } else { // if(!knob)
+        
+        if (_imp->parentGroup) {
+            Page_Knob* topLvlPage = getTopLevelPageForKnob(knob.get());
+            assert(topLvlPage);
+            boost::shared_ptr<KnobI> parent = knob->getParentKnob();
+            Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+            _imp->parentGroup->addItem("-");
+            int idx = 1;
+            for (std::list<Group_Knob*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it, ++idx) {
+                Page_Knob* page = getTopLevelPageForKnob(*it);
+                assert(page);
+                
+                ///add only grps whose parent page is the selected page
+                if (page == topLvlPage) {
+                    _imp->parentGroup->addItem((*it)->getName().c_str());
+                    if (isParentGrp && isParentGrp == *it) {
+                        _imp->parentGroup->setCurrentIndex(idx);
+                    }
+                }
+                
+            }
+        }
     }
+    
     QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),Qt::Horizontal,this);
     QObject::connect(buttons,SIGNAL(rejected()), this, SLOT(reject()));
     QObject::connect(buttons,SIGNAL(accepted()), this, SLOT(onOkClicked()));
@@ -3581,7 +3586,10 @@ AddKnobDialog::onOkClicked()
     } else {
         ///Remove the previous knob, and recreate it.
         int index;
+        Page_Knob* oldParentPage = 0;
+
         if (_imp->knob) {
+            oldParentPage = getTopLevelPageForKnob(_imp->knob.get());
             index = getChoiceIndexFromKnobType(_imp->knob.get());
             _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
             _imp->knob.reset();
@@ -3590,6 +3598,10 @@ AddKnobDialog::onOkClicked()
             index = _imp->typeChoice->activeIndex();
         }
         _imp->createKnobFromSelection(index);
+        assert(_imp->knob);
+        if (oldParentPage) {
+            oldParentPage->addKnob(_imp->knob);
+        }
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
         }

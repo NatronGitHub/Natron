@@ -1821,6 +1821,8 @@ public:
     /*Add a knob to the vector. This is called by the
        Knob class. Don't call this*/
     void addKnob(boost::shared_ptr<KnobI> k);
+    
+    void insertKnob(int idx, const boost::shared_ptr<KnobI>& k);
 
 
     void initializeKnobsPublic();

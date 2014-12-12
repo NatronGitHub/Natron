@@ -2443,6 +2443,22 @@ KnobHolder::addKnob(boost::shared_ptr<KnobI> k)
     _imp->knobs.push_back(k);
 }
 
+void
+KnobHolder::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
+{
+    if (index < 0) {
+        return;
+    }
+    QMutexLocker kk(&_imp->knobsMutex);
+    
+    if (index >= (int)_imp->knobs.size()) {
+        _imp->knobs.push_back(k);
+    } else {
+        std::vector<boost::shared_ptr<KnobI> >::iterator it = _imp->knobs.begin();
+        std::advance(it, index);
+        _imp->knobs.insert(it, k);
+    }
+}
 
 void
 KnobHolder::setPanelPointer(DockablePanelI* gui)

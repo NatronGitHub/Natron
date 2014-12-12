@@ -663,6 +663,8 @@ public:
     
     void moveOneStepUp(KnobI* k);
     void moveOneStepDown(KnobI* k);
+    
+    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
 
     const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
 
@@ -711,6 +713,8 @@ public:
     void moveOneStepDown(KnobI* k);
     
     void removeKnob(KnobI* k);
+    
+    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
 
     const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
     {
