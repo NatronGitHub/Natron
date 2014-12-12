@@ -349,7 +349,8 @@ TimeLineGui::paintGL()
             glEnd();
             glCheckErrorIgnoreOSXBug();
 
-            if (tickSize > minTickSizeText) {
+            bool doRender = std::abs(std::floor(0.5 + value) - value) == 0.;
+            if (doRender && tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = QString::number(value);
                 const int sSizePixel =  fontM.width(s);
