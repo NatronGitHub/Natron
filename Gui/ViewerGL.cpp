@@ -624,6 +624,8 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glTexCoordPointer(2, GL_FLOAT, 0, 0);
 
+        glDisableClientState(GL_COLOR_ARRAY);
+
         glBindBuffer(GL_ARRAY_BUFFER,0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
@@ -1179,7 +1181,7 @@ ViewerGL::paintGL()
                 }
             } else {
                 if (drawTexture[0]) {
-                    
+                    glDisable(GL_BLEND);
                     BlendSetter b(premultA);
                     drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
 
@@ -1945,8 +1947,8 @@ ViewerGL::initializeGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     makeCurrent();
     initAndCheckGlExtensions();
-    _imp->displayTextures[0] = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
-    _imp->displayTextures[1] = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
+    _imp->displayTextures[0] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
+    _imp->displayTextures[1] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
 
 
     // glGenVertexArrays(1, &_vaoId);
