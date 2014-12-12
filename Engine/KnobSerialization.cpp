@@ -23,12 +23,10 @@
 
 
 ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
-                                       TypeExtraData* extraData,
                                        int dimension,
                                        bool save)
     : _knob(knob)
     , _dimension(dimension)
-    , _extraData(extraData)
 
 {
     if (save) {

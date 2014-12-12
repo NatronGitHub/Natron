@@ -46,12 +46,19 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
 
         std::vector< boost::shared_ptr<KnobI> >  knobs = n->getLiveInstance()->getKnobs_mt_safe();
 
+        std::list<boost::shared_ptr<KnobI> > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
             Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
             Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
             Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knobs[i].get() );
-            if (knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
+            
+            if (isPage && knobs[i]->isUserKnob()) {
+                userPages.push_back(knobs[i]);
+                continue;
+            }
+            
+            if (!knobs[i]->isUserKnob() && knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
                 
                 ///For choice do a deepclone because we need entries
                 bool doCopyKnobs = isChoice ? true : copyKnobs;
@@ -60,7 +67,13 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
                 _knobsValues.push_back(newKnobSer);
             }
         }
+        
         _nbKnobs = (int)_knobsValues.size();
+        
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it!=userPages.end(); ++it) {
+            boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
+            _userPages.push_back(s);
+        }
 
         _knobsAge = n->getKnobsAge();
 

@@ -120,6 +120,9 @@ public:
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
     void restoreKnobsLinks(const NodeSerialization & serialization,const std::vector<boost::shared_ptr<Natron::Node> > & allNodes);
+    
+    void restoreUserKnobs(const NodeSerialization& serialization);
+    
 
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
