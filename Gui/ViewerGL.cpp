@@ -1285,7 +1285,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
             }
             RectD dataW = getRoD(i);
             
-            if (dataW != _imp->projectFormat) {
+            if (dataW != projectFormatCanonical) {
                 renderText(dataW.right(), dataW.top(),
                            _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
