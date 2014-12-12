@@ -517,7 +517,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->gainBox);
 
 
-    _imp->gainSlider = new ScaleSliderQWidget(0, 64,1.0,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gainSlider = new ScaleSliderQWidget(0, 64,1.0,ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     _imp->gainSlider->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
                                        "Multiplies the image by \nthis amount before display.") );
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
