@@ -2434,15 +2434,13 @@ OfxEffectInstance::knobChanged(KnobI* k,
         }
         if (_overlayInteract) {
             if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
-                
                 incrementRedrawNeededCounter();
-                
             }
-        }
-        
-        if (recursionLevel == 1 && checkIfOverlayRedrawNeeded()) {
-            stat = _overlayInteract->redraw();
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+
+            if (recursionLevel == 1 && checkIfOverlayRedrawNeeded()) {
+                stat = _overlayInteract->redraw();
+                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+            }
         }
     }
 } // knobChanged

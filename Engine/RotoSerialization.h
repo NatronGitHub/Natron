@@ -302,6 +302,9 @@ public:
 
     BezierSerialization()
         : RotoDrawableItemSerialization()
+        , _controlPoints()
+        , _featherPoints()
+        , _closed(false)
     {
     }
 

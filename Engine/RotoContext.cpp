@@ -3427,7 +3427,7 @@ void
 Bezier::save(RotoItemSerialization* obj) const
 {
     BezierSerialization* s = dynamic_cast<BezierSerialization*>(obj);
-    {
+    if (s) {
         QMutexLocker l(&itemMutex);
 
         s->_closed = _imp->finished;
