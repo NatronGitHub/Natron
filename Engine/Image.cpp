@@ -20,10 +20,18 @@
 
 using namespace Natron;
 
+#define BM_GET(i,j) &_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
 
+#if NATRON_ENABLE_TRIMAP
+#define PIXEL_UNAVAILABLE 2
+#endif
 
 RectI
+#if NATRON_ENABLE_TRIMAP
+Bitmap::minimalNonMarkedBbox(const RectI & roi,bool* isBeingRenderedElsewhere) const
+#else
 Bitmap::minimalNonMarkedBbox(const RectI & roi) const
+#endif
 {
     /*if we rendered everything we just append
        a NULL box to indicate we rendered it all.*/
@@ -37,22 +45,60 @@ Bitmap::minimalNonMarkedBbox(const RectI & roi) const
     roi.intersect(_bounds, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
+        const char* buf = BM_GET(i, _bounds.left());
+#if NATRON_ENABLE_TRIMAP
+        const char* lineEnd = buf + _bounds.width();
+        bool metUnavailablePixel = false;
+        while (buf < lineEnd) {
+            if (!*buf) {
+                buf = 0;
+                break;
+            } else if (*buf == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+            ++buf;
+        }
+        if (!buf) {
+            break;
+        } else if (metUnavailablePixel) {
+            *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+        }
+#else
         if ( !memchr( buf, 0, _bounds.width() ) ) {
             bbox.set_bottom(bbox.bottom() + 1);
         } else {
             break;
         }
+#endif
     }
 
     //find top (will do zero iteration if the bbox is already empty)
     for (int i = bbox.top() - 1; i >= bbox.bottom(); --i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
+        const char* buf = BM_GET(i, _bounds.left());
+#if NATRON_ENABLE_TRIMAP
+        const char* lineEnd = buf + _bounds.width();
+        bool metUnavailablePixel = false;
+        while (buf < lineEnd) {
+            if (!*buf) {
+                buf = 0;
+                break;
+            } else if (*buf == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+            ++buf;
+        }
+        if (!buf) {
+            break;
+        } else if (metUnavailablePixel) {
+            *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+        }
+#else
         if ( !memchr( buf, 0, _bounds.width() ) ) {
             bbox.set_top(bbox.top() - 1);
         } else {
             break;
         }
+#endif
     }
 
     // avoid making bbox.width() iterations for nothing
@@ -62,15 +108,28 @@ Bitmap::minimalNonMarkedBbox(const RectI & roi) const
 
     //find left
     for (int j = bbox.left(); j < bbox.right(); ++j) {
-        bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bbox.bottom(), j);
+#if NATRON_ENABLE_TRIMAP
+        bool metUnavailablePixel = false;
+#endif
+        for (int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width()) {
+            if (!*pix) {
+                pix = 0;
                 break;
             }
+#if NATRON_ENABLE_TRIMAP
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+#endif
         }
-        if (!shouldStop) {
+        if (pix) {
             bbox.set_left(bbox.left() + 1);
+#if NATRON_ENABLE_TRIMAP
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
+            }
+#endif
         } else {
             break;
         }
@@ -78,15 +137,28 @@ Bitmap::minimalNonMarkedBbox(const RectI & roi) const
 
     //find right
     for (int j = bbox.right() - 1; j >= bbox.left(); --j) {
-        bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bbox.bottom(), j);
+#if NATRON_ENABLE_TRIMAP
+        bool metUnavailablePixel = false;
+#endif
+        for (int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width()) {
+            if (!*pix) {
+                pix = 0;
                 break;
             }
+#if NATRON_ENABLE_TRIMAP
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+#endif
         }
-        if (!shouldStop) {
+        if (pix) {
             bbox.set_right(bbox.right() - 1);
+#if NATRON_ENABLE_TRIMAP
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
+            }
+#endif
         } else {
             break;
         }
@@ -96,10 +168,18 @@ Bitmap::minimalNonMarkedBbox(const RectI & roi) const
 } // minimalNonMarkedBbox
 
 std::list<RectI>
+#if NATRON_ENABLE_TRIMAP
+Bitmap::minimalNonMarkedRects(const RectI & roi,bool* isBeingRenderedElsewhere) const
+#else
 Bitmap::minimalNonMarkedRects(const RectI & roi) const
+#endif
 {
     std::list<RectI> ret;
+#if NATRON_ENABLE_TRIMAP
+    RectI bboxM = minimalNonMarkedBbox(roi,isBeingRenderedElsewhere);
+#else
     RectI bboxM = minimalNonMarkedBbox(roi);
+#endif
 
 //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
@@ -138,8 +218,10 @@ Bitmap::minimalNonMarkedRects(const RectI & roi) const
     RectI bboxA = bboxX;
     bboxA.set_top( bboxX.bottom() );
     for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 1, _bounds.width() ) ) {
+#pragma message WARN("The expression before was const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()]; I think " \
+"iterating from bboxX.left() to bboxX.right() is enough")
+        const char* buf = BM_GET(i, bboxX.left());
+        if ( !memchr( buf, 1, bboxX.width() ) ) {
             bboxX.set_bottom(bboxX.bottom() + 1);
             bboxA.set_top( bboxX.bottom() );
         } else {
@@ -155,7 +237,9 @@ Bitmap::minimalNonMarkedRects(const RectI & roi) const
     RectI bboxB = bboxX;
     bboxB.set_bottom( bboxX.top() );
     for (int i = bboxX.top() - 1; i >= bboxX.bottom(); --i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
+#pragma message WARN("The expression before was const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()]; I think " \
+"iterating from bboxX.left() to bboxX.right() is enough")
+        const char* buf = BM_GET(i, bboxX.left());
         if ( !memchr( buf, 1, _bounds.width() ) ) {
             bboxX.set_top(bboxX.top() - 1);
             bboxB.set_bottom( bboxX.top() );
@@ -171,14 +255,14 @@ Bitmap::minimalNonMarkedRects(const RectI & roi) const
     RectI bboxC = bboxX;
     bboxC.set_right( bboxX.left() );
     for (int j = bboxX.left(); j < bboxX.right(); ++j) {
-        bool shouldStop = false;
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bboxX.bottom(), j);
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+            if (*pix) {
+                pix = 0;
                 break;
             }
         }
-        if (!shouldStop) {
+        if (pix) {
             bboxX.set_left(bboxX.left() + 1);
             bboxC.set_right( bboxX.left() );
         } else {
@@ -193,14 +277,14 @@ Bitmap::minimalNonMarkedRects(const RectI & roi) const
     RectI bboxD = bboxX;
     bboxD.set_left( bboxX.right() );
     for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
-        bool shouldStop = false;
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bboxX.bottom(), j);
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+            if (*pix) {
+                pix = 0;
                 break;
             }
         }
-        if (!shouldStop) {
+        if (pix) {
             bboxX.set_right(bboxX.right() - 1);
             bboxD.set_left( bboxX.right() );
         } else {
@@ -232,17 +316,21 @@ Bitmap::minimalNonMarkedRects(const RectI & roi) const
     assert( bboxD.bottom() == bboxX.bottom() );
 
     // get the bounding box of what's left (the X rectangle in the drawing above)
+#if NATRON_ENABLE_TRIMAP
+    bboxX = minimalNonMarkedBbox(bboxX,isBeingRenderedElsewhere);
+#else 
     bboxX = minimalNonMarkedBbox(bboxX);
+#endif
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxX);
     }
 
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
 # ifdef DEBUG
-    /*qDebug() << "render " << ret.size() << " rectangles";
+    qDebug() << "render " << ret.size() << " rectangles";
     for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
         qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
-    }*/
+    }
 # endif // DEBUG
     return ret;
 } // minimalNonMarkedRects
@@ -251,7 +339,7 @@ void
 Natron::Bitmap::markForRendered(const RectI & roi)
 {
     for (int i = roi.bottom(); i < roi.top(); ++i) {
-        char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width() + ( roi.left() - _bounds.left() )];
+        char* buf = BM_GET(i, roi.left());
         memset( buf, 1, roi.width() );
     }
 }
@@ -261,7 +349,7 @@ Natron::Bitmap::getBitmapAt(int x,
                             int y) const
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        return &_map[( y - _bounds.bottom() ) * _bounds.width() + ( x - _bounds.left() )];
+        return BM_GET(y,x);
     } else {
         return NULL;
     }
@@ -272,7 +360,7 @@ Natron::Bitmap::getBitmapAt(int x,
                             int y)
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        return &_map[( y - _bounds.bottom() ) * _bounds.width() + ( x - _bounds.left() )];
+        return BM_GET(y,x);
     } else {
         return NULL;
     }

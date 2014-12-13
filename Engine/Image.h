@@ -28,6 +28,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Rect.h"
 #include "Engine/OutputSchedulerThread.h"
 
+
 namespace Natron {
 
     
@@ -75,9 +76,13 @@ namespace Natron {
             return _bounds;
         }
 
+#if NATRON_ENABLE_TRIMAP
+        std::list<RectI> minimalNonMarkedRects(const RectI & roi,bool* isBeingRenderedElsewhere) const;
+        RectI minimalNonMarkedBbox(const RectI & roi,bool* isBeingRenderedElsewhere) const;
+#else 
         std::list<RectI> minimalNonMarkedRects(const RectI & roi) const;
-
         RectI minimalNonMarkedBbox(const RectI & roi) const;
+#endif
 
         void markForRendered(const RectI & roi);
 
@@ -265,24 +270,40 @@ namespace Natron {
      * area to render. Since this problem is quite hard to solve,the different portions
      * of image returned may contain already rendered pixels.
      **/
+#if NATRON_ENABLE_TRIMAP
+        std::list<RectI> getRestToRender(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere) const
+#else
         std::list<RectI> getRestToRender(const RectI & regionOfInterest) const
+#endif
         {
             if (!_useBitmap) {
                 return std::list<RectI>();
             }
             QReadLocker locker(&_lock);
 
+#if NATRON_ENABLE_TRIMAP
+            return _bitmap.minimalNonMarkedRects(regionOfInterest, isBeingRenderedElsewhere);
+#else
             return _bitmap.minimalNonMarkedRects(regionOfInterest);
+#endif
         }
 
+#if NATRON_ENABLE_TRIMAP
+        RectI getMinimalRect(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere) const
+#else
         RectI getMinimalRect(const RectI & regionOfInterest) const
+#endif
         {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
             QReadLocker locker(&_lock);
 
+#if NATRON_ENABLE_TRIMAP
+            return _bitmap.minimalNonMarkedBbox(regionOfInterest,isBeingRenderedElsewhere);
+#else
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
+#endif
         }
 
         void markForRendered(const RectI & roi)

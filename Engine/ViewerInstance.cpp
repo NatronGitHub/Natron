@@ -603,7 +603,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
         
         /// make sure we have the lock on the texture because it may be in the cache already
         ///but not yet allocated.
-        FrameEntryLocker entryLocker(_imp.get(),params->cachedFrame);
+        FrameEntryLocker entryLocker(_imp.get());
+        if (!entryLocker.tryLock(params->cachedFrame)) {
+            ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+            return eStatusOK;
+        }
         
         if (params->cachedFrame->getAborted()) {
             ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
@@ -615,7 +619,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     }
     
     if (isCached) {
-        /*Found in viewer cache, we execute the cached engine and leave*/
 
         // how do you make sure cachedFrame->data() is not freed after this line?
         ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
@@ -680,7 +683,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
             }
             
             if (textureIsCached) {
-                entryLocker.lock(params->cachedFrame);
+                //entryLocker.lock(params->cachedFrame);
+                if (!entryLocker.tryLock(params->cachedFrame)) {
+                    ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+                    return eStatusOK;
+                }
             } else {
                 ///The entry has already been locked by the cache
                 params->cachedFrame->allocateMemory();

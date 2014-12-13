@@ -174,6 +174,20 @@ public:
         textureBeingRendered.push_back(entry);
     }
     
+    virtual bool tryLock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    {
+        QMutexLocker l(&textureBeingRenderedMutex);
+        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+        if ( it != textureBeingRendered.end() ) {
+            return false;
+        }
+        ///Okay the image is not used by any other thread, claim that we want to use it
+        assert( it == textureBeingRendered.end() );
+        textureBeingRendered.push_back(entry);
+        return true;
+    }
+    
     virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
     {
 

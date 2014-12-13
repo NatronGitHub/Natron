@@ -581,6 +581,7 @@ public:
      * This is used internally by EffectInstance::renderRoI
      **/
     void lock(const boost::shared_ptr<Natron::Image>& entry);
+    bool tryLock(const boost::shared_ptr<Natron::Image>& entry);
     void unlock(const boost::shared_ptr<Natron::Image>& entry);
 
 

@@ -2991,6 +2991,23 @@ Node::lock(const boost::shared_ptr<Natron::Image> & image)
     _imp->imagesBeingRendered.push_back(image);
 }
 
+bool
+Node::tryLock(const boost::shared_ptr<Natron::Image> & image)
+{
+    
+    QMutexLocker l(&_imp->imagesBeingRenderedMutex);
+    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
+    std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    
+    if ( it != _imp->imagesBeingRendered.end() ) {
+        return false;
+    }
+    ///Okay the image is not used by any other thread, claim that we want to use it
+    assert( it == _imp->imagesBeingRendered.end() );
+    _imp->imagesBeingRendered.push_back(image);
+    return true;
+}
+
 void
 Node::unlock(const boost::shared_ptr<Natron::Image> & image)
 {
