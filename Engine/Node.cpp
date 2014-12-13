@@ -1546,7 +1546,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
                         return eCanConnectInput_differentPars;
                     }
                     
-                    if ((*it)->getLiveInstance()->getPreferredFrameRate() != inputFPS) {
+                    if (std::abs((*it)->getLiveInstance()->getPreferredFrameRate() - inputFPS) > 0.01) {
                         return eCanConnectInput_differentFPS;
                     }
                     

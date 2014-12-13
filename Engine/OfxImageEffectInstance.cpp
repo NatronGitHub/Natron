@@ -810,29 +810,80 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
-    bool caughtExcp = false;
+    
+    double inputPar = 1.;
+    bool inputParSet = false;
+    bool mustWarnPar = false;
+    bool outputFrameRateSet = false;
+    double outputFrameRate = _outputFrameRate;
+    bool mustWarnFPS = false;
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it2 = _clips.begin(); it2 != _clips.end(); ++it2) {
+        if (!it2->second->isOutput() && it2->second->getConnected()) {
+            if (!inputParSet) {
+                inputPar = it2->second->getAspectRatio();
+                inputParSet = true;
+            } else if (inputPar != it2->second->getAspectRatio()) {
+                // We have several inputs with different aspect ratio, which should be forbidden by the host.
+                mustWarnPar = true;
+            }
+            
+            if (!outputFrameRateSet) {
+                outputFrameRate = it2->second->getFrameRate();
+                outputFrameRateSet = true;
+            } else if (std::abs(outputFrameRate - it2->second->getFrameRate()) > 0.01) {
+                // We have several inputs with different frame rates
+                mustWarnFPS = true;
+            }
+
+        }
+    }
+
+    
     try {
         setupClipPreferencesArgs(outArgs);
     } catch (OFX::Host::Property::Exception) {
+        outArgs.setDoubleProperty("OfxImageClipPropPAR_Output" , inputPar);
+        outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
+    }
+    if (mustWarnPar) {
         qDebug()
         << "WARNING: getClipPreferences() for "
         << _ofxEffectInstance->getName_mt_safe().c_str()
-        << ": This node has several input clips with different pixel aspect ratio or different frame rates but it does "
+        << ": This node has several input clips with different pixel aspect ratio but it does "
         "not support multiple input clips PAR. Your script or the GUI should have handled this "
         "earlier (before connecting the node @see Node::canConnectInput) .";
+        outArgs.setDoubleProperty("OfxImageClipPropPAR_Output" , inputPar);
+
+    }
+    
+    if (mustWarnFPS) {
+        qDebug()
+        << "WARNING: getClipPreferences() for "
+        << _ofxEffectInstance->getName_mt_safe().c_str()
+        << ": This node has several input clips with different frame rates but it does "
+        "not support it. Your script or the GUI should have handled this "
+        "earlier (before connecting the node @see Node::canConnectInput) .";
         outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
-        outArgs.setDoubleProperty("OfxImageClipPropPAR_Output" , 1.);
-        
         std::string name = _ofxEffectInstance->getName_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio or different frame rates but it cannot handle it.");
-        caughtExcp = true;
     }
 
-    if (!caughtExcp) {
+    if (mustWarnPar && !mustWarnFPS) {
+        std::string name = _ofxEffectInstance->getName_mt_safe();
+        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio but it cannot handle it.");
+    } else if (!mustWarnPar && mustWarnFPS) {
+        std::string name = _ofxEffectInstance->getName_mt_safe();
+        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different frame rates but it cannot handle it.");
+    } else if (mustWarnPar && mustWarnFPS) {
+        std::string name = _ofxEffectInstance->getName_mt_safe();
+        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio and different frame rates but it cannot handle it.");
+    } else {
         if (_ofxEffectInstance->getNode()->hasPersistentMessage()) {
             _ofxEffectInstance->clearPersistentMessage(false);
         }
     }
+    
+
 #       ifdef OFX_DEBUG_ACTIONS
     std::cout << "OFX: "<<(void*)this<<"->"<<kOfxImageEffectActionGetClipPreferences<<"()"<<std::endl;
 #       endif
