@@ -948,9 +948,9 @@ Image::halveRoIForDepth(const RectI & roi,
                 char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
 #if NATRON_ENABLE_TRIMAP
                 a = a == PIXEL_UNAVAILABLE ? 0 : a;
-                b = b == PIXEL_UNAVAILABLE ? 0 : a;
-                c = c == PIXEL_UNAVAILABLE ? 0 : a;
-                d = d == PIXEL_UNAVAILABLE ? 0 : a;
+                b = b == PIXEL_UNAVAILABLE ? 0 : b;
+                c = c == PIXEL_UNAVAILABLE ? 0 : c;
+                d = d == PIXEL_UNAVAILABLE ? 0 : d;
 #endif
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
