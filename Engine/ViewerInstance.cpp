@@ -607,11 +607,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
 }
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
-#define abortCheck(input) if ( (!isSequentialRender && canAbort && (input->getHash() != inArgs.activeInputHash || \
-                                                                    getTimeline()->currentFrame() != inArgs.params->time ) ) \
-                                ||  \
-                                (isSequentialRender && input->isAbortedFromPlayback()) \
-                        )  {\
+#define abortCheck(input) if ( input->aborted() ) { \
                                 if (inArgs.params->cachedFrame) { \
                                     inArgs.params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
@@ -1105,7 +1101,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                             break;
                     }
                     
-
+                    
                     switch ( pixelSize ) {
                     case sizeof(unsigned char): //byte
                         if (args.srcColorSpace) {

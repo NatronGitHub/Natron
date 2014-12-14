@@ -2382,7 +2382,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///the image is NOT an identity, and it may have some content left to render.
     EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
     
-    if (!rectsToRender.empty()) {
+    if (!rectsToRender.empty() || isBeingRenderedElsewhere) {
         
 #if NATRON_ENABLE_TRIMAP
         if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
@@ -2390,31 +2390,34 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             _imp->markImageAsBeingRendered(useImageAsOutput ? image : downscaledImage);
         }
 #endif
-        renderRetCode = renderRoIInternal(args.time,
-                                          args.mipMapLevel,
-                                          args.view,
-                                          rectsToRender,
-                                          rod,
-                                          par,
-                                          image,
-                                          downscaledImage,
-                                          useImageAsOutput,
-                                          frameRenderArgs.isSequentialRender,
-                                          frameRenderArgs.isRenderResponseToUserInteraction,
-                                          nodeHash,
-                                          args.channelForAlpha,
-                                          renderFullScaleThenDownscale,
-                                          renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                          inputsRoi,
-                                          inputImages
+        if (!rectsToRender.empty()) {
+            renderRetCode = renderRoIInternal(args.time,
+                                              args.mipMapLevel,
+                                              args.view,
+                                              rectsToRender,
+                                              rod,
+                                              par,
+                                              image,
+                                              downscaledImage,
+                                              useImageAsOutput,
+                                              frameRenderArgs.isSequentialRender,
+                                              frameRenderArgs.isRenderResponseToUserInteraction,
+                                              nodeHash,
+                                              args.channelForAlpha,
+                                              renderFullScaleThenDownscale,
+                                              renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                              inputsRoi,
+                                              inputImages
 #if NATRON_ENABLE_TRIMAP
-                                          ,&isBeingRenderedElsewhere
+                                              ,&isBeingRenderedElsewhere
 #endif
-                                          );
+                                              );
+        }
         
 #if NATRON_ENABLE_TRIMAP
         if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
             ///Only use trimap system if the render cannot be aborted.
+            assert(!aborted());
             if (renderRetCode == eRenderRoIStatusRenderFailed || !isBeingRenderedElsewhere) {
                 _imp->unmarkImageAsBeingRendered(useImageAsOutput ? image : downscaledImage,renderRetCode == eRenderRoIStatusRenderFailed);
             } else {
