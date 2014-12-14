@@ -359,7 +359,8 @@ struct EffectInstance::Implementation
         ImageBeingRendered() : cond(), lock(), refCount(0) {}
     };
     QMutex imagesBeingRenderedMutex;
-    typedef std::map<ImagePtr,boost::shared_ptr<ImageBeingRendered> > IBRMap;
+    typedef boost::shared_ptr<ImageBeingRendered> IBRPtr;
+    typedef std::map<ImagePtr,IBRPtr > IBRMap;
     IBRMap imagesBeingRendered;
 #endif
     
@@ -373,13 +374,15 @@ struct EffectInstance::Implementation
 #if NATRON_ENABLE_TRIMAP
     void markImageAsBeingRendered(const boost::shared_ptr<Natron::Image>& img)
     {
-        
+        if (!img->usesBitMap()) {
+            return;
+        }
         QMutexLocker k(&imagesBeingRenderedMutex);
         IBRMap::iterator found = imagesBeingRendered.find(img);
         if (found != imagesBeingRendered.end()) {
             ++(found->second->refCount);
         } else {
-            boost::shared_ptr<Implementation::ImageBeingRendered> ibr(new Implementation::ImageBeingRendered);
+            IBRPtr ibr(new Implementation::ImageBeingRendered);
             ++ibr->refCount;
             imagesBeingRendered.insert(std::make_pair(img,ibr));
         }
@@ -387,21 +390,32 @@ struct EffectInstance::Implementation
     
     void waitForImageBeingRenderedElsewhereAndUnmark(const RectI& roi,const boost::shared_ptr<Natron::Image>& img)
     {
-        QMutexLocker k(&imagesBeingRenderedMutex);
-        IBRMap::iterator found = imagesBeingRendered.find(img);
-        assert(found != imagesBeingRendered.end());
+        if (!img->usesBitMap()) {
+            return;
+        }
+        IBRPtr ibr;
+        {
+            QMutexLocker k(&imagesBeingRenderedMutex);
+            IBRMap::iterator found = imagesBeingRendered.find(img);
+            assert(found != imagesBeingRendered.end());
+            ibr = found->second;
+        }
         
         std::list<RectI> restToRender;
-        QMutexLocker kk(&found->second->lock);
+        QMutexLocker kk(&ibr->lock);
         bool isBeingRenderedElseWhere = false;
         img->getRestToRender_trimap(roi,restToRender, &isBeingRenderedElseWhere);
         
         while (isBeingRenderedElseWhere) {
-            found->second->cond.wait(&found->second->lock);
+            ibr->cond.wait(&ibr->lock);
             
             ///Lock was released for some time, get a fresh iterator since the map might have changed
-            found = imagesBeingRendered.find(img);
-            assert(found != imagesBeingRendered.end());
+            {
+                QMutexLocker k(&imagesBeingRenderedMutex);
+                IBRMap::iterator found = imagesBeingRendered.find(img);
+                assert(found != imagesBeingRendered.end());
+                ibr = found->second;
+            }
             
             img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
         }
@@ -409,17 +423,27 @@ struct EffectInstance::Implementation
         ///Everything should be rendered now.
         assert(restToRender.empty());
         
-        --found->second->refCount;
-        if (!found->second->refCount) {
-            kk.unlock(); // < unlock before erase which is going to delete the lock
-            imagesBeingRendered.erase(found);
+        {
+            QMutexLocker k(&imagesBeingRenderedMutex);
+            IBRMap::iterator found = imagesBeingRendered.find(img);
+            assert(found != imagesBeingRendered.end());
+            --found->second->refCount;
+            if (!found->second->refCount) {
+                kk.unlock(); // < unlock before erase which is going to delete the lock
+                imagesBeingRendered.erase(found);
+            }
         }
+
+        
         
     
     }
     
     void unmarkImageAsBeingRendered(const boost::shared_ptr<Natron::Image>& img)
     {
+        if (!img->usesBitMap()) {
+            return;
+        }
         QMutexLocker k(&imagesBeingRenderedMutex);
         IBRMap::iterator found = imagesBeingRendered.find(img);
         assert(found != imagesBeingRendered.end());

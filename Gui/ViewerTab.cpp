@@ -156,6 +156,7 @@ struct ViewerTabPrivate
     Button* enableViewerRoI;
     Button* refreshButton;
     QIcon iconRefreshOff, iconRefreshOn;
+    int ongoingRenderCount;
     
     Button* activateRenderScale;
     bool renderScaleActive;
@@ -258,6 +259,7 @@ struct ViewerTabPrivate
         , refreshButton(NULL)
         , iconRefreshOff()
         , iconRefreshOn()
+        , ongoingRenderCount(0)
         , activateRenderScale(NULL)
         , renderScaleActive(false)
         , renderScaleCombo(NULL)
@@ -3291,13 +3293,20 @@ ViewerTab::setDesiredFps(double fps)
 void
 ViewerTab::onViewerRenderingStarted()
 {
-    _imp->refreshButton->setIcon(_imp->iconRefreshOn);
+    
+    if (!_imp->ongoingRenderCount) {
+        _imp->refreshButton->setIcon(_imp->iconRefreshOn);
+    }
+    ++_imp->ongoingRenderCount;
 }
 
 void
 ViewerTab::onViewerRenderingStopped()
 {
-    _imp->refreshButton->setIcon(_imp->iconRefreshOff);
+    --_imp->ongoingRenderCount;
+    if (!_imp->ongoingRenderCount) {
+        _imp->refreshButton->setIcon(_imp->iconRefreshOff);
+    }
 }
 
 void
