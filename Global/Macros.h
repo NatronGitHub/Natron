@@ -143,7 +143,7 @@ NATRON_VERSION_REVISION)
 //Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
-#define NATRON_ENABLE_TRIMAP 1
+#define NATRON_ENABLE_TRIMAP 0
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x
