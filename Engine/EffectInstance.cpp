@@ -409,6 +409,7 @@ struct EffectInstance::Implementation
         
         while (isBeingRenderedElseWhere && !ibr->renderFailed) {
             ibr->cond.wait(&ibr->lock);
+            isBeingRenderedElseWhere = false;
             img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
         }
         
