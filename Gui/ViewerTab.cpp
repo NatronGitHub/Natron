@@ -1287,7 +1287,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     _imp->currentFrameBox->setValue(time);
     
     if (_imp->timeLineGui->getTimeline() != _imp->gui->getApp()->getTimeLine()) {
-        _imp->viewerNode->renderCurrentFrame(false);
+        _imp->viewerNode->renderCurrentFrame(true);
     }
 }
 
@@ -1302,7 +1302,7 @@ ViewerTab::centerViewer()
 {
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
-        _imp->viewerNode->renderCurrentFrame(true);
+        _imp->viewerNode->renderCurrentFrame(false);
     } else {
         _imp->viewer->updateGL();
     }
@@ -1312,7 +1312,7 @@ void
 ViewerTab::refresh()
 {
     _imp->viewerNode->forceFullComputationOnNextFrame();
-    _imp->viewerNode->renderCurrentFrame(true);
+    _imp->viewerNode->renderCurrentFrame(false);
 }
 
 ViewerTab::~ViewerTab()

@@ -942,11 +942,16 @@ Image::halveRoIForDepth(const RectI & roi,
                 ///a b
                 ///c d
 
-                const char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
-                const char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
-                const char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
-                const char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
-
+                char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
+                char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
+                char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
+                char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
+#if NATRON_ENABLE_TRIMAP
+                a = a == PIXEL_UNAVAILABLE ? 0 : a;
+                b = b == PIXEL_UNAVAILABLE ? 0 : a;
+                c = c == PIXEL_UNAVAILABLE ? 0 : a;
+                d = d == PIXEL_UNAVAILABLE ? 0 : a;
+#endif
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
                 assert(a + b + c + d <= sum); // bitmaps are 0 or 1
