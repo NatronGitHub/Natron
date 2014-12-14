@@ -261,9 +261,11 @@ public slots:
     void onFrameRangeEditingFinished();
 
     void onCanSetFrameRangeButtonClicked(bool toggled);
+    void onCanSetFrameRangeLabelClicked(bool toggled);
     void setFrameRangeLocked(bool toggled);
     
     void onCanSetFPSClicked(bool toggled);
+    void onCanSetFPSLabelClicked(bool toggled);
     void setFPSLocked(bool fpsLocked);
 
     void onTimelineBoundariesChanged(SequenceTime,SequenceTime,int);

@@ -121,6 +121,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _magnecStartingPos()
       , _nodeLabel()
       , _parentMultiInstance()
+      , _renderingStartedCount(0)
 {
 }
 
@@ -1530,17 +1531,23 @@ NodeGui::getUndoStack() const
 void
 NodeGui::onRenderingStarted()
 {
-    _stateIndicator->setBrush(Qt::yellow);
-    _stateIndicator->show();
-    update();
+    if (!_renderingStartedCount) {
+        _stateIndicator->setBrush(Qt::yellow);
+        _stateIndicator->show();
+        update();
+    }
+    ++_renderingStartedCount;
     
 }
 
 void
 NodeGui::onRenderingFinished()
 {
-    _stateIndicator->hide();
-    update();
+    --_renderingStartedCount;
+    if (!_renderingStartedCount) {
+        _stateIndicator->hide();
+        update();
+    }
 }
 
 void
@@ -1580,10 +1587,13 @@ NodeGui::setVisibleDetails(bool visible)
 void
 NodeGui::onInputNRenderingStarted(int input)
 {
-    
-    std::map<int,Edge*>::iterator it = _inputEdges.find(input);
-    if ( it != _inputEdges.end() ) {
-        it->second->turnOnRenderingColor();
+    std::map<int,int>::iterator itC = _inputNRenderingStartedCount.find(input);
+    if (itC == _inputNRenderingStartedCount.end()) {
+        std::map<int,Edge*>::iterator it = _inputEdges.find(input);
+        if ( it != _inputEdges.end() ) {
+            it->second->turnOnRenderingColor();
+        }
+        _inputNRenderingStartedCount.insert(std::make_pair(input,1));
     }
     
 }
@@ -1591,10 +1601,17 @@ NodeGui::onInputNRenderingStarted(int input)
 void
 NodeGui::onInputNRenderingFinished(int input)
 {
-    std::map<int,Edge*>::iterator it = _inputEdges.find(input);
-
-    if ( it != _inputEdges.end() ) {
-        it->second->turnOffRenderingColor();
+    std::map<int,int>::iterator itC = _inputNRenderingStartedCount.find(input);
+    if (itC != _inputNRenderingStartedCount.end()) {
+        
+        --itC->second;
+        if (!itC->second) {
+            std::map<int,Edge*>::iterator it = _inputEdges.find(input);
+            if ( it != _inputEdges.end() ) {
+                it->second->turnOffRenderingColor();
+            }
+            _inputNRenderingStartedCount.erase(itC);
+        }
     }
 }
 

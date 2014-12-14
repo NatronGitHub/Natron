@@ -502,6 +502,9 @@ private:
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
     boost::shared_ptr<NodeGui> _parentMultiInstance;
+    
+    int _renderingStartedCount;
+    std::map<int,int> _inputNRenderingStartedCount;
       
 };
 

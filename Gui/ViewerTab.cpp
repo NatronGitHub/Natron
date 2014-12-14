@@ -200,11 +200,11 @@ struct ViewerTabPrivate
     Button* playbackMode_Button;
     LineEdit* frameRangeEdit;
     QCheckBox* canEditFrameRangeBox;
-    QLabel* canEditFrameRangeLabel;
+    ClickableLabel* canEditFrameRangeLabel;
     mutable QMutex frameRangeLockedMutex;
     bool frameRangeLocked;
     QCheckBox* canEditFpsBox;
-    QLabel* canEditFpsLabel;
+    ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;
     bool fpsLocked;
     SpinBox* fpsBox;
@@ -801,7 +801,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->canEditFrameRangeBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QFont font(appFont,appFontSize);
     
-    _imp->canEditFrameRangeLabel = new QLabel(tr("Frame-range"),_imp->playerButtonsContainer);
+    _imp->canEditFrameRangeLabel = new ClickableLabel(tr("Frame-range"),_imp->playerButtonsContainer);
+    QObject::connect(_imp->canEditFrameRangeLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFrameRangeLabelClicked(bool)));
     _imp->canEditFrameRangeLabel->setToolTip(canEditFRTooltip);
     _imp->canEditFrameRangeLabel->setFont(font);
     
@@ -836,7 +837,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->canEditFpsBox->setChecked(!_imp->fpsLocked);
     QObject::connect( _imp->canEditFpsBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFPSClicked(bool) ) );
     
-    _imp->canEditFpsLabel = new QLabel(tr("fps"),_imp->playerButtonsContainer);
+    _imp->canEditFpsLabel = new ClickableLabel(tr("fps"),_imp->playerButtonsContainer);
+    QObject::connect(_imp->canEditFpsLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFPSLabelClicked(bool)));
     _imp->canEditFpsLabel->setToolTip(canEditFpsBoxTT);
     _imp->canEditFpsLabel->setFont(font);
     
@@ -2879,10 +2881,24 @@ ViewerTab::onCanSetFrameRangeButtonClicked(bool toggled)
 }
 
 void
+ViewerTab::onCanSetFrameRangeLabelClicked(bool toggled)
+{
+    _imp->canEditFrameRangeBox->setChecked(toggled);
+    onCanSetFrameRangeButtonClicked(toggled);
+}
+
+void
 ViewerTab::setFrameRangeLocked(bool toggled)
 {
     _imp->canEditFrameRangeBox->setChecked(!toggled);
     onCanSetFrameRangeButtonClicked(!toggled);
+}
+
+void
+ViewerTab::onCanSetFPSLabelClicked(bool toggled)
+{
+    _imp->canEditFpsBox->setChecked(toggled);
+    onCanSetFPSClicked(toggled);
 }
 
 void

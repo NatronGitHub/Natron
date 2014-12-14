@@ -355,8 +355,9 @@ struct EffectInstance::Implementation
         QWaitCondition cond;
         QMutex lock;
         int refCount;
+        bool renderFailed;
         
-        ImageBeingRendered() : cond(), lock(), refCount(0) {}
+        ImageBeingRendered() : cond(), lock(), refCount(0), renderFailed(false) {}
     };
     QMutex imagesBeingRenderedMutex;
     typedef boost::shared_ptr<ImageBeingRendered> IBRPtr;
@@ -406,17 +407,8 @@ struct EffectInstance::Implementation
         bool isBeingRenderedElseWhere = false;
         img->getRestToRender_trimap(roi,restToRender, &isBeingRenderedElseWhere);
         
-        while (isBeingRenderedElseWhere) {
+        while (isBeingRenderedElseWhere && !ibr->renderFailed) {
             ibr->cond.wait(&ibr->lock);
-            
-            ///Lock was released for some time, get a fresh iterator since the map might have changed
-            {
-                QMutexLocker k(&imagesBeingRenderedMutex);
-                IBRMap::iterator found = imagesBeingRendered.find(img);
-                assert(found != imagesBeingRendered.end());
-                ibr = found->second;
-            }
-            
             img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
         }
         
@@ -439,7 +431,7 @@ struct EffectInstance::Implementation
     
     }
     
-    void unmarkImageAsBeingRendered(const boost::shared_ptr<Natron::Image>& img)
+    void unmarkImageAsBeingRendered(const boost::shared_ptr<Natron::Image>& img,bool renderFailed)
     {
         if (!img->usesBitMap()) {
             return;
@@ -449,6 +441,9 @@ struct EffectInstance::Implementation
         assert(found != imagesBeingRendered.end());
         
         QMutexLocker kk(&found->second->lock);
+        if (renderFailed) {
+            found->second->renderFailed = true;
+        }
         found->second->cond.wakeAll();
         --found->second->refCount;
         if (!found->second->refCount) {
@@ -2420,7 +2415,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
             ///Only use trimap system if the render cannot be aborted.
             if (renderRetCode == eRenderRoIStatusRenderFailed || !isBeingRenderedElsewhere) {
-                _imp->unmarkImageAsBeingRendered(useImageAsOutput ? image : downscaledImage);
+                _imp->unmarkImageAsBeingRendered(useImageAsOutput ? image : downscaledImage,renderRetCode == eRenderRoIStatusRenderFailed);
             } else {
                 _imp->waitForImageBeingRenderedElsewhereAndUnmark(roi, useImageAsOutput ? image: downscaledImage);
             }
