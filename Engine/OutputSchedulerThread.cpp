@@ -2730,7 +2730,9 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
             args[i].reset();
         }
     }
-    if (!args[0] && !args[1]) {
+    if ((!args[0] && !args[1]) ||
+        (!args[0] && status[0] == eStatusOK && args[1] && status[1] == eStatusFailed) ||
+        (!args[1] && status[1] == eStatusOK && args[0] && status[0] == eStatusFailed)) {
         _imp->viewer->redrawViewer();
     } else {
         
