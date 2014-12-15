@@ -1179,6 +1179,10 @@ EffectInstance::getImage(int inputNb,
     if (!inputImg) {
         return inputImg;
     }
+    
+    ///Check that the rendered image contains what we requested.
+    assert(inputImg->getComponents() == comp);
+    
     if (roiPixel) {
         *roiPixel = pixelRoI;
     }
@@ -2457,10 +2461,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
     
     ///The image might need to be converted to fit the original requested format
-    bool imageConversionNeeded = args.components != image->getComponents() || args.bitdepth != image->getBitDepth();
+    bool imageConversionNeeded = args.components != downscaledImage->getComponents() || args.bitdepth != downscaledImage->getBitDepth();
     assert( isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents) );
     
-    if (imageConversionNeeded && !renderAborted && renderRetCode != eRenderRoIStatusRenderFailed) {
+    if (imageConversionNeeded && renderRetCode != eRenderRoIStatusRenderFailed) {
         boost::shared_ptr<Image> tmp( new Image(args.components, rod, downscaledImage->getBounds(), mipMapLevel,downscaledImage->getPixelAspectRatio(), args.bitdepth, false) );
         
         bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
@@ -2488,7 +2492,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         _imp->lastRenderHash = nodeHash;
         _imp->lastImage = downscaledImage;
     }
-
+    assert(downscaledImage->getComponents() == args.components && downscaledImage->getBitDepth() == args.bitdepth);
     return downscaledImage;
 } // renderRoI
 
