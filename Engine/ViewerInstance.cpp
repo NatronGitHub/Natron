@@ -1642,14 +1642,15 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    _imp->viewerParamsLut = colorspace;
-
+    
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        
+        _imp->viewerParamsLut = colorspace;
+    }
     assert(_imp->uiContext);
     if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
-          && !getApp()->getProject()->isLoadingProject() ) {
+        && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     } else {
         _imp->uiContext->redraw();
