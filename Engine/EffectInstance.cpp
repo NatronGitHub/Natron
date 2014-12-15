@@ -417,17 +417,15 @@ struct EffectInstance::Implementation
         
         ///Everything should be rendered now.
         assert(restToRender.empty());
-        int refCount;
-        {
-            QMutexLocker kk(&ibr->lock);
-            --ibr->refCount;
-            refCount = ibr->refCount;
-        }
+
         {
             QMutexLocker k(&imagesBeingRenderedMutex);
             IBRMap::iterator found = imagesBeingRendered.find(img);
             assert(found != imagesBeingRendered.end());
-            if (!refCount) {
+            
+            QMutexLocker kk(&ibr->lock);
+            --ibr->refCount;
+            if (found != imagesBeingRendered.end() && !ibr->refCount) {
                 imagesBeingRendered.erase(found);
             }
         }
