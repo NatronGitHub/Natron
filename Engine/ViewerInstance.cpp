@@ -776,9 +776,11 @@ ViewerInstance::renderViewer_internal(int view,
                                                                                         inArgs.params->textureRect.par,
                                                                                         inArgs.params->mipMapLevel);
     if (roi != roiAfterRender) {
-        inArgs.params->cachedFrame->setAborted(true);
-        appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
-        inArgs.params->cachedFrame.reset();
+        if (inArgs.params->cachedFrame) {
+            inArgs.params->cachedFrame->setAborted(true);
+            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
+            inArgs.params->cachedFrame.reset();
+        }
         return eStatusReplyDefault;
     }
     

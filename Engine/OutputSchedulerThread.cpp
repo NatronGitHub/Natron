@@ -1207,8 +1207,10 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_p
         BufferedFrame b;
         b.time = time;
         b.view = view;
-        b.frame.push_back(image);
-        treatFrame(b);
+        if (image) {
+            b.frame.push_back(image);
+            treatFrame(b);
+        }
     } else {
         
         ///Called by the scheduler thread when an image is rendered
@@ -2089,7 +2091,7 @@ private:
             return;
         } else {
             for (int i = 0; i < 2; ++i) {
-                if (args[i] && args[i]->params && args[i]->params->cachedFrame) {
+                if (args[i] && args[i]->params && args[i]->params->ramBuffer) {
                     _imp->scheduler->appendToBuffer(time, view, args[i]->params);
                     args[i].reset();
                 }
@@ -2110,10 +2112,10 @@ private:
             ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
             _imp->scheduler->notifyRenderFailure(std::string());
         } else {
-            if (args[0] && args[0]->params && args[0]->params->cachedFrame) {
+            if (args[0] && args[0]->params && args[0]->params->ramBuffer) {
                 _imp->scheduler->appendToBuffer(time, view, args[0]->params);
             }
-            if (args[1] && args[1]->params && args[1]->params->cachedFrame) {
+            if (args[1] && args[1]->params && args[1]->params->ramBuffer) {
                 _imp->scheduler->appendToBuffer(time, view, args[1]->params);
             }
         }
@@ -2617,7 +2619,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableOb
         assert(*it2);
         boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
         assert(params);
-        if (params && params->cachedFrame) {
+        if (params && params->ramBuffer) {
             hasDoneSomething = true;
             viewer->updateViewer(params);
         }
