@@ -222,8 +222,11 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
             if (buf) {
                 bboxX.set_bottom(bboxX.bottom() + 1);
                 bboxA.set_top( bboxX.bottom() );
-            } else if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true;
+            } else {
+                if (metUnavailablePixel) {
+                    *isBeingRenderedElsewhere = true;
+                }
+                break;
             }
         } else {
             if ( !memchr( buf, 1, bboxX.width() ) ) {
@@ -262,10 +265,12 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
             if (buf) {
                 bboxX.set_top(bboxX.top() - 1);
                 bboxB.set_bottom( bboxX.top() );
-            } else if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true;
+            } else {
+                if (metUnavailablePixel) {
+                    *isBeingRenderedElsewhere = true;
+                }
+                break;
             }
-
         } else {
             if ( !memchr( buf, 1, bboxX.width() ) ) {
                 bboxX.set_top(bboxX.top() - 1);
