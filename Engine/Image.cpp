@@ -205,11 +205,33 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
     bboxA.set_top( bboxX.bottom() );
     for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
         const char* buf = BM_GET(i, bboxX.left());
-        if ( !memchr( buf, 1, bboxX.width() ) ) {
-            bboxX.set_bottom(bboxX.bottom() + 1);
-            bboxA.set_top( bboxX.bottom() );
+        if (trimap) {
+            const char* lineEnd = buf + bboxX.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (*buf == 1) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    metUnavailablePixel = true;
+                    break;
+                }
+                ++buf;
+            }
+            if (buf) {
+                bboxX.set_bottom(bboxX.bottom() + 1);
+                bboxA.set_top( bboxX.bottom() );
+            } else if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
         } else {
-            break;
+            if ( !memchr( buf, 1, bboxX.width() ) ) {
+                bboxX.set_bottom(bboxX.bottom() + 1);
+                bboxA.set_top( bboxX.bottom() );
+            } else {
+                break;
+            }
         }
     }
     if ( !bboxA.isNull() ) { // empty boxes should not be pushed
@@ -222,11 +244,36 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
     bboxB.set_bottom( bboxX.top() );
     for (int i = bboxX.top() - 1; i >= bboxX.bottom(); --i) {
         const char* buf = BM_GET(i, bboxX.left());
-        if ( !memchr( buf, 1, _bounds.width() ) ) {
-            bboxX.set_top(bboxX.top() - 1);
-            bboxB.set_bottom( bboxX.top() );
+        
+        if (trimap) {
+            const char* lineEnd = buf + bboxX.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (*buf == 1) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    metUnavailablePixel = true;
+                    break;
+                }
+                ++buf;
+            }
+            if (buf) {
+                bboxX.set_top(bboxX.top() - 1);
+                bboxB.set_bottom( bboxX.top() );
+            } else if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
+
         } else {
-            break;
+            if ( !memchr( buf, 1, bboxX.width() ) ) {
+                bboxX.set_top(bboxX.top() - 1);
+                bboxB.set_bottom( bboxX.top() );
+            } else {
+                break;
+            }
+            
         }
     }
     if ( !bboxB.isNull() ) { // empty boxes should not be pushed
@@ -238,9 +285,16 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
     bboxC.set_right( bboxX.left() );
     for (int j = bboxX.left(); j < bboxX.right(); ++j) {
         const char* pix = BM_GET(bboxX.bottom(), j);
+        
+        bool metUnavailablePixel = false;
+        
         for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
-            if (*pix) {
+            if (*pix == 1) {
                 pix = 0;
+                break;
+            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                pix = 0;
+                metUnavailablePixel = true;
                 break;
             }
         }
@@ -248,6 +302,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
             bboxX.set_left(bboxX.left() + 1);
             bboxC.set_right( bboxX.left() );
         } else {
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
             break;
         }
     }
@@ -260,9 +317,16 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
     bboxD.set_left( bboxX.right() );
     for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
         const char* pix = BM_GET(bboxX.bottom(), j);
+        
+        bool metUnavailablePixel = false;
+        
         for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
-            if (*pix) {
+            if (*pix == 1) {
                 pix = 0;
+                break;
+            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                pix = 0;
+                metUnavailablePixel = true;
                 break;
             }
         }
@@ -270,6 +334,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
             bboxX.set_right(bboxX.right() - 1);
             bboxD.set_left( bboxX.right() );
         } else {
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
             break;
         }
     }
