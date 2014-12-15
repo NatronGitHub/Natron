@@ -3196,9 +3196,10 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     bool renderAborted = aborted();
     
-    if (st != eStatusOK || renderAborted) {
+    if (st != eStatusOK) {
 #if NATRON_ENABLE_TRIMAP
         if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+            assert(!renderAborted);
             if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
                 fullScaleImage->clearBitmap(renderRectToRender);
             } else {
@@ -3206,9 +3207,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             }
         }
 #endif
-        if (st != eStatusOK) {
-            return eRenderingFunctorFailed;
-        }
+        return eRenderingFunctorFailed;
+        
     }
     
     if ( !renderAborted ) {

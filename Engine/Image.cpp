@@ -682,8 +682,8 @@ Image::pixelAt(int x,
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
         return (unsigned char*)(this->_data.writable())
-        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-        + ( x - _bounds.left() ) * compDataSize;
+        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -699,8 +699,8 @@ Image::pixelAt(int x,
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
         return (unsigned char*)(this->_data.readable())
-        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-        + ( x - _bounds.left() ) * compDataSize;
+        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -1652,7 +1652,12 @@ Bitmap::copyRowPortion(int x1,int x2,int y,const Bitmap& other)
 {
     const char* srcBitmap = other.getBitmapAt(x1, y);
     char* dstBitmap = getBitmapAt(x1, y);
-    memcpy( dstBitmap, srcBitmap, x2 - x1 );
+    const char* end = dstBitmap + (x2 - x1);
+    while (dstBitmap < end) {
+        *dstBitmap = *srcBitmap == PIXEL_UNAVAILABLE ? 0 : *srcBitmap;
+        ++dstBitmap;
+        ++srcBitmap;
+    }
     
 }
 
@@ -1680,7 +1685,15 @@ Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
     for (int y = roi.y1; y < roi.y2; ++y,
          srcBitmap += srcRowSize,
          dstBitmap += dstRowSize) {
-        memcpy(dstBitmap, srcBitmap, roi.width());
+        
+        const char* srcCur = srcBitmap;
+        const char* srcEnd = srcBitmap + roi.width();
+        char* dstCur = dstBitmap;
+        while (srcCur < srcEnd) {
+            *dstCur = *srcCur == PIXEL_UNAVAILABLE ? 0 : *srcCur;
+            ++srcCur;
+            ++dstCur;
+        }
     }
 }
 
