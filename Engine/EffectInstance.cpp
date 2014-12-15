@@ -403,26 +403,31 @@ struct EffectInstance::Implementation
         }
         
         std::list<RectI> restToRender;
-        QMutexLocker kk(&ibr->lock);
         bool isBeingRenderedElseWhere = false;
         img->getRestToRender_trimap(roi,restToRender, &isBeingRenderedElseWhere);
         
-        while (isBeingRenderedElseWhere && !ibr->renderFailed) {
-            ibr->cond.wait(&ibr->lock);
-            isBeingRenderedElseWhere = false;
-            img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
+        {
+            QMutexLocker kk(&ibr->lock);
+            while (isBeingRenderedElseWhere && !ibr->renderFailed) {
+                ibr->cond.wait(&ibr->lock);
+                isBeingRenderedElseWhere = false;
+                img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
+            }
         }
         
         ///Everything should be rendered now.
         assert(restToRender.empty());
-        
+        int refCount;
+        {
+            QMutexLocker kk(&ibr->lock);
+            --ibr->refCount;
+            refCount = ibr->refCount;
+        }
         {
             QMutexLocker k(&imagesBeingRenderedMutex);
             IBRMap::iterator found = imagesBeingRendered.find(img);
             assert(found != imagesBeingRendered.end());
-            --found->second->refCount;
-            if (!found->second->refCount) {
-                kk.unlock(); // < unlock before erase which is going to delete the lock
+            if (!refCount) {
                 imagesBeingRendered.erase(found);
             }
         }
