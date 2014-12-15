@@ -100,7 +100,7 @@ public:
                                 boost::shared_ptr<ViewerInstance::ViewerArgs> args[2]) WARN_UNUSED_RETURN;
 
 
-    void updateViewer(const boost::shared_ptr<BufferableObject>& frame);
+    void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
     
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully

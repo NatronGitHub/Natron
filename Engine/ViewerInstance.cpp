@@ -315,7 +315,7 @@ ViewerInstance::renderViewer(int view,
             break;
         }
         
-        if (args[i]) {
+        if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
             ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,*args[i]);
             if (ret[i] == eStatusReplyDefault) {
@@ -573,9 +573,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
         ///but not yet allocated.
         FrameEntryLocker entryLocker(_imp.get());
         if (!entryLocker.tryLock(outArgs->params->cachedFrame)) {
-            outArgs->params.reset();
+            outArgs->params->cachedFrame.reset();
             ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-            return eStatusReplyDefault;
+            //return eStatusReplyDefault;
+            return eStatusOK;
         }
         
         if (outArgs->params->cachedFrame->getAborted()) {
@@ -683,9 +684,10 @@ ViewerInstance::renderViewer_internal(int view,
         }
         
         if (textureIsCached) {
-            //entryLocker.lock(params->cachedFrame);
+            //entryLocker.lock(inArgs.params->cachedFrame);
             if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
                 ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+                inArgs.params->cachedFrame.reset();
                 return eStatusOK;
             }
         } else {
@@ -776,7 +778,7 @@ ViewerInstance::renderViewer_internal(int view,
     if (roi != roiAfterRender) {
         inArgs.params->cachedFrame->setAborted(true);
         appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
-        
+        inArgs.params->cachedFrame.reset();
         return eStatusReplyDefault;
     }
     
@@ -915,7 +917,7 @@ ViewerInstance::renderViewer_internal(int view,
 
 
 void
-ViewerInstance::updateViewer(const boost::shared_ptr<BufferableObject>& frame)
+ViewerInstance::updateViewer(boost::shared_ptr<UpdateViewerParams> & frame)
 {
     _imp->updateViewer(boost::dynamic_pointer_cast<UpdateViewerParams>(frame));
 }

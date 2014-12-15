@@ -1998,7 +1998,9 @@ void
 ViewerDisplayScheduler::treatFrame(const BufferedFrame& frame)
 {
     for (std::list<boost::shared_ptr<BufferableObject> >::const_iterator it = frame.frame.begin(); it!=frame.frame.end(); ++it) {
-        _viewer->updateViewer(*it);
+        boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it);
+        assert(params);
+        _viewer->updateViewer(params);
     }
     if (!frame.frame.empty()) {
         _viewer->redrawViewer();
@@ -2501,6 +2503,7 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
         args.scheduler->treatProducedFrame(ret);
     }
     
+    
 }
 
 ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
@@ -2609,15 +2612,22 @@ ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableOb
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    if (!frames.empty()) {
-        for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
-            assert(*it2);
-            viewer->updateViewer(*it2);
+    bool hasDoneSomething = false;
+    for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
+        assert(*it2);
+        boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
+        assert(params);
+        if (params && params->cachedFrame) {
+            hasDoneSomething = true;
+            viewer->updateViewer(params);
         }
     }
     
+    
     ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
-    viewer->redrawViewer();
+    if (hasDoneSomething) {
+        viewer->redrawViewer();
+    }
     
     
     {

@@ -2970,7 +2970,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             QMutexLocker *locker = 0;
 
             if (safety == eRenderSafetyInstanceSafe) {
-                 locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
+                locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
             } else if (safety == eRenderSafetyUnsafe) {
                 locker = new QMutexLocker( appPTR->getMutexForPlugin( getPluginID().c_str() ) );
             }
