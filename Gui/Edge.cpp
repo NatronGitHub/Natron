@@ -343,7 +343,7 @@ Edge::initLine()
     } else {
         arrowSize = 7. * sc;
     }
-    double headAngle = 4. * M_PI / 5.;
+    double headAngle = 3. * M_PI / 4.;
     QPointF arrowP1 = arrowIntersect + QPointF(std::sin(a + headAngle) * arrowSize,
                                             std::cos(a + headAngle) * arrowSize);
     QPointF arrowP2 = arrowIntersect + QPointF(std::sin(a + M_PI - headAngle) * arrowSize,

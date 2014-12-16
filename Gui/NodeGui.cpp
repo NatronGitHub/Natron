@@ -854,11 +854,11 @@ NodeGui::initializeInputs()
             bool decrAngle = true;
             if (_internalNode->getLiveInstance()->isInputMask(it->first)) {
                 if (maskIndex == 0) {
-                    edgeAngle = M_PI;
+                    edgeAngle = 0;
                     decrAngle = false;
                     ++maskIndex;
                 } else if (maskIndex == 1) {
-                    edgeAngle = 0;
+                    edgeAngle = M_PI;
                     decrAngle = false;
                     ++maskIndex;
                 } else {
