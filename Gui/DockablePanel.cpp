@@ -275,12 +275,13 @@ DockablePanel::DockablePanel(Gui* gui
             std::string iconFilePath = iseffect->getNode()->getPluginIconFilePath();
             if (!iconFilePath.empty()) {
                 QPixmap ic;
-                ic.load(iconFilePath.c_str());
-                ic = ic.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2,NATRON_MEDIUM_BUTTON_SIZE - 2,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-                QLabel* iconLabel = new QLabel(getHeaderWidget());
-                iconLabel->setContentsMargins(2, 2, 2, 2);
-                iconLabel->setPixmap(ic);
-                _imp->_headerLayout->addWidget(iconLabel);
+                if (ic.load(iconFilePath.c_str())) {
+                    ic = ic.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2,NATRON_MEDIUM_BUTTON_SIZE - 2,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+                    QLabel* iconLabel = new QLabel(getHeaderWidget());
+                    iconLabel->setContentsMargins(2, 2, 2, 2);
+                    iconLabel->setPixmap(ic);
+                    _imp->_headerLayout->addWidget(iconLabel);
+                }
                 
             }
             
