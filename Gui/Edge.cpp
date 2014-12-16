@@ -305,10 +305,11 @@ Edge::initLine()
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
         if (_label) {
+            QFontMetrics fm(_label->font());
             double cosinus = std::cos(_angle);
             int yOffset = 0;
             if (cosinus < 0) {
-                yOffset = -40;
+                yOffset = -fm.width(_label->toPlainText());
             } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                 yOffset = +5;
             } else {
@@ -317,7 +318,7 @@ Edge::initLine()
 
             /*adjusting dst to show label at the middle of the line*/
 
-            QPointF labelDst = QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
+            QPointF labelDst = dstIntersection;//QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
 
             _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
         }
