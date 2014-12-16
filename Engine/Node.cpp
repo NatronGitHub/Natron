@@ -176,6 +176,10 @@ struct Node::Implementation
         computingPreview = v;
     }
     
+    void restoreUserKnobsRecursive(const std::list<boost::shared_ptr<KnobSerializationBase> >& knobs,
+                                   const boost::shared_ptr<Group_Knob>& group,
+                                   const boost::shared_ptr<Page_Knob>& page);
+    
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
     std::string pluginID; //< the ID of the embedded plug-in
     
@@ -664,6 +668,47 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         (*it)->restoreKnobLinks(knob,allNodes);
         (*it)->restoreExpressions(knob);
         (*it)->restoreTracks(knob,allNodes);
+    }
+}
+
+void
+Node::restoreUserKnobs(const NodeSerialization& serialization)
+{
+    const std::list<boost::shared_ptr<GroupKnobSerialization> >& userPages = serialization.getUserPages();
+    for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userPages.begin() ; it != userPages.end(); ++it) {
+        boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(_imp->liveInstance, (*it)->getLabel() , 1, false);
+        page->setAsUserKnob();
+        page->setName((*it)->getName());
+        _imp->restoreUserKnobsRecursive((*it)->getChildren(), boost::shared_ptr<Group_Knob>(), page);
+    }
+}
+
+void
+Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_ptr<KnobSerializationBase> >& knobs,
+                                                const boost::shared_ptr<Group_Knob>& group,
+                                                const boost::shared_ptr<Page_Knob>& page)
+{
+    for (std::list<boost::shared_ptr<KnobSerializationBase> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>(it->get());
+        KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>(it->get());
+        assert(isGrp || isRegular);
+        
+        if (isGrp) {
+            boost::shared_ptr<Group_Knob> grp = Natron::createKnob<Group_Knob>(liveInstance, isGrp->getLabel() , 1, false);
+            grp->setAsUserKnob();
+            grp->setName((*it)->getName());
+            if (isGrp && isGrp->isSetAsTab()) {
+                grp->setAsTab();
+            }
+            page->addKnob(grp);
+            if (group) {
+                group->addKnob(grp);
+            }
+            restoreUserKnobsRecursive(isGrp->getChildren(), grp, page);
+        } else {
+            boost::shared_ptr<KnobI> sKnob = isRegular->getKnob();
+#pragma message WARN("Create knob with good properties here")
+        }
     }
 }
 
@@ -1228,6 +1273,9 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
+    
+    restoreUserKnobs(serialization);
+    
     emit knobsInitialized();
 } // initializeKnobs
 

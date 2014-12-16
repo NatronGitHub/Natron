@@ -31,7 +31,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
 #define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE
+#define NODE_SERIALIZATION_INTRODUCES_USER_KNOBS 4
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_USER_KNOBS
 
 namespace Natron {
 class Node;
@@ -137,6 +138,11 @@ public:
         return _multiInstanceParentName;
     }
 
+    const std::list<boost::shared_ptr<GroupKnobSerialization> >& getUserPages() const
+    {
+        return _userPages;
+    }
+    
 private:
 
     bool _isNull;
@@ -154,6 +160,7 @@ private:
     boost::shared_ptr<Natron::Node> _node;
     AppInstance* _app;
     std::string _multiInstanceParentName;
+    std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -177,6 +184,12 @@ private:
             ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
         }
         ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
+        
+        int userPagesCount = (int)_userPages.size();
+        ar & boost::serialization::make_nvp("UserPagesCount",userPagesCount);
+        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin() ; it != _userPages.end() ;++it ) {
+            ar & boost::serialization::make_nvp("item",**it);
+        }
     }
 
     template<class Archive>
@@ -212,6 +225,16 @@ private:
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
             ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
+        }
+        
+        if (version >= NODE_SERIALIZATION_INTRODUCES_USER_KNOBS) {
+            int userPagesCount;
+            ar & boost::serialization::make_nvp("UserPagesCount",userPagesCount);
+            for (int i = 0; i < userPagesCount; ++i) {
+                boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization());
+                ar & boost::serialization::make_nvp("item",*s);
+                _userPages.push_back(s);
+            }
         }
     }
 
