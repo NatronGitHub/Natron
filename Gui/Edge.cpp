@@ -195,7 +195,7 @@ Edge::initLine()
     } else if (_source && !_dest) {
         dst = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
-
+    
     std::vector<QLineF> dstEdges;
     std::vector<QLineF> srcEdges;
     if (_dest) {
@@ -205,17 +205,30 @@ Edge::initLine()
         makeEdges(sourceBBOX, srcEdges);
     }
     
+    
+    QPointF srcpt;
+    
+    if (_source && _dest) {
+        /// This is a connected edge, either input or output
+        srcpt = sourceBBOX.center();
+        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+    } else if (!_source && _dest) {
+        /// The edge is an input edge which is unconnected
+        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
+                        dst.y() - (std::sin(_angle) * 100000 * sc) );
+        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+    } else if (_source && !_dest) {
+        /// The edge is an output edge which is unconnected
+        srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
+        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+        
+    }
+    
     bool foundDstIntersection = false;
     
     QPointF dstIntersection;
-
-    QPointF srcpt;
-    if (_source && _dest) {
-        /////// This is a connected edge, either input or output
-        srcpt = sourceBBOX.center();
-
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-
+    
+    if (_dest) {
         for (int i = 0; i < 4; ++i) {
             QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
             if (type == QLineF::BoundedIntersection) {
@@ -224,6 +237,10 @@ Edge::initLine()
                 break;
             }
         }
+    }
+    
+    if (_source && _dest) {
+
         QPointF srcInteresect;
         bool foundSrcIntersection = false;
         if (foundDstIntersection) {
@@ -264,10 +281,6 @@ Edge::initLine()
             }
         }
     } else if (!_source && _dest) {
-        ///// The edge is an input edge which is unconnected
-        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
-                         dst.y() - (std::sin(_angle) * 100000 * sc) );
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
         ///ok now that we have the direction between dst and srcPt we can get the distance between the center of the node
         ///and the intersection with the bbox. We add UNATTECHED_ARROW_LENGTH to that distance to position srcPt correctly.
@@ -308,13 +321,7 @@ Edge::initLine()
 
             _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
         }
-    } else if (_source && !_dest) {
-        ///// The edge is an output edge which is unconnected
-        srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-
-        ///output edges don't have labels
-    }
+    } 
 
 
     double length = std::max(EDGE_LENGTH_MIN, line().length());
@@ -329,7 +336,12 @@ Edge::initLine()
     
     QPointF arrowIntersect = foundDstIntersection ? dstIntersection : dst;
 
-    qreal arrowSize = 10. * sc;
+    qreal arrowSize;
+    if (_source && _dest) {
+        arrowSize = 10. * sc;
+    } else {
+        arrowSize = 7. * sc;
+    }
     double headAngle = 4. * M_PI / 5.;
     QPointF arrowP1 = arrowIntersect + QPointF(std::sin(a + headAngle) * arrowSize,
                                             std::cos(a + headAngle) * arrowSize);

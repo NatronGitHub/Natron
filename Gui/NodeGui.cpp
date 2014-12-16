@@ -822,7 +822,8 @@ NodeGui::initializeInputs()
 
     int emptyInputsCount = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( !it->second->hasSource() && it->second->isVisible() ) {
+        if ( !it->second->hasSource() && it->second->isVisible() &&
+            !_internalNode->getLiveInstance()->isInputMask(it->first)) {
             ++emptyInputsCount;
         }
     }
@@ -845,10 +846,31 @@ NodeGui::initializeInputs()
 
     double piDividedbyX = M_PI / (emptyInputsCount + 1);
     double angle = M_PI - piDividedbyX;
+  
+    int maskIndex = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         if ( !it->second->hasSource() && it->second->isVisible() ) {
-            it->second->setAngle(angle);
-            angle -= piDividedbyX;
+            double edgeAngle;
+            bool decrAngle = true;
+            if (_internalNode->getLiveInstance()->isInputMask(it->first)) {
+                if (maskIndex == 0) {
+                    edgeAngle = M_PI;
+                    decrAngle = false;
+                    ++maskIndex;
+                } else if (maskIndex == 1) {
+                    edgeAngle = 0;
+                    decrAngle = false;
+                    ++maskIndex;
+                } else {
+                    edgeAngle = angle;
+                }
+            } else {
+                edgeAngle = angle;
+            }
+            it->second->setAngle(edgeAngle);
+            if (decrAngle) {
+                angle -= piDividedbyX;
+            }
             it->second->initLine();
         }
     }
