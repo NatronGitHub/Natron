@@ -344,7 +344,8 @@ public:
     SmoothCuspUndoCommand(RotoGui* roto,
                           const std::list<SmoothCuspCurveData> & data,
                           int time,
-                          bool cusp);
+                          bool cusp,
+                          const std::pair<double, double>& pixelScale);
 
     virtual ~SmoothCuspUndoCommand();
 
@@ -360,6 +361,7 @@ private:
     int _count;
     bool _cusp;
     std::list<SmoothCuspCurveData> curves;
+    std::pair<double, double> _pixelScale;
 };
 
 

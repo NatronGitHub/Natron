@@ -124,10 +124,10 @@ public:
     void removeKeyframe(int time);
 
     ///returns true if a keyframe was set
-    bool cuspPoint(int time,bool autoKeying,bool rippleEdit);
+    bool cuspPoint(int time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
 
     ///returns true if a keyframe was set
-    bool smoothPoint(int time,bool autoKeying,bool rippleEdit);
+    bool smoothPoint(int time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
 
 
     virtual bool isFeatherPoint() const
@@ -635,7 +635,7 @@ public:
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void smoothPointAtIndex(int index,int time);
+    void smoothPointAtIndex(int index,int time,const std::pair<double,double>& pixelScale);
 
     /**
      * @brief Cusps the curvature of the bezier at the given index by reducing the tangents.
@@ -643,7 +643,7 @@ public:
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void cuspPointAtIndex(int index,int time);
+    void cuspPointAtIndex(int index,int time,const std::pair<double,double>& pixelScale);
 
     /**
      * @brief Set a new keyframe at the given time. If a keyframe already exists this function does nothing.

@@ -413,7 +413,8 @@ static void
 cuspTangent(double x,
             double y,
             double *tx,
-            double *ty)
+            double *ty,
+            const std::pair<double,double>& pixelScale)
 {
     ///decrease the tangents distance by 1 fourth
     ///if the tangents are equal to the control point, make them 10 pixels long
@@ -421,11 +422,11 @@ cuspTangent(double x,
     double dy = *ty - y;
     double distSquare = dx * dx + dy * dy;
 
-    if (distSquare <= TANGENTS_CUSP_LIMIT * TANGENTS_CUSP_LIMIT) {
+    if (distSquare <= pixelScale.first * pixelScale.second * TANGENTS_CUSP_LIMIT * TANGENTS_CUSP_LIMIT) {
         *tx = x;
         *ty = y;
     } else {
-        double newDx = 0.75 * dx;
+        double newDx = 0.75 * dx ;
         double newDy = 0.75 * dy;
         *tx = x + newDx;
         *ty = y + newDy;
@@ -439,7 +440,8 @@ smoothTangent(int time,
               double x,
               double y,
               double *tx,
-              double *ty)
+              double *ty,
+              const std::pair<double,double>& pixelScale)
 {
     if ( (x == *tx) && (y == *ty) ) {
         const std::list < boost::shared_ptr<BezierCP> > & cps = ( p->isFeatherPoint() ?
@@ -478,14 +480,14 @@ smoothTangent(int time,
         Point delta;
         ///normalize derivatives by their norm
         if (norm != 0) {
-            delta.x = ( (rightDx - leftDx) / norm ) * TANGENTS_CUSP_LIMIT;
-            delta.y = ( (rightDy - leftDy) / norm ) * TANGENTS_CUSP_LIMIT;
+            delta.x = ( (rightDx - leftDx) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.first;
+            delta.y = ( (rightDy - leftDy) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.second;
         } else {
             ///both derivatives are the same, use the direction of the left one
             norm = sqrt( (leftDx - x) * (leftDx - x) + (leftDy - y) * (leftDy - y) );
             if (norm != 0) {
-                delta.x = ( (rightDx - x) / norm ) * TANGENTS_CUSP_LIMIT;
-                delta.y = ( (leftDy - y) / norm ) * TANGENTS_CUSP_LIMIT;
+                delta.x = ( (rightDx - x) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.first;
+                delta.y = ( (leftDy - y) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.second;
             } else {
                 ///both derivatives and control point are equal, just use 0
                 delta.x = delta.y = 0;
@@ -506,11 +508,11 @@ smoothTangent(int time,
         double dy = *ty - y;
         double newDx,newDy;
         if ( (dx == 0) && (dy == 0) ) {
-            dx = dx < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT;
-            dy = dy < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT;
+            dx = (dx < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.first;
+            dy = (dy < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.second;
         }
-        newDx = 1.25 * dx;
-        newDy = 1.25 * dy;
+        newDx = dx * 1.25;
+        newDy = dy * 1.25;
 
         *tx = x + newDx;
         *ty = y + newDy;
@@ -521,7 +523,8 @@ smoothTangent(int time,
 bool
 BezierCP::cuspPoint(int time,
                     bool autoKeying,
-                    bool rippleEdit)
+                    bool rippleEdit,
+                    const std::pair<double,double>& pixelScale)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -538,8 +541,8 @@ BezierCP::cuspPoint(int time,
     getLeftBezierPointAtTime(time, &leftX, &leftY,true);
     bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY,true);
     double newLeftX = leftX,newLeftY = leftY,newRightX = rightX,newRightY = rightY;
-    cuspTangent(x, y, &newLeftX, &newLeftY);
-    cuspTangent(x, y, &newRightX, &newRightY);
+    cuspTangent(x, y, &newLeftX, &newLeftY, pixelScale);
+    cuspTangent(x, y, &newRightX, &newRightY, pixelScale);
 
     bool keyframeSet = false;
 
@@ -566,7 +569,8 @@ BezierCP::cuspPoint(int time,
 bool
 BezierCP::smoothPoint(int time,
                       bool autoKeying,
-                      bool rippleEdit)
+                      bool rippleEdit,
+                      const std::pair<double,double>& pixelScale)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -583,8 +587,8 @@ BezierCP::smoothPoint(int time,
     getLeftBezierPointAtTime(time, &leftX, &leftY,true);
     bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY,true);
 
-    smoothTangent(time,true,this,x, y, &leftX, &leftY);
-    smoothTangent(time,false,this,x, y, &rightX, &rightY);
+    smoothTangent(time,true,this,x, y, &leftX, &leftY, pixelScale);
+    smoothTangent(time,false,this,x, y, &rightX, &rightY, pixelScale);
 
     bool keyframeSet = false;
 
@@ -2819,7 +2823,8 @@ Bezier::removeFeatherAtIndex(int index)
 
 void
 Bezier::smoothPointAtIndex(int index,
-                           int time)
+                           int time,
+                           const std::pair<double,double>& pixelScale)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2838,8 +2843,8 @@ Bezier::smoothPointAtIndex(int index,
         std::advance(fp, index);
 
         assert( cp != _imp->points.end() && fp != _imp->featherPoints.end() );
-        (*cp)->smoothPoint(time,autoKeying,rippleEdit);
-        keySet = (*fp)->smoothPoint(time,autoKeying,rippleEdit);
+        (*cp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
+        keySet = (*fp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
     }
     if (autoKeying) {
         setKeyframe(time);
@@ -2851,7 +2856,8 @@ Bezier::smoothPointAtIndex(int index,
 
 void
 Bezier::cuspPointAtIndex(int index,
-                         int time)
+                         int time,
+                         const std::pair<double,double>& pixelScale)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2870,8 +2876,8 @@ Bezier::cuspPointAtIndex(int index,
         std::advance(fp, index);
 
         assert( cp != _imp->points.end() && fp != _imp->featherPoints.end() );
-        (*cp)->cuspPoint(time,autoKeying,rippleEdit);
-        keySet = (*fp)->cuspPoint(time,autoKeying,rippleEdit);
+        (*cp)->cuspPoint(time,autoKeying,rippleEdit, pixelScale);
+        keySet = (*fp)->cuspPoint(time,autoKeying,rippleEdit,pixelScale);
     }
     if (autoKeying) {
         setKeyframe(time);
