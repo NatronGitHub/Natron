@@ -17,7 +17,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
-
+#include "Engine/Plugin.h"
 using namespace Natron;
 
 
@@ -49,7 +49,11 @@ BaseTest::registerTestPlugins()
         ///make sure the generic test plugin is present
         Natron::LibraryBinary* bin = NULL;
         try {
-            bin = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1);
+            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1);
+            if (p) {
+                bin = p->getLibraryBinary();
+            }
+            
         } catch (const std::exception & e) {
             std::cout << e.what() << std::endl;
         }
