@@ -356,4 +356,23 @@ private:
     NodeBackDrop* _backdrop;
 };
 
+class VerticalColorBar : public QWidget
+{
+    Q_OBJECT
+    
+    QColor _color;
+    
+public:
+    
+    VerticalColorBar(QWidget* parent);
+    
+public slots:
+    
+    void setColor(const QColor& color);
+    
+private:
+    
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+};
 #endif // NATRON_GUI_SETTINGSPANEL_H_

@@ -78,6 +78,7 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
+#define NATRON_VERTICAL_BAR_WIDTH 4
 using std::make_pair;
 using namespace Natron;
 
@@ -117,6 +118,10 @@ struct DockablePanelPrivate
     LineEdit* _nameLineEdit; /*!< if the name is editable*/
     QLabel* _nameLabel; /*!< if the name is read-only*/
 
+    QHBoxLayout* _horizLayout;
+    QWidget* _horizContainer;
+    VerticalColorBar* _verticalColorBar;
+    
     /*Tab related*/
     QTabWidget* _tabWidget;
     Button* _centerNodeButton;
@@ -151,7 +156,7 @@ struct DockablePanelPrivate
     DockablePanel::HeaderMode _mode;
     mutable QMutex _isClosedMutex;
     bool _isClosed; //< accessed by serialization thread too
-
+    
     DockablePanelPrivate(DockablePanel* publicI
                          ,
                          Gui* gui
@@ -165,39 +170,42 @@ struct DockablePanelPrivate
                          bool useScrollAreasForTabs
                          ,
                          const QString & defaultPageName)
-        : _publicInterface(publicI)
-          ,_gui(gui)
-          ,_container(container)
-          ,_mainLayout(NULL)
-          ,_headerWidget(NULL)
-          ,_headerLayout(NULL)
-          ,_nameLineEdit(NULL)
-          ,_nameLabel(NULL)
-          ,_tabWidget(NULL)
-          , _centerNodeButton(NULL)
-          ,_helpButton(NULL)
-          ,_minimize(NULL)
-          ,_hideUnmodifiedButton(NULL)
-          ,_floatButton(NULL)
-          ,_cross(NULL)
-          , _currentColor()
-          ,_colorButton(NULL)
-          ,_undoButton(NULL)
-          ,_redoButton(NULL)
-          ,_restoreDefaultsButton(NULL)
-          ,_minimized(false)
-          ,_undoStack(new QUndoStack)
-          ,_floating(false)
-          ,_floatingWidget(NULL)
-          ,_knobs()
-          ,_knobsVisibilityBeforeHideModif()
-          ,_holder(holder)
-          ,_pages()
-          ,_defaultPageName(defaultPageName)
-          ,_useScrollAreasForTabs(useScrollAreasForTabs)
-          ,_mode(headerMode)
-          ,_isClosedMutex()
-          ,_isClosed(false)
+    : _publicInterface(publicI)
+    ,_gui(gui)
+    ,_container(container)
+    ,_mainLayout(NULL)
+    ,_headerWidget(NULL)
+    ,_headerLayout(NULL)
+    ,_nameLineEdit(NULL)
+    ,_nameLabel(NULL)
+    , _horizLayout(0)
+    , _horizContainer(0)
+    , _verticalColorBar(0)
+    ,_tabWidget(NULL)
+    , _centerNodeButton(NULL)
+    ,_helpButton(NULL)
+    ,_minimize(NULL)
+    ,_hideUnmodifiedButton(NULL)
+    ,_floatButton(NULL)
+    ,_cross(NULL)
+    , _currentColor()
+    ,_colorButton(NULL)
+    ,_undoButton(NULL)
+    ,_redoButton(NULL)
+    ,_restoreDefaultsButton(NULL)
+    ,_minimized(false)
+    ,_undoStack(new QUndoStack)
+    ,_floating(false)
+    ,_floatingWidget(NULL)
+    ,_knobs()
+    ,_knobsVisibilityBeforeHideModif()
+    ,_holder(holder)
+    ,_pages()
+    ,_defaultPageName(defaultPageName)
+    ,_useScrollAreasForTabs(useScrollAreasForTabs)
+    ,_mode(headerMode)
+    ,_isClosedMutex()
+    ,_isClosed(false)
     {
     }
 
@@ -461,15 +469,26 @@ DockablePanel::DockablePanel(Gui* gui
 
         _imp->_mainLayout->addWidget(_imp->_headerWidget);
     }
-
+    
+    
+    _imp->_horizContainer = new QWidget(this);
+    _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
+    _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 3);
+    if (headerMode != READ_ONLY_NAME) {
+        _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
+        _imp->_verticalColorBar->setColor(_imp->_currentColor);
+        _imp->_horizLayout->addWidget(_imp->_verticalColorBar);
+    }
+    
     if (useScrollAreasForTabs) {
-        _imp->_tabWidget = new QTabWidget(this);
+        _imp->_tabWidget = new QTabWidget(_imp->_horizContainer);
     } else {
         _imp->_tabWidget = new DockablePanelTabWidget(gui,this);
     }
+    _imp->_horizLayout->addWidget(_imp->_tabWidget);
     _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     _imp->_tabWidget->setObjectName("QTabWidget");
-    _imp->_mainLayout->addWidget(_imp->_tabWidget);
+    _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
         _imp->addPage(defaultPageName);
@@ -1034,7 +1053,7 @@ DockablePanelPrivate::addPage(const QString & name)
     QGridLayout *tabLayout = new QGridLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
-    tabLayout->setContentsMargins(3, 0, 0, 0);
+    tabLayout->setContentsMargins(1, 1, 1, 1);
     tabLayout->setColumnStretch(1, 1);
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
     _tabWidget->addTab(newTab,name);
@@ -1359,6 +1378,7 @@ DockablePanel::onColorDialogColorChanged(const QColor & color)
         QPixmap p(15,15);
         p.fill(color);
         _imp->_colorButton->setIcon( QIcon(p) );
+        _imp->_verticalColorBar->setColor(color);
     }
 }
 
@@ -1543,6 +1563,39 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             }
         }
     }
+}
+
+VerticalColorBar::VerticalColorBar(QWidget* parent)
+: QWidget(parent)
+, _color(Qt::black)
+{
+    setFixedWidth(NATRON_VERTICAL_BAR_WIDTH);
+}
+
+void
+VerticalColorBar::setColor(const QColor& color)
+{
+    _color = color;
+    update();
+}
+
+QSize
+VerticalColorBar::sizeHint() const
+{
+    return QWidget::sizeHint();
+    //return QSize(5,1000);
+}
+
+void
+VerticalColorBar::paintEvent(QPaintEvent* /*e*/)
+{
+    QPainter p(this);
+    QPen pen;
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setWidth(NATRON_VERTICAL_BAR_WIDTH);
+    pen.setColor(_color);
+    p.setPen(pen);
+    p.drawLine( 0, NATRON_VERTICAL_BAR_WIDTH, 0, height() - NATRON_VERTICAL_BAR_WIDTH);
 }
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
