@@ -287,6 +287,9 @@ void
 ScaleSliderQWidget::resizeEvent(QResizeEvent* e)
 {
     _imp->zoomCtx.setScreenSize(e->size().width(), e->size().height());
+    if (!_imp->mustInitializeSliderPosition) {
+        centerOn(_imp->minimum, _imp->maximum);
+    }
     QWidget::resizeEvent(e);
 }
 
