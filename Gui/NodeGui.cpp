@@ -105,9 +105,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _outputEdge(NULL)
       , _settingsPanel(NULL)
       , _mainInstancePanel(NULL)
-      , _selectedGradient(NULL)
-      , _defaultGradient(NULL)
-      , _clonedGradient(NULL)
+      , _defaultColor()
+      , _clonedColor()
       , _wasBeginEditCalled(false)
       , positionMutex()
       , _slaveMasterLink(NULL)
@@ -129,9 +128,6 @@ NodeGui::~NodeGui()
 {
     deleteReferences();
 
-    delete _clonedGradient;
-    delete _selectedGradient;
-    delete _defaultGradient;
     delete _bitDepthWarning;
     delete _expressionIndicator;
 }
@@ -191,7 +187,7 @@ NodeGui::initialize(NodeGraph* dag,
     if (_settingsPanel) {
         QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
         QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
-        QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( setDefaultGradientColor(QColor) ) );
+        QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( setDefaultColor(QColor) ) );
     }
     OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( _internalNode->getLiveInstance() );
     if (ofxNode) {
@@ -206,20 +202,11 @@ NodeGui::initialize(NodeGraph* dag,
         initializeShape();
     }
 
-
-    QRectF rect = boundingRect();
-
-    _selectedGradient = new QLinearGradient( rect.topLeft(), rect.bottomRight() );
-
-    _defaultGradient = new QLinearGradient( rect.topLeft(), rect.bottomRight() );
     QColor defaultColor = getCurrentColor();
-
-    _clonedGradient = new QLinearGradient( rect.topLeft(), rect.bottomRight() );
-    _clonedGradient->setColorAt( 0, QColor(200,70,100) );
-    _clonedGradient->setColorAt( 1, QColor(120,120,120) );
+    _clonedColor.setRgb(200,70,100);
 
 
-    setDefaultGradientColor(defaultColor);
+    setDefaultColor(defaultColor);
 
     if ( !_internalNode->isMultiInstance() ) {
         _nodeLabel = _internalNode->getNodeExtraLabel().c_str();
@@ -363,15 +350,9 @@ NodeGui::createGui()
 }
 
 void
-NodeGui::setDefaultGradientColor(const QColor & color)
+NodeGui::setDefaultColor(const QColor & color)
 {
-    assert(_clonedGradient && _defaultGradient && _selectedGradient);
-    _defaultGradient->setColorAt(1,color);
-    QColor colorBrightened;
-    colorBrightened.setRedF( Natron::clamp(color.redF() * 1.5) );
-    colorBrightened.setGreenF( Natron::clamp(color.greenF() * 1.5) );
-    colorBrightened.setBlueF( Natron::clamp(color.blueF() * 1.5) );
-    _defaultGradient->setColorAt(0, colorBrightened);
+    _defaultColor = color;
     refreshCurrentBrush();
 }
 
@@ -986,26 +967,13 @@ NodeGui::applyBrush(const QBrush & brush)
 void
 NodeGui::refreshCurrentBrush()
 {
-    assert(_clonedGradient && _defaultGradient && _selectedGradient);
-    if (_selected) {
-        float selectedR,selectedG,selectedB;
-        appPTR->getCurrentSettings()->getDefaultSelectedNodeColor(&selectedR, &selectedG, &selectedB);
-        QColor selColor;
-        selColor.setRgbF(selectedR, selectedG, selectedB);
-        QColor brightenedSelColor;
-        brightenedSelColor.setRgbF( Natron::clamp(selColor.redF() * 1.2)
-                                    ,Natron::clamp(selColor.greenF() * 1.2)
-                                    ,Natron::clamp(selColor.blueF() * 1.2) );
-        _selectedGradient->setColorAt(1, selColor);
-        _selectedGradient->setColorAt(0, brightenedSelColor);
-        applyBrush(*_selectedGradient);
+    
+    if (_slaveMasterLink) {
+        applyBrush(_clonedColor);
     } else {
-        if (_slaveMasterLink) {
-            applyBrush(*_clonedGradient);
-        } else {
-            applyBrush(*_defaultGradient);
-        }
+        applyBrush(_defaultColor);
     }
+    
 }
 
 void
@@ -1015,7 +983,6 @@ NodeGui::setUserSelected(bool b)
         QMutexLocker l(&_selectedMutex);
         _selected = b;
     }
-    refreshCurrentBrush();
     update();
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
@@ -1024,6 +991,7 @@ NodeGui::setUserSelected(bool b)
             _graph->getGui()->setRotoInterface(this);
         }
     }
+    refreshStateIndicator();
 }
 
 bool
@@ -1032,23 +1000,6 @@ NodeGui::getIsSelected() const
     QMutexLocker l(&_selectedMutex); return _selected;
 }
 
-void
-NodeGui::setSelectedGradient(const QLinearGradient & gradient)
-{
-    *_selectedGradient = gradient;
-    if (_selected) {
-        applyBrush(*_selectedGradient);
-    }
-}
-
-void
-NodeGui::setDefaultGradient(const QLinearGradient & gradient)
-{
-    *_defaultGradient = gradient;
-    if (!_selected) {
-        applyBrush(*_defaultGradient);
-    }
-}
 
 Edge*
 NodeGui::findConnectedEdge(NodeGui* parent)
@@ -1412,7 +1363,6 @@ NodeGui::onPersistentMessageChanged()
     _internalNode->getPersistentMessage(&message, &type);
     
     _persistentMessage->setVisible(!message.isEmpty());
-    _stateIndicator->setVisible(!message.isEmpty());
     
     if (message.isEmpty()) {
 
@@ -1422,15 +1372,13 @@ NodeGui::onPersistentMessageChanged()
     } else {
     
         if (type == 1) {
-            _persistentMessage->setPlainText("ERROR");
+            _persistentMessage->setPlainText(tr("ERROR"));
             QColor errColor(128,0,0,255);
             _persistentMessage->setDefaultTextColor(errColor);
-            _stateIndicator->setBrush(errColor);
         } else if (type == 2) {
-            _persistentMessage->setPlainText("WARNING");
+            _persistentMessage->setPlainText(tr("WARNING"));
             QColor warColor(180,180,0,255);
             _persistentMessage->setDefaultTextColor(warColor);
-            _stateIndicator->setBrush(warColor);
         } else {
             return;
         }
@@ -1440,6 +1388,7 @@ NodeGui::onPersistentMessageChanged()
         QRectF rect = _boundingBox->rect();
         updateShape( rect.width(), rect.height() );
     }
+    refreshStateIndicator();
 
     const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -1532,9 +1481,11 @@ void
 NodeGui::onRenderingStarted()
 {
     if (!_renderingStartedCount) {
-        _stateIndicator->setBrush(Qt::yellow);
-        _stateIndicator->show();
-        update();
+        if (!_stateIndicator->isVisible()) {
+            _stateIndicator->setBrush(Qt::yellow);
+            _stateIndicator->show();
+            update();
+        }
     }
     ++_renderingStartedCount;
     
@@ -1545,7 +1496,45 @@ NodeGui::onRenderingFinished()
 {
     --_renderingStartedCount;
     if (!_renderingStartedCount) {
+        refreshStateIndicator();
+    }
+}
+
+void
+NodeGui::refreshStateIndicator()
+{
+    if (!_stateIndicator) {
+        return;
+    }
+    QString message;
+    int type;
+    _internalNode->getPersistentMessage(&message, &type);
+    
+    bool showIndicator = true;
+    if (_mergeHintActive) {
+        
+        _stateIndicator->setBrush(Qt::green);
+        
+    } else if (getIsSelected()) {
+        
+        _stateIndicator->setBrush(Qt::white);
+
+    } else if (!message.isEmpty() && (type == 1 || type == 2)) {
+        if (type == 1) {
+            _stateIndicator->setBrush(QColor(128,0,0,255)); //< error
+        } else if ( type == 2) {
+            _stateIndicator->setBrush(QColor(80,180,0,255)); //< warning
+        }
+        
+    } else {
+        showIndicator = false;
+    }
+    
+    if (showIndicator && !_stateIndicator->isVisible()) {
+        _stateIndicator->show();
+    } else if (!showIndicator && _stateIndicator->isVisible()) {
         _stateIndicator->hide();
+    } else {
         update();
     }
 }
@@ -1557,16 +1546,7 @@ NodeGui::setMergeHintActive(bool active)
         return;
     }
     _mergeHintActive = active;
-    if (active) {
-        _stateIndicator->setBrush(Qt::green);
-        if (!_stateIndicator->isVisible()) {
-            _stateIndicator->show();
-        }
-    } else {
-        if (_stateIndicator->isVisible()) {
-            _stateIndicator->hide();
-        }
-    }
+    refreshStateIndicator();
     
 }
 
@@ -1688,7 +1668,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         _slaveMasterLink->setWidth(3);
         if ( !_internalNode->isNodeDisabled() ) {
             if ( !isSelected() ) {
-                applyBrush(*_clonedGradient);
+                applyBrush(_clonedColor);
             }
         }
     } else {
@@ -1698,7 +1678,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         _masterNodeGui.reset();
         if ( !_internalNode->isNodeDisabled() ) {
             if ( !isSelected() ) {
-                applyBrush(*_defaultGradient);
+                applyBrush(_defaultColor);
             }
         }
     }
@@ -2128,7 +2108,15 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
 QColor
 NodeGui::getCurrentColor() const
 {
-    return _settingsPanel ? _settingsPanel->getCurrentColor() : QColor(142,142,142);
+    if (_settingsPanel) {
+        return _settingsPanel->getCurrentColor();
+    } else {
+        QColor ret;
+        float r,g,b;
+        appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
+        ret.setRgbF(r,g,b);
+        return ret;
+    }
 }
 
 void
@@ -2296,8 +2284,9 @@ NodeGui::onParentMultiInstancePositionChanged(int x,
 
 //////////Dot node gui
 DotGui::DotGui(QGraphicsItem* parent)
-    : NodeGui(parent)
-      , diskShape(NULL)
+: NodeGui(parent)
+, diskShape(NULL)
+, ellipseIndicator(NULL)
 {
 }
 
@@ -2307,6 +2296,33 @@ DotGui::createGui()
     diskShape = new QGraphicsEllipseItem(this);
     QPointF topLeft = mapFromParent( pos() );
     diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),DOT_GUI_DIAMETER,DOT_GUI_DIAMETER) );
+    
+    ellipseIndicator = new QGraphicsEllipseItem(this);
+    ellipseIndicator->setRect(QRectF(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,
+                                     topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
+                                     DOT_GUI_DIAMETER + NATRON_STATE_INDICATOR_OFFSET * 2,
+                                     DOT_GUI_DIAMETER + NATRON_STATE_INDICATOR_OFFSET * 2));
+    ellipseIndicator->hide();
+}
+
+void
+DotGui::refreshStateIndicator()
+{
+    bool showIndicator = true;
+    if (getIsSelected()) {
+        ellipseIndicator->setBrush(QColor(255,255,255,128));
+    } else {
+        showIndicator = false;
+    }
+    
+    if (showIndicator && !ellipseIndicator->isVisible()) {
+        ellipseIndicator->show();
+    } else if (!showIndicator && ellipseIndicator->isVisible()) {
+        ellipseIndicator->hide();
+    } else {
+        update();
+    }
+
 }
 
 void

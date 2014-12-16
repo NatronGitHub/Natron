@@ -377,7 +377,7 @@ DockablePanel::DockablePanel(Gui* gui
             } else if (backdrop) {
                 appPTR->getCurrentSettings()->getDefaultBackDropColor(&r, &g, &b);
             } else {
-                r = g = b = 0.6;
+                r = g = b = 0.7;
             }
             
             

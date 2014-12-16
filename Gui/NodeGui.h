@@ -37,7 +37,6 @@ class QScrollArea;
 class NodeSettingsPanel;
 class QVBoxLayout;
 class QLinearGradient;
-class QGradient;
 class AppInstance;
 class NodeGraph;
 class QAction;
@@ -242,10 +241,6 @@ public:
 
     bool isSettingsPanelVisible() const;
 
-    void setSelectedGradient(const QLinearGradient & gradient);
-
-    void setDefaultGradient(const QLinearGradient & gradient);
-
     void removeSettingsPanel();
 
     QUndoStack* getUndoStack() const;
@@ -308,12 +303,14 @@ public:
      * not be visible and would just clutter and slow down the interface
      **/
     void setVisibleDetails(bool visible);
+    
+    virtual void refreshStateIndicator();
         
 public slots:
 
     void onSettingsPanelClosed(bool closed);
     
-    void setDefaultGradientColor(const QColor & color);
+    void setDefaultColor(const QColor & color);
 
     void togglePreview();
 
@@ -459,7 +456,8 @@ private:
     /*A pointer to the preview pixmap displayed for readers/*/
     QGraphicsPixmapItem* _previewPixmap;
     QGraphicsTextItem* _persistentMessage;
-    QGraphicsRectItem* _stateIndicator;
+    QGraphicsRectItem* _stateIndicator;    
+    
     bool _mergeHintActive;
     NodeGuiIndicator* _bitDepthWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
@@ -473,9 +471,8 @@ private:
     ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
     ///another panel for the main-instance (hidden) knobs to function properly
     NodeSettingsPanel* _mainInstancePanel;
-    QGradient* _selectedGradient;
-    QGradient* _defaultGradient;
-    QGradient* _clonedGradient;
+    QColor _defaultColor;
+    QColor _clonedColor;
     bool _wasBeginEditCalled;
     mutable QMutex positionMutex;
 
@@ -526,17 +523,20 @@ private:
     {
         return false;
     }
-
+    
+    virtual void refreshStateIndicator() OVERRIDE FINAL;
+    
     virtual void applyBrush(const QBrush & brush) OVERRIDE FINAL;
 
     ///Doesn't do anything, preview cannot be activated
     virtual void initializeShape() OVERRIDE FINAL
     {
     }
-
+    
     virtual QRectF boundingRect() const OVERRIDE FINAL;
     virtual QPainterPath shape() const OVERRIDE FINAL;
     QGraphicsEllipseItem* diskShape;
+    QGraphicsEllipseItem* ellipseIndicator;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

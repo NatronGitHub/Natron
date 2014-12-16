@@ -824,9 +824,9 @@ Settings::setDefaultValues()
     _maxDiskCacheNodeGB->setDefaultValue(10,0);
     setCachingLabels();
     _autoTurbo->setDefaultValue(false);
-    _defaultNodeColor->setDefaultValue(0.6,0);
-    _defaultNodeColor->setDefaultValue(0.6,1);
-    _defaultNodeColor->setDefaultValue(0.6,2);
+    _defaultNodeColor->setDefaultValue(0.7,0);
+    _defaultNodeColor->setDefaultValue(0.7,1);
+    _defaultNodeColor->setDefaultValue(0.7,2);
     _defaultSelectedNodeColor->setDefaultValue(0.7,0);
     _defaultSelectedNodeColor->setDefaultValue(0.6,1);
     _defaultSelectedNodeColor->setDefaultValue(0.3,2);
@@ -840,9 +840,9 @@ Settings::setDefaultValues()
     _defaultGeneratorColor->setDefaultValue(0.5,1);
     _defaultGeneratorColor->setDefaultValue(0.2,2);
 
-    _defaultReaderColor->setDefaultValue(0.6,0);
-    _defaultReaderColor->setDefaultValue(0.6,1);
-    _defaultReaderColor->setDefaultValue(0.6,2);
+    _defaultReaderColor->setDefaultValue(0.7,0);
+    _defaultReaderColor->setDefaultValue(0.7,1);
+    _defaultReaderColor->setDefaultValue(0.7,2);
 
     _defaultWriterColor->setDefaultValue(0.75,0);
     _defaultWriterColor->setDefaultValue(0.75,1);

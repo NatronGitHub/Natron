@@ -14,7 +14,7 @@ QLabel {
 
 
 NodeSettingsPanel[_selected="true"] {
-    border:1px solid yellow;
+    border:1px solid white;
     border-radius : 2px;
 }
 NodeSettingsPanel[_selected="false"] {
