@@ -640,13 +640,13 @@ public:
                 ValueExtraData* extraData = new ValueExtraData;
                 if (isDbl) {
                     extraData->min = isDbl->getMinimum();
-                    extraData->max = isDbl->getMinimum();
+                    extraData->max = isDbl->getMaximum();
                 } else if (isInt) {
                     extraData->min = isInt->getMinimum();
-                    extraData->max = isInt->getMinimum();
+                    extraData->max = isInt->getMaximum();
                 } else if (isColor) {
                     extraData->min = isColor->getMinimum();
-                    extraData->max = isColor->getMinimum();
+                    extraData->max = isColor->getMaximum();
                 }
                 _extraData = extraData;
             }
@@ -773,7 +773,7 @@ class GroupKnobSerialization : public KnobSerializationBase
     std::string _name,_label;
     bool _secret;
     bool _isSetAsTab; //< only valid for groups
-    
+    bool _isOpened; //< only for groups
 public:
     
     GroupKnobSerialization(const boost::shared_ptr<KnobI>& knob)
@@ -783,6 +783,7 @@ public:
     , _label()
     , _secret(false)
     , _isSetAsTab(false)
+    , _isOpened(false)
     {
         Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
         Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
@@ -825,6 +826,7 @@ public:
     , _label()
     , _secret(false)
     , _isSetAsTab(false)
+    , _isOpened(false)
     {
         
     }
@@ -858,6 +860,10 @@ public:
         return _secret;
     }
     
+    bool isOpened() const {
+        return _isOpened;
+    }
+    
     bool isSetAsTab() const
     {
         return _isSetAsTab;
@@ -877,15 +883,18 @@ private:
         std::string label = _knob->getDescription();
         bool isSecret = _knob->getIsSecret();
         bool setAsTab = false;
-        
+        bool isOpened = false;
         Group_Knob* isGrp = dynamic_cast<Group_Knob*>(_knob.get());
         if (isGrp && isGrp->isTab()) {
             setAsTab = true;
+        } else if (isGrp) {
+            isOpened = isGrp->getValue();
         }
         ar & boost::serialization::make_nvp("Name",name);
         ar & boost::serialization::make_nvp("Label",label);
         ar & boost::serialization::make_nvp("Secret",isSecret);
         ar & boost::serialization::make_nvp("IsTab",setAsTab);
+        ar & boost::serialization::make_nvp("IsOpened",isOpened);
         
         int nbChildren = (int)_children.size();
         ar & boost::serialization::make_nvp("NbChildren",nbChildren);
@@ -920,6 +929,7 @@ private:
         ar & boost::serialization::make_nvp("Label",_label);
         ar & boost::serialization::make_nvp("Secret",_secret);
         ar & boost::serialization::make_nvp("IsTab",_isSetAsTab);
+        ar & boost::serialization::make_nvp("IsOpened",_isOpened);
         
         int nbChildren;
         ar & boost::serialization::make_nvp("NbChildren",nbChildren);

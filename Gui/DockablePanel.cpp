@@ -737,7 +737,7 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
         }
     }
     assert(idx != -1);
-    
+#pragma message WARN("Fix this function")
     ///find all knobs backward that are on the same line.
     int k = idx - 1;
     while ( k >= 0 && knobs[k]->isNewLineTurnedOff()) {
@@ -1512,10 +1512,14 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
             if (isTopLevelParentAPage) {
                 PageMap::iterator page = _imp->_pages.find(isTopLevelParentAPage->getDescription().c_str());
-                int index = page->second.tabWidget->indexOf(page->second.tab);
+                int index = -1;
+                if (page->second.tab != 0) {
+                    index = page->second.tabWidget->indexOf(page->second.tab);
+                }
                 if (index != -1) {
                     page->second.tabWidget->removeTab(index);
                     page->second.tab->deleteLater();
+                    page->second.tab = 0;
                 }
                 if (page->second.tabWidget->count() == 0) {
                     page->second.tabWidget->deleteLater();
@@ -1527,6 +1531,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
             if (it != _imp->_knobs.end()) {
                 it->second->removeGui();
+                it->first->setKnobGuiPointer(0);
                 delete it->second;
                 _imp->_knobs.erase(it);
             }
@@ -2315,8 +2320,8 @@ ManageUserParamsDialogPrivate::rebuildUserPages()
     
     for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
         std::vector<boost::shared_ptr<KnobI> > children = page->getChildren();
-        for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
-            panel->deleteKnobGui(*it);
+        for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+            panel->deleteKnobGui(*it2);
         }
     }
     
@@ -2378,6 +2383,7 @@ ManageUserParamsDialog::onAddClicked()
         _imp->items.push_back(i);
     }
     _imp->rebuildUserPages();
+    _imp->panel->getGui()->getApp()->triggerAutoSave();
 }
 
 void
@@ -2396,6 +2402,7 @@ ManageUserParamsDialog::onDeleteClicked()
                     if (userPage->getChildren().empty()) {
                         userPage->getHolder()->removeDynamicKnob(userPage.get());
                     }
+                    _imp->panel->getGui()->getApp()->triggerAutoSave();
                     break;
                 }
             }
@@ -2416,6 +2423,7 @@ ManageUserParamsDialog::onEditClicked()
                         it->knob = dialog.getKnob();
                         it->item->setText(0, it->knob->getName().c_str());
                         _imp->rebuildUserPages();
+                        _imp->panel->getGui()->getApp()->triggerAutoSave();
                         break;
                     }
                 }

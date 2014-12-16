@@ -704,10 +704,129 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             if (group) {
                 group->addKnob(grp);
             }
+            grp->setValue(isGrp->isOpened(), 0);
             restoreUserKnobsRecursive(isGrp->getChildren(), grp, page);
         } else {
+            assert(isRegular->isUserKnob());
             boost::shared_ptr<KnobI> sKnob = isRegular->getKnob();
-#pragma message WARN("Create knob with good properties here")
+            boost::shared_ptr<KnobI> knob;
+            Int_Knob* isInt = dynamic_cast<Int_Knob*>(sKnob.get());
+            Double_Knob* isDbl = dynamic_cast<Double_Knob*>(sKnob.get());
+            Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(sKnob.get());
+            Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(sKnob.get());
+            Color_Knob* isColor = dynamic_cast<Color_Knob*>(sKnob.get());
+            String_Knob* isStr = dynamic_cast<String_Knob*>(sKnob.get());
+            File_Knob* isFile = dynamic_cast<File_Knob*>(sKnob.get());
+            OutputFile_Knob* isOutFile = dynamic_cast<OutputFile_Knob*>(sKnob.get());
+            Path_Knob* isPath = dynamic_cast<Path_Knob*>(sKnob.get());
+            
+            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath);
+            
+            if (isInt) {
+                boost::shared_ptr<Int_Knob> k = Natron::createKnob<Int_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                             sKnob->getDimension(), false);
+                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
+                assert(data);
+                std::vector<int> minimums,maximums;
+                for (int i = 0; i < k->getDimension(); ++i) {
+                    minimums.push_back(data->min);
+                    maximums.push_back(data->max);
+                }
+                k->setMinimumsAndMaximums(minimums, maximums);
+                knob = k;
+            } else if (isDbl) {
+                boost::shared_ptr<Double_Knob> k = Natron::createKnob<Double_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                             sKnob->getDimension(), false);
+                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
+                assert(data);
+                std::vector<double> minimums,maximums;
+                for (int i = 0; i < k->getDimension(); ++i) {
+                    minimums.push_back(data->min);
+                    maximums.push_back(data->max);
+                }
+                k->setMinimumsAndMaximums(minimums, maximums);
+                knob = k;
+            } else if (isBool) {
+                boost::shared_ptr<Bool_Knob> k = Natron::createKnob<Bool_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                             sKnob->getDimension(), false);
+                knob = k;
+            } else if (isChoice) {
+                boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                               sKnob->getDimension(), false);
+                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(isRegular->getExtraData());
+                assert(data);
+                k->populateChoices(data->_entries);
+                knob = k;
+            } else if (isColor) {
+                boost::shared_ptr<Color_Knob> k = Natron::createKnob<Color_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                               sKnob->getDimension(), false);
+                knob = k;
+
+            } else if (isStr) {
+                boost::shared_ptr<String_Knob> k = Natron::createKnob<String_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                                 sKnob->getDimension(), false);
+                const TextExtraData* data = dynamic_cast<const TextExtraData*>(isRegular->getExtraData());
+                assert(data);
+                if (data->label) {
+                    k->setAsLabel();
+                } else {
+                    if (data->multiLine) {
+                        k->setAsMultiLine();
+                        if (data->richText) {
+                            k->setUsesRichText(true);
+                        }
+                    }
+                }
+                knob = k;
+
+            } else if (isFile) {
+                boost::shared_ptr<File_Knob> k = Natron::createKnob<File_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                                   sKnob->getDimension(), false);
+                const FileExtraData* data = dynamic_cast<const FileExtraData*>(isRegular->getExtraData());
+                assert(data);
+                if (data->useSequences) {
+                    k->setAsInputImage();
+                }
+                knob = k;
+
+            } else if (isOutFile) {
+                boost::shared_ptr<OutputFile_Knob> k = Natron::createKnob<OutputFile_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                               sKnob->getDimension(), false);
+                const FileExtraData* data = dynamic_cast<const FileExtraData*>(isRegular->getExtraData());
+                assert(data);
+                if (data->useSequences) {
+                    k->setAsOutputImageFile();
+                }
+                knob = k;
+            } else if (isPath) {
+                boost::shared_ptr<Path_Knob> k = Natron::createKnob<Path_Knob>(liveInstance, isRegular->getLabel() ,
+                                                                                           sKnob->getDimension(), false);
+                const PathExtraData* data = dynamic_cast<const PathExtraData*>(isRegular->getExtraData());
+                assert(data);
+                if (data->multiPath) {
+                    k->setMultiPath(true);
+                }
+                knob = k;
+            }
+            
+            assert(knob);
+            knob->clone(sKnob.get());
+            knob->setAsUserKnob();
+            if (group) {
+                group->addKnob(knob);
+            }
+            if (page) {
+                page->addKnob(knob);
+            }
+            knob->setIsPersistant(isRegular->isPersistent());
+            knob->setAnimationEnabled(isRegular->isAnimationEnabled());
+            knob->setEvaluateOnChange(isRegular->getEvaluatesOnChange());
+            knob->setName(isRegular->getName());
+            knob->setHintToolTip(isRegular->getHintToolTip());
+            if (!isRegular->triggerNewLine()) {
+                knob->turnOffNewLine();
+            }
+            
         }
     }
 }
