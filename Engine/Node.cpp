@@ -35,6 +35,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/Plugin.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
@@ -89,7 +90,7 @@ namespace { // protect local classes in anonymous namespace
 struct Node::Implementation
 {
     Implementation(AppInstance* app_,
-                   LibraryBinary* plugin_)
+                   Natron::Plugin* plugin_)
     : app(app_)
     , knobsInitialized(false)
     , inputsInitialized(false)
@@ -204,7 +205,7 @@ struct Node::Implementation
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
-    LibraryBinary* plugin; //< the plugin which stores the function to instantiate the effect
+    Natron::Plugin* plugin; //< the plugin which stores the function to instantiate the effect
     bool computingPreview;
     mutable QMutex computingPreviewMutex;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
@@ -299,7 +300,7 @@ toBGRA(unsigned char r,
 }
 
 Node::Node(AppInstance* app,
-           LibraryBinary* plugin)
+           Natron::Plugin* plugin)
 : QObject()
 , _imp( new Implementation(app,plugin) )
 {
@@ -363,7 +364,11 @@ Node::load(const std::string & pluginID,
     
     int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(pluginID);
 
-    std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
+    LibraryBinary* binary = _imp->plugin->getLibraryBinary();
+    std::pair<bool,EffectBuilder> func;
+    if (binary) {
+        func = binary->findFunction<EffectBuilder>("BuildEffect");
+    }
     bool isFileDialogPreviewReader = fixedName.contains("Natron_File_Dialog_Preview_Provider_Reader");
     if (func.first) {
         _imp->liveInstance = func.second(thisShared);
@@ -2386,6 +2391,12 @@ Node::setKnobsFrozen(bool frozen)
 }
 
 std::string
+Node::getPluginIconFilePath() const
+{
+    return _imp->plugin ? _imp->plugin->getIconFilePath().toStdString() : std::string();
+}
+
+std::string
 Node::getPluginID() const
 {
     ///MT-safe, never changes
@@ -3617,7 +3628,7 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
 //////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,
-                             LibraryBinary* plugin)
+                             Natron::Plugin* plugin)
 : Node(app,plugin)
 , _inputsCount(1)
 {

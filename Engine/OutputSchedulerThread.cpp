@@ -2744,6 +2744,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
         functorArgs.canAbort = canAbort;
         functorArgs.viewerHash = viewerHash;
         functorArgs.scheduler = _imp.get();
+        functorArgs.request = 0;
         if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
             renderCurrentFrameFunctor(functorArgs);
         } else {

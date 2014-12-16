@@ -148,7 +148,7 @@ public:
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
     const std::vector<Natron::Plugin*> & getPluginsList() const WARN_UNUSED_RETURN;
     QMutex* getMutexForPlugin(const QString & pluginId) const WARN_UNUSED_RETURN;
-    Natron::LibraryBinary* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
+    Natron::Plugin* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;

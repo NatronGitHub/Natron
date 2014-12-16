@@ -268,7 +268,22 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
         
-        if (!holder->isProject()) {
+        Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (iseffect) {
+            
+
+            std::string iconFilePath = iseffect->getNode()->getPluginIconFilePath();
+            if (!iconFilePath.empty()) {
+                QPixmap ic;
+                ic.load(iconFilePath.c_str());
+                ic = ic.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2,NATRON_MEDIUM_BUTTON_SIZE - 2,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+                QLabel* iconLabel = new QLabel(getHeaderWidget());
+                iconLabel->setContentsMargins(2, 2, 2, 2);
+                iconLabel->setPixmap(ic);
+                _imp->_headerLayout->addWidget(iconLabel);
+                
+            }
+            
             QPixmap pixCenter;
             appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenter);
             _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
@@ -333,7 +348,7 @@ DockablePanel::DockablePanel(Gui* gui
         if (headerMode != READ_ONLY_NAME) {
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
-            Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
+            
             NodeBackDrop* backdrop = dynamic_cast<NodeBackDrop*>(holder);
             MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
             if (isMultiInstance) {
