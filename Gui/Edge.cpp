@@ -29,8 +29,9 @@
 
 #define EDGE_LENGTH_MIN 0.1
 
-#define kGraphicalContainerOffset 10 \
-    //!< number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+// number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+#define kGraphicalContainerOffset 10
+
 
 Edge::Edge(int inputNb_,
            double angle_,
@@ -203,6 +204,10 @@ Edge::initLine()
     if (_source) {
         makeEdges(sourceBBOX, srcEdges);
     }
+    
+    bool foundDstIntersection = false;
+    
+    QPointF dstIntersection;
 
     QPointF srcpt;
     if (_source && _dest) {
@@ -211,30 +216,27 @@ Edge::initLine()
 
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
-        bool foundIntersection = false;
-        QPointF dstIntersection;
         for (int i = 0; i < 4; ++i) {
             QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
             if (type == QLineF::BoundedIntersection) {
                 setLine( QLineF( dstIntersection,line().p2() ) );
-                foundIntersection = true;
+                foundDstIntersection = true;
                 break;
             }
         }
         QPointF srcInteresect;
-
-        if (foundIntersection) {
+        bool foundSrcIntersection = false;
+        if (foundDstIntersection) {
             ///Find the intersection with the source bbox
-            foundIntersection = false;
             for (int i = 0; i < 4; ++i) {
                 QLineF::IntersectType type = srcEdges[i].intersect(line(), &srcInteresect);
                 if (type == QLineF::BoundedIntersection) {
-                    foundIntersection = true;
+                    foundSrcIntersection = true;
                     break;
                 }
             }
         }
-        if (foundIntersection) {
+        if (foundSrcIntersection) {
             _middlePoint = (srcInteresect + dstIntersection) / 2;
             ///Hide bend point for short edges
             double visibleLength  = QLineF(srcInteresect,dstIntersection).length();
@@ -324,15 +326,18 @@ Edge::initLine()
     if (line().dy() >= 0) {
         a = 2 * M_PI - a;
     }
+    
+    QPointF arrowIntersect = foundDstIntersection ? dstIntersection : dst;
 
-    qreal arrowSize = 5. * sc;
-    QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
+    qreal arrowSize = 10. * sc;
+    double headAngle = 4. * M_PI / 5.;
+    QPointF arrowP1 = arrowIntersect + QPointF(std::sin(a + headAngle) * arrowSize,
+                                            std::cos(a + headAngle) * arrowSize);
+    QPointF arrowP2 = arrowIntersect + QPointF(std::sin(a + M_PI - headAngle) * arrowSize,
+                                            std::cos(a + M_PI - headAngle) * arrowSize);
 
     _arrowHead.clear();
-    _arrowHead << dst << arrowP1 << arrowP2;
+    _arrowHead << arrowIntersect << arrowP1 << arrowP2;
 } // initLine
 
 QPainterPath
