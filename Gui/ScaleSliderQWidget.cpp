@@ -277,6 +277,9 @@ ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
 
+    if (_imp->zoomCtx.screenHeight() == 0 || _imp->zoomCtx.screenWidth() == 0) {
+        return;
+    }
     double w = right - left;
     _imp->zoomCtx.fill(left - w * 0.05, right + w * 0.05, _imp->zoomCtx.bottom(), _imp->zoomCtx.top());
 
