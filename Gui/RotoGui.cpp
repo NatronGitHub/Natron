@@ -1736,7 +1736,7 @@ RotoGui::penDown(double /*scaleX*/,
             data.curve = nearbyBezier;
             data.newPoints.push_back(nearbyCP);
             datas.push_back(data);
-            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false) );
+            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false,pixelScale) );
             didSomething = true;
         }
         break;
@@ -1747,7 +1747,7 @@ RotoGui::penDown(double /*scaleX*/,
             data.curve = nearbyBezier;
             data.newPoints.push_back(nearbyCP);
             datas.push_back(data);
-            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true) );
+            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true,pixelScale) );
             didSomething = true;
         }
         break;
@@ -3131,6 +3131,9 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 void
 RotoGui::smoothSelectedCurve()
 {
+    
+    std::pair<double,double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -3145,13 +3148,15 @@ RotoGui::smoothSelectedCurve()
         }
         datas.push_back(data);
     }
-    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false) );
+    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false,pixelScale) );
     _imp->viewer->redraw();
 }
 
 void
 RotoGui::cuspSelectedCurve()
 {
+    std::pair<double,double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -3166,7 +3171,7 @@ RotoGui::cuspSelectedCurve()
         }
         datas.push_back(data);
     }
-    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true) );
+    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true,pixelScale) );
     _imp->viewer->redraw();
 }
 
@@ -3189,6 +3194,10 @@ void
 RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
                                  const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & cp)
 {
+    
+    std::pair<double,double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
+    
     QPoint pos = QCursor::pos();
     QMenu menu(_imp->viewer);
 
@@ -3233,7 +3242,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
         data.curve = curve;
         data.newPoints.push_back(cp);
         datas.push_back(data);
-        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false) );
+        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false,pixelScale) );
         _imp->viewer->redraw();
     } else if (ret == cuspAction) {
         std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
@@ -3241,7 +3250,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
         data.curve = curve;
         data.newPoints.push_back(cp);
         datas.push_back(data);
-        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true) );
+        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true,pixelScale) );
         _imp->viewer->redraw();
     } else if (ret == removeFeather) {
         std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;

@@ -32,6 +32,7 @@ public:
     
     virtual void lock(const boost::shared_ptr<EntryType>& entry) = 0;
     
+    virtual bool tryLock(const boost::shared_ptr<EntryType>& entry) = 0;
     
     virtual void unlock(const boost::shared_ptr<EntryType>& entry) =0 ;
     
@@ -74,6 +75,18 @@ public:
         if (_manager) {
             _manager->lock(_entry);
         }
+    }
+    
+    bool tryLock(const boost::shared_ptr<EntryType>& entry)
+    {
+        assert(!_entry);
+        if (_manager) {
+            if (_manager->tryLock(entry)) {
+                _entry = entry;
+                return true;
+            }
+        }
+        return false;
     }
     
     void unlock()

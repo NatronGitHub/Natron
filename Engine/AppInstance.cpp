@@ -315,10 +315,10 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 const CreateNodeArgs::DefaultValuesList& paramValues)
 {
     boost::shared_ptr<Node> node;
-    LibraryBinary* pluginBinary = 0;
+    Natron::Plugin* plugin = 0;
 
     try {
-        pluginBinary = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
+        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
     } catch (const std::exception & e) {
         Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e.what(), false );
 
@@ -326,9 +326,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     if (pluginID != "Viewer") { // for now only the viewer can be an inspector.
-        node.reset( new Node(this,pluginBinary) );
+        node.reset( new Node(this,plugin) );
     } else {
-        node.reset( new InspectorNode(this,pluginBinary) );
+        node.reset( new InspectorNode(this,plugin) );
     }
     
     {

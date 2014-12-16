@@ -39,7 +39,7 @@
 #include "Engine/Timer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
-
+#include "Engine/ViewerInstancePrivate.h"
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
@@ -1207,8 +1207,10 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_p
         BufferedFrame b;
         b.time = time;
         b.view = view;
-        b.frame.push_back(image);
-        treatFrame(b);
+        if (image) {
+            b.frame.push_back(image);
+            treatFrame(b);
+        }
     } else {
         
         ///Called by the scheduler thread when an image is rendered
@@ -1998,7 +2000,9 @@ void
 ViewerDisplayScheduler::treatFrame(const BufferedFrame& frame)
 {
     for (std::list<boost::shared_ptr<BufferableObject> >::const_iterator it = frame.frame.begin(); it!=frame.frame.end(); ++it) {
-        _viewer->updateViewer(*it);
+        boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it);
+        assert(params);
+        _viewer->updateViewer(params);
     }
     if (!frame.frame.empty()) {
         _viewer->redrawViewer();
@@ -2064,16 +2068,43 @@ private:
         
         ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
         ///it calls appendToBuffer by itself
-        StatusEnum stat;
+        StatusEnum stat = eStatusReplyDefault;
         
         int viewsCount = _viewer->getRenderViewsCount();
         int view = viewsCount > 0 ? _viewer->getCurrentView() : 0;
-
-        std::list<boost::shared_ptr<BufferableObject> > frames;
-        try {
-            stat = _viewer->renderViewer(time,view,false,true,_viewer->getHash(),true,frames);
-        } catch (...) {
-            stat = eStatusFailed;
+        U64 viewerHash = _viewer->getHash();
+        boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
+        
+        Natron::StatusEnum status[2] = {
+            eStatusFailed, eStatusFailed
+        };
+        
+        for (int i = 0; i < 2; ++i) {
+            args[i].reset(new ViewerInstance::ViewerArgs);
+            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, view, i, viewerHash, args[i].get());
+        }
+       
+        if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
+            _imp->scheduler->notifyRenderFailure(std::string());
+            return;
+        } else if (status[0] == eStatusReplyDefault || status[1] == eStatusReplyDefault) {
+            return;
+        } else {
+            for (int i = 0; i < 2; ++i) {
+                if (args[i] && args[i]->params && args[i]->params->ramBuffer) {
+                    _imp->scheduler->appendToBuffer(time, view, args[i]->params);
+                    args[i].reset();
+                }
+            }
+        }
+        
+        
+        if (args[0] || args[1]) {
+            try {
+                stat = _viewer->renderViewer(view,false,true,viewerHash,true,args);
+            } catch (...) {
+                stat = eStatusFailed;
+            }
         }
         
         if (stat == eStatusFailed) {
@@ -2081,9 +2112,11 @@ private:
             ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
             _imp->scheduler->notifyRenderFailure(std::string());
         } else {
-            for (std::list<boost::shared_ptr<BufferableObject> >::iterator it = frames.begin(); it != frames.end(); ++it) {
-                assert(*it);
-                _imp->scheduler->appendToBuffer(time, view, *it);
+            if (args[0] && args[0]->params && args[0]->params->ramBuffer) {
+                _imp->scheduler->appendToBuffer(time, view, args[0]->params);
+            }
+            if (args[1] && args[1]->params && args[1]->params->ramBuffer) {
+                _imp->scheduler->appendToBuffer(time, view, args[1]->params);
             }
         }
 
@@ -2426,24 +2459,27 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 
 };
 
+struct CurrentFrameFunctorArgs
+{
+    int view;
+    ViewerInstance* viewer;
+    bool canAbort;
+    U64 viewerHash;
+    RequestedFrame* request;
+    ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
+    boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
+};
 
-
-static void renderCurrentFrameFunctor(ViewerInstance* viewer,bool canAbort,RequestedFrame* request, ViewerCurrentFrameRequestSchedulerPrivate* scheduler)
+static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
 {
     
     ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
     ///it calls appendToBuffer by itself
     StatusEnum stat;
     
-    U64 viewerHash = viewer->getHash();
-    int frame = viewer->getTimeline()->currentFrame();
-    
-    int viewsCount = viewer->getRenderViewsCount();
-    int view = viewsCount > 0 ? viewer->getCurrentView() : 0;
-    
     BufferableObjectList ret;
     try {
-        stat = viewer->renderViewer(frame,view,QThread::currentThread() == qApp->thread(),false,viewerHash,canAbort,ret);
+        stat = args.viewer->renderViewer(args.view,QThread::currentThread() == qApp->thread(),false,args.viewerHash,args.canAbort,args.args);
     } catch (...) {
         stat = eStatusFailed;
     }
@@ -2451,17 +2487,24 @@ static void renderCurrentFrameFunctor(ViewerInstance* viewer,bool canAbort,Reque
     if (stat == eStatusFailed) {
         ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
         ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
-        viewer->disconnectViewer();
+        args.viewer->disconnectViewer();
         ret.clear();
+    } else {
+        for (int i = 0; i < 2; ++i) {
+            if (args.args[i] && args.args[i]->params && args.args[i]->params->ramBuffer) {
+                ret.push_back(args.args[i]->params);
+            }
+        }
     }
     
-    if (request) {
-        scheduler->notifyFrameProduced(ret, request);
+    if (args.request) {
+        args.scheduler->notifyFrameProduced(ret, args.request);
     } else {
         
         assert(QThread::currentThread() == qApp->thread());
-        scheduler->treatProducedFrame(ret);
+        args.scheduler->treatProducedFrame(ret);
     }
+    
     
 }
 
@@ -2571,18 +2614,23 @@ ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableOb
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    if (!frames.empty()) {
-        for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
-            assert(*it2);
-            viewer->updateViewer(*it2);
+    bool hasDoneSomething = false;
+    for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
+        assert(*it2);
+        boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
+        assert(params);
+        if (params && params->ramBuffer) {
+            hasDoneSomething = true;
+            viewer->updateViewer(params);
         }
-        if (!frames.empty()) {
-            viewer->redrawViewer();
-        }
-    } else {
-        ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
+    }
+    
+    
+    ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
+    if (hasDoneSomething) {
         viewer->redrawViewer();
     }
+    
     
     {
         QMutexLocker k(&treatMutex);
@@ -2653,21 +2701,67 @@ ViewerCurrentFrameRequestScheduler::hasThreadsWorking() const
 void
 ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
 {
-    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
-        renderCurrentFrameFunctor(_imp->viewer, canAbort, NULL,_imp.get());
-    } else {
-        RequestedFrame *request = new RequestedFrame;
-        request->id = 0;
-        {
-            QMutexLocker k(&_imp->requestsQueueMutex);
-            _imp->requestsQueue.push_back(request);
-            
-            if (isRunning()) {
-                _imp->requestsQueueNotEmpty.wakeOne();
-            } else {
-                start();
-            }
+    int frame = _imp->viewer->getTimeline()->currentFrame();
+    int viewsCount = _imp->viewer->getRenderViewsCount();
+    int view = viewsCount > 0 ? _imp->viewer->getCurrentView() : 0;
+    U64 viewerHash = _imp->viewer->getHash();
+    
+    Natron::StatusEnum status[2] = {
+        eStatusFailed, eStatusFailed
+    };
+    
+    boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
+    for (int i = 0; i < 2; ++i) {
+        args[i].reset(new ViewerInstance::ViewerArgs);
+        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, view, i, viewerHash, args[i].get());
+    }
+    
+    if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
+        _imp->viewer->disconnectViewer();
+        return;
+    } else if (status[0] == eStatusReplyDefault || status[1] == eStatusReplyDefault) {
+        _imp->viewer->redrawViewer();
+        return;
+    }
+    
+    for (int i = 0; i < 2 ; ++i) {
+        if (args[i]->params && args[i]->params->ramBuffer) {
+            _imp->viewer->updateViewer(args[i]->params);
+            args[i].reset();
         }
-        QtConcurrent::run(renderCurrentFrameFunctor,_imp->viewer, canAbort,request,_imp.get());
+    }
+    if ((!args[0] && !args[1]) ||
+        (!args[0] && status[0] == eStatusOK && args[1] && status[1] == eStatusFailed) ||
+        (!args[1] && status[1] == eStatusOK && args[0] && status[0] == eStatusFailed)) {
+        _imp->viewer->redrawViewer();
+    } else {
+        
+        CurrentFrameFunctorArgs functorArgs;
+        functorArgs.viewer = _imp->viewer;
+        functorArgs.view = view;
+        functorArgs.args[0] = args[0];
+        functorArgs.args[1] = args[1];
+        functorArgs.canAbort = canAbort;
+        functorArgs.viewerHash = viewerHash;
+        functorArgs.scheduler = _imp.get();
+        functorArgs.request = 0;
+        if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+            renderCurrentFrameFunctor(functorArgs);
+        } else {
+            RequestedFrame *request = new RequestedFrame;
+            request->id = 0;
+            {
+                QMutexLocker k(&_imp->requestsQueueMutex);
+                _imp->requestsQueue.push_back(request);
+                
+                if (isRunning()) {
+                    _imp->requestsQueueNotEmpty.wakeOne();
+                } else {
+                    start();
+                }
+            }
+            functorArgs.request = request;
+            QtConcurrent::run(renderCurrentFrameFunctor,functorArgs);
+        }
     }
 }

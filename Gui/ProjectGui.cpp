@@ -356,7 +356,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             if ( (std::abs(r - defR) > 0.05) || (std::abs(g - defG) > 0.05) || (std::abs(b - defB) > 0.05) ) {
                 QColor color;
                 color.setRgbF(r, g, b);
-                nGui->setDefaultGradientColor(color);
+                nGui->setDefaultColor(color);
                 nGui->setCurrentColor(color);
             }
         }

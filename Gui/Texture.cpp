@@ -20,10 +20,12 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 Texture::Texture(U32 target,
                  int minFilter,
-                 int magFilter)
+                 int magFilter,
+                 int clamp)
     : _target(target)
       , _minFilter(minFilter)
       , _magFilter(magFilter)
+      , _clamp(clamp)
       , _type(eDataTypeNone)
 {
     glGenTextures(1, &_texID);
@@ -67,8 +69,8 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
             glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
             glTexParameteri (_target, GL_TEXTURE_MAG_FILTER, _magFilter);
 
-            glTexParameteri (_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameteri (_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
+            glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
             if (type == eDataTypeByte) {
                 glTexImage2D(_target,
                              0,         // level

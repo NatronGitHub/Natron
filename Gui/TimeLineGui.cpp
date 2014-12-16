@@ -349,7 +349,8 @@ TimeLineGui::paintGL()
             glEnd();
             glCheckErrorIgnoreOSXBug();
 
-            if (tickSize > minTickSizeText) {
+            bool doRender = std::abs(std::floor(0.5 + value) - value) == 0.;
+            if (doRender && tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = QString::number(value);
                 const int sSizePixel =  fontM.width(s);
@@ -573,24 +574,28 @@ TimeLineGui::seek(SequenceTime time)
 void
 TimeLineGui::mousePressEvent(QMouseEvent* e)
 {
-    _imp->_lastMouseEventWidgetCoord = e->pos();
-    double t = toTimeLineCoordinates(e->x(),0).x();
-    SequenceTime tseq = std::floor(t + 0.5);
-    if ( modCASIsControl(e) && !_imp->_viewer->isFrameRangeLocked() ) {
-        _imp->_state = eTimelineStateDraggingBoundary;
-        int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound() - 1,0).x();
-        int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound() + 1,0).x();
-        int distFromFirst = std::abs(e->x() - firstPos);
-        int distFromLast = std::abs(e->x() - lastPos);
-        if (distFromFirst  > distFromLast) {
-            setBoundaries(_imp->_timeline->leftBound(), tseq); // moving last frame anchor
-        } else {
-            setBoundaries( tseq, _imp->_timeline->rightBound() );   // moving first frame anchor
-        }
+    if (buttonDownIsMiddle(e)) {
+        centerOn(_imp->_timeline->leftBound(), _imp->_timeline->rightBound());
     } else {
-        _imp->_state = eTimelineStateDraggingCursor;
-        _imp->_gui->setUserScrubbingTimeline(true);
-        seek(tseq);
+        _imp->_lastMouseEventWidgetCoord = e->pos();
+        double t = toTimeLineCoordinates(e->x(),0).x();
+        SequenceTime tseq = std::floor(t + 0.5);
+        if ( modCASIsControl(e) && !_imp->_viewer->isFrameRangeLocked() ) {
+            _imp->_state = eTimelineStateDraggingBoundary;
+            int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound() - 1,0).x();
+            int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound() + 1,0).x();
+            int distFromFirst = std::abs(e->x() - firstPos);
+            int distFromLast = std::abs(e->x() - lastPos);
+            if (distFromFirst  > distFromLast) {
+                setBoundaries(_imp->_timeline->leftBound(), tseq); // moving last frame anchor
+            } else {
+                setBoundaries( tseq, _imp->_timeline->rightBound() );   // moving first frame anchor
+            }
+        } else {
+            _imp->_state = eTimelineStateDraggingCursor;
+            _imp->_gui->setUserScrubbingTimeline(true);
+            seek(tseq);
+        }
     }
 }
 

@@ -34,7 +34,8 @@ public:
 
     Texture(U32 target,
             int minFilter,
-            int magFilter);
+            int magFilter,
+            int clamp);
 
     U32 getTexID() const
     {
@@ -70,7 +71,7 @@ private:
 
     U32 _texID;
     U32 _target;
-    int _minFilter,_magFilter;
+    int _minFilter,_magFilter, _clamp;
     TextureRect _textureRect;
     DataTypeEnum _type;
 };

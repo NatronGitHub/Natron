@@ -28,6 +28,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Rect.h"
 #include "Engine/OutputSchedulerThread.h"
 
+
 namespace Natron {
 
     
@@ -75,11 +76,24 @@ namespace Natron {
             return _bounds;
         }
 
-        std::list<RectI> minimalNonMarkedRects(const RectI & roi) const;
+#if NATRON_ENABLE_TRIMAP
+        void minimalNonMarkedRects_trimap(const RectI & roi,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const;
+        RectI minimalNonMarkedBbox_trimap(const RectI & roi,bool* isBeingRenderedElsewhere) const;
+#endif
 
+        void minimalNonMarkedRects(const RectI & roi,std::list<RectI>& ret) const;
         RectI minimalNonMarkedBbox(const RectI & roi) const;
 
+
+        ///Fill with 1 the roi
         void markForRendered(const RectI & roi);
+        
+#if NATRON_ENABLE_TRIMAP
+        ///Fill with 2 the roi
+        void markForRendering(const RectI & roi);
+#endif
+        
+        void clear(const RectI& roi);
 
         const char* getBitmap() const
         {
@@ -265,23 +279,41 @@ namespace Natron {
      * area to render. Since this problem is quite hard to solve,the different portions
      * of image returned may contain already rendered pixels.
      **/
-        std::list<RectI> getRestToRender(const RectI & regionOfInterest) const
+#if NATRON_ENABLE_TRIMAP
+        void getRestToRender_trimap(const RectI & regionOfInterest,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const
         {
             if (!_useBitmap) {
-                return std::list<RectI>();
+                return;
             }
             QReadLocker locker(&_lock);
-
-            return _bitmap.minimalNonMarkedRects(regionOfInterest);
+            _bitmap.minimalNonMarkedRects_trimap(regionOfInterest, ret, isBeingRenderedElsewhere);
+        }
+#endif
+        void getRestToRender(const RectI & regionOfInterest,std::list<RectI>& ret) const
+        {
+            if (!_useBitmap) {
+                return ;
+            }
+            QReadLocker locker(&_lock);
+            _bitmap.minimalNonMarkedRects(regionOfInterest,ret);
         }
 
+#if NATRON_ENABLE_TRIMAP
+        RectI getMinimalRect_trimap(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere) const
+        {
+            if (!_useBitmap) {
+                return regionOfInterest;
+            }
+            QReadLocker locker(&_lock);
+            return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
+        }
+#endif
         RectI getMinimalRect(const RectI & regionOfInterest) const
         {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
             QReadLocker locker(&_lock);
-
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
         }
 
@@ -294,7 +326,30 @@ namespace Natron {
 
             _bitmap.markForRendered(roi);
         }
+        
+#if NATRON_ENABLE_TRIMAP
+        ///Fill with 2 the roi
+        void markForRendering(const RectI & roi)
+        {
+            if (!_useBitmap) {
+                return;
+            }
+            QWriteLocker locker(&_lock);
+            
+            _bitmap.markForRendering(roi);
+        }
+#endif
 
+        void clearBitmap(const RectI& roi)
+        {
+            if (!_useBitmap) {
+                return;
+            }
+            QWriteLocker locker(&_lock);
+            
+            _bitmap.clear(roi);
+        }
+        
         /**
      * @brief Fills the image with the given colour. If the image components
      * are not RGBA it will ignore the unsupported components.

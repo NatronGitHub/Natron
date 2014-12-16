@@ -188,7 +188,8 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
             dispmax = SLIDER_MAX_RANGE;
         }
         
-        _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
+        _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false),
+                                         ScaleSliderQWidget::eDataTypeInt,Natron::eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
@@ -890,7 +891,8 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             }
         }
         
-        _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false), Natron::eScaleTypeLinear, layout->parentWidget() );
+        _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false),
+                                         ScaleSliderQWidget::eDataTypeDouble, Natron::eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
@@ -1786,7 +1788,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if ( slidermax >= std::numeric_limits<float>::max() ) {
         slidermax = 1.;
     }
-    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false), Natron::eScaleTypeLinear, boxContainers);
+    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(0,false),
+                                     ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
     _slider->hide();

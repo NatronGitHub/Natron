@@ -988,7 +988,8 @@ OpenCloseUndoCommand::redo()
 SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,
                                              const std::list<SmoothCuspCurveData> & data,
                                              int time,
-                                             bool cusp)
+                                             bool cusp,
+                                             const std::pair<double, double>& pixelScale)
     : QUndoCommand()
       , _roto(roto)
       , _firstRedoCalled(false)
@@ -996,6 +997,7 @@ SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,
       , _count(1)
       , _cusp(cusp)
       , curves(data)
+      , _pixelScale(pixelScale)
 {
     for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it != curves.end(); ++it) {
         for (SelectedPointList::const_iterator it2 = it->newPoints.begin(); it2 != it->newPoints.end(); ++it2) {
@@ -1045,9 +1047,9 @@ SmoothCuspUndoCommand::redo()
                 assert(index != -1);
 
                 if (_cusp) {
-                    it->curve->cuspPointAtIndex(index, _time);
+                    it->curve->cuspPointAtIndex(index, _time, _pixelScale);
                 } else {
-                    it->curve->smoothPointAtIndex(index, _time);
+                    it->curve->smoothPointAtIndex(index, _time, _pixelScale);
                 }
             }
         }

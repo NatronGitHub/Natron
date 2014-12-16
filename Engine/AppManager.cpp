@@ -1150,7 +1150,7 @@ AppManager::getKnobFactory() const
     return *(_imp->_knobFactory);
 }
 
-Natron::LibraryBinary*
+Natron::Plugin*
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion) const
@@ -1177,7 +1177,7 @@ AppManager::getPluginBinary(const QString & pluginId,
         std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
         --greatest;
 
-        return greatest->second->getLibraryBinary();
+        return greatest->second;
     }
 }
 

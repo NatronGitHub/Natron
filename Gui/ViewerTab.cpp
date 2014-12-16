@@ -156,6 +156,7 @@ struct ViewerTabPrivate
     Button* enableViewerRoI;
     Button* refreshButton;
     QIcon iconRefreshOff, iconRefreshOn;
+    int ongoingRenderCount;
     
     Button* activateRenderScale;
     bool renderScaleActive;
@@ -199,11 +200,11 @@ struct ViewerTabPrivate
     Button* playbackMode_Button;
     LineEdit* frameRangeEdit;
     QCheckBox* canEditFrameRangeBox;
-    QLabel* canEditFrameRangeLabel;
+    ClickableLabel* canEditFrameRangeLabel;
     mutable QMutex frameRangeLockedMutex;
     bool frameRangeLocked;
     QCheckBox* canEditFpsBox;
-    QLabel* canEditFpsLabel;
+    ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;
     bool fpsLocked;
     SpinBox* fpsBox;
@@ -258,6 +259,7 @@ struct ViewerTabPrivate
         , refreshButton(NULL)
         , iconRefreshOff()
         , iconRefreshOn()
+        , ongoingRenderCount(0)
         , activateRenderScale(NULL)
         , renderScaleActive(false)
         , renderScaleCombo(NULL)
@@ -517,7 +519,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->gainBox);
 
 
-    _imp->gainSlider = new ScaleSliderQWidget(0, 64,1.0,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gainSlider = new ScaleSliderQWidget(0, 64,1.0,ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     _imp->gainSlider->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
                                        "Multiplies the image by \nthis amount before display.") );
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
@@ -799,7 +801,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->canEditFrameRangeBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QFont font(appFont,appFontSize);
     
-    _imp->canEditFrameRangeLabel = new QLabel(tr("Frame-range"),_imp->playerButtonsContainer);
+    _imp->canEditFrameRangeLabel = new ClickableLabel(tr("Frame-range"),_imp->playerButtonsContainer);
+    QObject::connect(_imp->canEditFrameRangeLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFrameRangeLabelClicked(bool)));
     _imp->canEditFrameRangeLabel->setToolTip(canEditFRTooltip);
     _imp->canEditFrameRangeLabel->setFont(font);
     
@@ -834,7 +837,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->canEditFpsBox->setChecked(!_imp->fpsLocked);
     QObject::connect( _imp->canEditFpsBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFPSClicked(bool) ) );
     
-    _imp->canEditFpsLabel = new QLabel(tr("fps"),_imp->playerButtonsContainer);
+    _imp->canEditFpsLabel = new ClickableLabel(tr("fps"),_imp->playerButtonsContainer);
+    QObject::connect(_imp->canEditFpsLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFPSLabelClicked(bool)));
     _imp->canEditFpsLabel->setToolTip(canEditFpsBoxTT);
     _imp->canEditFpsLabel->setFont(font);
     
@@ -1287,7 +1291,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     _imp->currentFrameBox->setValue(time);
     
     if (_imp->timeLineGui->getTimeline() != _imp->gui->getApp()->getTimeLine()) {
-        _imp->viewerNode->renderCurrentFrame(false);
+        _imp->viewerNode->renderCurrentFrame(true);
     }
 }
 
@@ -1302,7 +1306,7 @@ ViewerTab::centerViewer()
 {
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
-        _imp->viewerNode->renderCurrentFrame(true);
+        _imp->viewerNode->renderCurrentFrame(false);
     } else {
         _imp->viewer->updateGL();
     }
@@ -1312,7 +1316,7 @@ void
 ViewerTab::refresh()
 {
     _imp->viewerNode->forceFullComputationOnNextFrame();
-    _imp->viewerNode->renderCurrentFrame(true);
+    _imp->viewerNode->renderCurrentFrame(false);
 }
 
 ViewerTab::~ViewerTab()
@@ -2878,10 +2882,24 @@ ViewerTab::onCanSetFrameRangeButtonClicked(bool toggled)
 }
 
 void
+ViewerTab::onCanSetFrameRangeLabelClicked(bool toggled)
+{
+    _imp->canEditFrameRangeBox->setChecked(toggled);
+    onCanSetFrameRangeButtonClicked(toggled);
+}
+
+void
 ViewerTab::setFrameRangeLocked(bool toggled)
 {
     _imp->canEditFrameRangeBox->setChecked(!toggled);
     onCanSetFrameRangeButtonClicked(!toggled);
+}
+
+void
+ViewerTab::onCanSetFPSLabelClicked(bool toggled)
+{
+    _imp->canEditFpsBox->setChecked(toggled);
+    onCanSetFPSClicked(toggled);
 }
 
 void
@@ -3292,13 +3310,20 @@ ViewerTab::setDesiredFps(double fps)
 void
 ViewerTab::onViewerRenderingStarted()
 {
-    _imp->refreshButton->setIcon(_imp->iconRefreshOn);
+    
+    if (!_imp->ongoingRenderCount) {
+        _imp->refreshButton->setIcon(_imp->iconRefreshOn);
+    }
+    ++_imp->ongoingRenderCount;
 }
 
 void
 ViewerTab::onViewerRenderingStopped()
 {
-    _imp->refreshButton->setIcon(_imp->iconRefreshOff);
+    --_imp->ongoingRenderCount;
+    if (!_imp->ongoingRenderCount) {
+        _imp->refreshButton->setIcon(_imp->iconRefreshOff);
+    }
 }
 
 void

@@ -19,7 +19,8 @@ TEST(BitmapTest,SimpleRect) {
     Natron::Bitmap bm(rod);
 
     ///assert that the union of all the non rendered rects is the rod
-    std::list<RectI> nonRenderedRects = bm.minimalNonMarkedRects(rod);
+    std::list<RectI> nonRenderedRects;
+    bm.minimalNonMarkedRects(rod,nonRenderedRects);
     RectI nonRenderedRectsUnion;
 
     for (std::list<RectI>::iterator it = nonRenderedRects.begin(); it != nonRenderedRects.end(); ++it) {
@@ -37,7 +38,7 @@ TEST(BitmapTest,SimpleRect) {
 
     ///assert that non of the rendered rects interesect the non rendered half
     RectI nonRenderedHalf(0,50,100,100);
-    nonRenderedRects = bm.minimalNonMarkedRects(rod);
+    bm.minimalNonMarkedRects(rod,nonRenderedRects);
     for (std::list<RectI>::iterator it = nonRenderedRects.begin(); it != nonRenderedRects.end(); ++it) {
         ASSERT_TRUE( (*it).intersects(nonRenderedHalf) );
     }
@@ -57,7 +58,9 @@ TEST(BitmapTest,SimpleRect) {
     bm.markForRendered(nonRenderedHalf);
 
     ///assert that the bm is rendered totally
-    ASSERT_TRUE( bm.minimalNonMarkedRects(rod).empty() );
+    nonRenderedRects.clear();
+    bm.minimalNonMarkedRects(rod, nonRenderedRects);
+    ASSERT_TRUE( nonRenderedRects.empty() );
     ASSERT_TRUE( !memchr( map,0,rod.area() ) );
 }
 

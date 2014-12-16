@@ -305,6 +305,10 @@ struct EffectInstance::Implementation
           , pluginMemoryChunks()
           , supportsRenderScale(eSupportsMaybe)
           , actionsCache()
+#if NATRON_ENABLE_TRIMAP
+          , imagesBeingRenderedMutex()
+          , imagesBeingRendered()
+#endif
     {
     }
 
@@ -344,6 +348,22 @@ struct EffectInstance::Implementation
     /// Mt-Safe actions cache
     ActionsCache actionsCache;
     
+#if NATRON_ENABLE_TRIMAP
+    ///Store all images being rendered to avoid 2 threads rendering the same portion of an image
+    struct ImageBeingRendered
+    {
+        QWaitCondition cond;
+        QMutex lock;
+        int refCount;
+        bool renderFailed;
+        
+        ImageBeingRendered() : cond(), lock(), refCount(0), renderFailed(false) {}
+    };
+    QMutex imagesBeingRenderedMutex;
+    typedef boost::shared_ptr<ImageBeingRendered> IBRPtr;
+    typedef std::map<ImagePtr,IBRPtr > IBRMap;
+    IBRMap imagesBeingRendered;
+#endif
     
     void setDuringInteractAction(bool b)
     {
@@ -352,10 +372,93 @@ struct EffectInstance::Implementation
         duringInteractAction = b;
     }
 
+#if NATRON_ENABLE_TRIMAP
+    void markImageAsBeingRendered(const boost::shared_ptr<Natron::Image>& img)
+    {
+        if (!img->usesBitMap()) {
+            return;
+        }
+        QMutexLocker k(&imagesBeingRenderedMutex);
+        IBRMap::iterator found = imagesBeingRendered.find(img);
+        if (found != imagesBeingRendered.end()) {
+            ++(found->second->refCount);
+        } else {
+            IBRPtr ibr(new Implementation::ImageBeingRendered);
+            ++ibr->refCount;
+            imagesBeingRendered.insert(std::make_pair(img,ibr));
+        }
+    }
+    
+    void waitForImageBeingRenderedElsewhereAndUnmark(const RectI& roi,const boost::shared_ptr<Natron::Image>& img)
+    {
+        if (!img->usesBitMap()) {
+            return;
+        }
+        IBRPtr ibr;
+        {
+            QMutexLocker k(&imagesBeingRenderedMutex);
+            IBRMap::iterator found = imagesBeingRendered.find(img);
+            assert(found != imagesBeingRendered.end());
+            ibr = found->second;
+        }
+        
+        std::list<RectI> restToRender;
+        bool isBeingRenderedElseWhere = false;
+        img->getRestToRender_trimap(roi,restToRender, &isBeingRenderedElseWhere);
+        
+        {
+            QMutexLocker kk(&ibr->lock);
+            while (isBeingRenderedElseWhere && !ibr->renderFailed) {
+                ibr->cond.wait(&ibr->lock);
+                isBeingRenderedElseWhere = false;
+                img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
+            }
+        }
+        
+        ///Everything should be rendered now.
+        assert(restToRender.empty());
 
+        {
+            QMutexLocker k(&imagesBeingRenderedMutex);
+            IBRMap::iterator found = imagesBeingRendered.find(img);
+            assert(found != imagesBeingRendered.end());
+            
+            QMutexLocker kk(&ibr->lock);
+            --ibr->refCount;
+            if (found != imagesBeingRendered.end() && !ibr->refCount) {
+                imagesBeingRendered.erase(found);
+            }
+        }
 
+        
+        
+    
+    }
+    
+    void unmarkImageAsBeingRendered(const boost::shared_ptr<Natron::Image>& img,bool renderFailed)
+    {
+        if (!img->usesBitMap()) {
+            return;
+        }
+        QMutexLocker k(&imagesBeingRenderedMutex);
+        IBRMap::iterator found = imagesBeingRendered.find(img);
+        assert(found != imagesBeingRendered.end());
+        
+        QMutexLocker kk(&found->second->lock);
+        if (renderFailed) {
+            found->second->renderFailed = true;
+        }
+        found->second->cond.wakeAll();
+        --found->second->refCount;
+        if (!found->second->refCount) {
+            kk.unlock(); // < unlock before erase which is going to delete the lock
+            imagesBeingRendered.erase(found);
+        }
+        
+    }
+#endif
     /**
-     * @brief This function sets on the thread storage given in parameter all the arguments which 
+     * @brief This function sets on the thread storage given in parameter all the arguments which
      * are used to render an image.
      * This is used exclusively on the render thread in the renderRoI function or renderRoIInternal function.
      * The reason we use thread-storage is because the OpenFX API doesn't give all the parameters to the 
@@ -568,6 +671,13 @@ void
 EffectInstance::lock(const boost::shared_ptr<Natron::Image>& entry)
 {
     _node->lock(entry);
+}
+
+
+bool
+EffectInstance::tryLock(const boost::shared_ptr<Natron::Image>& entry)
+{
+    return _node->tryLock(entry);
 }
 
 void
@@ -1067,6 +1177,10 @@ EffectInstance::getImage(int inputNb,
     if (!inputImg) {
         return inputImg;
     }
+    
+    ///Check that the rendered image contains what we requested.
+    assert(inputImg->getComponents() == comp);
+    
     if (roiPixel) {
         *roiPixel = pixelRoI;
     }
@@ -1386,8 +1500,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         ///A ptr to a higher resolution of the image or an image with different comps/bitdepth
         ImagePtr imageToConvert;
         
-        bool imageConversionNeeded = false;
-        
         for (ImageList::iterator it = cachedImages.begin(); it!=cachedImages.end(); ++it) {
             unsigned int imgMMlevel = (*it)->getMipMapLevel();
             ImageComponentsEnum imgComps = (*it)->getComponents();
@@ -1427,31 +1539,21 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     continue;
                 }
                 
-                
-                ///Same resolution but different comps/bitdepth
-                if (imgMMlevel == mipMapLevel) {
-                    imageConversionNeeded = true;
-                    imageToConvert = *it;
-                    break;
-                }
-                
                 assert(imgMMlevel < mipMapLevel);
                 
                 if (!imageToConvert) {
                     imageToConvert = *it;
-                    imageConversionNeeded = false;//imgComps != components || imgDepth != bitdepth;
 
                 } else {
-                    if (imgMMlevel < imageToConvert->getMipMapLevel()) {
+                    ///We found an image which scale is closer to the requested mipmap level we want, use it instead
+                    if (imgMMlevel > imageToConvert->getMipMapLevel()) {
                         imageToConvert = *it;
-                        imageConversionNeeded = false;//imgComps != components || imgDepth != bitdepth;
-
                     }
                 }
                 
                 
             }
-        }
+        } //end for
         
         if (imageToConvert && !*image) {
 
@@ -1462,45 +1564,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
             ImageLocker locker(this, imageToConvert);
 
-            ///Edit: don't try to convert now, instead continue rendering the original image and convert afterwards
-//            if (imageConversionNeeded) {
-//                
-//                boost::shared_ptr<ImageParams> imageParams(new ImageParams(*imageToConvert->getParams()));
-//                imageParams->setComponents(components);
-//                imageParams->setBitDepth(bitdepth);
-//                
-//                
-//                ///Allocate the image in the cache, it may be useful later
-//                ImageLocker imageLock(this);
-//                
-//                boost::shared_ptr<Image> img;
-//                if (useCache) {
-//                    bool cached = !useDiskCache ? Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img) :
-//                                                  Natron::getImageFromDiskCacheOrCreate(key, imageParams, &imageLock, &img);
-//                    assert(img);
-//                    
-//                    if (!cached) {
-//                        img->allocateMemory();
-//                    } else {
-//                        ///lock the image because it might not be allocated yet
-//                        imageLock.lock(img);
-//                    }
-//                } else {
-//                    img.reset(new Image(key,imageParams));
-//                }
-//                
-//                bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
-//                
-//                imageToConvert->convertToFormat(imageToConvert->getBounds(),
-//                                                               getApp()->getDefaultColorSpaceForBitDepth( imageToConvert->getBitDepth() ),
-//                                                               getApp()->getDefaultColorSpaceForBitDepth(bitdepth), channelForAlpha, false,
-//                                                useCache  && imageToConvert->usesBitMap(),
-//                                                unPremultIfNeeded, img.get());
-//                
-//                imageToConvert = img;
-//                
-//            }
-            
             if (imageToConvert->getMipMapLevel() != mipMapLevel) {
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
                 
@@ -2079,11 +2142,22 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///Hence after rendering all the input images, we redo a cache look-up to check whether the image is still here
     bool redoCacheLookup = false;
     
-
+#if NATRON_ENABLE_TRIMAP
+    bool isBeingRenderedElsewhere = false;
+#endif
+    
     if (image) {
         
         ///We check what is left to render.
-        rectsToRender = image->getRestToRender(roi);
+#if NATRON_ENABLE_TRIMAP
+        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+            image->getRestToRender_trimap(roi, rectsToRender, &isBeingRenderedElsewhere);
+        } else {
+            image->getRestToRender(roi, rectsToRender);
+        }
+#else
+        image->getRestToRender(roi, rectsToRender);
+#endif
         
         if (!rectsToRender.empty() && appPTR->isNodeCacheAlmostFull()) {
             ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
@@ -2126,7 +2200,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (image) {
             cachedImgParams = image->getParams();
             ///We check what is left to render.
-            rectsToRender = image->getRestToRender(roi);
+#if NATRON_ENABLE_TRIMAP
+            if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+                image->getRestToRender_trimap(roi, rectsToRender, &isBeingRenderedElsewhere);
+            } else {
+                image->getRestToRender(roi, rectsToRender);
+            }
+#else
+            image->getRestToRender(roi, rectsToRender);
+#endif
         }
     }
     
@@ -2307,25 +2389,49 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///the image is NOT an identity, and it may have some content left to render.
     EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
     
-    if (!rectsToRender.empty()) {
+    if (!rectsToRender.empty() || isBeingRenderedElsewhere) {
         
-        renderRetCode = renderRoIInternal(args.time,
-                                          args.mipMapLevel,
-                                          args.view,
-                                          rectsToRender,
-                                          rod,
-                                          par,
-                                          image,
-                                          downscaledImage,
-                                          useImageAsOutput,
-                                          frameRenderArgs.isSequentialRender,
-                                          frameRenderArgs.isRenderResponseToUserInteraction,
-                                          nodeHash,
-                                          args.channelForAlpha,
-                                          renderFullScaleThenDownscale,
-                                          renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                          inputsRoi,
-                                          inputImages);
+#if NATRON_ENABLE_TRIMAP
+        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+            ///Only use trimap system if the render cannot be aborted.
+            _imp->markImageAsBeingRendered(useImageAsOutput ? image : downscaledImage);
+        }
+#endif
+        if (!rectsToRender.empty()) {
+            renderRetCode = renderRoIInternal(args.time,
+                                              args.mipMapLevel,
+                                              args.view,
+                                              rectsToRender,
+                                              rod,
+                                              par,
+                                              image,
+                                              downscaledImage,
+                                              useImageAsOutput,
+                                              frameRenderArgs.isSequentialRender,
+                                              frameRenderArgs.isRenderResponseToUserInteraction,
+                                              nodeHash,
+                                              args.channelForAlpha,
+                                              renderFullScaleThenDownscale,
+                                              renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                              inputsRoi,
+                                              inputImages
+#if NATRON_ENABLE_TRIMAP
+                                              ,&isBeingRenderedElsewhere
+#endif
+                                              );
+        }
+        
+#if NATRON_ENABLE_TRIMAP
+        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+            ///Only use trimap system if the render cannot be aborted.
+            assert(!aborted());
+            if (renderRetCode == eRenderRoIStatusRenderFailed || !isBeingRenderedElsewhere) {
+                _imp->unmarkImageAsBeingRendered(useImageAsOutput ? image : downscaledImage,renderRetCode == eRenderRoIStatusRenderFailed);
+            } else {
+                _imp->waitForImageBeingRenderedElsewhereAndUnmark(roi, useImageAsOutput ? image: downscaledImage);
+            }
+        }
+#endif
     }
     
     
@@ -2334,7 +2440,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 #ifdef DEBUG
     if (renderRetCode != eRenderRoIStatusRenderFailed && !renderAborted) {
         // Kindly check that everything we asked for is rendered!
-        std::list<RectI> restToRender = useImageAsOutput ? image->getRestToRender(roi) : downscaledImage->getRestToRender(roi);
+
+        std::list<RectI> restToRender;
+        if (useImageAsOutput) {
+            image->getRestToRender(roi,rectsToRender);
+        } else {
+            downscaledImage->getRestToRender(roi,rectsToRender);
+        }
         assert(restToRender.empty());
     }
 #endif
@@ -2347,10 +2459,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
     
     ///The image might need to be converted to fit the original requested format
-    bool imageConversionNeeded = args.components != image->getComponents() || args.bitdepth != image->getBitDepth();
+    bool imageConversionNeeded = args.components != downscaledImage->getComponents() || args.bitdepth != downscaledImage->getBitDepth();
     assert( isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents) );
     
-    if (imageConversionNeeded && !renderAborted && renderRetCode != eRenderRoIStatusRenderFailed) {
+    if (imageConversionNeeded && renderRetCode != eRenderRoIStatusRenderFailed) {
         boost::shared_ptr<Image> tmp( new Image(args.components, rod, downscaledImage->getBounds(), mipMapLevel,downscaledImage->getPixelAspectRatio(), args.bitdepth, false) );
         
         bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
@@ -2378,7 +2490,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         _imp->lastRenderHash = nodeHash;
         _imp->lastImage = downscaledImage;
     }
-
+    assert(downscaledImage->getComponents() == args.components && downscaledImage->getBitDepth() == args.bitdepth);
     return downscaledImage;
 } // renderRoI
 
@@ -2567,7 +2679,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
                                   const RoIMap& inputsRoi,
-                                  const std::list<boost::shared_ptr<Natron::Image> >& inputImages)
+                                  const std::list<boost::shared_ptr<Natron::Image> >& inputImages
+#if NATRON_ENABLE_TRIMAP
+                                  ,bool *isBeingRenderedElsewhere
+#endif
+                                  )
 {
     EffectInstance::RenderRoIStatusEnum retCode;
 
@@ -2613,7 +2729,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     if (!rectsToRender.empty()) {
         renderingNotifier.reset(new NotifyRenderingStarted_RAII(_node.get()));
     }
-
+    
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
         RectI downscaledRectToRender = *it; // please leave it as const, copy it if necessary
@@ -2805,13 +2921,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
             
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
-            QFuture<Natron::StatusEnum> ret = QtConcurrent::mapped( splitRects,
-                                                                boost::bind(&EffectInstance::tiledRenderingFunctor,
-                                                                            this,
-                                                                            tiledArgs,
-                                                                            frameArgs,
-                                                                            true,
-                                                                            _1) );
+            QFuture<EffectInstance::RenderingFunctorRet> ret = QtConcurrent::mapped( splitRects,
+                                                                                    boost::bind(&EffectInstance::tiledRenderingFunctor,
+                                                                                                this,
+                                                                                                tiledArgs,
+                                                                                                frameArgs,
+                                                                                                true,
+                                                                                                _1) );
             ret.waitForFinished();
 
             ///never call endsequence render here if the render is sequential
@@ -2826,11 +2942,17 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                     break;
                 }
             }
-            for (QFuture<Natron::StatusEnum>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-                if ( (*it2) == Natron::eStatusFailed ) {
-                    renderStatus = *it2;
+            
+            for (QFuture<EffectInstance::RenderingFunctorRet>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+                if ( (*it2) == EffectInstance::eRenderingFunctorFailed ) {
+                    renderStatus = eStatusFailed;
                     break;
                 }
+#if NATRON_ENABLE_TRIMAP
+                else if ((*it2) == EffectInstance::eRenderingFunctorTakeImageLock) {
+                    *isBeingRenderedElsewhere = true;
+                }
+#endif
             }
             break;
         }
@@ -2850,28 +2972,40 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             QMutexLocker *locker = 0;
 
             if (safety == eRenderSafetyInstanceSafe) {
-                 locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
+                locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
             } else if (safety == eRenderSafetyUnsafe) {
                 locker = new QMutexLocker( appPTR->getMutexForPlugin( getPluginID().c_str() ) );
             }
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
             
             
-            renderStatus = tiledRenderingFunctor(args,
-                                                 frameArgs,
-                                                 inputImages,
-                                                 false,
-                                                 renderFullScaleThenDownscale,
-                                                 useScaleOneInputImages,
-                                                 isSequentialRender,
-                                                 isRenderMadeInResponseToUserInteraction,
-                                                 renderMappedRectToRender,
-                                                 par,
-                                                 downscaledImage,
-                                                 image,
-                                                 renderMappedImage);
+            RenderingFunctorRet functorRet = tiledRenderingFunctor(args,
+                                                                   frameArgs,
+                                                                   inputImages,
+                                                                   false,
+                                                                   renderFullScaleThenDownscale,
+                                                                   useScaleOneInputImages,
+                                                                   isSequentialRender,
+                                                                   isRenderMadeInResponseToUserInteraction,
+                                                                   downscaledRectToRender,
+                                                                   par,
+                                                                   downscaledImage,
+                                                                   image,
+                                                                   renderMappedImage);
 
             delete locker;
+            
+            if (functorRet == eRenderingFunctorFailed) {
+                renderStatus = eStatusFailed;
+            } else if (functorRet == eRenderingFunctorOK) {
+                renderStatus = eStatusOK;
+            } else if  (functorRet == eRenderingFunctorTakeImageLock) {
+                renderStatus = eStatusOK;
+#if NATRON_ENABLE_TRIMAP
+                *isBeingRenderedElsewhere = true;
+#endif
+            }
+            
             break;
         }
         } // switch
@@ -2883,6 +3017,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         }
     } // for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
     
+    
     if (renderStatus != eStatusOK) {
         retCode = eRenderRoIStatusRenderFailed;
     }
@@ -2890,7 +3025,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     return retCode;
 } // renderRoIInternal
 
-Natron::StatusEnum
+EffectInstance::RenderingFunctorRet
 EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                       const ParallelRenderArgs& frameArgs,
                                      bool setThreadLocalStorage,
@@ -2911,7 +3046,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  args.renderMappedImage);
 }
 
-Natron::StatusEnum
+EffectInstance::RenderingFunctorRet
 EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       const ParallelRenderArgs& frameArgs,
                                       const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
@@ -2962,6 +3097,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     boost::shared_ptr<InputImagesHolder_RAII> scopedInputImages;
     
+    bool isBeingRenderedElseWhere = false;
     if (!setThreadLocalStorage) {
         renderRectToRender = args._renderWindowPixel;
     } else {
@@ -2977,13 +3113,30 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             downscaledRectToRender.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
             canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
             renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
+#if NATRON_ENABLE_TRIMAP
+            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+                renderRectToRender = renderMappedImage->getMinimalRect_trimap(renderRectToRender,&isBeingRenderedElseWhere);
+            } else {
+                renderRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
+            }
+#else
             renderRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
+#endif
             
             assert(renderBounds.x1 <= renderRectToRender.x1 && renderRectToRender.x2 <= renderBounds.x2 &&
                    renderBounds.y1 <= renderRectToRender.y1 && renderRectToRender.y2 <= renderBounds.y2);
         } else {
             //THe downscaled image is cached, read bitmap from it
+#if NATRON_ENABLE_TRIMAP
+            RectI downscaledRectToRenderMinimal;
+            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+                downscaledRectToRenderMinimal = downscaledImage->getMinimalRect_trimap(downscaledRectToRender,&isBeingRenderedElseWhere);
+            } else {
+                downscaledRectToRenderMinimal = downscaledImage->getMinimalRect(downscaledRectToRender);
+            }
+#else
             const RectI downscaledRectToRenderMinimal = downscaledImage->getMinimalRect(downscaledRectToRender);
+#endif
             
             assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
                    renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
@@ -3015,10 +3168,21 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         scopedInputImages.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
     }
+    
     if ( renderRectToRender.isNull() ) {
         ///We've got nothing to do
-        return eStatusOK;
+        return isBeingRenderedElseWhere ? eRenderingFunctorTakeImageLock : eRenderingFunctorOK;
     }
+    
+#if NATRON_ENABLE_TRIMAP
+    if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+        if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
+            fullScaleImage->markForRendering(renderRectToRender);
+        } else {
+            downscaledImage->markForRendering(downscaledRectToRender);
+        }
+    }
+#endif
     
     RenderScale originalScale;
     originalScale.x = downscaledImage->getScale();
@@ -3031,11 +3195,25 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                           isSequentialRender,
                                           isRenderResponseToUserInteraction,
                                           renderMappedImage);
+    
+    bool renderAborted = aborted();
+    
     if (st != eStatusOK) {
-        return st;
+#if NATRON_ENABLE_TRIMAP
+        if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+            assert(!renderAborted);
+            if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
+                fullScaleImage->clearBitmap(renderRectToRender);
+            } else {
+                downscaledImage->clearBitmap(downscaledRectToRender);
+            }
+        }
+#endif
+        return eRenderingFunctorFailed;
+        
     }
     
-    if ( !aborted() ) {
+    if ( !renderAborted ) {
         
         
         //Check for NaNs
@@ -3061,8 +3239,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
     }
   
-
-    return eStatusOK;
+    
+    return isBeingRenderedElseWhere ? eRenderingFunctorTakeImageLock : eRenderingFunctorOK;
 } // tiledRenderingFunctor
 
 void

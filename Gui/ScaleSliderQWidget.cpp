@@ -50,10 +50,12 @@ struct ScaleSliderQWidgetPrivate
     bool ctrlDown;
     bool shiftDown;
     double currentZoom;
+    ScaleSliderQWidget::DataType dataType;
     
     ScaleSliderQWidgetPrivate(double min,
                               double max,
                               double initialPos,
+                              ScaleSliderQWidget::DataType dataType,
                               Natron::ScaleTypeEnum type)
     : zoomCtx()
     , oldClick()
@@ -72,6 +74,7 @@ struct ScaleSliderQWidgetPrivate
     , ctrlDown(false)
     , shiftDown(false)
     , currentZoom(1.)
+    , dataType(dataType)
     {
         
     }
@@ -80,10 +83,11 @@ struct ScaleSliderQWidgetPrivate
 ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double max,
                                        double initialPos,
+                                       DataType dataType,
                                        Natron::ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
-    , _imp(new ScaleSliderQWidgetPrivate(min,max,initialPos,type))
+    , _imp(new ScaleSliderQWidgetPrivate(min,max,initialPos,dataType,type))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
@@ -148,8 +152,8 @@ ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 
         _imp->oldClick = newClick;
         QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
-
-        seekInternal( newClick_opengl.x() );
+        double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
+        seekInternal(v);
     }
     QWidget::mousePressEvent(e);
 }
@@ -160,8 +164,8 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
     if (!_imp->readOnly) {
         QPoint newClick =  e->pos();
         QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
-
-        seekInternal( newClick_opengl.x() );
+        double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
+        seekInternal(v);
     }
 }
 
@@ -273,6 +277,9 @@ ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
 
+    if (_imp->zoomCtx.screenHeight() == 0 || _imp->zoomCtx.screenWidth() == 0) {
+        return;
+    }
     double w = right - left;
     _imp->zoomCtx.fill(left - w * 0.05, right + w * 0.05, _imp->zoomCtx.bottom(), _imp->zoomCtx.top());
 
@@ -283,6 +290,9 @@ void
 ScaleSliderQWidget::resizeEvent(QResizeEvent* e)
 {
     _imp->zoomCtx.setScreenSize(e->size().width(), e->size().height());
+    if (!_imp->mustInitializeSliderPosition) {
+        centerOn(_imp->minimum, _imp->maximum);
+    }
     QWidget::resizeEvent(e);
 }
 
@@ -357,8 +367,8 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
         p.drawLine(tickBottomPos,tickTopPos);
 
-
-        if (tickSize > minTickSizeText) {
+        bool renderText = _imp->dataType == eDataTypeDouble || std::abs(std::floor(0.5 + value) - value) == 0.;
+        if (renderText && tickSize > minTickSizeText) {
             const int tickSizePixel = rangePixel * tickSize / range;
             const QString s = QString::number(value);
             const int sSizePixel =  fontM.width(s);

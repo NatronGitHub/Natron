@@ -29,8 +29,9 @@
 
 #define EDGE_LENGTH_MIN 0.1
 
-#define kGraphicalContainerOffset 10 \
-    //!< number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+// number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+#define kGraphicalContainerOffset 10
+
 
 Edge::Edge(int inputNb_,
            double angle_,
@@ -194,7 +195,7 @@ Edge::initLine()
     } else if (_source && !_dest) {
         dst = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
-
+    
     std::vector<QLineF> dstEdges;
     std::vector<QLineF> srcEdges;
     if (_dest) {
@@ -203,38 +204,56 @@ Edge::initLine()
     if (_source) {
         makeEdges(sourceBBOX, srcEdges);
     }
-
+    
+    
     QPointF srcpt;
+    
     if (_source && _dest) {
-        /////// This is a connected edge, either input or output
+        /// This is a connected edge, either input or output
         srcpt = sourceBBOX.center();
-
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-
-        bool foundIntersection = false;
-        QPointF dstIntersection;
+    } else if (!_source && _dest) {
+        /// The edge is an input edge which is unconnected
+        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
+                        dst.y() - (std::sin(_angle) * 100000 * sc) );
+        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+    } else if (_source && !_dest) {
+        /// The edge is an output edge which is unconnected
+        srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
+        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+        
+    }
+    
+    bool foundDstIntersection = false;
+    
+    QPointF dstIntersection;
+    
+    if (_dest) {
         for (int i = 0; i < 4; ++i) {
             QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
             if (type == QLineF::BoundedIntersection) {
                 setLine( QLineF( dstIntersection,line().p2() ) );
-                foundIntersection = true;
+                foundDstIntersection = true;
                 break;
             }
         }
-        QPointF srcInteresect;
+    }
+    
+    if (_source && _dest) {
 
-        if (foundIntersection) {
+        QPointF srcInteresect;
+        bool foundSrcIntersection = false;
+        if (foundDstIntersection) {
             ///Find the intersection with the source bbox
-            foundIntersection = false;
             for (int i = 0; i < 4; ++i) {
                 QLineF::IntersectType type = srcEdges[i].intersect(line(), &srcInteresect);
                 if (type == QLineF::BoundedIntersection) {
-                    foundIntersection = true;
+                    foundSrcIntersection = true;
                     break;
                 }
             }
         }
-        if (foundIntersection) {
+        if (foundSrcIntersection) {
             _middlePoint = (srcInteresect + dstIntersection) / 2;
             ///Hide bend point for short edges
             double visibleLength  = QLineF(srcInteresect,dstIntersection).length();
@@ -262,10 +281,6 @@ Edge::initLine()
             }
         }
     } else if (!_source && _dest) {
-        ///// The edge is an input edge which is unconnected
-        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
-                         dst.y() - (std::sin(_angle) * 100000 * sc) );
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
         ///ok now that we have the direction between dst and srcPt we can get the distance between the center of the node
         ///and the intersection with the bbox. We add UNATTECHED_ARROW_LENGTH to that distance to position srcPt correctly.
@@ -290,10 +305,11 @@ Edge::initLine()
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
         if (_label) {
+            QFontMetrics fm(_label->font());
             double cosinus = std::cos(_angle);
             int yOffset = 0;
             if (cosinus < 0) {
-                yOffset = -40;
+                yOffset = -fm.width(_label->toPlainText());
             } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                 yOffset = +5;
             } else {
@@ -302,17 +318,11 @@ Edge::initLine()
 
             /*adjusting dst to show label at the middle of the line*/
 
-            QPointF labelDst = QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
+            QPointF labelDst = dstIntersection;//QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
 
             _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
         }
-    } else if (_source && !_dest) {
-        ///// The edge is an output edge which is unconnected
-        srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-
-        ///output edges don't have labels
-    }
+    } 
 
 
     double length = std::max(EDGE_LENGTH_MIN, line().length());
@@ -324,15 +334,23 @@ Edge::initLine()
     if (line().dy() >= 0) {
         a = 2 * M_PI - a;
     }
+    
+    QPointF arrowIntersect = foundDstIntersection ? dstIntersection : dst;
 
-    qreal arrowSize = 5. * sc;
-    QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
+    qreal arrowSize;
+    if (_source && _dest) {
+        arrowSize = 10. * sc;
+    } else {
+        arrowSize = 7. * sc;
+    }
+    double headAngle = 3. * M_PI / 4.;
+    QPointF arrowP1 = arrowIntersect + QPointF(std::sin(a + headAngle) * arrowSize,
+                                            std::cos(a + headAngle) * arrowSize);
+    QPointF arrowP2 = arrowIntersect + QPointF(std::sin(a + M_PI - headAngle) * arrowSize,
+                                            std::cos(a + M_PI - headAngle) * arrowSize);
 
     _arrowHead.clear();
-    _arrowHead << dst << arrowP1 << arrowP2;
+    _arrowHead << arrowIntersect << arrowP1 << arrowP2;
 } // initLine
 
 QPainterPath

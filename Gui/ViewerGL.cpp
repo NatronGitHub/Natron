@@ -624,6 +624,8 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glTexCoordPointer(2, GL_FLOAT, 0, 0);
 
+        glDisableClientState(GL_COLOR_ARRAY);
+
         glBindBuffer(GL_ARRAY_BUFFER,0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
@@ -983,7 +985,7 @@ ViewerGL::resizeGL(int width,
     if ( viewer->getUiContext() && _imp->viewerTab->getGui() &&
          !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
          ( ( oldWidth != width) || ( oldHeight != height) ) ) {
-        viewer->renderCurrentFrame(true);
+        viewer->renderCurrentFrame(false);
         
         if (!_imp->persistentMessages.empty()) {
             updatePersistentMessageToWidth(width - 20);
@@ -1179,7 +1181,7 @@ ViewerGL::paintGL()
                 }
             } else {
                 if (drawTexture[0]) {
-                    
+                    glDisable(GL_BLEND);
                     BlendSetter b(premultA);
                     drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
 
@@ -1285,7 +1287,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
             }
             RectD dataW = getRoD(i);
             
-            if (dataW != _imp->projectFormat) {
+            if (dataW != projectFormatCanonical) {
                 renderText(dataW.right(), dataW.top(),
                            _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
@@ -1945,8 +1947,8 @@ ViewerGL::initializeGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     makeCurrent();
     initAndCheckGlExtensions();
-    _imp->displayTextures[0] = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
-    _imp->displayTextures[1] = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
+    _imp->displayTextures[0] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
+    _imp->displayTextures[1] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
 
 
     // glGenVertexArrays(1, &_vaoId);
@@ -2757,7 +2759,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->zoomOrPannedSinceLastFit = true;
         }
         _imp->oldClick = newClick;
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         
         //  else {
         mustRedraw = true;
@@ -2792,7 +2794,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         emit zoomChanged(zoomValue);
 
         //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         
         //  else {
         mustRedraw = true;
@@ -2806,7 +2808,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.y1 -= dySinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
             }
             mustRedraw = true;
         }
@@ -2818,7 +2820,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.x1 -= dxSinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
             }
             mustRedraw = true;
         }
@@ -2830,7 +2832,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.x2 -= dxSinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
             }
             mustRedraw = true;
         }
@@ -2842,7 +2844,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.y2 -= dySinceLastMove;
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
             }
             mustRedraw = true;
         }
@@ -2854,7 +2856,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             _imp->userRoI.translate(-dxSinceLastMove,-dySinceLastMove);
         }
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         }
         mustRedraw = true;
         break;
@@ -2869,7 +2871,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         l.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         }
         mustRedraw = true;
         break;
@@ -2884,7 +2886,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         l.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         }
         mustRedraw = true;
         break;
@@ -2899,7 +2901,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         l.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         }
         mustRedraw = true;
         break;
@@ -2913,7 +2915,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         }
         _imp->userRoIMutex.unlock();
         if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         }
         mustRedraw = true;
         break;
@@ -3124,7 +3126,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     emit zoomChanged(zoomValue);
 
 
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
     
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
@@ -3158,7 +3160,7 @@ ViewerGL::zoomSlot(int v)
     ///since we're changing the zoom factor
     _imp->viewerTab->clearTimelineCacheLine();
     
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
    
 }
 
@@ -3343,7 +3345,7 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     if ( !loadingProject ) {
         fitImageToFormat();
         if ( _imp->viewerTab->getInternalNode()) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         }
     }
 
@@ -3373,7 +3375,7 @@ ViewerGL::setClipToDisplayWindow(bool b)
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if ( viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
     }
 }
 
@@ -3761,7 +3763,7 @@ ViewerGL::setUserRoIEnabled(bool b)
         _imp->userRoIEnabled = b;
     }
     if ( displayingImage() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
     }
     update();
 }

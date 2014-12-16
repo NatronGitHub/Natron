@@ -587,6 +587,7 @@ struct RotoContextPrivate
           , featherLink(true)
           , node(n)
           , age(0)
+          , lastRenderHash(0)
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();

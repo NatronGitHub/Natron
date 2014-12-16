@@ -33,7 +33,7 @@ CLANG_DIAG_ON(deprecated)
  * It also holds a pixel aspect ratio so the viewer can display the
  * frame accordingly*/
 class Format
-    : public RectI            //!< project format is in canonical coordinates
+    : public RectI            //!< project format is in pixel coordinates
 
 {
     friend class boost::serialization::access;

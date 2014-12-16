@@ -566,6 +566,7 @@ public:
     virtual double getPreferredFrameRate() const;
 
     virtual void lock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL;
+    virtual bool tryLock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL;
     virtual void unlock(const boost::shared_ptr<Natron::Image>& entry) OVERRIDE FINAL ;
 
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1264,7 +1265,11 @@ private:
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
                                           const RoIMap& inputRoisParam,
-                                          const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam);
+                                          const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam
+#if NATRON_ENABLE_TRIMAP
+                                          ,bool *isBeingRenderedElsewhere
+#endif
+);
 
     bool renderInputImagesForRoI(bool createImageInCache,
                                  SequenceTime time,
@@ -1349,6 +1354,14 @@ private:
         boost::shared_ptr<Natron::Image>  fullScaleImage;
         boost::shared_ptr<Natron::Image>  renderMappedImage;
     };
+
+    enum RenderingFunctorRet
+    {
+        eRenderingFunctorFailed, //< must stop rendering
+        eRenderingFunctorOK, //< ok, move on
+        eRenderingFunctorTakeImageLock //< take the image lock because another thread is rendering part of something we need
+    };
+
     ///These are the image passed to the plug-in to render
     /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
     /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
@@ -1370,12 +1383,12 @@ private:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    Natron::StatusEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
+    RenderingFunctorRet tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                              const ParallelRenderArgs& frameArgs,
                                              bool setThreadLocalStorage,
                                              const RectI & downscaledRectToRender );
 
-    Natron::StatusEnum tiledRenderingFunctor(const RenderArgs & args,
+    RenderingFunctorRet tiledRenderingFunctor(const RenderArgs & args,
                                              const ParallelRenderArgs& frameArgs,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              bool setThreadLocalStorage,

@@ -20,97 +20,163 @@
 
 using namespace Natron;
 
+#define BM_GET(i,j) &_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
 
+#define PIXEL_UNAVAILABLE 2
 
-RectI
-Bitmap::minimalNonMarkedBbox(const RectI & roi) const
+template <int trimap>
+RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const std::vector<char>& _map,
+                                    bool* isBeingRenderedElsewhere)
 {
-    /*if we rendered everything we just append
-       a NULL box to indicate we rendered it all.*/
-//    if(!memchr(_map.get(),0,_rod.area())){
-//        ret.push_back(RectI());
-//        return ret;
-//    }
-
     RectI bbox;
-
+    
     roi.intersect(_bounds, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 0, _bounds.width() ) ) {
-            bbox.set_bottom(bbox.bottom() + 1);
+        const char* buf = BM_GET(i, _bounds.left());
+        
+        if (trimap) {
+            
+            const char* lineEnd = buf + _bounds.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (!*buf) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    metUnavailablePixel = true;
+                }
+                ++buf;
+            }
+            if (!buf) {
+                break;
+            } else if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+            }
         } else {
-            break;
+            if ( !memchr( buf, 0, _bounds.width() ) ) {
+                bbox.set_bottom(bbox.bottom() + 1);
+            } else {
+                break;
+            }
         }
     }
-
+    
     //find top (will do zero iteration if the bbox is already empty)
     for (int i = bbox.top() - 1; i >= bbox.bottom(); --i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 0, _bounds.width() ) ) {
-            bbox.set_top(bbox.top() - 1);
+        const char* buf = BM_GET(i, _bounds.left());
+        
+        if (trimap) {
+            
+            const char* lineEnd = buf + _bounds.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (!*buf) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    metUnavailablePixel = true;
+                }
+                ++buf;
+            }
+            if (!buf) {
+                break;
+            } else if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+            }
+            
         } else {
-            break;
+            if ( !memchr( buf, 0, _bounds.width() ) ) {
+                bbox.set_top(bbox.top() - 1);
+            } else {
+                break;
+            }
         }
     }
-
+    
     // avoid making bbox.width() iterations for nothing
     if ( bbox.isNull() ) {
         return bbox;
     }
-
+    
     //find left
     for (int j = bbox.left(); j < bbox.right(); ++j) {
-        bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bbox.bottom(), j);
+
+        bool metUnavailablePixel = false;
+
+        for (int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width()) {
+            if (!*pix) {
+                pix = 0;
                 break;
             }
+            
+            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+            
         }
-        if (!shouldStop) {
+        if (pix) {
             bbox.set_left(bbox.left() + 1);
+            if (trimap && metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
+            }
         } else {
             break;
         }
     }
-
+    
     //find right
     for (int j = bbox.right() - 1; j >= bbox.left(); --j) {
-        bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bbox.bottom(), j);
+
+        bool metUnavailablePixel = false;
+
+        for (int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width()) {
+            if (!*pix) {
+                pix = 0;
                 break;
             }
+
+            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+
         }
-        if (!shouldStop) {
+        if (pix) {
             bbox.set_right(bbox.right() - 1);
+
+            if (trimap && metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
+            }
+
         } else {
             break;
         }
     }
-
+    
     return bbox;
-} // minimalNonMarkedBbox
 
-std::list<RectI>
-Bitmap::minimalNonMarkedRects(const RectI & roi) const
+}
+
+
+template <int trimap>
+void
+minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std::vector<char>& _map,
+                               std::list<RectI>& ret,bool* isBeingRenderedElsewhere)
 {
-    std::list<RectI> ret;
-    RectI bboxM = minimalNonMarkedBbox(roi);
-
-//#define NATRON_BITMAP_DISABLE_OPTIMIZATION
+    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(roi, _bounds, _map, isBeingRenderedElsewhere);
+    
+    //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
     if ( !bboxM.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxM);
     }
 #else
     if ( bboxM.isNull() ) {
-        return ret; // return an empty rectangle list
+        return; // return an empty rectangle list
     }
-
+    
     // optimization by Fred, Jan 31, 2014
     //
     // Now that we have the smallest enclosing bounding box,
@@ -131,128 +197,247 @@ Bitmap::minimalNonMarkedRects(const RectI & roi) const
     // CXXXXXXXXXXDDD
     // CXXXXXXXXXXDDD
     // AAAAAAAAAAAAAA
-
+    
     // First, find if there's an "A" rectangle, and push it to the result
     //find bottom
     RectI bboxX = bboxM;
     RectI bboxA = bboxX;
     bboxA.set_top( bboxX.bottom() );
     for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 1, _bounds.width() ) ) {
-            bboxX.set_bottom(bboxX.bottom() + 1);
-            bboxA.set_top( bboxX.bottom() );
+        const char* buf = BM_GET(i, bboxX.left());
+        if (trimap) {
+            const char* lineEnd = buf + bboxX.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (*buf == 1) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    metUnavailablePixel = true;
+                    break;
+                }
+                ++buf;
+            }
+            if (buf) {
+                bboxX.set_bottom(bboxX.bottom() + 1);
+                bboxA.set_top( bboxX.bottom() );
+            } else {
+                if (metUnavailablePixel) {
+                    *isBeingRenderedElsewhere = true;
+                }
+                break;
+            }
         } else {
-            break;
+            if ( !memchr( buf, 1, bboxX.width() ) ) {
+                bboxX.set_bottom(bboxX.bottom() + 1);
+                bboxA.set_top( bboxX.bottom() );
+            } else {
+                break;
+            }
         }
     }
     if ( !bboxA.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxA);
     }
-
+    
     // Now, find the "B" rectangle
     //find top
     RectI bboxB = bboxX;
     bboxB.set_bottom( bboxX.top() );
     for (int i = bboxX.top() - 1; i >= bboxX.bottom(); --i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 1, _bounds.width() ) ) {
-            bboxX.set_top(bboxX.top() - 1);
-            bboxB.set_bottom( bboxX.top() );
+        const char* buf = BM_GET(i, bboxX.left());
+        
+        if (trimap) {
+            const char* lineEnd = buf + bboxX.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (*buf == 1) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    metUnavailablePixel = true;
+                    break;
+                }
+                ++buf;
+            }
+            if (buf) {
+                bboxX.set_top(bboxX.top() - 1);
+                bboxB.set_bottom( bboxX.top() );
+            } else {
+                if (metUnavailablePixel) {
+                    *isBeingRenderedElsewhere = true;
+                }
+                break;
+            }
         } else {
-            break;
+            if ( !memchr( buf, 1, bboxX.width() ) ) {
+                bboxX.set_top(bboxX.top() - 1);
+                bboxB.set_bottom( bboxX.top() );
+            } else {
+                break;
+            }
+            
         }
     }
     if ( !bboxB.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxB);
     }
-
+    
     //find left
     RectI bboxC = bboxX;
     bboxC.set_right( bboxX.left() );
     for (int j = bboxX.left(); j < bboxX.right(); ++j) {
-        bool shouldStop = false;
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bboxX.bottom(), j);
+        
+        bool metUnavailablePixel = false;
+        
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+            if (*pix == 1) {
+                pix = 0;
+                break;
+            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                pix = 0;
+                metUnavailablePixel = true;
                 break;
             }
         }
-        if (!shouldStop) {
+        if (pix) {
             bboxX.set_left(bboxX.left() + 1);
             bboxC.set_right( bboxX.left() );
         } else {
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
             break;
         }
     }
     if ( !bboxC.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxC);
     }
-
+    
     //find right
     RectI bboxD = bboxX;
     bboxD.set_left( bboxX.right() );
     for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
-        bool shouldStop = false;
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bboxX.bottom(), j);
+        
+        bool metUnavailablePixel = false;
+        
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+            if (*pix == 1) {
+                pix = 0;
+                break;
+            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                pix = 0;
+                metUnavailablePixel = true;
                 break;
             }
         }
-        if (!shouldStop) {
+        if (pix) {
             bboxX.set_right(bboxX.right() - 1);
             bboxD.set_left( bboxX.right() );
         } else {
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
             break;
         }
     }
     if ( !bboxD.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxD);
     }
-
+    
     assert( bboxA.bottom() == bboxM.bottom() );
     assert( bboxA.left() == bboxM.left() );
     assert( bboxA.right() == bboxM.right() );
     assert( bboxA.top() == bboxX.bottom() );
-
+    
     assert( bboxB.top() == bboxM.top() );
     assert( bboxB.left() == bboxM.left() );
     assert( bboxB.right() == bboxM.right() );
     assert( bboxB.bottom() == bboxX.top() );
-
+    
     assert( bboxC.top() == bboxX.top() );
     assert( bboxC.left() == bboxM.left() );
     assert( bboxC.right() == bboxX.left() );
     assert( bboxC.bottom() == bboxX.bottom() );
-
+    
     assert( bboxD.top() == bboxX.top() );
     assert( bboxD.left() == bboxX.right() );
     assert( bboxD.right() == bboxM.right() );
     assert( bboxD.bottom() == bboxX.bottom() );
-
+    
     // get the bounding box of what's left (the X rectangle in the drawing above)
-    bboxX = minimalNonMarkedBbox(bboxX);
+    bboxX = minimalNonMarkedBbox_internal<trimap>(bboxX,_bounds,_map,isBeingRenderedElsewhere);
+    
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxX);
     }
-
+    
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
 # ifdef DEBUG
-    /*qDebug() << "render " << ret.size() << " rectangles";
+    qDebug() << "render " << ret.size() << " rectangles";
     for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
         qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
-    }*/
+    }
 # endif // DEBUG
-    return ret;
 } // minimalNonMarkedRects
+
+RectI
+Bitmap::minimalNonMarkedBbox(const RectI & roi) const
+{
+    return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map, NULL);
+}
+
+void
+Bitmap::minimalNonMarkedRects(const RectI & roi,std::list<RectI>& ret) const
+{
+    minimalNonMarkedRects_internal<0>(roi, _bounds, _map,ret , NULL);
+}
+
+#if NATRON_ENABLE_TRIMAP
+RectI
+Bitmap::minimalNonMarkedBbox_trimap(const RectI & roi,bool* isBeingRenderedElsewhere) const
+{
+    return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map, isBeingRenderedElsewhere);
+}
+
+
+void
+Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const
+{
+    minimalNonMarkedRects_internal<1>(roi, _bounds, _map ,ret , isBeingRenderedElsewhere);
+} 
+#endif
 
 void
 Natron::Bitmap::markForRendered(const RectI & roi)
 {
-    for (int i = roi.bottom(); i < roi.top(); ++i) {
-        char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width() + ( roi.left() - _bounds.left() )];
+    char* buf = BM_GET(roi.bottom(), roi.left());
+    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
         memset( buf, 1, roi.width() );
+    }
+}
+
+#if NATRON_ENABLE_TRIMAP
+void
+Natron::Bitmap::markForRendering(const RectI & roi)
+{
+    char* buf = BM_GET(roi.bottom(), roi.left());
+    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
+        memset( buf, PIXEL_UNAVAILABLE , roi.width() );
+    }
+}
+#endif
+
+void
+Natron::Bitmap::clear(const RectI& roi)
+{
+    char* buf = BM_GET(roi.bottom(), roi.left());
+    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
+        memset( buf, 0 , roi.width() );
     }
 }
 
@@ -261,7 +446,7 @@ Natron::Bitmap::getBitmapAt(int x,
                             int y) const
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        return &_map[( y - _bounds.bottom() ) * _bounds.width() + ( x - _bounds.left() )];
+        return BM_GET(y,x);
     } else {
         return NULL;
     }
@@ -272,7 +457,7 @@ Natron::Bitmap::getBitmapAt(int x,
                             int y)
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        return &_map[( y - _bounds.bottom() ) * _bounds.width() + ( x - _bounds.left() )];
+        return BM_GET(y,x);
     } else {
         return NULL;
     }
@@ -569,8 +754,8 @@ Image::pixelAt(int x,
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
         return (unsigned char*)(this->_data.writable())
-        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-        + ( x - _bounds.left() ) * compDataSize;
+        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -586,8 +771,8 @@ Image::pixelAt(int x,
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
         return (unsigned char*)(this->_data.readable())
-        + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-        + ( x - _bounds.left() ) * compDataSize;
+        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -829,11 +1014,16 @@ Image::halveRoIForDepth(const RectI & roi,
                 ///a b
                 ///c d
 
-                const char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
-                const char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
-                const char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
-                const char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
-
+                char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
+                char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
+                char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
+                char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
+#if NATRON_ENABLE_TRIMAP
+                a = a == PIXEL_UNAVAILABLE ? 0 : a;
+                b = b == PIXEL_UNAVAILABLE ? 0 : b;
+                c = c == PIXEL_UNAVAILABLE ? 0 : c;
+                d = d == PIXEL_UNAVAILABLE ? 0 : d;
+#endif
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
                 assert(a + b + c + d <= sum); // bitmaps are 0 or 1
@@ -1534,7 +1724,12 @@ Bitmap::copyRowPortion(int x1,int x2,int y,const Bitmap& other)
 {
     const char* srcBitmap = other.getBitmapAt(x1, y);
     char* dstBitmap = getBitmapAt(x1, y);
-    memcpy( dstBitmap, srcBitmap, x2 - x1 );
+    const char* end = dstBitmap + (x2 - x1);
+    while (dstBitmap < end) {
+        *dstBitmap = *srcBitmap == PIXEL_UNAVAILABLE ? 0 : *srcBitmap;
+        ++dstBitmap;
+        ++srcBitmap;
+    }
     
 }
 
@@ -1562,7 +1757,15 @@ Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
     for (int y = roi.y1; y < roi.y2; ++y,
          srcBitmap += srcRowSize,
          dstBitmap += dstRowSize) {
-        memcpy(dstBitmap, srcBitmap, roi.width());
+        
+        const char* srcCur = srcBitmap;
+        const char* srcEnd = srcBitmap + roi.width();
+        char* dstCur = dstBitmap;
+        while (srcCur < srcEnd) {
+            *dstCur = *srcCur == PIXEL_UNAVAILABLE ? 0 : *srcCur;
+            ++srcCur;
+            ++dstCur;
+        }
     }
 }
 

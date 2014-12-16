@@ -51,6 +51,7 @@ class Double_Knob;
 class NodeGuiI;
 class RotoContext;
 namespace Natron {
+class Plugin;
 class OutputEffectInstance;
 class Image;
 class EffectInstance;
@@ -67,7 +68,7 @@ public:
 
 
     Node(AppInstance* app,
-         Natron::LibraryBinary* plugin);
+         Natron::Plugin* plugin);
 
     virtual ~Node();
 
@@ -409,6 +410,7 @@ public:
      **/
     std::string getPluginID() const;
 
+
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -418,6 +420,11 @@ public:
      * @brief Forwarded to the live effect instance
      **/
     std::string getDescription() const;
+    
+    /**
+     * @brief Returns the absolute file-path to the plug-in icon.
+     **/
+    std::string getPluginIconFilePath() const;
 
     /*============================*/
     AppInstance* getApp() const;
@@ -576,6 +583,7 @@ public:
      * This is used internally by EffectInstance::renderRoI
      **/
     void lock(const boost::shared_ptr<Natron::Image>& entry);
+    bool tryLock(const boost::shared_ptr<Natron::Image>& entry);
     void unlock(const boost::shared_ptr<Natron::Image>& entry);
 
 
@@ -914,7 +922,7 @@ class InspectorNode
 public:
 
     InspectorNode(AppInstance* app,
-                  Natron::LibraryBinary* plugin);
+                  Natron::Plugin* plugin);
 
     virtual ~InspectorNode();
 
