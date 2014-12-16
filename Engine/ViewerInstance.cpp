@@ -458,11 +458,19 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     
     assert(_imp->uiContext);
     
+    bool autoContrast;
+    ViewerInstance::DisplayChannels channels;
+    {
+        QMutexLocker locker(&_imp->viewerParamsMutex);
+        autoContrast = _imp->viewerParamsAutoContrast;
+        channels = _imp->viewerParamsChannels;
+    }
     /*computing the RoI*/
     
     ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
-    RectI roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
+    RectI roi = autoContrast ? _imp->uiContext->getExactImageRectangleDisplayed(rod, par, mipMapLevel) :
+    _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
     
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
         emit disconnectTextureRequest(textureIndex);
@@ -503,16 +511,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     outArgs->params->mipMapLevel = (unsigned int)mipMapLevel;
     outArgs->params->textureIndex = textureIndex;
 
-    
-    
-    bool autoContrast;
-    ViewerInstance::DisplayChannels channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         outArgs->params->gain = _imp->viewerParamsGain;
         outArgs->params->lut = _imp->viewerParamsLut;
-        autoContrast = _imp->viewerParamsAutoContrast;
-        channels = _imp->viewerParamsChannels;
     }
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getName_mt_safe();
     
@@ -775,7 +777,7 @@ ViewerInstance::renderViewer_internal(int view,
     RectI roiAfterRender = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(inArgs.params->rod,
                                                                                         inArgs.params->textureRect.par,
                                                                                         inArgs.params->mipMapLevel);
-    if (roi != roiAfterRender) {
+    if (!autoContrast && roi != roiAfterRender) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);

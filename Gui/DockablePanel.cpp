@@ -260,6 +260,8 @@ DockablePanel::DockablePanel(Gui* gui
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::TabFocus);
 
+    Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
+
     if (headerMode != NO_HEADER) {
         _imp->_headerWidget = new QFrame(this);
         _imp->_headerWidget->setFrameShape(QFrame::Box);
@@ -268,7 +270,6 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
         
-        Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (iseffect) {
             
 
@@ -490,7 +491,7 @@ DockablePanel::DockablePanel(Gui* gui
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
     _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 3);
-    if (headerMode != READ_ONLY_NAME) {
+    if (iseffect) {
         _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
         _imp->_verticalColorBar->setColor(_imp->_currentColor);
         _imp->_horizLayout->addWidget(_imp->_verticalColorBar);

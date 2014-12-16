@@ -2141,6 +2141,26 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
 }
 
 RectI
+ViewerGL::getExactImageRectangleDisplayed(const RectD & rod,const double par,unsigned int mipMapLevel)
+{
+    bool clipToProject = isClippingImageToProjectWindow();
+    RectD clippedRod;
+    
+    if (clipToProject) {
+        RectD projectFormatCanonical;
+        _imp->getProjectFormatCanonical(projectFormatCanonical);
+        rod.intersect(projectFormatCanonical,&clippedRod);
+    } else {
+        clippedRod = rod;
+    }
+    
+    RectI bounds;
+    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
+    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
+    return roi;
+}
+
+RectI
 ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel)
 {
     bool clipToProject = isClippingImageToProjectWindow();
