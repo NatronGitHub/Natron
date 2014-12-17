@@ -1925,16 +1925,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                image = getImage(inputNbIdentity,
-                                 inputTimeIdentity,
-                                 args.scale,
-                                 args.view,
-                                 &canonicalRoI,
-                                 args.components,
-                                 args.bitdepth,
-                                 par,
-                                 true,
-                                 NULL);
+                RenderRoIArgs inputArgs = args;
+                inputArgs.time = inputTimeIdentity;
+                
+                image = inputEffectIdentity->renderRoI(inputArgs);
 
             }
             
@@ -2398,6 +2392,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
 #endif
         if (!rectsToRender.empty()) {
+            
+# ifdef DEBUG
+            qDebug() << getNode()->getName_mt_safe().c_str() << ": render " << rectsToRender.size() << " rectangles";
+            for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+                qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
+            }
+# endif
             renderRetCode = renderRoIInternal(args.time,
                                               args.mipMapLevel,
                                               args.view,

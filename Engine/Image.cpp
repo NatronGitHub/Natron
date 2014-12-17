@@ -377,12 +377,7 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
     }
     
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
-# ifdef DEBUG
-    qDebug() << "render " << ret.size() << " rectangles";
-    for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
-        qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
-    }
-# endif // DEBUG
+
 } // minimalNonMarkedRects
 
 RectI
