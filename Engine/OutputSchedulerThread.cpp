@@ -2099,7 +2099,7 @@ private:
         }
         
         
-        if (args[0] || args[1]) {
+        if ((args[0] && status[0] != eStatusFailed) || (args[1] && status[1] != eStatusFailed)) {
             try {
                 stat = _viewer->renderViewer(view,false,true,viewerHash,true,args);
             } catch (...) {
