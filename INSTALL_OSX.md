@@ -59,7 +59,7 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install qt expat icairo glew
+    brew install qt expat cairo glew
 
 To install the openfx-io and openfx-misc sets of plugin, you also need the following:
 
