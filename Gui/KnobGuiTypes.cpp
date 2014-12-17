@@ -2125,10 +2125,11 @@ Color_KnobGui::showColorDialog()
             realColor.setBlue(userColor.blue());
         }
         if (_dimension >= 4) {
-            if (getKnob()->isEnabled(3)) {
-                _aBox->setValue(userColor.alphaF()); // no conversion, alpha is linear
-            }
-            realColor.setAlpha(userColor.alpha());
+            ///Don't set alpha since the color dialog can only handle RGB
+//            if (getKnob()->isEnabled(3)) {
+//                _aBox->setValue(userColor.alphaF()); // no conversion, alpha is linear
+//            }
+//            realColor.setAlpha(userColor.alpha());
         }
 
         onColorChanged();
@@ -2147,9 +2148,10 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
     if (_dimension > 1) {
         _knob->setValue(Natron::Color::from_func_srgb(color.greenF()), 1);
         _knob->setValue(Natron::Color::from_func_srgb(color.blueF()), 2);
-        if (_dimension > 3) {
-            _knob->setValue(color.alphaF(), 3); // no conversion, alpha is linear
-        }
+        ///Don't set alpha since the color dialog can only handle RGB
+//        if (_dimension > 3) {
+//            _knob->setValue(color.alphaF(), 3); // no conversion, alpha is linear
+//        }
     }
     _knob->unblockEvaluation();
     _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
