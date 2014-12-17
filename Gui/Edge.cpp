@@ -55,6 +55,7 @@ Edge::Edge(int inputNb_,
 , _paintBendPoint(false)
 , _bendPointHiddenAutomatically(false)
 , _enoughSpaceToShowLabel(true)
+, _isRotoMask(false)
 , _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
@@ -68,6 +69,9 @@ Edge::Edge(int inputNb_,
     setZValue(4);
     Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
     if (effect) {
+        
+        _isRotoMask = effect->isInputRotoBrush(_inputNb);
+        
         bool autoHide = areOptionalInputsAutoHidden();
         bool isSelected = _dest->getIsSelected();
         if (effect->isInputMask(_inputNb)) {
@@ -104,6 +108,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
 , _paintBendPoint(false)
 , _bendPointHiddenAutomatically(false)
 , _enoughSpaceToShowLabel(true)
+, _isRotoMask(false)
 , _middlePoint()
 {
     assert(src);
@@ -128,7 +133,7 @@ Edge::setSource(const boost::shared_ptr<NodeGui> & src)
     bool autoHide = areOptionalInputsAutoHidden();
     assert(_dest);
     bool isSelected = _dest->getIsSelected();
-    if (autoHide && _optional) {
+    if (autoHide && _optional  && !_isRotoMask) {
         if (src || isSelected) {
             show();
         } else {
@@ -150,17 +155,23 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
 {
     _source = src;
     _dest = dst;
+    
+    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
+
+    if (effect) {
+        _isRotoMask = effect->isInputRotoBrush(_inputNb);
+    }
+    
     if (!_label) {
         _label = new QGraphicsTextItem(QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ),this);
         _label->setDefaultTextColor( QColor(200,200,200) );
     } else {
         _label->setPlainText( QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ) );
     }
-    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
     if (effect) {
         bool autoHide = areOptionalInputsAutoHidden();
         bool isSelected = _dest->getIsSelected();
-        if (effect->isInputMask(_inputNb)) {
+        if (effect->isInputMask(_inputNb) && !_isRotoMask) {
             setDashed(true);
             setOptional(true);
             if (autoHide) {
@@ -170,7 +181,7 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
                     show();
                 }
             }
-        } else if (effect->isInputOptional(_inputNb)) {
+        } else if (effect->isInputOptional(_inputNb)  && !_isRotoMask) {
             setOptional(true);
             if (!isSelected && autoHide) {
                 if (!src) {

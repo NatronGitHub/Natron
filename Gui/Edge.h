@@ -134,6 +134,9 @@ public:
 
     bool isNearbyBendPoint(const QPointF & scenePoint);
 
+    bool isRotoEdge() const {
+        return _isRotoMask;
+    }
 private:
 
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
@@ -153,6 +156,7 @@ private:
     bool _paintBendPoint;
     bool _bendPointHiddenAutomatically;
     bool _enoughSpaceToShowLabel;
+    bool _isRotoMask;
     QPointF _middlePoint; //updated only when dest && source are valid
 };
 

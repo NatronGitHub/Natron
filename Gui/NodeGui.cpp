@@ -925,7 +925,9 @@ NodeGui::setOptionalInputsVisible(bool visible)
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
         for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-            if (_internalNode->getLiveInstance()->isInputOptional(it->first) && !_internalNode->getInput(it->first)) {
+            if (_internalNode->getLiveInstance()->isInputOptional(it->first) &&
+                !_internalNode->getInput(it->first) &&
+                !it->second->isRotoEdge()) {
                 it->second->setVisible(visible);
             }
         }
