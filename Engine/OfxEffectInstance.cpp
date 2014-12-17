@@ -549,6 +549,7 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     } else if ( (pluginIdentifier == "tuttle.anisotropicdiffusion") ||
                 (pluginIdentifier == "tuttle.anisotropictensors") ||
                 (pluginIdentifier == "tuttle.blur") ||
+                (pluginIdentifier == "tuttle.convolution") ||
                 (pluginIdentifier == "tuttle.floodfill") ||
                 (pluginIdentifier == "tuttle.localmaxima") ||
                 (pluginIdentifier == "tuttle.nlmdenoiser") ||
@@ -557,8 +558,10 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
         s = PLUGIN_GROUP_FILTER;
     } else if ( (pluginIdentifier == "tuttle.bitdepth") ||
                 (pluginIdentifier == "tuttle.colorgradation") ||
+                (pluginIdentifier == "tuttle.colorspace") ||
                 (pluginIdentifier == "tuttle.colorsuppress") ||
                 (pluginIdentifier == "tuttle.colortransfer") ||
+                (pluginIdentifier == "tuttle.colortransform") ||
                 (pluginIdentifier == "tuttle.ctl") ||
                 (pluginIdentifier == "tuttle.gamma") ||
                 (pluginIdentifier == "tuttle.invert") ||
@@ -568,7 +571,9 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
                 (pluginIdentifier == "tuttle.ocio.lut") ) {
         out.push_back(PLUGIN_GROUP_COLOR);
         s = "OCIO";
-    } else if ( (pluginIdentifier == "tuttle.histogramkeyer") ||
+    } else if ( (pluginIdentifier == "tuttle.basickeyer") ||
+                (pluginIdentifier == "tuttle.colorspacekeyer") ||
+                (pluginIdentifier == "tuttle.histogramkeyer") ||
                 (pluginIdentifier == "tuttle.idkeyer") ) {
         s = PLUGIN_GROUP_KEYER;
     } else if ( (pluginIdentifier == "tuttle.avreader") ||
@@ -607,21 +612,26 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     } else if ( (pluginIdentifier == "tuttle.text") ) {
         s = PLUGIN_GROUP_PAINT;
     } else if ( (pluginIdentifier == "tuttle.component") ||
+                (pluginIdentifier == "tuttle.fade") ||
                 (pluginIdentifier == "tuttle.merge") ) {
         s = PLUGIN_GROUP_MERGE;
     } else if ( (pluginIdentifier == "tuttle.crop") ||
                 (pluginIdentifier == "tuttle.flip") ||
                 (pluginIdentifier == "tuttle.lensdistort") ||
+                (pluginIdentifier == "tuttle.move2d") ||
                 (pluginIdentifier == "tuttle.pinning") ||
                 (pluginIdentifier == "tuttle.pushpixel") ||
                 (pluginIdentifier == "tuttle.resize") ||
-                (pluginIdentifier == "tuttle.swscale") ) {
+                (pluginIdentifier == "tuttle.swscale") ||
+                (pluginIdentifier == "tuttle.warp") ) {
         s = PLUGIN_GROUP_TRANSFORM;
     } else if ( (pluginIdentifier == "tuttle.mathoperator") ) {
         out.push_back(PLUGIN_GROUP_COLOR);
         s = "Math";
     } else if ( (pluginIdentifier == "tuttle.timeshift") ) {
         s = PLUGIN_GROUP_TIME;
+    } else if ( (pluginIdentifier == "tuttle.channelshuffle") ) {
+        s = PLUGIN_GROUP_CHANNEL;
     }
 
     /*
