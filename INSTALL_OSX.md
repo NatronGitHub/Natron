@@ -27,9 +27,10 @@ Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
 
 ### MacPorts
 
-You need an up to date macports version. Just download it and install it from : 
-(Macports website)[http://www.macports.org]
+You need an up to date macports version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
+	sudo port selfupdate
+	sudo port upgrade outdated
 	sudo port install qt4-mac boost glew cairo expat
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
