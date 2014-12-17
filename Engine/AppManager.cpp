@@ -938,7 +938,7 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         }
 
         Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
-                                                     "","",qgrouping,"",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion(),
+                                                     NATRON_IMAGES_PATH "dot_icon.png","",qgrouping,"",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion(),
                                                     false,false);
         plugins->push_back(plugin);
 
@@ -961,7 +961,7 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         }
         
         Natron::Plugin* plugin = new Natron::Plugin( binary,node->getPluginID().c_str(),node->getPluginLabel().c_str(),
-                                                    "","",qgrouping,"",NULL,node->getMajorVersion(),node->getMinorVersion(),
+                                                    NATRON_IMAGES_PATH "diskcache_icon.png","",qgrouping,"",NULL,node->getMajorVersion(),node->getMinorVersion(),
                                                     false,false);
         plugins->push_back(plugin);
         
