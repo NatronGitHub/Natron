@@ -182,6 +182,12 @@ public:
         return _label;
     }
     
+    QString generateUserFriendlyPluginID() const
+    {
+        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+        return _label + "  [" + grouping + "]";
+    }
+    
     const QString & getPluginOFXID() const
     {
         return _ofxPluginID;

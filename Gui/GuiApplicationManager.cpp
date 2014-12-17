@@ -82,7 +82,9 @@ CLANG_DIAG_ON(uninitialized)
  **/
 #define registerMouseShortcut(group,id,description, modifiers,button) ( _imp->addMouseShortcut(group,id,description, modifiers,button) )
 
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 1
+//Increment this when making change to default shortcuts or changes that would break expected default shortcuts
+//in a way. This way the user will get prompted to restore default shortcuts on next launch
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 2
 
 using namespace Natron;
 
@@ -749,18 +751,19 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
     bool hasShortcut = true;
+
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if (pluginID == "TransformOFX  [Transform]") {
+    if (pluginID == "net.sf.openfx.transformplugin") {
         symbol = Qt::Key_T;
-    } else if (pluginID == "RotoOFX  [Draw]") {
+    } else if (pluginID == "net.sf.openfx.rotoplugin") {
         symbol = Qt::Key_O;
-    } else if (pluginID == "MergeOFX  [Merge]") {
+    } else if (pluginID == "net.sf.openfx.mergeplugin") {
         symbol = Qt::Key_M;
-    } else if (pluginID == "GradeOFX  [Color]") {
+    } else if (pluginID == "net.sf.openfx.gradeplugin") {
         symbol = Qt::Key_G;
-    } else if (pluginID == "ColorCorrectOFX  [Color]") {
+    } else if (pluginID == "net.sf.openfx.colorcorrectplugin") {
         symbol = Qt::Key_C;
-    } else if (pluginID == "BlurCImg  [Filter]") {
+    } else if (pluginID == "net.sf.cimg.cimgblur") {
         symbol = Qt::Key_B;
     } else {
         hasShortcut = false;

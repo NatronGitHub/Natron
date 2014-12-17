@@ -172,6 +172,8 @@ struct AppManagerPrivate
      * @brief Called on startup to initialize the max opened files
      **/
     void setMaxCacheFiles();
+    
+    Natron::Plugin* findPluginById(const QString& oldId) const;
 };
 
 void
@@ -1137,6 +1139,55 @@ const KnobFactory &
 AppManager::getKnobFactory() const
 {
     return *(_imp->_knobFactory);
+}
+
+Natron::Plugin*
+AppManagerPrivate::findPluginById(const QString& newId) const
+{
+    for (U32 i = 0; i < _plugins.size(); ++i) {
+        if (_plugins[i]->getPluginID() == newId) {
+            return _plugins[i];
+        }
+    }
+    return 0;
+}
+
+Natron::Plugin*
+AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const
+{
+    std::map<int,Natron::Plugin*> matches;
+    
+    if (pluginId == "Viewer") {
+        return _imp->findPluginById(NATRON_VIEWER_ID);
+    } else if (pluginId == "Dot") {
+        return _imp->findPluginById(NATRON_DOT_ID);
+    } else if (pluginId == "DiskCache") {
+        return _imp->findPluginById(NATRON_DISKCACHE_NODE_ID);
+    }
+    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
+        
+        ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
+        if (_imp->_plugins[i]->generateUserFriendlyPluginID() == pluginId &&
+            ((majorVersion != -1 && _imp->_plugins[i]->getMajorVersion() == majorVersion) ||
+             majorVersion == -1)) {
+                matches.insert( std::make_pair(_imp->_plugins[i]->getMinorVersion(),_imp->_plugins[i]) );
+            }
+        
+    }
+    
+    if ( matches.empty() ) {
+        QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
+        .arg(pluginId)
+        .arg(majorVersion)
+        .arg(minorVersion);
+        throw std::invalid_argument( exc.toStdString() );
+    } else {
+        std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
+        --greatest;
+        
+        return greatest->second;
+    }
+
 }
 
 Natron::Plugin*

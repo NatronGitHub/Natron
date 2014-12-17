@@ -83,8 +83,8 @@ CompleterLineEdit::filterText(const QString & txt)
     if ( txt.isEmpty() ) {
         sl = _imp->words;
     } else {
-        for (int i = 0; i < _imp->ids.size(); ++i) {
-            if ( _imp->ids[i].contains(txt,Qt::CaseInsensitive) ) {
+        for (int i = 0; i < _imp->words.size(); ++i) {
+            if ( _imp->words[i].contains(txt,Qt::CaseInsensitive) ) {
                 sl << _imp->words[i];
             }
         }
@@ -233,19 +233,21 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
 
     QStringList ids;
     QStringList names;
-    bool foundInitialFilter = false;
+    QString initialFilterName;
     for (unsigned int i = 0; i < _imp->items.size(); ++i) {
         ids.push_back( _imp->items[i]->getPluginID() );
-        names.push_back( _imp->items[i]->getPluginLabel() );
+        names.push_back( _imp->items[i]->generateUserFriendlyPluginID() );
         if (ids[i] == initialFilter) {
-            foundInitialFilter = true;
+            initialFilterName = names[i];
         }
     }
+    
+    
     ids.sort();
     names.sort();
-    _imp->textEdit = new CompleterLineEdit(ids,names,true,this);
-    if (foundInitialFilter) {
-        _imp->textEdit->setText(initialFilter);
+    _imp->textEdit = new CompleterLineEdit(names,ids,true,this);
+    if (!initialFilterName.isEmpty()) {
+        _imp->textEdit->setText(initialFilterName);
     }
 
     QPoint global = QCursor::pos();
@@ -257,7 +259,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     _imp->layout->addWidget(_imp->textEdit);
     _imp->textEdit->setFocus();
     _imp->textEdit->selectAll();
-    QTimer::singleShot( 25, _imp->textEdit, SLOT( showCompleter() ) );
+    QTimer::singleShot( 20, _imp->textEdit, SLOT( showCompleter() ) );
 }
 
 NodeCreationDialog::~NodeCreationDialog()
@@ -267,7 +269,13 @@ NodeCreationDialog::~NodeCreationDialog()
 QString
 NodeCreationDialog::getNodeName() const
 {
-    return _imp->textEdit->text();
+    QString name = _imp->textEdit->text();
+    for (U32 i = 0; i < _imp->items.size(); ++i) {
+        if (_imp->items[i]->generateUserFriendlyPluginID() == name) {
+            return _imp->items[i]->getPluginID();
+        }
+    }
+    return QString();
 }
 
 void

@@ -48,7 +48,7 @@ QtWriter::~QtWriter()
 std::string
 QtWriter::getPluginID() const
 {
-    return "WriteQt";
+    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt";
 }
 
 std::string

@@ -189,6 +189,7 @@ GuiAppInstance::load(const QString & projectName,
                                                                  "would you like to set them to their defaults ? "
                                                                  "Clicking no will keep the old shortcuts hence if a new shortcut has been "
                                                                  "set to something else than an empty shortcut you won't benefit of it.").toStdString(),
+                                                              false,
                                                               Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                                               Natron::eStandardButtonNo);
             if (reply == Natron::eStandardButtonYes) {
@@ -209,7 +210,7 @@ GuiAppInstance::load(const QString & projectName,
 
     if ( projectName.isEmpty() ) {
         ///if the user didn't specify a projects name in the launch args just create a viewer node.
-        createNode( CreateNodeArgs("Viewer",
+        createNode( CreateNodeArgs(NATRON_VIEWER_ID,
                                    "",
                                    -1,-1,
                                    -1,
@@ -257,7 +258,7 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
     _imp->_nodeMapping.insert( std::make_pair(node,nodegui) );
 
     ///It needs to be here because we rely on the _nodeMapping member
-    bool isViewer = node->getPluginID() == "Viewer";
+    bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
     if (isViewer) {
         _imp->_gui->createViewerGui(node);
     }

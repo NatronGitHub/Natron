@@ -143,7 +143,8 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     const std::vector<boost::shared_ptr<Natron::Node> > & nodes = project->getCurrentNodes();
 
     for (U32 i = 0; i < nodes.size(); ++i) {
-        if (nodes[i]->getPluginID() == "Viewer") {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+        if (isViewer) {
             _copyFromViewerCombo->addItem( nodes[i]->getName().c_str() );
         }
     }

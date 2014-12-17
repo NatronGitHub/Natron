@@ -71,13 +71,7 @@ public:
     static std::string makePluginLabel(const std::string & shortLabel,
                                        const std::string & label,
                                        const std::string & longLabel) WARN_UNUSED_RETURN;
-    static std::string generateImageEffectClassName(const std::string & pluginIdentifier,
-                                                    int versionMajor,
-                                                    int versionMinor,
-                                                    const std::string & shortLabel,
-                                                    const std::string & label,
-                                                    const std::string & longLabel,
-                                                    const std::string & grouping) WARN_UNUSED_RETURN;
+    
 };
 
 class OfxEffectInstance

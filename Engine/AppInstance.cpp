@@ -23,6 +23,7 @@
 #include <boost/bind.hpp>
 
 #include "Engine/Project.h"
+#include "Engine/Plugin.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
@@ -319,13 +320,20 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     try {
         plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
-    } catch (const std::exception & e) {
-        Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e.what(), false );
-
-        return node;
+    } catch (const std::exception & e1) {
+        
+        ///Ok try with the old Ids we had in Natron prior to 1.0
+        try {
+            plugin = appPTR->getPluginBinaryFromOldID(pluginID, majorVersion, minorVersion);
+        } catch (const std::exception& e2) {
+            Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e2.what(), false );
+            return node;
+        }
+        
     }
 
-    if (pluginID != "Viewer") { // for now only the viewer can be an inspector.
+    std::string foundPluginID = plugin->getPluginID().toStdString();
+    if (foundPluginID != NATRON_VIEWER_ID) { // for now only the viewer can be an inspector.
         node.reset( new Node(this,plugin) );
     } else {
         node.reset( new InspectorNode(this,plugin) );
@@ -333,7 +341,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     {
         ///Furnace plug-ins don't handle using the thread pool
-        if (pluginID.contains("Furnace") && appPTR->getUseThreadPool()) {
+        if (foundPluginID.find("Furnace") != std::string::npos && appPTR->getUseThreadPool()) {
             Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
@@ -346,17 +354,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     
     try {
-        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
+        node->load(foundPluginID,multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
         std::string title = std::string("Error while creating node");
-        std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
+        std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
         errorDialog(title, message, false);
 
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
         std::string title = std::string("Error while creating node");
-        std::string message = title + " " + pluginID.toStdString();
+        std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
         errorDialog(title, message, false);
 
@@ -559,7 +567,8 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
                     exc.append(" is not an output node! It cannot render anything.");
                     throw std::invalid_argument(exc);
                 }
-                if (node->getPluginID() == "Viewer") {
+                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+                if (isViewer) {
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
                 RenderWork w;

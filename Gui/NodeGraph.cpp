@@ -1268,7 +1268,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
                     
-                    CreateNodeArgs args("MergeOFX  [Merge]","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
+                    CreateNodeArgs args("net.sf.openfx.mergeplugin","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
                                         CreateNodeArgs::DefaultValuesList());
                     
                     boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
@@ -2072,7 +2072,7 @@ void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
     if ( !_imp->_gui->getLastSelectedViewer() ) {
-        _imp->_gui->getApp()->createNode(  CreateNodeArgs("Viewer",
+        _imp->_gui->getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
                                                           "",
                                                           -1,-1,
                                                           -1,
@@ -3326,7 +3326,8 @@ NodeGraph::cloneSelectedNodes()
 
             return;
         }
-        if ( (*it)->getNode()->getPluginID() == "Viewer" ) {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
+        if (isViewer) {
             Natron::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
 
             return;

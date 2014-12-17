@@ -461,19 +461,13 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
             continue;
         }
 
-        QString openfxId = p->getIdentifier().c_str();
+        std::string openfxId = p->getIdentifier();
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
         const std::string & bundlePath = p->getBinary()->getBundlePath();
         std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
                                                                       p->getDescriptor().getLabel(),
                                                                       p->getDescriptor().getLongLabel() );
-        std::string pluginId = OfxEffectInstance::generateImageEffectClassName(p->getIdentifier(),
-                                                                               p->getVersionMajor(),
-                                                                               p->getVersionMinor(),
-                                                                               p->getDescriptor().getShortLabel(),
-                                                                               p->getDescriptor().getLabel(),
-                                                                               p->getDescriptor().getLongLabel(),
-                                                                               grouping);
+        
         QStringList groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
@@ -481,7 +475,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         assert( p->getBinary() );
         QString iconFilename = QString( bundlePath.c_str() ) + "/Contents/Resources/";
         iconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
-        iconFilename.append(openfxId);
+        iconFilename.append(openfxId.c_str());
         iconFilename.append(".png");
         QString groupIconFilename;
         if (groups.size() > 0) {
@@ -494,7 +488,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
             groups.push_back(PLUGIN_GROUP_DEFAULT);
         }
 
-        _ofxPlugins[pluginId] = OFXPluginEntry(openfxId.toStdString(), grouping);
+        _ofxPlugins[openfxId] = OFXPluginEntry(openfxId, grouping);
 
         
         const std::set<std::string> & contexts = p->getContexts();
@@ -502,7 +496,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
         appPTR->registerPlugin( groups,
-                                pluginId.c_str(),
+                                openfxId.c_str(),
                                 pluginLabel.c_str(),
                                 iconFilename,
                                 groupIconFilename,
@@ -535,10 +529,10 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                 it = readersMap->find(formats[k]);
 
                 if ( it != readersMap->end() ) {
-                    it->second.push_back(std::make_pair(pluginId, evaluation));
+                    it->second.push_back(std::make_pair(openfxId, evaluation));
                 } else {
                     std::vector<std::pair<std::string,double> > newVec(1);
-                    newVec[0] = std::make_pair(pluginId,evaluation);
+                    newVec[0] = std::make_pair(openfxId,evaluation);
                     readersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }
@@ -549,10 +543,10 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                 it = writersMap->find(formats[k]);
 
                 if ( it != writersMap->end() ) {
-                    it->second.push_back(std::make_pair(pluginId, evaluation));
+                    it->second.push_back(std::make_pair(openfxId, evaluation));
                 } else {
                     std::vector<std::pair<std::string,double> > newVec(1);
-                    newVec[0] = std::make_pair(pluginId,evaluation);
+                    newVec[0] = std::make_pair(openfxId,evaluation);
                     writersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }

@@ -183,13 +183,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         assert(_effect);
         _effect->setOfxEffectInstance( dynamic_cast<OfxEffectInstance*>(this) );
 
-        _natronPluginID = generateImageEffectClassName( _effect->getPlugin()->getIdentifier(),
-                                                        _effect->getPlugin()->getVersionMajor(),
-                                                        _effect->getPlugin()->getVersionMinor(),
-                                                        _effect->getDescriptor().getShortLabel(),
-                                                        _effect->getDescriptor().getLabel(),
-                                                        _effect->getDescriptor().getLongLabel(),
-                                                        _effect->getDescriptor().getPluginGrouping() );
+        _natronPluginID = plugin->getIdentifier();
+//        _natronPluginID = generateImageEffectClassName( _effect->getPlugin()->getIdentifier(),
+//                                                        _effect->getPlugin()->getVersionMajor(),
+//                                                        _effect->getPlugin()->getVersionMinor(),
+//                                                        _effect->getDescriptor().getShortLabel(),
+//                                                        _effect->getDescriptor().getLabel(),
+//                                                        _effect->getDescriptor().getLongLabel(),
+//                                                        _effect->getDescriptor().getPluginGrouping() );
 
 
         blockEvaluation();
@@ -672,29 +673,6 @@ AbstractOfxEffectInstance::makePluginLabel(const std::string & shortLabel,
     return labelToUse;
 }
 
-std::string
-AbstractOfxEffectInstance::generateImageEffectClassName(const std::string & pluginIdentifier,
-                                                        int versionMajor,
-                                                        int versionMinor,
-                                                        const std::string & shortLabel,
-                                                        const std::string & label,
-                                                        const std::string & longLabel,
-                                                        const std::string & grouping)
-{
-    std::string labelToUse = makePluginLabel(shortLabel, label, longLabel);
-    QStringList groups = makePluginGrouping(pluginIdentifier, versionMajor, versionMinor, labelToUse, grouping);
-
-    if (labelToUse == "Viewer") { // we don't want a plugin to have the same name as our viewer
-        labelToUse =  groups[0].toStdString() + longLabel;
-    }
-    if (groups.size() >= 1) {
-        labelToUse.append("  [");
-        labelToUse.append( groups[0].toStdString() );
-        labelToUse.append("]");
-    }
-
-    return labelToUse;
-}
 
 std::string
 OfxEffectInstance::getPluginID() const

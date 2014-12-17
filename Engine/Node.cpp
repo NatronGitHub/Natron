@@ -879,7 +879,7 @@ Node::getPreferredInputForConnection()
     }  else {
         if ( !optionalEmptyInputs.empty() ) {
             
-            if (getPluginID().find("Merge") != std::string::npos) {
+            if (getPluginID().find("net.sf.openfx.mergeplugin") != std::string::npos) {
                 //if it is a merge node, try to follow what the user preferences tell us
                 std::string inputNameToFind;
                 bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
@@ -2346,9 +2346,8 @@ Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    QString name = getPluginID().c_str();
-    
-    return name.contains("roto",Qt::CaseInsensitive);
+    std::string name = getPluginID();
+    return name.find("net.sf.openfx.rotoplugin") != std::string::npos;
 }
 
 /**
@@ -3318,7 +3317,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 bool
 Node::isTrackerNode() const
 {
-    return getPluginID().find("Tracker") != std::string::npos;
+    return getPluginID().find("net.sf.openfx.trackerpm") != std::string::npos;
 }
 
 void

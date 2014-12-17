@@ -2630,7 +2630,7 @@ Gui::saveAndIncrVersion()
 void
 Gui::createNewViewer()
 {
-    (void)_imp->_appInstance->createNode( CreateNodeArgs("Viewer",
+    (void)_imp->_appInstance->createNode( CreateNodeArgs(NATRON_VIEWER_ID,
                                                          "",
                                                          -1,-1,
                                                          -1,
@@ -3904,8 +3904,8 @@ void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
     NodeGui* node = qobject_cast<NodeGui*>( sender() );
-
-    if ( node && (node->getNode()->getPluginID() == "Viewer") ) {
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
+    if ( node && isViewer) {
         emit viewersChanged();
     }
 }
