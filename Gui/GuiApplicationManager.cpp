@@ -1000,7 +1000,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
     {
         QString label(NATRON_BACKDROP_NODE_NAME);
         QStringList backdropGrouping(PLUGIN_GROUP_OTHER);
-        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,"","",backdropGrouping,"",NULL,1,0,false,false);
+        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,NATRON_IMAGES_PATH "backdrop_icon.png","",backdropGrouping,"",NULL,1,0,false,false);
         plugins->push_back(plugin);
         onPluginLoaded(plugin);
     }
