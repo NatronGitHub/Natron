@@ -23,6 +23,8 @@ In order to have Natron compiling, first you need to install the required librar
 
 There are two exclusive options: using MacPorts or using Homebrew.
 
+Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
+
 ### MacPorts
 
 You need an up to date macports version. Just download it and install it from : 
@@ -54,9 +56,6 @@ EOF
 ### Homebrew
 
 Install homebrew from <http://brew.sh/>
-
-For a universal 32/64 bits build, add the option --universal to all
-the "brew install" commands.
 
 Install libraries:
 
