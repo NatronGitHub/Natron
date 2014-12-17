@@ -796,8 +796,8 @@ AppManager::writeToOutputPipe(const QString & longMessage,
                               const QString & shortMessage)
 {
     if (!_imp->_backgroundIPC) {
-        qDebug() << longMessage;
-
+        ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
+        std::cout << longMessage.toStdString() << std::endl;
         return false;
     }
     _imp->_backgroundIPC->writeToOutputChannel(shortMessage);
@@ -1985,6 +1985,14 @@ bool
 AppManager::wasProjectCreatedDuringRC2Or3() const
 {
     return _imp->lastProjectLoadedCreatedDuringRC2Or3;
+}
+
+void
+AppManager::toggleAutoHideGraphInputs()
+{
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        it->second.app->toggleAutoHideGraphInputs();
+    }
 }
 
 namespace Natron {

@@ -16,6 +16,7 @@
 #include <QGraphicsScene>
 
 #include "Gui/NodeGui.h"
+#include "Gui/NodeGraph.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
@@ -37,23 +38,24 @@ Edge::Edge(int inputNb_,
            double angle_,
            const boost::shared_ptr<NodeGui> & dest_,
            QGraphicsItem *parent)
-    : QGraphicsLineItem(parent)
-      , _isOutputEdge(false)
-      , _inputNb(inputNb_)
-      , _angle(angle_)
-      , _label(NULL)
-      , _arrowHead()
-      , _dest(dest_)
-      , _source()
-      , _defaultColor(Qt::black)
-      , _renderingColor(243,149,0)
-      , _useRenderingColor(false)
-      , _useHighlight(false)
-      , _paintWithDash(false)
-      , _paintBendPoint(false)
-      , _bendPointHiddenAutomatically(false)
-      , _wasLabelVisible(false)
-      , _middlePoint()
+: QGraphicsLineItem(parent)
+, _isOutputEdge(false)
+, _inputNb(inputNb_)
+, _angle(angle_)
+, _label(NULL)
+, _arrowHead()
+, _dest(dest_)
+, _source()
+, _defaultColor(Qt::black)
+, _renderingColor(243,149,0)
+, _useRenderingColor(false)
+, _useHighlight(false)
+, _paintWithDash(false)
+, _optional(false)
+, _paintBendPoint(false)
+, _bendPointHiddenAutomatically(false)
+, _enoughSpaceToShowLabel(true)
+, _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
     if ( (_inputNb != -1) && _dest ) {
@@ -64,30 +66,45 @@ Edge::Edge(int inputNb_,
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(4);
-    if ( _dest && _dest->getNode()->getLiveInstance() && _dest->getNode()->getLiveInstance()->isInputOptional(_inputNb) ) {
-        _paintWithDash = true;
+    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
+    if (effect) {
+        bool autoHide = areOptionalInputsAutoHidden();
+        bool isSelected = _dest->getIsSelected();
+        if (effect->isInputMask(_inputNb)) {
+            setDashed(true);
+            setOptional(true);
+            if (!isSelected && autoHide) {
+                hide();
+            }
+        } else if (effect->isInputOptional(_inputNb)) {
+            setOptional(true);
+            if (!isSelected && autoHide) {
+                hide();
+            }
+        }
     }
 }
 
 Edge::Edge(const boost::shared_ptr<NodeGui> & src,
            QGraphicsItem *parent)
-    : QGraphicsLineItem(parent)
-      , _isOutputEdge(true)
-      , _inputNb(-1)
-      , _angle(M_PI_2)
-      , _label(NULL)
-      , _arrowHead()
-      , _dest()
-      , _source(src)
-      , _defaultColor(Qt::black)
-      , _renderingColor(243,149,0)
-      , _useRenderingColor(false)
-      , _useHighlight(false)
-      , _paintWithDash(false)
-      , _paintBendPoint(false)
-      , _bendPointHiddenAutomatically(false)
-      , _wasLabelVisible(false)
-      , _middlePoint()
+: QGraphicsLineItem(parent)
+, _isOutputEdge(true)
+, _inputNb(-1)
+, _angle(M_PI_2)
+, _label(NULL)
+, _arrowHead()
+, _dest()
+, _source(src)
+, _defaultColor(Qt::black)
+, _renderingColor(243,149,0)
+, _useRenderingColor(false)
+, _useHighlight(false)
+, _paintWithDash(false)
+, _optional(false)
+, _paintBendPoint(false)
+, _bendPointHiddenAutomatically(false)
+, _enoughSpaceToShowLabel(true)
+, _middlePoint()
 {
     assert(src);
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
@@ -108,7 +125,23 @@ void
 Edge::setSource(const boost::shared_ptr<NodeGui> & src)
 {
     _source = src;
+    bool autoHide = areOptionalInputsAutoHidden();
+    assert(_dest);
+    bool isSelected = _dest->getIsSelected();
+    if (autoHide && _optional) {
+        if (src || isSelected) {
+            show();
+        } else {
+            hide();
+        }
+    }
     initLine();
+}
+
+bool
+Edge::areOptionalInputsAutoHidden() const
+{
+    return _dest ? _dest->getDagGui()->areOptionalInputsAutoHidden() : false;
 }
 
 void
@@ -123,8 +156,30 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
     } else {
         _label->setPlainText( QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ) );
     }
-    if ( _dest && _dest->getNode()->getLiveInstance() && _dest->getNode()->getLiveInstance()->isInputOptional(_inputNb) ) {
-        _paintWithDash = true;
+    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
+    if (effect) {
+        bool autoHide = areOptionalInputsAutoHidden();
+        bool isSelected = _dest->getIsSelected();
+        if (effect->isInputMask(_inputNb)) {
+            setDashed(true);
+            setOptional(true);
+            if (autoHide) {
+                if (!isSelected && !src) {
+                    hide();
+                } else {
+                    show();
+                }
+            }
+        } else if (effect->isInputOptional(_inputNb)) {
+            setOptional(true);
+            if (!isSelected && autoHide) {
+                if (!src) {
+                    hide();
+                } else {
+                    show();
+                }
+            }
+        }
     }
     initLine();
 }
@@ -132,7 +187,13 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
 void
 Edge::setOptional(bool optional)
 {
-    _paintWithDash = optional;
+    _optional = optional;
+}
+
+void
+Edge::setDashed(bool dashed)
+{
+    _paintWithDash = dashed;
 }
 
 void
@@ -273,10 +334,10 @@ Edge::initLine()
                 double txtWidth = fm.width( _label->toPlainText() );
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
                     _label->hide();
-                    _wasLabelVisible = false;
+                    _enoughSpaceToShowLabel = false;
                 } else {
                     _label->show();
-                    _wasLabelVisible = true;
+                    _enoughSpaceToShowLabel = true;
                 }
             }
         }
@@ -481,10 +542,9 @@ void
 Edge::setVisibleDetails(bool visible)
 {
     if (!visible) {
-        _wasLabelVisible = _label->isVisible();
         _label->hide();
     } else {
-        if (_wasLabelVisible) {
+        if (_enoughSpaceToShowLabel) {
             _label->show();
         }
     }
@@ -513,11 +573,15 @@ Edge::paint(QPainter *painter,
         color = _renderingColor;
     } else {
         color = _defaultColor;
+        if (_optional && !_paintWithDash) {
+            color.setAlphaF(0.4);
+        }
     }
     myPen.setColor(color);
     painter->setPen(myPen);
-    QLineF l = line();
-    painter->drawLine(l);
+    
+  
+    painter->drawLine(line());
 
     myPen.setStyle(Qt::SolidLine);
     painter->setPen(myPen);

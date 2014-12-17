@@ -135,6 +135,8 @@ public:
 
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
+    virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
+    
 public slots:
     
     virtual void redrawAllViewers() OVERRIDE FINAL;

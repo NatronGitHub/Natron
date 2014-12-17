@@ -783,3 +783,9 @@ GuiAppInstance::redrawAllViewers()
 {
     _imp->_gui->redrawAllViewers();
 }
+
+void
+GuiAppInstance::toggleAutoHideGraphInputs()
+{
+    _imp->_gui->toggleAutoHideGraphInputs();
+}

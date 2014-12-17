@@ -1395,7 +1395,9 @@ DockablePanel::onColorDialogColorChanged(const QColor & color)
         QPixmap p(15,15);
         p.fill(color);
         _imp->_colorButton->setIcon( QIcon(p) );
-        _imp->_verticalColorBar->setColor(color);
+        if (_imp->_verticalColorBar) {
+            _imp->_verticalColorBar->setColor(color);
+        }
     }
 }
 

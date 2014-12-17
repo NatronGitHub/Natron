@@ -645,7 +645,7 @@ ShortcutDelegate::paint(QPainter * painter,
 
     if (isTopLevel) {
         font.setBold(true);
-        font.setPixelSize(15);
+        font.setPixelSize(13);
         pen.setColor(Qt::black);
     } else {
         font.setBold(false);

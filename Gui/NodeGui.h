@@ -338,7 +338,7 @@ public slots:
 
     void refreshEdges();
 
-    void refreshOptionalStateOfEdges();
+    void refreshDashedStateOfEdges();
     
     void refreshKnobLinks();
 
@@ -392,6 +392,8 @@ public slots:
     void onSettingsPanelClosedChanged(bool closed);
 
     void onParentMultiInstancePositionChanged(int x,int y);
+    
+    void setOptionalInputsVisible(bool visible);
 
 signals:
 
@@ -502,6 +504,8 @@ private:
     
     int _renderingStartedCount;
     std::map<int,int> _inputNRenderingStartedCount;
+    
+    bool _optionalInputsVisible;
       
 };
 

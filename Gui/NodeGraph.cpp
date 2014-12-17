@@ -1055,6 +1055,12 @@ NodeGraph::pushUndoCommand(QUndoCommand* command)
     _imp->_undoStack->push(command);
 }
 
+bool
+NodeGraph::areOptionalInputsAutoHidden() const
+{
+    return appPTR->getCurrentSettings()->areOptionalInputsAutoHidden();
+}
+
 void
 NodeGraph::deselect()
 {
@@ -1293,30 +1299,43 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).x();
     double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).y();
 
+    
+
+    
     QRectF sceneR = visibleSceneRect();
-    if (_imp->_evtState != SELECTION_RECT) {
+    if (_imp->_evtState != SELECTION_RECT && _imp->_evtState != ARROW_DRAGGING) {
         ///set cursor
         boost::shared_ptr<NodeGui> selected;
         Edge* selectedEdge = 0;
-
         {
+            bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
             QMutexLocker l(&_imp->_nodesMutex);
             for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                 boost::shared_ptr<NodeGui> & n = *it;
                 QPointF evpt = n->mapFromScene(newPos);
                 
                 QRectF bbox = n->mapToScene(n->boundingRect()).boundingRect();
-                
-                if ( n->isActive() && n->contains(evpt) && bbox.intersects(sceneR)) {
-                    selected = n;
-                    break;
-                } else {
-                    Edge* edge = n->hasEdgeNearbyPoint(newPos);
-                    if (edge) {
-                        selectedEdge = edge;
-                        break;
+                if (n->isActive() && bbox.intersects(sceneR)) {
+                    if (n->contains(evpt)) {
+                        selected = n;
+                        if (optionalInputsAutoHidden) {
+                            n->setOptionalInputsVisible(true);
+                        } else {
+                            break;
+                        }
+                    } else {
+                        Edge* edge = n->hasEdgeNearbyPoint(newPos);
+                        if (edge) {
+                            selectedEdge = edge;
+                            if (!optionalInputsAutoHidden) {
+                                break;
+                            }
+                        } else if (optionalInputsAutoHidden && !n->getIsSelected()) {
+                            n->setOptionalInputsVisible(false);
+                        }
                     }
                 }
+                
             }
         }
         if (selected) {
@@ -1415,7 +1434,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 boost::shared_ptr<NodeGui> nodeToShowMergeRect;
                 
                 boost::shared_ptr<Natron::Node> selectedNodeInternalNode = selectedNode->getNode();
-                
+
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
@@ -1440,10 +1459,12 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                     int selectedMaxInput = selectedNodeInternalNode->getMaxInputCount();
                                     double nPAR = internalNode->getLiveInstance()->getPreferredAspectRatio();
                                     double selectedPAR = selectedNodeInternalNode->getLiveInstance()->getPreferredAspectRatio();
+                                    double nFPS = internalNode->getLiveInstance()->getPreferredFrameRate();
+                                    double selectedFPS = selectedNodeInternalNode->getLiveInstance()->getPreferredFrameRate();
                                     
                                     bool isValid = true;
                                     
-                                    if (selectedPAR != nPAR) {
+                                    if (selectedPAR != nPAR || std::abs(nFPS - selectedFPS) > 0.01) {
                                         if (nHasInput || selectedHasInput) {
                                             isValid = false;
                                         } else if (!nHasInput && nMaxInput == 0 && !selectedHasInput && selectedMaxInput == 0) {
@@ -1923,7 +1944,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         toggleAutoPreview();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoTurbo, modifiers, key) ) {
         toggleAutoTurbo();
-    }  else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs, modifiers, key) ) {
+        toggleAutoHideInputs(true);
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         popFindDialog(QCursor::pos());
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         popRenameDialog(QCursor::pos());
@@ -2710,8 +2733,9 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addAction(findAction);
     _imp->_menu->addSeparator();
     
+    QFont font(appFont,appFontSize);
     QMenu* editMenu = new QMenu(tr("Edit"),_imp->_menu);
-    editMenu->setFont( QFont(appFont,appFontSize) );
+    editMenu->setFont(font);
     _imp->_menu->addAction( editMenu->menuAction() );
     
     QAction* copyAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphCopy,
@@ -2787,6 +2811,13 @@ NodeGraph::showMenu(const QPoint & pos)
     connectionHints->setChecked( appPTR->getCurrentSettings()->isConnectionHintEnabled() );
     QObject::connect( connectionHints,SIGNAL( triggered() ),this,SLOT( toggleConnectionHints() ) );
     _imp->_menu->addAction(connectionHints);
+    
+    QAction* autoHideInputs = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphAutoHideInputs,
+                                                      kShortcutDescActionGraphAutoHideInputs,_imp->_menu);
+    autoHideInputs->setCheckable(true);
+    autoHideInputs->setChecked( appPTR->getCurrentSettings()->areOptionalInputsAutoHidden() );
+    QObject::connect( autoHideInputs,SIGNAL( triggered() ),this,SLOT( toggleAutoHideInputs() ) );
+    _imp->_menu->addAction(autoHideInputs);
     
     QAction* knobLinks = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphShowExpressions,
                                                 kShortcutDescActionGraphShowExpressions,_imp->_menu);
@@ -3566,6 +3597,40 @@ void
 NodeGraph::toggleConnectionHints()
 {
     appPTR->getCurrentSettings()->setConnectionHintsEnabled( !appPTR->getCurrentSettings()->isConnectionHintEnabled() );
+}
+
+void
+NodeGraph::toggleAutoHideInputs(bool setSettings)
+{
+    bool autoHide ;
+    if (setSettings) {
+        autoHide = !appPTR->getCurrentSettings()->areOptionalInputsAutoHidden();
+        appPTR->getCurrentSettings()->setOptionalInputsAutoHidden(autoHide);
+    } else {
+        autoHide = appPTR->getCurrentSettings()->areOptionalInputsAutoHidden();
+    }
+    if (!autoHide) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+            (*it)->setOptionalInputsVisible(true);
+        }
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+            (*it)->setOptionalInputsVisible(true);
+        }
+    } else {
+        
+        QPointF evpt = mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+            
+            QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+            if (!(*it)->getIsSelected() && !bbox.contains(evpt)) {
+                (*it)->setOptionalInputsVisible(false);
+            }
+            
+        }
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+            (*it)->setOptionalInputsVisible(false);
+        }
+    }
 }
 
 NodeBackDrop*

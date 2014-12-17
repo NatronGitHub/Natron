@@ -119,7 +119,11 @@ public:
         _defaultColor = color;
     }
     
+    bool areOptionalInputsAutoHidden() const;
+    
     void setOptional(bool optional);
+    
+    void setDashed(bool dashed);
 
     void setBendPointVisible(bool visible);
 
@@ -145,9 +149,10 @@ private:
     bool _useRenderingColor;
     bool _useHighlight;
     bool _paintWithDash;
+    bool _optional;
     bool _paintBendPoint;
     bool _bendPointHiddenAutomatically;
-    bool _wasLabelVisible;
+    bool _enoughSpaceToShowLabel;
     QPointF _middlePoint; //updated only when dest && source are valid
 };
 

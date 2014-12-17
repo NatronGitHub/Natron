@@ -305,6 +305,7 @@ public:
 
     virtual void clearViewersLastRenderedTexture() {}
 
+    virtual void toggleAutoHideGraphInputs() {}
     
 public slots:
 

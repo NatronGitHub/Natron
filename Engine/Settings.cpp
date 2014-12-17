@@ -477,6 +477,15 @@ Settings::initializeKnobs()
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
     
+    _hideOptionalInputsAutomatically = Natron::createKnob<Bool_Knob>(this, "Auto hide optional inputs");
+    _hideOptionalInputsAutomatically->setName("autoHideInputs");
+    _hideOptionalInputsAutomatically->setAnimationEnabled(false);
+    _hideOptionalInputsAutomatically->setHintToolTip("When checked, any diconnected optional input of a node in the nodegraph "
+                                                     " (such as mask input) "
+                                                     "will be visible only when the mouse is hovering the node or when it is "
+                                                     "selected.");
+    _nodegraphTab->addKnob(_hideOptionalInputsAutomatically);
+    
     _useInputAForMergeAutoConnect = Natron::createKnob<Bool_Knob>(this,"Merge node connect to A input");
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setAnimationEnabled(false);
@@ -834,6 +843,7 @@ Settings::setDefaultValues()
     _defaultBackdropColor->setDefaultValue(0.5,1);
     _defaultBackdropColor->setDefaultValue(0.2,2);
     _disconnectedArrowLength->setDefaultValue(30);
+    _hideOptionalInputsAutomatically->setDefaultValue(true);
     _useInputAForMergeAutoConnect->setDefaultValue(true);
 
     _defaultGeneratorColor->setDefaultValue(0.3,0);
@@ -1106,7 +1116,7 @@ Settings::tryLoadOpenColorIOConfig()
 
 void
 Settings::onKnobValueChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum /*reason*/,
+                             Natron::ValueChangedReasonEnum reason,
                              SequenceTime /*time*/,
                              bool /*originatedFromMainThread*/)
 {
@@ -1224,6 +1234,8 @@ Settings::onKnobValueChanged(KnobI* k,
                                   QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
             _hasWarnedOnceOnFontChanged = true;
         }
+    } else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
+        appPTR->toggleAutoHideGraphInputs();
     }
 } // onKnobValueChanged
 
@@ -2184,4 +2196,16 @@ void
 Settings::setAutoTurboModeEnabled(bool e)
 {
     _autoTurbo->setValue(e, 0);
+}
+
+void
+Settings::setOptionalInputsAutoHidden(bool hidden)
+{
+    _hideOptionalInputsAutomatically->setValue(hidden, 0);
+}
+
+bool
+Settings::areOptionalInputsAutoHidden() const
+{
+    return _hideOptionalInputsAutomatically->getValue();
 }

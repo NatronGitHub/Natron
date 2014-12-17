@@ -351,6 +351,9 @@
 #define kShortcutIDActionGraphEnableHints "hints"
 #define kShortcutDescActionGraphEnableHints "Enable connection hints"
 
+#define kShortcutIDActionGraphAutoHideInputs "autoHideInputs"
+#define kShortcutDescActionGraphAutoHideInputs "Auto hide optional inputs"
+
 #define kShortcutIDActionGraphSwitchInputs "switchInputs"
 #define kShortcutDescActionGraphSwitchInputs "Switch input 1 and 2"
 

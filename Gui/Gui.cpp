@@ -4495,3 +4495,9 @@ Gui::redrawAllViewers()
     }
 }
 
+void
+Gui::toggleAutoHideGraphInputs()
+{
+    _imp->_nodeGraphArea->toggleAutoHideInputs(false);
+}
+

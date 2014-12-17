@@ -353,6 +353,7 @@ public:
     
     void saveCaches() const;
     
+    void toggleAutoHideGraphInputs();
 public slots:
     
 
