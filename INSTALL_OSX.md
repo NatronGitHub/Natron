@@ -23,11 +23,14 @@ In order to have Natron compiling, first you need to install the required librar
 
 There are two exclusive options: using MacPorts or using Homebrew.
 
+Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
+
 ### MacPorts
 
-You need an up to date macports version. Just download it and install it from : 
-(Macports website)[http://www.macports.org]
+You need an up to date macports version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
+	sudo port selfupdate
+	sudo port upgrade outdated
 	sudo port install qt4-mac boost glew cairo expat
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -54,9 +57,6 @@ EOF
 ### Homebrew
 
 Install homebrew from <http://brew.sh/>
-
-For a universal 32/64 bits build, add the option --universal to all
-the "brew install" commands.
 
 Install libraries:
 
