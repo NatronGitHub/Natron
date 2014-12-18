@@ -152,3 +152,9 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 ## Testing
 
 	(cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
+
+## OpenFX plugins
+
+Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the tools/packageOSX.sh script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
+
+Compiling [TuttleOFX](https://github.com/tuttleofx/TuttleOFX) is a bit trickier, but you can find [instructions for building on MacPorts as well as precompiled universal binaries](http://devernay.free.fr/hacks/openfx/#OSXTuttleOFX). Building on homebrew is also possible by following these two scripts: [install_dependencies.sh](https://github.com/tuttleofx/TuttleOFX/blob/develop/tools/travis/install_dependencies.sh) and [build.sh](https://github.com/tuttleofx/TuttleOFX/blob/develop/tools/travis/build.sh).
