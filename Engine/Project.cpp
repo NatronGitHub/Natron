@@ -943,30 +943,43 @@ void
 Project::initNodeCountersAndSetName(Node* n)
 {
     assert(n);
-    QMutexLocker l(&_imp->nodesLock);
-    std::map<std::string,int>::iterator it = _imp->nodeCounters.find( n->getPluginID() );
-    QString pluginLabel = n->getPluginLabel().c_str();
-    int foundOFX = pluginLabel.lastIndexOf("OFX");
-    if (foundOFX != -1) {
-        pluginLabel = pluginLabel.remove(foundOFX, 3);
+    int no = 1;
+    std::string baseName(n->getPluginLabel());
+    if (baseName.size() > 3 &&
+        baseName[baseName.size() - 1] == 'X' &&
+        baseName[baseName.size() - 2] == 'F' &&
+        baseName[baseName.size() - 3] == 'O') {
+        baseName = baseName.substr(0,baseName.size() - 3);
     }
-    if ( it != _imp->nodeCounters.end() ) {
-        it->second++;
-
-        n->setName( pluginLabel + QString::number(it->second) );
-    } else {
-        _imp->nodeCounters.insert( make_pair(n->getPluginID(), 1) );
-        n->setName( pluginLabel + QString::number(1) );
+    bool foundNodeWithName = false;
+    
+    std::string name;
+    {
+        std::stringstream ss;
+        ss << baseName << no;
+        name = ss.str();
     }
+    do {
+        foundNodeWithName = false;
+        QMutexLocker l(&_imp->nodesLock);
+        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+            if (_imp->currentNodes[i]->getName_mt_safe() == name) {
+                foundNodeWithName = true;
+                break;
+            }
+        }
+        if (foundNodeWithName) {
+            ++no;
+            {
+                std::stringstream ss;
+                ss << baseName << no;
+                name = ss.str();
+            }
+        }
+    } while (foundNodeWithName);
+    n->setName(name.c_str());
 }
 
-void
-Project::getNodeCounters(std::map<std::string,int>* counters) const
-{
-    QMutexLocker l(&_imp->nodesLock);
-
-    *counters = _imp->nodeCounters;
-}
 
 void
 Project::addNodeToProject(boost::shared_ptr<Natron::Node> n)
@@ -1257,7 +1270,6 @@ Project::save(ProjectSerialization* serializationObject) const
 bool
 Project::load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath)
 {
-    _imp->nodeCounters.clear();
     bool ret = _imp->restoreFromSerialization(obj,name,path,isAutoSave,realFilePath);
     Format f;
     getProjectDefaultFormat(&f);
@@ -1413,7 +1425,6 @@ Project::reset()
         _imp->projectPath.clear();
         _imp->autoSaveTimer->stop();
         _imp->additionalFormats.clear();
-        _imp->nodeCounters.clear();
     }
     _imp->timeline->removeAllKeyframesIndicators();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();

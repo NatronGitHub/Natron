@@ -207,11 +207,6 @@ public:
     qint64 getProjectCreationTime() const;
 
     /**
-     * @brief Copy the current node counters into the counters map. MT-safe
-     **/
-    void getNodeCounters(std::map<std::string,int>* counters) const;
-
-    /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
      * If no such node could be found, NULL is returned.
      **/

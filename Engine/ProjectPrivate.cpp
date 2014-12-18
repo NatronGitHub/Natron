@@ -328,8 +328,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
     
     ///We should be now at 75% progress...
-
-    nodeCounters = obj.getNodeCounters();
     
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;
