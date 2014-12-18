@@ -179,7 +179,7 @@ public:
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
         ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);
         ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
-        if (version <= PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS) {
+        if (version < PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS) {
             std::map<std::string,int> _nodeCounters;
             ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
         }

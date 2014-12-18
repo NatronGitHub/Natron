@@ -824,7 +824,8 @@ NodeGui::initializeInputs()
     int emptyInputsCount = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         if ( !it->second->hasSource() &&
-            !_internalNode->getLiveInstance()->isInputMask(it->first)) {
+            !_internalNode->getLiveInstance()->isInputMask(it->first) &&
+            !_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
             ++emptyInputsCount;
         }
     }
@@ -850,7 +851,8 @@ NodeGui::initializeInputs()
   
     int maskIndex = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if (!it->second->hasSource()) {
+        if (!it->second->hasSource() &&
+            !_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
             double edgeAngle;
             bool decrAngle = true;
             if (_internalNode->getLiveInstance()->isInputMask(it->first)) {
