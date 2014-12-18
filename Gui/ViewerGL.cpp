@@ -86,6 +86,10 @@ GCC_DIAG_OFF(deprecated-declarations)
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
 
@@ -3123,11 +3127,17 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
     double zoomFactor;
+    unsigned int oldMipMapLevel,newMipMapLevel;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        zoomFactor = _imp->zoomCtx.factor() ;
+
+        oldMipMapLevel = std::log(zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) )) / M_LN2;
+
+        zoomFactor*= scaleFactor;
+        
         if (zoomFactor <= zoomFactor_min) {
             zoomFactor = zoomFactor_min;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
@@ -3135,6 +3145,8 @@ ViewerGL::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+        
+        newMipMapLevel = std::log(zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) )) / M_LN2;
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
         _imp->zoomOrPannedSinceLastFit = true;
     }
@@ -3151,7 +3163,9 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
-    _imp->viewerTab->clearTimelineCacheLine();
+    if (oldMipMapLevel != newMipMapLevel) {
+        _imp->viewerTab->clearTimelineCacheLine();
+    }
     updateGL();
 }
 
@@ -3168,8 +3182,14 @@ ViewerGL::zoomSlot(int v)
     } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
+    unsigned int oldMipMapLevel,newMipMapLevel;
+    newMipMapLevel = std::log(newZoomFactor >= 1 ? 1 :
+                              std::pow( 2,-std::ceil(std::log(newZoomFactor) / M_LN2) )) / M_LN2;
+    double scale = newZoomFactor / _imp->zoomCtx.factor();
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
+        oldMipMapLevel = std::log(_imp->zoomCtx.factor() >= 1 ? 1 :
+                                  std::pow( 2,-std::ceil(std::log(_imp->zoomCtx.factor()) / M_LN2) )) / M_LN2;
         double scale = newZoomFactor / _imp->zoomCtx.factor();
         double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
@@ -3178,7 +3198,9 @@ ViewerGL::zoomSlot(int v)
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
-    _imp->viewerTab->clearTimelineCacheLine();
+    if (newMipMapLevel != oldMipMapLevel) {
+        _imp->viewerTab->clearTimelineCacheLine();
+    }
     
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
    

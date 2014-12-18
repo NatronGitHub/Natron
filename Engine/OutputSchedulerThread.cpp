@@ -63,7 +63,17 @@ struct BufferedFrameCompare_less
             } else if (lhs.view > rhs.view) {
                 return false;
             } else {
-                return false;
+                if (lhs.frame && rhs.frame) {
+                    if (lhs.frame->getUniqueID() < rhs.frame->getUniqueID()) {
+                        return true;
+                    } else if (lhs.frame->getUniqueID() > rhs.frame->getUniqueID()) {
+                        return false;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
             }
         }
     }
@@ -78,7 +88,7 @@ namespace {
     public:
         inline MetaTypesRegistration()
         {
-            qRegisterMetaType<BufferedFrame>("BufferedFrame");
+            qRegisterMetaType<BufferedFrames>("BufferedFrames");
             qRegisterMetaType<BufferableObjectList>("BufferableObjectList");
         }
     };
@@ -119,7 +129,6 @@ struct OutputSchedulerThreadPrivate
 {
     
     FrameBuffer buf; //the frames rendered by the worker threads that needs to be rendered in order by the output device
-    std::size_t bufferRAMOccupation; //the amount of RAM that the buffer keeps active
     QWaitCondition bufCondition;
     mutable QMutex bufMutex;
     
@@ -195,7 +204,6 @@ struct OutputSchedulerThreadPrivate
     
     OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::Mode mode)
     : buf()
-    , bufferRAMOccupation(0)
     , bufCondition()
     , bufMutex()
     , working(false)
@@ -237,7 +245,7 @@ struct OutputSchedulerThreadPrivate
        
     }
     
-    void appendBufferedFrame(double time,int view,const boost::shared_ptr<BufferableObject>& image)
+    bool appendBufferedFrame(double time,int view,const boost::shared_ptr<BufferableObject>& image) WARN_UNUSED_RETURN
     {
         ///Private, shouldn't lock
         assert(!bufMutex.tryLock());
@@ -245,53 +253,29 @@ struct OutputSchedulerThreadPrivate
         BufferedFrame k;
         k.time = time;
         k.view = view;
-        k.frame.push_back(image);
-        if (image) {
-            bufferRAMOccupation += image->sizeInRAM();
-        }
+        k.frame = image;
         std::pair<FrameBuffer::iterator,bool> ret = buf.insert(k);
-        if (!ret.second) {
-            k = *ret.first;
-            k.frame.push_back(image);
-            buf.erase(ret.first);
-            ret = buf.insert(k);
-            assert(ret.second);
-        }
+        return ret.second;
     }
     
-    void getFromBufferAndErase(double time,BufferedFrame& frame)
+    void getFromBufferAndErase(double time,BufferedFrames& frames)
     {
         
         ///Private, shouldn't lock
         assert(!bufMutex.tryLock());
         
+        FrameBuffer newBuf;
         for (FrameBuffer::iterator it = buf.begin(); it != buf.end(); ++it) {
             
             if (it->time == time) {
-                frame = *it;
-                if (!frame.frame.empty()) {
-                    std::size_t size = 0 ;
-                    for (std::list<boost::shared_ptr<BufferableObject> >::iterator it2 = frame.frame.begin(); it2 != frame.frame.end(); ++it2) {
-                        if (*it2) {
-                            size += (*it2)->sizeInRAM();
-                        }
-                    }
-                    
-                    
-                    ///Avoid overflow: we might not fallback exactly to 0 because images have a dynamic size
-                    ///but we don't need to update bufferRAMOccupation dynamically since it holds a global information
-                    ///which is not a few bytes precise
-                    if (size > bufferRAMOccupation) {
-                        bufferRAMOccupation = 0;
-                    } else {
-                        bufferRAMOccupation -= size;
-                    }
+                if (it->frame) {
+                    frames.push_back(*it);
                 }
-                buf.erase(it);
-                break;
+            } else {
+                newBuf.insert(*it);
             }
-            
         }
+        buf = newBuf;
     }
     
     void clearBuffer()
@@ -300,7 +284,6 @@ struct OutputSchedulerThreadPrivate
         assert(!bufMutex.tryLock());
         
         buf.clear();
-        bufferRAMOccupation = 0;
     }
     
     void appendRunnable(RenderThreadTask* runnable)
@@ -436,8 +419,8 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::Output
 : QThread()
 , _imp(new OutputSchedulerThreadPrivate(engine,effect,mode))
 {
-    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrame,bool,int)), this,
-                     SLOT(doTreatFrameMainThread(BufferedFrame,bool,int)));
+    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrames,bool,int)), this,
+                     SLOT(doTreatFrameMainThread(BufferedFrames,bool,int)));
     
     QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)));
     
@@ -946,14 +929,14 @@ OutputSchedulerThread::run()
                 
                 int expectedTimeToRender = timelineGetTime();
                 
-                BufferedFrame frameToRender;
+                BufferedFrames framesToRender;
                 {
                     QMutexLocker l(&_imp->bufMutex);
-                    _imp->getFromBufferAndErase(expectedTimeToRender, frameToRender);
+                    _imp->getFromBufferAndErase(expectedTimeToRender, framesToRender);
                 }
                 
                 ///The expected frame is not yet ready, go to sleep again
-                if (frameToRender.frame.empty()) {
+                if (framesToRender.empty()) {
                     break;
                 }
     
@@ -1024,7 +1007,7 @@ OutputSchedulerThread::run()
                 
                 
                 if (_imp->mode == TREAT_ON_SCHEDULER_THREAD) {
-                    treatFrame(frameToRender);
+                    treatFrame(framesToRender);
                     
                     if (!renderFinished) {
                         ///Timeline might have changed if another thread moved the playhead
@@ -1067,7 +1050,7 @@ OutputSchedulerThread::run()
                         
                     }
 
-                    emit s_doTreatOnMainThread(frameToRender,!renderFinished, timeToSeek);
+                    emit s_doTreatOnMainThread(framesToRender,!renderFinished, timeToSeek);
                                         
                     while (_imp->treatRunning) {
                         _imp->treatCondition.wait(&_imp->treatMutex);
@@ -1181,7 +1164,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
-                _imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
+                (void)_imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
                 _imp->bufCondition.wakeOne();
             }
         } else {
@@ -1200,32 +1183,60 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 }
 
 void
-OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& image)
+OutputSchedulerThread::appendToBuffer_internal(double time,int view,const boost::shared_ptr<BufferableObject>& frame,bool wakeThread)
 {
     if (QThread::currentThread() == qApp->thread()) {
         ///Single-threaded , call directly the function
-        BufferedFrame b;
-        b.time = time;
-        b.view = view;
-        if (image) {
-            b.frame.push_back(image);
-            treatFrame(b);
+        if (frame) {
+            BufferedFrame b;
+            b.time = time;
+            b.view = view;
+            b.frame = frame;
+            BufferedFrames frames;
+            frames.push_back(b);
+            treatFrame(frames);
         }
     } else {
         
         ///Called by the scheduler thread when an image is rendered
         
         QMutexLocker l(&_imp->bufMutex);
-        _imp->appendBufferedFrame(time, view, image);
+        (void)_imp->appendBufferedFrame(time, view, frame);
+        if (wakeThread) {
+            ///Wake up the scheduler thread that an image is available if it is asleep so it can treat it.
+            _imp->bufCondition.wakeOne();
+        }
         
-        ///Wake up the scheduler thread that an image is available if it is asleep so it can treat it.
-        _imp->bufCondition.wakeOne();
+    }
+}
+
+void
+OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& image)
+{
+    appendToBuffer_internal(time, view, image, true);
+}
+
+void
+OutputSchedulerThread::appendToBuffer(double time,int view,const BufferableObjectList& frames)
+{
+    if (frames.empty()) {
+        return;
+    }
+    BufferableObjectList::const_iterator next = frames.begin();
+    ++next;
+    for (BufferableObjectList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+        if (next != frames.end()) {
+            appendToBuffer_internal(time, view, *it, false);
+            ++next;
+        } else {
+            appendToBuffer_internal(time, view, *it, true);
+        }
     }
 }
 
 
 void
-OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame,bool mustSeekTimeline,int time)
+OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time)
 {
     assert(QThread::currentThread() == qApp->thread());
     {
@@ -1237,7 +1248,7 @@ OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrame& frame,bool mu
     }
     
     
-    treatFrame(frame);
+    treatFrame(frames);
     
     if (mustSeekTimeline) {
         timelineGoTo(time);
@@ -1833,8 +1844,11 @@ DefaultScheduler::createRunnable()
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-DefaultScheduler::treatFrame(const BufferedFrame& frame)
+DefaultScheduler::treatFrame(const BufferedFrames& frames)
 {
+    assert(!frames.empty());
+    //Only consider the first frame, we shouldn't have multiple view here anyway.
+    const BufferedFrame& frame = frames.front();
     
     ///Writers render to scale 1 always
     RenderScale scale;
@@ -1997,16 +2011,18 @@ ViewerDisplayScheduler::~ViewerDisplayScheduler()
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-ViewerDisplayScheduler::treatFrame(const BufferedFrame& frame)
+ViewerDisplayScheduler::treatFrame(const BufferedFrames& frames)
 {
-    for (std::list<boost::shared_ptr<BufferableObject> >::const_iterator it = frame.frame.begin(); it!=frame.frame.end(); ++it) {
-        boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it);
-        assert(params);
-        _viewer->updateViewer(params);
+
+    if (!frames.empty()) {
+        for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+            boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(it->frame);
+            assert(params);
+            _viewer->updateViewer(params);
+        }
     }
-    if (!frame.frame.empty()) {
-        _viewer->redrawViewer();
-    }
+    _viewer->redrawViewer();
+    
 }
 
 void
@@ -2090,12 +2106,14 @@ private:
         } else if (status[0] == eStatusReplyDefault || status[1] == eStatusReplyDefault) {
             return;
         } else {
+            BufferableObjectList toAppend;
             for (int i = 0; i < 2; ++i) {
                 if (args[i] && args[i]->params && args[i]->params->ramBuffer) {
-                    _imp->scheduler->appendToBuffer(time, view, args[i]->params);
+                    toAppend.push_back(args[i]->params);
                     args[i].reset();
                 }
             }
+            _imp->scheduler->appendToBuffer(time, view, toAppend);
         }
         
         
@@ -2112,12 +2130,13 @@ private:
             ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
             _imp->scheduler->notifyRenderFailure(std::string());
         } else {
-            if (args[0] && args[0]->params && args[0]->params->ramBuffer) {
-                _imp->scheduler->appendToBuffer(time, view, args[0]->params);
+            BufferableObjectList toAppend;
+            for (int i = 0; i < 2; ++i) {
+                if (args[i] && args[i]->params && args[i]->params->ramBuffer) {
+                    toAppend.push_back(args[i]->params);
+                }
             }
-            if (args[1] && args[1]->params && args[1]->params->ramBuffer) {
-                _imp->scheduler->appendToBuffer(time, view, args[1]->params);
-            }
+            _imp->scheduler->appendToBuffer(time, view, toAppend);
         }
 
     }

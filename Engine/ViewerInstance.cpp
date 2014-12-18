@@ -483,6 +483,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     // start UpdateViewerParams scope
     //
     outArgs->params.reset(new UpdateViewerParams);
+    outArgs->params->setUniqueID(textureIndex);
     outArgs->params->srcPremult = outArgs->activeInputToRender->getOutputPremultiplication();
     
     ///Texture rect contains the pixel coordinates in the image to be rendered
