@@ -4112,9 +4112,9 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
             }
         } else {
             if (_imp->pickerState == ePickerStateInactive) {
-                if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
+                //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
                     updateColorPicker( texIndex,widgetPos.x(),widgetPos.y() );
-                }
+               // }
             } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
                 if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
                     _imp->infoViewer[texIndex]->showColorAndMouseInfo();
@@ -4619,7 +4619,6 @@ ViewerGL::getColorAt(double x,
             *g = colorGPU[1];
             *b = colorGPU[2];
         }
-        
         return true;
     }
     
@@ -4673,7 +4672,6 @@ ViewerGL::getColorAt(double x,
             gotval = false;
             break;
     }
-    
     return gotval;
 } // getColorAt
 
