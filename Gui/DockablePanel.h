@@ -47,12 +47,17 @@ class MultiInstancePanel;
 class DockablePanelTabWidget
     : public QTabWidget
 {
+    Gui* _gui;
 public:
 
-    DockablePanelTabWidget(QWidget* parent = 0);
+    DockablePanelTabWidget(Gui* gui,QWidget* parent = 0);
 
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+    
+private:
+    
+    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
 };
 
 class DockablePanel;
@@ -351,4 +356,23 @@ private:
     NodeBackDrop* _backdrop;
 };
 
+class VerticalColorBar : public QWidget
+{
+    Q_OBJECT
+    
+    QColor _color;
+    
+public:
+    
+    VerticalColorBar(QWidget* parent);
+    
+public slots:
+    
+    void setColor(const QColor& color);
+    
+private:
+    
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+};
 #endif // NATRON_GUI_SETTINGSPANEL_H_

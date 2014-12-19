@@ -25,6 +25,7 @@
 #include "Engine/ProjectSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/Settings.h"
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
@@ -105,7 +106,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
 
     /// 1) restore project's knobs.
-    bool foundNatronV = false;
     for (U32 i = 0; i < projectKnobs.size(); ++i) {
         ///try to find a serialized value for this knob
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
@@ -126,16 +126,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                     isChoice->choiceRestoration(serializedKnob, choiceData);
                 } else {
                     projectKnobs[i]->clone( (*it)->getKnob() );
-                    
-                    if (projectKnobs[i]->getName() == "softwareVersion") {
-                        foundNatronV = true;
-                        std::string natronV = natronVersion->getValue();
-                        if (natronV.find("1.0.0") != std::string::npos && natronV.find("RC3") == std::string::npos) {
-                            appPTR->setProjectCreatedPriorToRC3(true);
-                        } else {
-                            appPTR->setProjectCreatedPriorToRC3(false);
-                        }
-                    }
                 }
                 //}
                 break;
@@ -151,9 +141,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
         }
 
-    }
-    if (!foundNatronV) {
-        appPTR->setProjectCreatedPriorToRC3(true);
     }
 
     /// 2) restore the timeline
@@ -176,11 +163,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     int nodesRestored = 0;
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         ++nodesRestored;
-        if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
+        
+        std::string pluginID = it->getPluginID();
+        
+        if ( appPTR->isBackground() && (pluginID == NATRON_VIEWER_ID || pluginID == "Viewer") ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
-
 
         ///If the node is a multiinstance child find in all the serialized nodes if the parent exists.
         ///If not, create it
@@ -203,7 +192,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs( it->getPluginID().c_str(),
+                    boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs( pluginID.c_str(),
                                                                                                             "",
                                                                                                             it->getPluginMajorVersion(),
                                                                                                             it->getPluginMinorVersion(),
@@ -221,14 +210,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             }
         }
 
-        ///this code may throw an exception which will be caught above
-        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode( LoadNodeArgs(it->getPluginID().c_str()
+        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode( LoadNodeArgs(pluginID.c_str()
                                                                                       ,it->getMultiInstanceParentName()
                                                                                       ,it->getPluginMajorVersion()
                                                                                       ,it->getPluginMinorVersion(),&(*it),false) );
         if (!n) {
             QString text( QObject::tr("The node ") );
-            text.append( it->getPluginID().c_str() );
+            text.append( pluginID.c_str() );
             text.append( QObject::tr(" was found in the script but doesn't seem \n"
                                      "to exist in the currently loaded plug-ins.") );
             appPTR->writeToOfxLog_mt_safe(text);
@@ -238,7 +226,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         if ( n->isOutputNode() ) {
             hasProjectAWriter = true;
         }
-        _publicInterface->getApp()->progressUpdate(_publicInterface, ((double)nodesRestored / (double)serializedNodes.size()) * 0.2);
+        if (serializedNodes.size() > 0) {
+            _publicInterface->getApp()->progressUpdate(_publicInterface, (0.2 * nodesRestored) / serializedNodes.size());
+        }
     }
 
 
@@ -250,7 +240,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 4) connect the nodes together, and restore the slave/master links for all knobs.
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
+        if ( appPTR->isBackground() && (it->getPluginID() == NATRON_VIEWER_ID) ) {
             //ignore viewers on background mode
             continue;
         }
@@ -322,14 +312,22 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     ///The next for loop is about 50% of loading time of a project
     
     ///Now that everything is connected, check clip preferences on all OpenFX effects
+    std::list<Natron::Node*> markedNodes;
+    std::list<Natron::Node*> nodesToRestorePreferences;
     for (U32 i = 0; i < currentNodes.size(); ++i) {
-        currentNodes[i]->getLiveInstance()->onMultipleInputsChanged();
-        _publicInterface->getApp()->progressUpdate(_publicInterface, ((double)(i+1) / (double)currentNodes.size()) * 0.5 + 0.25);
+        if (currentNodes[i]->isOutputNode()) {
+            nodesToRestorePreferences.push_back(currentNodes[i].get());
+        }
+    }
+    
+    int count = 0;
+    for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it,++count) {
+        (*it)->restoreClipPreferencesRecursive(markedNodes);
+        _publicInterface->getApp()->progressUpdate(_publicInterface,
+                                                   ((double)(count+1) / (double)nodesToRestorePreferences.size()) * 0.5 + 0.25);
     }
     
     ///We should be now at 75% progress...
-
-    nodeCounters = obj.getNodeCounters();
     
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;

@@ -66,6 +66,7 @@ public:
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & pixelRod,const double par,unsigned int mipMapLevel) = 0;
     virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel) = 0;
+    virtual RectI getExactImageRectangleDisplayed(const RectD & rod,const double par,unsigned int mipMapLevel) = 0;
 
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
@@ -91,6 +92,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const boost::shared_ptr<Natron::Image>& image,
+                                            int time,
                                             const RectD& rod,
                                             size_t bytesCount,
                                             const TextureRect & region,

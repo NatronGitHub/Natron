@@ -163,18 +163,17 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
-private:
-
-    virtual bool isEqualToVirtual(const NonKeyParams & other) const OVERRIDE FINAL
+    bool operator==(const ImageParams & other) const
     {
-        const ImageParams & imgParams = dynamic_cast<const ImageParams &>(other);
-
-        if ( imgParams._framesNeeded.size() != _framesNeeded.size() ) {
+        if (NonKeyParams::operator!=(other)) {
+            return false;
+        }
+        if ( other._framesNeeded.size() != _framesNeeded.size() ) {
             return false;
         }
         std::map<int,std::vector<RangeD> >::const_iterator it = _framesNeeded.begin();
-        for (std::map<int,std::vector<RangeD> >::const_iterator itOther = imgParams._framesNeeded.begin();
-             itOther != imgParams._framesNeeded.end(); ++itOther) {
+        for (std::map<int,std::vector<RangeD> >::const_iterator itOther = other._framesNeeded.begin();
+             itOther != other._framesNeeded.end(); ++itOther) {
             if ( it->second.size() != itOther->second.size() ) {
                 return false;
             }
@@ -185,12 +184,20 @@ private:
             }
             ++it;
         }
-
-        return _rod == imgParams._rod
-                && _components == imgParams._components
-                && _bitdepth == imgParams._bitdepth
-                && _mipMapLevel == imgParams._mipMapLevel;
+        
+        return _rod == other._rod
+        && _components == other._components
+        && _bitdepth == other._bitdepth
+        && _mipMapLevel == other._mipMapLevel;
     }
+    
+    bool operator!=(const ImageParams & other) const
+    {
+        return !(*this == other);
+    }
+    
+private:
+
 
     RectD _rod;
     RectI _bounds;

@@ -36,12 +36,20 @@ class ScaleSliderQWidget
     Q_OBJECT
 
 public:
-
+    
+    enum DataType
+    {
+        eDataTypeInt,
+        eDataTypeDouble
+    };
+    
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
+                       DataType dataType,
                        Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
+    
 
     virtual ~ScaleSliderQWidget() OVERRIDE;
 
@@ -82,6 +90,7 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 

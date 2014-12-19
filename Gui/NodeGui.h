@@ -29,6 +29,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Engine/NodeGuiI.h"
 
 class Edge;
 class QPainterPath;
@@ -36,7 +37,6 @@ class QScrollArea;
 class NodeSettingsPanel;
 class QVBoxLayout;
 class QLinearGradient;
-class QGradient;
 class AppInstance;
 class NodeGraph;
 class QAction;
@@ -113,14 +113,14 @@ private:
 };
 
 class NodeGui
-    : public QObject,public QGraphicsItem
+    : public QObject,public QGraphicsItem, public NodeGuiI
 {
     Q_OBJECT
-             Q_INTERFACES(QGraphicsItem)
-
+    Q_INTERFACES(QGraphicsItem)
+    
 public:
-
-
+    
+    
     typedef std::map<int,Edge*> InputEdgesMap;
 
     NodeGui(QGraphicsItem *parent = 0);
@@ -157,6 +157,10 @@ public:
     {
         return _graph;
     }
+    
+    virtual bool isSettingsPanelOpened() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setPosition(double x,double y) OVERRIDE FINAL;
 
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE FINAL;
@@ -237,10 +241,6 @@ public:
 
     bool isSettingsPanelVisible() const;
 
-    void setSelectedGradient(const QLinearGradient & gradient);
-
-    void setDefaultGradient(const QLinearGradient & gradient);
-
     void removeSettingsPanel();
 
     QUndoStack* getUndoStack() const;
@@ -303,12 +303,14 @@ public:
      * not be visible and would just clutter and slow down the interface
      **/
     void setVisibleDetails(bool visible);
+    
+    virtual void refreshStateIndicator();
         
 public slots:
 
     void onSettingsPanelClosed(bool closed);
     
-    void setDefaultGradientColor(const QColor & color);
+    void setDefaultColor(const QColor & color);
 
     void togglePreview();
 
@@ -328,10 +330,6 @@ public slots:
     /*Updates the preview image no matter what*/
     void forceComputePreview(int time);
 
-    /*Updates the channels tooltip. This is called by Node::validate(),
-       i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip(const Natron::ChannelSet & _channelsPixmap);
-
     void setName(const QString & _nameItem);
 
     void onInternalNameChanged(const QString &);
@@ -340,7 +338,7 @@ public slots:
 
     void refreshEdges();
 
-    void refreshOptionalStateOfEdges();
+    void refreshDashedStateOfEdges();
     
     void refreshKnobLinks();
 
@@ -394,6 +392,8 @@ public slots:
     void onSettingsPanelClosedChanged(bool closed);
 
     void onParentMultiInstancePositionChanged(int x,int y);
+    
+    void setOptionalInputsVisible(bool visible);
 
 signals:
 
@@ -458,7 +458,8 @@ private:
     /*A pointer to the preview pixmap displayed for readers/*/
     QGraphicsPixmapItem* _previewPixmap;
     QGraphicsTextItem* _persistentMessage;
-    QGraphicsRectItem* _stateIndicator;
+    QGraphicsRectItem* _stateIndicator;    
+    
     bool _mergeHintActive;
     NodeGuiIndicator* _bitDepthWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
@@ -472,9 +473,8 @@ private:
     ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
     ///another panel for the main-instance (hidden) knobs to function properly
     NodeSettingsPanel* _mainInstancePanel;
-    QGradient* _selectedGradient;
-    QGradient* _defaultGradient;
-    QGradient* _clonedGradient;
+    QColor _defaultColor;
+    QColor _clonedColor;
     bool _wasBeginEditCalled;
     mutable QMutex positionMutex;
 
@@ -501,6 +501,11 @@ private:
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
     boost::shared_ptr<NodeGui> _parentMultiInstance;
+    
+    int _renderingStartedCount;
+    std::map<int,int> _inputNRenderingStartedCount;
+    
+    bool _optionalInputsVisible;
       
 };
 
@@ -522,17 +527,20 @@ private:
     {
         return false;
     }
-
+    
+    virtual void refreshStateIndicator() OVERRIDE FINAL;
+    
     virtual void applyBrush(const QBrush & brush) OVERRIDE FINAL;
 
     ///Doesn't do anything, preview cannot be activated
     virtual void initializeShape() OVERRIDE FINAL
     {
     }
-
+    
     virtual QRectF boundingRect() const OVERRIDE FINAL;
     virtual QPainterPath shape() const OVERRIDE FINAL;
     QGraphicsEllipseItem* diskShape;
+    QGraphicsEllipseItem* ellipseIndicator;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

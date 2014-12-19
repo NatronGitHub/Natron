@@ -351,6 +351,9 @@
 #define kShortcutIDActionGraphEnableHints "hints"
 #define kShortcutDescActionGraphEnableHints "Enable connection hints"
 
+#define kShortcutIDActionGraphAutoHideInputs "autoHideInputs"
+#define kShortcutDescActionGraphAutoHideInputs "Auto hide optional inputs"
+
 #define kShortcutIDActionGraphSwitchInputs "switchInputs"
 #define kShortcutDescActionGraphSwitchInputs "Switch input 1 and 2"
 
@@ -377,6 +380,9 @@
 
 #define kShortcutIDActionGraphToggleAutoPreview "toggleAutoPreview"
 #define kShortcutDescActionGraphToggleAutoPreview "Auto previews"
+
+#define kShortcutIDActionGraphToggleAutoTurbo "toggleAutoTurbo"
+#define kShortcutDescActionGraphToggleAutoTurbo "Auto turbo"
 
 #define kShortcutIDActionGraphTogglePreview "togglePreview"
 #define kShortcutDescActionGraphTogglePreview "Toggle preview images"
@@ -533,6 +539,8 @@ public:
 
     KeyBoundAction()
         : BoundAction()
+        , currentShortcut(Qt::Key_unknown)
+        , defaultShortcut(Qt::Key_unknown)
     {
     }
 

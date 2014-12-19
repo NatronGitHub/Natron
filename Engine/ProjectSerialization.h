@@ -38,7 +38,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/KnobSerialization.h"
 
 #define PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION 2
-#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION
+#define PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS 3
+#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS
 
 class AppInstance;
 class ProjectSerialization
@@ -48,13 +49,16 @@ class ProjectSerialization
     std::list< boost::shared_ptr<KnobSerialization> > _projectKnobs;
     SequenceTime _timelineLeft,_timelineRight,_timelineCurrent;
     qint64 _creationDate;
-    std::map<std::string,int> _nodeCounters;
     AppInstance* _app;
 
 public:
 
     ProjectSerialization(AppInstance* app)
-        : _app(app)
+        : _timelineLeft(0)
+        , _timelineRight(0)
+        , _timelineCurrent(0)
+        , _creationDate(0)
+        , _app(app)
     {
     }
 
@@ -100,10 +104,6 @@ public:
         return _creationDate;
     }
 
-    const std::map<std::string,int> & getNodeCounters() const
-    {
-        return _nodeCounters;
-    }
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -145,7 +145,6 @@ public:
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
         ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);
         ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
-        ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
         ar & boost::serialization::make_nvp("CreationDate", _creationDate);
     }
 
@@ -169,16 +168,21 @@ public:
 
         int knobsCount;
         ar & boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
+        
         for (int i = 0; i < knobsCount; ++i) {
             boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
             ar & boost::serialization::make_nvp("item",*ks);
             _projectKnobs.push_back(ks);
         }
+
         ar & boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
         ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);
         ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
-        ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
+        if (version < PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS) {
+            std::map<std::string,int> _nodeCounters;
+            ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
+        }
         ar & boost::serialization::make_nvp("CreationDate", _creationDate);
     }
 

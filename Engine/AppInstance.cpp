@@ -23,6 +23,7 @@
 #include <boost/bind.hpp>
 
 #include "Engine/Project.h"
+#include "Engine/Plugin.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
@@ -85,38 +86,154 @@ AppInstance::checkForNewVersion() const
     loop.exec();
 }
 
+//return -1 if a < b, 0 if a == b and 1 if a > b
+//Returns -2 if not understood
+int compareDevStatus(const QString& a,const QString& b)
+{
+    if (a == NATRON_DEVELOPMENT_ALPHA) {
+        if (b == NATRON_DEVELOPMENT_ALPHA) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else if (a == NATRON_DEVELOPMENT_BETA) {
+        if (b == NATRON_DEVELOPMENT_ALPHA) {
+            return 1;
+        } else if (b == NATRON_DEVELOPMENT_BETA) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else if (a == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        if (b == NATRON_DEVELOPMENT_ALPHA) {
+            return 1;
+        } else if (b == NATRON_DEVELOPMENT_BETA) {
+            return 1;
+        } else if (b == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else if (a == NATRON_DEVELOPMENT_RELEASE_STABLE) {
+        if (b == NATRON_DEVELOPMENT_RELEASE_STABLE) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+    assert(false);
+    return -2;
+}
+
 void
 AppInstance::newVersionCheckDownloaded()
 {
     FileDownloader* downloader = qobject_cast<FileDownloader*>( sender() );
-
     assert(downloader);
+    
+    QString extractedFileVersionStr,extractedSoftwareVersionStr,extractedDevStatusStr,extractedBuildNumberStr;
+    
+    QString fileVersionTag("File version: ");
+    QString softwareVersionTag("Software version: ");
+    QString devStatusTag("Development status: ");
+    QString buildNumberTag("Build number: ");
+    
     QString data( downloader->downloadedData() );
-    data = data.remove("Natron latest version: ");
-    QString versionStr;
-    int i = 0;
-    while ( i < data.size() && data.at(i) != QChar(' ') ) {
-        versionStr.push_back( data.at(i) );
-        ++i;
+    QTextStream ts(&data);
+    
+    while (!ts.atEnd()) {
+        QString line = ts.readLine();
+        if (line.startsWith(QChar('#')) || line.startsWith(QChar('\n'))) {
+            continue;
+        }
+        
+        if (line.startsWith(fileVersionTag)) {
+            int i = fileVersionTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+                extractedFileVersionStr.push_back( line.at(i) );
+                ++i;
+            }
+        } else if (line.startsWith(softwareVersionTag)) {
+            int i = softwareVersionTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+                extractedSoftwareVersionStr.push_back( line.at(i) );
+                ++i;
+            }
+        } else if (line.startsWith(devStatusTag)) {
+            int i = devStatusTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+            extractedDevStatusStr.push_back( line.at(i) );
+                ++i;
+            }
+        } else if (line.startsWith(buildNumberTag)) {
+            int i = buildNumberTag.size();
+            while ( i < line.size() && !line.at(i).isSpace()) {
+                extractedBuildNumberStr.push_back( line.at(i) );
+                ++i;
+            }
+
+        }
     }
-    QStringList versionDigits = versionStr.split( QChar('.') );
+    
+    if (extractedFileVersionStr.isEmpty() || extractedFileVersionStr.toInt() < NATRON_LAST_VERSION_FILE_VERSION) {
+        //The file cannot be decoded here
+        downloader->deleteLater();
+        return;
+    }
+    
+    
+    
+    QStringList versionDigits = extractedSoftwareVersionStr.split( QChar('.') );
 
     ///we only understand 3 digits formed version numbers
     if (versionDigits.size() != 3) {
+        downloader->deleteLater();
         return;
     }
+    
+    int buildNumber = extractedBuildNumberStr.toInt();
 
     int major = versionDigits[0].toInt();
     int minor = versionDigits[1].toInt();
     int revision = versionDigits[2].toInt();
+    
+    int devStatCompare = compareDevStatus(extractedDevStatusStr, QString(NATRON_DEVELOPMENT_STATUS));
+    
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
-    if (versionEncoded > NATRON_VERSION_ENCODED) {
-        QString text( QObject::tr("Updates for %1 are now available for download. "
-                                  "You are currently using %1 version %2 - %3"
-                                  ". The latest version of %1 is version ").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING).arg(NATRON_DEVELOPMENT_STATUS) + data +
-                      QObject::tr(". You can download it from") + QString("<a href='http://sourceforge.net/projects/natron/'>"
-                                                                          "<font color=\"orange\">Sourceforge</a>.") );
-        Natron::informationDialog( "New version",text.toStdString() );
+    if (versionEncoded > NATRON_VERSION_ENCODED ||
+        (versionEncoded == NATRON_VERSION_ENCODED &&
+         (devStatCompare > 0 || (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER)))) {
+            
+            QString text;
+            if (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER && versionEncoded == NATRON_VERSION_ENCODED) {
+                ///show build number in version
+                text =  QObject::tr("<p>Updates for %1 are now available for download. "
+                                    "You are currently using %1 version %2 - %3 - build %4. "
+                                    "The latest version of %1 is version %5 - %6 - build %7.</p> ")
+                .arg(NATRON_APPLICATION_NAME)
+                .arg(NATRON_VERSION_STRING)
+                .arg(NATRON_DEVELOPMENT_STATUS)
+                .arg(NATRON_BUILD_NUMBER)
+                .arg(extractedSoftwareVersionStr)
+                .arg(extractedDevStatusStr)
+                .arg(extractedBuildNumberStr) +
+                QObject::tr("<p>You can download it from ") + QString("<a href='http://sourceforge.net/projects/natron/'>"
+                                                                     "<font color=\"orange\">Sourceforge</a>. </p>");
+            } else {
+                text =  QObject::tr("<p>Updates for %1 are now available for download. "
+                                    "You are currently using %1 version %2 - %3. "
+                                    "The latest version of %1 is version %4 - %5.</p> ")
+                .arg(NATRON_APPLICATION_NAME)
+                .arg(NATRON_VERSION_STRING)
+                .arg(NATRON_DEVELOPMENT_STATUS)
+                .arg(extractedSoftwareVersionStr)
+                .arg(extractedDevStatusStr) +
+                QObject::tr("<p>You can download it from ") + QString("<a href='http://sourceforge.net/projects/natron/'>"
+                                                                    "<font color=\"orange\">Sourceforge</a>. </p>");
+
+            }
+        
+            Natron::informationDialog( "New version",text.toStdString(), true );
     }
     downloader->deleteLater();
 }
@@ -141,7 +258,7 @@ AppInstance::load(const QString & projectName,
         bool checkUpdates = true;
         if ( !settings.contains("checkForUpdates") ) {
             Natron::StandardButtonEnum reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
-                                                                  "on launch of the application ?");
+                                                                  "on launch of the application ?", false);
             if (reply == Natron::eStandardButtonNo) {
                 checkUpdates = false;
             }
@@ -199,30 +316,37 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 const CreateNodeArgs::DefaultValuesList& paramValues)
 {
     boost::shared_ptr<Node> node;
-    LibraryBinary* pluginBinary = 0;
+    Natron::Plugin* plugin = 0;
 
     try {
-        pluginBinary = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
-    } catch (const std::exception & e) {
-        Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e.what() );
-
-        return node;
+        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
+    } catch (const std::exception & e1) {
+        
+        ///Ok try with the old Ids we had in Natron prior to 1.0
+        try {
+            plugin = appPTR->getPluginBinaryFromOldID(pluginID, majorVersion, minorVersion);
+        } catch (const std::exception& e2) {
+            Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e2.what(), false );
+            return node;
+        }
+        
     }
 
-    if (pluginID != "Viewer") { // for now only the viewer can be an inspector.
-        node.reset( new Node(this,pluginBinary) );
+    std::string foundPluginID = plugin->getPluginID().toStdString();
+    if (foundPluginID != NATRON_VIEWER_ID) { // for now only the viewer can be an inspector.
+        node.reset( new Node(this,plugin) );
     } else {
-        node.reset( new InspectorNode(this,pluginBinary) );
+        node.reset( new InspectorNode(this,plugin) );
     }
     
     {
         ///Furnace plug-ins don't handle using the thread pool
-        if (pluginID.contains("Furnace") && appPTR->getUseThreadPool()) {
+        if (foundPluginID.find("Furnace") != std::string::npos && appPTR->getUseThreadPool()) {
             Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
                                                                      "is known not to work well when this setting is checked. "
-                                                                     "Would you like to turn it off ? ").toStdString());
+                                                                     "Would you like to turn it off ? ").toStdString(), false);
             if (reply == Natron::eStandardButtonYes) {
                 appPTR->getCurrentSettings()->setUseGlobalThreadPool(false);
             }
@@ -230,19 +354,19 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     
     try {
-        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
+        node->load(foundPluginID,multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
         std::string title = std::string("Error while creating node");
-        std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
+        std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
-        errorDialog(title, message);
+        errorDialog(title, message, false);
 
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
         std::string title = std::string("Error while creating node");
-        std::string message = title + " " + pluginID.toStdString();
+        std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
-        errorDialog(title, message);
+        errorDialog(title, message, false);
 
         return boost::shared_ptr<Natron::Node>();
     }
@@ -346,13 +470,14 @@ AppInstance::getTimeLine() const
 
 void
 AppInstance::errorDialog(const std::string & title,
-                         const std::string & message) const
+                         const std::string & message,
+                         bool /*useHtml*/) const
 {
     std::cout << "ERROR: " << title + ": " << message << std::endl;
 }
 
 void
-AppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+AppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking,bool /*useHtml*/) const
 {
     std::cout << "ERROR: " << title + ": " << message << std::endl;
     *stopAsking = false;
@@ -360,13 +485,15 @@ AppInstance::errorDialog(const std::string & title,const std::string & message,b
 
 void
 AppInstance::warningDialog(const std::string & title,
-                           const std::string & message) const
+                           const std::string & message,
+                           bool /*useHtml*/) const
 {
     std::cout << "WARNING: " << title + ": " << message << std::endl;
 }
 
 void
-AppInstance::warningDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+AppInstance::warningDialog(const std::string & title,const std::string & message,bool* stopAsking,
+                           bool /*useHtml*/) const
 {
     std::cout << "WARNING: " << title + ": " << message << std::endl;
     *stopAsking = false;
@@ -375,13 +502,15 @@ AppInstance::warningDialog(const std::string & title,const std::string & message
 
 void
 AppInstance::informationDialog(const std::string & title,
-                               const std::string & message) const
+                               const std::string & message,
+                               bool /*useHtml*/) const
 {
     std::cout << "INFO: " << title + ": " << message << std::endl;
 }
 
 void
-AppInstance::informationDialog(const std::string & title,const std::string & message,bool* stopAsking) const
+AppInstance::informationDialog(const std::string & title,const std::string & message,bool* stopAsking,
+                               bool /*useHtml*/) const
 {
     std::cout << "INFO: " << title + ": " << message << std::endl;
     *stopAsking = false;
@@ -391,44 +520,15 @@ AppInstance::informationDialog(const std::string & title,const std::string & mes
 Natron::StandardButtonEnum
 AppInstance::questionDialog(const std::string & title,
                             const std::string & message,
+                            bool /*useHtml*/,
                             Natron::StandardButtons /*buttons*/,
                             Natron::StandardButtonEnum /*defaultButton*/) const
 {
     std::cout << "QUESTION: " << title + ": " << message << std::endl;
-
-    ///FIXME: maybe we could use scanf here... but we have to translat all the standard buttons to strings...i'm lazy
-
-    ///to do this now.
     return Natron::eStandardButtonYes;
 }
 
-void
-AppInstance::checkViewersConnection()
-{
-    std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
 
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-        if (n) {
-            n->renderCurrentFrame(true);
-        }
-    }
-}
-
-void
-AppInstance::redrawAllViewers()
-{
-    std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
-
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-        if (n) {
-            n->redrawViewer();
-        }
-    }
-}
 
 void
 AppInstance::triggerAutoSave()
@@ -467,7 +567,8 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
                     exc.append(" is not an output node! It cannot render anything.");
                     throw std::invalid_argument(exc);
                 }
-                if (node->getPluginID() == "Viewer") {
+                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+                if (isViewer) {
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
                 RenderWork w;
@@ -486,8 +587,9 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
                 RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>( projectNodes[j]->getLiveInstance() );
                 assert(w.writer);
-                
-                w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
+                if (w.writer) {
+                    w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
+                }
                 renderers.push_back(w);
             }
         }
@@ -582,3 +684,8 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
     _imp->_currentProject->onOCIOConfigPathChanged(path,false);
 }
 
+double
+AppInstance::getProjectFrameRate() const
+{
+    return _imp->_currentProject->getProjectFrameRate();
+}

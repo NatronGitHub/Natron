@@ -71,13 +71,7 @@ public:
     static std::string makePluginLabel(const std::string & shortLabel,
                                        const std::string & label,
                                        const std::string & longLabel) WARN_UNUSED_RETURN;
-    static std::string generateImageEffectClassName(const std::string & pluginIdentifier,
-                                                    int versionMajor,
-                                                    int versionMinor,
-                                                    const std::string & shortLabel,
-                                                    const std::string & label,
-                                                    const std::string & longLabel,
-                                                    const std::string & grouping) WARN_UNUSED_RETURN;
+    
 };
 
 class OfxEffectInstance
@@ -171,7 +165,7 @@ public:
                                   const RectD & outputRoD, //!< full RoD in canonical coordinates
                                   const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                   int view,
-                                Natron::EffectInstance::RoIMap* ret) OVERRIDE WARN_UNUSED_RETURN;
+                                Natron::EffectInstance::RoIMap* ret) OVERRIDE FINAL;
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
@@ -189,7 +183,8 @@ public:
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time) OVERRIDE;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+                             bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::StatusEnum render(SequenceTime time,
                                       const RenderScale& originalScale,
@@ -217,6 +212,8 @@ public:
      **/
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /**
      * @brief Does this effect supports multiresolution ?
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
@@ -227,7 +224,7 @@ public:
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
-    virtual void onMultipleInputsChanged() OVERRIDE FINAL;
+    virtual void restoreClipPreferences() OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     virtual Natron::StatusEnum beginSequenceRender(SequenceTime first,
                                                SequenceTime last,
@@ -253,10 +250,12 @@ public:
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
-                                     bool forceGetClipPrefAction,
-                                         bool recurse) OVERRIDE FINAL;
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
 
+public:
+
+    virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getPreferredFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getCanApplyTransform(Natron::EffectInstance** effect) const  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Natron::StatusEnum getTransform(SequenceTime time,
@@ -378,6 +377,8 @@ private:
     bool _isOutput; //if the OfxNode can output a file somehow
     bool _penDown; // true when the overlay trapped a penDow action
     Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
+    std::list< void* > _overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
+
     bool _created; // true after the call to createInstance
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers

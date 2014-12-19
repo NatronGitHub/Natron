@@ -8,9 +8,29 @@ with a scale of 10 then only the downstream node will be rendered with a scale o
 
 - The font of the application and its size are now customizable in the preferences, however a change to these settings requires a restart of Natron. The new default font is "Muli": https://www.google.com/fonts/specimen/Muli
 
+- We slightly adjusted how caching works in Natron which should globally make the software much faster. Previous versions of Natron had what's called an "Agressive caching" behaviour: every image of every node was cached in RAM, resulting in heavy memory usage and sometimes degraded performances. The new default behaviour is to cache the output of a node only if:
+    * Several outputs are connected to this node
+    * The node has a single output, but that output has its settings panel opened (Meaning the user is heavily editing the output effect and would like the input branch being in the cache)
+    * The node has its preview image enabled (in interactive session only)
+    * The node is using several images at different times to compute the result of the output (e.g: a retimer node)
+    * The parameter "Force caching" in the "Node" tab of the settings panel is checked
+Aggressive caching can however make the interactivity of Natron slightly faster (when using it in GUI mode) but would not be any useful in background render mode, so make sure it is checked off when rendering on disk. 
+You can by-pass this behaviour and come-back to the original "Aggressive caching" solution by turning it on in the Preferences of Natron. At least 8GiB of RAM are required to use aggressive caching, 16GiB  are recommended. 
+
+- New HSVTool node to adjust hue, saturation and brightnes, or perform color replacement.
+
+- New HSVToRGB & RGBToHSV nodes to convert between these 2 color-spaces
+
+- New Saturation node to modify the color saturation of an image.
+
+- New DiskCache node. This node allows to cache a branch of the compositing tree to re-use it later on without re-computing the images. This cache is persistent on disk and is saved between 2 runs
+of Natron. You can configure the location and maximum size of the cache in the preferences of Natron; in the Cache tab. 
+
 - A new progress bar will display the progression while loading a project
 
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
+
+- Tracker: all tracks are now multi-threaded for better performances. Also fixed a bug where the overlay displayed while tracking wasn't matching the underlying displayed image.
 
 - Roto: Selected points can now be dragged from everywhere within the bounding box instead of only the cross-hair.
 - Roto: It is now possible to move a bezier just by dragging a part of the curve where there is no control point.
@@ -37,6 +57,10 @@ to avoid creating new beziers by mistake
 
 - Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options. 
 
+- A new Auto-turbo setting has been added: when enabled, the Turbo-mode (originally toggable with the button on the right of the media player) will be enabled/disabled automatically when playback is started/finished. You can turn on/off this preference in the settings (NodeGraph tab) or in the right click menu of the node-graph.
+
+- Transform: When holding down the SHIFT modifier and controling the translate handle on the viewer, the direction will be constrained to either the X or  Y axis.
+
 - Fixed a crash on windows when connecting nodes
 
 - Fixed a bug on windows where the properties pane would overlap the viewer if placed below it
@@ -44,6 +68,16 @@ to avoid creating new beziers by mistake
 - Fixed a bug where the locale won't be taken into account and files with accents wouldn't be correctly displayed in the file dialog
 
 - Viewer: fixed a bug when the "Auto-wipe" preferences in the settings was disabled. The wipe would still show up automatically. 
+
+- Fixed a bug where the extra OpenFX plug-ins search paths would be ignored
+
+- Backdrop: only move nodes which are initially within the backdrop, not the ones that are crossed when moving it.
+
+- Nodegraph: zooming is now done under the mouse cursor
+
+
+- Readers: when a file changes externally, don't reload it automatically, instead a warning is displayed on the viewer and it is up to the user to reload it with the button created specifically
+for the occasion. The warning notification can be disabled in the preferences of Natron. The tooltip of the field with the filename now indicates the last modification date of the file.
 
 Natron 1.0.0 "RC3"
 -----------------

@@ -66,7 +66,6 @@ using namespace Natron;
 
 Natron::OfxHost::OfxHost()
     : _imageEffectPluginCache( new OFX::Host::ImageEffect::PluginCache(*this) )
-    , _ofxPlugins()
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     , _pluginsMutexes()
     , _pluginsMutexesLock(new QMutex)
@@ -226,7 +225,7 @@ Natron::OfxHost::vmessage(const char* msgtype,
     } else if (type == kOfxMessageMessage) {
         Natron::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
-        if (Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::eStandardButtonYes) {
+        if (Natron::questionDialog(NATRON_APPLICATION_NAME, message, false) == Natron::eStandardButtonYes) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;
@@ -256,43 +255,48 @@ Natron::OfxHost::clearPersistentMessage()
 
 void
 Natron::OfxHost::getPluginAndContextByID(const std::string & pluginID,
+                                         int major, int /*minor*/,
                                          OFX::Host::ImageEffect::ImageEffectPlugin** plugin,
                                          std::string & context)
 {
+    _imageEffectPluginCache->getPluginsByIDMajor();
     // throws out_of_range if the plugin does not exist
     // Note: std::map.at() is C++11
-    OFXPluginsIterator found = _ofxPlugins.find(pluginID);
-    if (found == _ofxPlugins.end()) {
-        throw std::out_of_range(std::string("Error: No such plugin ") + pluginID);
+    const std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> & ofxPlugins =
+    _imageEffectPluginCache->getPluginsByIDMajor();
+    
+    OFX::Host::ImageEffect::ImageEffectPlugin* p = 0;
+    for (std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *>::const_iterator it = ofxPlugins.begin();
+         it != ofxPlugins.end();++it) {
+        if (it->first.getId() == pluginID && it->first.getMajor() == major) {
+            p = it->second;
+            break;
+        }
     }
-    const OFXPluginEntry & ofxPlugin = found->second;
-
-    *plugin = _imageEffectPluginCache->getPluginById(ofxPlugin.openfxId);
-    if ( !(*plugin) ) {
-        throw std::runtime_error(std::string("Error: Could not get plugin ") + ofxPlugin.openfxId);
+        
+    if (!p) {
+        throw std::out_of_range(std::string("Error: No such plug-in ") + pluginID);
     }
-
-
+    *plugin = p;
+    
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
     // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
     try {
         pluginHandle = (*plugin)->getPluginHandle();
-    } catch (const std::exception & e) {
-        throw std::runtime_error( std::string("Error: Could not get plugin handle for plugin ") + pluginID + ": " + e.what() );
     } catch (...) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
+        throw std::runtime_error(std::string("Error: Description failed while loading ") + pluginID);
     }
 
     if (!pluginHandle) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
+        throw std::runtime_error(std::string("Error: Description failed while loading ") + pluginID);
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
 
     const std::set<std::string> & contexts = (*plugin)->getContexts();
 
     if (contexts.size() == 0) {
-        throw std::runtime_error( std::string("Error: Plugins supports no context") );
+        throw std::runtime_error( std::string("Error: Plug-in does not support any context") );
         //context = kOfxImageEffectContextGeneral;
         //plugin->addContext(kOfxImageEffectContextGeneral);
     } else if (contexts.size() == 1) {
@@ -366,10 +370,11 @@ Natron::OfxHost::createOfxEffect(const std::string & name,
                                  bool disableRenderScaleSupport)
 {
     assert(node);
-    OFX::Host::ImageEffect::ImageEffectPlugin *plugin;
+    OFX::Host::ImageEffect::ImageEffectPlugin *plugin = 0;
     std::string context;
-
-    getPluginAndContextByID(name,&plugin,context);
+    const Natron::Plugin* natronPlugin = node->getPlugin();
+    assert(natronPlugin);
+    getPluginAndContextByID(name,natronPlugin->getMajorVersion(),natronPlugin->getMinorVersion(),&plugin,context);
 
     AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
     if ( node && !node->getLiveInstance() ) {
@@ -452,8 +457,12 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     writeOFXCache();
 
     /*Filling node name list and plugin grouping*/
-    const std::map<std::string,OFX::Host::ImageEffect::ImageEffectPlugin *> & ofxPlugins = _imageEffectPluginCache->getPluginsByID();
-    for (std::map<std::string,OFX::Host::ImageEffect::ImageEffectPlugin *>::const_iterator it = ofxPlugins.begin();
+    typedef std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> PMap;
+    const PMap& ofxPlugins =
+    _imageEffectPluginCache->getPluginsByIDMajor();
+    
+    
+    for (PMap::const_iterator it = ofxPlugins.begin();
          it != ofxPlugins.end(); ++it) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = it->second;
         assert(p);
@@ -461,19 +470,13 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
             continue;
         }
 
-        QString openfxId = p->getIdentifier().c_str();
+        std::string openfxId = p->getIdentifier();
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
         const std::string & bundlePath = p->getBinary()->getBundlePath();
         std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
                                                                       p->getDescriptor().getLabel(),
                                                                       p->getDescriptor().getLongLabel() );
-        std::string pluginId = OfxEffectInstance::generateImageEffectClassName(p->getIdentifier(),
-                                                                               p->getVersionMajor(),
-                                                                               p->getVersionMinor(),
-                                                                               p->getDescriptor().getShortLabel(),
-                                                                               p->getDescriptor().getLabel(),
-                                                                               p->getDescriptor().getLongLabel(),
-                                                                               grouping);
+        
         QStringList groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
@@ -481,7 +484,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         assert( p->getBinary() );
         QString iconFilename = QString( bundlePath.c_str() ) + "/Contents/Resources/";
         iconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
-        iconFilename.append(openfxId);
+        iconFilename.append(openfxId.c_str());
         iconFilename.append(".png");
         QString groupIconFilename;
         if (groups.size() > 0) {
@@ -494,15 +497,13 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
             groups.push_back(PLUGIN_GROUP_DEFAULT);
         }
 
-        _ofxPlugins[pluginId] = OFXPluginEntry(openfxId.toStdString(), grouping);
-
         
         const std::set<std::string> & contexts = p->getContexts();
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
         appPTR->registerPlugin( groups,
-                                pluginId.c_str(),
+                                openfxId.c_str(),
                                 pluginLabel.c_str(),
                                 iconFilename,
                                 groupIconFilename,
@@ -535,10 +536,10 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                 it = readersMap->find(formats[k]);
 
                 if ( it != readersMap->end() ) {
-                    it->second.push_back(std::make_pair(pluginId, evaluation));
+                    it->second.push_back(std::make_pair(openfxId, evaluation));
                 } else {
                     std::vector<std::pair<std::string,double> > newVec(1);
-                    newVec[0] = std::make_pair(pluginId,evaluation);
+                    newVec[0] = std::make_pair(openfxId,evaluation);
                     readersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }
@@ -549,10 +550,10 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                 it = writersMap->find(formats[k]);
 
                 if ( it != writersMap->end() ) {
-                    it->second.push_back(std::make_pair(pluginId, evaluation));
+                    it->second.push_back(std::make_pair(openfxId, evaluation));
                 } else {
                     std::vector<std::pair<std::string,double> > newVec(1);
-                    newVec[0] = std::make_pair(pluginId,evaluation);
+                    newVec[0] = std::make_pair(openfxId,evaluation);
                     writersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }

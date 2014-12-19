@@ -17,7 +17,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
-
+#include "Engine/Plugin.h"
 using namespace Natron;
 
 
@@ -36,20 +36,24 @@ BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
 
-    _dotGeneratorPluginID = QString("Dot Generator  [OFX]");
+    _dotGeneratorPluginID = QString("net.sf.openfx.dotexample");
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
-    _readOIIOPluginID = QString("ReadOIIOOFX  [Image]");
+    _readOIIOPluginID = QString("fr.inria.openfx.readoiio");
     _allTestPluginIDs.push_back(_readOIIOPluginID);
 
-    _writeOIIOPluginID = QString("WriteOIIOOFX  [Image]");
+    _writeOIIOPluginID = QString("fr.inria.openfx.writeoiio");
     _allTestPluginIDs.push_back(_writeOIIOPluginID);
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
         ///make sure the generic test plugin is present
         Natron::LibraryBinary* bin = NULL;
         try {
-            bin = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1);
+            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1);
+            if (p) {
+                bin = p->getLibraryBinary();
+            }
+            
         } catch (const std::exception & e) {
             std::cout << e.what() << std::endl;
         }

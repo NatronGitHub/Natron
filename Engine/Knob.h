@@ -340,7 +340,7 @@ public:
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
      **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason, bool originatedFromMainThread) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -900,7 +900,7 @@ public:
     virtual void populate() OVERRIDE;
     virtual void blockEvaluation() OVERRIDE FINAL;
     virtual void unblockEvaluation() OVERRIDE FINAL;
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason, bool originatedFromMainThread) OVERRIDE FINAL;
 
 private:
 
@@ -1483,6 +1483,11 @@ public:
      **/
     void updateHasAnimation();
     
+    /**
+     * @brief Returns whether the onKnobValueChanged can be called by a separate thread
+     **/
+    virtual bool canHandleEvaluateOnChangeInOtherThread() const { return false; }
+    
 protected:
 
     bool isEvaluationBlocked() const;
@@ -1572,7 +1577,8 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time);
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+                                           bool originatedFromMainThread);
 
 
     /**
@@ -1589,6 +1595,18 @@ public:
      * will call evaluate_public
      **/
     void checkIfRenderNeeded();
+    
+    /**
+     * Call this if getRecursionLevel > 1 to compress overlay redraws
+     **/
+    void incrementRedrawNeededCounter();
+    
+    /**
+     * @brief Returns true if the overlay should be redrawn. This should be called once the recursion level reaches 0
+     * This will reset the overlay redraw needed counter to 0.
+     **/
+    bool checkIfOverlayRedrawNeeded();
+    
 
     /*Add a knob to the vector. This is called by the
        Knob class. Don't call this*/
@@ -1644,7 +1662,8 @@ protected:
      **/
     virtual void onKnobValueChanged(KnobI* /*k*/,
                                     Natron::ValueChangedReasonEnum /*reason*/,
-                                    SequenceTime /*time*/)
+                                    SequenceTime /*time*/,
+                                    bool /*originatedFromMainThread*/)
     {
     }
 

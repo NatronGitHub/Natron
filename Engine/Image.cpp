@@ -12,103 +12,171 @@
 #include "Image.h"
 
 #include <QDebug>
-
+#ifndef Q_MOC_RUN
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif
 #include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 
 using namespace Natron;
 
+#define BM_GET(i,j) &_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
 
+#define PIXEL_UNAVAILABLE 2
 
-RectI
-Bitmap::minimalNonMarkedBbox(const RectI & roi) const
+template <int trimap>
+RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const std::vector<char>& _map,
+                                    bool* isBeingRenderedElsewhere)
 {
-    /*if we rendered everything we just append
-       a NULL box to indicate we rendered it all.*/
-//    if(!memchr(_map.get(),0,_rod.area())){
-//        ret.push_back(RectI());
-//        return ret;
-//    }
-
     RectI bbox;
-
+    
     roi.intersect(_bounds, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 0, _bounds.width() ) ) {
-            bbox.set_bottom(bbox.bottom() + 1);
+        const char* buf = BM_GET(i, _bounds.left());
+        
+        if (trimap) {
+            
+            const char* lineEnd = buf + _bounds.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (!*buf) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    metUnavailablePixel = true;
+                }
+                ++buf;
+            }
+            if (!buf) {
+                break;
+            } else if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+            }
         } else {
-            break;
+            if ( !memchr( buf, 0, _bounds.width() ) ) {
+                bbox.set_bottom(bbox.bottom() + 1);
+            } else {
+                break;
+            }
         }
     }
-
+    
     //find top (will do zero iteration if the bbox is already empty)
     for (int i = bbox.top() - 1; i >= bbox.bottom(); --i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 0, _bounds.width() ) ) {
-            bbox.set_top(bbox.top() - 1);
+        const char* buf = BM_GET(i, _bounds.left());
+        
+        if (trimap) {
+            
+            const char* lineEnd = buf + _bounds.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (!*buf) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    metUnavailablePixel = true;
+                }
+                ++buf;
+            }
+            if (!buf) {
+                break;
+            } else if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+            }
+            
         } else {
-            break;
+            if ( !memchr( buf, 0, _bounds.width() ) ) {
+                bbox.set_top(bbox.top() - 1);
+            } else {
+                break;
+            }
         }
     }
-
+    
     // avoid making bbox.width() iterations for nothing
     if ( bbox.isNull() ) {
         return bbox;
     }
-
+    
     //find left
     for (int j = bbox.left(); j < bbox.right(); ++j) {
-        bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bbox.bottom(), j);
+
+        bool metUnavailablePixel = false;
+
+        for (int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width()) {
+            if (!*pix) {
+                pix = 0;
                 break;
             }
+            
+            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+            
         }
-        if (!shouldStop) {
+        if (pix) {
             bbox.set_left(bbox.left() + 1);
+            if (trimap && metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
+            }
         } else {
             break;
         }
     }
-
+    
     //find right
     for (int j = bbox.right() - 1; j >= bbox.left(); --j) {
-        bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bbox.bottom(), j);
+
+        bool metUnavailablePixel = false;
+
+        for (int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width()) {
+            if (!*pix) {
+                pix = 0;
                 break;
             }
+
+            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                metUnavailablePixel = true;
+            }
+
         }
-        if (!shouldStop) {
+        if (pix) {
             bbox.set_right(bbox.right() - 1);
+
+            if (trimap && metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
+            }
+
         } else {
             break;
         }
     }
-
+    
     return bbox;
-} // minimalNonMarkedBbox
 
-std::list<RectI>
-Bitmap::minimalNonMarkedRects(const RectI & roi) const
+}
+
+
+template <int trimap>
+void
+minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std::vector<char>& _map,
+                               std::list<RectI>& ret,bool* isBeingRenderedElsewhere)
 {
-    std::list<RectI> ret;
-    RectI bboxM = minimalNonMarkedBbox(roi);
-
-//#define NATRON_BITMAP_DISABLE_OPTIMIZATION
+    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(roi, _bounds, _map, isBeingRenderedElsewhere);
+    
+    //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
     if ( !bboxM.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxM);
     }
 #else
     if ( bboxM.isNull() ) {
-        return ret; // return an empty rectangle list
+        return; // return an empty rectangle list
     }
-
+    
     // optimization by Fred, Jan 31, 2014
     //
     // Now that we have the smallest enclosing bounding box,
@@ -129,128 +197,242 @@ Bitmap::minimalNonMarkedRects(const RectI & roi) const
     // CXXXXXXXXXXDDD
     // CXXXXXXXXXXDDD
     // AAAAAAAAAAAAAA
-
+    
     // First, find if there's an "A" rectangle, and push it to the result
     //find bottom
     RectI bboxX = bboxM;
     RectI bboxA = bboxX;
     bboxA.set_top( bboxX.bottom() );
     for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 1, _bounds.width() ) ) {
-            bboxX.set_bottom(bboxX.bottom() + 1);
-            bboxA.set_top( bboxX.bottom() );
+        const char* buf = BM_GET(i, bboxX.left());
+        if (trimap) {
+            const char* lineEnd = buf + bboxX.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (*buf == 1) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    metUnavailablePixel = true;
+                    break;
+                }
+                ++buf;
+            }
+            if (buf) {
+                bboxX.set_bottom(bboxX.bottom() + 1);
+                bboxA.set_top( bboxX.bottom() );
+            } else {
+                if (metUnavailablePixel) {
+                    *isBeingRenderedElsewhere = true;
+                }
+                break;
+            }
         } else {
-            break;
+            if ( !memchr( buf, 1, bboxX.width() ) ) {
+                bboxX.set_bottom(bboxX.bottom() + 1);
+                bboxA.set_top( bboxX.bottom() );
+            } else {
+                break;
+            }
         }
     }
     if ( !bboxA.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxA);
     }
-
+    
     // Now, find the "B" rectangle
     //find top
     RectI bboxB = bboxX;
     bboxB.set_bottom( bboxX.top() );
     for (int i = bboxX.top() - 1; i >= bboxX.bottom(); --i) {
-        const char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width()];
-        if ( !memchr( buf, 1, _bounds.width() ) ) {
-            bboxX.set_top(bboxX.top() - 1);
-            bboxB.set_bottom( bboxX.top() );
+        const char* buf = BM_GET(i, bboxX.left());
+        
+        if (trimap) {
+            const char* lineEnd = buf + bboxX.width();
+            bool metUnavailablePixel = false;
+            while (buf < lineEnd) {
+                if (*buf == 1) {
+                    buf = 0;
+                    break;
+                } else if (*buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    metUnavailablePixel = true;
+                    break;
+                }
+                ++buf;
+            }
+            if (buf) {
+                bboxX.set_top(bboxX.top() - 1);
+                bboxB.set_bottom( bboxX.top() );
+            } else {
+                if (metUnavailablePixel) {
+                    *isBeingRenderedElsewhere = true;
+                }
+                break;
+            }
         } else {
-            break;
+            if ( !memchr( buf, 1, bboxX.width() ) ) {
+                bboxX.set_top(bboxX.top() - 1);
+                bboxB.set_bottom( bboxX.top() );
+            } else {
+                break;
+            }
+            
         }
     }
     if ( !bboxB.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxB);
     }
-
+    
     //find left
     RectI bboxC = bboxX;
     bboxC.set_right( bboxX.left() );
     for (int j = bboxX.left(); j < bboxX.right(); ++j) {
-        bool shouldStop = false;
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bboxX.bottom(), j);
+        
+        bool metUnavailablePixel = false;
+        
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+            if (*pix == 1) {
+                pix = 0;
+                break;
+            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                pix = 0;
+                metUnavailablePixel = true;
                 break;
             }
         }
-        if (!shouldStop) {
+        if (pix) {
             bboxX.set_left(bboxX.left() + 1);
             bboxC.set_right( bboxX.left() );
         } else {
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
             break;
         }
     }
     if ( !bboxC.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxC);
     }
-
+    
     //find right
     RectI bboxD = bboxX;
     bboxD.set_left( bboxX.right() );
     for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
-        bool shouldStop = false;
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]) {
-                shouldStop = true;
+        const char* pix = BM_GET(bboxX.bottom(), j);
+        
+        bool metUnavailablePixel = false;
+        
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+            if (*pix == 1) {
+                pix = 0;
+                break;
+            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+                pix = 0;
+                metUnavailablePixel = true;
                 break;
             }
         }
-        if (!shouldStop) {
+        if (pix) {
             bboxX.set_right(bboxX.right() - 1);
             bboxD.set_left( bboxX.right() );
         } else {
+            if (metUnavailablePixel) {
+                *isBeingRenderedElsewhere = true;
+            }
             break;
         }
     }
     if ( !bboxD.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxD);
     }
-
+    
     assert( bboxA.bottom() == bboxM.bottom() );
     assert( bboxA.left() == bboxM.left() );
     assert( bboxA.right() == bboxM.right() );
     assert( bboxA.top() == bboxX.bottom() );
-
+    
     assert( bboxB.top() == bboxM.top() );
     assert( bboxB.left() == bboxM.left() );
     assert( bboxB.right() == bboxM.right() );
     assert( bboxB.bottom() == bboxX.top() );
-
+    
     assert( bboxC.top() == bboxX.top() );
     assert( bboxC.left() == bboxM.left() );
     assert( bboxC.right() == bboxX.left() );
     assert( bboxC.bottom() == bboxX.bottom() );
-
+    
     assert( bboxD.top() == bboxX.top() );
     assert( bboxD.left() == bboxX.right() );
     assert( bboxD.right() == bboxM.right() );
     assert( bboxD.bottom() == bboxX.bottom() );
-
+    
     // get the bounding box of what's left (the X rectangle in the drawing above)
-    bboxX = minimalNonMarkedBbox(bboxX);
+    bboxX = minimalNonMarkedBbox_internal<trimap>(bboxX,_bounds,_map,isBeingRenderedElsewhere);
+    
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxX);
     }
-
+    
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
-# ifdef DEBUG
-    /*qDebug() << "render " << ret.size() << " rectangles";
-    for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
-        qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
-    }*/
-# endif // DEBUG
-    return ret;
+
 } // minimalNonMarkedRects
+
+RectI
+Bitmap::minimalNonMarkedBbox(const RectI & roi) const
+{
+    return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map, NULL);
+}
+
+void
+Bitmap::minimalNonMarkedRects(const RectI & roi,std::list<RectI>& ret) const
+{
+    minimalNonMarkedRects_internal<0>(roi, _bounds, _map,ret , NULL);
+}
+
+#if NATRON_ENABLE_TRIMAP
+RectI
+Bitmap::minimalNonMarkedBbox_trimap(const RectI & roi,bool* isBeingRenderedElsewhere) const
+{
+    return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map, isBeingRenderedElsewhere);
+}
+
+
+void
+Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const
+{
+    minimalNonMarkedRects_internal<1>(roi, _bounds, _map ,ret , isBeingRenderedElsewhere);
+} 
+#endif
 
 void
 Natron::Bitmap::markForRendered(const RectI & roi)
 {
-    for (int i = roi.bottom(); i < roi.top(); ++i) {
-        char* buf = &_map[( i - _bounds.bottom() ) * _bounds.width() + ( roi.left() - _bounds.left() )];
+    char* buf = BM_GET(roi.bottom(), roi.left());
+    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
         memset( buf, 1, roi.width() );
+    }
+}
+
+#if NATRON_ENABLE_TRIMAP
+void
+Natron::Bitmap::markForRendering(const RectI & roi)
+{
+    char* buf = BM_GET(roi.bottom(), roi.left());
+    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
+        memset( buf, PIXEL_UNAVAILABLE , roi.width() );
+    }
+}
+#endif
+
+void
+Natron::Bitmap::clear(const RectI& roi)
+{
+    char* buf = BM_GET(roi.bottom(), roi.left());
+    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
+        memset( buf, 0 , roi.width() );
     }
 }
 
@@ -259,7 +441,7 @@ Natron::Bitmap::getBitmapAt(int x,
                             int y) const
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        return &_map[( y - _bounds.bottom() ) * _bounds.width() + ( x - _bounds.left() )];
+        return BM_GET(y,x);
     } else {
         return NULL;
     }
@@ -270,7 +452,7 @@ Natron::Bitmap::getBitmapAt(int x,
                             int y)
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        return &_map[( y - _bounds.bottom() ) * _bounds.width() + ( x - _bounds.left() )];
+        return BM_GET(y,x);
     } else {
         return NULL;
     }
@@ -282,12 +464,26 @@ Image::Image(const ImageKey & key,
              Natron::StorageModeEnum storage,
              const std::string & path)
     : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)
+    , _useBitmap(true)
 {
     _components = params->getComponents();
     _bitDepth = params->getBitDepth();
     _rod = params->getRoD();
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
+}
+
+Image::Image(const ImageKey & key,
+             const boost::shared_ptr<Natron::ImageParams>& params)
+: CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, NULL,Natron::eStorageModeRAM,std::string())
+, _useBitmap(false)
+{
+    _components = params->getComponents();
+    _bitDepth = params->getBitDepth();
+    _rod = params->getRoD();
+    _bounds = params->getBounds();
+    _par = params->getPixelAspectRatio();
+    allocateMemory();
 }
 
 
@@ -299,8 +495,10 @@ Image::Image(ImageComponentsEnum components,
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
              double par,
-             Natron::ImageBitDepthEnum bitdepth)
+             Natron::ImageBitDepthEnum bitdepth,
+             bool useBitmap)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
+    , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0,false,0,0),
                   boost::shared_ptr<ImageParams>( new ImageParams( 0,
@@ -326,15 +524,21 @@ Image::Image(ImageComponentsEnum components,
 }
 
 void
-Image::onMemoryAllocated()
+Image::onMemoryAllocated(bool diskRestoration)
 {
+    if (_cache || _useBitmap) {
+        _bitmap.initialize(_bounds);
+    }
+
+    if (diskRestoration) {
+        _bitmap.setTo1();
+    }
     
-    _bitmap.initialize(_bounds);
-
-
 #ifdef DEBUG
-    ///fill with red, to recognize unrendered pixels
-    fill(_bounds,1.,0.,0.,1.);
+    if (!diskRestoration) {
+        ///fill with red, to recognize unrendered pixels
+        fill(_bounds,1.,0.,0.,1.);
+    }
 #endif
     
 }
@@ -363,6 +567,28 @@ Image::makeParams(int cost,
 
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
+    return boost::shared_ptr<ImageParams>( new ImageParams(cost,
+                                                           rod,
+                                                           par,
+                                                           mipMapLevel,
+                                                           bounds,
+                                                           bitdepth,
+                                                           isRoDProjectFormat,
+                                                           components,
+                                                           framesNeeded) );
+}
+
+boost::shared_ptr<ImageParams>
+Image::makeParams(int cost,
+                  const RectD & rod,    // the image rod in canonical coordinates
+                  const RectI& bounds,
+                  const double par,
+                  unsigned int mipMapLevel,
+                  bool isRoDProjectFormat,
+                  ImageComponentsEnum components,
+                  Natron::ImageBitDepthEnum bitdepth,
+                  const std::map<int, std::vector<RangeD> > & framesNeeded)
+{
     return boost::shared_ptr<ImageParams>( new ImageParams(cost,
                                                            rod,
                                                            par,
@@ -414,17 +640,14 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     assert( getComponents() == srcImg.getComponents() );
     int components = getElementsCountForComponents( getComponents() );
 
+    if (copyBitmap) {
+        copyBitmapPortion(roi, srcImg);
+    }
     // now we're safe: both images contain the area in roi
     for (int y = roi.y1; y < roi.y2; ++y) {
         const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, y);
         PIX* dst = (PIX*)pixelAt(roi.x1, y);
         memcpy(dst, src, roi.width() * sizeof(PIX) * components);
-
-        if (copyBitmap) {
-            const char* srcBm = srcImg.getBitmapAt(roi.x1, y);
-            char* dstBm = getBitmapAt(roi.x1, y);
-            memcpy( dstBm, srcBm, roi.width() );
-        }
     }
 }
 
@@ -520,14 +743,14 @@ Image::pixelAt(int x,
 {
     int compsCount = getElementsCountForComponents( getComponents() );
 
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
-
-        return this->_data.writable()
-               + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-               + ( x - _bounds.left() ) * compDataSize;
-    } else {
+    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
+    } else {
+        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
+        
+        return (unsigned char*)(this->_data.writable())
+        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -536,15 +759,15 @@ Image::pixelAt(int x,
                int y) const
 {
     int compsCount = getElementsCountForComponents( getComponents() );
-
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
-
-        return this->_data.readable()
-               + ( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-               + ( x - _bounds.left() ) * compDataSize;
-    } else {
+    
+    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
+    } else {
+        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
+        
+        return (unsigned char*)(this->_data.readable())
+        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.left() ) * compDataSize;
     }
 }
 
@@ -566,7 +789,7 @@ Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
         switch (to) {
         case eImageComponentRGBA:
 
-            return false;
+            return true; //< let RGB fill the alpha with 0
         case eImageComponentRGB:
 
             return true;
@@ -666,11 +889,12 @@ Image::getRowElements() const
     return getComponentsCount() * _bounds.width();
 }
 
-// code proofread and fixed by @devernay on 8/8/2014
+// code proofread and fixed by @devernay on 4/12/2014
 template <typename PIX, int maxValue>
 void
 Image::halveRoIForDepth(const RectI & roi,
                         bool copyBitMap,
+                        bool treatUnavailablePixelsAsRendered,
                         Natron::Image* output) const
 {
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
@@ -688,6 +912,10 @@ Image::halveRoIForDepth(const RectI & roi,
     ///The source rectangle, intersected to this image region of definition in pixels
     const RectI &srcBounds = getBounds();
     const RectI &dstBounds = output->getBounds();
+    const RectI &srcBmBounds = _bitmap.getBounds();
+    const RectI &dstBmBounds = output->_bitmap.getBounds();
+    assert(!copyBitMap || usesBitMap());
+    assert(!usesBitMap() ||(srcBmBounds == srcBounds && dstBmBounds == dstBounds));
 
     // the srcRoD of the output should be enclosed in half the roi.
     // It does not have to be exactly half of the input.
@@ -699,7 +927,7 @@ Image::halveRoIForDepth(const RectI & roi,
     //           dstRoD.height()*2 <= roi.height());
     assert( getComponents() == output->getComponents() );
 
-    int components = getElementsCountForComponents( getComponents() );
+    int nComponents = getElementsCountForComponents( getComponents() );
     RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
@@ -709,138 +937,125 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
 
-    int dstRoIWidth = dstRoI.width();
-    int dstRoIHeight = dstRoI.height();
-    const PIX* src = (const PIX*)pixelAt(srcRoI.x1, srcRoI.y1);
-    PIX* dst = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
-    int srcRowSize = srcBounds.width() * components;
-    int dstRowSize = dstBounds.width() * components;
+    
+    /// Take the lock for both bitmaps since we're about to read/write from them!
+    QWriteLocker k1(&output->_lock);
+    QReadLocker k2(&_lock);
+    
+    const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
+    const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBmBounds.x1, srcBmBounds.y1);
+    PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1,   dstBounds.y1);
+    char* const dstBmPixels = output->_bitmap.getBitmapAt(dstBmBounds.x1, dstBmBounds.y1);
 
-    
-    const char* srcBm;
-    char* dstBm;
-    
-    srcBm = _bitmap.getBitmapAt(srcRoI.x1, srcRoI.y1);
-    dstBm = output->_bitmap.getBitmapAt(dstRoI.x1, dstRoI.y1);
-    
-    // Loop with sliding pointers:
-    // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
-    // This is the *good* way to code it, let the optimizer do the rest!
-    // Please don't change this, and don't remove the comments.
-    for (int y = 0; y < dstRoIHeight;
-         ++y,
-         src += (srcRowSize + srcRowSize) - dstRoIWidth * 2 * components, // two rows minus what was done on previous iteration
-         dst += (dstRowSize) - dstRoIWidth * components, // one row minus what was done on previous iteration
-         srcBm += (srcBounds.width() + srcBounds.width()) - dstRoIWidth * 2,
-         dstBm += (dstBounds.width()) - dstRoIWidth) {
+    int srcRowSize = srcBounds.width() * nComponents;
+    int dstRowSize = dstBounds.width() * nComponents;
+
+    // offset pointers so that srcData and dstData correspond to pixel (0,0)
+    const PIX* const srcData = srcPixels - (srcBounds.x1 * nComponents + srcRowSize * srcBounds.y1);
+    PIX* const dstData       = dstPixels - (dstBounds.x1 * nComponents + dstRowSize * dstBounds.y1);
+
+    const int srcBmRowSize = srcBmBounds.width();
+    const int dstBmRowSize = dstBmBounds.width();
+
+    const char* const srcBmData = srcBmPixels - (srcBmBounds.x1 + srcBmRowSize * srcBmBounds.y1);
+    char* const dstBmData       = dstBmPixels - (dstBmBounds.x1 + dstBmRowSize * dstBmBounds.y1);
+
+    for (int y = dstRoI.y1; y < dstRoI.y2; ++y) {
+        const PIX* const srcLineStart    = srcData + y * 2 * srcRowSize;
+        PIX* const dstLineStart          = dstData + y     * dstRowSize;
+        const char* const srcBmLineStart = srcBmData + y * 2 * srcBmRowSize;
+        char* const dstBmLineStart       = dstBmData + y     * dstBmRowSize;
+
+        // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
+        // Check that if are within srcBounds.
+        int srcy = y * 2;
+        bool pickThisRow = srcBounds.y1 <= (srcy + 0) && (srcy + 0) < srcBounds.y2;
+        bool pickNextRow = srcBounds.y1 <= (srcy + 1) && (srcy + 1) < srcBounds.y2;
+
+        int sumH = (int)pickNextRow + (int)pickThisRow;
+        assert(sumH == 1 || sumH == 2);
         
-        for (int x = 0; x < dstRoIWidth;
-             ++x,
-             src += (components + components) - components, // two pixels minus what was done on previous iteration
-             dst += (components) - components, // one pixel minus what was done on previous iteration
-             ++srcBm) {
-            
-            if (x * 2 > srcRoI.width() -1) {
+        for (int x = dstRoI.x1; x < dstRoI.x2; ++x) {
+            const PIX* const srcPixStart    = srcLineStart   + x * 2 * nComponents;
+            const char* const srcBmPixStart = srcBmLineStart + x * 2;
+            PIX* const dstPixStart          = dstLineStart   + x * nComponents;
+            char* const dstBmPixStart       = dstBmLineStart + x;
 
-                for (int k = 0; k < components; ++k, ++dst,++src) {
-                    *dst = 0;
-                }
-                continue;
+            // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
+            // Check that if are within srcBounds.
+            int srcx = x * 2;
+            bool pickThisCol = srcBounds.x1 <= (srcx + 0) && (srcx + 0) < srcBounds.x2;
+            bool pickNextCol = srcBounds.x1 <= (srcx + 1) && (srcx + 1) < srcBounds.x2;
+
+            int sumW = (int)pickThisCol + (int)pickNextCol;
+            assert(sumW == 1 || sumW == 2);
+            const int sum = sumW * sumH;
+            assert(0 < sum && sum <= 4);
+
+            for (int k = 0; k < nComponents; ++k) {
+                ///a b
+                ///c d
+
+                const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart + k) : 0;
+                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + k + nComponents) : 0;
+                const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + k + srcRowSize): 0;
+                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + nComponents)  : 0;
+                
+                assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
+                assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
+                dstPixStart[k] = (a + b + c + d) / sum;
             }
             
-            bool useNextPixel = x * 2 < srcRoI.width() - 1;
+            if (copyBitMap) {
+                ///a b
+                ///c d
 
-            //The src image can be in this implementation smaller than dstBounds * 2
-            if (y * 2  < (srcRoI.height() - 1)) {
-                
-                for (int k = 0; k < components; ++k, ++dst, ++src) {
-                    
-                    if (!useNextPixel) {
-                        *dst = PIX( (float)( *src + *(src + srcRowSize) ) / 2. );
-                    } else {
-                        *dst = PIX( (float)( *src +
-                                            *(src + components) +
-                                            *(src + srcRowSize) +
-                                            *(src + srcRowSize  + components) ) / 4. );
-                    }
+                char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
+                char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
+                char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
+                char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
+#if NATRON_ENABLE_TRIMAP
+                if (a == PIXEL_UNAVAILABLE) {
+                    a = treatUnavailablePixelsAsRendered ? 1 : 0;
                 }
-                if (copyBitMap) {
-                    if (!useNextPixel) {
-                        if (*srcBm != 0  && *(srcBm + srcBounds.width()) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    } else {
-                        if (*srcBm != 0 && *(srcBm + 1) != 0 && *(srcBm + srcBounds.width()) != 0 && *(srcBm + srcBounds.width() + 1) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    }
-                    
-                    ++srcBm;
-                    ++dstBm;
+                if (b == PIXEL_UNAVAILABLE) {
+                    b = treatUnavailablePixelsAsRendered ? 1 : 0;
                 }
-            } else if (y * 2 == (srcRoI.height() - 1)) {
-                
-                if (!useNextPixel) {
-                    for (int k = 0; k < components; ++k, ++dst, ++src) {
-                        *dst = *src;
-                        
-                    }
-                } else {
-                    for (int k = 0; k < components; ++k, ++dst, ++src) {
-                        *dst = PIX( (float)( *src +
-                                            *(src + components) ) / 2. );
-                        
-                    }
+                if (c == PIXEL_UNAVAILABLE) {
+                    c = treatUnavailablePixelsAsRendered ? 1 : 0;
                 }
-                
-                if (copyBitMap) {
-                    if (!useNextPixel) {
-                        *dstBm = *srcBm;
-                    } else {
-                        if (*srcBm != 0 && *(srcBm + 1) != 0) {
-                            *dstBm = 1;
-                        } else {
-                            *dstBm = 0;
-                        }
-                    }
-                   
-                    ++srcBm;
-                    ++dstBm;
+                if (d == PIXEL_UNAVAILABLE) {
+                    d = treatUnavailablePixelsAsRendered ? 1 : 0;
                 }
-            } else if (y * 2 > (srcRoI.height() - 1)) {
-                //Copy the previous line
-                for (int k = 0; k < components; ++k, ++dst,++src) {
-                    *dst = *(dst - dstRowSize);
-                    
-                }
-                if (copyBitMap) {
-                    *dstBm = *(dstBm - dstBounds.width());
-                    ++dstBm;
-                }
+#endif
+                assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
+                assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
+                assert(a + b + c + d <= sum); // bitmaps are 0 or 1
+                // the following is an integer division, the result can be 0 or 1
+                dstBmPixStart[0] = (a + b + c + d) / sum;
+                assert(dstBmPixStart[0] == 0 || dstBmPixStart[0] == 1);
             }
         }
     }
+
 } // halveRoIForDepth
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::halveRoI(const RectI & roi,
                 bool copyBitMap,
+                bool treatUnavailablePixelsAsRendered,
                 Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
-        halveRoIForDepth<unsigned char,255>(roi, copyBitMap, output);
+            halveRoIForDepth<unsigned char,255>(roi, copyBitMap,treatUnavailablePixelsAsRendered, output);
         break;
     case eImageBitDepthShort:
-        halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, output);
+        halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, treatUnavailablePixelsAsRendered, output);
         break;
     case eImageBitDepthFloat:
-        halveRoIForDepth<float,1>(roi,copyBitMap, output);
+        halveRoIForDepth<float,1>(roi,copyBitMap,treatUnavailablePixelsAsRendered, output);
         break;
     case eImageBitDepthNone:
         break;
@@ -924,6 +1139,7 @@ Image::downscaleMipMap(const RectI & roi,
                        unsigned int fromLevel,
                        unsigned int toLevel,
                        bool copyBitMap,
+                       bool treatUnavailablePixelsAsRendered,
                        Natron::Image* output) const
 {
     ///You should not call this function with a level equal to 0.
@@ -931,19 +1147,20 @@ Image::downscaleMipMap(const RectI & roi,
 
     assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
            _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
+    double par = getPixelAspectRatio();
 //    RectD roiCanonical;
-//    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
+//    roi.toCanonical(fromLevel, par , getRoD(), &roiCanonical);
 //    RectI dstRoI;
-//    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
+//    roiCanonical.toPixelEnclosing(toLevel, par , &dstRoI);
     unsigned int downscaleLvls = toLevel - fromLevel;
 
     assert(!copyBitMap || _bitmap.getBitmap());
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, getPixelAspectRatio(), getBitDepth() ) );
+    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, par, getBitDepth() , true) );
 
-    buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
+    buildMipMapLevel( roi, downscaleLvls, copyBitMap, treatUnavailablePixelsAsRendered, tmpImg.get() );
 
     // check that the downscaled mipmap is inside the output image (it may not be equal to it)
     assert(dstRoI.x1 >= output->getBounds().x1);
@@ -953,6 +1170,32 @@ Image::downscaleMipMap(const RectI & roi,
 
     ///Now copy the result of tmpImg into the output image
     output->pasteFrom(*tmpImg, dstRoI, copyBitMap);
+}
+
+
+void
+Image::checkForNaNs(const RectI& roi)
+{
+    if (getBitDepth() != eImageBitDepthFloat) {
+        return;
+    }
+    
+    unsigned int compsCount = getComponentsCount();
+    
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        
+        float* pix = (float*)pixelAt(roi.x1, roi.y1);
+        float* const end = pix +  compsCount * roi.width();
+        
+        for (;pix < end; ++pix) {
+            assert(!boost::math::isnan(*pix) && !boost::math::isinf(*pix));
+            if (boost::math::isnan(*pix) || boost::math::isinf(*pix)) {
+                *pix = 1.;
+            }
+        }
+    }
+
+
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -985,6 +1228,9 @@ Image::upscaleMipMapForDepth(const RectI & roi,
 
     assert( output->getComponents() == getComponents() );
     int components = getElementsCountForComponents( getComponents() );
+    if (components == 0) {
+        return;
+    }
     int srcRowSize = getBounds().width() * components;
     int dstRowSize = output->getBounds().width() * components;
     const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
@@ -1074,7 +1320,7 @@ Image::scaleBoxForDepth(const RectI & roi,
          ( srcRoi.x2 == 2 * dstBounds.x2) &&
          ( srcRoi.y1 == 2 * dstBounds.y1) &&
          ( srcRoi.y2 == 2 * dstBounds.y2) ) {
-        halveRoI(srcRoi, false, output);
+        halveRoI(srcRoi, false, false, output);
 
         return;
     }
@@ -1302,6 +1548,7 @@ void
 Image::buildMipMapLevel(const RectI & roi,
                         unsigned int level,
                         bool copyBitMap,
+                        bool treatUnavailablePixelsAsRendered,
                         Natron::Image* output) const
 {
     ///The last mip map level we will make with closestPo2
@@ -1329,12 +1576,12 @@ Image::buildMipMapLevel(const RectI & roi,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getPixelAspectRatio(),getBitDepth() );
+        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, 0, getPixelAspectRatio(),getBitDepth() , true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
         ///If the source image'sroi was originally a po2.
-        srcImg->halveRoI(previousRoI, copyBitMap, dstImg);
+        srcImg->halveRoI(previousRoI, copyBitMap,treatUnavailablePixelsAsRendered, dstImg);
 
         ///Clean-up, we should use shared_ptrs for safety
         if (mustFreeSrc) {
@@ -1376,13 +1623,6 @@ Image::getLevelFromScale(double s)
     assert(retval >= 0);
 
     return retval;
-}
-
-void
-Image::clearBitmap()
-{
-    QWriteLocker locker(&_lock);
-    _bitmap.clear();
 }
 
 namespace Natron {
@@ -1478,6 +1718,64 @@ lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
     return lut;
 }
 
+void
+Image::copyBitmapRowPortion(int x1, int x2,int y, const Image& other)
+{
+    QWriteLocker k1(&_lock);
+    QReadLocker k2(&other._lock);
+    _bitmap.copyRowPortion(x1, x2, y, other._bitmap);
+}
+
+void
+Bitmap::copyRowPortion(int x1,int x2,int y,const Bitmap& other)
+{
+    const char* srcBitmap = other.getBitmapAt(x1, y);
+    char* dstBitmap = getBitmapAt(x1, y);
+    const char* end = dstBitmap + (x2 - x1);
+    while (dstBitmap < end) {
+        *dstBitmap = *srcBitmap == PIXEL_UNAVAILABLE ? 0 : *srcBitmap;
+        ++dstBitmap;
+        ++srcBitmap;
+    }
+    
+}
+
+void
+Image::copyBitmapPortion(const RectI& roi, const Image& other)
+{
+    QWriteLocker k1(&_lock);
+    QReadLocker k2(&other._lock);
+    _bitmap.copyBitmapPortion(roi, other._bitmap);
+
+}
+
+void
+Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
+{
+    assert(roi.x1 >= _bounds.x1 && roi.x2 <= _bounds.x2 && roi.y1 >= _bounds.y1 && roi.y2 <= _bounds.y2);
+    assert(roi.x1 >= other._bounds.x1 && roi.x2 <= other._bounds.x2 && roi.y1 >= other._bounds.y1 && roi.y2 <= other._bounds.y2);
+    
+    int srcRowSize = other._bounds.width();
+    int dstRowSize = _bounds.width();
+    
+    const char* srcBitmap = other.getBitmapAt(roi.x1, roi.y1);
+    char* dstBitmap = getBitmapAt(roi.x1, roi.y1);
+    
+    for (int y = roi.y1; y < roi.y2; ++y,
+         srcBitmap += srcRowSize,
+         dstBitmap += dstRowSize) {
+        
+        const char* srcCur = srcBitmap;
+        const char* srcEnd = srcBitmap + roi.width();
+        char* dstCur = dstBitmap;
+        while (srcCur < srcEnd) {
+            *dstCur = *srcCur == PIXEL_UNAVAILABLE ? 0 : *srcCur;
+            ++srcCur;
+            ++dstCur;
+        }
+    }
+}
+
 ///Fast version when components are the same
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
 void
@@ -1506,7 +1804,9 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     if (srcLut == dstLut) {
         srcLut = dstLut = 0;
     }
-
+    if (intersection.isNull()) {
+        return;
+    }
     for (int y = 0; y < intersection.height(); ++y) {
         int start = rand() % intersection.width();
         const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
@@ -1576,9 +1876,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
         }
 
         if (copyBitmap) {
-            const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            memcpy( dstBitmap, srcBitmap, intersection.width() );
+            dstImg.copyBitmapRowPortion(intersection.x1, intersection.x2, intersection.y1 + y, srcImg);
         }
     }
 } // convertToFormatInternal_sameComps
@@ -1602,6 +1900,8 @@ convertToFormatInternal(const RectI & renderWindow,
         return;
     }
 
+    assert(!intersection.isNull() && intersection.width() > 0 && intersection.height() > 0);
+
     if (channelForAlpha == -1) {
         switch (srcNComps) {
             case 4:
@@ -1622,14 +1922,12 @@ convertToFormatInternal(const RectI & renderWindow,
     if ( dstNComps == 1 && (channelForAlpha == -1) ) {
         DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1, intersection.y1);
 
+        if (copyBitmap) {
+            dstImg.copyBitmapPortion(intersection, srcImg);
+        }
         for ( int y = 0; y < intersection.height();
               ++y, dstPixels += (r.width() * dstNComps) ) {
             std::fill(dstPixels, dstPixels + intersection.width() * dstNComps, 0.);
-            if (copyBitmap) {
-                const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-                char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-                memcpy( dstBitmap, srcBitmap, intersection.width() );
-            }
         }
 
         return;
@@ -1637,8 +1935,7 @@ convertToFormatInternal(const RectI & renderWindow,
 
     const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
     const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
-
-
+    
     for (int y = 0; y < intersection.height(); ++y) {
         
         ///Start of the line for error diffusion
@@ -1776,15 +2073,14 @@ convertToFormatInternal(const RectI & renderWindow,
             srcPixels = srcStart - srcNComps;
             dstPixels = dstStart - dstNComps;
         }
-
-        ///Copy bitmap if needed
-        if (copyBitmap) {
-            const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-            memcpy( dstBitmap, srcBitmap, intersection.width() );
-        }
+    }
+    
+    if (copyBitmap) {
+        dstImg.copyBitmapPortion(intersection, srcImg);
     }
 } // convertToFormatInternal
+
+
 
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
 void

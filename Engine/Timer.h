@@ -124,4 +124,40 @@ private:
     QMutex* _mutex; //< protects _spf which is the only member that can 
 };
 
+
+class TimeLapse
+{
+    timeval prev;
+    timeval constructorTime;
+public:
+    
+    TimeLapse();
+    
+    /**
+     * @brief Returns the time elapsed in seconds since reportAndReset was last called. If reportAndReset has never been called
+     * this will return the time since the object was instantiated.
+     **/
+    double getTimeElapsedReset();
+    
+    /**
+     * @brief Returns the time elapsed since this object was created.
+     **/
+    double getTimeSinceCreation() const;
+    
+    ~TimeLapse();
+};
+
+/**
+ * @class A small objects that will print the time elapsed (in seconds) between the constructor and the destructor.
+ **/
+class TimeLapseReporter
+{
+    timeval prev;
+public:
+    
+    TimeLapseReporter();
+    
+    ~TimeLapseReporter();
+};
+
 #endif // ifndef NATRON_ENGINE_TIMER_H_

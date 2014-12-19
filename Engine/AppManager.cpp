@@ -35,7 +35,6 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Node.h"
-#include "Engine/Plugin.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Image.h"
@@ -43,14 +42,16 @@
 #include "Engine/Format.h"
 #include "Engine/Log.h"
 #include "Engine/Cache.h"
-#include "Engine/ChannelSet.h"
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
+#include "Engine/DiskCacheNode.h"
 #include "Engine/NoOp.h"
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
+
+#define NATRON_CACHE_VERSION 2
 
 using namespace Natron;
 
@@ -63,11 +64,16 @@ struct AppManagerPrivate
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings
     std::vector<Format*> _formats; //<a list of the "base" formats available in the application
-    std::vector<Natron::Plugin*> _plugins; //< list of the plugins
+    PluginsMap _plugins; //< list of the plugins
     boost::scoped_ptr<Natron::OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
     boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache; //< Images cache
+    boost::shared_ptr<Natron::Cache<Natron::Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
     boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache; //< Viewer textures cache
+    
+    mutable QMutex diskCachesLocationMutex;
+    QString diskCachesLocation;
+    
     ProcessInputChannel* _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
@@ -104,8 +110,8 @@ struct AppManagerPrivate
     // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
     QAtomicInt runningThreadsCount;
     
-     //To by-pass a bug introduced in RC3 with the serialization of bezier curves
-    bool lastProjectLoadedCreatedPriorToRC3;
+     //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
+    bool lastProjectLoadedCreatedDuringRC2Or3;
     
     AppManagerPrivate()
         : _appType(AppManager::eAppTypeBackground)
@@ -118,7 +124,10 @@ struct AppManagerPrivate
         , ofxHost( new Natron::OfxHost() )
         , _knobFactory( new KnobFactory() )
         , _nodeCache()
+        , _diskCache()
         , _viewerCache()
+        , diskCachesLocationMutex()
+        , diskCachesLocation()
         ,_backgroundIPC(0)
         ,_loaded(false)
         ,_binaryPath()
@@ -135,7 +144,7 @@ struct AppManagerPrivate
         ,useThreadPool(true)
         ,nThreadsMutex()
         ,runningThreadsCount()
-        ,lastProjectLoadedCreatedPriorToRC3(false)
+        ,lastProjectLoadedCreatedDuringRC2Or3(false)
     {
         setMaxCacheFiles();
         
@@ -162,7 +171,15 @@ struct AppManagerPrivate
      * @brief Called on startup to initialize the max opened files
      **/
     void setMaxCacheFiles();
+    
+    Natron::Plugin* findPluginById(const QString& oldId,int major, int minor) const;
 };
+
+void
+AppManager::saveCaches() const
+{
+    _imp->saveCaches();
+}
 
 int
 AppManager::getHardwareIdealThreadCount()
@@ -369,6 +386,7 @@ AppManager::load(int &argc,
     initializeQApp(argc, argv);
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) ;
 
 #if QT_VERSION < 0x050000
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
@@ -389,10 +407,13 @@ AppManager::load(int &argc,
 AppManager::~AppManager()
 {
     assert( _imp->_appInstances.empty() );
-
-    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        delete _imp->_plugins[i];
+    
+    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            delete *it2;
+        }
     }
+
     foreach(Format * f,_imp->_formats) {
         delete f;
     }
@@ -411,8 +432,12 @@ AppManager::~AppManager()
     QThreadPool::globalInstance()->waitForDone();
     
     ///Kill caches now because decreaseNCacheFilesOpened can be called
+    _imp->_nodeCache->waitForDeleterThread();
+    _imp->_diskCache->waitForDeleterThread();
+    _imp->_viewerCache->waitForDeleterThread();
     _imp->_nodeCache.reset();
     _imp->_viewerCache.reset();
+    _imp->_diskCache.reset();
     
     if (qApp) {
         delete qApp;
@@ -471,7 +496,17 @@ AppManager::loadInternal(const QString & projectFilename,
     // this must be done after initializing the QCoreApplication, see
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
     //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
-    std::setlocale(LC_ALL,"en_US.UTF-8"); // set the locale for everything
+    // set the locale for everything
+    char *category = std::setlocale(LC_ALL,"en_US.UTF-8");
+    if (category == NULL) {
+        category = std::setlocale(LC_ALL,"UTF-8");
+    }
+    if (category == NULL) {
+        category = std::setlocale(LC_ALL,"C");
+    }
+    if (category == NULL) {
+        qDebug() << "Could not set locale!";
+    }
     Natron::Log::instance(); //< enable logging
 
     _imp->_settings->initializeKnobsPublic();
@@ -483,12 +518,15 @@ AppManager::loadInternal(const QString & projectFilename,
 
 
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-    U64 maxDiskCache = _imp->_settings->getMaximumDiskCacheSize();
+    U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-
-    U64 viewerCacheSize = maxDiskCache + playbackSize;
-    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1) );
-    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",0x1,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
+    U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
+    
+    U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
+    
+    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",NATRON_CACHE_VERSION, maxCacheRAM - playbackSize,1.) );
+    _imp->_diskCache.reset( new Cache<Image>("DiskCache",NATRON_CACHE_VERSION, maxDiskCacheNode,0.) );
+    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",NATRON_CACHE_VERSION,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
 
     setLoadingStatus( tr("Restoring the image cache...") );
     _imp->restoreCaches();
@@ -562,13 +600,13 @@ AppManager::newAppInstance(const QString & projectName,
         }
         instance->load(projectName,renderWorks);
     } catch (const std::exception & e) {
-        Natron::errorDialog( NATRON_APPLICATION_NAME,e.what() );
+        Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
         delete instance;
 
         return NULL;
     } catch (...) {
-        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString() );
+        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
         removeInstance(_imp->_availableID);
         delete instance;
 
@@ -630,6 +668,7 @@ AppManager::clearDiskCache()
 {
     clearLastRenderedTextures();
     _imp->_viewerCache->clear();
+    _imp->_diskCache->clear();
 }
 
 void
@@ -761,8 +800,8 @@ AppManager::writeToOutputPipe(const QString & longMessage,
                               const QString & shortMessage)
 {
     if (!_imp->_backgroundIPC) {
-        qDebug() << longMessage;
-
+        ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
+        std::cout << longMessage.toStdString() << std::endl;
         return false;
     }
     _imp->_backgroundIPC->writeToOutputChannel(shortMessage);
@@ -788,18 +827,24 @@ AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
+    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
     _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
 void
-AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
+AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
 {
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
 
     _imp->_viewerCache->setMaximumCacheSize(size);
     _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)size );
+}
+
+void
+AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
+{
+    _imp->_diskCache->setMaximumCacheSize(size);
 }
 
 void
@@ -810,7 +855,7 @@ AppManager::setPlaybackCacheMaximumSize(double p)
 
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
+    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
     _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
@@ -826,47 +871,60 @@ AppManager::loadAllPlugins()
 
     /*loading node plugins*/
 
-    loadBuiltinNodePlugins(&_imp->_plugins, &readersMap, &writersMap);
+    loadBuiltinNodePlugins(&readersMap, &writersMap);
 
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
 
     std::vector<Natron::Plugin*> ignoredPlugins;
-    _imp->_settings->populatePluginsTab(_imp->_plugins, ignoredPlugins);
+    _imp->_settings->populatePluginsTab(ignoredPlugins);
     
     ///Remove from the plug-ins the ignore plug-ins
     for (std::vector<Natron::Plugin*>::iterator it = ignoredPlugins.begin(); it != ignoredPlugins.end(); ++it) {
-        std::vector<Natron::Plugin*>::iterator found = std::find(_imp->_plugins.begin(),_imp->_plugins.end(),*it);
         
-        if (found != _imp->_plugins.end()) {
+        PluginsMap::iterator foundId = _imp->_plugins.find((*it)->getPluginID().toStdString());
+        if (foundId != _imp->_plugins.end()) {
+            PluginMajorsOrdered::iterator found = foundId->second.end();
             
-            ignorePlugin(*it);
-            ///Remove it from the readersMap and writersMap
-            
-            std::string pluginId = (*it)->getPluginID().toStdString();
-            if ((*it)->isReader()) {
-                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = readersMap.begin(); it2 != readersMap.end(); ++it2) {
-                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                        if (it3->first == pluginId) {
-                            it2->second.erase(it3);
-                            break;
+            for (PluginMajorsOrdered::iterator it2 = foundId->second.begin() ; it2 != foundId->second.end() ; ++it2) {
+                if (*it2 == *it) {
+                    found = it2;
+                    break;
+                }
+            }
+            if (found != foundId->second.end()) {
+                
+                ignorePlugin(*it);
+                ///Remove it from the readersMap and writersMap
+                
+                std::string pluginId = (*it)->getPluginID().toStdString();
+                if ((*it)->isReader()) {
+                    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = readersMap.begin(); it2 != readersMap.end(); ++it2) {
+                        for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                            if (it3->first == pluginId) {
+                                it2->second.erase(it3);
+                                break;
+                            }
                         }
                     }
                 }
-            }
-            if ((*it)->isWriter()) {
-                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = writersMap.begin(); it2 != writersMap.end(); ++it2) {
-                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                        if (it3->first == pluginId) {
-                            it2->second.erase(it3);
-                            break;
+                if ((*it)->isWriter()) {
+                    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = writersMap.begin(); it2 != writersMap.end(); ++it2) {
+                        for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                            if (it3->first == pluginId) {
+                                it2->second.erase(it3);
+                                break;
+                            }
                         }
                     }
+                    
                 }
-
+                delete *found;
+                foundId->second.erase(found);
+                if (foundId->second.empty()) {
+                    _imp->_plugins.erase(foundId);
+                }
             }
-            delete *found;
-            _imp->_plugins.erase(found);
         }
     }
     
@@ -877,8 +935,7 @@ AppManager::loadAllPlugins()
 }
 
 void
-AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                   std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
+AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
     {
@@ -895,15 +952,25 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-
-        Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
-                                                     "","",qgrouping,"",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion(),
-                                                    false,false);
-        plugins->push_back(plugin);
-
-
-        onPluginLoaded(plugin);
+        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion());
     }
+    {
+        boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&DiskCacheNode::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+    }
+
 }
 
 void
@@ -927,7 +994,15 @@ AppManager::registerPlugin(const QStringList & groups,
     }
     Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,ofxPluginID,pluginMutex,major,minor,
                                                 isReader,isWriter);
-    _imp->_plugins.push_back(plugin);
+    std::string stdID = pluginID.toStdString();
+    PluginsMap::iterator found = _imp->_plugins.find(stdID);
+    if (found != _imp->_plugins.end()) {
+        found->second.insert(plugin);
+    } else {
+        PluginMajorsOrdered set;
+        set.insert(plugin);
+        _imp->_plugins.insert(std::make_pair(stdID, set));
+    }
     onPluginLoaded(plugin);
 }
 
@@ -1043,19 +1118,22 @@ AppManager::clearExceedingEntriesFromNodeCache()
     _imp->_nodeCache->clearExceedingEntries();
 }
 
-const std::vector<Natron::Plugin*> &
+const PluginsMap&
 AppManager::getPluginsList() const
 {
     return _imp->_plugins;
 }
 
 QMutex*
-AppManager::getMutexForPlugin(const QString & pluginId) const
+AppManager::getMutexForPlugin(const QString & pluginId,int major,int /*minor*/) const
 {
-    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        if (_imp->_plugins[i]->getPluginID() == pluginId) {
-            return _imp->_plugins[i]->getPluginLock();
+    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+            if ((*it2)->getPluginID() == pluginId && (*it2)->getMajorVersion() == major) {
+                return (*it2)->getPluginLock();
+            }
         }
+     
     }
     std::string exc("Couldn't find a plugin named ");
     exc.append( pluginId.toStdString() );
@@ -1074,35 +1152,75 @@ AppManager::getKnobFactory() const
     return *(_imp->_knobFactory);
 }
 
-Natron::LibraryBinary*
+Natron::Plugin*
+AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
+{
+    for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+            if ((*it2)->getPluginID() == newId && (*it2)->getMajorVersion() == major && (*it2)->getMinorVersion() == minor) {
+                return (*it2);
+            }
+        }
+        
+    }
+    return 0;
+}
+
+Natron::Plugin*
+AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const
+{
+    std::map<int,Natron::Plugin*> matches;
+    
+    if (pluginId == "Viewer") {
+        return _imp->findPluginById(NATRON_VIEWER_ID, majorVersion, minorVersion);
+    } else if (pluginId == "Dot") {
+        return _imp->findPluginById(NATRON_DOT_ID,majorVersion, minorVersion );
+    } else if (pluginId == "DiskCache") {
+        return _imp->findPluginById(NATRON_DISKCACHE_NODE_ID, majorVersion, minorVersion);
+    }
+    
+    ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+            if ((*it2)->generateUserFriendlyPluginID() == pluginId &&
+                ((*it2)->getMajorVersion() == majorVersion || majorVersion == -1) &&
+                ((*it2)->getMinorVersion() == minorVersion || minorVersion == -1)) {
+                return *it2;
+            }
+        }
+        
+    }
+    return 0;
+}
+
+Natron::Plugin*
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
-                            int minorVersion) const
+                            int /*minorVersion*/) const
 {
     std::map<int,Natron::Plugin*> matches;
 
-    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        if (_imp->_plugins[i]->getPluginID() != pluginId) {
-            continue;
+    PluginsMap::const_iterator foundID = _imp->_plugins.find(pluginId.toStdString());
+    if (foundID != _imp->_plugins.end()) {
+        
+        assert(!foundID->second.empty());
+        
+        if (majorVersion == -1) {
+            return *foundID->second.rbegin();
         }
-        if ( (majorVersion != -1) && (_imp->_plugins[i]->getMajorVersion() != majorVersion) ) {
-            continue;
+        
+        for (PluginMajorsOrdered::const_iterator it = foundID->second.begin(); it != foundID->second.end(); ++it) {
+            if (((*it)->getMajorVersion() == majorVersion)) {
+                return *it;
+            }
         }
-        matches.insert( std::make_pair(_imp->_plugins[i]->getMinorVersion(),_imp->_plugins[i]) );
     }
-
-    if ( matches.empty() ) {
-        QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
-                .arg(pluginId)
-                .arg(majorVersion)
-                .arg(minorVersion);
-        throw std::invalid_argument( exc.toStdString() );
-    } else {
-        std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
-        --greatest;
-
-        return greatest->second->getLibraryBinary();
-    }
+    QString exc = QString("Couldn't find a plugin attached to the ID %1, with a major version of %2")
+    .arg(pluginId)
+    .arg(majorVersion);
+    throw std::invalid_argument( exc.toStdString() );
+    return 0;
+    
 }
 
 Natron::EffectInstance*
@@ -1148,6 +1266,12 @@ AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
 }
 
 void
+AppManager::removeAllImagesFromDiskCacheWithMatchingKey(U64 treeVersion)
+{
+    _imp->_diskCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
+}
+
+void
 AppManager::removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion)
 {
     _imp->_viewerCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
@@ -1176,18 +1300,25 @@ bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              const boost::shared_ptr<Natron::ImageParams>& params,
                              ImageLocker* imageLocker,
-                             std::list<boost::shared_ptr<Natron::Image> >* returnValue) const
+                             boost::shared_ptr<Natron::Image>* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
 }
 
-void
-AppManager::createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                               ImageLocker* imageLocker,
-                               boost::shared_ptr<Natron::Image>* returnValue) const
+bool
+AppManager::getImage_diskCache(const Natron::ImageKey & key,std::list<boost::shared_ptr<Natron::Image> >* returnValue) const
 {
-    _imp->_nodeCache->create(key, params, imageLocker, returnValue);
+    return _imp->_diskCache->get(key, returnValue);
 }
+
+bool
+AppManager::getImageOrCreate_diskCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
+                                ImageLocker* imageLocker,
+                                boost::shared_ptr<Natron::Image>* returnValue) const
+{
+    return _imp->_diskCache->getOrCreate(key, params, imageLocker, returnValue);
+}
+
 
 bool
 AppManager::getTexture(const Natron::FrameKey & key,
@@ -1215,18 +1346,14 @@ AppManager::getTextureOrCreate(const Natron::FrameKey & key,
                                FrameEntryLocker* entryLocker,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
-    std::list<boost::shared_ptr<Natron::FrameEntry> > retList;
     
-    bool ret =  _imp->_viewerCache->getOrCreate(key, params,entryLocker,&retList);
-    
-    if (!retList.empty()) {
-        if (retList.size() > 1) {
-            qDebug() << "WARNING: Several FrameEntry's were found in the cache for with the same key, this is a bug since they are unique.";
-        }
-        
-        *returnValue = retList.front();
-    }
-    return ret;
+    return _imp->_viewerCache->getOrCreate(key, params,entryLocker,returnValue);
+}
+
+bool
+AppManager::isAggressiveCachingEnabled() const
+{
+    return _imp->_settings->isAggressiveCachingEnabled();
 }
 
 U64
@@ -1269,7 +1396,6 @@ void
 AppManager::registerEngineMetaTypes() const
 {
     qRegisterMetaType<Variant>();
-    qRegisterMetaType<Natron::ChannelSet>();
     qRegisterMetaType<Format>();
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<Natron::StandardButtons>();
@@ -1280,12 +1406,12 @@ AppManager::registerEngineMetaTypes() const
 #endif
 }
 
-void
-AppManagerPrivate::saveCaches()
+template <typename T>
+void saveCache(Natron::Cache<T>* cache)
 {
     std::ofstream ofile;
     ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
+    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     try {
         ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
     } catch (const std::ofstream::failure & e) {
@@ -1300,50 +1426,99 @@ AppManagerPrivate::saveCaches()
         return;
     }
     
-    Natron::Cache<FrameEntry>::CacheTOC toc;
-    _viewerCache->save(&toc);
-    
+    typename Natron::Cache<T>::CacheTOC toc;
+    cache->save(&toc);
+    unsigned int version = cache->cacheVersion();
     try {
         boost::archive::binary_oarchive oArchive(ofile);
+        oArchive << version;
         oArchive << toc;
     } catch (const std::exception & e) {
         qDebug() << "Failed to serialize the cache table of contents: " << e.what();
     }
     
     ofile.close();
-    
 
-    //
-    //    {
-    //        std::ofstream ofile;
-    //        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    //        std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
-    //        try {
-    //            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-    //        } catch (const std::ofstream::failure & e) {
-    //            qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
-    //
-    //            return;
-    //        }
-    //
-    //        if ( !ofile.good() ) {
-    //            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
-    //
-    //            return;
-    //        }
-    //
-    //        Natron::Cache<Image>::CacheTOC toc;
-    //        _nodeCache->save(&toc);
-    //
-    //        try {
-    //            boost::archive::binary_oarchive oArchive(ofile);
-    //            oArchive << toc;
-    //            ofile.close();
-    //        } catch (const std::exception & e) {
-    //            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
-    //        }
-    //    }
+}
+
+void
+AppManager::setDiskCacheLocation(const QString& path)
+{
+    
+    QDir d(path);
+    QMutexLocker k(&_imp->diskCachesLocationMutex);
+    if (d.exists() && !path.isEmpty()) {
+        _imp->diskCachesLocation = path;
+    } else {
+        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    }
+    
+}
+
+const QString&
+AppManager::getDiskCacheLocation() const
+{
+    QMutexLocker k(&_imp->diskCachesLocationMutex);
+    return _imp->diskCachesLocation;
+}
+
+void
+AppManagerPrivate::saveCaches()
+{
+    saveCache<FrameEntry>(_viewerCache.get());
+    saveCache<Image>(_diskCache.get());
 } // saveCaches
+
+template <typename T>
+void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
+{
+    if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
+        std::ifstream ifile;
+        std::string settingsFilePath = cache->getRestoreFilePath();
+        try {
+            ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            ifile.open(settingsFilePath.c_str(),std::ifstream::in);
+        } catch (const std::ifstream::failure & e) {
+            qDebug() << "Failed to open the cache restoration file: " << e.what();
+            
+            return;
+        }
+        
+        if ( !ifile.good() ) {
+            qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+            ifile.close();
+            
+            return;
+        }
+        
+        typename Natron::Cache<T>::CacheTOC tableOfContents;
+        unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
+        try {
+            boost::archive::binary_iarchive iArchive(ifile);
+            if (cache->cacheVersion() >= NATRON_CACHE_VERSION) {
+                iArchive >> cacheVersion;
+            }
+            //Only load caches with same version, otherwise wipe it!
+            if (cacheVersion == cache->cacheVersion()) {
+                iArchive >> tableOfContents;
+            } else {
+                p->cleanUpCacheDiskStructure(cache->getCachePath());
+            }
+        } catch (const std::exception & e) {
+            qDebug() << e.what();
+            ifile.close();
+            
+            return;
+        }
+        
+        ifile.close();
+        
+        QFile restoreFile( settingsFilePath.c_str() );
+        restoreFile.remove();
+        
+        cache->restore(tableOfContents);
+    }
+}
 
 void
 AppManagerPrivate::restoreCaches()
@@ -1388,43 +1563,8 @@ AppManagerPrivate::restoreCaches()
     //        }
     //    }
     if (!appPTR->isBackground()) {
-        if ( checkForCacheDiskStructure( _viewerCache->getCachePath() ) ) {
-            std::ifstream ifile;
-            std::string settingsFilePath = _viewerCache->getRestoreFilePath();
-            try {
-                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-            } catch (const std::ifstream::failure & e) {
-                qDebug() << "Failed to open the cache restoration file: " << e.what();
-
-                return;
-            }
-
-            if ( !ifile.good() ) {
-                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
-                ifile.close();
-
-                return;
-            }
-
-            Natron::Cache<FrameEntry>::CacheTOC tableOfContents;
-            try {
-                boost::archive::binary_iarchive iArchive(ifile);
-                iArchive >> tableOfContents;
-            } catch (const std::exception & e) {
-                qDebug() << e.what();
-                ifile.close();
-
-                return;
-            }
-
-            ifile.close();
-
-            QFile restoreFile( settingsFilePath.c_str() );
-            restoreFile.remove();
-
-            _viewerCache->restore(tableOfContents);
-        }
+        restoreCache<FrameEntry>(this, _viewerCache.get());
+        restoreCache<Image>(this, _diskCache.get());
     }
 } // restoreCaches
 
@@ -1756,6 +1896,22 @@ AppManager::qt_tildeExpansion(const QString &path,
 
 #endif
 
+bool
+AppManager::isNodeCacheAlmostFull() const
+{
+    std::size_t nodeCacheSize = _imp->_nodeCache->getMemoryCacheSize();
+    std::size_t nodeMaxCacheSize = _imp->_nodeCache->getMaximumMemorySize();
+    
+    if (nodeMaxCacheSize == 0) {
+        return true;
+    }
+    
+    if ((double)nodeCacheSize / nodeMaxCacheSize >= NATRON_CACHE_LIMIT_PERCENT) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 void
 AppManager::checkCacheFreeMemoryIsGoodEnough()
@@ -1872,27 +2028,36 @@ AppManager::setThreadAsActionCaller(bool actionCaller)
 
 
 void
-AppManager::setProjectCreatedPriorToRC3(bool b)
+AppManager::setProjectCreatedDuringRC2Or3(bool b)
 {
-    _imp->lastProjectLoadedCreatedPriorToRC3 = b;
+    _imp->lastProjectLoadedCreatedDuringRC2Or3 = b;
 }
 
 //To by-pass a bug introduced in RC3 with the serialization of bezier curves
 bool
-AppManager::wasProjectCreatedPriorToRC3() const
+AppManager::wasProjectCreatedDuringRC2Or3() const
 {
-    return _imp->lastProjectLoadedCreatedPriorToRC3;
+    return _imp->lastProjectLoadedCreatedDuringRC2Or3;
+}
+
+void
+AppManager::toggleAutoHideGraphInputs()
+{
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        it->second.app->toggleAutoHideGraphInputs();
+    }
 }
 
 namespace Natron {
 void
 errorDialog(const std::string & title,
-            const std::string & message)
+            const std::string & message,
+            bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->errorDialog(title,message);
+        topLvlInstance->errorDialog(title,message,useHtml);
     } else {
         std::cout << "ERROR: " << title << " :" <<  message << std::endl;
     }
@@ -1901,12 +2066,13 @@ errorDialog(const std::string & title,
 void
 errorDialog(const std::string & title,
             const std::string & message,
-            bool* stopAsking)
+            bool* stopAsking,
+            bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->errorDialog(title,message,stopAsking);
+        topLvlInstance->errorDialog(title,message,stopAsking,useHtml);
     } else {
         std::cout << "ERROR: " << title << " :" <<  message << std::endl;
     }
@@ -1914,12 +2080,13 @@ errorDialog(const std::string & title,
 
 void
 warningDialog(const std::string & title,
-              const std::string & message)
+              const std::string & message,
+              bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->warningDialog(title,message);
+        topLvlInstance->warningDialog(title,message,useHtml);
     } else {
         std::cout << "WARNING: " << title << " :" << message << std::endl;
     }
@@ -1927,12 +2094,13 @@ warningDialog(const std::string & title,
 void
 warningDialog(const std::string & title,
               const std::string & message,
-              bool* stopAsking)
+              bool* stopAsking,
+              bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->warningDialog(title,message, stopAsking);
+        topLvlInstance->warningDialog(title,message, stopAsking,useHtml);
     } else {
         std::cout << "WARNING: " << title << " :" << message << std::endl;
     }
@@ -1941,12 +2109,13 @@ warningDialog(const std::string & title,
 
 void
 informationDialog(const std::string & title,
-                  const std::string & message)
+                  const std::string & message,
+                  bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->informationDialog(title,message);
+        topLvlInstance->informationDialog(title,message,useHtml);
     } else {
         std::cout << "INFO: " << title << " :" << message << std::endl;
     }
@@ -1955,12 +2124,13 @@ informationDialog(const std::string & title,
 void
 informationDialog(const std::string & title,
                   const std::string & message,
-                  bool* stopAsking)
+                  bool* stopAsking,
+                  bool useHtml)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        topLvlInstance->informationDialog(title,message,stopAsking);
+        topLvlInstance->informationDialog(title,message,stopAsking,useHtml);
     } else {
         std::cout << "INFO: " << title << " :" << message << std::endl;
     }
@@ -1970,13 +2140,14 @@ informationDialog(const std::string & title,
 Natron::StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
+               bool useHtml,
                Natron::StandardButtons buttons,
                Natron::StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
+        return topLvlInstance->questionDialog(title,message,useHtml,buttons,defaultButton);
     } else {
         std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
@@ -1988,6 +2159,7 @@ questionDialog(const std::string & title,
 Natron::StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
+               bool useHtml,
                Natron::StandardButtons buttons,
                Natron::StandardButtonEnum defaultButton,
                bool* stopAsking)
@@ -1995,7 +2167,7 @@ questionDialog(const std::string & title,
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
-        return topLvlInstance->questionDialog(title,message,buttons,defaultButton,stopAsking);
+        return topLvlInstance->questionDialog(title,message,useHtml,buttons,defaultButton,stopAsking);
     } else {
         std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;

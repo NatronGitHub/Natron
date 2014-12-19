@@ -18,6 +18,7 @@
 #include "Engine/Rect.h"
 #include "Engine/EffectInstance.h"
 
+#define NATRON_VIEWER_ID NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer"
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -25,6 +26,7 @@ namespace Color {
 class Lut;
 }
 }
+class UpdateViewerParams;
 class TimeLine;
 class OpenGLViewerI;
 struct TextureRect;
@@ -66,6 +68,23 @@ public:
      **/
     void invalidateUiContext();
 
+    struct ViewerArgs
+    {
+        Natron::EffectInstance* activeInputToRender;
+        bool forceRender;
+        int activeInputIndex;
+        U64 activeInputHash;
+        boost::shared_ptr<Natron::FrameKey> key;
+        boost::shared_ptr<UpdateViewerParams> params;
+    };
+    
+    /**
+     * @brief Look-up the cache and try to find a matching texture for the portion to render.
+     **/
+    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
+                                                        ViewerArgs* outArgs);
+
+    
     /**
      * @brief This function renders the image at time 'time' on the viewer.
      * It first get the region of definition of the image at the given time
@@ -76,13 +95,13 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    Natron::StatusEnum renderViewer(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
+    Natron::StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                 U64 viewerHash,
                                 bool canAbort,
-                                std::list<boost::shared_ptr<BufferableObject> >& outputFrames) WARN_UNUSED_RETURN;
+                                boost::shared_ptr<ViewerInstance::ViewerArgs> args[2]) WARN_UNUSED_RETURN;
 
 
-    void updateViewer(const boost::shared_ptr<BufferableObject>& frame);
+    void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
     
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully
@@ -92,8 +111,6 @@ public:
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
     void disconnectViewer();
-
-    int activeInput() const WARN_UNUSED_RETURN;
 
     int getLutType() const WARN_UNUSED_RETURN;
 
@@ -135,6 +152,8 @@ public:
     void onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace);
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+    
+    virtual void restoreClipPreferences() OVERRIDE FINAL;
 
     void setInputA(int inputNb);
 
@@ -149,6 +168,11 @@ public:
     boost::shared_ptr<TimeLine> getTimeline() const;
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
+    
+    virtual void checkOFXClipPreferences(double time,
+                                         const RenderScale & scale,
+                                         const std::string & reason,
+                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 
@@ -180,6 +204,8 @@ signals:
     void refreshOptionalState();
 
     void activeInputsChanged();
+    
+    void clipPreferencesChanged();
 
     void disconnectTextureRequest(int index);
     
@@ -210,7 +236,7 @@ private:
 
     virtual std::string getPluginID() const OVERRIDE FINAL
     {
-        return "Viewer";
+        return NATRON_VIEWER_ID;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL
@@ -239,10 +265,13 @@ private:
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
     
-    Natron::StatusEnum renderViewer_internal(SequenceTime time,int view,bool singleThreaded,bool isSequentialRender,
-                                         int textureIndex, U64 viewerHash,
-                                         bool canAbort,
-                                         boost::shared_ptr<BufferableObject>* outputObject) WARN_UNUSED_RETURN;
+    
+    Natron::StatusEnum renderViewer_internal(int view,
+                                             bool singleThreaded,
+                                             bool isSequentialRender,
+                                             U64 viewerHash,
+                                             bool canAbort,
+                                             const ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
     

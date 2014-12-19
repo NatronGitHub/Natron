@@ -571,7 +571,7 @@ KnobCurveGui::getInternalKnob() const
 }
 
 BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
-                                   Bezier* bezier,
+                                   const boost::shared_ptr<Bezier>& bezier,
                                    const boost::shared_ptr<RotoContext>& roto,
                                    const QString & name,
                                    const QColor & color,
@@ -586,7 +586,7 @@ BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
     }
 }
 
-Bezier*
+boost::shared_ptr<Bezier>
 BezierCPCurveGui::getBezier() const
 {
     return _bezier;
@@ -998,13 +998,13 @@ CurveWidgetPrivate::refreshTimelinePositions()
     QPointF btmCursorBtm( _timeline->currentFrame(),btmRight.y() );
     QPointF btmcursorBtmWidgetCoord = zoomCtx.toWidgetCoordinates( btmCursorBtm.x(),btmCursorBtm.y() );
     QPointF btmCursorTop = zoomCtx.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-    QPointF btmCursorLeft = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2, btmcursorBtmWidgetCoord.y() );
-    QPointF btmCursorRight = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2,btmcursorBtmWidgetCoord.y() );
+    QPointF btmCursorLeft = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2., btmcursorBtmWidgetCoord.y() );
+    QPointF btmCursorRight = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2.,btmcursorBtmWidgetCoord.y() );
     QPointF topCursortop( _timeline->currentFrame(),topLeft.y() );
     QPointF topcursorTopWidgetCoord = zoomCtx.toWidgetCoordinates( topCursortop.x(),topCursortop.y() );
     QPointF topCursorBtm = zoomCtx.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + CURSOR_HEIGHT);
-    QPointF topCursorLeft = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() - CURSOR_WIDTH / 2, topcursorTopWidgetCoord.y() );
-    QPointF topCursorRight = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() + CURSOR_WIDTH / 2,topcursorTopWidgetCoord.y() );
+    QPointF topCursorLeft = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() - CURSOR_WIDTH / 2., topcursorTopWidgetCoord.y() );
+    QPointF topCursorRight = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() + CURSOR_WIDTH / 2.,topcursorTopWidgetCoord.y() );
 
     _timelineBtmPoly.clear();
     _timelineTopPoly.clear();
@@ -1912,8 +1912,9 @@ CurveWidget::CurveWidget(Gui* gui,
     
     if (parent->objectName() == "CurveEditorSplitter") {
         ///if this is the curve widget associated to the CurveEditor
-        QDesktopWidget* desktop = QApplication::desktop();
-        _imp->sizeH = desktop->screenGeometry().size();
+//        QDesktopWidget* desktop = QApplication::desktop();
+//        _imp->sizeH = desktop->screenGeometry().size();
+        _imp->sizeH = QSize(10000,10000);
 
     } else {
         ///a random parametric param curve editor
@@ -2688,6 +2689,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
     if (_imp->_state == eEventStateNone) {
         // nothing else to do
+        QGLWidget::mouseMoveEvent(e);
         return;
     }
 
@@ -2750,6 +2752,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     _imp->_oldClick = e->pos();
 
     update();
+    QGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void

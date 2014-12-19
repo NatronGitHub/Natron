@@ -207,11 +207,6 @@ public:
     qint64 getProjectCreationTime() const;
 
     /**
-     * @brief Copy the current node counters into the counters map. MT-safe
-     **/
-    void getNodeCounters(std::map<std::string,int>* counters) const;
-
-    /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
      * If no such node could be found, NULL is returned.
      **/
@@ -302,6 +297,8 @@ public:
 
     void setAllNodesAborted(bool aborted);
     
+    double getProjectFrameRate() const;
+    
 public slots:
 
     void onAutoSaveTimerTriggered();
@@ -311,6 +308,8 @@ public slots:
     {
         reset();
     }
+
+    void onAutoSaveFutureFinished();
 
 signals:
 
@@ -325,6 +324,7 @@ signals:
     void projectNameChanged(QString);
 
     void knobsInitialized();
+    
 
 private:
 
@@ -382,7 +382,8 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time)  OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+                                    bool originatedFromMainThread)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;
 

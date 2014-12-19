@@ -65,7 +65,8 @@ public:
     virtual ~GuiApplicationManager();
 
     const std::list<PluginGroupNode*> & getPluginsToolButtons() const;
-    PluginGroupNode* findPluginToolButtonOrCreate(const QString & pluginID,const QString & name,const QString & iconPath);
+    PluginGroupNode* findPluginToolButtonOrCreate(const QString & pluginID,const QString & name,const QString & iconPath,
+                                                  int major,int minor);
     virtual bool isBackground() const OVERRIDE FINAL
     {
         return false;
@@ -155,8 +156,7 @@ private:
     virtual void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
-    virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+    virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
     virtual void initGui() OVERRIDE FINAL;
     virtual AppInstance* makeNewInstance(int appID) const OVERRIDE FINAL;

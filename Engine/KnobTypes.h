@@ -699,8 +699,8 @@ public:
               int dimension,
               bool declaredByPlugin);
 
-    void addKnob(boost::shared_ptr<KnobI> k);
-
+    void addKnob(const boost::shared_ptr<KnobI>& k);
+    
     const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
     {
         return _children;

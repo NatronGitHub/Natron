@@ -31,7 +31,7 @@ CLANG_DIAG_ON(uninitialized)
 class QUndoCommand; //used by KnobGui
 class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
-class QFormLayout;
+class QGridLayout;
 class QMenu;
 class QLabel;
 class QString;
@@ -79,14 +79,15 @@ public:
 
     bool hasWidgetBeenCreated() const;
 
-    void createGUI(QFormLayout* containerLayout,
+    void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   QWidget* label,
+                   QLabel* label,
                    QHBoxLayout* layout,
                    int row,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
 
+    virtual bool shouldAddStretch() const { return true; }
 
     void pushUndoCommand(QUndoCommand* cmd);
 

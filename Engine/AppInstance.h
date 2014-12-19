@@ -196,14 +196,17 @@ public:
     {
     }
 
-    virtual void errorDialog(const std::string & title,const std::string & message) const;
-    virtual void errorDialog(const std::string & title,const std::string & message,bool* stopAsking) const;
-    virtual void warningDialog(const std::string & title,const std::string & message) const;
-    virtual void warningDialog(const std::string & title,const std::string & message,bool* stopAsking) const;
-    virtual void informationDialog(const std::string & title,const std::string & message) const;
-    virtual void informationDialog(const std::string & title,const std::string & message,bool* stopAsking) const;
+    virtual void errorDialog(const std::string & title,const std::string & message,bool useHtml) const;
+    virtual void errorDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
+    virtual void warningDialog(const std::string & title,const std::string & message,bool useHtml) const;
+    virtual void warningDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
+    virtual void informationDialog(const std::string & title,const std::string & message,bool useHtml) const;
+    virtual void informationDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
     
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
+                                                      const std::string & message,
+                                                      bool useHtml,
+                                                      Natron::StandardButtons buttons =
                                                       Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                                   Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const WARN_UNUSED_RETURN;
     
@@ -213,6 +216,7 @@ public:
      **/
     virtual Natron::StandardButtonEnum questionDialog(const std::string & /*title*/,
                                                       const std::string & /*message*/,
+                                                      bool /*useHtml*/,
                                                       Natron::StandardButtons /*buttons*/,
                                                       Natron::StandardButtonEnum /*defaultButton*/,
                                                       bool* /*stopAsking*/)
@@ -275,6 +279,8 @@ public:
     Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
 
     int getMainView() const;
+    
+    double getProjectFrameRate() const;
 
     /**
      * @brief Clears any shared ptr to NodeGuis left
@@ -299,15 +305,13 @@ public:
 
     virtual void clearViewersLastRenderedTexture() {}
 
+    virtual void toggleAutoHideGraphInputs() {}
     
 public slots:
 
     void quit();
 
-    /* The following methods are forwarded to the model */
-    void checkViewersConnection();
-
-    void redrawAllViewers();
+    virtual void redrawAllViewers() {}
 
     void triggerAutoSave();
 

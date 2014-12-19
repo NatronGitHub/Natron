@@ -31,11 +31,12 @@ MenuWithToolTips::MenuWithToolTips(QWidget* parent)
 bool
 MenuWithToolTips::event (QEvent* e)
 {
-    const QHelpEvent* helpEvent = static_cast <QHelpEvent*>(e);
+    if (e->type() == QEvent::ToolTip) {
+        const QHelpEvent* helpEvent = dynamic_cast<QHelpEvent*>(e);
+        assert(helpEvent);
 
-    if (helpEvent->type() == QEvent::ToolTip) {
         QAction* action = activeAction();
-        if (!action) {
+        if (!helpEvent || !action) {
             return false;
         }
         if ( action->text() != action->toolTip() ) {

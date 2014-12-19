@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/Knob.h"
-
+#include <QThread>
 namespace Natron {
 class Node;
 }
@@ -135,7 +135,8 @@ private:
 
     virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+                                    bool originatedFromMainThread) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
 
@@ -166,11 +167,17 @@ public:
 
     void setUpdateViewerOnTracking(bool update);
 
+    bool isUpdateViewerOnTrackingEnabled() const;
 public slots:
 
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
 
+    void onTrackingStarted();
+    
+    void onTrackingFinished();
+    
+    void onTrackingProgressUpdate(double progress);
     
 signals:
     
@@ -185,9 +192,48 @@ private:
     virtual void onButtonTriggered(Button_Knob* button) OVERRIDE FINAL;
     virtual void showMenuForInstance(Natron::Node* item) OVERRIDE FINAL;
 
-    void handleTrackNextAndPrevious(const std::list<Button_Knob*> & selectedInstances,SequenceTime currentFrame);
-
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
+};
+
+struct TrackSchedulerPrivate;
+class TrackScheduler : public QThread
+{
+    Q_OBJECT
+    
+public:
+    
+    TrackScheduler(const TrackerPanel* panel);
+    
+    virtual ~TrackScheduler();
+    
+    /**
+     * @brief Track the selectedInstances, calling the instance change action on each button (either the previous or
+     * next button) in a separate thread. 
+     * @param start the first frame to track, if forward is true then start < end
+     * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
+     **/
+    void track(int start,int end,bool forward,const std::list<Button_Knob*> & selectedInstances);
+    
+    void abortTracking();
+    
+    void quitThread();
+    
+    bool isWorking() const;
+    
+signals:
+    
+    void trackingStarted();
+    
+    void trackingFinished();
+    
+    void progressUpdate(double progress);
+
+private:
+    
+    virtual void run() OVERRIDE FINAL;
+    
+    boost::scoped_ptr<TrackSchedulerPrivate> _imp;
+    
 };
 
 

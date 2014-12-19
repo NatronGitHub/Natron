@@ -314,7 +314,7 @@ MultipleKnobEditsUndoCommand::undo()
     if (holder) {
         int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
         for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame);
+            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
         }
 
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
@@ -348,7 +348,7 @@ MultipleKnobEditsUndoCommand::redo()
 
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
                 int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
-                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame);
+                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
             }
         }
     } else {
@@ -463,9 +463,12 @@ RestoreDefaultsCommand::undo()
         if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
-                KeyFrameSet kfs = (*it)->getCurve(i)->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                    times.push_back( it->getTime() );
+                boost::shared_ptr<Curve> c = (*it)->getCurve(i);
+                if (c) {
+                    KeyFrameSet kfs = c->getKeyFrames_mt_safe();
+                    for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                        times.push_back( it->getTime() );
+                    }
                 }
             }
         }
@@ -492,9 +495,12 @@ RestoreDefaultsCommand::redo()
         if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
-                KeyFrameSet kfs = (*it)->getCurve(i)->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                    times.push_back( it->getTime() );
+                boost::shared_ptr<Curve> c = (*it)->getCurve(i);
+                if (c) {
+                    KeyFrameSet kfs = c->getKeyFrames_mt_safe();
+                    for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                        times.push_back( it->getTime() );
+                    }
                 }
             }
         }

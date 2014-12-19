@@ -341,19 +341,19 @@ public:
     bool intersect(const RectI & r,
                    RectI* intersection) const
     {
-        if ( isNull() || r.isNull() ) {
-            return false;
-        }
-
-        if ( (x1 > r.x2) || (r.x1 > x2) || (y1 > r.y2) || (r.y1 > y2) ) {
+        if ( !intersects(r) ) {
             return false;
         }
 
         intersection->x1 = std::max(x1,r.x1);
-        intersection->x2 = std::min(x2,r.x2);
+        // the region must be *at least* empty, thus the maximin.
+        intersection->x2 = std::max(intersection->x1,std::min(x2,r.x2));
         intersection->y1 = std::max(y1,r.y1);
-        intersection->y2 = std::min(y2,r.y2);
+        // the region must be *at least* empty, thus the maximin.
+        intersection->y2 = std::max(intersection->y1,std::min(y2,r.y2));
 
+        assert(!intersection->isNull());
+        
         return true;
     }
 
@@ -372,7 +372,7 @@ public:
         if ( isNull() || r.isNull() ) {
             return false;
         }
-        if ( (x1 > r.x2) || (r.x1 > x2) || (y1 > r.y2) || (r.y1 > y2) ) {
+        if ( (r.x2 <= x1) || (x2 <= r.x1) || (r.y2 <= y1) || (y2 <= r.y1) ) {
             return false;
         }
 
@@ -390,7 +390,7 @@ public:
     /*the area : w*h*/
     U64 area() const
     {
-        return width() * height();
+        return (U64)width() * height();
     }
 
     RectI & operator=(const RectI & other)
@@ -742,7 +742,7 @@ public:
     /*the area : w*h*/
     double area() const
     {
-        return width() * height();
+        return (double)width() * height();
     }
 
     RectD & operator=(const RectD & other)

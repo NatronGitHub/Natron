@@ -12,12 +12,14 @@
 #define PROJECTPRIVATE_H
 
 #include <map>
-
+#include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDateTime>
 #include <QString>
+#include <QFuture>
+#include <QFutureWatcher>
 #include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -45,9 +47,9 @@ generateStringFromFormat(const Format & f)
 
     formatStr.append(f.getName().c_str());
     formatStr.append("  ");
-    formatStr.append(QString::number(std::ceil(f.width())));
+    formatStr.append(QString::number(f.width()));
     formatStr.append(" x ");
-    formatStr.append(QString::number(std::ceil(f.height())));
+    formatStr.append(QString::number(f.height()));
     formatStr.append("  ");
     formatStr.append(QString::number(f.getPixelAspectRatio()));
 
@@ -79,6 +81,7 @@ struct ProjectPrivate
     boost::shared_ptr<Int_Knob> mainView;
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
     boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
+    boost::shared_ptr<Double_Knob> frameRate;
     
     boost::shared_ptr<String_Knob> natronVersion;
     boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;
@@ -87,7 +90,6 @@ struct ProjectPrivate
     
     boost::shared_ptr<TimeLine> timeline; // global timeline
     mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
-    std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
     bool autoSetProjectFormat;
     std::vector< boost::shared_ptr<Natron::Node> > currentNodes;
     Natron::Project* project;
@@ -98,6 +100,7 @@ struct ProjectPrivate
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
+    std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
 
     
     ProjectPrivate(Natron::Project* project);

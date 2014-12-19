@@ -32,7 +32,15 @@ class NodeGuiSerialization
 public:
 
     NodeGuiSerialization()
-        : _colorWasFound(false), _selected(false)
+        : _nodeName()
+        , _posX(0.)
+        , _posY(0.)
+        , _previewEnabled(false)
+        , _r(0.)
+        , _g(0.)
+        , _b(0.)
+        , _colorWasFound(false)
+        , _selected(false)
     {
     }
 

@@ -78,6 +78,7 @@ public:
         : ramBuffer(NULL)
           , mustFreeRamBuffer(false)
           , textureIndex(0)
+          , time(0)
           , textureRect()
           , bytesCount(0)
           , gain(1.)
@@ -104,6 +105,7 @@ public:
     unsigned char* ramBuffer;
     bool mustFreeRamBuffer; //< set to true when !cachedFrame
     int textureIndex;
+    int time;
     TextureRect textureRect;
     Natron::ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
@@ -170,6 +172,20 @@ public:
         ///Okay the image is not used by any other thread, claim that we want to use it
         assert( it == textureBeingRendered.end() );
         textureBeingRendered.push_back(entry);
+    }
+    
+    virtual bool tryLock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    {
+        QMutexLocker l(&textureBeingRenderedMutex);
+        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+        if ( it != textureBeingRendered.end() ) {
+            return false;
+        }
+        ///Okay the image is not used by any other thread, claim that we want to use it
+        assert( it == textureBeingRendered.end() );
+        textureBeingRendered.push_back(entry);
+        return true;
     }
     
     virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL

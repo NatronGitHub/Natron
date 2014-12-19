@@ -23,7 +23,6 @@
 #include <ofxNatron.h>
 
 #include "Engine/Hash64.h"
-#include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxHost.h"
@@ -36,6 +35,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/Plugin.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
@@ -45,6 +45,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Timer.h"
 #include "Engine/Settings.h"
+#include "Engine/NodeGuiI.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
@@ -61,15 +62,22 @@ namespace { // protect local classes in anonymous namespace
     typedef std::list<Node::KnobLink> KnobLinkList;
     typedef std::vector<boost::shared_ptr<Node> > InputsV;
     
+    enum InputActionEnum
+    {
+        eInputActionConnect,
+        eInputActionDisconnect,
+        eInputActionReplace
+    };
+    
     struct ConnectInputAction
     {
         boost::shared_ptr<Natron::Node> node;
-        bool isConnect;
+        InputActionEnum type;
         int inputNb;
         
-        ConnectInputAction(const boost::shared_ptr<Natron::Node>& input,bool isConnect,int inputNb)
+        ConnectInputAction(const boost::shared_ptr<Natron::Node>& input,InputActionEnum type,int inputNb)
         : node(input)
-        , isConnect(isConnect)
+        , type(type)
         , inputNb(inputNb)
         {
         }
@@ -82,7 +90,7 @@ namespace { // protect local classes in anonymous namespace
 struct Node::Implementation
 {
     Implementation(AppInstance* app_,
-                   LibraryBinary* plugin_)
+                   Natron::Plugin* plugin_)
     : app(app_)
     , knobsInitialized(false)
     , inputsInitialized(false)
@@ -124,6 +132,7 @@ struct Node::Implementation
     , outputFormat()
     , refreshInfoButton()
     , useFullScaleImagesWhenRenderScaleUnsupported()
+    , forceCaching()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -149,6 +158,7 @@ struct Node::Implementation
     , persistentMessage()
     , persistentMessageType(0)
     , persistentMessageMutex()
+    , guiPointer(0)
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -195,7 +205,7 @@ struct Node::Implementation
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
-    LibraryBinary* plugin; //< the plugin which stores the function to instantiate the effect
+    Natron::Plugin* plugin; //< the plugin which stores the function to instantiate the effect
     bool computingPreview;
     mutable QMutex computingPreviewMutex;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
@@ -228,6 +238,7 @@ struct Node::Implementation
     boost::shared_ptr<Button_Knob> refreshInfoButton;
     
     boost::shared_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported;
+    boost::shared_ptr<Bool_Knob> forceCaching;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -270,6 +281,8 @@ struct Node::Implementation
     QString persistentMessage;
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
+    
+    NodeGuiI* guiPointer;
 };
 
 /**
@@ -287,7 +300,7 @@ toBGRA(unsigned char r,
 }
 
 Node::Node(AppInstance* app,
-           LibraryBinary* plugin)
+           Natron::Plugin* plugin)
 : QObject()
 , _imp( new Implementation(app,plugin) )
 {
@@ -303,7 +316,14 @@ Node::createRotoContextConditionnally()
     ///Initialize the roto context if any
     if ( isRotoNode() ) {
         _imp->rotoContext.reset( new RotoContext(this) );
+        _imp->rotoContext->createBaseLayer();
     }
+}
+
+const Natron::Plugin*
+Node::getPlugin() const
+{
+    return _imp->plugin;
 }
 
 void
@@ -350,7 +370,11 @@ Node::load(const std::string & pluginID,
     
     int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(pluginID);
 
-    std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
+    LibraryBinary* binary = _imp->plugin->getLibraryBinary();
+    std::pair<bool,EffectBuilder> func;
+    if (binary) {
+        func = binary->findFunction<EffectBuilder>("BuildEffect");
+    }
     bool isFileDialogPreviewReader = fixedName.contains("Natron_File_Dialog_Preview_Provider_Reader");
     if (func.first) {
         _imp->liveInstance = func.second(thisShared);
@@ -441,6 +465,12 @@ Node::fetchParentMultiInstancePointer()
             break;
         }
     }
+}
+
+Natron::Node*
+Node::getParentMultiInstance() const
+{
+    return _imp->multiInstanceParent;
 }
 
 bool
@@ -824,7 +854,7 @@ Node::getInputNames(std::vector<std::string> & inputNames) const
 }
 
 int
-Node::getPreferredInputForConnection() const
+Node::getPreferredInputForConnection() 
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (getMaxInputCount() == 0) {
@@ -855,7 +885,7 @@ Node::getPreferredInputForConnection() const
     }  else {
         if ( !optionalEmptyInputs.empty() ) {
             
-            if (getPluginID().find("Merge") != std::string::npos) {
+            if (getPluginID().find("net.sf.openfx.mergeplugin") != std::string::npos) {
                 //if it is a merge node, try to follow what the user preferences tell us
                 std::string inputNameToFind;
                 bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
@@ -1070,6 +1100,18 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
     loadKnob(_imp->nodeLabelKnob, serialization);
     
+    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Force caching", 1, false);
+    _imp->forceCaching->setName("forceCaching");
+    _imp->forceCaching->setDefaultValue(false);
+    _imp->forceCaching->setAnimationEnabled(false);
+    _imp->forceCaching->turnOffNewLine();
+    _imp->forceCaching->setIsPersistant(true);
+    _imp->forceCaching->setEvaluateOnChange(false);
+    _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
+                                       "images.");
+    _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
+    loadKnob(_imp->forceCaching,serialization);
+    
     _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Preview enabled",1,false);
     assert(_imp->previewEnabledKnob);
     _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
@@ -1154,6 +1196,12 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->liveInstance->unblockEvaluation();
     emit knobsInitialized();
 } // initializeKnobs
+
+bool
+Node::isForceCachingEnabled() const
+{
+    return _imp->forceCaching->getValue();
+}
 
 void
 Node::onSetSupportRenderScaleMaybeSet(int support)
@@ -1499,23 +1547,21 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
         if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
             
-            bool inputPARSet = false;
-            double inputPAR = 1.;
+            double inputPAR = input->getLiveInstance()->getPreferredAspectRatio();
+            
+            double inputFPS = input->getLiveInstance()->getPreferredFrameRate();
+            
             for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
                 if (*it) {
-                    if (!inputPARSet) {
-                        inputPAR = (*it)->getLiveInstance()->getPreferredAspectRatio();
-                        inputPARSet = true;
-                    } else {
-                        if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
-                            return eCanConnectInput_differentPars;
-                        }
+                    if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                        return eCanConnectInput_differentPars;
                     }
+                    
+                    if (std::abs((*it)->getLiveInstance()->getPreferredFrameRate() - inputFPS) > 0.01) {
+                        return eCanConnectInput_differentFPS;
+                    }
+                    
                 }
-            }
-            
-            if (inputPARSet && inputPAR != input->getLiveInstance()->getPreferredAspectRatio()) {
-                return eCanConnectInput_differentPars;
             }
         }
     }
@@ -1524,7 +1570,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
 }
 
 bool
-Node::connectInput(boost::shared_ptr<Node> input,
+Node::connectInput(const boost::shared_ptr<Node> & input,
                    int inputNumber)
 {
     ////Only called by the main-thread
@@ -1543,7 +1589,7 @@ Node::connectInput(boost::shared_ptr<Node> input,
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] != NULL) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
             return false;
         }
         
@@ -1551,7 +1597,7 @@ Node::connectInput(boost::shared_ptr<Node> input,
         {
             QMutexLocker k(&_imp->nodeIsRenderingMutex);
             if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(input,true,inputNumber);
+                ConnectInputAction action(input,eInputActionConnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return true;
@@ -1575,6 +1621,63 @@ Node::connectInput(boost::shared_ptr<Node> input,
     ///Recompute the hash
     computeHash();
     
+    return true;
+}
+
+bool
+Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    assert(_imp->inputsInitialized);
+    assert(input);
+    
+    ///Check for cycles: they are forbidden in the graph
+    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+        return false;
+    }
+    if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
+        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        return false;
+    }
+    {
+        ///Check for invalid index
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) ) {
+            return false;
+        }
+        
+        ///If the node is currently rendering, queue the action instead of executing it
+        {
+            QMutexLocker k(&_imp->nodeIsRenderingMutex);
+            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+                ConnectInputAction action(input,eInputActionReplace,inputNumber);
+                QMutexLocker cql(&_imp->connectionQueueMutex);
+                _imp->connectionQueue.push_back(action);
+                return true;
+            }
+        }
+        
+        ///Set the input
+        if (_imp->inputs[inputNumber]) {
+            QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+            _imp->inputs[inputNumber]->disconnectOutput(this);
+        }
+        _imp->inputs[inputNumber] = input;
+        input->connectOutput(this);
+    }
+    
+    ///Get notified when the input name has changed
+    QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+    
+    ///Notify the GUI
+    emit inputChanged(inputNumber);
+    
+    ///Call the instance changed action with a reason clip changed
+    onInputChanged(inputNumber);
+    
+    ///Recompute the hash
+    computeHash();
     return true;
 }
 
@@ -1620,10 +1723,7 @@ Node::switchInput0And1()
         ///if there's a mask use it as input B for the switch
         if (firstMaskInput != -1) {
             inputBIndex = firstMaskInput;
-        } else {
-            ///there's only 1 input
-            return;
-        }
+        } 
     }
     
     ///If the node is currently rendering, queue the action instead of executing it
@@ -1631,27 +1731,15 @@ Node::switchInput0And1()
         QMutexLocker k(&_imp->nodeIsRenderingMutex);
         if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
             QMutexLocker cql(&_imp->connectionQueueMutex);
-            ///Disonnect input A
+            ///Replace input A
             {
-                ConnectInputAction action(_imp->inputs[inputAIndex],false,inputAIndex);
+                ConnectInputAction action(_imp->inputs[inputBIndex],eInputActionReplace,inputAIndex);
                 _imp->connectionQueue.push_back(action);
             }
             
-            ///Disconnect input B
+            ///Replace input B
             {
-                ConnectInputAction action(_imp->inputs[inputBIndex],false,inputBIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            ///Connect input A
-            {
-                ConnectInputAction action(_imp->inputs[inputBIndex],true,inputAIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            ///Connect input B
-            {
-                ConnectInputAction action(_imp->inputs[inputAIndex],true,inputBIndex);
+                ConnectInputAction action(_imp->inputs[inputAIndex],eInputActionReplace,inputBIndex);
                 _imp->connectionQueue.push_back(action);
             }
             
@@ -1728,7 +1816,7 @@ Node::disconnectInput(int inputNumber)
         {
             QMutexLocker k(&_imp->nodeIsRenderingMutex);
             if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(_imp->inputs[inputNumber],false,inputNumber);
+                ConnectInputAction action(_imp->inputs[inputNumber],eInputActionDisconnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return inputNumber;
@@ -1762,7 +1850,7 @@ Node::disconnectInput(Node* input)
                 {
                     QMutexLocker k(&_imp->nodeIsRenderingMutex);
                     if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                        ConnectInputAction action(_imp->inputs[i],false,i);
+                        ConnectInputAction action(_imp->inputs[i],eInputActionDisconnect,i);
                         QMutexLocker cql(&_imp->connectionQueueMutex);
                         _imp->connectionQueue.push_back(action);
                         return i;
@@ -1856,7 +1944,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     }
     
     //first tell the gui to clear any persistent message linked to this node
-    clearPersistentMessage();
+    clearPersistentMessage(false);
     
     ///For all knobs that have listeners, kill expressions
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
@@ -2159,7 +2247,8 @@ Node::makePreviewImage(SequenceTime time,
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(getHashValue(),time, scale, 0, &rod, &isProjectFormat);
+    U64 nodeHash = getHashValue();
+    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -2186,7 +2275,9 @@ Node::makePreviewImage(SequenceTime time,
                                              true,
                                              false,
                                              false,
-                                             getHashValue());
+                                             nodeHash,
+                                             false,
+                                             getApp()->getTimeLine().get());
     
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
@@ -2261,9 +2352,8 @@ Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    QString name = getPluginID().c_str();
-    
-    return name.contains("roto",Qt::CaseInsensitive);
+    std::string name = getPluginID();
+    return name.find("net.sf.openfx.rotoplugin") != std::string::npos;
 }
 
 /**
@@ -2303,6 +2393,12 @@ Node::setKnobsFrozen(bool frozen)
             _imp->inputs[i]->setKnobsFrozen(frozen);
         }
     }
+}
+
+std::string
+Node::getPluginIconFilePath() const
+{
+    return _imp->plugin ? _imp->plugin->getIconFilePath().toStdString() : std::string();
 }
 
 std::string
@@ -2426,7 +2522,7 @@ Node::message(MessageTypeEnum type,
             return true;
         case eMessageTypeQuestion:
             
-            return questionDialog(getName_mt_safe(), content) == eStandardButtonYes;
+            return questionDialog(getName_mt_safe(), content, false) == eStandardButtonYes;
         default:
             
             return false;
@@ -2470,6 +2566,13 @@ Node::setPersistentMessage(MessageTypeEnum type,
     }
 }
 
+bool
+Node::hasPersistentMessage() const
+{
+    QMutexLocker k(&_imp->persistentMessageMutex);
+    return !_imp->persistentMessage.isEmpty();
+}
+
 void
 Node::getPersistentMessage(QString* message,int* type) const
 {
@@ -2479,7 +2582,7 @@ Node::getPersistentMessage(QString* message,int* type) const
 }
 
 void
-Node::clearPersistentMessage()
+Node::clearPersistentMessage(bool recurse)
 {
     if ( !appPTR->isBackground() ) {
         {
@@ -2492,11 +2595,13 @@ Node::clearPersistentMessage()
         }
     }
     
-    QMutexLocker l(&_imp->inputsMutex);
-    ///No need to lock, guiInputs is only written to by the main-thread
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->clearPersistentMessage();
+    if (recurse) {
+        QMutexLocker l(&_imp->inputsMutex);
+        ///No need to lock, guiInputs is only written to by the main-thread
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                _imp->inputs[i]->clearPersistentMessage(true);
+            }
         }
     }
     
@@ -2902,6 +3007,23 @@ Node::lock(const boost::shared_ptr<Natron::Image> & image)
     _imp->imagesBeingRendered.push_back(image);
 }
 
+bool
+Node::tryLock(const boost::shared_ptr<Natron::Image> & image)
+{
+    
+    QMutexLocker l(&_imp->imagesBeingRenderedMutex);
+    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
+    std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    
+    if ( it != _imp->imagesBeingRendered.end() ) {
+        return false;
+    }
+    ///Okay the image is not used by any other thread, claim that we want to use it
+    assert( it == _imp->imagesBeingRendered.end() );
+    _imp->imagesBeingRendered.push_back(image);
+    return true;
+}
+
 void
 Node::unlock(const boost::shared_ptr<Natron::Image> & image)
 {
@@ -2955,18 +3077,6 @@ Node::onParentMultiInstanceInputChanged(int input)
     _imp->duringInputChangedAction = false;
 }
 
-void
-Node::onMultipleInputChanged()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->duringInputChangedAction = true;
-    for (std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.begin(); it != _imp->enableMaskKnob.end(); ++it) {
-        boost::shared_ptr<Node> inp = getInput(it->first);
-        it->second->setValue(inp ? true : false, 0);
-    }
-    _imp->liveInstance->onMultipleInputsChanged();
-    _imp->duringInputChangedAction = false;
-}
 
 bool
 Node::duringInputChangedAction() const
@@ -2980,6 +3090,9 @@ void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)
 {
+    if (!what) {
+        return;
+    }
     for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it != _imp->maskChannelKnob.end(); ++it) {
         if (it->second.get() == what) {
             int index = it->second->getValue();
@@ -3009,7 +3122,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if (what->getName() == kOfxParamStringSublabelName) {
         //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
         String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
-        if (what) {
+        if (strKnob) {
             QString operation = strKnob->getValue().c_str();
             replaceCustomDataInlabel('(' + operation + ')');
         }
@@ -3108,10 +3221,14 @@ Node::areKeyframesVisibleOnTimeline() const
 void
 Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 {
+    assert(keyframes);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistant()) {
+            continue;
+        }
+        if (!knobs[i]->canAnimate()) {
             continue;
         }
         int dim = knobs[i]->getDimension();
@@ -3121,9 +3238,11 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             continue;
         }
         for (int j = 0; j < dim; ++j) {
-            KeyFrameSet kfs = knobs[i]->getCurve(j)->getKeyFrames_mt_safe();
-            for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                keyframes->push_back( it->getTime() );
+            if (knobs[i]->canAnimate() && knobs[i]->isAnimated(j)) {
+                KeyFrameSet kfs = knobs[i]->getCurve(j)->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                    keyframes->push_back( it->getTime() );
+                }
             }
         }
     }
@@ -3204,7 +3323,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 bool
 Node::isTrackerNode() const
 {
-    return getPluginID().find("Tracker") != std::string::npos;
+    return getPluginID().find("net.sf.openfx.trackerpm") != std::string::npos;
 }
 
 void
@@ -3238,10 +3357,12 @@ Node::setParallelRenderArgs(int time,
                             bool isRenderUserInteraction,
                             bool isSequential,
                             bool canAbort,
-                            U64 nodeHash)
+                            U64 nodeHash,
+                            bool canSetValue,
+                            const TimeLine* timeline)
 {
     std::list<Natron::Node*> marked;
-    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, marked);
+    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, canSetValue, timeline, marked);
 }
 
 void
@@ -3259,17 +3380,22 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     if (found != markedNodes.end()) {
         return;
     }
-    _imp->liveInstance->invalidateParallelRenderArgs();
+    bool wasCanSetValueSet = _imp->liveInstance->invalidateParallelRenderArgs();
     
     bool mustDequeue ;
     {
         int nodeIsRendering;
         if (QThread::currentThread() != qApp->thread()) {
-            ///Decrement the node is rendering counter
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            --_imp->nodeIsRendering;
-            assert(_imp->nodeIsRendering >= 0);
-            nodeIsRendering = _imp->nodeIsRendering;
+            
+            if (!wasCanSetValueSet) {
+                ///Decrement the node is rendering counter
+                QMutexLocker k(&_imp->nodeIsRenderingMutex);
+                --_imp->nodeIsRendering;
+                assert(_imp->nodeIsRendering >= 0);
+                nodeIsRendering = _imp->nodeIsRendering;
+            } else {
+                nodeIsRendering = 0;
+            }
         } else {
             nodeIsRendering = 0;
         }
@@ -3310,6 +3436,8 @@ Node::setParallelRenderArgsInternal(int time,
                                     bool isSequential,
                                     U64 nodeHash,
                                     bool canAbort,
+                                    bool canSetValue,
+                                    const TimeLine* timeline,
                                     std::list<Natron::Node*>& markedNodes)
 {
     ///If marked, we alredy set render args
@@ -3325,7 +3453,7 @@ Node::setParallelRenderArgsInternal(int time,
         rotoAge = 0;
     }
     
-    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge);
+    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge,canSetValue, timeline);
     
     
     ///Wait for the main-thread to be done dequeuing the connect actions queue
@@ -3343,9 +3471,11 @@ Node::setParallelRenderArgsInternal(int time,
                 mustQuitProcessing = _imp->mustQuitProcessing;
             }
         }
-        ///Increment the node is rendering counter
-        QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
-        ++_imp->nodeIsRendering;
+        if (!canSetValue) {
+            ///Increment the node is rendering counter
+            QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
+            ++_imp->nodeIsRendering;
+        }
     }
     
     ///mark this
@@ -3358,8 +3488,7 @@ Node::setParallelRenderArgsInternal(int time,
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
-            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort,
-                                                 markedNodes);
+            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort, canSetValue,  timeline, markedNodes);
             
         }
     }
@@ -3392,12 +3521,18 @@ Node::dequeueActions()
     
     for (std::list<ConnectInputAction>::iterator it = queue.begin(); it!= queue.end(); ++it) {
         
-        if (it->isConnect) {
-            connectInput(it->node, it->inputNb);
-        } else {
-            disconnectInput(it->inputNb);
+        switch (it->type) {
+            case eInputActionConnect:
+                connectInput(it->node, it->inputNb);
+                break;
+            case eInputActionDisconnect:
+                disconnectInput(it->inputNb);
+                break;
+            case eInputActionReplace:
+                replaceInput(it->node, it->inputNb);
+                break;
         }
-        
+
     }
     
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
@@ -3405,14 +3540,118 @@ Node::dequeueActions()
     _imp->nodeIsDequeuingCond.wakeAll();
 }
 
+bool
+Node::shouldCacheOutput() const
+{
+    {
+        //If true then we're in analysis, so we cache the input of the analysis effect
+        bool isMainThread = QThread::currentThread() == qApp->thread();
+        
+        QMutexLocker k(&_imp->outputsMutex);
+        std::size_t sz = _imp->outputs.size();
+        if (sz > 1) {
+            ///The node is referenced multiple times below, cache it
+            return true;
+        } else {
+            if (sz == 1) {
+                //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
+                //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
+                Node* output = _imp->outputs.front();
+                
+#pragma message WARN("Hack: Return true if the node is directly connected to a viewer, because otherwise we will never cache " \
+"properly a graph which is linear (with only a single input tree). We need to rework the viewer cache to cache tiles and then " \
+"we can remove this piece of code")
+                ///+TEMPORARY
+                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
+                if (isViewer) {
+                    int activeInputs[2];
+                    isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+                    if (output->getInput(activeInputs[0]).get() == this ||
+                        output->getInput(activeInputs[1]).get() == this) {
+                        return true;
+                    }
+                }
+                ///+TEMPORARY
+                
+                return output->isSettingsPanelOpened() ||
+                _imp->liveInstance->doesTemporalClipAccess() ||
+                (isMainThread && (output->isMultiInstance() || output->getParentMultiInstance())) ||
+                isForceCachingEnabled() ||
+                appPTR->isAggressiveCachingEnabled() ||
+                (isPreviewEnabled() && !appPTR->isBackground());
+            } else {
+                return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
+            }
+        }
+    }
+    
+}
+
+void
+Node::setNodeGuiPointer(NodeGuiI* gui)
+{
+    assert(!_imp->guiPointer);
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->guiPointer = gui;
+}
+
+bool
+Node::isSettingsPanelOpened() const
+{
+    if (!_imp->guiPointer) {
+        return false;
+    }
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->isSettingsPanelOpened();
+    }
+    {
+        QMutexLocker k(&_imp->masterNodeMutex);
+        if (_imp->masterNode) {
+            return _imp->masterNode->isSettingsPanelOpened();
+        }
+        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
+            if (it->masterNode->isSettingsPanelOpened()) {
+                return true;
+            }
+        }
+    }
+    return _imp->guiPointer->isSettingsPanelOpened();
+    
+}
+
+void
+Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
+{
+    std::list<Natron::Node*>::const_iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    
+    InputsV inputs;
+    
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        inputs = _imp->inputs;
+    }
+    
+    
+    for (InputsV::iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        if ((*it)) {
+            (*it)->restoreClipPreferencesRecursive(markedNodes);
+        }
+    }
+    
+    _imp->liveInstance->restoreClipPreferences();
+    markedNodes.push_back(this);
+    
+}
+
 //////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,
-                             LibraryBinary* plugin)
+                             Natron::Plugin* plugin)
 : Node(app,plugin)
 , _inputsCount(1)
-, _activeInput(0)
-, _activeInputMutex()
 {
 }
 
@@ -3421,7 +3660,7 @@ InspectorNode::~InspectorNode()
 }
 
 bool
-InspectorNode::connectInput(boost::shared_ptr<Node> input,
+InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
                             int inputNumber)
 {
     ///Only called by the main-thread
@@ -3454,17 +3693,8 @@ InspectorNode::connectInput(boost::shared_ptr<Node> input,
         addEmptyInput();
     }
     
-    int oldActiveInput;
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        oldActiveInput = _activeInput;
-        _activeInput = inputNumber;
-    }
     if ( !Node::connectInput(input, inputNumber) ) {
-        {
-            QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = oldActiveInput;
-        }
+        
         computeHash();
     }
     tryAddEmptyInput();
@@ -3506,10 +3736,7 @@ InspectorNode::addEmptyInput()
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        _activeInput = _inputsCount - 1;
-    }
+
     ++_inputsCount;
     initializeInputs();
 }
@@ -3542,10 +3769,7 @@ InspectorNode::disconnectInput(int inputNumber)
     
     if (ret != -1) {
         removeEmptyInputs();
-        {
-            QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = _inputsCount - 1;
-        }
+
     }
     
     return ret;
@@ -3566,15 +3790,29 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     if ( ( inputNb > (_inputsCount - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
         return;
     }
-    {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        _activeInput = inputNb;
-    }
+
     computeHash();
     emit inputChanged(inputNb);
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
-        dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() )->renderCurrentFrame(true);
+        Natron::OutputEffectInstance* oei = dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() );
+        assert(oei);
+        if (oei) {
+            oei->renderCurrentFrame(true);
+        }
     }
+}
+
+int
+InspectorNode::getPreferredInputForConnection()
+{
+    for (int i = 0; i < _inputsCount; ++i) {
+        if (!getInput(i)) {
+            return i;
+        }
+    }
+    ///No free input, make a new one
+    addEmptyInput();
+    return _inputsCount - 1;
 }
 

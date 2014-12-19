@@ -117,7 +117,8 @@ public:
     void setThreadAsActionCaller(bool actionCaller);
 private:
 
-    void getPluginAndContextByID(const std::string & pluginID, OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string & context);
+    void getPluginAndContextByID(const std::string & pluginID, int major, int minor,
+                                 OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string & context);
 
     /*Writes all plugins loaded and their descriptors to
        the OFX plugin cache. (called by the destructor) */
@@ -147,11 +148,6 @@ private:
         {
         }
     };
-
-    typedef std::map<std::string,OFXPluginEntry> OFXPluginsMap;
-    typedef OFXPluginsMap::const_iterator OFXPluginsIterator;
-
-    OFXPluginsMap _ofxPlugins;
     
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     std::list<QMutex*> _pluginsMutexes;

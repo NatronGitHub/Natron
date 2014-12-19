@@ -83,8 +83,8 @@ CompleterLineEdit::filterText(const QString & txt)
     if ( txt.isEmpty() ) {
         sl = _imp->words;
     } else {
-        for (int i = 0; i < _imp->ids.size(); ++i) {
-            if ( _imp->ids[i].contains(txt,Qt::CaseInsensitive) ) {
+        for (int i = 0; i < _imp->words.size(); ++i) {
+            if ( _imp->words[i].contains(txt,Qt::CaseInsensitive) ) {
                 sl << _imp->words[i];
             }
         }
@@ -98,11 +98,11 @@ CompleterLineEdit::filterText(const QString & txt)
     }
 
     QPoint p = mapToGlobal( QPoint( 0,height() ) );
-    QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
-    double maxHeight = ( screen.height() - p.y() ) * 0.8;
-    QFontMetrics fm = _imp->listView->fontMetrics();
-    maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
+    //QDesktopWidget* desktop = QApplication::desktop();
+    //QRect screen = desktop->screenGeometry();
+    //double maxHeight = ( screen.height() - p.y() ) * 0.8;
+    //QFontMetrics fm = _imp->listView->fontMetrics();
+    //maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
 
     // Position the text edit
  //   _imp->listView->setFixedSize(width(),maxHeight);
@@ -209,7 +209,7 @@ struct NodeCreationDialogPrivate
 {
     QVBoxLayout* layout;
     CompleterLineEdit* textEdit;
-    std::vector<Natron::Plugin*> items;
+    Natron::PluginsMap items;
 
     NodeCreationDialogPrivate()
         : layout(NULL)
@@ -233,19 +233,35 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
 
     QStringList ids;
     QStringList names;
-    bool foundInitialFilter = false;
-    for (unsigned int i = 0; i < _imp->items.size(); ++i) {
-        ids.push_back( _imp->items[i]->getPluginID() );
-        names.push_back( _imp->items[i]->getPluginLabel() );
+    QString initialFilterName;
+    int i = 0;
+    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it,++i) {
+        
+        if (it->second.size() == 1) {
+            names.push_back( (*it->second.begin())->generateUserFriendlyPluginID() );
+            ids.push_back(it->first.c_str());
+        } else {
+            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+                if (it2 == it->second.rbegin()) {
+                    names.push_back((*it2)->generateUserFriendlyPluginID());
+                } else {
+                    names.push_back((*it2)->generateUserFriendlyPluginIDMajorEncoded());
+                }
+                ids.push_back(it->first.c_str());
+            }
+        }
+        
         if (ids[i] == initialFilter) {
-            foundInitialFilter = true;
+            initialFilterName = names[i];
         }
     }
+    
+    
     ids.sort();
     names.sort();
-    _imp->textEdit = new CompleterLineEdit(ids,names,true,this);
-    if (foundInitialFilter) {
-        _imp->textEdit->setText(initialFilter);
+    _imp->textEdit = new CompleterLineEdit(names,ids,true,this);
+    if (!initialFilterName.isEmpty()) {
+        _imp->textEdit->setText(initialFilterName);
     }
 
     QPoint global = QCursor::pos();
@@ -257,7 +273,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     _imp->layout->addWidget(_imp->textEdit);
     _imp->textEdit->setFocus();
     _imp->textEdit->selectAll();
-    QTimer::singleShot( 25, _imp->textEdit, SLOT( showCompleter() ) );
+    QTimer::singleShot( 20, _imp->textEdit, SLOT( showCompleter() ) );
 }
 
 NodeCreationDialog::~NodeCreationDialog()
@@ -265,9 +281,33 @@ NodeCreationDialog::~NodeCreationDialog()
 }
 
 QString
-NodeCreationDialog::getNodeName() const
+NodeCreationDialog::getNodeName(int *major) const
 {
-    return _imp->textEdit->text();
+    QString name = _imp->textEdit->text();
+    
+    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        if (it->second.size() == 1) {
+            if ((*it->second.begin())->generateUserFriendlyPluginID() == name) {
+                *major = (*(it->second.begin()))->getMajorVersion();
+                return (*it->second.begin())->getPluginID();
+            }
+        } else {
+            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+                if (it2 == it->second.rbegin()) {
+                    if ((*it2)->generateUserFriendlyPluginID() == name) {
+                        *major = (*it2)->getMajorVersion();
+                        return (*it2)->getPluginID();
+                    }
+                } else {
+                    if ((*it2)->generateUserFriendlyPluginIDMajorEncoded() == name) {
+                        *major = (*it2)->getMajorVersion();
+                        return (*it2)->getPluginID();
+                    }
+                }
+            }
+        }
+    }
+    return QString();
 }
 
 void

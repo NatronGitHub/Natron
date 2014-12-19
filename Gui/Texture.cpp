@@ -20,17 +20,20 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 Texture::Texture(U32 target,
                  int minFilter,
-                 int magFilter)
+                 int magFilter,
+                 int clamp)
     : _target(target)
       , _minFilter(minFilter)
       , _magFilter(magFilter)
+      , _clamp(clamp)
+      , _type(eDataTypeNone)
 {
     glGenTextures(1, &_texID);
 }
 
 void
 Texture::fillOrAllocateTexture(const TextureRect & texRect,
-                               DataType type)
+                               DataTypeEnum type)
 {
     GLuint savedTexture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
@@ -40,7 +43,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
         glEnable(_target);
         glBindTexture (_target, _texID);
         if ( (texRect == _textureRect) && (_type == type) ) {
-            if (_type == Texture::BYTE) {
+            if (_type == Texture::eDataTypeByte) {
                 glTexSubImage2D(_target,
                                 0,              // level
                                 0, 0,               // xoffset, yoffset
@@ -48,7 +51,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                                 GL_BGRA,            // format
                                 GL_UNSIGNED_INT_8_8_8_8_REV,        // type
                                 0);
-            } else if (_type == Texture::FLOAT) {
+            } else if (_type == Texture::eDataTypeFloat) {
                 glTexSubImage2D(_target,
                                 0,              // level
                                 0, 0,               // xoffset, yoffset
@@ -66,9 +69,9 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
             glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
             glTexParameteri (_target, GL_TEXTURE_MAG_FILTER, _magFilter);
 
-            glTexParameteri (_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameteri (_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
-            if (type == BYTE) {
+            glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
+            glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
+            if (type == eDataTypeByte) {
                 glTexImage2D(_target,
                              0,         // level
                              GL_RGBA8, //internalFormat
@@ -77,7 +80,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                              GL_BGRA,       // format
                              GL_UNSIGNED_INT_8_8_8_8_REV,   // type
                              0);            // pixels
-            } else if (type == FLOAT) {
+            } else if (type == eDataTypeFloat) {
                 glTexImage2D (_target,
                               0,            // level
                               GL_RGBA32F_ARB, //internalFormat

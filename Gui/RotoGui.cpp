@@ -194,6 +194,14 @@ struct RotoGui::RotoGuiPrivate
           , type(ROTOSCOPING)
           , toolbar(0)
           , selectionButtonsBar(0)
+          , selectionButtonsBarLayout(0)
+          , autoKeyingEnabled(0)
+          , featherLinkEnabled(0)
+          , displayFeatherEnabled(0)
+          , stickySelectionEnabled(0)
+          , rippleEditEnabled(0)
+          , addKeyframeButton(0)
+          , removeKeyframeButton(0)
           , selectTool(0)
           , pointsEditionTool(0)
           , bezierEditionTool(0)
@@ -231,7 +239,7 @@ struct RotoGui::RotoGuiPrivate
 
     void onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem> & item,bool* ret);
 
-    bool removeBezierFromSelection(const Bezier* b);
+    bool removeBezierFromSelection(const boost::shared_ptr<Bezier>& b);
 
     void computeSelectedCpsBBOX();
 
@@ -269,6 +277,8 @@ struct RotoGui::RotoGuiPrivate
     bool isNearbyBBoxMidLeft(const QPointF & p,double tolerance,const std::pair<double,double> & pixelScale) const;
 
     bool isNearbySelectedCpsBoundingBox(const QPointF & pos,double tolerance) const;
+    
+    EventStateEnum isMouseInteractingWithCPSBbox(const QPointF& pos,double tolerance,const std::pair<double, double>& pixelScale) const;
 };
 
 RotoToolButton::RotoToolButton(QWidget* parent)
@@ -1335,10 +1345,10 @@ RotoGui::RotoGuiPrivate::clearBeziersSelection()
 }
 
 bool
-RotoGui::RotoGuiPrivate::removeBezierFromSelection(const Bezier* b)
+RotoGui::RotoGuiPrivate::removeBezierFromSelection(const boost::shared_ptr<Bezier>& b)
 {
     for (SelectedBeziers::iterator fb = rotoData->selectedBeziers.begin(); fb != rotoData->selectedBeziers.end(); ++fb) {
-        if (fb->get() == b) {
+        if (*fb == b) {
             context->deselect(*fb,RotoContext::OVERLAY_INTERACT);
             rotoData->selectedBeziers.erase(fb);
 
@@ -1480,32 +1490,8 @@ RotoGui::penDown(double /*scaleX*/,
 
     bool didSomething = false;
     int time = _imp->context->getTimelineCurrentTime();
-    int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
+    double tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
-
-    if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_TOP_LEFT;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_TOP_RIGHT;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmLeft(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_BTM_LEFT;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmRight(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_BTM_RIGHT;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidTop(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_MID_TOP;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidRight(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_MID_RIGHT;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidBtm(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_MID_BTM;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale) ) {
-        _imp->state = DRAGGING_BBOX_MID_LEFT;
-    } else if ( _imp->rotoData->showCpsBbox && _imp->isWithinSelectedCpsBBox(pos) ) {
-        _imp->state = DRAGGING_SELECTED_CPS;
-    }
-
-    if (_imp->state != NONE) {
-        return true;
-    }
 
 
     ////////////////// TANGENT SELECTION
@@ -1575,16 +1561,14 @@ RotoGui::penDown(double /*scaleX*/,
         /////////////////CONTROL POINT SELECTION
         //////Check if the point is nearby a control point of a selected bezier
         ///Find out if the user selected a control point
-        if ( nearbyBezier->isLockedRecursive() ) {
-            nearbyBezier.reset();
-        } else {
-            Bezier::ControlPointSelectionPref pref = Bezier::WHATEVER_FIRST;
-            if ( (_imp->selectedTool == SELECT_FEATHER_POINTS) && isFeatherVisible() ) {
-                pref = Bezier::FEATHER_FIRST;
-            }
-
-            nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
+        
+        Bezier::ControlPointSelectionPref pref = Bezier::WHATEVER_FIRST;
+        if ( (_imp->selectedTool == SELECT_FEATHER_POINTS) && isFeatherVisible() ) {
+            pref = Bezier::FEATHER_FIRST;
         }
+        
+        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
+        
     }
     switch (_imp->selectedTool) {
     case SELECT_ALL:
@@ -1620,7 +1604,7 @@ RotoGui::penDown(double /*scaleX*/,
                 _imp->rotoData->featherBarBeingDragged = featherBarSel;
 
                 ///Also select the point only if the curve is the same!
-                if ( featherBarSel.first->getBezier() == nearbyBezier.get() ) {
+                if ( featherBarSel.first->getBezier() == nearbyBezier ) {
                     _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged, e);
                     _imp->handleBezierSelection(nearbyBezier, e);
                 }
@@ -1655,6 +1639,12 @@ RotoGui::penDown(double /*scaleX*/,
                                                 ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                 didSomething = true;
             }
+            if (_imp->state == NONE) {
+                _imp->state = _imp->isMouseInteractingWithCPSBbox(pos,cpSelectionTolerance,pixelScale);
+                if (_imp->state != NONE) {
+                    didSomething = true;
+                }
+            }
         }
         break;
     }
@@ -1671,6 +1661,13 @@ RotoGui::penDown(double /*scaleX*/,
                 showMenuForCurve(nearbyBezier);
             }
             didSomething = true;
+        } else {
+            if (_imp->state == NONE) {
+                _imp->state = _imp->isMouseInteractingWithCPSBbox(pos,cpSelectionTolerance,pixelScale);
+                if (_imp->state != NONE) {
+                    didSomething = true;
+                }
+            }
         }
         break;
     case ADD_POINTS:
@@ -1693,7 +1690,7 @@ RotoGui::penDown(double /*scaleX*/,
         break;
     case REMOVE_POINTS:
         if (nearbyCP.first) {
-            assert( nearbyBezier && nearbyBezier.get() == nearbyCP.first->getBezier() );
+            assert( nearbyBezier && nearbyBezier == nearbyCP.first->getBezier() );
             if ( nearbyCP.first->isFeatherPoint() ) {
                 pushUndoCommand( new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.second) );
             } else {
@@ -1728,7 +1725,7 @@ RotoGui::penDown(double /*scaleX*/,
             data.curve = nearbyBezier;
             data.newPoints.push_back(nearbyCP);
             datas.push_back(data);
-            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false) );
+            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false,pixelScale) );
             didSomething = true;
         }
         break;
@@ -1739,7 +1736,7 @@ RotoGui::penDown(double /*scaleX*/,
             data.curve = nearbyBezier;
             data.newPoints.push_back(nearbyCP);
             datas.push_back(data);
-            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true) );
+            pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true,pixelScale) );
             didSomething = true;
         }
         break;
@@ -1837,9 +1834,7 @@ RotoGui::penDoubleClicked(double /*scaleX*/,
         bool isFeather;
         boost::shared_ptr<Bezier> nearbyBezier =
             _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
-        if ( nearbyBezier && nearbyBezier->isLockedRecursive() ) {
-            nearbyBezier.reset();
-        }
+    
         if (nearbyBezier) {
             ///If the bezier is already selected and we re-click on it, change the transform mode
             _imp->handleBezierSelection(nearbyBezier, e);
@@ -1878,105 +1873,108 @@ RotoGui::penMotion(double /*scaleX*/,
     int time = _imp->context->getTimelineCurrentTime();
     ///Set the cursor to the appropriate case
     bool cursorSet = false;
-    if ( (_imp->rotoData->selectedCps.size() > 1) && _imp->isWithinSelectedCpsBBox(pos) ) {
-        _imp->viewer->setCursor( QCursor(Qt::SizeAllCursor) );
-        cursorSet = true;
-    } else {
-        double cpTol = kControlPointSelectionTolerance * pixelScale.first;
-
-
-        if ( !cursorSet && _imp->rotoData->showCpsBbox && (_imp->state != DRAGGING_CP) && (_imp->state != DRAGGING_SELECTED_CPS)
-             && ( _imp->state != DRAGGING_LEFT_TANGENT) &&
-             ( _imp->state != DRAGGING_RIGHT_TANGENT) ) {
-            double bboxTol = cpTol;
-            if ( _imp->isNearbyBBoxBtmLeft(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxBtmLeft;
-                didSomething = true;
-            } else if ( _imp->isNearbyBBoxBtmRight(pos,bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxBtmRight;
-                didSomething = true;
-            } else if ( _imp->isNearbyBBoxTopRight(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxTopRight;
-                didSomething = true;
-            } else if ( _imp->isNearbyBBoxTopLeft(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxTopLeft;
-                didSomething = true;
-            } else if ( _imp->isNearbyBBoxMidTop(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxMidTop;
-                didSomething = true;
-            } else if ( _imp->isNearbyBBoxMidRight(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxMidRight;
-                didSomething = true;
-            } else if ( _imp->isNearbyBBoxMidBtm(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxMidBtm;
-                didSomething = true;
-            } else if ( _imp->isNearbyBBoxMidLeft(pos, bboxTol,pixelScale) ) {
-                _imp->hoverState = eHoverStateBboxMidLeft;
-                didSomething = true;
-            } else {
-                _imp->hoverState = eHoverStateNothing;
-                didSomething = true;
+    
+    double cpTol = kControlPointSelectionTolerance * pixelScale.first;
+    
+    
+    if ( !cursorSet && _imp->rotoData->showCpsBbox && (_imp->state != DRAGGING_CP) && (_imp->state != DRAGGING_SELECTED_CPS)
+        && ( _imp->state != DRAGGING_LEFT_TANGENT) &&
+        ( _imp->state != DRAGGING_RIGHT_TANGENT) ) {
+        double bboxTol = cpTol;
+        if ( _imp->isNearbyBBoxBtmLeft(pos, bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxBtmLeft;
+            didSomething = true;
+        } else if ( _imp->isNearbyBBoxBtmRight(pos,bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxBtmRight;
+            didSomething = true;
+        } else if ( _imp->isNearbyBBoxTopRight(pos, bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxTopRight;
+            didSomething = true;
+        } else if ( _imp->isNearbyBBoxTopLeft(pos, bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxTopLeft;
+            didSomething = true;
+        } else if ( _imp->isNearbyBBoxMidTop(pos, bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxMidTop;
+            didSomething = true;
+        } else if ( _imp->isNearbyBBoxMidRight(pos, bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxMidRight;
+            didSomething = true;
+        } else if ( _imp->isNearbyBBoxMidBtm(pos, bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxMidBtm;
+            didSomething = true;
+        } else if ( _imp->isNearbyBBoxMidLeft(pos, bboxTol,pixelScale) ) {
+            _imp->hoverState = eHoverStateBboxMidLeft;
+            didSomething = true;
+        } else {
+            _imp->hoverState = eHoverStateNothing;
+            didSomething = true;
+        }
+    }
+    if (_imp->hoverState == eHoverStateNothing) {
+        if ( (_imp->state != DRAGGING_CP) && (_imp->state != DRAGGING_SELECTED_CPS) ) {
+            for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin(); it != _imp->rotoData->selectedBeziers.end(); ++it) {
+                int index = -1;
+                std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nb =
+                (*it)->isNearbyControlPoint(pos.x(), pos.y(), cpTol,Bezier::WHATEVER_FIRST,&index);
+                if ( (index != -1) && ( ( !nb.first->isFeatherPoint() && !isFeatherVisible() ) || isFeatherVisible() ) ) {
+                    _imp->viewer->setCursor( QCursor(Qt::CrossCursor) );
+                    cursorSet = true;
+                    break;
+                }
             }
         }
-        if (_imp->hoverState == eHoverStateNothing) {
-            if ( (_imp->state != DRAGGING_CP) && (_imp->state != DRAGGING_SELECTED_CPS) ) {
-                for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin(); it != _imp->rotoData->selectedBeziers.end(); ++it) {
-                    int index = -1;
-                    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nb =
-                        (*it)->isNearbyControlPoint(pos.x(), pos.y(), cpTol,Bezier::WHATEVER_FIRST,&index);
-                    if ( (index != -1) && ( ( !nb.first->isFeatherPoint() && !isFeatherVisible() ) || isFeatherVisible() ) ) {
-                        _imp->viewer->setCursor( QCursor(Qt::CrossCursor) );
-                        cursorSet = true;
-                        break;
-                    }
-                }
-            }
-            if ( !cursorSet && (_imp->state != DRAGGING_LEFT_TANGENT) && (_imp->state != DRAGGING_RIGHT_TANGENT) ) {
-                ///find a nearby tangent
-                for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
-                    if (it->first->isNearbyTangent(time, pos.x(), pos.y(), cpTol) != -1) {
-                        _imp->viewer->setCursor( QCursor(Qt::CrossCursor) );
-                        cursorSet = true;
-                        break;
-                    }
-                }
-            }
-            if ( !cursorSet && (_imp->state != DRAGGING_CP) && (_imp->state != DRAGGING_SELECTED_CPS) && (_imp->state != DRAGGING_LEFT_TANGENT) &&
-                 ( _imp->state != DRAGGING_RIGHT_TANGENT) ) {
-                double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
-                double nearbyBezierT;
-                int nearbyBezierCPIndex;
-                bool isFeather;
-                boost::shared_ptr<Bezier> nearbyBezier =
-                    _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
-                if ( isFeather && !isFeatherVisible() ) {
-                    nearbyBezier.reset();
-                }
-                if ( nearbyBezier && !nearbyBezier->isLockedRecursive() ) {
-                    _imp->viewer->setCursor( QCursor(Qt::PointingHandCursor) );
+        if ( !cursorSet && (_imp->state != DRAGGING_LEFT_TANGENT) && (_imp->state != DRAGGING_RIGHT_TANGENT) ) {
+            ///find a nearby tangent
+            for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
+                if (it->first->isNearbyTangent(time, pos.x(), pos.y(), cpTol) != -1) {
+                    _imp->viewer->setCursor( QCursor(Qt::CrossCursor) );
                     cursorSet = true;
+                    break;
                 }
             }
-
-            SelectedCP nearbyFeatherBar;
-            if ( !cursorSet && isFeatherVisible() ) {
-                nearbyFeatherBar = _imp->isNearbyFeatherBar(time, pixelScale, pos);
-                if (nearbyFeatherBar.first && nearbyFeatherBar.second) {
-                    _imp->rotoData->featherBarBeingHovered = nearbyFeatherBar;
-                }
+        }
+        if ( !cursorSet && (_imp->state != DRAGGING_CP) && (_imp->state != DRAGGING_SELECTED_CPS) && (_imp->state != DRAGGING_LEFT_TANGENT) &&
+            ( _imp->state != DRAGGING_RIGHT_TANGENT) ) {
+            double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
+            double nearbyBezierT;
+            int nearbyBezierCPIndex;
+            bool isFeather;
+            boost::shared_ptr<Bezier> nearbyBezier =
+            _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
+            if ( isFeather && !isFeatherVisible() ) {
+                nearbyBezier.reset();
             }
-            if (!nearbyFeatherBar.first || !nearbyFeatherBar.second) {
-                _imp->rotoData->featherBarBeingHovered.first.reset();
-                _imp->rotoData->featherBarBeingHovered.second.reset();
+            if ( nearbyBezier) {
+                _imp->viewer->setCursor( QCursor(Qt::PointingHandCursor) );
+                cursorSet = true;
             }
-            if ( (_imp->state != NONE) || _imp->rotoData->featherBarBeingHovered.first || cursorSet || (lastHoverState != eHoverStateNothing) ) {
-                didSomething = true;
+        }
+        
+        if ( !cursorSet && (_imp->rotoData->selectedCps.size() > 1) && _imp->isWithinSelectedCpsBBox(pos) ) {
+            _imp->viewer->setCursor( QCursor(Qt::SizeAllCursor) );
+            cursorSet = true;
+        }
+        
+        SelectedCP nearbyFeatherBar;
+        if ( !cursorSet && isFeatherVisible() ) {
+            nearbyFeatherBar = _imp->isNearbyFeatherBar(time, pixelScale, pos);
+            if (nearbyFeatherBar.first && nearbyFeatherBar.second) {
+                _imp->rotoData->featherBarBeingHovered = nearbyFeatherBar;
             }
+        }
+        if (!nearbyFeatherBar.first || !nearbyFeatherBar.second) {
+            _imp->rotoData->featherBarBeingHovered.first.reset();
+            _imp->rotoData->featherBarBeingHovered.second.reset();
+        }
+        
+        if ( (_imp->state != NONE) || _imp->rotoData->featherBarBeingHovered.first || cursorSet || (lastHoverState != eHoverStateNothing) ) {
+            didSomething = true;
         }
     }
 
-    if (!cursorSet) {
-        _imp->viewer->setCursor( QCursor(Qt::ArrowCursor) );
+
+if (!cursorSet) {
+    _imp->viewer->setCursor( QCursor(Qt::ArrowCursor) );
     }
 
 
@@ -1988,7 +1986,7 @@ RotoGui::penMotion(double /*scaleX*/,
         if (_imp->rotoData->bezierBeingDragged) {
             SelectedCPs cps;
             const std::list<boost::shared_ptr<BezierCP> >& c = _imp->rotoData->bezierBeingDragged->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> >& f = _imp->rotoData->bezierBeingDragged->getControlPoints();
+            const std::list<boost::shared_ptr<BezierCP> >& f = _imp->rotoData->bezierBeingDragged->getFeatherPoints();
             assert(c.size() == f.size());
             std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = f.begin();
             for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp,++itFp) {
@@ -2240,9 +2238,9 @@ RotoGui::penUp(double /*scaleX*/,
 }
 
 void
-RotoGui::removeCurve(Bezier* curve)
+RotoGui::removeCurve(const boost::shared_ptr<Bezier>& curve)
 {
-    if ( curve == _imp->rotoData->builtBezier.get() ) {
+    if ( curve == _imp->rotoData->builtBezier ) {
         _imp->rotoData->builtBezier.reset();
     }
     _imp->context->removeItem(curve);
@@ -2340,6 +2338,9 @@ RotoGui::keyDown(double /*scaleX*/,
         didSomething = true;
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoRemoveFeather, modifiers, key) ) {
         removeFeatherForSelectedCurve();
+        didSomething = true;
+    } else if (key == Qt::Key_Escape) {
+        _imp->clearSelection();
         didSomething = true;
     }
 
@@ -2621,6 +2622,32 @@ RotoGui::RotoGuiPrivate::isNearbyBBoxMidBtm(const QPointF & p,
 
         return arrowBbox.contains( p.x(),p.y() );
     }
+}
+
+EventStateEnum
+RotoGui::RotoGuiPrivate::isMouseInteractingWithCPSBbox(const QPointF& pos,double cpSelectionTolerance,const std::pair<double, double>& pixelScale) const
+{
+    EventStateEnum state = NONE;
+    if ( rotoData->showCpsBbox && isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_TOP_LEFT;
+    } else if ( rotoData->showCpsBbox && isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_TOP_RIGHT;
+    } else if ( rotoData->showCpsBbox && isNearbyBBoxBtmLeft(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_BTM_LEFT;
+    } else if ( rotoData->showCpsBbox && isNearbyBBoxBtmRight(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_BTM_RIGHT;
+    } else if ( rotoData->showCpsBbox && isNearbyBBoxMidTop(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_MID_TOP;
+    } else if ( rotoData->showCpsBbox && isNearbyBBoxMidRight(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_MID_RIGHT;
+    } else if ( rotoData->showCpsBbox && isNearbyBBoxMidBtm(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_MID_BTM;
+    } else if ( rotoData->showCpsBbox && isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale) ) {
+        state = DRAGGING_BBOX_MID_LEFT;
+    } else if ( rotoData->showCpsBbox && isWithinSelectedCpsBBox(pos) ) {
+        state = DRAGGING_SELECTED_CPS;
+    }
+    return state;
 }
 
 bool
@@ -3123,6 +3150,9 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 void
 RotoGui::smoothSelectedCurve()
 {
+    
+    std::pair<double,double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -3137,13 +3167,15 @@ RotoGui::smoothSelectedCurve()
         }
         datas.push_back(data);
     }
-    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false) );
+    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false,pixelScale) );
     _imp->viewer->redraw();
 }
 
 void
 RotoGui::cuspSelectedCurve()
 {
+    std::pair<double,double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -3158,7 +3190,7 @@ RotoGui::cuspSelectedCurve()
         }
         datas.push_back(data);
     }
-    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true) );
+    pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true,pixelScale) );
     _imp->viewer->redraw();
 }
 
@@ -3181,6 +3213,10 @@ void
 RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
                                  const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & cp)
 {
+    
+    std::pair<double,double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
+    
     QPoint pos = QCursor::pos();
     QMenu menu(_imp->viewer);
 
@@ -3225,7 +3261,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
         data.curve = curve;
         data.newPoints.push_back(cp);
         datas.push_back(data);
-        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false) );
+        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,false,pixelScale) );
         _imp->viewer->redraw();
     } else if (ret == cuspAction) {
         std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
@@ -3233,7 +3269,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
         data.curve = curve;
         data.newPoints.push_back(cp);
         datas.push_back(data);
-        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true) );
+        pushUndoCommand( new SmoothCuspUndoCommand(this,datas,time,true,pixelScale) );
         _imp->viewer->redraw();
     } else if (ret == removeFeather) {
         std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;

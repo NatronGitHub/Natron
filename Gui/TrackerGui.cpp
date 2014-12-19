@@ -120,8 +120,8 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_ENABLED, &pixUpdateViewerEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_DISABLED, &pixUpdateViewerDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, &pixUpdateViewerEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH, &pixUpdateViewerDisabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_STOP, &pixStop);
 
     QIcon bwIcon;

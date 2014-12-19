@@ -48,9 +48,9 @@ SOURCES += \
     AppInstance.cpp \
     AppManager.cpp \
     BlockingBackgroundRender.cpp \
-    ChannelSet.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
+    DiskCacheNode.cpp \
     EffectInstance.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
@@ -111,7 +111,7 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
-    ChannelSet.h \
+    DiskCacheNode.h \
     EffectInstance.h \
     FileDownloader.h \
     FileSystemModel.h \
@@ -145,6 +145,7 @@ HEADERS += \
     Lut.h \
     MemoryFile.h \
     Node.h \
+    NodeGuiI.h \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \

@@ -243,7 +243,8 @@ public:
 
     bool areAllNonOptionalClipsConnected() const;
 
-
+    ///True if the effect is currently performing an analysis
+    bool isInAnalysis() const;
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////
@@ -260,6 +261,8 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////
 
     bool getCanApplyTransform(OfxClipInstance** clip) const;
+    
+    const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
     
 private:
     OfxEffectInstance* _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //

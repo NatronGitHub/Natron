@@ -186,58 +186,80 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
     _imp->owner = owner;
     _imp->dimensionInOwner = dimensionInOwner;
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
-    _imp->type = CurvePrivate::eCurveTypeDouble;
+    bool found = false;
     // use RTTI to guess curve type
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeInt;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Double_Knob* k = dynamic_cast<Double_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeDouble;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Color_Knob* k = dynamic_cast<Color_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeDouble;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            String_Knob* k = dynamic_cast<String_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeString;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeInt;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            File_Knob* k = dynamic_cast<File_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeString;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
+            found = true;
         }
     }
-    if (_imp->type == CurvePrivate::eCurveTypeDouble) {
-        try {
-            Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
-            if (k) {
-                _imp->type = CurvePrivate::eCurveTypeBool;
-            }
-        } catch (const std::bad_cast & e) {
+    if (!found) {
+        String_Knob* k = dynamic_cast<String_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
         }
     }
-
-    Parametric_Knob* parametric = dynamic_cast<Parametric_Knob*>(owner);
-    if (parametric) {
-        _imp->isParametric = true;
+    if (!found) {
+        File_Knob* k = dynamic_cast<File_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
+        }
     }
+    if (!found) {
+        OutputFile_Knob* k = dynamic_cast<OutputFile_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
+        }
+    }
+    if (!found) {
+        Path_Knob* k = dynamic_cast<Path_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeString;
+            found = true;
+        }
+    }
+    if (!found) {
+        Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
+        if (k) {
+            _imp->type = CurvePrivate::eCurveTypeBool;
+            found = true;
+        }
+    }
+    
+    if (!found) {
+        Parametric_Knob* parametric = dynamic_cast<Parametric_Knob*>(owner);
+        if (parametric) {
+            _imp->isParametric = true;
+            found = true;
+        }
+    }
+    assert(found);
 }
 
 Curve::Curve(const Curve & other)
@@ -461,32 +483,36 @@ Curve::getNearestKeyFrameWithTime(double time,
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
-    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
-        if (it->getTime() > time) {
-            upper = it;
-            break;
-        } else if (it->getTime() == time) {
-            *k = *it;
-
-            return true;
-        }
-    }
-
-    if ( upper == _imp->keyFrames.begin() ) {
-        *k = *upper;
+    if (_imp->keyFrames.size() == 1) {
+        *k = *_imp->keyFrames.begin();
 
         return true;
     }
 
-    KeyFrameSet::const_iterator lower = upper;
-    --lower;
-    if ( upper == _imp->keyFrames.end() ) {
+    KeyFrame kt(time, 0.); // virtual keyframe at t for comparison
+
+    KeyFrameSet::const_iterator lower = _imp->keyFrames.lower_bound(kt);
+    if (lower == _imp->keyFrames.end()) {
+        // all elements are before, take the last one
+        *k = *_imp->keyFrames.rbegin();
+
+        return true;
+    }
+    if (lower->getTime() >= time) {
+        // we are before the first element, return it
+        *k = *lower;
+
+        return true;
+    }
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.upper_bound(kt);
+    if (upper == _imp->keyFrames.end()) {
+        // no element after this one, return the lower bound
         *k = *lower;
 
         return true;
     }
 
+    // upper and lower are both valid iterators, take the closest one
     assert(time - lower->getTime() > 0);
     assert(upper->getTime() - time > 0);
 

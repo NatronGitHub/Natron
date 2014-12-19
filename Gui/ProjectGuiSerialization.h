@@ -35,7 +35,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_CHECKERBOARD 5
 #define VIEWER_DATA_INTRODUCES_FPS 6
 #define VIEWER_DATA_REMOVES_ASPECT_RATIO 7
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_REMOVES_ASPECT_RATIO
+#define VIEWER_DATA_INTRODUCES_FPS_LOCK 8
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FPS_LOCK
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -43,7 +44,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_CHANGES_SPLITTERS 5
 #define PROJECT_GUI_EXERNALISE_GUI_LAYOUT 6
 #define PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL 7
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL
+#define PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT 8
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
@@ -91,6 +93,7 @@ struct ViewerData
     bool checkerboardEnabled;
     
     double fps;
+    bool fpsLocked;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -153,6 +156,12 @@ struct ViewerData
             ar & boost::serialization::make_nvp("Fps",fps);
         } else {
             fps = 24.;
+        }
+        
+        if (version >= VIEWER_DATA_INTRODUCES_FPS_LOCK) {
+            ar & boost::serialization::make_nvp("FpsLocked",fpsLocked);
+        } else {
+            fpsLocked = true;
         }
     }
 };

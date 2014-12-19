@@ -16,6 +16,7 @@
 #include <QGraphicsScene>
 
 #include "Gui/NodeGui.h"
+#include "Gui/NodeGraph.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
@@ -29,30 +30,33 @@
 
 #define EDGE_LENGTH_MIN 0.1
 
-#define kGraphicalContainerOffset 10 \
-    //!< number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+// number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+#define kGraphicalContainerOffset 10
+
 
 Edge::Edge(int inputNb_,
            double angle_,
            const boost::shared_ptr<NodeGui> & dest_,
            QGraphicsItem *parent)
-    : QGraphicsLineItem(parent)
-      , _isOutputEdge(false)
-      , _inputNb(inputNb_)
-      , _angle(angle_)
-      , _label(NULL)
-      , _arrowHead()
-      , _dest(dest_)
-      , _source()
-      , _defaultColor(Qt::black)
-      , _renderingColor(243,149,0)
-      , _useRenderingColor(false)
-      , _useHighlight(false)
-      , _paintWithDash(false)
-      , _paintBendPoint(false)
-      , _bendPointHiddenAutomatically(false)
-      , _wasLabelVisible(false)
-      , _middlePoint()
+: QGraphicsLineItem(parent)
+, _isOutputEdge(false)
+, _inputNb(inputNb_)
+, _angle(angle_)
+, _label(NULL)
+, _arrowHead()
+, _dest(dest_)
+, _source()
+, _defaultColor(Qt::black)
+, _renderingColor(243,149,0)
+, _useRenderingColor(false)
+, _useHighlight(false)
+, _paintWithDash(false)
+, _optional(false)
+, _paintBendPoint(false)
+, _bendPointHiddenAutomatically(false)
+, _enoughSpaceToShowLabel(true)
+, _isRotoMask(false)
+, _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
     if ( (_inputNb != -1) && _dest ) {
@@ -63,29 +67,49 @@ Edge::Edge(int inputNb_,
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(4);
-    if ( _dest && _dest->getNode()->getLiveInstance() && _dest->getNode()->getLiveInstance()->isInputOptional(_inputNb) ) {
-        _paintWithDash = true;
+    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
+    if (effect) {
+        
+        _isRotoMask = effect->isInputRotoBrush(_inputNb);
+        
+        bool autoHide = areOptionalInputsAutoHidden();
+        bool isSelected = _dest->getIsSelected();
+        if (effect->isInputMask(_inputNb)) {
+            setDashed(true);
+            setOptional(true);
+            if (!isSelected && autoHide) {
+                hide();
+            }
+        } else if (effect->isInputOptional(_inputNb)) {
+            setOptional(true);
+            if (!isSelected && autoHide) {
+                hide();
+            }
+        }
     }
 }
 
 Edge::Edge(const boost::shared_ptr<NodeGui> & src,
            QGraphicsItem *parent)
-    : QGraphicsLineItem(parent)
-      , _isOutputEdge(true)
-      , _inputNb(-1)
-      , _angle(M_PI_2)
-      , _label(NULL)
-      , _arrowHead()
-      , _dest()
-      , _source(src)
-      , _defaultColor(Qt::black)
-      , _renderingColor(243,149,0)
-      , _useRenderingColor(false)
-      , _useHighlight(false)
-      , _paintWithDash(false)
-      , _bendPointHiddenAutomatically(false)
-      , _wasLabelVisible(false)
-      , _middlePoint()
+: QGraphicsLineItem(parent)
+, _isOutputEdge(true)
+, _inputNb(-1)
+, _angle(M_PI_2)
+, _label(NULL)
+, _arrowHead()
+, _dest()
+, _source(src)
+, _defaultColor(Qt::black)
+, _renderingColor(243,149,0)
+, _useRenderingColor(false)
+, _useHighlight(false)
+, _paintWithDash(false)
+, _optional(false)
+, _paintBendPoint(false)
+, _bendPointHiddenAutomatically(false)
+, _enoughSpaceToShowLabel(true)
+, _isRotoMask(false)
+, _middlePoint()
 {
     assert(src);
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
@@ -106,7 +130,23 @@ void
 Edge::setSource(const boost::shared_ptr<NodeGui> & src)
 {
     _source = src;
+    bool autoHide = areOptionalInputsAutoHidden();
+    assert(_dest);
+    bool isSelected = _dest->getIsSelected();
+    if (autoHide && _optional  && !_isRotoMask) {
+        if (src || isSelected) {
+            show();
+        } else {
+            hide();
+        }
+    }
     initLine();
+}
+
+bool
+Edge::areOptionalInputsAutoHidden() const
+{
+    return _dest ? _dest->getDagGui()->areOptionalInputsAutoHidden() : false;
 }
 
 void
@@ -115,14 +155,42 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
 {
     _source = src;
     _dest = dst;
+    
+    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
+
+    if (effect) {
+        _isRotoMask = effect->isInputRotoBrush(_inputNb);
+    }
+    
     if (!_label) {
         _label = new QGraphicsTextItem(QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ),this);
         _label->setDefaultTextColor( QColor(200,200,200) );
     } else {
         _label->setPlainText( QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ) );
     }
-    if ( _dest && _dest->getNode()->getLiveInstance() && _dest->getNode()->getLiveInstance()->isInputOptional(_inputNb) ) {
-        _paintWithDash = true;
+    if (effect) {
+        bool autoHide = areOptionalInputsAutoHidden();
+        bool isSelected = _dest->getIsSelected();
+        if (effect->isInputMask(_inputNb) && !_isRotoMask) {
+            setDashed(true);
+            setOptional(true);
+            if (autoHide) {
+                if (!isSelected && !src) {
+                    hide();
+                } else {
+                    show();
+                }
+            }
+        } else if (effect->isInputOptional(_inputNb)  && !_isRotoMask) {
+            setOptional(true);
+            if (!isSelected && autoHide) {
+                if (!src) {
+                    hide();
+                } else {
+                    show();
+                }
+            }
+        }
     }
     initLine();
 }
@@ -130,7 +198,13 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
 void
 Edge::setOptional(bool optional)
 {
-    _paintWithDash = optional;
+    _optional = optional;
+}
+
+void
+Edge::setDashed(bool dashed)
+{
+    _paintWithDash = dashed;
 }
 
 void
@@ -193,7 +267,7 @@ Edge::initLine()
     } else if (_source && !_dest) {
         dst = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
-
+    
     std::vector<QLineF> dstEdges;
     std::vector<QLineF> srcEdges;
     if (_dest) {
@@ -202,38 +276,56 @@ Edge::initLine()
     if (_source) {
         makeEdges(sourceBBOX, srcEdges);
     }
-
+    
+    
     QPointF srcpt;
+    
     if (_source && _dest) {
-        /////// This is a connected edge, either input or output
+        /// This is a connected edge, either input or output
         srcpt = sourceBBOX.center();
-
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-
-        bool foundIntersection = false;
-        QPointF dstIntersection;
+    } else if (!_source && _dest) {
+        /// The edge is an input edge which is unconnected
+        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
+                        dst.y() - (std::sin(_angle) * 100000 * sc) );
+        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+    } else if (_source && !_dest) {
+        /// The edge is an output edge which is unconnected
+        srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
+        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+        
+    }
+    
+    bool foundDstIntersection = false;
+    
+    QPointF dstIntersection;
+    
+    if (_dest) {
         for (int i = 0; i < 4; ++i) {
             QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
             if (type == QLineF::BoundedIntersection) {
                 setLine( QLineF( dstIntersection,line().p2() ) );
-                foundIntersection = true;
+                foundDstIntersection = true;
                 break;
             }
         }
-        QPointF srcInteresect;
+    }
+    
+    if (_source && _dest) {
 
-        if (foundIntersection) {
+        QPointF srcInteresect;
+        bool foundSrcIntersection = false;
+        if (foundDstIntersection) {
             ///Find the intersection with the source bbox
-            foundIntersection = false;
             for (int i = 0; i < 4; ++i) {
                 QLineF::IntersectType type = srcEdges[i].intersect(line(), &srcInteresect);
                 if (type == QLineF::BoundedIntersection) {
-                    foundIntersection = true;
+                    foundSrcIntersection = true;
                     break;
                 }
             }
         }
-        if (foundIntersection) {
+        if (foundSrcIntersection) {
             _middlePoint = (srcInteresect + dstIntersection) / 2;
             ///Hide bend point for short edges
             double visibleLength  = QLineF(srcInteresect,dstIntersection).length();
@@ -253,18 +345,14 @@ Edge::initLine()
                 double txtWidth = fm.width( _label->toPlainText() );
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
                     _label->hide();
-                    _wasLabelVisible = false;
+                    _enoughSpaceToShowLabel = false;
                 } else {
                     _label->show();
-                    _wasLabelVisible = true;
+                    _enoughSpaceToShowLabel = true;
                 }
             }
         }
     } else if (!_source && _dest) {
-        ///// The edge is an input edge which is unconnected
-        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
-                         dst.y() - (std::sin(_angle) * 100000 * sc) );
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
         ///ok now that we have the direction between dst and srcPt we can get the distance between the center of the node
         ///and the intersection with the bbox. We add UNATTECHED_ARROW_LENGTH to that distance to position srcPt correctly.
@@ -289,10 +377,11 @@ Edge::initLine()
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
         if (_label) {
+            QFontMetrics fm(_label->font());
             double cosinus = std::cos(_angle);
             int yOffset = 0;
             if (cosinus < 0) {
-                yOffset = -40;
+                yOffset = -fm.width(_label->toPlainText());
             } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                 yOffset = +5;
             } else {
@@ -301,17 +390,11 @@ Edge::initLine()
 
             /*adjusting dst to show label at the middle of the line*/
 
-            QPointF labelDst = QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
+            QPointF labelDst = dstIntersection;//QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
 
             _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
         }
-    } else if (_source && !_dest) {
-        ///// The edge is an output edge which is unconnected
-        srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-
-        ///output edges don't have labels
-    }
+    } 
 
 
     double length = std::max(EDGE_LENGTH_MIN, line().length());
@@ -323,15 +406,23 @@ Edge::initLine()
     if (line().dy() >= 0) {
         a = 2 * M_PI - a;
     }
+    
+    QPointF arrowIntersect = foundDstIntersection ? dstIntersection : dst;
 
-    qreal arrowSize = 5. * sc;
-    QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
+    qreal arrowSize;
+    if (_source && _dest) {
+        arrowSize = 10. * sc;
+    } else {
+        arrowSize = 7. * sc;
+    }
+    double headAngle = 3. * M_PI / 4.;
+    QPointF arrowP1 = arrowIntersect + QPointF(std::sin(a + headAngle) * arrowSize,
+                                            std::cos(a + headAngle) * arrowSize);
+    QPointF arrowP2 = arrowIntersect + QPointF(std::sin(a + M_PI - headAngle) * arrowSize,
+                                            std::cos(a + M_PI - headAngle) * arrowSize);
 
     _arrowHead.clear();
-    _arrowHead << dst << arrowP1 << arrowP2;
+    _arrowHead << arrowIntersect << arrowP1 << arrowP2;
 } // initLine
 
 QPainterPath
@@ -462,10 +553,9 @@ void
 Edge::setVisibleDetails(bool visible)
 {
     if (!visible) {
-        _wasLabelVisible = _label->isVisible();
         _label->hide();
     } else {
-        if (_wasLabelVisible) {
+        if (_enoughSpaceToShowLabel) {
             _label->show();
         }
     }
@@ -494,11 +584,15 @@ Edge::paint(QPainter *painter,
         color = _renderingColor;
     } else {
         color = _defaultColor;
+        if (_optional && !_paintWithDash) {
+            color.setAlphaF(0.4);
+        }
     }
     myPen.setColor(color);
     painter->setPen(myPen);
-    QLineF l = line();
-    painter->drawLine(l);
+    
+  
+    painter->drawLine(line());
 
     myPen.setStyle(Qt::SolidLine);
     painter->setPen(myPen);

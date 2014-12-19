@@ -65,8 +65,10 @@ struct HistogramPrivate
           , histogramSelectionGroup(NULL)
           , viewerCurrentInputMenu(NULL)
           , viewerCurrentInputGroup(NULL)
+          , modeActions(0)
           , modeMenu(NULL)
           , fullImage(NULL)
+          , filterActions(0)
           , filterMenu(NULL)
           , widget(widget)
           , mode(Histogram::RGB)
@@ -251,8 +253,9 @@ Histogram::Histogram(Gui* gui,
     QObject::connect( &_imp->histogramThread, SIGNAL( histogramProduced() ), this, SLOT( onCPUHistogramComputed() ) );
 #endif
 
-    QDesktopWidget* desktop = QApplication::desktop();
-    _imp->sizeH = desktop->screenGeometry().size();
+//    QDesktopWidget* desktop = QApplication::desktop();
+//    _imp->sizeH = desktop->screenGeometry().size();
+    _imp->sizeH = QSize(10000,10000);
     
     _imp->rightClickMenu = new QMenu(this);
     _imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
@@ -410,12 +413,11 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         viewerName = selectedHistAction->text().toStdString();
     }
 
-    int textureIndex = -1;
+    int textureIndex = 0;
     QAction* selectedInputAction = viewerCurrentInputGroup->checkedAction();
     if (selectedInputAction) {
         textureIndex = selectedInputAction->data().toInt();
-    }
-
+    } 
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();
@@ -1192,6 +1194,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         update();
         break;
     }
+    QGLWidget::mouseMoveEvent(e);
 }
 
 void

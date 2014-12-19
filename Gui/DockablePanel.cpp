@@ -18,7 +18,7 @@
 #include <QTabWidget>
 #include <QStyle>
 #include <QUndoStack>
-#include <QFormLayout>
+#include <QGridLayout>
 #include <QUndoCommand>
 #include <QDebug>
 #include <QToolTip>
@@ -49,9 +49,11 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
+#include "Engine/Plugin.h"
 #include "Engine/Image.h"
 #include "Engine/NodeSerialization.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
@@ -77,6 +79,7 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
+#define NATRON_VERTICAL_BAR_WIDTH 4
 using std::make_pair;
 using namespace Natron;
 
@@ -116,6 +119,10 @@ struct DockablePanelPrivate
     LineEdit* _nameLineEdit; /*!< if the name is editable*/
     QLabel* _nameLabel; /*!< if the name is read-only*/
 
+    QHBoxLayout* _horizLayout;
+    QWidget* _horizContainer;
+    VerticalColorBar* _verticalColorBar;
+    
     /*Tab related*/
     QTabWidget* _tabWidget;
     Button* _centerNodeButton;
@@ -150,7 +157,7 @@ struct DockablePanelPrivate
     DockablePanel::HeaderMode _mode;
     mutable QMutex _isClosedMutex;
     bool _isClosed; //< accessed by serialization thread too
-
+    
     DockablePanelPrivate(DockablePanel* publicI
                          ,
                          Gui* gui
@@ -164,39 +171,42 @@ struct DockablePanelPrivate
                          bool useScrollAreasForTabs
                          ,
                          const QString & defaultPageName)
-        : _publicInterface(publicI)
-          ,_gui(gui)
-          ,_container(container)
-          ,_mainLayout(NULL)
-          ,_headerWidget(NULL)
-          ,_headerLayout(NULL)
-          ,_nameLineEdit(NULL)
-          ,_nameLabel(NULL)
-          ,_tabWidget(NULL)
-          , _centerNodeButton(NULL)
-          ,_helpButton(NULL)
-          ,_minimize(NULL)
-          ,_hideUnmodifiedButton(NULL)
-          ,_floatButton(NULL)
-          ,_cross(NULL)
-          , _currentColor()
-          ,_colorButton(NULL)
-          ,_undoButton(NULL)
-          ,_redoButton(NULL)
-          ,_restoreDefaultsButton(NULL)
-          ,_minimized(false)
-          ,_undoStack(new QUndoStack)
-          ,_floating(false)
-          ,_floatingWidget(NULL)
-          ,_knobs()
-          ,_knobsVisibilityBeforeHideModif()
-          ,_holder(holder)
-          ,_pages()
-          ,_defaultPageName(defaultPageName)
-          ,_useScrollAreasForTabs(useScrollAreasForTabs)
-          ,_mode(headerMode)
-          ,_isClosedMutex()
-          ,_isClosed(false)
+    : _publicInterface(publicI)
+    ,_gui(gui)
+    ,_container(container)
+    ,_mainLayout(NULL)
+    ,_headerWidget(NULL)
+    ,_headerLayout(NULL)
+    ,_nameLineEdit(NULL)
+    ,_nameLabel(NULL)
+    , _horizLayout(0)
+    , _horizContainer(0)
+    , _verticalColorBar(0)
+    ,_tabWidget(NULL)
+    , _centerNodeButton(NULL)
+    ,_helpButton(NULL)
+    ,_minimize(NULL)
+    ,_hideUnmodifiedButton(NULL)
+    ,_floatButton(NULL)
+    ,_cross(NULL)
+    , _currentColor()
+    ,_colorButton(NULL)
+    ,_undoButton(NULL)
+    ,_redoButton(NULL)
+    ,_restoreDefaultsButton(NULL)
+    ,_minimized(false)
+    ,_undoStack(new QUndoStack)
+    ,_floating(false)
+    ,_floatingWidget(NULL)
+    ,_knobs()
+    ,_knobsVisibilityBeforeHideModif()
+    ,_holder(holder)
+    ,_pages()
+    ,_defaultPageName(defaultPageName)
+    ,_useScrollAreasForTabs(useScrollAreasForTabs)
+    ,_mode(headerMode)
+    ,_isClosedMutex()
+    ,_isClosed(false)
     {
     }
 
@@ -250,7 +260,17 @@ DockablePanel::DockablePanel(Gui* gui
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::TabFocus);
-
+    
+    Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
+    QString pluginLabelVersioned;
+    if (iseffect) {
+        const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
+        pluginLabelVersioned = plugin->getPluginLabel();
+        QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
+        pluginLabelVersioned.append(toAppend);
+    }
+    
+    
     if (headerMode != NO_HEADER) {
         _imp->_headerWidget = new QFrame(this);
         _imp->_headerWidget->setFrameShape(QFrame::Box);
@@ -259,7 +279,23 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
         
-        if (!holder->isProject()) {
+        if (iseffect) {
+            
+
+            std::string iconFilePath = iseffect->getNode()->getPluginIconFilePath();
+            if (!iconFilePath.empty()) {
+                QPixmap ic;
+                if (ic.load(iconFilePath.c_str())) {
+                    ic = ic.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2,NATRON_MEDIUM_BUTTON_SIZE - 2,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+                    QLabel* iconLabel = new QLabel(getHeaderWidget());
+                    iconLabel->setContentsMargins(2, 2, 2, 2);
+                    iconLabel->setPixmap(ic);
+                    iconLabel->setToolTip(pluginLabelVersioned);
+                    _imp->_headerLayout->addWidget(iconLabel);
+                }
+                
+            }
+            
             QPixmap pixCenter;
             appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenter);
             _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
@@ -275,9 +311,15 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
         _imp->_helpButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
-        if ( !helpToolTip.isEmpty() ) {
-            _imp->_helpButton->setToolTip( Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal) );
-        }
+            QString tt = Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal);
+            if (!pluginLabelVersioned.isEmpty()) {
+                QString toPrepend("<p><b>");
+                toPrepend.append(pluginLabelVersioned);
+                toPrepend.append("</b></p>");
+                tt.prepend(toPrepend);
+            }
+            _imp->_helpButton->setToolTip(tt);
+        
         QObject::connect( _imp->_helpButton, SIGNAL( clicked() ), this, SLOT( showHelp() ) );
         
         if (!_imp->_holder->isProject()) {
@@ -324,7 +366,7 @@ DockablePanel::DockablePanel(Gui* gui
         if (headerMode != READ_ONLY_NAME) {
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
-            Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
+            
             NodeBackDrop* backdrop = dynamic_cast<NodeBackDrop*>(holder);
             MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
             if (isMultiInstance) {
@@ -368,7 +410,7 @@ DockablePanel::DockablePanel(Gui* gui
             } else if (backdrop) {
                 appPTR->getCurrentSettings()->getDefaultBackDropColor(&r, &g, &b);
             } else {
-                r = g = b = 0.6;
+                r = g = b = 0.7;
             }
             
             
@@ -460,15 +502,26 @@ DockablePanel::DockablePanel(Gui* gui
 
         _imp->_mainLayout->addWidget(_imp->_headerWidget);
     }
-
-    if (useScrollAreasForTabs) {
-        _imp->_tabWidget = new QTabWidget(this);
-    } else {
-        _imp->_tabWidget = new DockablePanelTabWidget(this);
+    
+    
+    _imp->_horizContainer = new QWidget(this);
+    _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
+    _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 3);
+    if (iseffect) {
+        _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
+        _imp->_verticalColorBar->setColor(_imp->_currentColor);
+        _imp->_horizLayout->addWidget(_imp->_verticalColorBar);
     }
+    
+    if (useScrollAreasForTabs) {
+        _imp->_tabWidget = new QTabWidget(_imp->_horizContainer);
+    } else {
+        _imp->_tabWidget = new DockablePanelTabWidget(gui,this);
+    }
+    _imp->_horizLayout->addWidget(_imp->_tabWidget);
     _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     _imp->_tabWidget->setObjectName("QTabWidget");
-    _imp->_mainLayout->addWidget(_imp->_tabWidget);
+    _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
         _imp->addPage(defaultPageName);
@@ -506,10 +559,51 @@ DockablePanel::getHolder() const
     return _imp->_holder;
 }
 
-DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
+class NoWheelTabBar : public QTabBar
+{
+public:
+    
+    NoWheelTabBar(QWidget* parent) : QTabBar(parent) {}
+    
+private:
+    
+    virtual void wheelEvent(QWheelEvent* event) OVERRIDE FINAL
+    {
+        //ignore wheel events so it doesn't scroll the tabs
+        QWidget::wheelEvent(event);
+    }
+};
+
+
+DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,QWidget* parent)
     : QTabWidget(parent)
+    , _gui(gui)
 {
     setFocusPolicy(Qt::StrongFocus);
+    QTabBar* tabbar = new NoWheelTabBar(this);
+    tabbar->setFocusPolicy(Qt::ClickFocus);
+    setTabBar(tabbar);
+}
+
+void
+DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
+{
+    Qt::Key key = (Qt::Key)event->key();
+    Qt::KeyboardModifiers modifiers = event->modifiers();
+    
+    bool hasF = hasFocus();
+    
+    if (!hasF && isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
+        if ( _gui->getLastSelectedViewer() ) {
+            _gui->getLastSelectedViewer()->previousFrame();
+        }
+    } else if (!hasF && isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+        if ( _gui->getLastSelectedViewer() ) {
+            _gui->getLastSelectedViewer()->nextFrame();
+        }
+    } else {
+        QTabWidget::keyPressEvent(event);
+    }
 }
 
 QSize
@@ -630,6 +724,8 @@ DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<Kno
     ///add all knobs left  to the default page
 
     RotoPanel* roto = initializeRotoPanel();
+    
+    
     if (roto) {
         PageMap::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
         ///the top level parent is not a page, i.e the plug-in didn't specify any page
@@ -658,17 +754,19 @@ DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<Kno
         }
 
         assert( parentTab != _imp->_pages.end() );
-        QFormLayout* layout;
+        
+        QGridLayout* layout = 0;
         if (_imp->_useScrollAreasForTabs) {
-            layout = dynamic_cast<QFormLayout*>( dynamic_cast<QScrollArea*>(parentTab->second.tab)->widget()->layout() );
+            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(parentTab->second.tab)->widget()->layout() );
         } else {
-            layout = dynamic_cast<QFormLayout*>( parentTab->second.tab->layout() );
+            layout = dynamic_cast<QGridLayout*>( parentTab->second.tab->layout() );
         }
         assert(layout);
-        layout->addRow(roto);
+        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
     }
 
     initializeExtraGui(_imp->_mainLayout);
+    
 }
 
 void
@@ -703,7 +801,10 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
     }
 
     KnobHelper* helper = dynamic_cast<KnobHelper*>( knob.get() );
-    QObject::connect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),_publicInterface,SLOT( onKnobDeletion() ) );
+    assert(helper);
+    if (helper) {
+        QObject::connect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),_publicInterface,SLOT( onKnobDeletion() ) );
+    }
     KnobGui* ret =  appPTR->createGuiForKnob(knob,_publicInterface);
     if (!ret) {
         qDebug() << "Failed to create Knob GUI";
@@ -804,12 +905,12 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             assert( page != _pages.end() );
 
             ///retrieve the form layout
-            QFormLayout* layout;
+            QGridLayout* layout;
             if (_useScrollAreasForTabs) {
-                layout = dynamic_cast<QFormLayout*>(
+                layout = dynamic_cast<QGridLayout*>(
                     dynamic_cast<QScrollArea*>(page->second.tab)->widget()->layout() );
             } else {
-                layout = dynamic_cast<QFormLayout*>( page->second.tab->layout() );
+                layout = dynamic_cast<QGridLayout*>( page->second.tab->layout() );
             }
             assert(layout);
 
@@ -830,7 +931,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 fieldLayout = new QHBoxLayout(fieldContainer);
                 fieldLayout->setContentsMargins(3,0,0,NATRON_SETTINGS_VERTICAL_SPACING_PIXELS);
                 fieldLayout->setSpacing(2);
-                fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+                //fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
             } else {
                 ///otherwise re-use the last row's widget and layout
                 assert(lastRowWidget);
@@ -842,9 +943,10 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             }
             assert(fieldContainer);
             assert(fieldLayout);
-            ClickableLabel* label = new ClickableLabel("",page->second.tab);
+            ClickableLabel* label = 0;
             
-            if (ret->showDescriptionLabel() && !knob->getDescription().empty() && label) {
+            if (ret->showDescriptionLabel() && !knob->getDescription().empty()) {
+                label = new ClickableLabel("",page->second.tab);
                 label->setText_overload( QString(QString( ret->getKnob()->getDescription().c_str() ) + ":") );
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             }
@@ -859,42 +961,36 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     QHBoxLayout* frameLayout = new QHBoxLayout(frame);
                     page->second.tabWidget = new QTabWidget(frame);
                     frameLayout->addWidget(page->second.tabWidget);
-                    layout->addRow(frame);
+                    layout->addWidget(frame, page->second.currentRow, 0, 1, 2);
                 }
                 QString parentTabName( parentIsGroup->getDescription().c_str() );
 
                 ///now check if the tab exists
                 QWidget* tab = 0;
-                QFormLayout* tabLayout = 0;
+                QGridLayout* tabLayout = 0;
                 for (int i = 0; i < page->second.tabWidget->count(); ++i) {
                     if (page->second.tabWidget->tabText(i) == parentTabName) {
                         tab = page->second.tabWidget->widget(i);
-                        tabLayout = qobject_cast<QFormLayout*>( tab->layout() );
+                        tabLayout = qobject_cast<QGridLayout*>( tab->layout() );
                         break;
                     }
                 }
 
                 if (!tab) {
                     tab = new QWidget(page->second.tabWidget);
-                    tabLayout = new QFormLayout(tab);
+                    tabLayout = new QGridLayout(tab);
+                    tabLayout->setColumnStretch(1, 1);
                     tabLayout->setContentsMargins(0, 0, 0, 0);
                     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
-
+                
                 ret->createGUI(tabLayout,fieldContainer,label,fieldLayout,page->second.currentRow,makeNewLine,knobsOnSameLine);
             } else {
                 ///fill the fieldLayout with the widgets
                 ret->createGUI(layout,fieldContainer,label,fieldLayout,page->second.currentRow,makeNewLine,knobsOnSameLine);
             }
             
-            //layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            ///FIXME: QFormLayout seems to ignore royally the alignment between the label and the field.
-            ///The only way to have both the label and the field at the same height is to hardcode the height of the label...
-            //int labelHeight =  20;//fieldContainer->sizeHint().height();
-            //label->setFixedHeight(labelHeight);
-            
-
 
             ///increment the row count
             ++page->second.currentRow;
@@ -976,6 +1072,7 @@ DockablePanelPrivate::addPage(const QString & name)
     if (_useScrollAreasForTabs) {
         QScrollArea* sa = new QScrollArea(_tabWidget);
         layoutContainer = new QWidget(sa);
+        layoutContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
         sa->setWidgetResizable(true);
         sa->setWidget(layoutContainer);
         newTab = sa;
@@ -986,15 +1083,12 @@ DockablePanelPrivate::addPage(const QString & name)
         newTab = clickableWidget;
         layoutContainer = newTab;
     }
-    QFormLayout *tabLayout = new QFormLayout(layoutContainer);
+    QGridLayout *tabLayout = new QGridLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
-    tabLayout->setContentsMargins(3, 0, 0, 0);
+    tabLayout->setContentsMargins(1, 1, 1, 1);
+    tabLayout->setColumnStretch(1, 1);
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
-    tabLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    tabLayout->setAlignment(Qt::AlignVCenter);
-    tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     _tabWidget->addTab(newTab,name);
     Page p;
     p.tab = newTab;
@@ -1317,6 +1411,9 @@ DockablePanel::onColorDialogColorChanged(const QColor & color)
         QPixmap p(15,15);
         p.fill(color);
         _imp->_colorButton->setIcon( QIcon(p) );
+        if (_imp->_verticalColorBar) {
+            _imp->_verticalColorBar->setColor(color);
+        }
     }
 }
 
@@ -1501,6 +1598,39 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             }
         }
     }
+}
+
+VerticalColorBar::VerticalColorBar(QWidget* parent)
+: QWidget(parent)
+, _color(Qt::black)
+{
+    setFixedWidth(NATRON_VERTICAL_BAR_WIDTH);
+}
+
+void
+VerticalColorBar::setColor(const QColor& color)
+{
+    _color = color;
+    update();
+}
+
+QSize
+VerticalColorBar::sizeHint() const
+{
+    return QWidget::sizeHint();
+    //return QSize(5,1000);
+}
+
+void
+VerticalColorBar::paintEvent(QPaintEvent* /*e*/)
+{
+    QPainter p(this);
+    QPen pen;
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setWidth(NATRON_VERTICAL_BAR_WIDTH);
+    pen.setColor(_color);
+    p.setPen(pen);
+    p.drawLine( 0, NATRON_VERTICAL_BAR_WIDTH, 0, height() - NATRON_VERTICAL_BAR_WIDTH);
 }
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,

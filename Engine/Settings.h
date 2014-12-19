@@ -57,7 +57,8 @@ public:
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+                                    bool originatedFromMainThread) OVERRIDE FINAL;
 
     int getViewersBitDepth() const;
 
@@ -67,7 +68,9 @@ public:
 
     double getRamPlaybackMaximumPercent() const;
 
-    U64 getMaximumDiskCacheSize() const;
+    U64 getMaximumViewerDiskCacheSize() const;
+    
+    U64 getMaximumDiskCacheNodeSize() const;
 
     double getUnreachableRamPercent() const;
 
@@ -85,14 +88,14 @@ public:
     
     void setUseGlobalThreadPool(bool use) ;
 
-    const std::string & getReaderPluginIDForFileType(const std::string & extension);
-    const std::string & getWriterPluginIDForFileType(const std::string & extension);
+    std::string getReaderPluginIDForFileType(const std::string & extension);
+    std::string getWriterPluginIDForFileType(const std::string & extension);
 
     void populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
 
     void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
     
-    void populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore);
+    void populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore);
     
     void populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts);
 
@@ -213,6 +216,17 @@ public:
      **/
     int getRenderScaleSupportPreference(const std::string& pluginID) const;
     
+    
+    bool notifyOnFileChange() const;
+    
+    bool isAggressiveCachingEnabled() const;
+    
+    bool isAutoTurboEnabled() const;
+    
+    void setAutoTurboModeEnabled(bool e);
+    
+    void setOptionalInputsAutoHidden(bool hidden);
+    bool areOptionalInputsAutoHidden() const;
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -229,6 +243,7 @@ private:
     boost::shared_ptr<Choice_Knob> _systemFontChoice;
     boost::shared_ptr<Int_Knob> _fontSize;
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
+    boost::shared_ptr<Bool_Knob> _notifyOnFileChange;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Int_Knob> _numberOfThreads;
@@ -252,6 +267,7 @@ private:
     boost::shared_ptr<File_Knob> _customOcioConfigFile;
     boost::shared_ptr<Page_Knob> _cachingTab;
 
+    boost::shared_ptr<Bool_Knob> _aggressiveCaching;
     ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
     boost::shared_ptr<String_Knob> _maxPlaybackLabel;
@@ -271,7 +287,10 @@ private:
     boost::shared_ptr<String_Knob> _unreachableRAMLabel;
     
     ///The total disk space allowed for all Natron's caches
-    boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
+    boost::shared_ptr<Int_Knob> _maxViewerDiskCacheGB;
+    boost::shared_ptr<Int_Knob> _maxDiskCacheNodeGB;
+    boost::shared_ptr<Path_Knob> _diskCachePath;
+    
     boost::shared_ptr<Page_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
     boost::shared_ptr<Int_Knob> _powerOf2Tiling;
@@ -280,11 +299,13 @@ private:
     boost::shared_ptr<Color_Knob> _checkerboardColor2;
     boost::shared_ptr<Bool_Knob> _autoWipe;
     boost::shared_ptr<Page_Knob> _nodegraphTab;
+    boost::shared_ptr<Bool_Knob> _autoTurbo;
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
     boost::shared_ptr<Bool_Knob> _useBWIcons;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
+    boost::shared_ptr<Bool_Knob> _hideOptionalInputsAutomatically;
     boost::shared_ptr<Bool_Knob> _useInputAForMergeAutoConnect;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
     boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;

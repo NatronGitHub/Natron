@@ -118,6 +118,7 @@ struct ShortCutEditorPrivate
           , shortcutGroup(0)
           , shortcutGroupLayout(0)
           , shortcutLabel(0)
+          , shortcutEditor(0)
           , validateButton(0)
           , clearButton(0)
           , resetButton(0)
@@ -574,7 +575,7 @@ ShortCutEditor::onRestoreDefaultsButtonClicked()
 {
     Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
                                                                                                     "will wipe all the current configuration "
-                                                                                                    "are you sure you want to do this?").toStdString() );
+                                                                                                    "are you sure you want to do this?").toStdString(), false );
 
     if (reply == Natron::eStandardButtonYes) {
         appPTR->restoreDefaultShortcuts();
@@ -644,7 +645,7 @@ ShortcutDelegate::paint(QPainter * painter,
 
     if (isTopLevel) {
         font.setBold(true);
-        font.setPixelSize(15);
+        font.setPixelSize(13);
         pen.setColor(Qt::black);
     } else {
         font.setBold(false);

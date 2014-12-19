@@ -17,6 +17,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSplitter>
+#include <QTimer>
 #include <QDebug>
 #include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_ON(deprecated)
@@ -142,7 +143,8 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     const std::vector<boost::shared_ptr<Natron::Node> > & nodes = project->getCurrentNodes();
 
     for (U32 i = 0; i < nodes.size(); ++i) {
-        if (nodes[i]->getPluginID() == "Viewer") {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+        if (isViewer) {
             _copyFromViewerCombo->addItem( nodes[i]->getName().c_str() );
         }
     }
@@ -260,7 +262,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     archive >> boost::serialization::make_nvp("ProjectGui",obj);
 
     const std::map<std::string, ViewerData > & viewersProjections = obj.getViewersProjections();
-
+    
 
     ///now restore the backdrops
     const std::list<NodeBackDropSerialization> & backdrops = obj.getBackdrops();
@@ -355,7 +357,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             if ( (std::abs(r - defR) > 0.05) || (std::abs(g - defG) > 0.05) || (std::abs(b - defB) > 0.05) ) {
                 QColor color;
                 color.setRgbF(r, g, b);
-                nGui->setDefaultGradientColor(color);
+                nGui->setDefaultColor(color);
                 nGui->setCurrentColor(color);
             }
         }
@@ -385,7 +387,10 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
-                tab->setDesiredFps(found->second.fps);
+                if (!found->second.fpsLocked) {
+                    tab->setDesiredFps(found->second.fps);
+                }
+                tab->setFPSLocked(found->second.fpsLocked);
             }
         }
 
@@ -451,6 +456,11 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         ///will relocate it correctly
         _gui->appendTabToDefaultViewerPane(h);
     }
+    
+    if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
+        _gui->getNodeGraph()->clearSelection();
+    }
+    QTimer::singleShot( 25, _gui->getNodeGraph(), SLOT(centerOnAllNodes()));
 } // load
 
 std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const

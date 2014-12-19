@@ -24,6 +24,7 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/noncopyable.hpp>
 #endif
 
+#include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/ImageLocker.h"
 
@@ -146,9 +147,10 @@ public:
 
     const std::map<int,AppInstanceRef> & getAppInstances() const WARN_UNUSED_RETURN;
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
-    const std::vector<Natron::Plugin*> & getPluginsList() const WARN_UNUSED_RETURN;
-    QMutex* getMutexForPlugin(const QString & pluginId) const WARN_UNUSED_RETURN;
-    Natron::LibraryBinary* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
+    const Natron::PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
+    QMutex* getMutexForPlugin(const QString & pluginId,int major,int minor) const WARN_UNUSED_RETURN;
+    Natron::Plugin* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
+    Natron::Plugin* getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
@@ -173,11 +175,14 @@ public:
      **/
     bool getImageOrCreate(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
                           ImageLocker* imageLocker,
-                          std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
+                          boost::shared_ptr<Natron::Image>* returnValue) const;
     
-    void createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
+    bool getImage_diskCache(const Natron::ImageKey & key,std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
+    
+    bool getImageOrCreate_diskCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
                           ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
+    
 
     bool getTexture(const Natron::FrameKey & key,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
@@ -192,6 +197,8 @@ public:
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
 
+    void setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size);
+    
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
 
     void setPlaybackCacheMaximumSize(double p);
@@ -206,6 +213,7 @@ public:
      * tree version. This is useful to wipe the cache for one particular node.
      **/
     void  removeAllImagesFromCacheWithMatchingKey(U64 treeVersion);
+    void  removeAllImagesFromDiskCacheWithMatchingKey(U64 treeVersion);
     void  removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion);
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
@@ -333,11 +341,21 @@ public:
     virtual QString getAppFont() const { return ""; }
     virtual int getAppFontSize() const { return 11; }
     
-    void setProjectCreatedPriorToRC3(bool b);
+    void setProjectCreatedDuringRC2Or3(bool b);
     
     //To by-pass a bug introduced in RC3 with the serialization of bezier curves
-    bool wasProjectCreatedPriorToRC3() const;
+    bool wasProjectCreatedDuringRC2Or3() const;
     
+    bool isNodeCacheAlmostFull() const;
+    
+    bool isAggressiveCachingEnabled() const;
+    
+    void setDiskCacheLocation(const QString& path);
+    const QString& getDiskCacheLocation() const;
+    
+    void saveCaches() const;
+    
+    void toggleAutoHideGraphInputs();
 public slots:
     
 
@@ -377,8 +395,7 @@ protected:
     {
     }
 
-    virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+    virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
     virtual AppInstance* makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
@@ -422,20 +439,22 @@ private:
 };
 
 namespace Natron {
-void errorDialog(const std::string & title,const std::string & message);
-void errorDialog(const std::string & title,const std::string & message,bool* stopAsking);
+void errorDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void errorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-void warningDialog(const std::string & title,const std::string & message);
-void warningDialog(const std::string & title,const std::string & message,bool* stopAsking);
+void warningDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void warningDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-void informationDialog(const std::string & title,const std::string & message);
-void informationDialog(const std::string & title,const std::string & message,bool* stopAsking);
+void informationDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void informationDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
+Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
+                                          Natron::StandardButtons buttons =
                                           Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                       Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
     
-Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons,
+Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
+                                          Natron::StandardButtons buttons,
                                           Natron::StandardButtonEnum defaultButton,
                                           bool* stopAsking);
 
@@ -459,17 +478,27 @@ inline bool
 getImageFromCacheOrCreate(const Natron::ImageKey & key,
                           const boost::shared_ptr<Natron::ImageParams>& params,
                           ImageLocker* imageLocker,
-                          std::list<boost::shared_ptr<Natron::Image> >* returnValue)
+                          boost::shared_ptr<Natron::Image>* returnValue)
 {
     return appPTR->getImageOrCreate(key,params, imageLocker, returnValue);
 }
     
-inline void createImageInCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                                  ImageLocker* imageLocker,
-                                  boost::shared_ptr<Natron::Image>* returnValue) 
+inline bool
+getImageFromDiskCache(const Natron::ImageKey & key,
+                      std::list<boost::shared_ptr<Natron::Image> >* returnValue)
 {
-    appPTR->createImageInCache(key, params, imageLocker, returnValue);
+    return appPTR->getImage_diskCache(key, returnValue);
 }
+    
+inline bool
+getImageFromDiskCacheOrCreate(const Natron::ImageKey & key,
+                              const boost::shared_ptr<Natron::ImageParams>& params,
+                              ImageLocker* imageLocker,
+                              boost::shared_ptr<Natron::Image>* returnValue)
+{
+    return appPTR->getImageOrCreate_diskCache(key,params, imageLocker, returnValue);
+}
+    
 
 inline bool
 getTextureFromCache(const Natron::FrameKey & key,

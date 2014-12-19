@@ -144,7 +144,10 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("Label", label);
             assert(_extraData);
             ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
-            data->_choiceString = label;
+            assert(data);
+            if (data) {
+                data->_choiceString = label;
+            }
             
         } else if (isString) {
             std::string v = isString->getValue(_dimension);
@@ -192,13 +195,18 @@ struct ValueSerialization
         ar & boost::serialization::make_nvp("HasAnimation",hasAnimation);
         bool convertOldFileKeyframesToPattern = false;
         if (hasAnimation) {
+            assert(_knob->canAnimate());
             Curve c;
             ar & boost::serialization::make_nvp("Curve",c);
             ///This is to overcome the change to the animation of file params: They no longer hold keyframes
             ///Don't try to load keyframes
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
             if (!convertOldFileKeyframesToPattern) {
-                _knob->getCurve(_dimension)->clone(c);
+                boost::shared_ptr<Curve> curve = _knob->getCurve(_dimension);
+                assert(curve);
+                if (curve) {
+                    _knob->getCurve(_dimension)->clone(c);
+                }
             }
         }
 
@@ -225,10 +233,8 @@ struct ValueSerialization
                 
                 assert(_extraData);
                 ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
+                assert(data);
                 data->_choiceString = label;
-                
-                
-                
             }
             isChoice->setValue(v, _dimension);
 
@@ -409,6 +415,7 @@ public:
     ///Constructor used to serialize
     explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob,bool copyKnob)
         : _knob()
+        , _dimension(0)
         , _extraData(NULL)
     {
         initialize(knob,copyKnob);
@@ -440,6 +447,7 @@ public:
     ///this the deserialization will not succeed.
     KnobSerialization()
         : _knob()
+        , _dimension(0)
         , _extraData(NULL)
     {
     }

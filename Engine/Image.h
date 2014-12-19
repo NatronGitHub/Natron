@@ -28,6 +28,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Rect.h"
 #include "Engine/OutputSchedulerThread.h"
 
+
 namespace Natron {
 
     
@@ -42,7 +43,7 @@ namespace Natron {
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
             // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
             //assert(!rod.isNull());
-            clear();
+            std::fill(_map.begin(), _map.end(), 0);
         }
 
         Bitmap()
@@ -56,16 +57,18 @@ namespace Natron {
             assert(_map.size() == 0);
             _bounds = bounds;
             _map.resize( _bounds.area() );
-            clear();
+
+            std::fill(_map.begin(), _map.end(), 0);
         }
 
         ~Bitmap()
         {
         }
 
-        void clear()
+        
+        void setTo1()
         {
-            std::fill(_map.begin(), _map.end(), 0);
+            std::fill(_map.begin(),_map.end(),1);
         }
 
         const RectI & getBounds() const
@@ -73,11 +76,24 @@ namespace Natron {
             return _bounds;
         }
 
-        std::list<RectI> minimalNonMarkedRects(const RectI & roi) const;
+#if NATRON_ENABLE_TRIMAP
+        void minimalNonMarkedRects_trimap(const RectI & roi,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const;
+        RectI minimalNonMarkedBbox_trimap(const RectI & roi,bool* isBeingRenderedElsewhere) const;
+#endif
 
+        void minimalNonMarkedRects(const RectI & roi,std::list<RectI>& ret) const;
         RectI minimalNonMarkedBbox(const RectI & roi) const;
 
+
+        ///Fill with 1 the roi
         void markForRendered(const RectI & roi);
+        
+#if NATRON_ENABLE_TRIMAP
+        ///Fill with 2 the roi
+        void markForRendering(const RectI & roi);
+#endif
+        
+        void clear(const RectI& roi);
 
         const char* getBitmap() const
         {
@@ -91,7 +107,11 @@ namespace Natron {
 
         const char* getBitmapAt(int x,int y) const;
         char* getBitmapAt(int x,int y);
-
+        
+        void copyRowPortion(int x1,int x2,int y,const Bitmap& other);
+        
+        void copyBitmapPortion(const RectI& roi, const Bitmap& other);
+        
     private:
         RectI _bounds;
         std::vector<char> _map;
@@ -107,7 +127,8 @@ namespace Natron {
               const Natron::CacheAPI* cache,
               Natron::StorageModeEnum storage,
               const std::string & path);
-
+        
+        
 
         /*This constructor can be used to allocate a local Image. The deallocation should
        then be handled by the user. Note that no view number is passed in parameter
@@ -117,14 +138,22 @@ namespace Natron {
               const RectI & bounds,    //!< bounds in pixel coordinates
               unsigned int mipMapLevel,
               double par,
-              Natron::ImageBitDepthEnum bitdepth);
+              Natron::ImageBitDepthEnum bitdepth,
+              bool useBitmap = false);
 
+        //Same as above but parameters are in the ImageParams object
+        Image(const ImageKey & key,
+              const boost::shared_ptr<Natron::ImageParams>& params);
+
+        
         virtual ~Image()
         {
             deallocate();
         }
+        
+        bool usesBitMap() const { return _useBitmap; }
 
-        virtual void onMemoryAllocated() OVERRIDE FINAL;
+        virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
 
         static ImageKey makeKey(U64 nodeHashKey,
                                 bool frameVaryingOrAnimated,
@@ -132,6 +161,16 @@ namespace Natron {
                                 int view);
         static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                          const RectD & rod,    // the image rod in canonical coordinates
+                                                         const double par,
+                                                         unsigned int mipMapLevel,
+                                                         bool isRoDProjectFormat,
+                                                         ImageComponentsEnum components,
+                                                         Natron::ImageBitDepthEnum bitdepth,
+                                                         const std::map<int, std::vector<RangeD> > & framesNeeded);
+        
+        static boost::shared_ptr<ImageParams> makeParams(int cost,
+                                                         const RectD & rod,    // the image rod in canonical coordinates
+                                                         const RectI& bounds,
                                                          const double par,
                                                          unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,
@@ -234,39 +273,83 @@ namespace Natron {
         }
 
         /**
-     * @brief Zeroes out the bitmap so the image is considered to be as though nothing
-     * had been rendered.
-     **/
-        void clearBitmap();
-
-        /**
      * @brief Returns a list of portions of image that are not yet rendered within the
      * region of interest given. This internally uses the bitmap to know what portion
      * are already rendered in the image. It aims to return the minimal
      * area to render. Since this problem is quite hard to solve,the different portions
      * of image returned may contain already rendered pixels.
      **/
-        std::list<RectI> getRestToRender(const RectI & regionOfInterest) const
+#if NATRON_ENABLE_TRIMAP
+        void getRestToRender_trimap(const RectI & regionOfInterest,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const
         {
+            if (!_useBitmap) {
+                return;
+            }
             QReadLocker locker(&_lock);
-
-            return _bitmap.minimalNonMarkedRects(regionOfInterest);
+            _bitmap.minimalNonMarkedRects_trimap(regionOfInterest, ret, isBeingRenderedElsewhere);
+        }
+#endif
+        void getRestToRender(const RectI & regionOfInterest,std::list<RectI>& ret) const
+        {
+            if (!_useBitmap) {
+                return ;
+            }
+            QReadLocker locker(&_lock);
+            _bitmap.minimalNonMarkedRects(regionOfInterest,ret);
         }
 
+#if NATRON_ENABLE_TRIMAP
+        RectI getMinimalRect_trimap(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere) const
+        {
+            if (!_useBitmap) {
+                return regionOfInterest;
+            }
+            QReadLocker locker(&_lock);
+            return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
+        }
+#endif
         RectI getMinimalRect(const RectI & regionOfInterest) const
         {
+            if (!_useBitmap) {
+                return regionOfInterest;
+            }
             QReadLocker locker(&_lock);
-
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
         }
 
         void markForRendered(const RectI & roi)
         {
+            if (!_useBitmap) {
+                return;
+            }
             QWriteLocker locker(&_lock);
 
             _bitmap.markForRendered(roi);
         }
+        
+#if NATRON_ENABLE_TRIMAP
+        ///Fill with 2 the roi
+        void markForRendering(const RectI & roi)
+        {
+            if (!_useBitmap) {
+                return;
+            }
+            QWriteLocker locker(&_lock);
+            
+            _bitmap.markForRendering(roi);
+        }
+#endif
 
+        void clearBitmap(const RectI& roi)
+        {
+            if (!_useBitmap) {
+                return;
+            }
+            QWriteLocker locker(&_lock);
+            
+            _bitmap.clear(roi);
+        }
+        
         /**
      * @brief Fills the image with the given colour. If the image components
      * are not RGBA it will ignore the unsupported components.
@@ -307,7 +390,9 @@ namespace Natron {
      * given mipmap level,
      * and then computes the mipmap of the given level of that rectangle.
      **/
-        void downscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, bool copyBitMap, Natron::Image* output) const;
+        void downscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, bool copyBitMap,
+                             bool treatUnavailablePixelsAsRendered,
+                             Natron::Image* output) const;
 
         /**
      * @brief Upscales a portion of this image into output.
@@ -369,25 +454,38 @@ namespace Natron {
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
+        
+        void checkForNaNs(const RectI& roi);
 
+        void copyBitmapRowPortion(int x1, int x2,int y, const Image& other);
+
+        void copyBitmapPortion(const RectI& roi, const Image& other);
+        
     private:
 
+        
         /**
      * @brief Given the output buffer,the region of interest and the mip map level, this
      * function computes the mip map of this image in the given roi.
      * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
      **/
-        void buildMipMapLevel(const RectI & roiCanonical, unsigned int level, bool copyBitMap,Natron::Image* output) const;
+        void buildMipMapLevel(const RectI & roiCanonical, unsigned int level, bool copyBitMap,bool treatUnavailablePixelsAsRendered,
+                              Natron::Image* output) const;
 
 
         /**
      * @brief Halve the given roi of this image into output.
      * If the RoI bounds are odd, the largest enclosing RoI with even bounds will be considered.
      **/
-        void halveRoI(const RectI & roi, bool copyBitMap, Natron::Image* output) const;
+        void halveRoI(const RectI & roi, bool copyBitMap, bool treatUnavailablePixelsAsRendered,
+                      Natron::Image* output) const;
+        
 
         template <typename PIX, int maxValue>
-        void halveRoIForDepth(const RectI & roi, bool copyBitMap, Natron::Image* output) const;
+        void halveRoIForDepth(const RectI & roi,
+                              bool copyBitMap,
+                              bool treatUnavailablePixelsAsRendered,
+                              Natron::Image* output) const;
 
         /**
      * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)
@@ -417,6 +515,7 @@ namespace Natron {
         RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
         RectI _bounds;
         double _par;
+        bool _useBitmap;
     };
 
     template <typename SRCPIX,typename DSTPIX>

@@ -43,17 +43,19 @@ class NodeSettingsPanel;
 class KnobI;
 class ViewerInstance;
 class Format;
+class TimeLine;
 class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
 class Double_Knob;
+class NodeGuiI;
 class RotoContext;
 namespace Natron {
+class Plugin;
 class OutputEffectInstance;
 class Image;
 class EffectInstance;
 class LibraryBinary;
-class ChannelSet;
 
 class Node
     : public QObject
@@ -66,10 +68,12 @@ public:
 
 
     Node(AppInstance* app,
-         Natron::LibraryBinary* plugin);
+         Natron::Plugin* plugin);
 
     virtual ~Node();
 
+    const Natron::Plugin* getPlugin() const;
+    
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
      * This function also loads all parameters. Node connections will not be setup in this method.
@@ -144,6 +148,8 @@ public:
      * e.g: the Tracker node.
      **/
     bool isMultiInstance() const;
+    
+    Natron::Node* getParentMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
     std::string getParentMultiInstanceName() const;
@@ -306,7 +312,7 @@ public:
      * empty input if they are all optionals, or -1 if nothing matches the 2 first conditions..
      * if all inputs are connected.
      **/
-    int getPreferredInputForConnection() const;
+    virtual int getPreferredInputForConnection() ;
 
     /**
      * @brief Returns in 'outputs' a map of all nodes connected to this node
@@ -332,7 +338,8 @@ public:
         eCanConnectInput_inputAlreadyConnected,
         eCanConnectInput_givenNodeNotConnectable,
         eCanConnectInput_graphCycles,
-        eCanConnectInput_differentPars
+        eCanConnectInput_differentPars,
+        eCanConnectInput_differentFPS
     };
     /**
      * @brief Returns true if a connection is possible for the given input number of the current node 
@@ -346,7 +353,7 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber);
+    virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber);
 
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
@@ -358,7 +365,22 @@ public:
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
     virtual int disconnectInput(Node* input);
+    
+    /**
+     * @brief Same as:
+      disconnectInput(inputNumber);
+      connectInput(input,inputNumber);
+     * Except that it is atomic
+     **/
+    bool replaceInput(const boost::shared_ptr<Node>& input,int inputNumber);
+    
+    void setNodeGuiPointer(NodeGuiI* gui);
 
+    bool isSettingsPanelOpened() const;
+    
+    bool shouldCacheOutput() const;
+
+    
 private:
     /**
      * @brief Adds an output to this node.
@@ -390,6 +412,7 @@ public:
      **/
     std::string getPluginID() const;
 
+
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -399,6 +422,11 @@ public:
      * @brief Forwarded to the live effect instance
      **/
     std::string getDescription() const;
+    
+    /**
+     * @brief Returns the absolute file-path to the plug-in icon.
+     **/
+    std::string getPluginIconFilePath() const;
 
     /*============================*/
     AppInstance* getApp() const;
@@ -513,7 +541,7 @@ public:
      * @brief Clears any message posted previously by setPersistentMessage.
      * This function will also be called on all inputs
      **/
-    void clearPersistentMessage();
+    void clearPersistentMessage(bool recurse);
 
     void purgeAllInstancesCaches();
 
@@ -562,6 +590,7 @@ public:
      * This is used internally by EffectInstance::renderRoI
      **/
     void lock(const boost::shared_ptr<Natron::Image>& entry);
+    bool tryLock(const boost::shared_ptr<Natron::Image>& entry);
     void unlock(const boost::shared_ptr<Natron::Image>& entry);
 
 
@@ -572,8 +601,6 @@ public:
     boost::shared_ptr<Natron::Image> getImageBeingRendered(int time,unsigned int mipMapLevel,int view);
 
     void onInputChanged(int inputNb);
-
-    void onMultipleInputChanged();
 
     void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReasonEnum reason);
 
@@ -684,7 +711,9 @@ public:
                                bool isRenderUserInteraction,
                                bool isSequential,
                                bool canAbort,
-                               U64 nodeHash);
+                               U64 nodeHash,
+                               bool canSetValue,
+                               const TimeLine* timeline);
     
     void invalidateParallelRenderArgs();
     
@@ -693,16 +722,18 @@ public:
         Node* node;
     public:
         
-        ParallelRenderArgsSetter(Node* node,
+        ParallelRenderArgsSetter(Node* n,
                                  int time,
                                  int view,
                                  bool isRenderUserInteraction,
                                  bool isSequential,
                                  bool canAbort,
-                                 U64 nodeHash)
-        : node(node)
+                                 U64 nodeHash,
+                                 bool canSetValue,
+                                 const TimeLine* timeline)
+        : node(n)
         {
-            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash);
+            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,canSetValue,timeline);
         }
         
         ~ParallelRenderArgsSetter()
@@ -716,8 +747,14 @@ public:
      **/
     bool isNodeRendering() const;
     
+    bool hasPersistentMessage() const;
+    
     void getPersistentMessage(QString* message,int* type) const;
 
+    bool isForceCachingEnabled() const;
+    
+    void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
+    
 public slots:
 
     void setKnobsAge(U64 newAge);
@@ -740,11 +777,6 @@ public slots:
     void refreshPreviewImage(int time)
     {
         emit previewImageChanged(time);
-    }
-
-    void notifyGuiChannelChanged(const Natron::ChannelSet & c)
-    {
-        emit channelsChanged(c);
     }
 
     void onMasterNodeDeactivated();
@@ -792,8 +824,6 @@ signals:
     void previewImageChanged(int);
 
     void previewRefreshRequested(int);
-
-    void channelsChanged(const Natron::ChannelSet &);
 
     void inputNIsRendering(int inputNb);
 
@@ -850,6 +880,8 @@ private:
                                        bool isSequential,
                                        U64 nodeHash,
                                        bool canAbort,
+                                       bool canSetValue,
+                                       const TimeLine* timeline,
                                        std::list<Natron::Node*>& markedNodes);
     
 
@@ -880,13 +912,12 @@ class InspectorNode
     Q_OBJECT
     
     int _inputsCount;
-    int _activeInput;
-    mutable QMutex _activeInputMutex;
+
 
 public:
 
     InspectorNode(AppInstance* app,
-                  Natron::LibraryBinary* plugin);
+                  Natron::Plugin* plugin);
 
     virtual ~InspectorNode();
 
@@ -895,10 +926,13 @@ public:
         return _inputsCount;
     }
 
-    virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber) OVERRIDE;
+    virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
     virtual int disconnectInput(int inputNumber) OVERRIDE;
     virtual int disconnectInput(Node* input) OVERRIDE;
 
+
+
+    virtual int getPreferredInputForConnection()  OVERRIDE FINAL;
 
     bool tryAddEmptyInput();
 
@@ -908,10 +942,6 @@ public:
 
     void setActiveInputAndRefresh(int inputNb);
 
-    int activeInput() const
-    {
-        QMutexLocker l(&_activeInputMutex); return _activeInput;
-    }
 };
 
 #endif // NATRON_ENGINE_NODE_H_

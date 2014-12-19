@@ -48,7 +48,7 @@ QtWriter::~QtWriter()
 std::string
 QtWriter::getPluginID() const
 {
-    return "WriteQt";
+    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt";
 }
 
 std::string
@@ -155,7 +155,8 @@ void
 QtWriter::knobChanged(KnobI* k,
                       Natron::ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
-                      SequenceTime /*time*/)
+                      SequenceTime /*time*/,
+                      bool/* originatedFromMainThread*/)
 {
     if ( k == _frameRangeChoosal.get() ) {
         int index = _frameRangeChoosal->getValue();

@@ -127,6 +127,7 @@ public:
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & imageRoD,const double par,unsigned int mipMapLevel) OVERRIDE FINAL;
+    virtual RectI getExactImageRectangleDisplayed(const RectD & rod,const double par,unsigned int mipMapLevel) OVERRIDE FINAL;
     virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
@@ -162,6 +163,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const boost::shared_ptr<Natron::Image>& image,
+                                            int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double offset, int lut, int pboIndex,

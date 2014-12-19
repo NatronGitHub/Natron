@@ -25,14 +25,15 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Rect.h"
 
 #define FORMAT_SERIALIZATION_CHANGES_TO_RECTD 2
-#define FORMAT_SERIALIZATION_VERSION FORMAT_SERIALIZATION_CHANGES_TO_RECTD
+#define FORMAT_SERIALIZATION_CHANGES_TO_RECTI 3
+#define FORMAT_SERIALIZATION_VERSION FORMAT_SERIALIZATION_CHANGES_TO_RECTI
+
 /*This class is used to hold the format of a frame (its resolution).
  * Some formats have a name , e.g : 1920*1080 is full HD, etc...
  * It also holds a pixel aspect ratio so the viewer can display the
  * frame accordingly*/
-#pragma message WARN("Format should inherit RectI instead because it is everywhere in pixel coords!")
 class Format
-    : public RectD            //!< project format is in canonical coordinates
+    : public RectI            //!< project format is in pixel coordinates
 
 {
     friend class boost::serialization::access;
@@ -47,10 +48,19 @@ class Format
             x2 = r.x2;
             y1 = r.y1;
             y2 = r.y2;
+        } else if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTI) {
+            
+            RectD r;
+            ar & boost::serialization::make_nvp("RectD",r);
+            x1 = r.x1;
+            x2 = r.x2;
+            y1 = r.y1;
+            y2 = r.y2;
+
         } else {
-            boost::serialization::void_cast_register<Format,RectD>( static_cast<Format *>(NULL),
-                                                                    static_cast<RectD *>(NULL) );
-            ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectD);
+            boost::serialization::void_cast_register<Format,RectI>( static_cast<Format *>(NULL),
+                                                                    static_cast<RectI *>(NULL) );
+            ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectI);
         }
         ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_par);
         ar & boost::serialization::make_nvp("Name",_name);
@@ -63,21 +73,21 @@ public:
            int t,
            const std::string & name,
            double par)
-        : RectD(l,b,r,t)
+        : RectI(l,b,r,t)
           , _par(par)
           , _name(name)
     {
     }
 
-    Format(const RectD & rect)
-        : RectD(rect)
+    Format(const RectI & rect)
+        : RectI(rect)
           , _par(1.)
           , _name()
     {
     }
     
-    Format(const RectD& rect, const double par)
-    : RectD(rect)
+    Format(const RectI& rect, const double par)
+    : RectI(rect)
     , _par(par)
     , _name()
     {
@@ -85,14 +95,14 @@ public:
     }
 
     Format(const Format & other)
-        : RectD(other.left(), other.bottom(), other.right(), other.top())
+        : RectI(other.left(), other.bottom(), other.right(), other.top())
           , _par(other.getPixelAspectRatio())
           , _name(other.getName())
     {
     }
 
     Format()
-        : RectD()
+        : RectI()
           , _par(1.0)
           , _name()
     {
@@ -120,6 +130,13 @@ public:
     void setPixelAspectRatio(double p)
     {
         _par = p;
+    }
+    
+    RectD toCanonicalFormat() const
+    {
+        RectD ret;
+        toCanonical_noClipping(0, _par, &ret);
+        return ret;
     }
 
     Format & operator=(const Format & other)

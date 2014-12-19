@@ -357,12 +357,12 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
                 break;
             }
-            Bezier* isBezier = dynamic_cast<Bezier*>( item.get() );
+            boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
             assert(isBezier);
             
-            boost::shared_ptr<BezierCP> point = it->isFeather ?
-            isBezier->getFeatherPointAtIndex(it->cpIndex)
-            : isBezier->getControlPointAtIndex(it->cpIndex);
+            boost::shared_ptr<BezierCP> point = (it->isFeather ?
+                                                 isBezier->getFeatherPointAtIndex(it->cpIndex)
+                                                 : isBezier->getControlPointAtIndex(it->cpIndex));
             
             if (!point) {
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
@@ -399,7 +399,7 @@ getInputRoD(EffectInstance* effect,
 #else
     Format f;
     effect->getRenderFormat(&f);
-    rod = f;
+    rod = f.toCanonicalFormat();
 #endif
 }
 
@@ -923,7 +923,7 @@ Page_Knob::typeName() const
 }
 
 void
-Page_Knob::addKnob(boost::shared_ptr<KnobI> k)
+Page_Knob::addKnob(const boost::shared_ptr<KnobI> &k)
 {
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     

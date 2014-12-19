@@ -63,8 +63,8 @@ void
 BezierCP::load(Archive & ar,
                const unsigned int version) 
 {
-    bool createdPriorToRC3 = appPTR->wasProjectCreatedPriorToRC3();
-    if (version >= BEZIER_CP_FIX_BUG_CURVE_POINTER || createdPriorToRC3) {
+    bool createdDuringToRC2Or3 = appPTR->wasProjectCreatedDuringRC2Or3();
+    if (version >= BEZIER_CP_FIX_BUG_CURVE_POINTER || !createdDuringToRC2Or3) {
     
         ar & boost::serialization::make_nvp("X",_imp->x);
         
@@ -302,6 +302,9 @@ public:
 
     BezierSerialization()
         : RotoDrawableItemSerialization()
+        , _controlPoints()
+        , _featherPoints()
+        , _closed(false)
     {
     }
 
@@ -451,6 +454,11 @@ public:
 
     RotoContextSerialization()
         : _baseLayer()
+        , _selectedItems()
+        , _autoKeying(false)
+        , _rippleEdit(false)
+        , _featherLink(false)
+        , _itemCounters()
     {
     }
 

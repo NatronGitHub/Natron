@@ -11,7 +11,7 @@
 #endif
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
-
+#define NATRON_DOT_ID NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Dot"
 /**
  * @brief A NoOp is an effect that doesn't do anything. It is useful for scripting (adding custom parameters)
  * and it is also used to implement the "Dot" node.
@@ -100,7 +100,7 @@ public:
 
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return "Dot";
+        return NATRON_DOT_ID;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN

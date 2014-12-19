@@ -60,7 +60,7 @@ QtReader::~QtReader()
 std::string
 QtReader::getPluginID() const
 {
-    return "ReadQt";
+    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt";;
 }
 
 std::string
@@ -154,7 +154,8 @@ void
 QtReader::knobChanged(KnobI* k,
                       Natron::ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
-                      SequenceTime /*time*/)
+                      SequenceTime /*time*/,
+                      bool /*originatedFromMainThread*/)
 {
     if ( k == _fileKnob.get() ) {
         SequenceTime first,last;
