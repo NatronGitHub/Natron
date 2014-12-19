@@ -1475,6 +1475,9 @@ KnobHelper::deleteAnimationBeforeTime(int time,
                                       int dimension,
                                       Natron::ValueChangedReasonEnum reason)
 {
+    if (!_imp->curves[dimension]) {
+        return;
+    }
     assert( 0 <= dimension && dimension < getDimension() );
     KeyFrame k;
     bool ok = _imp->curves[dimension]->getPreviousKeyframeTime(time, &k);
@@ -1491,7 +1494,11 @@ KnobHelper::deleteAnimationAfterTime(int time,
 {
     assert( 0 <= dimension && dimension < getDimension() );
     KeyFrame k;
+    if (!_imp->curves[dimension]) {
+        return;
+    }
     bool ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
+    
     while (ok) {
         deleteValueAtTime(k.getTime(), dimension, reason);
         ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
