@@ -26,18 +26,25 @@ class PluginGroupNode
     QString _id;
     QString _label;
     QString _iconPath;
+    int _major,_minor;
     std::vector<PluginGroupNode*> _children;
     PluginGroupNode* _parent;
-
+    bool _severalPluginMajorVersions;
 public:
     PluginGroupNode(const QString & pluginID,
                     const QString & pluginLabel,
-                    const QString & iconPath)
-        : _id(pluginID)
-          , _label(pluginLabel)
-          , _iconPath(iconPath)
-          , _children()
-          , _parent(NULL)
+                    const QString & iconPath,
+                    int major,
+                    int minor,
+                    bool severalPluginMajorVersions)
+    : _id(pluginID)
+    , _label(pluginLabel)
+    , _iconPath(iconPath)
+    , _major(major)
+    , _minor(minor)
+    , _children()
+    , _parent(NULL)
+    , _severalPluginMajorVersions(severalPluginMajorVersions)
     {
     }
 
@@ -49,6 +56,11 @@ public:
     const QString & getLabel() const
     {
         return _label;
+    }
+    
+    const QString getLabelVersionEncoded() const
+    {
+        return _label + QString::number(_major) + QString(".") + QString::number(_minor);
     }
 
     void setLabel(const QString & label)
@@ -87,6 +99,26 @@ public:
     bool hasParent() const
     {
         return _parent != NULL;
+    }
+    
+    int getMajorVersion() const
+    {
+        return _major;
+    }
+    
+    int getMinorVersion() const
+    {
+        return _minor;
+    }
+    
+    bool isThereSeveralPluginMajorVersions() const
+    {
+        return _severalPluginMajorVersions;
+    }
+    
+    void setSeveralPluginMajorVersions(bool v)
+    {
+        _severalPluginMajorVersions = v;
     }
 };
 

@@ -2179,7 +2179,7 @@ ToolButton*
 Gui::findOrCreateToolButton(PluginGroupNode* plugin)
 {
     for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
-        if ( _imp->_toolButtons[i]->getID() == plugin->getID() ) {
+        if ( _imp->_toolButtons[i]->getID() == plugin->getID() && _imp->_toolButtons[i]->getPluginMajor() == plugin->getMajorVersion()) {
             return _imp->_toolButtons[i];
         }
     }
@@ -2211,7 +2211,7 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
         //if the plugin has no children and no parent, put it in the "others" group
         if ( !plugin->hasParent() ) {
             ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
-            PluginGroupNode* othersToolButton = appPTR->findPluginToolButtonOrCreate(PLUGIN_GROUP_DEFAULT,PLUGIN_GROUP_DEFAULT, PLUGIN_GROUP_DEFAULT_ICON_PATH);
+            PluginGroupNode* othersToolButton = appPTR->findPluginToolButtonOrCreate(PLUGIN_GROUP_DEFAULT,PLUGIN_GROUP_DEFAULT, PLUGIN_GROUP_DEFAULT_ICON_PATH,1,0);
             othersToolButton->tryAddChild(plugin);
 
             //if the othersGroup doesn't exist, create it
@@ -2221,10 +2221,12 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
             parentToolButton = othersGroup;
         }
     }
-    ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance,plugin,plugin->getID(),plugin->getLabel(),icon);
+    ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance,plugin,plugin->getID(),plugin->getMajorVersion(),
+                                                   plugin->getMinorVersion(),
+                                                   plugin->getLabel(),icon);
 
     if (isLeaf) {
-        QString label = pluginsToolButton->getLabel();
+        QString label = plugin->isThereSeveralPluginMajorVersions() ? plugin->getLabelVersionEncoded() : plugin->getLabel();
         int foundOFX = label.lastIndexOf("OFX");
         if (foundOFX != -1) {
             label = label.remove(foundOFX, 3);

@@ -65,7 +65,8 @@ public:
     virtual ~GuiApplicationManager();
 
     const std::list<PluginGroupNode*> & getPluginsToolButtons() const;
-    PluginGroupNode* findPluginToolButtonOrCreate(const QString & pluginID,const QString & name,const QString & iconPath);
+    PluginGroupNode* findPluginToolButtonOrCreate(const QString & pluginID,const QString & name,const QString & iconPath,
+                                                  int major,int minor);
     virtual bool isBackground() const OVERRIDE FINAL
     {
         return false;

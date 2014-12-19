@@ -320,6 +320,12 @@ Node::createRotoContextConditionnally()
     }
 }
 
+const Natron::Plugin*
+Node::getPlugin() const
+{
+    return _imp->plugin;
+}
+
 void
 Node::load(const std::string & pluginID,
            const std::string & parentMultiInstanceName,

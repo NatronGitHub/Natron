@@ -72,6 +72,8 @@ public:
 
     virtual ~Node();
 
+    const Natron::Plugin* getPlugin() const;
+    
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
      * This function also loads all parameters. Node connections will not be setup in this method.

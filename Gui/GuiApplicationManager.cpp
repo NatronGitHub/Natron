@@ -734,7 +734,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     const QString & groupIconPath = plugin->getGroupIconFilePath();
 
     for (int i = 0; i < groups.size(); ++i) {
-        PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath);
+        PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath,1,0);
         if ( parent && (parent != child) ) {
             parent->tryAddChild(child);
             child->setParent(parent);
@@ -743,7 +743,8 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
         shortcutGrouping.push_back('/');
         shortcutGrouping.push_back(groups[i]);
     }
-    PluginGroupNode* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath);
+    PluginGroupNode* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath,plugin->getMajorVersion(),
+                                                              plugin->getMinorVersion());
     if ( parent && (parent != lastChild) ) {
         parent->tryAddChild(lastChild);
         lastChild->setParent(parent);
@@ -817,14 +818,22 @@ GuiApplicationManagerPrivate::removePluginToolButton(const QString& pluginID)
 PluginGroupNode*
 GuiApplicationManager::findPluginToolButtonOrCreate(const QString & pluginID,
                                                     const QString & name,
-                                                    const QString & iconPath)
+                                                    const QString & iconPath,
+                                                    int major,
+                                                    int minor)
 {
+    bool severalMajor = false;
     for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin(); it != _imp->_toolButtons.end(); ++it) {
         if ((*it)->getID() == pluginID) {
-            return *it;
+            if (major == (*it)->getMajorVersion()) {
+                return *it;
+            } else {
+                (*it)->setSeveralPluginMajorVersions(true);
+                severalMajor = true;
+            }
         }
     }
-    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath);
+    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath,major,minor,severalMajor);
     _imp->_toolButtons.push_back(ret);
 
     return ret;
