@@ -13,6 +13,8 @@
 #define PLUGIN_H
 
 #include <vector>
+#include <set>
+#include <map>
 #include <QString>
 #include <QStringList>
 
@@ -58,9 +60,9 @@ public:
         return _label;
     }
     
-    const QString getLabelVersionEncoded() const
+    const QString getLabelVersionMajorEncoded() const
     {
-        return _label + QString::number(_major) + QString(".") + QString::number(_minor);
+        return _label + QString("_v") + QString::number(_major);
     }
 
     void setLabel(const QString & label)
@@ -135,7 +137,7 @@ class Plugin
     QMutex* _lock;
     int _majorVersion;
     int _minorVersion;
-    bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
+    mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader,_isWriter;
 public:
 
@@ -214,11 +216,28 @@ public:
         return _label;
     }
     
+    const QString getLabelVersionMajorMinorEncoded() const
+    {
+        return _label + QString("_v") + QString::number(_majorVersion) + QString(".") + QString::number(_minorVersion);
+    }
+    
+    const QString getLabelVersionMajorEncoded() const
+    {
+        return _label + QString("_v") + QString::number(_majorVersion);
+    }
+    
     QString generateUserFriendlyPluginID() const
     {
         QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
         return _label + "  [" + grouping + "]";
     }
+    
+    QString generateUserFriendlyPluginIDMajorEncoded() const
+    {
+        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+        return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
+    }
+
     
     const QString & getPluginOFXID() const
     {
@@ -260,7 +279,7 @@ public:
         return _minorVersion;
     }
 
-    void setHasShortcut(bool has)
+    void setHasShortcut(bool has) const
     {
         _hasShortcutSet = has;
     }
@@ -270,6 +289,18 @@ public:
         return _hasShortcutSet;
     }
 };
+    
+struct Plugin_compare_major
+{
+    bool operator() (const Plugin* const lhs,
+                     const Plugin* const rhs) const
+    {
+        return lhs->getMajorVersion() < rhs->getMajorVersion();
+    }
+};
+    
+typedef std::set<Plugin*,Plugin_compare_major> PluginMajorsOrdered;
+typedef std::map<std::string,PluginMajorsOrdered> PluginsMap;
 }
 
 #endif // PLUGIN_H

@@ -457,10 +457,12 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     writeOFXCache();
 
     /*Filling node name list and plugin grouping*/
-    const std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> & ofxPlugins =
+    typedef std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> PMap;
+    const PMap& ofxPlugins =
     _imageEffectPluginCache->getPluginsByIDMajor();
     
-    for (std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *>::const_iterator it = ofxPlugins.begin();
+    
+    for (PMap::const_iterator it = ofxPlugins.begin();
          it != ofxPlugins.end(); ++it) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = it->second;
         assert(p);

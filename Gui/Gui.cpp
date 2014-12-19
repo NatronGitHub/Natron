@@ -2226,7 +2226,7 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
                                                    plugin->getLabel(),icon);
 
     if (isLeaf) {
-        QString label = plugin->isThereSeveralPluginMajorVersions() ? plugin->getLabelVersionEncoded() : plugin->getLabel();
+        QString label = plugin->isThereSeveralPluginMajorVersions() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
         int foundOFX = label.lastIndexOf("OFX");
         if (foundOFX != -1) {
             label = label.remove(foundOFX, 3);

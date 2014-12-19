@@ -95,7 +95,7 @@ public:
 
     void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
     
-    void populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore);
+    void populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore);
     
     void populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts);
 

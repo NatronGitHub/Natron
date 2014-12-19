@@ -1779,31 +1779,30 @@ NodeGraph::onNodeCreationDialogFinished()
 
     if (dialog) {
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
-        QString res = dialog->getNodeName();
+        int major;
+        QString res = dialog->getNodeName(&major);
         _imp->_lastNodeCreatedName = res;
         dialog->deleteLater();
 
         switch (ret) {
         case QDialog::Accepted: {
-           
-            const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
-            for (U32 i = 0; i < allPlugins.size(); ++i) {
-                if (allPlugins[i]->getPluginID() == res) {
-                    QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    getGui()->getApp()->createNode( CreateNodeArgs( res,
-                                                                   "",
-                                                                   -1,
-                                                                   -1,
-                                                                   -1,
-                                                                   true,
-                                                                   posHint.x(),
-                                                                   posHint.y(),
-                                                                   true,
-                                                                   true,
-                                                                   QString(),
-                                                                   CreateNodeArgs::DefaultValuesList()) );
-                    break;
-                }
+            
+            const Natron::PluginsMap & allPlugins = appPTR->getPluginsList();
+            Natron::PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
+            if (found != allPlugins.end()) {
+                QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                getGui()->getApp()->createNode( CreateNodeArgs( res,
+                                                               "",
+                                                               major,
+                                                               -1,
+                                                               -1,
+                                                               true,
+                                                               posHint.x(),
+                                                               posHint.y(),
+                                                               true,
+                                                               true,
+                                                               QString(),
+                                                               CreateNodeArgs::DefaultValuesList()) );
             }
             break;
         }
@@ -1964,18 +1963,22 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         
         if (!intercepted) {
             /// Search for a node which has a shortcut bound
-            const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
-            for (U32 i = 0; i < allPlugins.size(); ++i) {
-                if ( allPlugins[i]->getHasShortcut() ) {
+            const Natron::PluginsMap & allPlugins = appPTR->getPluginsList();
+            for (Natron::PluginsMap::const_iterator it = allPlugins.begin() ;it != allPlugins.end() ;++it) {
+                
+                assert(!it->second.empty());
+                Natron::Plugin* plugin = *it->second.rbegin();
+                
+                if ( plugin->getHasShortcut() ) {
                     QString group(kShortcutGroupNodes);
-                    QStringList groupingSplit = allPlugins[i]->getGrouping();
+                    QStringList groupingSplit = plugin->getGrouping();
                     for (int j = 0; j < groupingSplit.size(); ++j) {
                         group.push_back('/');
                         group.push_back(groupingSplit[j]);
                     }
-                    if ( isKeybind(group.toStdString().c_str(), allPlugins[i]->getPluginID().toStdString().c_str(), modifiers, key) ) {
+                    if ( isKeybind(group.toStdString().c_str(), plugin->getPluginID(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                        getGui()->getApp()->createNode( CreateNodeArgs( allPlugins[i]->getPluginID(),
+                        getGui()->getApp()->createNode( CreateNodeArgs( plugin->getPluginID(),
                                                                        "",
                                                                        -1,-1,
                                                                        -1,

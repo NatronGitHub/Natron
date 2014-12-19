@@ -1506,22 +1506,25 @@ struct PerPluginKnobs
 };
 
 void
-Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore)
+Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
 {
+    
+    const PluginsMap& plugins = appPTR->getPluginsList();
+    
     std::vector<boost::shared_ptr<KnobI> > knobsToRestore;
     
     std::map<Natron::Plugin*,PerPluginKnobs> pluginsMap;
     
     std::set< std::string > groupNames;
     ///First pass to exctract all groups
-    for (std::vector<Natron::Plugin*>::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
-        
-        const QString& ofxID = (*it)->getPluginOFXID();
-        if (ofxID.isEmpty()) {
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+    
+        if (it->first.empty()) {
             continue;
         }
+        assert(it->second.size() > 0);
         
-        const QStringList& grouping = (*it)->getGrouping();
+        const QStringList& grouping = (*it->second.rbegin())->getGrouping();
         if (grouping.size() > 0) {
             groupNames.insert(grouping[0].toStdString());
         }
@@ -1541,15 +1544,17 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
     zoomSupportEntries.push_back("Deactivated");
     
     ///Create per-plugin knobs and add them to groups
-    for (std::vector<Natron::Plugin*>::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         
-        const QString& ofxID = (*it)->getPluginOFXID();
-        if (ofxID.isEmpty()) {
+        if (it->first.empty()) {
             continue;
         }
+        assert(it->second.size() > 0);
+        
+        Natron::Plugin* plugin  = *it->second.rbegin();
         
         boost::shared_ptr<Group_Knob> group;
-        const QStringList& grouping = (*it)->getGrouping();
+        const QStringList& grouping = plugin->getGrouping();
         if (grouping.size() > 0) {
             
             std::string mainGroup = grouping[0].toStdString();
@@ -1564,12 +1569,11 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
         }
         
         ///Create checkbox to activate/deactivate the plug-in
-        std::string pluginName = (*it)->generateUserFriendlyPluginID().toStdString();
-        std::string ofxStdID = ofxID.toStdString();
+        std::string pluginName = plugin->generateUserFriendlyPluginID().toStdString();
         
         boost::shared_ptr<String_Knob> pluginLabel = Natron::createKnob<String_Knob>(this, pluginName);
         pluginLabel->setAsLabel();
-        pluginLabel->setName(ofxStdID);
+        pluginLabel->setName(it->first);
         pluginLabel->setAnimationEnabled(false);
         pluginLabel->setDefaultValue(pluginName);
         pluginLabel->turnOffNewLine();
@@ -1582,8 +1586,8 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
         _pluginsTab->addKnob(pluginLabel);
         
         boost::shared_ptr<Bool_Knob> pluginActivation = Natron::createKnob<Bool_Knob>(this, "Enabled");
-        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(ofxID));
-        pluginActivation->setName(ofxStdID + ".enabled");
+        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()));
+        pluginActivation->setName(it->first + ".enabled");
         pluginActivation->setAnimationEnabled(false);
         pluginActivation->turnOffNewLine();
         pluginActivation->setHintToolTip("When checked, " + pluginName + " will be activated and you can create a node using this plug-in in " NATRON_APPLICATION_NAME ". When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.");
@@ -1596,8 +1600,8 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
         
         boost::shared_ptr<Choice_Knob> zoomSupport = Natron::createKnob<Choice_Knob>(this, "Zoom support");
         zoomSupport->populateChoices(zoomSupportEntries);
-        zoomSupport->setName(ofxStdID + ".zoomSupport");
-        zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(ofxID));
+        zoomSupport->setName(it->first + ".zoomSupport");
+        zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(plugin->getPluginID()));
         zoomSupport->setHintToolTip("Controls whether the plug-in should have its default zoom support or it should be activated. "
                                     "This parameter is useful because some plug-ins flag that they can support different level of zoom "
                                     "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
@@ -1616,7 +1620,7 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
             _pluginsTab->addKnob(group);
         }
         
-        pluginsMap.insert(std::make_pair(*it, PerPluginKnobs(pluginActivation,zoomSupport)));
+        pluginsMap.insert(std::make_pair(plugin, PerPluginKnobs(pluginActivation,zoomSupport)));
 
     }
     

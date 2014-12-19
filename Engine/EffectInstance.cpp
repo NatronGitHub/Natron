@@ -2975,7 +2975,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             if (safety == eRenderSafetyInstanceSafe) {
                 locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
             } else if (safety == eRenderSafetyUnsafe) {
-                locker = new QMutexLocker( appPTR->getMutexForPlugin( getPluginID().c_str() ) );
+                const Natron::Plugin* p = _node->getPlugin();
+                assert(p);
+                
+                locker = new QMutexLocker( appPTR->getMutexForPlugin(p->getPluginID(), p->getMajorVersion(), p->getMinorVersion()) );
             }
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
             
