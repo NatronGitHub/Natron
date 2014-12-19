@@ -3557,6 +3557,22 @@ Node::shouldCacheOutput() const
                 //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
                 //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
                 Node* output = _imp->outputs.front();
+                
+#pragma message WARN("Hack: Return true if the node is directly connected to a viewer, because otherwise we will never cache " \
+"properly a graph which is linear (with only a single input tree). We need to rework the viewer cache to cache tiles and then " \
+"we can remove this piece of code")
+                ///+TEMPORARY
+                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
+                if (isViewer) {
+                    int activeInputs[2];
+                    isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+                    if (output->getInput(activeInputs[0]).get() == this ||
+                        output->getInput(activeInputs[1]).get() == this) {
+                        return true;
+                    }
+                }
+                ///+TEMPORARY
+                
                 return output->isSettingsPanelOpened() ||
                 _imp->liveInstance->doesTemporalClipAccess() ||
                 (isMainThread && (output->isMultiInstance() || output->getParentMultiInstance())) ||
