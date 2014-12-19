@@ -3076,7 +3076,8 @@ ViewerGL::updateColorPicker(int textureIndex,
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     RectD rod = getRoD(textureIndex);
-    Format dispW = getDisplayWindow();
+    RectD projectCanonical;
+    _imp->getProjectFormatCanonical(projectCanonical);
     if ( ( imgPosCanonical.x() >= rod.left() ) &&
          ( imgPosCanonical.x() < rod.right() ) &&
          ( imgPosCanonical.y() >= rod.bottom() ) &&
@@ -3086,10 +3087,10 @@ ViewerGL::updateColorPicker(int textureIndex,
         ///if the clip to project format is enabled, make sure it is in the project format too
         bool clipping = isClippingImageToProjectWindow();
         if ( !clipping ||
-             ( ( imgPosCanonical.x() >= dispW.left() ) &&
-               ( imgPosCanonical.x() < dispW.right() ) &&
-               ( imgPosCanonical.y() >= dispW.bottom() ) &&
-               ( imgPosCanonical.y() < dispW.top() ) ) ) {
+             ( ( imgPosCanonical.x() >= projectCanonical.left() ) &&
+               ( imgPosCanonical.x() < projectCanonical.right() ) &&
+               ( imgPosCanonical.y() >= projectCanonical.bottom() ) &&
+               ( imgPosCanonical.y() < projectCanonical.top() ) ) ) {
             //imgPos must be in canonical coordinates
             picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a);
         }
