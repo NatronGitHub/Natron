@@ -2366,6 +2366,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             RectI bounds;
             rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
             downscaledImage.reset( new Natron::Image(outputComponents, rod, downscaledImageBounds, args.mipMapLevel, image->getPixelAspectRatio(), outputDepth, true) );
+            image->downscaleMipMap(image->getBounds(), 0, args.mipMapLevel, false, downscaledImage.get() );
         }
     }
     
