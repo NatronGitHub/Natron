@@ -4038,7 +4038,7 @@ RotoContext::isNearbyBezier(double x,
         const RotoItems & items = (*it)->getItems();
         for (RotoItems::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
             boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(*it2);
-            if (b) {
+            if (b && !b->isLockedRecursive()) {
                 double param;
                 int i = b->isPointOnCurve(x, y, acceptance, &param,feather);
                 if (i != -1) {

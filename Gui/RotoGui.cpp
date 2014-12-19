@@ -1561,16 +1561,14 @@ RotoGui::penDown(double /*scaleX*/,
         /////////////////CONTROL POINT SELECTION
         //////Check if the point is nearby a control point of a selected bezier
         ///Find out if the user selected a control point
-        if ( nearbyBezier->isLockedRecursive() ) {
-            nearbyBezier.reset();
-        } else {
-            Bezier::ControlPointSelectionPref pref = Bezier::WHATEVER_FIRST;
-            if ( (_imp->selectedTool == SELECT_FEATHER_POINTS) && isFeatherVisible() ) {
-                pref = Bezier::FEATHER_FIRST;
-            }
-
-            nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
+        
+        Bezier::ControlPointSelectionPref pref = Bezier::WHATEVER_FIRST;
+        if ( (_imp->selectedTool == SELECT_FEATHER_POINTS) && isFeatherVisible() ) {
+            pref = Bezier::FEATHER_FIRST;
         }
+        
+        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
+        
     }
     switch (_imp->selectedTool) {
     case SELECT_ALL:
@@ -1836,9 +1834,7 @@ RotoGui::penDoubleClicked(double /*scaleX*/,
         bool isFeather;
         boost::shared_ptr<Bezier> nearbyBezier =
             _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
-        if ( nearbyBezier && nearbyBezier->isLockedRecursive() ) {
-            nearbyBezier.reset();
-        }
+    
         if (nearbyBezier) {
             ///If the bezier is already selected and we re-click on it, change the transform mode
             _imp->handleBezierSelection(nearbyBezier, e);
@@ -1948,7 +1944,7 @@ RotoGui::penMotion(double /*scaleX*/,
             if ( isFeather && !isFeatherVisible() ) {
                 nearbyBezier.reset();
             }
-            if ( nearbyBezier && !nearbyBezier->isLockedRecursive() ) {
+            if ( nearbyBezier) {
                 _imp->viewer->setCursor( QCursor(Qt::PointingHandCursor) );
                 cursorSet = true;
             }
