@@ -3906,8 +3906,11 @@ void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
     NodeGui* node = qobject_cast<NodeGui*>( sender() );
+    if (!node) {
+        return;
+    }
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
-    if ( node && isViewer) {
+    if (isViewer) {
         emit viewersChanged();
     }
 }
