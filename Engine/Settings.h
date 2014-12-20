@@ -151,8 +151,6 @@ public:
 
     void getDefaultNodeColor(float *r,float *g,float *b) const;
 
-    void getDefaultSelectedNodeColor(float *r,float *g,float *b) const;
-
     void getDefaultBackDropColor(float *r,float *g,float *b) const;
 
     int getDisconnectedArrowLength() const;
@@ -308,7 +306,6 @@ private:
     boost::shared_ptr<Bool_Knob> _hideOptionalInputsAutomatically;
     boost::shared_ptr<Bool_Knob> _useInputAForMergeAutoConnect;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
-    boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;
     boost::shared_ptr<Color_Knob> _defaultBackdropColor;
     boost::shared_ptr<Color_Knob> _defaultGeneratorColor;
     boost::shared_ptr<Color_Knob> _defaultReaderColor;

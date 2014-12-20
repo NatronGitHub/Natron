@@ -500,13 +500,6 @@ Settings::initializeKnobs()
 
     _nodegraphTab->addKnob(_defaultNodeColor);
 
-    _defaultSelectedNodeColor = Natron::createKnob<Color_Knob>(this, "Default selected node color",3);
-    _defaultSelectedNodeColor->setName("selectedNodeColor");
-    _defaultSelectedNodeColor->setAnimationEnabled(false);
-    _defaultSelectedNodeColor->setHintToolTip("The default selection color used for newly created nodes.");
-
-    _nodegraphTab->addKnob(_defaultSelectedNodeColor);
-
 
     _defaultBackdropColor =  Natron::createKnob<Color_Knob>(this, "Default backdrop color",3);
     _defaultBackdropColor->setName("backdropColor");
@@ -836,12 +829,9 @@ Settings::setDefaultValues()
     _defaultNodeColor->setDefaultValue(0.7,0);
     _defaultNodeColor->setDefaultValue(0.7,1);
     _defaultNodeColor->setDefaultValue(0.7,2);
-    _defaultSelectedNodeColor->setDefaultValue(0.7,0);
-    _defaultSelectedNodeColor->setDefaultValue(0.6,1);
-    _defaultSelectedNodeColor->setDefaultValue(0.3,2);
-    _defaultBackdropColor->setDefaultValue(0.5,0);
-    _defaultBackdropColor->setDefaultValue(0.5,1);
-    _defaultBackdropColor->setDefaultValue(0.2,2);
+    _defaultBackdropColor->setDefaultValue(0.45,0);
+    _defaultBackdropColor->setDefaultValue(0.45,1);
+    _defaultBackdropColor->setDefaultValue(0.45,2);
     _disconnectedArrowLength->setDefaultValue(30);
     _hideOptionalInputsAutomatically->setDefaultValue(true);
     _useInputAForMergeAutoConnect->setDefaultValue(true);
@@ -1829,16 +1819,6 @@ Settings::getDefaultNodeColor(float *r,
     *r = _defaultNodeColor->getValue(0);
     *g = _defaultNodeColor->getValue(1);
     *b = _defaultNodeColor->getValue(2);
-}
-
-void
-Settings::getDefaultSelectedNodeColor(float *r,
-                                      float *g,
-                                      float *b) const
-{
-    *r = _defaultSelectedNodeColor->getValue(0);
-    *g = _defaultSelectedNodeColor->getValue(1);
-    *b = _defaultSelectedNodeColor->getValue(2);
 }
 
 void
