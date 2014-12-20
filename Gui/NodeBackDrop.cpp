@@ -320,10 +320,8 @@ NodeBackDropPrivate::setColorInternal(const QColor & color)
     _publicInterface->setBrush(color);
 
     if (isSelected) {
-        float r,g,b;
-        appPTR->getCurrentSettings()->getDefaultSelectedNodeColor(&r, &g, &b);
-        QColor selCol;
-        selCol.setRgbF(r, g, b);
+        
+        QColor selCol(Qt::white);
         header->setBrush(selCol);
         resizeHandle->setBrush(selCol);
     } else {
