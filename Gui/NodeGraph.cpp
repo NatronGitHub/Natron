@@ -859,7 +859,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     } else if (selectedBendPoint) {
         _imp->setNodesBendPointsVisible(false);
 
-        CreateNodeArgs args("Dot",
+        CreateNodeArgs args(NATRON_DOT_ID,
                             std::string(),
                             -1,
                             -1,

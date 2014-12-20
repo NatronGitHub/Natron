@@ -3186,7 +3186,6 @@ ViewerGL::zoomSlot(int v)
     unsigned int oldMipMapLevel,newMipMapLevel;
     newMipMapLevel = std::log(newZoomFactor >= 1 ? 1 :
                               std::pow( 2,-std::ceil(std::log(newZoomFactor) / M_LN2) )) / M_LN2;
-    double scale = newZoomFactor / _imp->zoomCtx.factor();
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         oldMipMapLevel = std::log(_imp->zoomCtx.factor() >= 1 ? 1 :
