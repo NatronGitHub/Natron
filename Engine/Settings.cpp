@@ -89,7 +89,6 @@ Settings::initializeKnobs()
     _fontChoice->setName("font");
     _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
     std::vector<std::string> fontEntries;
-    fontEntries.push_back("Muli");
     fontEntries.push_back("Droid Sans");
     fontEntries.push_back("System fonts...");
     _fontChoice->populateChoices(fontEntries);
@@ -775,7 +774,7 @@ Settings::setDefaultValues()
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
-    _fontChoice->setDefaultValue(1);
+    _fontChoice->setDefaultValue(0);
     _systemFontChoice->setDefaultValue(0);
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
     _checkForUpdates->setDefaultValue(false);
