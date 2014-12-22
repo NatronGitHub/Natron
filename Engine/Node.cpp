@@ -521,8 +521,8 @@ Node::computeHash()
                 isViewer->getActiveInputs(activeInput[0], activeInput[1]);
                 
                 for (int i = 0; i < 2; ++i) {
-                    if ( (activeInput[i] >= 0) && _imp->inputs[i] ) {
-                        _imp->hash.append( _imp->inputs[i]->getHashValue() );
+                    if ( (activeInput[i] >= 0) && _imp->inputs[activeInput[i]] ) {
+                        _imp->hash.append( _imp->inputs[activeInput[i]]->getHashValue() );
                     }
                 }
             } else {

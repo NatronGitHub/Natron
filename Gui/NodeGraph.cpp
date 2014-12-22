@@ -291,6 +291,7 @@ struct NodeGraphPrivate
     bool _knobLinksVisible;
     double _accumDelta;
     bool _detailsVisible;
+    bool _mergeMoveCommands;
     
     NodeGraphPrivate(Gui* gui,
                      NodeGraph* p)
@@ -336,6 +337,7 @@ struct NodeGraphPrivate
           , _knobLinksVisible(true)
           , _accumDelta(0)
           , _detailsVisible(false)
+          , _mergeMoveCommands(false)
     {
     }
 
@@ -794,7 +796,7 @@ void
 NodeGraph::mousePressEvent(QMouseEvent* e)
 {
     assert(e);
-
+    _imp->_mergeMoveCommands = false;
     if ( buttonDownIsMiddle(e) ) {
         _imp->_evtState = MOVING_AREA;
 
@@ -1087,6 +1089,8 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 {
     EVENT_STATE state = _imp->_evtState;
 
+    _imp->_nodesWithinBDAtPenDown.clear();
+    _imp->_mergeMoveCommands = false;
     _imp->_firstMove = true;
     _imp->_evtState = DEFAULT;
     _imp->_nodesWithinBDAtPenDown.clear();
@@ -1403,11 +1407,16 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             }
             mustUpdateNavigator = true;
             pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
-                                                                 _imp->_selection.bds,
-                                                                 newPos.x() - _imp->_lastScenePosClick.x(),
-                                                                 newPos.y() - _imp->_lastScenePosClick.y(),newPos) );
+                                                          _imp->_selection.bds,
+                                                          newPos.x() - _imp->_lastScenePosClick.x(),
+                                                          newPos.y() - _imp->_lastScenePosClick.y(),
+                                                          _imp->_mergeMoveCommands,
+                                                          newPos) );
+            if (!_imp->_mergeMoveCommands) {
+                _imp->_mergeMoveCommands = true;
+            }
         }
-
+        
         if (_imp->_selection.nodes.size() == 1) {
             ///try to find a nearby edge
             boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();

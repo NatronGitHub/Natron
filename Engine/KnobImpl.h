@@ -1573,8 +1573,10 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                 }
             }
             boost::shared_ptr<Curve> curve = getCurve(i,true);
-            assert(curve);
-            curve->clone( *other->getCurve(i,true) );
+            boost::shared_ptr<Curve> otherCurve = other->getCurve(i,true);
+            if (curve && otherCurve) {
+                curve->clone( *other->getCurve(i,true) );
+            }
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(i);
             if (guiCurve && otherGuiCurve) {

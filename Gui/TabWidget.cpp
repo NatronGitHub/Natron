@@ -836,6 +836,25 @@ TabBar::leaveEvent(QEvent* e)
     }
 }
 
+/**
+ * @brief Given the widget w, tries to find reursively if a parent is a tabwidget and returns it
+ **/
+static TabWidget* findTabWidgetRecursive(QWidget* w)
+{
+    assert(w);
+    TabWidget* isTab = dynamic_cast<TabWidget*>(w);
+    if (isTab) {
+        return isTab;
+    } else {
+        if (w->parentWidget()) {
+            return findTabWidgetRecursive(w->parentWidget());
+        } else {
+            return 0;
+        }
+    }
+    
+}
+
 void
 TabBar::mouseMoveEvent(QMouseEvent* e)
 {
@@ -850,14 +869,23 @@ TabBar::mouseMoveEvent(QMouseEvent* e)
 
     if ( _tabWidget->getGui()->isDraggingPanel() ) {
         const QPoint & globalPos = e->globalPos();
-        const std::list<TabWidget*> panes = _tabWidget->getGui()->getPanes();
-        for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-            if ( (*it)->isWithinWidget(globalPos) ) {
-                (*it)->setDrawDropRect(true);
-            } else {
-                (*it)->setDrawDropRect(false);
+        QWidget* widgetUnderMouse = qApp->widgetAt(globalPos);
+        if (widgetUnderMouse) {
+            TabWidget* topLvlTabWidget = findTabWidgetRecursive(widgetUnderMouse);
+            if (topLvlTabWidget) {
+                
+                const std::list<TabWidget*> panes = _tabWidget->getGui()->getPanes();
+                for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
+                    if ( *it == topLvlTabWidget ) {
+                        (*it)->setDrawDropRect(true);
+                    } else {
+                        (*it)->setDrawDropRect(false);
+                    }
+                }
             }
+            
         }
+        
         _dragPix->update(globalPos);
         QTabBar::mouseMoveEvent(e);
 
@@ -966,12 +994,14 @@ TabWidget::stopDragTab(const QPoint & globalPos)
 
     QWidget* draggedPanel = _gui->stopDragPanel();
     const std::list<TabWidget*> panes = _gui->getPanes();
+    
+    QWidget* widgetUnderMouse = qApp->widgetAt(globalPos);
     bool foundTabWidgetUnderneath = false;
-    for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-        if ( (*it)->isWithinWidget(globalPos) ) {
-            (*it)->appendTab(draggedPanel);
+    if (widgetUnderMouse) {
+        TabWidget* topLvlTabWidget = findTabWidgetRecursive(widgetUnderMouse);
+        if (topLvlTabWidget) {
+            topLvlTabWidget->appendTab(draggedPanel);
             foundTabWidgetUnderneath = true;
-            break;
         }
     }
 

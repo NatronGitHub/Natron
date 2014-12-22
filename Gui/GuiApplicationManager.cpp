@@ -700,7 +700,6 @@ GuiApplicationManager::initGui()
     QStringList fontFilenames;
     fontFilenames << fontResource.arg("DroidSans");
     fontFilenames << fontResource.arg("DroidSans-Bold");
-    fontFilenames << fontResource.arg("Muli-Regular");
     foreach(QString fontFilename, fontFilenames) {
         _imp->_splashScreen->updateText("Loading font " + fontFilename);
         //qDebug() << "attempting to load" << fontFilename;
@@ -1096,9 +1095,6 @@ GuiApplicationManager::initializeQApp(int &argc,
     if (settings.contains("font")) {
         QString fontChoiceEntry = settings.value("font").toString();
         
-        //fontChoiceEntry == Muli
-        //font_i == 1 == NATRON_FONT_ALT
-        //font_i == 2 == System font
         if (fontChoiceEntry == "System fonts...") {
             
             if (settings.contains("systemFont")) {
