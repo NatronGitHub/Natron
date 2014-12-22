@@ -83,7 +83,11 @@ ticks_bounds(double xmin,
         const int h = half_tick ? 2 : 1;
         const int mult = h * tick_width * tick_max;
         // make sure offset is outside of the range (xmin,xmax)
-        *offset = mult * ( (xmin > 0) ? std::floor(xmin / mult) : std::ceil(xmax / mult) );
+        if (mult != 0) {
+            *offset = mult * ( (xmin > 0) ? std::floor(xmin / mult) : std::ceil(xmax / mult) );
+        } else {
+            *offset = 0;
+        }
     }
     *m1 = std::ceil( (xmin - *offset) / tick_width );
     *m2 = std::floor( (xmax - *offset) / tick_width );
