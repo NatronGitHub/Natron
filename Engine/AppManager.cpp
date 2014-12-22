@@ -22,6 +22,7 @@
 #include <QAbstractSocket>
 #include <QCoreApplication>
 #include <QThread>
+#include <QThreadPool>
 #include <QtCore/QAtomicInt>
 
 #include "Global/MemoryInfo.h"
@@ -386,6 +387,8 @@ AppManager::load(int &argc,
     initializeQApp(argc, argv);
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+    QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
+    //otherwise it might crash with thread local storage
     _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) ;
 
 #if QT_VERSION < 0x050000
