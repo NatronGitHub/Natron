@@ -1401,6 +1401,8 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
 
 static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
 {
+#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
+#if 0
     if (
         //Tuttle Readers/Writers
         ofxPluginID == "tuttle.avreader" ||
@@ -1454,6 +1456,7 @@ static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
         //These plug-ins of TuttleOFX achieve the same as plug-ins bundled with Natron, deactivate them by default.
         return false;
     }
+#endif
     return true;
 }
 
