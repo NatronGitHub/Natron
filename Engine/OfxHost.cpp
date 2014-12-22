@@ -483,13 +483,23 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
 
         assert( p->getBinary() );
         QString iconFilename = QString( bundlePath.c_str() ) + "/Contents/Resources/";
-        iconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
-        iconFilename.append(openfxId.c_str());
-        iconFilename.append(".png");
+        std::string pngIcon;
+        try {
+            // kOfxPropIcon is normally only defined for parameter desctriptors
+            // (see <http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterProperties>)
+            // but let's assume it may also be defained on the plugin descriptor.
+            pngIcon = p->getDescriptor().getProps().getStringProperty(kOfxPropIcon, 1); // dimension 1 is PNG icon
+        } catch (OFX::Host::Property::Exception) {
+        }
+        if (pngIcon.empty()) {
+            // no icon defined by kOfxPropIcon, use the default value
+            pngIcon = openfxId + ".png";
+        }
+        iconFilename.append( pngIcon.c_str() );
         QString groupIconFilename;
         if (groups.size() > 0) {
             groupIconFilename = QString( p->getBinary()->getBundlePath().c_str() ) + "/Contents/Resources/";
-            groupIconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
+            // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         } else {
