@@ -67,6 +67,7 @@ private:
     Button* _cancelB;
     Button* _okB;
     boost::shared_ptr<Settings> _settings;
+    bool _closeIsOK;
 };
 
 #endif // PREFERENCESPANEL_H
