@@ -3226,7 +3226,9 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         
         //Check for NaNs
-        renderMappedImage->checkForNaNs(renderRectToRender);
+        if (renderMappedImage->checkForNaNs(renderRectToRender)) {
+            qDebug() << getNode()->getName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
+        }
         
         ///copy the rectangle rendered in the full scale image to the downscaled output
         if (renderFullScaleThenDownscale) {

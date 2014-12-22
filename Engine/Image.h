@@ -454,8 +454,11 @@ namespace Natron {
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
-        
-        void checkForNaNs(const RectI& roi);
+
+        /**
+         * @brief returns true if image contains NaNs or infinite values, and fix them.
+         */
+        bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
 
         void copyBitmapRowPortion(int x1, int x2,int y, const Image& other);
 

@@ -1173,29 +1173,30 @@ Image::downscaleMipMap(const RectI & roi,
 }
 
 
-void
+bool
 Image::checkForNaNs(const RectI& roi)
 {
     if (getBitDepth() != eImageBitDepthFloat) {
-        return;
+        return false;
     }
     
     unsigned int compsCount = getComponentsCount();
-    
+
+    bool hasnan = false;
     for (int y = roi.y1; y < roi.y2; ++y) {
         
         float* pix = (float*)pixelAt(roi.x1, roi.y1);
         float* const end = pix +  compsCount * roi.width();
         
         for (;pix < end; ++pix) {
-            assert(!boost::math::isnan(*pix) && !boost::math::isinf(*pix));
             if (boost::math::isnan(*pix) || boost::math::isinf(*pix)) {
                 *pix = 1.;
+                hasnan = true;
             }
         }
     }
 
-
+    return hasnan;
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
