@@ -1272,7 +1272,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
                     
-                    CreateNodeArgs args("net.sf.openfx.mergeplugin","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
+                    CreateNodeArgs args("net.sf.openfx.MergePlugin","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
                                         CreateNodeArgs::DefaultValuesList());
                     
                     boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);

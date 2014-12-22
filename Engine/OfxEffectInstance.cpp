@@ -577,7 +577,7 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
 
     } else if ( (pluginIdentifier == "tuttle.checkerboard") ||
                (pluginIdentifier == "tuttle.colorbars") ||
-               (pluginIdentifier == "tuttle.colorcube") ||
+               (pluginIdentifier == "tuttle.colorcube") || // TuttleColorCube
                (pluginIdentifier == "tuttle.colorgradient") ||
                (pluginIdentifier == "tuttle.colorwheel") ||
                (pluginIdentifier == "tuttle.constant") ||
@@ -651,7 +651,9 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
                 (pluginIdentifier == "tuttle.idkeyer") ) {
         s = PLUGIN_GROUP_KEYER;
 
-    } else if ( (pluginIdentifier == "tuttle.diff") ||
+    } else if ( (pluginIdentifier == "tuttle.colorCube") || // TuttleColorCubeViewer
+               (pluginIdentifier == "tuttle.colorcubeviewer") ||
+               (pluginIdentifier == "tuttle.diff") ||
                (pluginIdentifier == "tuttle.dummy") ||
                (pluginIdentifier == "tuttle.histogram") ||
                (pluginIdentifier == "tuttle.imagestatistics") ) {

@@ -753,17 +753,17 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     bool hasShortcut = true;
 
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if (pluginID == "net.sf.openfx.transformplugin") {
+    if (pluginID == "net.sf.openfx.TransformPlugin") {
         symbol = Qt::Key_T;
-    } else if (pluginID == "net.sf.openfx.rotoplugin") {
+    } else if (pluginID == "net.sf.openfx.RotoPlugin") {
         symbol = Qt::Key_O;
-    } else if (pluginID == "net.sf.openfx.mergeplugin") {
+    } else if (pluginID == "net.sf.openfx.MergePlugin") {
         symbol = Qt::Key_M;
-    } else if (pluginID == "net.sf.openfx.gradeplugin") {
+    } else if (pluginID == "net.sf.openfx.GradePlugin") {
         symbol = Qt::Key_G;
-    } else if (pluginID == "net.sf.openfx.colorcorrectplugin") {
+    } else if (pluginID == "net.sf.openfx.ColorCorrectPlugin") {
         symbol = Qt::Key_C;
-    } else if (pluginID == "net.sf.cimg.cimgblur") {
+    } else if (pluginID == "net.sf.cimg.CImgBlur") {
         symbol = Qt::Key_B;
     } else {
         hasShortcut = false;
@@ -821,18 +821,16 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QString & pluginID,
                                                     int major,
                                                     int minor)
 {
-    bool severalMajor = false;
     for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin(); it != _imp->_toolButtons.end(); ++it) {
         if ((*it)->getID() == pluginID) {
             if (major == (*it)->getMajorVersion()) {
                 return *it;
             } else {
-                (*it)->setSeveralPluginMajorVersions(true);
-                severalMajor = true;
+                (*it)->setNotHighestMajorVersion(true);
             }
         }
     }
-    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath,major,minor,severalMajor);
+    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath,major,minor);
     _imp->_toolButtons.push_back(ret);
 
     return ret;

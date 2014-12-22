@@ -31,14 +31,13 @@ class PluginGroupNode
     int _major,_minor;
     std::vector<PluginGroupNode*> _children;
     PluginGroupNode* _parent;
-    bool _severalPluginMajorVersions;
+    bool _notHighestMajorVersion;
 public:
     PluginGroupNode(const QString & pluginID,
                     const QString & pluginLabel,
                     const QString & iconPath,
                     int major,
-                    int minor,
-                    bool severalPluginMajorVersions)
+                    int minor)
     : _id(pluginID)
     , _label(pluginLabel)
     , _iconPath(iconPath)
@@ -46,7 +45,7 @@ public:
     , _minor(minor)
     , _children()
     , _parent(NULL)
-    , _severalPluginMajorVersions(severalPluginMajorVersions)
+    , _notHighestMajorVersion(false)
     {
     }
 
@@ -62,7 +61,7 @@ public:
     
     const QString getLabelVersionMajorEncoded() const
     {
-        return _label + QString("_v") + QString::number(_major);
+        return _label + ' ' + QString::number(_major);
     }
 
     void setLabel(const QString & label)
@@ -113,14 +112,14 @@ public:
         return _minor;
     }
     
-    bool isThereSeveralPluginMajorVersions() const
+    bool getNotHighestMajorVersion() const
     {
-        return _severalPluginMajorVersions;
+        return _notHighestMajorVersion;
     }
     
-    void setSeveralPluginMajorVersions(bool v)
+    void setNotHighestMajorVersion(bool v)
     {
-        _severalPluginMajorVersions = v;
+        _notHighestMajorVersion = v;
     }
 };
 
@@ -218,12 +217,12 @@ public:
     
     const QString getLabelVersionMajorMinorEncoded() const
     {
-        return _label + QString("_v") + QString::number(_majorVersion) + QString(".") + QString::number(_minorVersion);
+        return _label + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
     }
     
     const QString getLabelVersionMajorEncoded() const
     {
-        return _label + QString("_v") + QString::number(_majorVersion);
+        return _label + ' ' + QString::number(_majorVersion);
     }
     
     QString generateUserFriendlyPluginID() const
