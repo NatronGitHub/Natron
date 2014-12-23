@@ -970,6 +970,7 @@ Node::removeReferences()
         isOutput->getRenderEngine()->quitEngine();
     }
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
+    Natron::deleteNodeVariableToPython(getName());
     delete _imp->liveInstance;
     _imp->liveInstance = 0;
 }
@@ -2153,7 +2154,6 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         std::list<KnobI*> listeners;
         knobs[i]->getListeners(listeners);
         for (std::list<KnobI*>::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            
             if ((*it)->getHolder() == _imp->liveInstance) {
                 continue;
             }
@@ -2276,7 +2276,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         _imp->activated = false;
     }
     
-    Natron::deleteNodeVariableToPython(getName());
+   // Natron::deleteNodeVariableToPython(getName());
 } // deactivate
 
 void
@@ -2290,7 +2290,6 @@ Node::activate(const std::list< Node* > & outputsToRestore,
         return;
     }
     
-    Natron::declareNodeVariableToPython(getApp()->getAppID(), getName());
     
     ///No need to lock, guiInputs is only written to by the main-thread
     
@@ -2339,6 +2338,8 @@ Node::activate(const std::list< Node* > & outputsToRestore,
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
     }
+    //Natron::declareNodeVariableToPython(getApp()->getAppID(), getName());
+
     Q_EMIT activated(triggerRender);
 } // activate
 
