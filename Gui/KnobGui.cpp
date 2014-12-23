@@ -690,6 +690,13 @@ KnobGui::setSecret()
     } else {
         hide();
     }
+    Group_KnobGui* isGrp = dynamic_cast<Group_KnobGui*>(this);
+    if (isGrp) {
+        const std::list<KnobGui*>& children = isGrp->getChildren();
+        for (std::list<KnobGui*>::const_iterator it = children.begin(); it != children.end(); ++it) {
+            (*it)->setSecret();
+        }
+    }
 }
 
 bool

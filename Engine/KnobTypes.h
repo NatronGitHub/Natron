@@ -658,7 +658,6 @@ public:
                bool declaredByPlugin);
 
     void addKnob(boost::shared_ptr<KnobI> k);
-    
     void removeKnob(KnobI* k);
     
     void moveOneStepUp(KnobI* k);

@@ -595,6 +595,38 @@ DockablePanel::getPagesCount() const
     return _imp->_pages.size();
 }
 
+void
+DockablePanel::rebuildUserPages()
+{
+    std::list<Page_Knob*> userPages;
+    getUserPages(userPages);
+    
+    boost::shared_ptr<Page_Knob> page = getUserPageKnob();
+    userPages.push_back(page.get());
+    for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
+        PageMap::iterator foundPage = _imp->_pages.find((*it)->getDescription().c_str());
+        if (foundPage != _imp->_pages.end()) {
+            foundPage->second.currentRow = 0;
+            std::vector<boost::shared_ptr<KnobI> > children = (*it)->getChildren();
+            for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+                deleteKnobGui(*it2);
+            }
+        }
+    }
+    
+    scanForNewKnobs();
+    
+    ///Refresh the curve editor with potential new animated knobs
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    
+    if (isNodePanel) {
+        boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
+        getGui()->getCurveEditor()->removeNode(node.get());
+        getGui()->getCurveEditor()->addNode(node);
+    }
+
+}
+
 
 void
 DockablePanel::onGuiClosing()
@@ -2331,29 +2363,7 @@ DockablePanel::getUserPages(std::list<Page_Knob*>& userPages) const
 void
 ManageUserParamsDialogPrivate::rebuildUserPages()
 {
-    
-    std::list<Page_Knob*> userPages;
-    panel->getUserPages(userPages);
-    
-    boost::shared_ptr<Page_Knob> page = getUserPageKnob();
-    userPages.push_back(page.get());
-    for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
-        std::vector<boost::shared_ptr<KnobI> > children = (*it)->getChildren();
-        for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-            panel->deleteKnobGui(*it2);
-        }
-    }
-    
-    panel->scanForNewKnobs();
-    
-    ///Refresh the curve editor with potential new animated knobs
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(panel);
-    
-    if (isNodePanel) {
-        boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
-        panel->getGui()->getCurveEditor()->removeNode(node.get());
-        panel->getGui()->getCurveEditor()->addNode(node);
-    }
+    panel->rebuildUserPages();
 }
 
 void
@@ -2600,24 +2610,30 @@ ManageUserParamsDialog::onSelectionChanged()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     bool canEdit = true;
     bool canMove = true;
+    bool canDelete = true;
     if (!selection.isEmpty()) {
         QTreeWidgetItem* item = selection[0];
         if (item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
             canEdit = false;
+            canDelete = false;
             canMove = false;
         }
         for (std::list<TreeItem>::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
             if (it->item == item) {
                 Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->knob.get());
+                Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->knob.get());
                 if (isPage) {
                     canMove = false;
+                    canEdit = false;
+                } else if (isGroup) {
+                    canEdit = false;
                 }
                 break;
             }
         }
     }
     
-    _imp->removeButton->setEnabled(selection.size() == 1 && canEdit);
+    _imp->removeButton->setEnabled(selection.size() == 1 && canDelete);
     _imp->editButton->setEnabled(selection.size() == 1 && canEdit);
     _imp->upButton->setEnabled(selection.size() == 1 && canMove);
     _imp->downButton->setEnabled(selection.size() == 1 && canMove);
@@ -2767,7 +2783,9 @@ struct AddKnobDialogPrivate
     
     void setVisiblePage(bool visible);
     
-    void createKnobFromSelection(int type);
+    void createKnobFromSelection(int type,int optionalGroupIndex = -1);
+    
+    Group_Knob* getSelectedGroup() const;
 };
 
 static int getChoiceIndexFromKnobType(KnobI* knob)
@@ -3470,7 +3488,7 @@ AddKnobDialog::getKnob() const
 }
 
 void
-AddKnobDialogPrivate::createKnobFromSelection(int index)
+AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
 {
     assert(!knob);
     std::string label = labelLineEdit->text().toStdString();
@@ -3611,17 +3629,14 @@ AddKnobDialogPrivate::createKnobFromSelection(int index)
     knob->setName(nameLineEdit->text().toStdString());
     knob->setHintToolTip(tooltipArea->toPlainText().toStdString());
     bool addedInGrp = false;
-    if (parentGroup) {
-        std::string selectedItem = parentGroup->getCurrentIndexText().toStdString();
-        if (selectedItem != "-") {
-            for (std::list<Group_Knob*>::iterator it = userGroups.begin(); it != userGroups.end(); ++it) {
-                if ((*it)->getName() == selectedItem) {
-                    (*it)->addKnob(knob);
-                    addedInGrp = true;
-                    break;
-                }
-            }
+    Group_Knob* selectedGrp = getSelectedGroup();
+    if (selectedGrp) {
+        if (optionalGroupIndex != -1) {
+            selectedGrp->insertKnob(optionalGroupIndex, knob);
+        } else {
+            selectedGrp->addKnob(knob);
         }
+        addedInGrp = true;
     }
     
     
@@ -3641,6 +3656,22 @@ AddKnobDialogPrivate::createKnobFromSelection(int index)
 
         }
     }
+}
+
+Group_Knob*
+AddKnobDialogPrivate::getSelectedGroup() const
+{
+    if (parentGroup) {
+        std::string selectedItem = parentGroup->getCurrentIndexText().toStdString();
+        if (selectedItem != "-") {
+            for (std::list<Group_Knob*>::const_iterator it = userGroups.begin(); it != userGroups.end(); ++it) {
+                if ((*it)->getName() == selectedItem) {
+                    return *it;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 void
@@ -3683,22 +3714,53 @@ AddKnobDialog::onOkClicked()
         
     } else {
         ///Remove the previous knob, and recreate it.
+        
+        ///Index of the type in the combo
         int index;
+        
+        ///Remember the old page in which to insert the knob
         Page_Knob* oldParentPage = 0;
-
+        
+        ///If the knob was in a group, we need to place it at the same index
+        int oldIndexInGroup = -1;
+        
         if (_imp->knob) {
+            
             oldParentPage = getTopLevelPageForKnob(_imp->knob.get());
             index = getChoiceIndexFromKnobType(_imp->knob.get());
+            boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
+            Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+            if (isParentGrp && isParentGrp == _imp->getSelectedGroup()) {
+                const std::vector<boost::shared_ptr<KnobI> >& children = isParentGrp->getChildren();
+                for (U32 i = 0; i < children.size(); ++i) {
+                    if (children[i] == _imp->knob) {
+                        oldIndexInGroup = i;
+                        break;
+                    }
+                }
+            } else {
+                const std::vector<boost::shared_ptr<KnobI> >& children = oldParentPage->getChildren();
+                for (U32 i = 0; i < children.size(); ++i) {
+                    if (children[i] == _imp->knob) {
+                        oldIndexInGroup = i;
+                        break;
+                    }
+                }
+            }
             _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
             _imp->knob.reset();
         } else {
             assert(_imp->typeChoice);
             index = _imp->typeChoice->activeIndex();
         }
-        _imp->createKnobFromSelection(index);
+        _imp->createKnobFromSelection(index, oldIndexInGroup);
         assert(_imp->knob);
         if (oldParentPage && !_imp->knob->getParentKnob()) {
-            oldParentPage->addKnob(_imp->knob);
+            if (oldIndexInGroup == -1) {
+                oldParentPage->addKnob(_imp->knob);
+            } else {
+                oldParentPage->insertKnob(oldIndexInGroup, _imp->knob);
+            }
         }
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());

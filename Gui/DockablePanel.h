@@ -195,6 +195,8 @@ public:
     void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
     
     int getPagesCount() const;
+    
+    void rebuildUserPages();
         
 public Q_SLOTS:
 
