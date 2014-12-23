@@ -148,6 +148,8 @@ public:
     void refreshNodesKnobsAtTime(SequenceTime time);
     
     void pushUndoCommand(QUndoCommand* command);
+    
+    bool areOptionalInputsAutoHidden() const;
 
    public Q_SLOTS:
 
@@ -192,6 +194,8 @@ public:
     void centerOnAllNodes();
 
     void toggleConnectionHints();
+    
+    void toggleAutoHideInputs(bool setSettings = true);
     
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);

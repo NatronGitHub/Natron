@@ -136,6 +136,8 @@ public:
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
 public Q_SLOTS:
+
+    virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     
     virtual void redrawAllViewers() OVERRIDE FINAL;
 

@@ -121,6 +121,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _nodeLabel()
       , _parentMultiInstance()
       , _renderingStartedCount(0)
+      , _optionalInputsVisible(false)
 {
 }
 
@@ -177,7 +178,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isOutput);
     if (isViewer) {
-        QObject::connect(isViewer,SIGNAL(refreshOptionalState()),this,SLOT(refreshOptionalStateOfEdges()));
+        QObject::connect(isViewer,SIGNAL(refreshOptionalState()),this,SLOT(refreshDashedStateOfEdges()));
     }
 
     createGui();
@@ -658,7 +659,7 @@ NodeGui::changePosition(double dx,
 }
 
 void
-NodeGui::refreshOptionalStateOfEdges()
+NodeGui::refreshDashedStateOfEdges()
 {
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
     if (viewer) {
@@ -669,16 +670,16 @@ NodeGui::refreshOptionalStateOfEdges()
         
         for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
             if (i->first == activeInputs[0] || i->first == activeInputs[1]) {
-                i->second->setOptional(false);
+                i->second->setDashed(false);
             } else {
-                i->second->setOptional(true);
+                i->second->setDashed(true);
             }
             if (i->second->getSource()) {
                 ++nbInputsConnected;
             }
         }
         if (nbInputsConnected == 0) {
-            _inputEdges[0]->setOptional(false);
+            _inputEdges[0]->setDashed(false);
         }
     }
 }
@@ -822,8 +823,9 @@ NodeGui::initializeInputs()
 
     int emptyInputsCount = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( !it->second->hasSource() && it->second->isVisible() &&
-            !_internalNode->getLiveInstance()->isInputMask(it->first)) {
+        if ( !it->second->hasSource() &&
+            !_internalNode->getLiveInstance()->isInputMask(it->first) &&
+            !_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
             ++emptyInputsCount;
         }
     }
@@ -849,7 +851,8 @@ NodeGui::initializeInputs()
   
     int maskIndex = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( !it->second->hasSource() && it->second->isVisible() ) {
+        if (!it->second->hasSource() &&
+            !_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
             double edgeAngle;
             bool decrAngle = true;
             if (_internalNode->getLiveInstance()->isInputMask(it->first)) {
@@ -912,6 +915,25 @@ NodeGui::boundingRect() const
     t.translate( -center.x(), -center.y() );
 
     return t.mapRect(bbox);
+}
+
+void
+NodeGui::setOptionalInputsVisible(bool visible)
+{
+    ///Don't do this for inspectors
+    if (dynamic_cast<InspectorNode*>(_internalNode.get())) {
+        return;
+    }
+    if (visible != _optionalInputsVisible) {
+        _optionalInputsVisible = visible;
+        for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+            if (_internalNode->getLiveInstance()->isInputOptional(it->first) &&
+                !_internalNode->getInput(it->first) &&
+                !it->second->isRotoEdge()) {
+                it->second->setVisible(visible);
+            }
+        }
+    }
 }
 
 QRectF
@@ -1005,7 +1027,6 @@ NodeGui::setUserSelected(bool b)
         QMutexLocker l(&_selectedMutex);
         _selected = b;
     }
-    update();
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
@@ -1013,7 +1034,24 @@ NodeGui::setUserSelected(bool b)
             _graph->getGui()->setRotoInterface(this);
         }
     }
+    
+    bool optionalInputsAutoHidden = _graph->areOptionalInputsAutoHidden();
+    if (optionalInputsAutoHidden) {
+        if (!b) {
+            QPointF evpt = mapFromScene(_graph->mapToScene(_graph->mapFromGlobal(QCursor::pos())));
+            QRectF bbox = boundingRect();
+            if (!bbox.contains(evpt)) {
+                setOptionalInputsVisible(false);
+            }
+        } else {
+            setOptionalInputsVisible(true);
+        }
+    }
+    
     refreshStateIndicator();
+    
+    
+
 }
 
 bool

@@ -31,6 +31,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
     : QWidget(parent)
       , _gui(parent)
       , _settings(settings)
+      , _closeIsOK(false)
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -99,6 +100,7 @@ void
 PreferencesPanel::applyChangesAndClose()
 {
     _settings->saveSettings();
+    _closeIsOK = true;
     close();
 }
 
@@ -115,7 +117,7 @@ PreferencesPanel::showEvent(QShowEvent* /*e*/)
 void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
-    if ( _settings->wereChangesMadeSinceLastSave() ) {
+    if ( !_closeIsOK && _settings->wereChangesMadeSinceLastSave() ) {
         _settings->blockEvaluation();
         _settings->restoreSettings();
         _settings->unblockEvaluation();

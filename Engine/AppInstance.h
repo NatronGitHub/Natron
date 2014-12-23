@@ -312,6 +312,8 @@ public:
      * Returns the index of the start of the next line after the app variable declaration
      **/
     std::size_t declareCurrentAppVariable_Python(std::string& script);
+
+    virtual void toggleAutoHideGraphInputs() {}
     
 public Q_SLOTS:
 

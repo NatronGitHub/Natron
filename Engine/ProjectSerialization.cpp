@@ -47,8 +47,6 @@ ProjectSerialization::initialize(const Natron::Project* project)
         }
     }
 
-    project->getNodeCounters(&_nodeCounters);
-
     _timelineLeft = project->leftBound();
     _timelineRight = project->rightBound();
     _timelineCurrent = project->currentFrame();

@@ -22,6 +22,7 @@
 #include <QAbstractSocket>
 #include <QCoreApplication>
 #include <QThread>
+#include <QThreadPool>
 #include <QtCore/QAtomicInt>
 
 #include "Global/MemoryInfo.h"
@@ -35,7 +36,6 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Node.h"
-#include "Engine/Plugin.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Image.h"
@@ -65,7 +65,7 @@ struct AppManagerPrivate
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings
     std::vector<Format*> _formats; //<a list of the "base" formats available in the application
-    std::vector<Natron::Plugin*> _plugins; //< list of the plugins
+    PluginsMap _plugins; //< list of the plugins
     boost::scoped_ptr<Natron::OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
     boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache; //< Images cache
@@ -180,6 +180,8 @@ struct AppManagerPrivate
      * @brief Called on startup to initialize the max opened files
      **/
     void setMaxCacheFiles();
+    
+    Natron::Plugin* findPluginById(const QString& oldId,int major, int minor) const;
 };
 
 void
@@ -395,6 +397,8 @@ AppManager::load(int &argc,
     initPython(argc, argv);
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+    QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
+    //otherwise it might crash with thread local storage
     _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) ;
 
 #if QT_VERSION < 0x050000
@@ -416,10 +420,13 @@ AppManager::load(int &argc,
 AppManager::~AppManager()
 {
     assert( _imp->_appInstances.empty() );
-
-    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        delete _imp->_plugins[i];
+    
+    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            delete *it2;
+        }
     }
+
     foreach(Format * f,_imp->_formats) {
         delete f;
     }
@@ -813,8 +820,8 @@ AppManager::writeToOutputPipe(const QString & longMessage,
                               const QString & shortMessage)
 {
     if (!_imp->_backgroundIPC) {
-        qDebug() << longMessage;
-
+        ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
+        std::cout << longMessage.toStdString() << std::endl;
         return false;
     }
     _imp->_backgroundIPC->writeToOutputChannel(shortMessage);
@@ -884,47 +891,60 @@ AppManager::loadAllPlugins()
 
     /*loading node plugins*/
 
-    loadBuiltinNodePlugins(&_imp->_plugins, &readersMap, &writersMap);
+    loadBuiltinNodePlugins(&readersMap, &writersMap);
 
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
 
     std::vector<Natron::Plugin*> ignoredPlugins;
-    _imp->_settings->populatePluginsTab(_imp->_plugins, ignoredPlugins);
+    _imp->_settings->populatePluginsTab(ignoredPlugins);
     
     ///Remove from the plug-ins the ignore plug-ins
     for (std::vector<Natron::Plugin*>::iterator it = ignoredPlugins.begin(); it != ignoredPlugins.end(); ++it) {
-        std::vector<Natron::Plugin*>::iterator found = std::find(_imp->_plugins.begin(),_imp->_plugins.end(),*it);
         
-        if (found != _imp->_plugins.end()) {
+        PluginsMap::iterator foundId = _imp->_plugins.find((*it)->getPluginID().toStdString());
+        if (foundId != _imp->_plugins.end()) {
+            PluginMajorsOrdered::iterator found = foundId->second.end();
             
-            ignorePlugin(*it);
-            ///Remove it from the readersMap and writersMap
-            
-            std::string pluginId = (*it)->getPluginID().toStdString();
-            if ((*it)->isReader()) {
-                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = readersMap.begin(); it2 != readersMap.end(); ++it2) {
-                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                        if (it3->first == pluginId) {
-                            it2->second.erase(it3);
-                            break;
+            for (PluginMajorsOrdered::iterator it2 = foundId->second.begin() ; it2 != foundId->second.end() ; ++it2) {
+                if (*it2 == *it) {
+                    found = it2;
+                    break;
+                }
+            }
+            if (found != foundId->second.end()) {
+                
+                ignorePlugin(*it);
+                ///Remove it from the readersMap and writersMap
+                
+                std::string pluginId = (*it)->getPluginID().toStdString();
+                if ((*it)->isReader()) {
+                    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = readersMap.begin(); it2 != readersMap.end(); ++it2) {
+                        for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                            if (it3->first == pluginId) {
+                                it2->second.erase(it3);
+                                break;
+                            }
                         }
                     }
                 }
-            }
-            if ((*it)->isWriter()) {
-                for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = writersMap.begin(); it2 != writersMap.end(); ++it2) {
-                    for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                        if (it3->first == pluginId) {
-                            it2->second.erase(it3);
-                            break;
+                if ((*it)->isWriter()) {
+                    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = writersMap.begin(); it2 != writersMap.end(); ++it2) {
+                        for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                            if (it3->first == pluginId) {
+                                it2->second.erase(it3);
+                                break;
+                            }
                         }
                     }
+                    
                 }
-
+                delete *found;
+                foundId->second.erase(found);
+                if (foundId->second.empty()) {
+                    _imp->_plugins.erase(foundId);
+                }
             }
-            delete *found;
-            _imp->_plugins.erase(found);
         }
     }
     
@@ -935,8 +955,7 @@ AppManager::loadAllPlugins()
 }
 
 void
-AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                   std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
+AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
     {
@@ -953,14 +972,7 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-
-        Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
-                                                     "","",qgrouping,"",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion(),
-                                                    false,false);
-        plugins->push_back(plugin);
-
-
-        onPluginLoaded(plugin);
+        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -976,14 +988,7 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        
-        Natron::Plugin* plugin = new Natron::Plugin( binary,node->getPluginID().c_str(),node->getPluginLabel().c_str(),
-                                                    "","",qgrouping,"",NULL,node->getMajorVersion(),node->getMinorVersion(),
-                                                    false,false);
-        plugins->push_back(plugin);
-        
-        
-        onPluginLoaded(plugin);
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
 
 }
@@ -1009,7 +1014,15 @@ AppManager::registerPlugin(const QStringList & groups,
     }
     Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,ofxPluginID,pluginMutex,major,minor,
                                                 isReader,isWriter);
-    _imp->_plugins.push_back(plugin);
+    std::string stdID = pluginID.toStdString();
+    PluginsMap::iterator found = _imp->_plugins.find(stdID);
+    if (found != _imp->_plugins.end()) {
+        found->second.insert(plugin);
+    } else {
+        PluginMajorsOrdered set;
+        set.insert(plugin);
+        _imp->_plugins.insert(std::make_pair(stdID, set));
+    }
     onPluginLoaded(plugin);
 }
 
@@ -1125,19 +1138,22 @@ AppManager::clearExceedingEntriesFromNodeCache()
     _imp->_nodeCache->clearExceedingEntries();
 }
 
-const std::vector<Natron::Plugin*> &
+const PluginsMap&
 AppManager::getPluginsList() const
 {
     return _imp->_plugins;
 }
 
 QMutex*
-AppManager::getMutexForPlugin(const QString & pluginId) const
+AppManager::getMutexForPlugin(const QString & pluginId,int major,int /*minor*/) const
 {
-    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        if (_imp->_plugins[i]->getPluginID() == pluginId) {
-            return _imp->_plugins[i]->getPluginLock();
+    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+            if ((*it2)->getPluginID() == pluginId && (*it2)->getMajorVersion() == major) {
+                return (*it2)->getPluginLock();
+            }
         }
+     
     }
     std::string exc("Couldn't find a plugin named ");
     exc.append( pluginId.toStdString() );
@@ -1157,34 +1173,74 @@ AppManager::getKnobFactory() const
 }
 
 Natron::Plugin*
+AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
+{
+    for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+            if ((*it2)->getPluginID() == newId && (*it2)->getMajorVersion() == major && (*it2)->getMinorVersion() == minor) {
+                return (*it2);
+            }
+        }
+        
+    }
+    return 0;
+}
+
+Natron::Plugin*
+AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const
+{
+    std::map<int,Natron::Plugin*> matches;
+    
+    if (pluginId == "Viewer") {
+        return _imp->findPluginById(NATRON_VIEWER_ID, majorVersion, minorVersion);
+    } else if (pluginId == "Dot") {
+        return _imp->findPluginById(NATRON_DOT_ID,majorVersion, minorVersion );
+    } else if (pluginId == "DiskCache") {
+        return _imp->findPluginById(NATRON_DISKCACHE_NODE_ID, majorVersion, minorVersion);
+    }
+    
+    ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+            if ((*it2)->generateUserFriendlyPluginID() == pluginId &&
+                ((*it2)->getMajorVersion() == majorVersion || majorVersion == -1) &&
+                ((*it2)->getMinorVersion() == minorVersion || minorVersion == -1)) {
+                return *it2;
+            }
+        }
+        
+    }
+    return 0;
+}
+
+Natron::Plugin*
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
-                            int minorVersion) const
+                            int /*minorVersion*/) const
 {
     std::map<int,Natron::Plugin*> matches;
 
-    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        if (_imp->_plugins[i]->getPluginID() != pluginId) {
-            continue;
+    PluginsMap::const_iterator foundID = _imp->_plugins.find(pluginId.toStdString());
+    if (foundID != _imp->_plugins.end()) {
+        
+        assert(!foundID->second.empty());
+        
+        if (majorVersion == -1) {
+            return *foundID->second.rbegin();
         }
-        if ( (majorVersion != -1) && (_imp->_plugins[i]->getMajorVersion() != majorVersion) ) {
-            continue;
+        
+        for (PluginMajorsOrdered::const_iterator it = foundID->second.begin(); it != foundID->second.end(); ++it) {
+            if (((*it)->getMajorVersion() == majorVersion)) {
+                return *it;
+            }
         }
-        matches.insert( std::make_pair(_imp->_plugins[i]->getMinorVersion(),_imp->_plugins[i]) );
     }
-
-    if ( matches.empty() ) {
-        QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
-                .arg(pluginId)
-                .arg(majorVersion)
-                .arg(minorVersion);
-        throw std::invalid_argument( exc.toStdString() );
-    } else {
-        std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
-        --greatest;
-
-        return greatest->second;
-    }
+    QString exc = QString("Couldn't find a plugin attached to the ID %1, with a major version of %2")
+    .arg(pluginId)
+    .arg(majorVersion);
+    throw std::invalid_argument( exc.toStdString() );
+    return 0;
+    
 }
 
 Natron::EffectInstance*
@@ -1994,8 +2050,9 @@ std::list<std::string>
 AppManager::getPluginIDs() const
 {
     std::list<std::string> ret;
-    for (std::vector<Natron::Plugin*>::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
-        ret.push_back((*it)->getPluginID().toStdString());
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
+        assert(!it->second.empty());
+        ret.push_back(it->first);
     }
     return ret;
 }
@@ -2182,6 +2239,14 @@ bool
 AppManager::wasProjectCreatedDuringRC2Or3() const
 {
     return _imp->lastProjectLoadedCreatedDuringRC2Or3;
+}
+
+void
+AppManager::toggleAutoHideGraphInputs()
+{
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        it->second.app->toggleAutoHideGraphInputs();
+    }
 }
 
 namespace Natron {

@@ -8,12 +8,12 @@ Natron on GNU/Linux.
 
 In order to have Natron compiling, first you need to install the required libraries.
 
-### Qt 4.8.6 or 5.3
+### Qt 4.8.6
 
 You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads).
 Alternatively you can get it from apt-get (the package depends on your distribution).
 Please download one of the version mentioned above, Natron is known to be buggy when
-running with Qt 5.0 or 5.1.
+running with Qt 5.
 
 
 ### Boost

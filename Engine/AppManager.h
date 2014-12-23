@@ -26,6 +26,7 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/noncopyable.hpp>
 #endif
 
+#include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/ImageLocker.h"
 
@@ -151,9 +152,10 @@ public:
 
     const std::map<int,AppInstanceRef> & getAppInstances() const WARN_UNUSED_RETURN;
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
-    const std::vector<Natron::Plugin*> & getPluginsList() const WARN_UNUSED_RETURN;
-    QMutex* getMutexForPlugin(const QString & pluginId) const WARN_UNUSED_RETURN;
+    const Natron::PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
+    QMutex* getMutexForPlugin(const QString & pluginId,int major,int minor) const WARN_UNUSED_RETURN;
     Natron::Plugin* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
+    Natron::Plugin* getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
@@ -366,7 +368,8 @@ public:
     void saveCaches() const;
     
 public Q_SLOTS:
-    
+
+    void toggleAutoHideGraphInputs();
 
     ///Closes the application not saving any projects.
     virtual void exitApp();
@@ -404,8 +407,7 @@ protected:
     {
     }
 
-    virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+    virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
     virtual AppInstance* makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const

@@ -39,12 +39,19 @@ public:
     ToolButton( AppInstance* app,
                 PluginGroupNode* pluginToolButton,
                 const QString & pluginID,
+                int major,
+                int minor,
                 const QString & label,
                 QIcon icon = QIcon() );
 
     virtual ~ToolButton();
 
     const QString & getID() const;
+    
+    int getPluginMajor() const;
+    
+    int getPluginMinor() const;
+    
     const QString & getLabel() const;
     const QIcon & getIcon() const;
 

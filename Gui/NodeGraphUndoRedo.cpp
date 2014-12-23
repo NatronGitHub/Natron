@@ -37,6 +37,7 @@ MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove> &
                                                    const std::list<NodeBackDrop*> & bds,
                                                    double dx,
                                                    double dy,
+                                                   bool doMerge,
                                                    const QPointF & mouseScenePos,
                                                    QUndoCommand *parent)
     : QUndoCommand(parent)
@@ -46,6 +47,7 @@ MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove> &
       , _mouseScenePos(mouseScenePos)
       , _dx(dx)
       , _dy(dy)
+      , _doMerge(doMerge)
 {
     assert( !nodes.empty() || !bds.empty() );
 }
@@ -87,6 +89,9 @@ MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command)
     const MoveMultipleNodesCommand *mvCmd = dynamic_cast<const MoveMultipleNodesCommand *>(command);
 
     if (!mvCmd) {
+        return false;
+    }
+    if (!mvCmd->_doMerge || !_doMerge) {
         return false;
     }
     if ( ( mvCmd->_bds.size() != _bds.size() ) || ( mvCmd->_nodes.size() != _nodes.size() ) ) {

@@ -23,11 +23,14 @@ In order to have Natron compiling, first you need to install the required librar
 
 There are two exclusive options: using MacPorts or using Homebrew.
 
+Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
+
 ### MacPorts
 
-You need an up to date macports version. Just download it and install it from : 
-(Macports website)[http://www.macports.org]
+You need an up to date macports version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
+	sudo port selfupdate
+	sudo port upgrade outdated
 	sudo port install qt4-mac boost glew cairo expat
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -54,9 +57,6 @@ EOF
 ### Homebrew
 
 Install homebrew from <http://brew.sh/>
-
-For a universal 32/64 bits build, add the option --universal to all
-the "brew install" commands.
 
 Install libraries:
 
@@ -117,7 +117,7 @@ EOF
 ```
 
 ## Build with Makefile
->>>>>>> workshop
+
 You can generate a makefile by typing
 
 	qmake -r Project.pro
@@ -158,5 +158,10 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 
 ## Generating Python bindings
 
-shiboken-2.7 Engine/Pyside_Engine_Python.h --include-paths=Engine/:Global:/opt/local/include:/opt/local/include/PySide-2.7 --typesystem-paths=/opt/local/share/PySide-2.7/typesystems:Engine --output-directory=Engine Engine/typesystem_engine.xml --use-isnull-as-nb_nonzero
+shiboken-3.4 Engine/Pyside_Engine_Python.h --include-paths=/Users/alexandre/development/Engine:/Users/alexandre/development/Natron/Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/typesystem_engine.xml
 
+## OpenFX plugins
+
+Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/workshop/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
+
+Compiling [TuttleOFX](https://github.com/tuttleofx/TuttleOFX) is a bit trickier, but you can find [instructions for building on MacPorts as well as precompiled universal binaries](http://devernay.free.fr/hacks/openfx/#OSXTuttleOFX). Building on homebrew is also possible by following these two scripts: [install_dependencies.sh](https://github.com/tuttleofx/TuttleOFX/blob/develop/tools/travis/install_dependencies.sh) and [build.sh](https://github.com/tuttleofx/TuttleOFX/blob/develop/tools/travis/build.sh).

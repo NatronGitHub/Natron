@@ -377,12 +377,7 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
     }
     
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
-# ifdef DEBUG
-    qDebug() << "render " << ret.size() << " rectangles";
-    for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
-        qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
-    }
-# endif // DEBUG
+
 } // minimalNonMarkedRects
 
 RectI
@@ -899,6 +894,7 @@ template <typename PIX, int maxValue>
 void
 Image::halveRoIForDepth(const RectI & roi,
                         bool copyBitMap,
+                        bool treatUnavailablePixelsAsRendered,
                         Natron::Image* output) const
 {
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
@@ -1019,10 +1015,18 @@ Image::halveRoIForDepth(const RectI & roi,
                 char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
                 char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
 #if NATRON_ENABLE_TRIMAP
-                a = a == PIXEL_UNAVAILABLE ? 0 : a;
-                b = b == PIXEL_UNAVAILABLE ? 0 : b;
-                c = c == PIXEL_UNAVAILABLE ? 0 : c;
-                d = d == PIXEL_UNAVAILABLE ? 0 : d;
+                if (a == PIXEL_UNAVAILABLE) {
+                    a = treatUnavailablePixelsAsRendered ? 1 : 0;
+                }
+                if (b == PIXEL_UNAVAILABLE) {
+                    b = treatUnavailablePixelsAsRendered ? 1 : 0;
+                }
+                if (c == PIXEL_UNAVAILABLE) {
+                    c = treatUnavailablePixelsAsRendered ? 1 : 0;
+                }
+                if (d == PIXEL_UNAVAILABLE) {
+                    d = treatUnavailablePixelsAsRendered ? 1 : 0;
+                }
 #endif
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
@@ -1040,17 +1044,18 @@ Image::halveRoIForDepth(const RectI & roi,
 void
 Image::halveRoI(const RectI & roi,
                 bool copyBitMap,
+                bool treatUnavailablePixelsAsRendered,
                 Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
-        halveRoIForDepth<unsigned char,255>(roi, copyBitMap, output);
+            halveRoIForDepth<unsigned char,255>(roi, copyBitMap,treatUnavailablePixelsAsRendered, output);
         break;
     case eImageBitDepthShort:
-        halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, output);
+        halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, treatUnavailablePixelsAsRendered, output);
         break;
     case eImageBitDepthFloat:
-        halveRoIForDepth<float,1>(roi,copyBitMap, output);
+        halveRoIForDepth<float,1>(roi,copyBitMap,treatUnavailablePixelsAsRendered, output);
         break;
     case eImageBitDepthNone:
         break;
@@ -1134,6 +1139,7 @@ Image::downscaleMipMap(const RectI & roi,
                        unsigned int fromLevel,
                        unsigned int toLevel,
                        bool copyBitMap,
+                       bool treatUnavailablePixelsAsRendered,
                        Natron::Image* output) const
 {
     ///You should not call this function with a level equal to 0.
@@ -1154,7 +1160,7 @@ Image::downscaleMipMap(const RectI & roi,
     
     ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, par, getBitDepth() , true) );
 
-    buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
+    buildMipMapLevel( roi, downscaleLvls, copyBitMap, treatUnavailablePixelsAsRendered, tmpImg.get() );
 
     // check that the downscaled mipmap is inside the output image (it may not be equal to it)
     assert(dstRoI.x1 >= output->getBounds().x1);
@@ -1167,29 +1173,30 @@ Image::downscaleMipMap(const RectI & roi,
 }
 
 
-void
+bool
 Image::checkForNaNs(const RectI& roi)
 {
     if (getBitDepth() != eImageBitDepthFloat) {
-        return;
+        return false;
     }
     
     unsigned int compsCount = getComponentsCount();
-    
+
+    bool hasnan = false;
     for (int y = roi.y1; y < roi.y2; ++y) {
         
         float* pix = (float*)pixelAt(roi.x1, roi.y1);
         float* const end = pix +  compsCount * roi.width();
         
         for (;pix < end; ++pix) {
-            assert(!boost::math::isnan(*pix) && !boost::math::isinf(*pix));
             if (boost::math::isnan(*pix) || boost::math::isinf(*pix)) {
                 *pix = 1.;
+                hasnan = true;
             }
         }
     }
 
-
+    return hasnan;
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -1314,7 +1321,7 @@ Image::scaleBoxForDepth(const RectI & roi,
          ( srcRoi.x2 == 2 * dstBounds.x2) &&
          ( srcRoi.y1 == 2 * dstBounds.y1) &&
          ( srcRoi.y2 == 2 * dstBounds.y2) ) {
-        halveRoI(srcRoi, false, output);
+        halveRoI(srcRoi, false, false, output);
 
         return;
     }
@@ -1542,6 +1549,7 @@ void
 Image::buildMipMapLevel(const RectI & roi,
                         unsigned int level,
                         bool copyBitMap,
+                        bool treatUnavailablePixelsAsRendered,
                         Natron::Image* output) const
 {
     ///The last mip map level we will make with closestPo2
@@ -1574,7 +1582,7 @@ Image::buildMipMapLevel(const RectI & roi,
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
         ///If the source image'sroi was originally a po2.
-        srcImg->halveRoI(previousRoI, copyBitMap, dstImg);
+        srcImg->halveRoI(previousRoI, copyBitMap,treatUnavailablePixelsAsRendered, dstImg);
 
         ///Clean-up, we should use shared_ptrs for safety
         if (mustFreeSrc) {

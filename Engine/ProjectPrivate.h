@@ -90,7 +90,6 @@ struct ProjectPrivate
     
     boost::shared_ptr<TimeLine> timeline; // global timeline
     mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
-    std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
     bool autoSetProjectFormat;
     std::vector< boost::shared_ptr<Natron::Node> > currentNodes;
     Natron::Project* project;

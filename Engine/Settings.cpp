@@ -89,7 +89,6 @@ Settings::initializeKnobs()
     _fontChoice->setName("font");
     _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
     std::vector<std::string> fontEntries;
-    fontEntries.push_back("Muli");
     fontEntries.push_back("Droid Sans");
     fontEntries.push_back("System fonts...");
     _fontChoice->populateChoices(fontEntries);
@@ -477,6 +476,15 @@ Settings::initializeKnobs()
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
     
+    _hideOptionalInputsAutomatically = Natron::createKnob<Bool_Knob>(this, "Auto hide optional inputs");
+    _hideOptionalInputsAutomatically->setName("autoHideInputs");
+    _hideOptionalInputsAutomatically->setAnimationEnabled(false);
+    _hideOptionalInputsAutomatically->setHintToolTip("When checked, any diconnected optional input of a node in the nodegraph "
+                                                     " (such as mask input) "
+                                                     "will be visible only when the mouse is hovering the node or when it is "
+                                                     "selected.");
+    _nodegraphTab->addKnob(_hideOptionalInputsAutomatically);
+    
     _useInputAForMergeAutoConnect = Natron::createKnob<Bool_Knob>(this,"Merge node connect to A input");
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setAnimationEnabled(false);
@@ -490,13 +498,6 @@ Settings::initializeKnobs()
     _defaultNodeColor->setHintToolTip("The default color used for newly created nodes.");
 
     _nodegraphTab->addKnob(_defaultNodeColor);
-
-    _defaultSelectedNodeColor = Natron::createKnob<Color_Knob>(this, "Default selected node color",3);
-    _defaultSelectedNodeColor->setName("selectedNodeColor");
-    _defaultSelectedNodeColor->setAnimationEnabled(false);
-    _defaultSelectedNodeColor->setHintToolTip("The default selection color used for newly created nodes.");
-
-    _nodegraphTab->addKnob(_defaultSelectedNodeColor);
 
 
     _defaultBackdropColor =  Natron::createKnob<Color_Knob>(this, "Default backdrop color",3);
@@ -773,7 +774,7 @@ Settings::setDefaultValues()
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
-    _fontChoice->setDefaultValue(1);
+    _fontChoice->setDefaultValue(0);
     _systemFontChoice->setDefaultValue(0);
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
     _checkForUpdates->setDefaultValue(false);
@@ -827,13 +828,11 @@ Settings::setDefaultValues()
     _defaultNodeColor->setDefaultValue(0.7,0);
     _defaultNodeColor->setDefaultValue(0.7,1);
     _defaultNodeColor->setDefaultValue(0.7,2);
-    _defaultSelectedNodeColor->setDefaultValue(0.7,0);
-    _defaultSelectedNodeColor->setDefaultValue(0.6,1);
-    _defaultSelectedNodeColor->setDefaultValue(0.3,2);
-    _defaultBackdropColor->setDefaultValue(0.5,0);
-    _defaultBackdropColor->setDefaultValue(0.5,1);
-    _defaultBackdropColor->setDefaultValue(0.2,2);
+    _defaultBackdropColor->setDefaultValue(0.45,0);
+    _defaultBackdropColor->setDefaultValue(0.45,1);
+    _defaultBackdropColor->setDefaultValue(0.45,2);
     _disconnectedArrowLength->setDefaultValue(30);
+    _hideOptionalInputsAutomatically->setDefaultValue(true);
     _useInputAForMergeAutoConnect->setDefaultValue(true);
 
     _defaultGeneratorColor->setDefaultValue(0.3,0);
@@ -1106,7 +1105,7 @@ Settings::tryLoadOpenColorIOConfig()
 
 void
 Settings::onKnobValueChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum /*reason*/,
+                             Natron::ValueChangedReasonEnum reason,
                              SequenceTime /*time*/,
                              bool /*originatedFromMainThread*/)
 {
@@ -1224,6 +1223,8 @@ Settings::onKnobValueChanged(KnobI* k,
                                   QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
             _hasWarnedOnceOnFontChanged = true;
         }
+    } else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
+        appPTR->toggleAutoHideGraphInputs();
     }
 } // onKnobValueChanged
 
@@ -1400,6 +1401,8 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
 
 static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
 {
+#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
+#if 0
     if (
         //Tuttle Readers/Writers
         ofxPluginID == "tuttle.avreader" ||
@@ -1453,6 +1456,7 @@ static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
         //These plug-ins of TuttleOFX achieve the same as plug-ins bundled with Natron, deactivate them by default.
         return false;
     }
+#endif
     return true;
 }
 
@@ -1494,22 +1498,25 @@ struct PerPluginKnobs
 };
 
 void
-Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore)
+Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
 {
+    
+    const PluginsMap& plugins = appPTR->getPluginsList();
+    
     std::vector<boost::shared_ptr<KnobI> > knobsToRestore;
     
     std::map<Natron::Plugin*,PerPluginKnobs> pluginsMap;
     
     std::set< std::string > groupNames;
     ///First pass to exctract all groups
-    for (std::vector<Natron::Plugin*>::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
-        
-        const QString& ofxID = (*it)->getPluginOFXID();
-        if (ofxID.isEmpty()) {
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+    
+        if (it->first.empty()) {
             continue;
         }
+        assert(it->second.size() > 0);
         
-        const QStringList& grouping = (*it)->getGrouping();
+        const QStringList& grouping = (*it->second.rbegin())->getGrouping();
         if (grouping.size() > 0) {
             groupNames.insert(grouping[0].toStdString());
         }
@@ -1529,15 +1536,17 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
     zoomSupportEntries.push_back("Deactivated");
     
     ///Create per-plugin knobs and add them to groups
-    for (std::vector<Natron::Plugin*>::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         
-        const QString& ofxID = (*it)->getPluginOFXID();
-        if (ofxID.isEmpty()) {
+        if (it->first.empty()) {
             continue;
         }
+        assert(it->second.size() > 0);
+        
+        Natron::Plugin* plugin  = *it->second.rbegin();
         
         boost::shared_ptr<Group_Knob> group;
-        const QStringList& grouping = (*it)->getGrouping();
+        const QStringList& grouping = plugin->getGrouping();
         if (grouping.size() > 0) {
             
             std::string mainGroup = grouping[0].toStdString();
@@ -1552,12 +1561,11 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
         }
         
         ///Create checkbox to activate/deactivate the plug-in
-        std::string pluginName = (*it)->getPluginID().toStdString();
-        std::string ofxStdID = ofxID.toStdString();
+        std::string pluginName = plugin->generateUserFriendlyPluginID().toStdString();
         
         boost::shared_ptr<String_Knob> pluginLabel = Natron::createKnob<String_Knob>(this, pluginName);
         pluginLabel->setAsLabel();
-        pluginLabel->setName(ofxStdID);
+        pluginLabel->setName(it->first);
         pluginLabel->setAnimationEnabled(false);
         pluginLabel->setDefaultValue(pluginName);
         pluginLabel->turnOffNewLine();
@@ -1570,8 +1578,8 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
         _pluginsTab->addKnob(pluginLabel);
         
         boost::shared_ptr<Bool_Knob> pluginActivation = Natron::createKnob<Bool_Knob>(this, "Enabled");
-        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(ofxID));
-        pluginActivation->setName(ofxStdID + ".enabled");
+        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()));
+        pluginActivation->setName(it->first + ".enabled");
         pluginActivation->setAnimationEnabled(false);
         pluginActivation->turnOffNewLine();
         pluginActivation->setHintToolTip("When checked, " + pluginName + " will be activated and you can create a node using this plug-in in " NATRON_APPLICATION_NAME ". When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.");
@@ -1584,8 +1592,8 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
         
         boost::shared_ptr<Choice_Knob> zoomSupport = Natron::createKnob<Choice_Knob>(this, "Zoom support");
         zoomSupport->populateChoices(zoomSupportEntries);
-        zoomSupport->setName(ofxStdID + ".zoomSupport");
-        zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(ofxID));
+        zoomSupport->setName(it->first + ".zoomSupport");
+        zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(plugin->getPluginID()));
         zoomSupport->setHintToolTip("Controls whether the plug-in should have its default zoom support or it should be activated. "
                                     "This parameter is useful because some plug-ins flag that they can support different level of zoom "
                                     "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
@@ -1604,7 +1612,7 @@ Settings::populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::ve
             _pluginsTab->addKnob(group);
         }
         
-        pluginsMap.insert(std::make_pair(*it, PerPluginKnobs(pluginActivation,zoomSupport)));
+        pluginsMap.insert(std::make_pair(plugin, PerPluginKnobs(pluginActivation,zoomSupport)));
 
     }
     
@@ -1813,16 +1821,6 @@ Settings::getDefaultNodeColor(float *r,
     *r = _defaultNodeColor->getValue(0);
     *g = _defaultNodeColor->getValue(1);
     *b = _defaultNodeColor->getValue(2);
-}
-
-void
-Settings::getDefaultSelectedNodeColor(float *r,
-                                      float *g,
-                                      float *b) const
-{
-    *r = _defaultSelectedNodeColor->getValue(0);
-    *g = _defaultSelectedNodeColor->getValue(1);
-    *b = _defaultSelectedNodeColor->getValue(2);
 }
 
 void
@@ -2184,4 +2182,16 @@ void
 Settings::setAutoTurboModeEnabled(bool e)
 {
     _autoTurbo->setValue(e, 0);
+}
+
+void
+Settings::setOptionalInputsAutoHidden(bool hidden)
+{
+    _hideOptionalInputsAutomatically->setValue(hidden, 0);
+}
+
+bool
+Settings::areOptionalInputsAutoHidden() const
+{
+    return _hideOptionalInputsAutomatically->getValue();
 }

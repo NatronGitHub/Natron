@@ -50,6 +50,7 @@ public:
                              const std::list<NodeBackDrop*> & bds,
                              double dx,
                              double dy,
+                             bool doMerge,
                              const QPointF & mouseScenePos,
                              QUndoCommand *parent = 0);
     virtual void undo();
@@ -70,6 +71,7 @@ private:
     std::list<NodeBackDrop*> _bds;
     QPointF _mouseScenePos;
     double _dx,_dy;
+    bool _doMerge;
 };
 
 

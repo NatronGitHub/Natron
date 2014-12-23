@@ -58,9 +58,21 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
     roto->getSelection(&_selectedCurves, &_selectedPoints);
 
     ///we make a copy of the points
-    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
-        CpPtr first( new BezierCP( *(it->first) ) );
-        CpPtr second( new BezierCP( *(it->second) ) );
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it) {
+        CpPtr first,second;
+        if (it->first->isFeatherPoint()) {
+            first.reset( new FeatherPoint(it->first->getBezier()));
+            first->clone(*(it->first));
+        } else {
+            first.reset( new BezierCP( *(it->first) ) );
+        }
+        
+        if (it->second->isFeatherPoint()) {
+            second.reset( new FeatherPoint(it->second->getBezier()));
+            second->clone(*(it->second));
+        } else {
+            second.reset( new BezierCP( *(it->second) ) );
+        }
         _originalPoints.push_back( std::make_pair(first, second) );
     }
 
@@ -1928,16 +1940,16 @@ void
 LinkToTrackUndoCommand::redo()
 {
     SequenceTime time = _roto->getContext()->getTimelineCurrentTime();
-    bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
+    //bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
 
     for (SelectedCpList::iterator it = _points.begin(); it != _points.end(); ++it) {
         it->first->slaveTo(time,_track);
         _track->addSlavedTrack(it->first);
 
-        if (featherLinkEnabled) {
+      //  if (featherLinkEnabled) {
             it->second->slaveTo(time, _track);
             _track->addSlavedTrack(it->second);
-        }
+       // }
     }
     setText( QObject::tr("Link to track") );
     _roto->evaluate(true);

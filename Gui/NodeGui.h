@@ -338,7 +338,7 @@ public Q_SLOTS:
 
     void refreshEdges();
 
-    void refreshOptionalStateOfEdges();
+    void refreshDashedStateOfEdges();
     
     void refreshKnobLinks();
 
@@ -392,6 +392,8 @@ public Q_SLOTS:
     void onSettingsPanelClosedChanged(bool closed);
 
     void onParentMultiInstancePositionChanged(int x,int y);
+    
+    void setOptionalInputsVisible(bool visible);
 
 Q_SIGNALS:
 
@@ -500,6 +502,8 @@ private:
     
     int _renderingStartedCount;
     std::map<int,int> _inputNRenderingStartedCount;
+    
+    bool _optionalInputsVisible;
       
 };
 

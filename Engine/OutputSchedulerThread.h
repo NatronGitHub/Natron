@@ -35,12 +35,23 @@ class RenderEngine;
  **/
 class BufferableObject
 {
+    
+    int uniqueID; //< used to differentiate frames which may belong to the same time/view (e.g when wipe is enabled)
 public:
     
+    int getUniqueID() const
+    {
+        return uniqueID;
+    }
     
-    BufferableObject() {}
+    BufferableObject() : uniqueID(0) {}
     
     virtual ~BufferableObject() {}
+    
+    void setUniqueID(int aid)
+    {
+        uniqueID = aid;
+    }
     
     virtual std::size_t sizeInRAM() const = 0;
 };
@@ -53,8 +64,7 @@ struct BufferedFrame
     int view;
     double time;
     
-    ///List because there might be several frames for the Viewer when in wipe/over/under/minus modes
-    std::list<boost::shared_ptr<BufferableObject> > frame;
+    boost::shared_ptr<BufferableObject> frame;
     
     BufferedFrame()
     : view(0) , time(0), frame()
@@ -62,6 +72,8 @@ struct BufferedFrame
         
     }
 };
+
+typedef std::list<BufferedFrame> BufferedFrames;
 
 class OutputSchedulerThread;
 
@@ -132,8 +144,18 @@ public:
      * @brief When a render thread has finished rendering a frame, it must
      * append it here for buffering to make sure the output device (Viewer, Writer, etc...) will proceed the frames
      * in respect to the time parameter.
+     * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames 
+     * use the other version of this function.
      **/
     void appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
+    void appendToBuffer(double time,int view,const BufferableObjectList& frames);
+    
+private:
+    
+    void appendToBuffer_internal(double time,int view,const boost::shared_ptr<BufferableObject>& frame,bool wakeThread);
+    
+public:
+    
     
     /**
      * @brief Once returned from that function, the object's thread will be finished and the object unusable.
@@ -237,7 +259,7 @@ public:
     
 public Q_SLOTS:
     
-    void doTreatFrameMainThread(const BufferedFrame& frame,bool mustSeekTimeline,int time);
+    void doTreatFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
     /**
      @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
@@ -256,7 +278,7 @@ public Q_SLOTS:
     void abortRendering(bool blocking);
 Q_SIGNALS:
     
-    void s_doTreatOnMainThread(const BufferedFrame& frame,bool mustSeekTimeline,int time);
+    void s_doTreatOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
     void s_abortRenderingOnMainThread(bool blocking);
     
@@ -271,7 +293,7 @@ protected:
      * According to the Mode given to the scheduler this function will be called either by the scheduler thread (this)
      * or by the application's main-thread (typically to do OpenGL rendering).
      **/
-    virtual void treatFrame(const BufferedFrame& frame) = 0;
+    virtual void treatFrame(const BufferedFrames& frames) = 0;
     
     /**
      * @brief Must be implemented to increment/decrement the timeline by one frame.
@@ -412,7 +434,7 @@ public:
     
 private:
     
-    virtual void treatFrame(const BufferedFrame& frame) OVERRIDE FINAL;
+    virtual void treatFrame(const BufferedFrames& frames) OVERRIDE FINAL;
     
     virtual void timelineStepOne(RenderDirection direction) OVERRIDE FINAL;
     
@@ -453,7 +475,7 @@ public:
     
 private:
 
-    virtual void treatFrame(const BufferedFrame& frame) OVERRIDE FINAL;
+    virtual void treatFrame(const BufferedFrames& frames) OVERRIDE FINAL;
     
     virtual void timelineStepOne(RenderDirection direction) OVERRIDE FINAL;
     

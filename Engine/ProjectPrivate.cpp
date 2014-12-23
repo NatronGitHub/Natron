@@ -25,6 +25,7 @@
 #include "Engine/ProjectSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/Settings.h"
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
@@ -162,11 +163,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     int nodesRestored = 0;
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         ++nodesRestored;
-        if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
+        
+        std::string pluginID = it->getPluginID();
+        
+        if ( appPTR->isBackground() && (pluginID == NATRON_VIEWER_ID || pluginID == "Viewer") ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
-
 
         ///If the node is a multiinstance child find in all the serialized nodes if the parent exists.
         ///If not, create it
@@ -189,7 +192,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs( it->getPluginID().c_str(),
+                    boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs( pluginID.c_str(),
                                                                                                             "",
                                                                                                             it->getPluginMajorVersion(),
                                                                                                             it->getPluginMinorVersion(),
@@ -207,14 +210,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             }
         }
 
-        ///this code may throw an exception which will be caught above
-        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode( LoadNodeArgs(it->getPluginID().c_str()
+        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode( LoadNodeArgs(pluginID.c_str()
                                                                                       ,it->getMultiInstanceParentName()
                                                                                       ,it->getPluginMajorVersion()
                                                                                       ,it->getPluginMinorVersion(),&(*it),false) );
         if (!n) {
             QString text( QObject::tr("The node ") );
-            text.append( it->getPluginID().c_str() );
+            text.append( pluginID.c_str() );
             text.append( QObject::tr(" was found in the script but doesn't seem \n"
                                      "to exist in the currently loaded plug-ins.") );
             appPTR->writeToOfxLog_mt_safe(text);
@@ -238,7 +240,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 4) connect the nodes together, and restore the slave/master links for all knobs.
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
+        if ( appPTR->isBackground() && (it->getPluginID() == NATRON_VIEWER_ID) ) {
             //ignore viewers on background mode
             continue;
         }
@@ -326,8 +328,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
     
     ///We should be now at 75% progress...
-
-    nodeCounters = obj.getNodeCounters();
     
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;

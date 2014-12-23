@@ -55,6 +55,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
+#include "Engine/Plugin.h"
 #include "Engine/Image.h"
 #include "Engine/NodeSerialization.h"
 
@@ -294,7 +295,17 @@ DockablePanel::DockablePanel(Gui* gui
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::TabFocus);
-
+    
+    Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
+    QString pluginLabelVersioned;
+    if (iseffect) {
+        const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
+        pluginLabelVersioned = plugin->getPluginLabel();
+        QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
+        pluginLabelVersioned.append(toAppend);
+    }
+    
+    
     if (headerMode != NO_HEADER) {
         _imp->_headerWidget = new QFrame(this);
         _imp->_headerWidget->setFrameShape(QFrame::Box);
@@ -303,7 +314,6 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
         
-        Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (iseffect) {
             
 
@@ -315,6 +325,7 @@ DockablePanel::DockablePanel(Gui* gui
                     QLabel* iconLabel = new QLabel(getHeaderWidget());
                     iconLabel->setContentsMargins(2, 2, 2, 2);
                     iconLabel->setPixmap(ic);
+                    iconLabel->setToolTip(pluginLabelVersioned);
                     _imp->_headerLayout->addWidget(iconLabel);
                 }
                 
@@ -335,9 +346,15 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
         _imp->_helpButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
-        if ( !helpToolTip.isEmpty() ) {
-            _imp->_helpButton->setToolTip( Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal) );
-        }
+            QString tt = Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal);
+            if (!pluginLabelVersioned.isEmpty()) {
+                QString toPrepend("<p><b>");
+                toPrepend.append(pluginLabelVersioned);
+                toPrepend.append("</b></p>");
+                tt.prepend(toPrepend);
+            }
+            _imp->_helpButton->setToolTip(tt);
+        
         QObject::connect( _imp->_helpButton, SIGNAL( clicked() ), this, SLOT( showHelp() ) );
         
         if (!_imp->_holder->isProject()) {
@@ -482,8 +499,7 @@ DockablePanel::DockablePanel(Gui* gui
         icRestore.addPixmap(pixRestore);
         _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
         _imp->_restoreDefaultsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-        _imp->_restoreDefaultsButton->setToolTip( Qt::convertFromPlainText(tr("Restore default values for this operator."
-                                                                              " This cannot be undone!"),Qt::WhiteSpaceNormal) );
+        _imp->_restoreDefaultsButton->setToolTip( Qt::convertFromPlainText(tr("Restore default values for this operator."),Qt::WhiteSpaceNormal) );
         _imp->_restoreDefaultsButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_restoreDefaultsButton,SIGNAL( clicked() ),this,SLOT( onRestoreDefaultsButtonClicked() ) );
         QObject::connect( _imp->_undoButton, SIGNAL( clicked() ),this, SLOT( onUndoClicked() ) );
@@ -525,7 +541,7 @@ DockablePanel::DockablePanel(Gui* gui
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
     _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 3);
-    if (headerMode != READ_ONLY_NAME) {
+    if (iseffect) {
         _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
         _imp->_verticalColorBar->setColor(_imp->_currentColor);
         _imp->_horizLayout->addWidget(_imp->_verticalColorBar);
@@ -1620,7 +1636,9 @@ DockablePanel::onColorDialogColorChanged(const QColor & color)
         QPixmap p(15,15);
         p.fill(color);
         _imp->_colorButton->setIcon( QIcon(p) );
-        _imp->_verticalColorBar->setColor(color);
+        if (_imp->_verticalColorBar) {
+            _imp->_verticalColorBar->setColor(color);
+        }
     }
 }
 

@@ -95,7 +95,7 @@ public:
 
     void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
     
-    void populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore);
+    void populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore);
     
     void populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts);
 
@@ -150,8 +150,6 @@ public:
     bool preferBundledPlugins() const;
 
     void getDefaultNodeColor(float *r,float *g,float *b) const;
-
-    void getDefaultSelectedNodeColor(float *r,float *g,float *b) const;
 
     void getDefaultBackDropColor(float *r,float *g,float *b) const;
 
@@ -224,6 +222,9 @@ public:
     bool isAutoTurboEnabled() const;
     
     void setAutoTurboModeEnabled(bool e);
+    
+    void setOptionalInputsAutoHidden(bool hidden);
+    bool areOptionalInputsAutoHidden() const;
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -302,9 +303,9 @@ private:
     boost::shared_ptr<Bool_Knob> _useBWIcons;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
+    boost::shared_ptr<Bool_Knob> _hideOptionalInputsAutomatically;
     boost::shared_ptr<Bool_Knob> _useInputAForMergeAutoConnect;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
-    boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;
     boost::shared_ptr<Color_Knob> _defaultBackdropColor;
     boost::shared_ptr<Color_Knob> _defaultGeneratorColor;
     boost::shared_ptr<Color_Knob> _defaultReaderColor;

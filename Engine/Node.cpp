@@ -328,6 +328,12 @@ Node::createRotoContextConditionnally()
     }
 }
 
+const Natron::Plugin*
+Node::getPlugin() const
+{
+    return _imp->plugin;
+}
+
 void
 Node::load(const std::string & pluginID,
            const std::string & parentMultiInstanceName,
@@ -525,8 +531,8 @@ Node::computeHash()
                 isViewer->getActiveInputs(activeInput[0], activeInput[1]);
                 
                 for (int i = 0; i < 2; ++i) {
-                    if ( (activeInput[i] >= 0) && _imp->inputs[i] ) {
-                        _imp->hash.append( _imp->inputs[i]->getHashValue() );
+                    if ( (activeInput[i] >= 0) && _imp->inputs[activeInput[i]] ) {
+                        _imp->hash.append( _imp->inputs[activeInput[i]]->getHashValue() );
                     }
                 }
             } else {
@@ -1050,7 +1056,7 @@ Node::getPreferredInputForConnection()
     }  else {
         if ( !optionalEmptyInputs.empty() ) {
             
-            if (getPluginID().find("Merge") != std::string::npos) {
+            if (getPluginID().find("net.sf.openfx.MergePlugin") != std::string::npos) {
                 //if it is a merge node, try to follow what the user preferences tell us
                 std::string inputNameToFind;
                 bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
@@ -2561,9 +2567,8 @@ Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    QString name = getPluginID().c_str();
-    
-    return name.contains("roto",Qt::CaseInsensitive);
+    std::string name = getPluginID();
+    return name.find("net.sf.openfx.RotoPlugin") != std::string::npos;
 }
 
 /**
@@ -3536,7 +3541,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 bool
 Node::isTrackerNode() const
 {
-    return getPluginID().find("Tracker") != std::string::npos;
+    return getPluginID().find("net.sf.openfx.TrackerPM") != std::string::npos;
 }
 
 void
@@ -3796,6 +3801,22 @@ Node::shouldCacheOutput() const
                 //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
                 //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
                 Node* output = _imp->outputs.front();
+                
+#pragma message WARN("Hack: Return true if the node is directly connected to a viewer, because otherwise we will never cache " \
+"properly a graph which is linear (with only a single input tree). We need to rework the viewer cache to cache tiles and then " \
+"we can remove this piece of code")
+                ///+TEMPORARY
+                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
+                if (isViewer) {
+                    int activeInputs[2];
+                    isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+                    if (output->getInput(activeInputs[0]).get() == this ||
+                        output->getInput(activeInputs[1]).get() == this) {
+                        return true;
+                    }
+                }
+                ///+TEMPORARY
+                
                 return output->isSettingsPanelOpened() ||
                 _imp->liveInstance->doesTemporalClipAccess() ||
                 (isMainThread && (output->isMultiInstance() || output->getParentMultiInstance())) ||

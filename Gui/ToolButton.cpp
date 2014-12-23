@@ -21,6 +21,7 @@ struct ToolButtonPrivate
 {
     AppInstance* _app;
     QString _id;
+    int _major,_minor;
     QString _label;
     QIcon _icon;
     QMenu* _menu;
@@ -31,10 +32,14 @@ struct ToolButtonPrivate
     ToolButtonPrivate(AppInstance* app,
                       PluginGroupNode* pluginToolButton,
                       const QString & pluginID,
+                      int major,
+                      int minor,
                       const QString & label,
                       QIcon icon)
         : _app(app)
           , _id(pluginID)
+          , _major(major)
+          , _minor(minor)
           , _label(label)
           , _icon(icon)
           , _menu(NULL)
@@ -48,9 +53,11 @@ struct ToolButtonPrivate
 ToolButton::ToolButton(AppInstance* app,
                        PluginGroupNode* pluginToolButton,
                        const QString & pluginID,
+                       int major,
+                       int minor,
                        const QString & label,
                        QIcon icon)
-    : _imp( new ToolButtonPrivate(app,pluginToolButton,pluginID,label,icon) )
+    : _imp( new ToolButtonPrivate(app,pluginToolButton,pluginID,major,minor,label,icon) )
 {
 }
 
@@ -62,6 +69,18 @@ const QString &
 ToolButton::getID() const
 {
     return _imp->_id;
+}
+
+int
+ToolButton::getPluginMajor() const
+{
+    return _imp->_major;
+}
+
+int
+ToolButton::getPluginMinor() const
+{
+    return _imp->_minor;
 }
 
 const QString &
@@ -134,7 +153,7 @@ ToolButton::onTriggered()
 {
     CreateNodeArgs args(_imp->_id,
                    "",
-                   -1,-1,
+                   _imp->_major,_imp->_minor,
                    -1,
                    true,
                    INT_MIN,INT_MIN,

@@ -69,7 +69,7 @@ public:
 
     virtual ~NodeCreationDialog() OVERRIDE;
 
-    QString getNodeName() const;
+    QString getNodeName(int *major) const;
 
 private:
 

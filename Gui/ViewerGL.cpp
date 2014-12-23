@@ -86,6 +86,10 @@ GCC_DIAG_OFF(deprecated-declarations)
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
 
@@ -2141,6 +2145,26 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
 }
 
 RectI
+ViewerGL::getExactImageRectangleDisplayed(const RectD & rod,const double par,unsigned int mipMapLevel)
+{
+    bool clipToProject = isClippingImageToProjectWindow();
+    RectD clippedRod;
+    
+    if (clipToProject) {
+        RectD projectFormatCanonical;
+        _imp->getProjectFormatCanonical(projectFormatCanonical);
+        rod.intersect(projectFormatCanonical,&clippedRod);
+    } else {
+        clippedRod = rod;
+    }
+    
+    RectI bounds;
+    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
+    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
+    return roi;
+}
+
+RectI
 ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel)
 {
     bool clipToProject = isClippingImageToProjectWindow();
@@ -3052,7 +3076,8 @@ ViewerGL::updateColorPicker(int textureIndex,
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     RectD rod = getRoD(textureIndex);
-    Format dispW = getDisplayWindow();
+    RectD projectCanonical;
+    _imp->getProjectFormatCanonical(projectCanonical);
     if ( ( imgPosCanonical.x() >= rod.left() ) &&
          ( imgPosCanonical.x() < rod.right() ) &&
          ( imgPosCanonical.y() >= rod.bottom() ) &&
@@ -3062,10 +3087,10 @@ ViewerGL::updateColorPicker(int textureIndex,
         ///if the clip to project format is enabled, make sure it is in the project format too
         bool clipping = isClippingImageToProjectWindow();
         if ( !clipping ||
-             ( ( imgPosCanonical.x() >= dispW.left() ) &&
-               ( imgPosCanonical.x() < dispW.right() ) &&
-               ( imgPosCanonical.y() >= dispW.bottom() ) &&
-               ( imgPosCanonical.y() < dispW.top() ) ) ) {
+             ( ( imgPosCanonical.x() >= projectCanonical.left() ) &&
+               ( imgPosCanonical.x() < projectCanonical.right() ) &&
+               ( imgPosCanonical.y() >= projectCanonical.bottom() ) &&
+               ( imgPosCanonical.y() < projectCanonical.top() ) ) ) {
             //imgPos must be in canonical coordinates
             picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a);
         }
@@ -3103,11 +3128,17 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
     double zoomFactor;
+    unsigned int oldMipMapLevel,newMipMapLevel;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        zoomFactor = _imp->zoomCtx.factor() ;
+
+        oldMipMapLevel = std::log(zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) )) / M_LN2;
+
+        zoomFactor*= scaleFactor;
+        
         if (zoomFactor <= zoomFactor_min) {
             zoomFactor = zoomFactor_min;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
@@ -3115,6 +3146,8 @@ ViewerGL::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+        
+        newMipMapLevel = std::log(zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) )) / M_LN2;
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
         _imp->zoomOrPannedSinceLastFit = true;
     }
@@ -3131,7 +3164,9 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
-    _imp->viewerTab->clearTimelineCacheLine();
+    if (oldMipMapLevel != newMipMapLevel) {
+        _imp->viewerTab->clearTimelineCacheLine();
+    }
     updateGL();
 }
 
@@ -3148,8 +3183,13 @@ ViewerGL::zoomSlot(int v)
     } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
+    unsigned int oldMipMapLevel,newMipMapLevel;
+    newMipMapLevel = std::log(newZoomFactor >= 1 ? 1 :
+                              std::pow( 2,-std::ceil(std::log(newZoomFactor) / M_LN2) )) / M_LN2;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
+        oldMipMapLevel = std::log(_imp->zoomCtx.factor() >= 1 ? 1 :
+                                  std::pow( 2,-std::ceil(std::log(_imp->zoomCtx.factor()) / M_LN2) )) / M_LN2;
         double scale = newZoomFactor / _imp->zoomCtx.factor();
         double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
@@ -3158,7 +3198,9 @@ ViewerGL::zoomSlot(int v)
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
-    _imp->viewerTab->clearTimelineCacheLine();
+    if (newMipMapLevel != oldMipMapLevel) {
+        _imp->viewerTab->clearTimelineCacheLine();
+    }
     
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
    
@@ -4070,9 +4112,9 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
             }
         } else {
             if (_imp->pickerState == ePickerStateInactive) {
-                if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
+                //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
                     updateColorPicker( texIndex,widgetPos.x(),widgetPos.y() );
-                }
+               // }
             } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
                 if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
                     _imp->infoViewer[texIndex]->showColorAndMouseInfo();
@@ -4577,7 +4619,6 @@ ViewerGL::getColorAt(double x,
             *g = colorGPU[1];
             *b = colorGPU[2];
         }
-        
         return true;
     }
     
@@ -4631,7 +4672,6 @@ ViewerGL::getColorAt(double x,
             gotval = false;
             break;
     }
-    
     return gotval;
 } // getColorAt
 

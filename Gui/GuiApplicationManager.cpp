@@ -82,7 +82,9 @@ CLANG_DIAG_ON(uninitialized)
  **/
 #define registerMouseShortcut(group,id,description, modifiers,button) ( _imp->addMouseShortcut(group,id,description, modifiers,button) )
 
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 1
+//Increment this when making change to default shortcuts or changes that would break expected default shortcuts
+//in a way. This way the user will get prompted to restore default shortcuts on next launch
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 2
 
 using namespace Natron;
 
@@ -698,7 +700,6 @@ GuiApplicationManager::initGui()
     QStringList fontFilenames;
     fontFilenames << fontResource.arg("DroidSans");
     fontFilenames << fontResource.arg("DroidSans-Bold");
-    fontFilenames << fontResource.arg("Muli-Regular");
     foreach(QString fontFilename, fontFilenames) {
         _imp->_splashScreen->updateText("Loading font " + fontFilename);
         //qDebug() << "attempting to load" << fontFilename;
@@ -732,7 +733,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     const QString & groupIconPath = plugin->getGroupIconFilePath();
 
     for (int i = 0; i < groups.size(); ++i) {
-        PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath);
+        PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath,1,0);
         if ( parent && (parent != child) ) {
             parent->tryAddChild(child);
             child->setParent(parent);
@@ -741,7 +742,8 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
         shortcutGrouping.push_back('/');
         shortcutGrouping.push_back(groups[i]);
     }
-    PluginGroupNode* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath);
+    PluginGroupNode* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath,plugin->getMajorVersion(),
+                                                              plugin->getMinorVersion());
     if ( parent && (parent != lastChild) ) {
         parent->tryAddChild(lastChild);
         lastChild->setParent(parent);
@@ -749,18 +751,19 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
     bool hasShortcut = true;
+
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if (pluginID == "TransformOFX  [Transform]") {
+    if (pluginID == "net.sf.openfx.TransformPlugin") {
         symbol = Qt::Key_T;
-    } else if (pluginID == "RotoOFX  [Draw]") {
+    } else if (pluginID == "net.sf.openfx.RotoPlugin") {
         symbol = Qt::Key_O;
-    } else if (pluginID == "MergeOFX  [Merge]") {
+    } else if (pluginID == "net.sf.openfx.MergePlugin") {
         symbol = Qt::Key_M;
-    } else if (pluginID == "GradeOFX  [Color]") {
+    } else if (pluginID == "net.sf.openfx.GradePlugin") {
         symbol = Qt::Key_G;
-    } else if (pluginID == "ColorCorrectOFX  [Color]") {
+    } else if (pluginID == "net.sf.openfx.ColorCorrectPlugin") {
         symbol = Qt::Key_C;
-    } else if (pluginID == "BlurCImg  [Filter]") {
+    } else if (pluginID == "net.sf.cimg.CImgBlur") {
         symbol = Qt::Key_B;
     } else {
         hasShortcut = false;
@@ -814,14 +817,20 @@ GuiApplicationManagerPrivate::removePluginToolButton(const QString& pluginID)
 PluginGroupNode*
 GuiApplicationManager::findPluginToolButtonOrCreate(const QString & pluginID,
                                                     const QString & name,
-                                                    const QString & iconPath)
+                                                    const QString & iconPath,
+                                                    int major,
+                                                    int minor)
 {
     for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin(); it != _imp->_toolButtons.end(); ++it) {
         if ((*it)->getID() == pluginID) {
-            return *it;
+            if (major == (*it)->getMajorVersion()) {
+                return *it;
+            } else {
+                (*it)->setNotHighestMajorVersion(true);
+            }
         }
     }
-    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath);
+    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath,major,minor);
     _imp->_toolButtons.push_back(ret);
 
     return ret;
@@ -911,8 +920,7 @@ GuiApplicationManager::setLoadingStatus(const QString & str)
 }
 
 void
-GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                              std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                               std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
 {
     ////Use ReadQt and WriteQt only for debug versions of Natron.
@@ -929,12 +937,9 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         readerFunctions.insert( std::make_pair("BuildEffect", (void*)&QtReader::BuildEffect) );
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
-        Natron::Plugin* plugin = new Natron::Plugin( readerPlugin,reader->getPluginID().c_str(),reader->getPluginLabel().c_str(),
-                                                     "","",grouping,"",(QMutex*)NULL,reader->getMajorVersion(),reader->getMinorVersion() ,
-                                                    true,false);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
-
+        
+        registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion());
+ 
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
             std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
@@ -957,11 +962,10 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         writerFunctions.insert( std::make_pair("BuildEffect", (void*)&QtWriter::BuildEffect) );
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
-        Natron::Plugin* plugin = new Natron::Plugin( writerPlugin,writer->getPluginID().c_str(),writer->getPluginLabel().c_str(),
-                                                     "","",grouping,"",(QMutex*)NULL,writer->getMajorVersion(),writer->getMinorVersion(),
-                                                    false,true);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
+        
+        registerPlugin(grouping, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", "", "", false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion());
+        
+
 
         std::vector<std::string> extensions = writer->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
@@ -989,24 +993,20 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         viewerFunctions.insert( std::make_pair("BuildEffect", (void*)&ViewerInstance::BuildEffect) );
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
-        Natron::Plugin* plugin = new Natron::Plugin( viewerPlugin,viewer->getPluginID().c_str(),viewer->getPluginLabel().c_str(),
-                                                     NATRON_IMAGES_PATH "viewer_icon.png","",grouping,"",(QMutex*)NULL,
-                                                    viewer->getMajorVersion(),viewer->getMinorVersion(),
-                                                    false,false);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
+        
+        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion());
+
     }
 
     {
         QString label(NATRON_BACKDROP_NODE_NAME);
         QStringList backdropGrouping(PLUGIN_GROUP_OTHER);
-        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,"","",backdropGrouping,"",NULL,1,0,false,false);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
+        
+        registerPlugin(backdropGrouping, label, label,NATRON_IMAGES_PATH "backdrop_icon.png", "", "", false, false, NULL, false, 1, 0);
     }
 
     ///Also load the plug-ins of the AppManager
-    AppManager::loadBuiltinNodePlugins(plugins, readersMap, writersMap);
+    AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 } // loadBuiltinNodePlugins
 
 AppInstance*
@@ -1093,9 +1093,6 @@ GuiApplicationManager::initializeQApp(int &argc,
     if (settings.contains("font")) {
         QString fontChoiceEntry = settings.value("font").toString();
         
-        //fontChoiceEntry == Muli
-        //font_i == 1 == NATRON_FONT_ALT
-        //font_i == 2 == System font
         if (fontChoiceEntry == "System fonts...") {
             
             if (settings.contains("systemFont")) {
@@ -1396,12 +1393,11 @@ GuiApplicationManager::loadShortcuts()
                 //If this is a node shortcut, notify the Plugin object that it has a shortcut.
                 if ( (kAction->currentShortcut != (Qt::Key)0) &&
                      it->first.startsWith(kShortcutGroupNodes) ) {
-                    const std::vector<Natron::Plugin*> & allPlugins = getPluginsList();
-                    for (U32 i = 0; i < allPlugins.size(); ++i) {
-                        if (allPlugins[i]->getPluginID() == it2->first) {
-                            allPlugins[i]->setHasShortcut(true);
-                            break;
-                        }
+                    const PluginsMap & allPlugins = getPluginsList();
+                    PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
+                    if (found != allPlugins.end()) {
+                        assert(found->second.size() > 0);
+                        (*found->second.rbegin())->setHasShortcut(true);
                     }
                 }
             }
@@ -1566,6 +1562,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAll, kShortcutDescActionGraphSelectAll, Qt::ControlModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAllVisible, kShortcutDescActionGraphSelectAllVisible, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints, kShortcutDescActionGraphEnableHints, Qt::NoModifier, Qt::Key_H);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs, kShortcutDescActionGraphAutoHideInputs, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSwitchInputs, kShortcutDescActionGraphSwitchInputs, Qt::ShiftModifier, Qt::Key_X);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCopy, kShortcutDescActionGraphCopy, Qt::ControlModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste, kShortcutDescActionGraphPaste, Qt::ControlModifier, Qt::Key_V);
@@ -1834,12 +1831,11 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
         if ( it->first.startsWith(kShortcutGroupNodes) ) {
             for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 if (it2->second == action) {
-                    const std::vector<Natron::Plugin*> & allPlugins = getPluginsList();
-                    for (U32 i = 0; i < allPlugins.size(); ++i) {
-                        if (allPlugins[i]->getPluginID() == it2->first) {
-                            allPlugins[i]->setHasShortcut(action->currentShortcut != (Qt::Key)0);
-                            break;
-                        }
+                    const PluginsMap & allPlugins = getPluginsList();
+                    PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
+                    if (found != allPlugins.end()) {
+                        assert(found->second.size() > 0);
+                        (*found->second.rbegin())->setHasShortcut(action->currentShortcut != (Qt::Key)0);
                     }
                     break;
                 }

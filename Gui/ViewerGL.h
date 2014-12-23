@@ -127,6 +127,7 @@ public:
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & imageRoD,const double par,unsigned int mipMapLevel) OVERRIDE FINAL;
+    virtual RectI getExactImageRectangleDisplayed(const RectD & rod,const double par,unsigned int mipMapLevel) OVERRIDE FINAL;
     virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation

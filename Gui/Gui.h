@@ -447,7 +447,10 @@ public:
     
     void redrawAllViewers();
     
+    void toggleAutoHideGraphInputs();
+
 Q_SIGNALS:
+
 
     void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
     
