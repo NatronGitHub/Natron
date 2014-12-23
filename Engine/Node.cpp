@@ -3783,6 +3783,7 @@ Node::declarePythonFields()
         }
     }
 }
+
 bool
 Node::shouldCacheOutput() const
 {

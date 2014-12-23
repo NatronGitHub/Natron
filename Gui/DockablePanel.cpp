@@ -1869,7 +1869,11 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 void
 DockablePanel::scanForNewKnobs()
 {
-     _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL);
+    _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL);
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (isNodePanel) {
+        isNodePanel->getNode()->getNode()->declarePythonFields();
+    }
 }
 
 VerticalColorBar::VerticalColorBar(QWidget* parent)

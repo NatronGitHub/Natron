@@ -769,6 +769,11 @@ public:
     
     void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
+    /**
+     * @brief Declares to Python all parameters as attribute of the variable representing this node.
+     **/
+    void declarePythonFields();
+
 public Q_SLOTS:
 
     void setKnobsAge(U64 newAge);
@@ -878,7 +883,6 @@ protected:
 
 private:
     
-    void declarePythonFields();
     
     std::string makeInfoForInput(int inputNumber) const;
 
