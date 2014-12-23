@@ -336,9 +336,7 @@ KnobHelper::KnobHelper(KnobHolder* holder,
 
 KnobHelper::~KnobHelper()
 {
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_deleted();
-    }
+    
 }
 
 void
@@ -368,8 +366,8 @@ KnobHelper::deleteKnob()
             _imp->holder->removeDynamicKnob(it->get());
         }
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_deleted();
+    if (_imp->gui) {
+        _imp->gui->onKnobDeletion();
     }
 }
 

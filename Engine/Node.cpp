@@ -820,8 +820,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             knob->setAsUserKnob();
             if (group) {
                 group->addKnob(knob);
-            }
-            if (page) {
+            } else if (page) {
                 page->addKnob(knob);
             }
             knob->setIsPersistant(isRegular->isPersistent());

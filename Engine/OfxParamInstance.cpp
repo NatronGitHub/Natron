@@ -2370,18 +2370,6 @@ OfxPageInstance::setSecret()
     _pageKnob->setAllDimensionsEnabled( getSecret() );
 }
 
-void
-OfxPageInstance::populatePage()
-{
-    const std::map<int,OFX::Host::Param::Instance*> & children = getChildren();
-
-    for (std::map<int, OFX::Host::Param::Instance*>::const_iterator it = children.begin(); it != children.end(); ++it) {
-        OfxParamToKnob* param = dynamic_cast<OfxParamToKnob*>(it->second);
-        assert(param);
-        _pageKnob->addKnob( param->getKnob() );
-    }
-}
-
 boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
 {
     return _pageKnob;

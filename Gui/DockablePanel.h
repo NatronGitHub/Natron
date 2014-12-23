@@ -195,7 +195,7 @@ public:
     void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
     
     int getPagesCount() const;
-    
+        
 public Q_SLOTS:
 
     /*Internal slot, not meant to be called externally.*/
@@ -212,9 +212,6 @@ public Q_SLOTS:
     
     /*initializes the knobs GUI and also the roto context if any*/
     void initializeKnobs();
-
-    /*Internal slot, not meant to be called externally.*/
-    void onKnobDeletion();
 
     /*Internal slot, not meant to be called externally.*/
     void onUndoClicked();
@@ -289,7 +286,7 @@ protected:
 private:
 
 
-    void initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> > & knobs);
+    void initializeKnobsInternal();
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
         Q_EMIT selected();

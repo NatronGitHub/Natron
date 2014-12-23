@@ -247,8 +247,7 @@ struct DockablePanelPrivate
 
 
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
-                              QWidget* lastRowWidget,
-                              bool onlyTopLevelKnobs);
+                              QWidget* lastRowWidget);
 
     KnobGui* createKnobGui(const boost::shared_ptr<KnobI> &knob);
 
@@ -573,8 +572,6 @@ DockablePanel::~DockablePanel()
     ///normally the onKnobDeletion() function should have cleared them
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
-            KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
-            QObject::disconnect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),this,SLOT( onKnobDeletion() ) );
             it->first->setKnobGuiPointer(0);
             it->second->deleteLater();
         }
@@ -741,7 +738,6 @@ DockablePanel::onLineEditNameEditingFinished()
 }
 
 static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& knobs,
-                                bool onlyTopLevel,
                                 const boost::shared_ptr<KnobI>& ref,
                                 std::vector<boost::shared_ptr<KnobI> >& knobsOnSameLine)
 {
@@ -753,13 +749,19 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
         }
     }
     assert(idx != -1);
-#pragma message WARN("Fix this function")
+
     ///find all knobs backward that are on the same line.
     int k = idx - 1;
+    boost::shared_ptr<KnobI> parent = ref->getParentKnob();
+    
     while ( k >= 0 && knobs[k]->isNewLineTurnedOff()) {
-        if (!dynamic_cast<Page_Knob*>(knobs[k].get()) &&
-            !dynamic_cast<Group_Knob*>(knobs[k].get())) {
-            if ((onlyTopLevel && !knobs[k]->getParentKnob()) || !onlyTopLevel) {
+        if (parent) {
+            assert(knobs[k]->getParentKnob() == parent);
+            knobsOnSameLine.push_back(knobs[k]);
+        } else {
+            if (!knobs[k]->getParentKnob() &&
+                !dynamic_cast<Page_Knob*>(knobs[k].get()) &&
+                !dynamic_cast<Group_Knob*>(knobs[k].get())) {
                 knobsOnSameLine.push_back(knobs[k]);
             }
         }
@@ -769,9 +771,13 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
     ///find all knobs forward that are on the same line.
     k = idx;
     while ( k < (int)(knobs.size() - 1) && knobs[k]->isNewLineTurnedOff()) {
-        if (!dynamic_cast<Page_Knob*>(knobs[k + 1].get()) &&
-            !dynamic_cast<Group_Knob*>(knobs[k + 1].get())) {
-            if ((onlyTopLevel && !knobs[k + 1]->getParentKnob()) || !onlyTopLevel) {
+        if (parent) {
+            assert(knobs[k + 1]->getParentKnob() == parent);
+            knobsOnSameLine.push_back(knobs[k + 1]);
+        } else {
+            if (!knobs[k + 1]->getParentKnob() &&
+                !dynamic_cast<Page_Knob*>(knobs[k + 1].get()) &&
+                !dynamic_cast<Group_Knob*>(knobs[k + 1].get())) {
                 knobsOnSameLine.push_back(knobs[k + 1]);
             }
         }
@@ -782,80 +788,80 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
 
 void
 DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
-                                           QWidget* lastRowWidget,
-                                           bool onlyTopLevelKnobs)
+                                           QWidget* lastRowWidget)
 {
     for (U32 i = 0; i < knobs.size(); ++i) {
-        ///we create only top level knobs, they will in-turn create their children if they have any
-        if ( (!onlyTopLevelKnobs) || ( onlyTopLevelKnobs && !knobs[i]->getParentKnob() ) ) {
-            bool makeNewLine = true;
-            Group_Knob *isGroup = dynamic_cast<Group_Knob*>(knobs[i].get());
-
-            ////The knob  will have a vector of all other knobs on the same line.
-            std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
-            
-            
-            //If the knob is dynamic (i:e created after the initial creation of knobs)
-            //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
-            boost::shared_ptr<KnobI> parentKnob = knobs[i]->getParentKnob();
-            Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(parentKnob.get());
-            if (knobs[i]->isDynamicallyCreated() && isParentGroup) {
-                Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(knobs[i]->getParentKnob(), false, lastRowWidget));
-                assert(parentGui);
-                const std::list<KnobGui*>& children = parentGui->getChildren();
-                if (!children.empty()) {
-                    if (children.back()->getKnob()->isNewLineTurnedOff()) {
-                        makeNewLine = false;
-                        lastRowWidget = children.back()->getFieldContainer();
-                        
-                        std::list<KnobGui*>::const_reverse_iterator it = children.rbegin();
-                        ++it;
-                        for (; it != children.rend(); ++it) {
-                            if ((*it)->getKnob()->isNewLineTurnedOff()) {
-                                if (!dynamic_cast<Page_Knob*>((*it)->getKnob().get()) &&
-                                    !dynamic_cast<Group_Knob*>((*it)->getKnob().get())) {
-                                    knobsOnSameLine.push_back((*it)->getKnob());
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                }
+        
+        bool makeNewLine = true;
+        Group_Knob *isGroup = dynamic_cast<Group_Knob*>(knobs[i].get());
+        Page_Knob *isPage = dynamic_cast<Page_Knob*>(knobs[i].get());
+        
+        ////The knob  will have a vector of all other knobs on the same line.
+        std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
+        
+        
+        //If the knob is dynamic (i:e created after the initial creation of knobs)
+        //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
+        boost::shared_ptr<KnobI> parentKnob = knobs[i]->getParentKnob();
+        Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(parentKnob.get());
+//        if (knobs[i]->isDynamicallyCreated() && isParentGroup) {
+//            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(knobs[i]->getParentKnob(), false, lastRowWidget));
+//            assert(parentGui);
+//            const std::list<KnobGui*>& children = parentGui->getChildren();
+//            if (!children.empty()) {
+//                if (children.back()->getKnob()->isNewLineTurnedOff()) {
+//                    makeNewLine = false;
+//                    lastRowWidget = children.back()->getFieldContainer();
+//                    
+//                    std::list<KnobGui*>::const_reverse_iterator it = children.rbegin();
+//                    ++it;
+//                    for (; it != children.rend(); ++it) {
+//                        if ((*it)->getKnob()->isNewLineTurnedOff()) {
+//                            if (!dynamic_cast<Page_Knob*>((*it)->getKnob().get()) &&
+//                                !dynamic_cast<Group_Knob*>((*it)->getKnob().get())) {
+//                                knobsOnSameLine.push_back((*it)->getKnob());
+//                            }
+//                        } else {
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+        
+        
+        if (!isPage && !isGroup) {
+            if ( (i > 0) && knobs[i - 1]->isNewLineTurnedOff() ) {
+                makeNewLine = false;
             }
             
-
-            if (!isGroup && (!knobs[i]->isDynamicallyCreated() || !isParentGroup)) { //< a knob with children (i.e a group) cannot have children on the same line
-                if ( (i > 0) && knobs[i - 1]->isNewLineTurnedOff() ) {
-                    makeNewLine = false;
-                }
-                
-                Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parentKnob.get());
-                if (isParentPage) {
-                    const std::vector<boost::shared_ptr<KnobI> > & children = isParentPage->getChildren();
-                    findKnobsOnSameLine(children, false, knobs[i], knobsOnSameLine);
-                } else if (isParentGroup) {
-                    const std::vector<boost::shared_ptr<KnobI> > & children = isParentGroup->getChildren();
-                    findKnobsOnSameLine(children, false, knobs[i], knobsOnSameLine);
-                } else {
-                    findKnobsOnSameLine(knobs, true, knobs[i], knobsOnSameLine);
-                }
-                
+            Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+            if (isParentPage) {
+                const std::vector<boost::shared_ptr<KnobI> > & children = isParentPage->getChildren();
+                findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
+            } else if (isParentGroup) {
+                const std::vector<boost::shared_ptr<KnobI> > & children = isParentGroup->getChildren();
+                findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
+            } else {
+                findKnobsOnSameLine(knobs, knobs[i], knobsOnSameLine);
             }
-
-            KnobGui* newGui = findKnobGuiOrCreate(knobs[i],makeNewLine,lastRowWidget,knobsOnSameLine);
-            ///childrens cannot be on the same row than their parent
-            if (!isGroup && newGui) {
-                lastRowWidget = newGui->getFieldContainer();
-            }
+            
+        }
+        
+        KnobGui* newGui = findKnobGuiOrCreate(knobs[i],makeNewLine,lastRowWidget,knobsOnSameLine);
+        ///childrens cannot be on the same row than their parent
+        if (!isGroup && newGui) {
+            lastRowWidget = newGui->getFieldContainer();
         }
     }
+    
 }
 
 void
-DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> > & knobs)
+DockablePanel::initializeKnobsInternal()
 {
-    _imp->initializeKnobVector(knobs,NULL, false);
+    const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->_holder->getKnobs();
+    _imp->initializeKnobVector(knobs, NULL);
 
     ///add all knobs left  to the default page
 
@@ -908,11 +914,7 @@ DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<Kno
 void
 DockablePanel::initializeKnobs()
 {
-    /// function called to create the gui for each knob. It can be called several times in a row
-    /// without any damage
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->_holder->getKnobs();
-
-    initializeKnobsInternal(knobs);
+    initializeKnobsInternal();
 }
 
 KnobGui*
@@ -936,11 +938,6 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
         return found->second;
     }
 
-    KnobHelper* helper = dynamic_cast<KnobHelper*>( knob.get() );
-    assert(helper);
-    if (helper) {
-        QObject::connect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),_publicInterface,SLOT( onKnobDeletion() ) );
-    }
     KnobGui* ret =  appPTR->createGuiForKnob(knob,_publicInterface);
     if (!ret) {
         qDebug() << "Failed to create Knob GUI";
@@ -1177,9 +1174,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
     ///if the knob is a group, create all the children
     if (isGroup) {
-        initializeKnobVector(isGroup->getChildren(),lastRowWidget, false);
+        initializeKnobVector(isGroup->getChildren(), lastRowWidget);
     } else if (isPage) {
-        initializeKnobVector(isPage->getChildren(),lastRowWidget, false);
+        initializeKnobVector(isPage->getChildren(), lastRowWidget);
     }
 
     return ret;
@@ -1231,7 +1228,7 @@ RightClickableWidget::enterEvent(QEvent* e)
 }
 
 PageMap::iterator
-DockablePanelPrivate::addPage(Page_Knob* page,const QString & name)
+DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
 {
     PageMap::iterator found = _pages.find(name);
 
@@ -1239,11 +1236,6 @@ DockablePanelPrivate::addPage(Page_Knob* page,const QString & name)
         return found;
     }
     
-    if (page) {
-        QObject::connect( page->getSignalSlotHandler().get(),SIGNAL( deleted() ),_publicInterface,SLOT( onKnobDeletion() ) );
-    }
-
-
     QWidget* newTab;
     QWidget* layoutContainer;
     if (_useScrollAreasForTabs) {
@@ -1508,12 +1500,24 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 _imp->_tabWidget->removeTab(index);
             }
             found->second.tab->deleteLater();
+            found->second.currentRow = 0;
             _imp->_pages.erase(found);
+            
+            const std::vector<boost::shared_ptr<KnobI> >& children = isPage->getChildren();
+            for (U32 i = 0; i < children.size(); ++i) {
+                deleteKnobGui(children[i]);
+            }
         }
         
     } else {
         
         Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
+        if (isGrp) {
+            const std::vector<boost::shared_ptr<KnobI> >& children = isGrp->getChildren();
+            for (U32 i = 0; i < children.size(); ++i) {
+                deleteKnobGui(children[i]);
+            }
+        }
         if (isGrp && isGrp->isTab()) {
             //find parent page
             KnobI* parentKnobTmp = isGrp;
@@ -1552,15 +1556,6 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 _imp->_knobs.erase(it);
             }
         }
-    }
-}
-
-void
-DockablePanel::onKnobDeletion()
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-    if (handler) {
-        deleteKnobGui(handler->getKnob());
     }
 }
 
@@ -1842,7 +1837,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 void
 DockablePanel::scanForNewKnobs()
 {
-     _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL, false);
+     _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL);
 }
 
 VerticalColorBar::VerticalColorBar(QWidget* parent)
@@ -2229,26 +2224,32 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->buttonsLayout = new QVBoxLayout(_imp->buttonsContainer);
     
     _imp->addButton = new Button(tr("Add"),_imp->buttonsContainer);
+    _imp->addButton->setToolTip(Qt::convertFromPlainText(tr("Add a new parameter, group or page")));
     QObject::connect(_imp->addButton,SIGNAL(clicked(bool)),this,SLOT(onAddClicked()));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     
     _imp->editButton = new Button(tr("Edit"),_imp->buttonsContainer);
+    _imp->editButton->setToolTip(Qt::convertFromPlainText(tr("Edit the selected parameter")));
     QObject::connect(_imp->editButton,SIGNAL(clicked(bool)),this,SLOT(onEditClicked()));
     _imp->buttonsLayout->addWidget(_imp->editButton);
     
     _imp->removeButton = new Button(tr("Delete"),_imp->buttonsContainer);
+    _imp->removeButton->setToolTip(Qt::convertFromPlainText(tr("Delete the selected parameter")));
     QObject::connect(_imp->removeButton,SIGNAL(clicked(bool)),this,SLOT(onDeleteClicked()));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     
     _imp->upButton = new Button(tr("Up"),_imp->buttonsContainer);
+    _imp->upButton->setToolTip(Qt::convertFromPlainText(tr("Move the selected parameter one level up in the layout")));
     QObject::connect(_imp->upButton,SIGNAL(clicked(bool)),this,SLOT(onUpClicked()));
     _imp->buttonsLayout->addWidget(_imp->upButton);
     
     _imp->downButton = new Button(tr("Down"),_imp->buttonsContainer);
+    _imp->downButton->setToolTip(Qt::convertFromPlainText(tr("Move the selected parameter one level down in the layout")));
     QObject::connect(_imp->downButton,SIGNAL(clicked(bool)),this,SLOT(onDownClicked()));
     _imp->buttonsLayout->addWidget(_imp->downButton);
     
     _imp->closeButton = new Button(tr("Close"),_imp->buttonsContainer);
+    _imp->closeButton->setToolTip(Qt::convertFromPlainText(tr("Close this dialog")));
     QObject::connect(_imp->closeButton,SIGNAL(clicked(bool)),this,SLOT(onCloseClicked()));
     _imp->buttonsLayout->addWidget(_imp->closeButton);
     
@@ -2335,9 +2336,9 @@ ManageUserParamsDialogPrivate::rebuildUserPages()
     panel->getUserPages(userPages);
     
     boost::shared_ptr<Page_Knob> page = getUserPageKnob();
-    
+    userPages.push_back(page.get());
     for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
-        std::vector<boost::shared_ptr<KnobI> > children = page->getChildren();
+        std::vector<boost::shared_ptr<KnobI> > children = (*it)->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
             panel->deleteKnobGui(*it2);
         }
@@ -2862,7 +2863,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->nameLabel = new QLabel(tr("Script name:"),this);
         _imp->nameLabel->setFont(font);
         _imp->nameLineEdit = new LineEdit(firstRowContainer);
-        _imp->nameLineEdit->setToolTip(tr("The name of the parameter as it will be used in Python scripts"));
+        _imp->nameLineEdit->setToolTip(Qt::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts")));
         
         if (knob) {
             _imp->nameLineEdit->setText(knob->getName().c_str());
@@ -2881,7 +2882,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->labelLabel = new QLabel(tr("Label:"),secondRowContainer);
         _imp->labelLabel->setFont(font);
         _imp->labelLineEdit = new LineEdit(secondRowContainer);
-        _imp->labelLineEdit->setToolTip(tr("The label of the parameter as displayed on the graphical user interface"));
+        _imp->labelLineEdit->setToolTip(Qt::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface")));
         if (knob) {
             _imp->labelLineEdit->setText(knob->getDescription().c_str());
         }
@@ -2890,7 +2891,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->hideLabel->setFont(font);
         secondRowLayout->addWidget(_imp->hideLabel);
         _imp->hideBox = new QCheckBox(secondRowContainer);
-        _imp->hideBox->setToolTip(tr("If checked the parameter will not be visible on the user interface"));
+        _imp->hideBox->setToolTip(Qt::convertFromPlainText(tr("If checked the parameter will not be visible on the user interface")));
         if (knob) {
             _imp->hideBox->setChecked(knob->getIsSecret());
         }
@@ -2918,7 +2919,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             _imp->typeLabel = new QLabel(tr("Type:"),thirdRowContainer);
             _imp->typeLabel->setFont(font);
             _imp->typeChoice = new ComboBox(thirdRowContainer);
-            _imp->typeChoice->setToolTip(tr("The data type of the parameter"));
+            _imp->typeChoice->setToolTip(Qt::convertFromPlainText(tr("The data type of the parameter")));
             _imp->typeChoice->addItem("Integer");
             _imp->typeChoice->addItem("Integer 2D");
             _imp->typeChoice->addItem("Integer 3D");
@@ -2940,23 +2941,23 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             
             thirdRowLayout->addWidget(_imp->typeChoice);
         }
-        _imp->animatesLabel = new QLabel(tr("Animates:"),thirdRowContainer);
+        _imp->animatesLabel = new QLabel(Qt::convertFromPlainText(tr("Animates:")),thirdRowContainer);
         _imp->animatesLabel->setFont(font);
         
         if (!knob) {
             thirdRowLayout->addWidget(_imp->animatesLabel);
         }
         _imp->animatesCheckbox = new QCheckBox(thirdRowContainer);
-        _imp->animatesCheckbox->setToolTip(tr("When checked this parameter will be able to animate with keyframes"));
+        _imp->animatesCheckbox->setToolTip(Qt::convertFromPlainText(tr("When checked this parameter will be able to animate with keyframes")));
         if (knob) {
             _imp->animatesCheckbox->setChecked(knob->isAnimationEnabled());
         }
         thirdRowLayout->addWidget(_imp->animatesCheckbox);
-        _imp->evaluatesLabel = new QLabel(tr("Render on change:"),thirdRowContainer);
+        _imp->evaluatesLabel = new QLabel(Qt::convertFromPlainText(tr("Render on change:")),thirdRowContainer);
         _imp->evaluatesLabel->setFont(font);
         thirdRowLayout->addWidget(_imp->evaluatesLabel);
         _imp->evaluatesOnChange = new QCheckBox(thirdRowContainer);
-        _imp->evaluatesOnChange->setToolTip(tr("If checked, when the value of this parameter changes a new render will be triggered"));
+        _imp->evaluatesOnChange->setToolTip(Qt::convertFromPlainText(tr("If checked, when the value of this parameter changes a new render will be triggered")));
         if (knob) {
             _imp->evaluatesOnChange->setChecked(knob->getEvaluateOnChange());
         }
@@ -2973,7 +2974,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->tooltipLabel = new QLabel(tr("Tooltip:"),this);
         _imp->tooltipLabel->setFont(font);
         _imp->tooltipArea = new QTextEdit(this);
-        _imp->tooltipArea->setToolTip(tr("The help tooltip that will appear when hovering the parameter with the mouse"));
+        _imp->tooltipArea->setToolTip(Qt::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse")));
         _imp->mainLayout->addRow(_imp->tooltipLabel,_imp->tooltipArea);
         if (knob) {
             _imp->tooltipArea->setPlainText(knob->getHintToolTip().c_str());
@@ -3016,7 +3017,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->multiLineLabel = new QLabel(tr("Multi-line:"),optContainer);
         _imp->multiLineLabel->setFont(font);
         _imp->multiLine = new QCheckBox(optContainer);
-        _imp->multiLine->setToolTip(tr("Should this text be multi-line or single-line ?"));
+        _imp->multiLine->setToolTip(Qt::convertFromPlainText(tr("Should this text be multi-line or single-line ?")));
         optLayout->addWidget(_imp->multiLine);
         _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
         
@@ -3057,7 +3058,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->sequenceDialogLabel = new QLabel(tr("Use sequence dialog:"),optContainer);
         _imp->sequenceDialogLabel->setFont(font);
         _imp->sequenceDialog = new QCheckBox(optContainer);
-        _imp->sequenceDialog->setToolTip(tr("If checked the file dialog for this parameter will be able to decode image sequences"));
+        _imp->sequenceDialog->setToolTip(Qt::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences")));
         optLayout->addWidget(_imp->sequenceDialog);
         _imp->mainLayout->addRow(_imp->sequenceDialogLabel, optContainer);
         
@@ -3078,10 +3079,10 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->multiPathLabel = new QLabel(tr("Multiple paths:"),optContainer);
+        _imp->multiPathLabel = new QLabel(Qt::convertFromPlainText(tr("Multiple paths:")),optContainer);
         _imp->multiPathLabel->setFont(font);
         _imp->multiPath = new QCheckBox(optContainer);
-        _imp->multiPath->setToolTip(tr("If checked the parameter will be a table where each entry points to a different path"));
+        _imp->multiPath->setToolTip(Qt::convertFromPlainText(tr("If checked the parameter will be a table where each entry points to a different path")));
         optLayout->addWidget(_imp->multiPath);
         _imp->mainLayout->addRow(_imp->multiPathLabel, optContainer);
         
@@ -3100,7 +3101,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->groupAsTabLabel = new QLabel(tr("Group as tab:"),optContainer);
         _imp->groupAsTabLabel->setFont(font);
         _imp->groupAsTab = new QCheckBox(optContainer);
-        _imp->groupAsTab->setToolTip(tr("If checked the group will be a tab instead"));
+        _imp->groupAsTab->setToolTip(Qt::convertFromPlainText(tr("If checked the group will be a tab instead")));
         optLayout->addWidget(_imp->groupAsTab);
         _imp->mainLayout->addRow(_imp->groupAsTabLabel, optContainer);
         
@@ -3120,13 +3121,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->minLabel->setFont(font);
         
         _imp->minBox = new SpinBox(minMaxContainer,SpinBox::DOUBLE_SPINBOX);
-        _imp->minBox->setToolTip(tr("Set the minimum value for the parameter"));
+        _imp->minBox->setToolTip(Qt::convertFromPlainText(tr("Set the minimum value for the parameter")));
         minMaxLayout->addWidget(_imp->minBox);
         
         _imp->maxLabel = new QLabel(tr("Maximum:"),minMaxContainer);
         _imp->maxLabel->setFont(font);
         _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::DOUBLE_SPINBOX);
-        _imp->maxBox->setToolTip(tr("Set the maximum value for the parameter"));
+        _imp->maxBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum value for the parameter")));
         minMaxLayout->addWidget(_imp->maxLabel);
         minMaxLayout->addWidget(_imp->maxBox);
         minMaxLayout->addStretch();
@@ -3180,7 +3181,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->parentGroupLabel->setFont(font);
         _imp->parentGroup = new ComboBox(optContainer);
         
-        _imp->parentGroup->setToolTip(tr("The name of the group under which this parameter will appear"));
+        _imp->parentGroup->setToolTip(Qt::convertFromPlainText(tr("The name of the group under which this parameter will appear")));
         optLayout->addWidget(_imp->parentGroup);
         
         _imp->mainLayout->addRow(_imp->parentGroupLabel, optContainer);
@@ -3208,7 +3209,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         for (std::list<Page_Knob*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
             _imp->parentPage->addItem((*it)->getName().c_str());
         }
-        _imp->parentPage->setToolTip(tr("The tab  under which this parameter will appear"));
+        _imp->parentPage->setToolTip(Qt::convertFromPlainText(tr("The tab  under which this parameter will appear")));
         optLayout->addWidget(_imp->parentPage);
         if (knob) {
             ////find in which page the knob should be
@@ -3609,12 +3610,14 @@ AddKnobDialogPrivate::createKnobFromSelection(int index)
     knob->setSecret(hideBox->isChecked());
     knob->setName(nameLineEdit->text().toStdString());
     knob->setHintToolTip(tooltipArea->toPlainText().toStdString());
+    bool addedInGrp = false;
     if (parentGroup) {
         std::string selectedItem = parentGroup->getCurrentIndexText().toStdString();
         if (selectedItem != "-") {
             for (std::list<Group_Knob*>::iterator it = userGroups.begin(); it != userGroups.end(); ++it) {
                 if ((*it)->getName() == selectedItem) {
                     (*it)->addKnob(knob);
+                    addedInGrp = true;
                     break;
                 }
             }
@@ -3622,7 +3625,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index)
     }
     
     
-    if (index != 16 && parentPage) {
+    if (index != 16 && parentPage && !addedInGrp) {
         std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
         if (selectedItem == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
             boost::shared_ptr<Page_Knob> userPage = panel->getUserPageKnob();
@@ -3694,7 +3697,7 @@ AddKnobDialog::onOkClicked()
         }
         _imp->createKnobFromSelection(index);
         assert(_imp->knob);
-        if (oldParentPage) {
+        if (oldParentPage && !_imp->knob->getParentKnob()) {
             oldParentPage->addKnob(_imp->knob);
         }
         if (_imp->originalKnobSerialization) {

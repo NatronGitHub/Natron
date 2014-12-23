@@ -880,6 +880,18 @@ Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     
     if ( found == _children.end() ) {
+        
+        boost::shared_ptr<KnobI> parent = k->getParentKnob();
+        if (parent) {
+            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(parent.get());
+            Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
+            if (isGrp) {
+                isGrp->removeKnob(k.get());
+            } else if (isPage) {
+                isPage->removeKnob(k.get());
+            }
+        }
+        
         _children.push_back(k);
         boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
         assert(thisSharedPtr);

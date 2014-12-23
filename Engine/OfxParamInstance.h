@@ -585,9 +585,6 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-    ///Must be called after all OfxParamInstances have been created
-    void populatePage();
-
 private:
     boost::shared_ptr<Page_Knob> _pageKnob;
 };

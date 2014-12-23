@@ -66,11 +66,6 @@ public:
         Q_EMIT animationLevelChanged(dim,level);
     }
     
-    void s_deleted()
-    {
-        Q_EMIT deleted();
-    }
-    
     void s_valueChanged(int dimension,
                         int reason)
     {
@@ -223,9 +218,6 @@ Q_SIGNALS:
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
     void animationLevelChanged(int,int);
-    
-    ///emitted when the destructor is entered
-    void deleted();
     
     ///Emitted when the value is changed with a reason different than eValueChangedReasonUserEdited
     ///This can happen as the result of a setValue() call from the plug-in or by
