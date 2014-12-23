@@ -68,7 +68,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onTextEdited() ;
     
@@ -139,7 +139,7 @@ public:
     
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onTextEdited() ;
 
@@ -201,7 +201,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
 
 

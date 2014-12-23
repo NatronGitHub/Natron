@@ -90,11 +90,11 @@ public:
     void centerOnIt();
 
     void setVisibleDetails(bool visible);
-signals:
+Q_SIGNALS:
 
     void positionChanged();
 
-public slots:
+public Q_SLOTS:
 
     void onNameChanged(const QString & name);
     void onColorChanged(const QColor & color);

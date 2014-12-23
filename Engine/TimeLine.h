@@ -96,7 +96,7 @@ public:
 
     void getKeyframes(std::list<SequenceTime>* keys) const;
 
-public slots:
+public Q_SLOTS:
     void onFrameChanged(SequenceTime frame);
 
     void onBoundariesChanged(SequenceTime left,SequenceTime right);
@@ -105,7 +105,7 @@ public slots:
 
     void goToNextKeyframe();
 
-signals:
+Q_SIGNALS:
 
     void frameRangeChanged(SequenceTime,SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime,int reason);

@@ -487,7 +487,7 @@ CurveGui::setVisibleAndRefresh(bool visible)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _visible = visible;
-    emit curveChanged();
+    Q_EMIT curveChanged();
 }
 
 bool

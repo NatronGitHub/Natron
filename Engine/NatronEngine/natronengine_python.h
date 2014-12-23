@@ -73,12 +73,6 @@
 #define SBK_PARAMETRICPARAM_IDX                                      35
 #define SBK_BUTTONPARAM_IDX                                          3
 #define SBK_ANIMATEDPARAM_IDX                                        0
-#define SBK_STRINGPARAMBASE_IDX                                      39
-#define SBK_PATHPARAM_IDX                                            36
-#define SBK_OUTPUTFILEPARAM_IDX                                      33
-#define SBK_FILEPARAM_IDX                                            13
-#define SBK_STRINGPARAM_IDX                                          38
-#define SBK_BOOLEANPARAM_IDX                                         2
 #define SBK_CHOICEPARAM_IDX                                          4
 #define SBK_COLORPARAM_IDX                                           5
 #define SBK_DOUBLEPARAM_IDX                                          11
@@ -87,6 +81,12 @@
 #define SBK_INTPARAM_IDX                                             18
 #define SBK_INT2DPARAM_IDX                                           14
 #define SBK_INT3DPARAM_IDX                                           16
+#define SBK_STRINGPARAMBASE_IDX                                      39
+#define SBK_PATHPARAM_IDX                                            36
+#define SBK_OUTPUTFILEPARAM_IDX                                      33
+#define SBK_FILEPARAM_IDX                                            13
+#define SBK_STRINGPARAM_IDX                                          38
+#define SBK_BOOLEANPARAM_IDX                                         2
 #define SBK_EFFECT_IDX                                               12
 #define SBK_APP_IDX                                                  1
 #define SBK_NatronEngine_IDX_COUNT                                   40
@@ -136,12 +136,6 @@ template<> inline PyTypeObject* SbkType< ::Param >() { return reinterpret_cast<P
 template<> inline PyTypeObject* SbkType< ::ParametricParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ButtonParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::AnimatedParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX]); }
-template<> inline PyTypeObject* SbkType< ::StringParamBase >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX]); }
-template<> inline PyTypeObject* SbkType< ::PathParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PATHPARAM_IDX]); }
-template<> inline PyTypeObject* SbkType< ::OutputFileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX]); }
-template<> inline PyTypeObject* SbkType< ::FileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_FILEPARAM_IDX]); }
-template<> inline PyTypeObject* SbkType< ::StringParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX]); }
-template<> inline PyTypeObject* SbkType< ::BooleanParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ChoiceParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ColorParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_COLORPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::DoubleParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX]); }
@@ -150,6 +144,12 @@ template<> inline PyTypeObject* SbkType< ::Double3DParam >() { return reinterpre
 template<> inline PyTypeObject* SbkType< ::IntParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INTPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Int2DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Int3DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::StringParamBase >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX]); }
+template<> inline PyTypeObject* SbkType< ::PathParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PATHPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::OutputFileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::FileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_FILEPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::StringParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::BooleanParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Effect >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_EFFECT_IDX]); }
 template<> inline PyTypeObject* SbkType< ::App >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_APP_IDX]); }
 

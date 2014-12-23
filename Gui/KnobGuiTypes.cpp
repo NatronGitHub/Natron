@@ -1892,7 +1892,7 @@ Color_KnobGui::expandAllDimensions()
             _aBox->show();
         }
     }
-    emit dimensionSwitchToggled(true);
+    Q_EMIT dimensionSwitchToggled(true);
 }
 
 void
@@ -1913,7 +1913,7 @@ Color_KnobGui::foldAllDimensions()
             _aBox->hide();
         }
     }
-    emit dimensionSwitchToggled(false);
+    Q_EMIT dimensionSwitchToggled(false);
 }
 
 void
@@ -2391,7 +2391,7 @@ void
 ColorPickerLabel::mousePressEvent(QMouseEvent*)
 {
     _pickingEnabled = !_pickingEnabled;
-    emit pickingEnabled(_pickingEnabled);
+    Q_EMIT pickingEnabled(_pickingEnabled);
     setColor(_currentColor); //< refresh the icon
 }
 
@@ -2536,7 +2536,7 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 {
     if (_hasChanged) {
         _hasChanged = false;
-        emit editingFinished();
+        Q_EMIT editingFinished();
     }
     QTextEdit::focusOutEvent(e);
 }
@@ -2547,7 +2547,7 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
     if (e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
-            emit editingFinished();
+            Q_EMIT editingFinished();
         }
     }
     _hasChanged = true;

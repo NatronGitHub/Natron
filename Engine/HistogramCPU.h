@@ -57,7 +57,7 @@ public:
 
     void quitAnyComputation();
 
-signals:
+Q_SIGNALS:
 
     void histogramProduced();
 

@@ -382,7 +382,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     }
     
     if (!outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         return eStatusFailed;
     }
     
@@ -443,7 +443,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
                                                                         supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                         view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         return stat;
     }
     // update scale after the first call to getRegionOfDefinition
@@ -465,7 +465,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     RectI roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
     
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         outArgs->params.reset();
         return eStatusReplyDefault;
     }
@@ -1683,7 +1683,7 @@ ViewerInstance::disconnectViewer()
 
     //_lastRenderedImage.reset(); // if you uncomment this, _lastRenderedImage is not set back when you reconnect the viewer immediately after disconnecting
     if (_imp->uiContext) {
-        emit viewerDisconnected();
+        Q_EMIT viewerDisconnected();
     }
 }
 
@@ -1790,15 +1790,15 @@ ViewerInstance::onInputChanged(int inputNb)
             }
         }
     }
-    emit activeInputsChanged();
-    emit refreshOptionalState();
-    emit clipPreferencesChanged();
+    Q_EMIT activeInputsChanged();
+    Q_EMIT refreshOptionalState();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
 ViewerInstance::restoreClipPreferences()
 {
-    emit clipPreferencesChanged();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
@@ -1807,7 +1807,7 @@ ViewerInstance::checkOFXClipPreferences(double /*time*/,
                              const std::string & /*reason*/,
                              bool /*forceGetClipPrefAction*/)
 {
-    emit clipPreferencesChanged();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
@@ -1836,7 +1836,7 @@ ViewerInstance::setInputA(int inputNb)
         QMutexLocker l(&_imp->activeInputsMutex);
         _imp->activeInputs[0] = inputNb;
     }
-    emit refreshOptionalState();
+    Q_EMIT refreshOptionalState();
 }
 
 void
@@ -1847,7 +1847,7 @@ ViewerInstance::setInputB(int inputNb)
         QMutexLocker l(&_imp->activeInputsMutex);
         _imp->activeInputs[1] = inputNb;
     }
-    emit refreshOptionalState();
+    Q_EMIT refreshOptionalState();
 }
 
 bool

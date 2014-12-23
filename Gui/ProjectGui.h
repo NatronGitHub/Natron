@@ -95,7 +95,7 @@ public:
         return _gui;
     }
 
-public slots:
+public Q_SLOTS:
 
     void createNewFormat();
 
@@ -130,7 +130,7 @@ public:
 
     Format getFormat() const;
 
-public slots:
+public Q_SLOTS:
 
     void onCopyFromViewer();
 

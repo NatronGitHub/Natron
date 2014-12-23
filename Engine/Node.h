@@ -611,7 +611,7 @@ public:
     void toggleBitDepthWarning(bool on,
                                const QString & tooltip)
     {
-        emit bitDepthWarningToggled(on, tooltip);
+        Q_EMIT bitDepthWarningToggled(on, tooltip);
     }
 
     std::string getNodeExtraLabel() const;
@@ -767,7 +767,7 @@ public:
     
     void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
-public slots:
+public Q_SLOTS:
 
     void setKnobsAge(U64 newAge);
 
@@ -776,19 +776,19 @@ public slots:
 
     void doRefreshEdgesGUI()
     {
-        emit refreshEdgesGUI();
+        Q_EMIT refreshEdgesGUI();
     }
 
     /*will force a preview re-computation not matter of the project's preview mode*/
     void computePreviewImage(int time)
     {
-        emit previewRefreshRequested(time);
+        Q_EMIT previewRefreshRequested(time);
     }
 
     /*will refresh the preview only if the project is in auto-preview mode*/
     void refreshPreviewImage(int time)
     {
-        emit previewImageChanged(time);
+        Q_EMIT previewImageChanged(time);
     }
 
     void onMasterNodeDeactivated();
@@ -797,14 +797,14 @@ public slots:
 
     void notifySettingsPanelClosed(bool closed )
     {
-        emit settingsPanelClosed(closed);
+        Q_EMIT settingsPanelClosed(closed);
     }
     
     void dequeueActions();
 
     void onParentMultiInstanceInputChanged(int input);
 
-signals:
+Q_SIGNALS:
 
     void settingsPanelClosed(bool);
 

@@ -72,7 +72,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
 
 ProcessHandler::~ProcessHandler()
 {
-    emit deleted();
+    Q_EMIT deleted();
 
     _ipcServer->close();
     _bgProcessInputSocket->close();
@@ -120,12 +120,12 @@ ProcessHandler::onDataWrittenToSocket()
     _processLog.append("Message received: " + str + '\n');
     if ( str.startsWith(kFrameRenderedStringShort) ) {
         str = str.remove(kFrameRenderedStringShort);
-        emit frameRendered( str.toInt() );
+        Q_EMIT frameRendered( str.toInt() );
     } else if ( str.startsWith(kRenderingFinishedStringShort) ) {
         ///don't do anything
     } else if ( str.startsWith(kProgressChangedStringShort) ) {
         str = str.remove(kProgressChangedStringShort);
-        emit frameProgress( str.toInt() );
+        Q_EMIT frameProgress( str.toInt() );
     } else if ( str.startsWith(kBgProcessServerCreatedShort) ) {
         str = str.remove(kBgProcessServerCreatedShort);
         ///the bg process wants us to create the pipe for its input
@@ -176,7 +176,7 @@ ProcessHandler::onStandardErrorBytesWritten()
 void
 ProcessHandler::onProcessCanceled()
 {
-    emit processCanceled();
+    Q_EMIT processCanceled();
 
     if (!_bgProcessInputSocket) {
         _earlyCancel = true;
@@ -207,7 +207,7 @@ ProcessHandler::onProcessEnd(int exitCode,
     } else if (exitCode == 1) {
         returnCode = 1;
     }
-    emit processFinished(returnCode);
+    Q_EMIT processFinished(returnCode);
 }
 
 ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)

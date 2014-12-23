@@ -161,7 +161,7 @@ public:
             if (ret == KnobHelper::KEYFRAME_ADDED) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
             }
-            emit keyFrameSet();
+            Q_EMIT keyFrameSet();
         }
         if (refreshGui) {
             updateGUI(dimension);
@@ -196,7 +196,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-public slots:
+public Q_SLOTS:
 
     void onRefreshGuiCurve(int dimension);
     
@@ -294,7 +294,7 @@ public slots:
     void onExprChanged(int dimension);
     
     void onHelpChanged();
-signals:
+Q_SIGNALS:
 
     void knobUndoneChange();
 
@@ -393,7 +393,7 @@ public:
 
     boost::shared_ptr<KnobI> getSelectedKnobs() const;
 
-public slots:
+public Q_SLOTS:
 
     void onNodeComboEditingFinished();
 
@@ -417,7 +417,7 @@ public:
     int getDimension() const;
     
     QString getExpression(bool* hasRetVariable) const;
-public slots:
+public Q_SLOTS:
     
     void onUseRetButtonClicked(bool useRet);
     void onTextEditChanged();

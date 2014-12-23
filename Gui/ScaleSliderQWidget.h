@@ -69,11 +69,11 @@ public:
     void setReadOnly(bool ro);
 
     
-signals:
+Q_SIGNALS:
     void editingFinished();
     void positionChanged(double);
 
-public slots:
+public Q_SLOTS:
 
     void seekScalePosition(double v);
 

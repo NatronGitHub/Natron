@@ -201,33 +201,33 @@ public:
 
     void emitSignalClearedInMemoryPortion()
     {
-        emit clearedInMemoryPortion();
+        Q_EMIT clearedInMemoryPortion();
     }
 
     void emitClearedDiskPortion()
     {
-        emit clearedDiskPortion();
+        Q_EMIT clearedDiskPortion();
     }
 
     void emitAddedEntry(SequenceTime time)
     {
-        emit addedEntry(time);
+        Q_EMIT addedEntry(time);
     }
 
     void emitRemovedEntry(SequenceTime time,
                           int storage)
     {
-        emit removedEntry(time,storage);
+        Q_EMIT removedEntry(time,storage);
     }
 
     void emitEntryStorageChanged(SequenceTime time,
                                  int oldStorage,
                                  int newStorage)
     {
-        emit entryStorageChanged(time,oldStorage,newStorage);
+        Q_EMIT entryStorageChanged(time,oldStorage,newStorage);
     }
 
-signals:
+Q_SIGNALS:
 
     void clearedInMemoryPortion();
 
@@ -1321,7 +1321,7 @@ private:
                 if ((*it)->getKey() == key) {
                     returnValue->push_back(*it);
                     
-                    ///emit te added signal otherwise when first reading something that's already cached
+                    ///Q_EMIT te added signal otherwise when first reading something that's already cached
                     ///the timeline wouldn't update
                     if (_signalEmitter) {
                         _signalEmitter->emitAddedEntry( key.getTime() );
@@ -1398,7 +1398,7 @@ private:
                         
                         returnValue->push_back(*it);
                         ret.erase(it);
-                        ///emit te added signal otherwise when first reading something that's already cached
+                        ///Q_EMIT te added signal otherwise when first reading something that's already cached
                         ///the timeline wouldn't update
                         if (_signalEmitter) {
                             _signalEmitter->emitAddedEntry( key.getTime() );

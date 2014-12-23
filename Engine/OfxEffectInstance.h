@@ -134,7 +134,7 @@ public:
      **/
     void syncPrivateData_other_thread()
     {
-        emit syncPrivateDataRequested();
+        Q_EMIT syncPrivateDataRequested();
     }
 
 public:
@@ -282,12 +282,12 @@ public:
 
 
 
-public slots:
+public Q_SLOTS:
 
     void onSyncPrivateDataRequested();
 
 
-signals:
+Q_SIGNALS:
 
     void syncPrivateDataRequested();
 

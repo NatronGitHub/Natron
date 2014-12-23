@@ -403,7 +403,7 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
-signals:
+Q_SIGNALS:
 
 #ifdef NATRON_ROTO_INVERTIBLE
     void invertedStateChanged();
@@ -828,7 +828,7 @@ public:
      **/
     int getNextKeyframeTime(int time) const;
 
-signals:
+Q_SIGNALS:
 
     void aboutToClone();
 
@@ -1056,7 +1056,7 @@ public:
     
     void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
 
-signals:
+Q_SIGNALS:
 
     /**
      * Emitted when the selection is changed. The integer corresponds to the
@@ -1076,7 +1076,7 @@ signals:
     
     void itemNameChanged(const boost::shared_ptr<RotoItem>&);
 
-public slots:
+public Q_SLOTS:
 
     void onAutoKeyingChanged(bool enabled);
 

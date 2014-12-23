@@ -313,7 +313,7 @@ public:
      **/
     std::size_t declareCurrentAppVariable_Python(std::string& script);
     
-public slots:
+public Q_SLOTS:
 
     void quit();
 
@@ -329,7 +329,7 @@ public slots:
 
     void newVersionCheckError();
 
-signals:
+Q_SIGNALS:
 
     void pluginsPopulated();
 

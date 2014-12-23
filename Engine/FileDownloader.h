@@ -56,12 +56,12 @@ public:
 
     QNetworkReply* getReply() const;
 
-signals:
+Q_SIGNALS:
     void downloaded();
 
     void error();
 
-private slots:
+public Q_SLOTS:
 
     void fileDownloaded(QNetworkReply* pReply);
 

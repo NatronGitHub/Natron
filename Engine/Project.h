@@ -304,7 +304,7 @@ public:
     
     double getProjectFrameRate() const;
     
-public slots:
+public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();
 
@@ -316,7 +316,7 @@ public slots:
 
     void onAutoSaveFutureFinished();
 
-signals:
+Q_SIGNALS:
 
     void mustCreateFormat();
 

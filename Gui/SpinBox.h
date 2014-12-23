@@ -84,11 +84,11 @@ private:
 
     bool validateText();
 
-signals:
+Q_SIGNALS:
 
     void valueChanged(double d);
 
-public slots:
+public Q_SLOTS:
 
     void setValue(double d);
 

@@ -63,7 +63,7 @@ public:
 
     PluginGroupNode* getPluginToolButton() const;
 
-public slots:
+public Q_SLOTS:
 
     void onTriggered();
 

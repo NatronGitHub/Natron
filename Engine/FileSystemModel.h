@@ -117,7 +117,7 @@ public:
     void fetchDirectory(const boost::shared_ptr<FileSystemItem>& item);
     
     bool isWorking() const;
-signals:
+Q_SIGNALS:
     
     void directoryLoaded(QString);
     
@@ -275,7 +275,7 @@ public:
     
     void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order);
     
-public slots:
+public Q_SLOTS:
     
     void onDirectoryLoadedByGatherer(const QString& directory);
     
@@ -283,7 +283,7 @@ public slots:
     
     void onWatchedFileChanged(const QString& file);
     
-signals:
+Q_SIGNALS:
     
     void rootPathChanged(QString);
     

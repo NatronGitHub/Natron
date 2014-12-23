@@ -101,7 +101,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onSpinBoxValueChanged();
 
@@ -173,7 +173,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onCheckBoxStateChanged(bool);
 
@@ -220,7 +220,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
     void onSliderEditingFinished();
@@ -300,7 +300,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void emitValueChanged();
 
@@ -346,7 +346,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onCurrentIndexChanged(int i);
 
@@ -447,7 +447,7 @@ public:
 
     void setPickingEnabled(bool enabled);
 
-signals:
+Q_SIGNALS:
 
     void pickingEnabled(bool);
 
@@ -485,7 +485,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onColorChanged();
     void onMinMaxChanged(double mini, double maxi, int index);
@@ -506,7 +506,7 @@ public slots:
 
     void onDialogCurrentColorChanged(const QColor & color);
 
-signals:
+Q_SIGNALS:
 
     void dimensionSwitchToggled(bool b);
 
@@ -592,7 +592,7 @@ public:
 
     void setDirty(bool b);
 
-signals:
+Q_SIGNALS:
 
     void editingFinished();
 
@@ -630,7 +630,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     ///if the knob is not multiline
     void onLineChanged();
@@ -743,7 +743,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
     void setChecked(bool b);
 
 private:
@@ -797,7 +797,7 @@ public:
     virtual ~Parametric_KnobGui() OVERRIDE;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onCurveChanged(int dimension);
 

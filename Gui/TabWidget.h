@@ -81,7 +81,7 @@ public:
     }
 
     
-signals:
+Q_SIGNALS:
     
     void mouseLeftTabBar();
     
@@ -107,14 +107,14 @@ public:
     : QWidget(parent)
     {}
     
-signals:
+Q_SIGNALS:
     
     void mouseLeftTabBar();
 private:
     
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL
     {
-        emit mouseLeftTabBar();
+        Q_EMIT mouseLeftTabBar();
         QWidget::leaveEvent(e);
     }
     
@@ -241,7 +241,7 @@ public:
 
     void discardGuiPointer();
 
-public slots:
+public Q_SLOTS:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/
     void makeCurrentTab(int index);

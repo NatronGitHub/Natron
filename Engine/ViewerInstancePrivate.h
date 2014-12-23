@@ -153,7 +153,7 @@ public:
 
     void redrawViewer()
     {
-        emit mustRedrawViewer();
+        Q_EMIT mustRedrawViewer();
     }
     
 public:
@@ -202,14 +202,14 @@ public:
     }
 
 
-public slots:
+public Q_SLOTS:
     /**
      * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
      * Do not call this yourself.
      **/
     void updateViewer(boost::shared_ptr<UpdateViewerParams> params);
 
-signals:
+Q_SIGNALS:
    
     void mustRedrawViewer();
 

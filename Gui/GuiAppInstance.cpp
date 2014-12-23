@@ -161,7 +161,7 @@ GuiAppInstance::load(const QString & projectName,
         assert(*it);
         _imp->_gui->findOrCreateToolButton(*it);
     }
-    emit pluginsPopulated();
+    Q_EMIT pluginsPopulated();
 
     ///show the gui
     _imp->_gui->show();

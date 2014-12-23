@@ -1782,7 +1782,7 @@ void
 TrackerPanel::onTrackingFinished()
 {
     setKnobsFrozen(false);
-    emit trackingEnded();
+    Q_EMIT trackingEnded();
     if (getGui()) {
         getGui()->endProgress(getMainInstance()->getLiveInstance());
     }
@@ -2292,7 +2292,7 @@ TrackScheduler::run()
         
         bool reportProgress = _imp->curArgs.instances.size() > 1 || framesCount > 1;
         if (reportProgress) {
-            emit trackingStarted();
+            Q_EMIT trackingStarted();
         }
         
         while (cur != end) {
@@ -2322,7 +2322,7 @@ TrackScheduler::run()
 
             if (reportProgress) {
                 ///Notify we progressed of 1 frame
-                emit progressUpdate(progress);
+                Q_EMIT progressUpdate(progress);
             }
             
             ///Check for abortion
@@ -2338,7 +2338,7 @@ TrackScheduler::run()
         }
         
         if (reportProgress) {
-            emit trackingFinished();
+            Q_EMIT trackingFinished();
         }
         
         ///Flag that we're no longer working
@@ -2372,7 +2372,7 @@ void
 TrackScheduler::track(int startingFrame,int end,bool forward, const std::list<Button_Knob*> & selectedInstances)
 {
     if ((forward && startingFrame >= end) || (!forward && startingFrame <= end)) {
-        emit trackingFinished();
+        Q_EMIT trackingFinished();
         return;
     }
     {

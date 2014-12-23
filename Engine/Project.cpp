@@ -269,7 +269,7 @@ Project::loadProjectInternal(const QString & path,
 
     ifile.close();
     getApp()->endProgress(this);
-    emit projectNameChanged(name);
+    Q_EMIT projectNameChanged(name);
     return ret;
 }
 
@@ -490,13 +490,13 @@ Project::saveProjectInternal(const QString & path,
     
     if (!autoSave) {
         _imp->projectName = name;
-        emit projectNameChanged(name); //< notify the gui so it can update the title
+        Q_EMIT projectNameChanged(name); //< notify the gui so it can update the title
         _imp->projectPath = path;
         _imp->hasProjectBeenSavedByUser = true;
         _imp->ageSinceLastSave = time;
     } else {
         if (!isRenderSave) {
-            emit projectNameChanged(_imp->projectName + " (*)");
+            Q_EMIT projectNameChanged(_imp->projectName + " (*)");
         }
     }
     _imp->lastAutoSave = time;
@@ -703,7 +703,7 @@ Project::findAndTryLoadAutoSave()
                 _imp->lastAutoSave = QDateTime::currentDateTime();
                 _imp->ageSinceLastSave = QDateTime();
 
-                emit projectNameChanged(_imp->projectName + " (*)");
+                Q_EMIT projectNameChanged(_imp->projectName + " (*)");
 
                 refreshViewersAndPreviews();
 
@@ -903,7 +903,7 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
     
-    emit knobsInitialized();
+    Q_EMIT knobsInitialized();
 } // initializeKnobs
 
 void
@@ -1028,7 +1028,7 @@ Project::clearNodes(bool emitSignal)
     nodesToDelete.clear();
 
     if (emitSignal) {
-        emit nodesCleared();
+        Q_EMIT nodesCleared();
     }
 }
 
@@ -1262,7 +1262,7 @@ Project::load(const ProjectSerialization & obj,const QString& name,const QString
     bool ret = _imp->restoreFromSerialization(obj,name,path,isAutoSave,realFilePath);
     Format f;
     getProjectDefaultFormat(&f);
-    emit formatChanged(f);
+    Q_EMIT formatChanged(f);
     return ret;
 }
 
@@ -1306,12 +1306,12 @@ Project::onKnobValueChanged(KnobI* knob,
                     (*it)->incrementKnobsAge();
                 }
             }
-            emit formatChanged(frmt);
+            Q_EMIT formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
-        emit mustCreateFormat();
+        Q_EMIT mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
-        emit autoPreviewChanged( _imp->previewMode->getValue() );
+        Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
         std::vector< boost::shared_ptr<Natron::Node> > nodes ;
         {
@@ -1431,7 +1431,7 @@ Project::reset()
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
     _imp->envVars->unblockEvaluation();
     
-    emit projectNameChanged(NATRON_PROJECT_UNTITLED);
+    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
 }
 
@@ -1480,7 +1480,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         }
     }
     if (formatSet) {
-        emit formatChanged(dispW);
+        Q_EMIT formatChanged(dispW);
     }
 }
 

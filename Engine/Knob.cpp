@@ -80,7 +80,7 @@ KnobSignalSlotHandler::onMasterKeyFrameSet(SequenceTime time,int dimension,int r
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
     k->clone(master.get(), dimension);
-    emit keyFrameSet(time, dimension, reason, added);
+    Q_EMIT keyFrameSet(time, dimension, reason, added);
 }
 
 void
@@ -91,7 +91,7 @@ KnobSignalSlotHandler::onMasterKeyFrameRemoved(SequenceTime time,int dimension,i
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
     k->clone(master.get(), dimension);
-    emit keyFrameRemoved(time, dimension, reason);
+    Q_EMIT keyFrameRemoved(time, dimension, reason);
 }
 
 void
@@ -102,7 +102,7 @@ KnobSignalSlotHandler::onMasterKeyFrameMoved(int dimension,int oldTime,int newTi
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
     k->clone(master.get(), dimension);
-    emit keyFrameMoved(dimension, oldTime, newTime);
+    Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
 }
 
 void
@@ -113,7 +113,7 @@ KnobSignalSlotHandler::onMasterAnimationRemoved(int dimension)
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
     k->clone(master.get(), dimension);
-    emit animationRemoved(dimension);
+    Q_EMIT animationRemoved(dimension);
 }
 
 void
@@ -196,7 +196,7 @@ struct Expr
     bool hasRet;
     std::list<KnobI*> dependencies;
     
-    PyCodeObject* code;
+    PyObject* code;
     PyObject* global_dict;
     
     Expr() : expression(), originalExpression(), hasRet(false),  code(0), global_dict(0) {}
@@ -1319,10 +1319,7 @@ static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& toke
     while (couldFindToken) {
         
         if (findDotAfterParenthesis ) {
-            if (tokenStart + tokenSize >= str.size() || str.at(tokenStart + tokenSize) != '.') {
-                //We should anyway never get here because the expression should've been compiled and tested before
-                throw std::invalid_argument("A '.' must follow the ending parenthesis because this function returns a Tuple.");
-            } else {
+            if (tokenStart + tokenSize < str.size() && str.at(tokenStart + tokenSize) == '.') {
                 //remove the 2 characters, e.g: ".x" of the tuple
                 str.erase(tokenStart + tokenSize, 2);
             }
@@ -1394,10 +1391,10 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     
 }
 
-static void compileExpression(const std::string& expression,PyCodeObject** code,PyObject** globalDict)
+static void compileExpression(const std::string& expression,PyObject** code,PyObject** globalDict)
 {
     *globalDict = PyModule_GetDict(PyImport_AddModule("__main__"));
-    *code = (PyCodeObject*)Py_CompileString(expression.c_str(), "<string>", Py_file_input);
+    *code = (PyObject*)Py_CompileString(expression.c_str(), "<string>", Py_file_input);
     if (PyErr_Occurred() || !*code) {
 #ifdef DEBUG
         PyErr_Print();
@@ -1469,7 +1466,7 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
             throw std::runtime_error("return value must be assigned to the \"ret\" variable");
         }
         
-        error = std::string(PyString_AsString(output));
+        error = std::string(PY3String_asString(output));
         
         Py_DECREF(catcher);
         Py_DECREF(output);

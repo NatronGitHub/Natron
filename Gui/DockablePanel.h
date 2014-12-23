@@ -85,7 +85,7 @@ public:
     
     DockablePanel* getPanel() const { return panel; }
     
-signals:
+Q_SIGNALS:
     
     void rightClicked(const QPoint& p);
     void escapePressed();
@@ -196,7 +196,7 @@ public:
     
     int getPagesCount() const;
     
-public slots:
+public Q_SLOTS:
 
     /*Internal slot, not meant to be called externally.*/
     void closePanel();
@@ -245,7 +245,7 @@ public slots:
     
     void onManageUserParametersActionTriggered();
     
-signals:
+Q_SIGNALS:
 
     /*emitted when the panel is clicked*/
     void selected();
@@ -292,7 +292,7 @@ private:
     void initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> > & knobs);
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
-        emit selected();
+        Q_EMIT selected();
         QFrame::mousePressEvent(e);
     }
 
@@ -346,7 +346,7 @@ private:
     virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
     
     void onSettingsButtonClicked();
     
@@ -388,7 +388,7 @@ public:
     
     virtual ~ManageUserParamsDialog();
     
-public slots:
+public Q_SLOTS:
     
     void onAddClicked();
     
@@ -421,7 +421,7 @@ public:
     
     boost::shared_ptr<KnobI> getKnob() const;
 
-public slots:
+public Q_SLOTS:
     
     void onPageCurrentIndexChanged(int index);
     
@@ -443,7 +443,7 @@ public:
     
     VerticalColorBar(QWidget* parent);
     
-public slots:
+public Q_SLOTS:
     
     void setColor(const QColor& color);
     

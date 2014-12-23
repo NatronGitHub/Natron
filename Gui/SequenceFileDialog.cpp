@@ -2381,7 +2381,7 @@ void
 FavoriteView::clicked(const QModelIndex &index)
 {
     QUrl url = model()->index(index.row(), 0).data(UrlModel::UrlRole).toUrl();
-    emit urlRequested(url);
+    Q_EMIT urlRequested(url);
 
     selectUrl(url);
 }

@@ -47,7 +47,7 @@ public:
     
     bool isCheckBoxChecked() const;
     
-public slots:
+public Q_SLOTS:
     
     void onButtonClicked(QAbstractButton* button);
     

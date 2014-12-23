@@ -73,7 +73,7 @@ Int_Knob::setIncrement(int incr,
         throw "Int_Knob::setIncrement , dimension out of range";
     }
     _increments[index] = incr;
-    emit incrementChanged(_increments[index], index);
+    Q_EMIT incrementChanged(_increments[index], index);
 }
 
 void
@@ -86,7 +86,7 @@ Int_Knob::setIncrement(const std::vector<int> &incr)
             qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
             continue;
         }
-        emit incrementChanged(_increments[i], i);
+        Q_EMIT incrementChanged(_increments[i], i);
     }
 }
 
@@ -226,7 +226,7 @@ Double_Knob::setIncrement(double incr,
     }
     
     _increments[index] = incr;
-    emit incrementChanged(_increments[index], index);
+    Q_EMIT incrementChanged(_increments[index], index);
 }
 
 void
@@ -238,7 +238,7 @@ Double_Knob::setDecimals(int decis,
     }
     
     _decimals[index] = decis;
-    emit decimalsChanged(_decimals[index], index);
+    Q_EMIT decimalsChanged(_decimals[index], index);
 }
 
 
@@ -248,7 +248,7 @@ Double_Knob::setIncrement(const std::vector<double> &incr)
     assert( incr.size() == (U32)getDimension() );
     _increments = incr;
     for (U32 i = 0; i < incr.size(); ++i) {
-        emit incrementChanged(_increments[i], i);
+        Q_EMIT incrementChanged(_increments[i], i);
     }
 }
 
@@ -258,7 +258,7 @@ Double_Knob::setDecimals(const std::vector<int> &decis)
     assert( decis.size() == (U32)getDimension() );
     _decimals = decis;
     for (U32 i = 0; i < decis.size(); ++i) {
-        emit decimalsChanged(decis[i], i);
+        Q_EMIT decimalsChanged(decis[i], i);
     }
 }
 
@@ -548,7 +548,7 @@ Choice_Knob::populateChoices(const std::vector<std::string> &entries,
         _entriesHelp = entriesHelp;
         _entries = entries;
     }
-    emit populated();
+    Q_EMIT populated();
 }
 
 std::vector<std::string>
@@ -1177,7 +1177,7 @@ Parametric_Knob::addControlPoint(int dimension,
     KeyFrame k(key,value);
     k.setInterpolation(Natron::eKeyframeTypeCubic);
     _curves[dimension]->addKeyFrame(k);
-    emit curveChanged(dimension);
+    Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1245,7 +1245,7 @@ Parametric_Knob::setNthControlPoint(int dimension,
         return eStatusFailed;
     }
     _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
-    emit curveChanged(dimension);
+    Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1260,7 +1260,7 @@ Parametric_Knob::deleteControlPoint(int dimension,
     }
     
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
-    emit curveChanged(dimension);
+    Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1273,7 +1273,7 @@ Parametric_Knob::deleteAllControlPoints(int dimension)
         return eStatusFailed;
     }
     _curves[dimension]->clearKeyFrames();
-    emit curveChanged(dimension);
+    Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1335,6 +1335,6 @@ Parametric_Knob::resetExtraToDefaultValue(int dimension)
 {
     QVector<int> dimensions(1);
     dimensions[0] = dimension;
-    emit mustResetToDefault(dimensions);
+    Q_EMIT mustResetToDefault(dimensions);
 }
 

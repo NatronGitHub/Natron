@@ -109,7 +109,7 @@ public:
     }
     
     boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
-public slots:
+public Q_SLOTS:
 
     /**
      * @brief This is invoked everytimes the knob has a keyframe set or removed, to determine whether we need
@@ -159,7 +159,7 @@ public:
     NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
     NodeCurveEditorElement* findElement(QTreeWidgetItem* item) const WARN_UNUSED_RETURN;
 
-public slots:
+public Q_SLOTS:
 
     void onNameChanged(const QString & name);
 
@@ -201,7 +201,7 @@ public:
                              std::vector<CurveGui*> *curves);
     
     NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
-public slots:
+public Q_SLOTS:
     
     void onNameChanged(const QString & name);
     
@@ -238,7 +238,7 @@ public:
 
     std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
     
-public slots:
+public Q_SLOTS:
     
     void onNameChanged(const QString & name);
     
@@ -289,7 +289,7 @@ public:
 
     CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
 
-public slots:
+public Q_SLOTS:
 
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
 

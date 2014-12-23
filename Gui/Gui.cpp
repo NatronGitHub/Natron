@@ -1878,7 +1878,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
         _imp->_viewerTabs.push_back(tab);
     }
     where->appendTab(tab);
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 
     return tab;
 }
@@ -1911,7 +1911,7 @@ Gui::addViewerTab(ViewerTab* tab,
         }
     }
     where->appendTab(tab);
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 }
 
 void
@@ -1995,7 +1995,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             tab->deleteLater();
         }
     }
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 }
 
 Histogram*
@@ -2835,13 +2835,13 @@ Gui::errorDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml, buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml, buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2864,13 +2864,13 @@ Gui::errorDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,
                                             QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
@@ -2894,13 +2894,13 @@ Gui::warningDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2923,13 +2923,13 @@ Gui::warningDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,
                                             QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
@@ -2953,13 +2953,13 @@ Gui::informationDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2982,13 +2982,13 @@ Gui::informationDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -3059,13 +3059,13 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
+        Q_EMIT doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
+        Q_EMIT doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
     }
 
     return _imp->_lastQuestionDialogAnswer;
@@ -3091,14 +3091,14 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
+        Q_EMIT onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
+        Q_EMIT onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
     }
     
@@ -3576,7 +3576,7 @@ Gui::activateViewerTab(ViewerInstance* viewer)
             }
         }
     }
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 }
 
 void
@@ -3910,7 +3910,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
     NodeGui* node = qobject_cast<NodeGui*>( sender() );
 
     if ( node && (node->getNode()->getPluginID() == "Viewer") ) {
-        emit viewersChanged();
+        Q_EMIT viewersChanged();
     }
 }
 
@@ -4446,7 +4446,7 @@ FloatingWidget::resizeEvent(QResizeEvent* e)
 void
 FloatingWidget::closeEvent(QCloseEvent* e)
 {
-    emit closed();
+    Q_EMIT closed();
 
     closeWidgetRecursively(_embeddedWidget);
     removeEmbeddedWidget();

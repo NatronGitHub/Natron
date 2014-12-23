@@ -100,7 +100,7 @@ public:
     void setVisibleAndRefresh(bool visible);
 
     /**
-     * @brief same as setVisibleAndRefresh() but doesn't emit any signal for a repaint
+     * @brief same as setVisibleAndRefresh() but doesn't Q_EMIT any signal for a repaint
      **/
     void setVisible(bool visible);
 
@@ -136,7 +136,7 @@ public:
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
     
-signals:
+Q_SIGNALS:
 
     void curveChanged();
     
@@ -311,7 +311,7 @@ public:
     
     void pushUndoCommand(QUndoCommand* cmd);
 
-public slots:
+public Q_SLOTS:
 
     void refreshDisplayedTangents();
 
@@ -423,7 +423,7 @@ public:
 
     void getCurveColumns(std::map<int,CurveGui*>* columns) const;
 
-public slots:
+public Q_SLOTS:
 
     void open_file();
 
@@ -496,12 +496,12 @@ public:
     
     virtual ~EditKeyFrameDialog();
     
-signals:
+Q_SIGNALS:
     
     void valueChanged(int dimension,double value);
     
     
-public slots:
+public Q_SLOTS:
     
     void onXSpinBoxValueChanged(double d);
     void onYSpinBoxValueChanged(double d);

@@ -24,8 +24,6 @@
 #include <QThread>
 #include <QtCore/QAtomicInt>
 
-#include <Python.h>
-
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h" // for removeRecursively
 #include "Global/GlobalDefines.h" // for removeRecursively
@@ -116,38 +114,42 @@ struct AppManagerPrivate
      //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
     bool lastProjectLoadedCreatedDuringRC2Or3;
     
+    ///Python needs wide strings as from Python 3.x onwards everything is unicode based
+    std::vector<wchar_t*> args;
+    
     AppManagerPrivate()
-        : _appType(AppManager::eAppTypeBackground)
-        , _appInstances()
-        , _availableID(0)
-        , _topLevelInstanceID(0)
-        , _settings( new Settings(NULL) )
-        , _formats()
-        , _plugins()
-        , ofxHost( new Natron::OfxHost() )
-        , _knobFactory( new KnobFactory() )
-        , _nodeCache()
-        , _diskCache()
-        , _viewerCache()
-        , diskCachesLocationMutex()
-        , diskCachesLocation()
-        ,_backgroundIPC(0)
-        ,_loaded(false)
-        ,_binaryPath()
-        ,_wasAbortAnyProcessingCalled(false)
-        ,_nodesGlobalMemoryUse(0)
-        ,_ofxLogMutex()
-        ,_ofxLog()
-        ,maxCacheFiles(0)
-        ,currentCacheFilesCount(0)
-        ,currentCacheFilesCountMutex()
-        ,idealThreadCount(0)
-        ,nThreadsToRender(0)
-        ,nThreadsPerEffect(0)
-        ,useThreadPool(true)
-        ,nThreadsMutex()
-        ,runningThreadsCount()
-        ,lastProjectLoadedCreatedDuringRC2Or3(false)
+    : _appType(AppManager::eAppTypeBackground)
+    , _appInstances()
+    , _availableID(0)
+    , _topLevelInstanceID(0)
+    , _settings( new Settings(NULL) )
+    , _formats()
+    , _plugins()
+    , ofxHost( new Natron::OfxHost() )
+    , _knobFactory( new KnobFactory() )
+    , _nodeCache()
+    , _diskCache()
+    , _viewerCache()
+    , diskCachesLocationMutex()
+    , diskCachesLocation()
+    ,_backgroundIPC(0)
+    ,_loaded(false)
+    ,_binaryPath()
+    ,_wasAbortAnyProcessingCalled(false)
+    ,_nodesGlobalMemoryUse(0)
+    ,_ofxLogMutex()
+    ,_ofxLog()
+    ,maxCacheFiles(0)
+    ,currentCacheFilesCount(0)
+    ,currentCacheFilesCountMutex()
+    ,idealThreadCount(0)
+    ,nThreadsToRender(0)
+    ,nThreadsPerEffect(0)
+    ,useThreadPool(true)
+    ,nThreadsMutex()
+    ,runningThreadsCount()
+    ,lastProjectLoadedCreatedDuringRC2Or3(false)
+    ,args()
     {
         setMaxCacheFiles();
         
@@ -156,6 +158,10 @@ struct AppManagerPrivate
     
     ~AppManagerPrivate()
     {
+        for (U32 i = 0; i < args.size() ; ++i) {
+            free(args[i]);
+        }
+        args.clear();
     }
 
     void initProcessInputChannel(const QString & mainProcessServerName);
@@ -1994,15 +2000,154 @@ AppManager::getPluginIDs() const
     return ret;
 }
 
+//Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
+//Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
+static wchar_t*
+char2wchar(char* arg)
+{
+    wchar_t *res;
+#ifdef HAVE_BROKEN_MBSTOWCS
+    /* Some platforms have a broken implementation of
+     * mbstowcs which does not count the characters that
+     * would result from conversion.  Use an upper bound.
+     */
+    size_t argsize = strlen(arg);
+#else
+    size_t argsize = mbstowcs(NULL, arg, 0);
+#endif
+    size_t count;
+    unsigned char *in;
+    wchar_t *out;
+#ifdef HAVE_MBRTOWC
+    mbstate_t mbs;
+#endif
+    if (argsize != (size_t)-1) {
+        res = (wchar_t *)malloc((argsize+1)*sizeof(wchar_t));
+        if (!res)
+            goto oom;
+        count = mbstowcs(res, arg, argsize+1);
+        if (count != (size_t)-1) {
+            wchar_t *tmp;
+            /* Only use the result if it contains no
+             surrogate characters. */
+            for (tmp = res; *tmp != 0 &&
+                 (*tmp < 0xd800 || *tmp > 0xdfff); tmp++)
+                ;
+            if (*tmp == 0)
+                return res;
+        }
+        free(res);
+    }
+    /* Conversion failed. Fall back to escaping with surrogateescape. */
+#ifdef HAVE_MBRTOWC
+    /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
+    /* Overallocate; as multi-byte characters are in the argument, the
+     actual output could use less memory. */
+    argsize = strlen(arg) + 1;
+    res = (wchar_t*)malloc(argsize*sizeof(wchar_t));
+    if (!res) goto oom;
+    in = (unsigned char*)arg;
+    out = res;
+    memset(&mbs, 0, sizeof mbs);
+    while (argsize) {
+        size_t converted = mbrtowc(out, (char*)in, argsize, &mbs);
+        if (converted == 0)
+        /* Reached end of string; null char stored. */
+            break;
+        if (converted == (size_t)-2) {
+            /* Incomplete character. This should never happen,
+             since we provide everything that we have -
+             unless there is a bug in the C library, or I
+             misunderstood how mbrtowc works. */
+            fprintf(stderr, "unexpected mbrtowc result -2\n");
+            return NULL;
+        }
+        if (converted == (size_t)-1) {
+            /* Conversion error. Escape as UTF-8b, and start over
+             in the initial shift state. */
+            *out++ = 0xdc00 + *in++;
+            argsize--;
+            memset(&mbs, 0, sizeof mbs);
+            continue;
+        }
+        if (*out >= 0xd800 && *out <= 0xdfff) {
+            /* Surrogate character.  Escape the original
+             byte sequence with surrogateescape. */
+            argsize -= converted;
+            while (converted--)
+                *out++ = 0xdc00 + *in++;
+            continue;
+        }
+        /* successfully converted some bytes */
+        in += converted;
+        argsize -= converted;
+        out++;
+    }
+#else
+    /* Cannot use C locale for escaping; manually escape as if charset
+     is ASCII (i.e. escape all bytes > 128. This will still roundtrip
+     correctly in the locale's charset, which must be an ASCII superset. */
+    res = malloc((strlen(arg)+1)*sizeof(wchar_t));
+    if (!res) goto oom;
+    in = (unsigned char*)arg;
+    out = res;
+    while(*in)
+        if(*in < 128)
+            *out++ = *in++;
+        else
+            *out++ = 0xdc00 + *in++;
+    *out = 0;
+#endif
+    return res;
+oom:
+    fprintf(stderr, "out of memory\n");
+    return NULL;
+}
+
+//static void byteCStringToWideString_allocate(wchar_t** output,const char* byte)
+//{
+//
+//    std::wstring wstr = Natron::s2ws(byte);
+//    *output = (wchar_t*)malloc(sizeof(wchar_t) * wstr.length());
+//    wchar_t* dst = *output;
+//    for (size_t i = 0; i < wstr.length(); ++i) {
+//        dst[i] = wstr[i];
+//    }
+//}
+
+std::string
+Natron::PY3String_asString(PyObject* obj)
+{
+    std::string ret;
+    if (PyUnicode_Check(obj)) {
+        PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
+        if (temp_bytes != NULL) {
+            char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+            ret.append(cstr);
+            Py_DECREF(temp_bytes);
+        }
+    } else if (PyBytes_Check(obj)) {
+        char* cstr = PyBytes_AS_STRING(obj); // Borrowed pointer
+        ret.append(cstr);
+    }
+    return ret;
+}
+
 void
 AppManager::initPython(int argc,char* argv[])
 {
-    Py_SetProgramName(argv[0]);
-    Py_Initialize();
-    PySys_SetArgv(argc, argv); /// relative module import
     
+    _imp->args.resize(argc);
+    for (int i = 0; i < argc; ++i) {
+        _imp->args[i] = char2wchar(argv[i]);
+    }
+ 
+    Py_SetProgramName(_imp->args[0]);
     initBuiltinPythonModules();
-
+    Py_Initialize();
+    
+    PySys_SetArgv(argc,_imp->args.data()); /// relative module import
+    
 }
 
 void
@@ -2014,13 +2159,16 @@ AppManager::tearDownPython()
 ///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
 extern "C"
 {
-    void initNatronEngine();
+    PyObject* PyInit_NatronEngine();
 }
  
 void
 AppManager::initBuiltinPythonModules()
 {
-    initNatronEngine();
+    int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME,&PyInit_NatronEngine);
+    if (ret == -1) {
+        throw std::runtime_error("Failed to initialize built-in Python module.");
+    }
 }
 
 void
@@ -2213,7 +2361,6 @@ bool interpretPythonScript(const std::string& script,std::string* error)
     "catchOutErr = CatchOutErr()\n"
     "sys.stdout = catchOutErr\n"
     "sys.stderr = catchOutErr\n";
-    
     PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
     PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
     PyRun_SimpleString(script.c_str());
@@ -2223,7 +2370,7 @@ bool interpretPythonScript(const std::string& script,std::string* error)
     PyErr_Print(); //make python print any errors
     
     PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object, new ref
-    *error = std::string(PyString_AsString(output));
+    *error = std::string(PY3String_asString(output));
     
     Py_DECREF(catcher);
     Py_DECREF(output);

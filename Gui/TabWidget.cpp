@@ -830,7 +830,7 @@ TabBar::leaveEvent(QEvent* e)
         QTabBar::leaveEvent(e);
     } else {
         _processingLeaveEvent = true;
-        emit mouseLeftTabBar();
+        Q_EMIT mouseLeftTabBar();
         QTabBar::leaveEvent(e);
         _processingLeaveEvent = false;
     }

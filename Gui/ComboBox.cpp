@@ -454,8 +454,8 @@ ComboBox::setCurrentText(const QString & text)
     int index = setCurrentText_internal(text);
 
     if (index != -1) {
-        emit currentIndexChanged(index);
-        emit currentIndexChanged( getCurrentIndexText() );
+        Q_EMIT currentIndexChanged(index);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 
@@ -551,9 +551,9 @@ ComboBox::setCurrentIndex(int index)
         return;
     }
     if ( setCurrentIndex_internal(index) ) {
-        ///emit the signal only if the entry changed
-        emit currentIndexChanged(_currentIndex);
-        emit currentIndexChanged( getCurrentIndexText() );
+        ///Q_EMIT the signal only if the entry changed
+        Q_EMIT currentIndexChanged(_currentIndex);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 

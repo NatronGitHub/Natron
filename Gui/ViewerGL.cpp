@@ -2383,7 +2383,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
 
-    emit imageChanged(textureIndex);
+    Q_EMIT imageChanged(textureIndex);
 }
 
 void
@@ -2597,7 +2597,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             _imp->lastDragStartPos = zoomPos;
             _imp->ms = eMouseStateSelecting;
             if ( !modCASIsControl(e) ) {
-                emit selectionCleared();
+                Q_EMIT selectionCleared();
             }
         }
     }
@@ -2624,7 +2624,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 
     if (_imp->ms == eMouseStateSelecting) {
         mustRedraw = true;
-        emit selectionRectangleChanged(true);
+        Q_EMIT selectionRectangleChanged(true);
     }
 
     _imp->ms = eMouseStateUndefined;
@@ -2791,7 +2791,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             zoomValue = 1; // sometimes, floor(100*0.01) makes 0
         }
         assert(zoomValue > 0);
-        emit zoomChanged(zoomValue);
+        Q_EMIT zoomChanged(zoomValue);
 
         //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
@@ -2967,7 +2967,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     case eMouseStateSelecting: {
         _imp->refreshSelectionRectangle(zoomPos);
         mustRedraw = true;
-        emit selectionRectangleChanged(false);
+        Q_EMIT selectionRectangleChanged(false);
     }; break;
     default: {
         if ( _imp->overlay &&
@@ -3123,7 +3123,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         zoomValue = 1; // sometimes, floor(100*0.01) makes 0
     }
     assert(zoomValue > 0);
-    emit zoomChanged(zoomValue);
+    Q_EMIT zoomChanged(zoomValue);
 
 
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
@@ -3205,7 +3205,7 @@ ViewerGL::fitImageToFormat()
         if (zoomFactorInt == 0) {
             zoomFactorInt = 1;
         }
-        emit zoomChanged(zoomFactorInt);
+        Q_EMIT zoomChanged(zoomFactorInt);
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor

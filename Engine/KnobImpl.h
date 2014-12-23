@@ -21,7 +21,6 @@
 #include <string>
 
 
-#include <Python.h>
 #include <shiboken.h>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -322,7 +321,7 @@ template <>
 std::string
 Knob<std::string>::pyObjectToType(PyObject* o) const
 {
-    return std::string(PyString_AsString(o));
+    return std::string(Natron::PY3String_asString(o));
 }
 
 template <typename T>

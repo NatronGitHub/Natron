@@ -187,7 +187,7 @@ public:
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
     
-public slots:
+public Q_SLOTS:
 
 
     /**
@@ -337,7 +337,7 @@ public:
     
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-signals:
+Q_SIGNALS:
 
     /**
      *@brief Signal emitted when the current zoom factor changed.

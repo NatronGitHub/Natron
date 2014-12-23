@@ -170,7 +170,7 @@ Timer::waitUntilNextFrameIsDue ()
         double actualFrameRate = _framesSinceLastFpsFrame / t;
         if (actualFrameRate != _actualFrameRate) {
             _actualFrameRate = actualFrameRate;
-            emit fpsChanged(_actualFrameRate,getDesiredFrameRate());
+            Q_EMIT fpsChanged(_actualFrameRate,getDesiredFrameRate());
         }
         _framesSinceLastFpsFrame = 0;
     }

@@ -149,7 +149,7 @@ public:
     
     void pushUndoCommand(QUndoCommand* command);
 
-   public slots:
+   public Q_SLOTS:
 
     void deleteSelection();
 
@@ -264,7 +264,7 @@ public:
     
     virtual ~FindNodeDialog();
     
-public slots:
+public Q_SLOTS:
     
     void onOkClicked();
     void onCancelClicked();

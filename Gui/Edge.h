@@ -173,7 +173,7 @@ public:
 
     void setWidth(int lineWidth);
 
-public slots:
+public Q_SLOTS:
 
     /**
      * @brief Called when one of the 2 nodes is moved

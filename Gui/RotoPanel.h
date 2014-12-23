@@ -59,7 +59,7 @@ public:
     void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                   QTreeWidgetItem* treeItem = NULL);
 
-public slots:
+public Q_SLOTS:
 
     void onGoToPrevKeyframeButtonClicked();
 

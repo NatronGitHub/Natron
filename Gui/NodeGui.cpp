@@ -252,7 +252,7 @@ NodeGui::onSettingsPanelClosed(bool closed)
             (*it)->getViewer()->updatePersistentMessage();
         }
     }
-    emit settingsPanelClosed(closed);
+    Q_EMIT settingsPanelClosed(closed);
 }
 
 void
@@ -500,7 +500,7 @@ NodeGui::refreshPositionEnd(double x,
             (*it)->doRefreshEdgesGUI();
         }
     }
-    emit positionChanged(x,y);
+    Q_EMIT positionChanged(x,y);
 }
 
 void
@@ -944,7 +944,7 @@ NodeGui::setName(const QString & name_)
 {
     onInternalNameChanged(name_);
     _settingNameFromGui = true;
-    emit nameChanged(name_);
+    Q_EMIT nameChanged(name_);
     _settingNameFromGui = false;
 }
 
@@ -1214,7 +1214,7 @@ NodeGui::activate(bool triggerRender)
     if (!isMultiInstanceChild) {
         showGui();
     } else {
-        ///don't show gui if it is a multi instance child, but still emit the begin edit action
+        ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( _internalNode->getLiveInstance() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
@@ -2425,7 +2425,7 @@ NodeGui::trySetName(const QString& newName)
         if (panel) {
             panel->setName(newName);
         }
-        emit nameChanged(newName);
+        Q_EMIT nameChanged(newName);
     }
 
 }

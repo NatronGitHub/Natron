@@ -36,7 +36,7 @@ public:
 
     void addShortcut(BoundAction* action);
     
-public slots:
+public Q_SLOTS:
 
     void onSelectionChanged();
 

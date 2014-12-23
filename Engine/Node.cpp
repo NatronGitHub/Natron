@@ -840,7 +840,7 @@ Node::setKnobsAge(U64 newAge)
     QWriteLocker l(&_imp->knobsAgeMutex);
     if (_imp->knobsAge != newAge) {
         _imp->knobsAge = newAge;
-        emit knobsAgeChanged(_imp->knobsAge);
+        Q_EMIT knobsAgeChanged(_imp->knobsAge);
         l.unlock();
         computeHash();
         l.relock();
@@ -863,7 +863,7 @@ Node::incrementKnobsAge()
         }
         newAge = _imp->knobsAge;
     }
-    emit knobsAgeChanged(newAge);
+    Q_EMIT knobsAgeChanged(newAge);
     
     computeHash();
 }
@@ -1159,7 +1159,7 @@ Node::setName(const QString & name)
        
     }
     
-    emit nameChanged(name);
+    Q_EMIT nameChanged(name);
 }
 
 AppInstance*
@@ -1395,7 +1395,7 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     
     restoreUserKnobs(serialization);
     
-    emit knobsInitialized();
+    Q_EMIT knobsInitialized();
 } // initializeKnobs
 
 bool
@@ -1546,7 +1546,7 @@ Node::initializeInputs()
         _imp->liveInstance->addAcceptedComponents(-1, &_imp->outputComponents);
     }
     _imp->inputsInitialized = true;
-    emit inputsInitialized();
+    Q_EMIT inputsInitialized();
 }
 
 boost::shared_ptr<Node>
@@ -1809,7 +1809,7 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
     
     ///Notify the GUI
-    emit inputChanged(inputNumber);
+    Q_EMIT inputChanged(inputNumber);
     
     ///Call the instance changed action with a reason clip changed
     onInputChanged(inputNumber);
@@ -1867,7 +1867,7 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
     QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
     
     ///Notify the GUI
-    emit inputChanged(inputNumber);
+    Q_EMIT inputChanged(inputNumber);
     
     ///Call the instance changed action with a reason clip changed
     onInputChanged(inputNumber);
@@ -1949,8 +1949,8 @@ Node::switchInput0And1()
         _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
         _imp->inputs[inputBIndex] = input0;
     }
-    emit inputChanged(inputAIndex);
-    emit inputChanged(inputBIndex);
+    Q_EMIT inputChanged(inputAIndex);
+    Q_EMIT inputChanged(inputBIndex);
     onInputChanged(inputAIndex);
     onInputChanged(inputBIndex);
     computeHash();
@@ -1977,7 +1977,7 @@ Node::onInputNameChanged(const QString & name)
     }
     
     if (inputNb != -1) {
-        emit inputNameChanged(inputNb, name);
+        Q_EMIT inputNameChanged(inputNb, name);
     }
 }
 
@@ -1992,7 +1992,7 @@ Node::connectOutput(Node* output)
         QMutexLocker l(&_imp->outputsMutex);
         _imp->outputs.push_back(output);
     }
-    emit outputsChanged();
+    Q_EMIT outputsChanged();
 }
 
 int
@@ -2024,7 +2024,7 @@ Node::disconnectInput(int inputNumber)
         _imp->inputs[inputNumber].reset();
         
     }
-    emit inputChanged(inputNumber);
+    Q_EMIT inputChanged(inputNumber);
     onInputChanged(inputNumber);
     computeHash();
     
@@ -2056,7 +2056,7 @@ Node::disconnectInput(Node* input)
                 _imp->inputs[i].reset();
                 l.unlock();
                 input->disconnectOutput(this);
-                emit inputChanged(i);
+                Q_EMIT inputChanged(i);
                 onInputChanged(i);
                 computeHash();
                 l.relock();
@@ -2085,7 +2085,7 @@ Node::disconnectOutput(Node* output)
             _imp->outputs.erase(it);
         }
     }
-    emit outputsChanged();
+    Q_EMIT outputsChanged();
     
     return ret;
 }
@@ -2264,7 +2264,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     clearLastRenderedImage();
     
     if (hideGui) {
-        emit deactivated(triggerRender);
+        Q_EMIT deactivated(triggerRender);
     }
     {
         QMutexLocker l(&_imp->activatedMutex);
@@ -2334,7 +2334,7 @@ Node::activate(const std::list< Node* > & outputsToRestore,
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
     }
-    emit activated(triggerRender);
+    Q_EMIT activated(triggerRender);
 } // activate
 
 boost::shared_ptr<KnobI>
@@ -2769,7 +2769,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
             }
             _imp->persistentMessage = message;
         }
-        emit persistentMessageChanged();
+        Q_EMIT persistentMessageChanged();
     } else {
         std::cout << "Persistent message" << std::endl;
         std::cout << content << std::endl;
@@ -2800,7 +2800,7 @@ Node::clearPersistentMessage(bool recurse)
             if (!_imp->persistentMessage.isEmpty()) {
                 _imp->persistentMessage.clear();
                 k.unlock();
-                emit persistentMessageChanged();
+                Q_EMIT persistentMessageChanged();
             }
         }
     }
@@ -2851,7 +2851,7 @@ Node::notifyInputNIsRendering(int inputNb)
         
         l.unlock();
         
-        emit inputNIsRendering(inputNb);
+        Q_EMIT inputNIsRendering(inputNb);
         return true;
     }
     return false;
@@ -2860,7 +2860,7 @@ Node::notifyInputNIsRendering(int inputNb)
 void
 Node::notifyInputNIsFinishedRendering(int inputNb)
 {
-    emit inputNIsFinishedRendering(inputNb);
+    Q_EMIT inputNIsFinishedRendering(inputNb);
 }
 
 bool
@@ -2885,7 +2885,7 @@ Node::notifyRenderingStarted()
         
         l.unlock();
         
-        emit renderingStarted();
+        Q_EMIT renderingStarted();
         return true;
     }
     return false;
@@ -2894,7 +2894,7 @@ Node::notifyRenderingStarted()
 void
 Node::notifyRenderingEnded()
 {
-    emit renderingEnded();
+    Q_EMIT renderingEnded();
 }
 
 void
@@ -2911,7 +2911,7 @@ Node::registerPluginMemory(size_t nBytes)
         QMutexLocker l(&_imp->memoryUsedMutex);
         _imp->pluginInstanceMemoryUsed += nBytes;
     }
-    emit pluginMemoryUsageChanged(nBytes);
+    Q_EMIT pluginMemoryUsageChanged(nBytes);
 }
 
 void
@@ -2921,7 +2921,7 @@ Node::unregisterPluginMemory(size_t nBytes)
         QMutexLocker l(&_imp->memoryUsedMutex);
         _imp->pluginInstanceMemoryUsed -= nBytes;
     }
-    emit pluginMemoryUsageChanged(-nBytes);
+    Q_EMIT pluginMemoryUsageChanged(-nBytes);
 }
 
 QMutex &
@@ -3015,7 +3015,7 @@ Node::onAllKnobsSlaved(bool isSlave,
         }
     }
     
-    emit allKnobsSlaved(isSlave);
+    Q_EMIT allKnobsSlaved(isSlave);
 }
 
 void
@@ -3078,7 +3078,7 @@ Node::onKnobSlaved(KnobI* slave,KnobI* master,
         }
     }
     if (changed) {
-        emit knobsLinksChanged();
+        Q_EMIT knobsLinksChanged();
     }
 } // onKnobSlaved
 
@@ -3325,13 +3325,13 @@ Node::onEffectKnobValueChanged(KnobI* what,
     
     if ( what == _imp->previewEnabledKnob.get() ) {
         if ( (reason == Natron::eValueChangedReasonUserEdited) || (reason == Natron::eValueChangedReasonSlaveRefresh) ) {
-            emit previewKnobToggled();
+            Q_EMIT previewKnobToggled();
         }
     } else if ( ( what == _imp->disableNodeKnob.get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent ) {
-        emit disabledKnobToggled( _imp->disableNodeKnob->getValue() );
+        Q_EMIT disabledKnobToggled( _imp->disableNodeKnob->getValue() );
         getApp()->redrawAllViewers();
     } else if ( what == _imp->nodeLabelKnob.get() ) {
-        emit nodeExtraLabelChanged( _imp->nodeLabelKnob->getValue().c_str() );
+        Q_EMIT nodeExtraLabelChanged( _imp->nodeLabelKnob->getValue().c_str() );
     } else if (what->getName() == kOfxParamStringSublabelName) {
         //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
         String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
@@ -3624,7 +3624,7 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
             QMutexLocker k(&_imp->nodeIsDequeuingMutex);
             _imp->nodeIsDequeuing = true;
         }
-        emit mustDequeueActions();
+        Q_EMIT mustDequeueActions();
     }
     
     ///mark this
@@ -3760,7 +3760,7 @@ Node::declareCurrentNodeVariable_Python(std::string& script)
     
     ///Now define the thisNode variable
     std::stringstream ss;
-    ss << "thisNode = app.getNode(\"" << getName_mt_safe() << "\") \n";
+    ss << "thisNode = " << getName_mt_safe() <<  "\n";
     std::string toInsert = ss.str();
     script.insert(startLine, toInsert);
     return startLine + toInsert.size();
@@ -4015,7 +4015,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     }
 
     computeHash();
-    emit inputChanged(inputNb);
+    Q_EMIT inputChanged(inputNb);
     onInputChanged(inputNb);
     if ( isOutputNode() ) {
         Natron::OutputEffectInstance* oei = dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() );

@@ -41,13 +41,13 @@ public:
 
     QListView* getView() const;
 
-public slots:
+public Q_SLOTS:
 
     void filterText(const QString & txt);
     void setTextFromIndex(const QModelIndex & index);
     void showCompleter();
 
-signals:
+Q_SIGNALS:
 
     void itemCompletionChosen();
 

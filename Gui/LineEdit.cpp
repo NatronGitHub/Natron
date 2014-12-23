@@ -69,7 +69,7 @@ LineEdit::dropEvent(QDropEvent* e)
     }
     if ( !path.isEmpty() ) {
         setText(path);
-        emit textDropped();
+        Q_EMIT textDropped();
     }
 }
 
@@ -121,6 +121,6 @@ LineEdit::keyPressEvent(QKeyEvent* e)
 {
     QLineEdit::keyPressEvent(e);
     if (e->matches(QKeySequence::Paste)) {
-        emit textPasted();
+        Q_EMIT textPasted();
     }
 }

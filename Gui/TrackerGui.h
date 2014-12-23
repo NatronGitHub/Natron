@@ -60,7 +60,7 @@ public:
 
     bool loseFocus(double scaleX, double scaleY);
 
-public slots:
+public Q_SLOTS:
 
     void onAddTrackClicked(bool clicked);
 

@@ -15,6 +15,8 @@
 #include <vector>
 #include <string>
 #include <set>
+
+
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 
@@ -23,8 +25,6 @@
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
 
-struct _object;
-typedef _object PyObject;
 class Curve;
 class KeyFrame;
 class KnobHolder;
@@ -58,33 +58,33 @@ public:
     void s_evaluateValueChangedInMainThread(int dimension,
                                             int reason)
     {
-        emit evaluateValueChangedInMainThread(dimension,reason);
+        Q_EMIT evaluateValueChangedInMainThread(dimension,reason);
     }
     
     void s_animationLevelChanged(int dim,int level)
     {
-        emit animationLevelChanged(dim,level);
+        Q_EMIT animationLevelChanged(dim,level);
     }
     
     void s_deleted()
     {
-        emit deleted();
+        Q_EMIT deleted();
     }
     
     void s_valueChanged(int dimension,
                         int reason)
     {
-        emit valueChanged(dimension,reason);
+        Q_EMIT valueChanged(dimension,reason);
     }
     
     void s_secretChanged()
     {
-        emit secretChanged();
+        Q_EMIT secretChanged();
     }
     
     void s_enabledChanged()
     {
-        emit enabledChanged();
+        Q_EMIT enabledChanged();
     }
     
     void s_keyFrameSet(SequenceTime time,
@@ -92,42 +92,42 @@ public:
                        int reason,
                        bool added)
     {
-        emit keyFrameSet(time,dimension,reason,added);
+        Q_EMIT keyFrameSet(time,dimension,reason,added);
     }
     
     void s_keyFrameRemoved(SequenceTime time,
                            int dimension,
                            int reason)
     {
-        emit keyFrameRemoved(time,dimension,reason);
+        Q_EMIT keyFrameRemoved(time,dimension,reason);
     }
     
     void s_animationAboutToBeRemoved(int dimension)
     {
-        emit animationAboutToBeRemoved(dimension);
+        Q_EMIT animationAboutToBeRemoved(dimension);
     }
     
     void s_animationRemoved(int dimension)
     {
-        emit animationRemoved(dimension);
+        Q_EMIT animationRemoved(dimension);
     }
     
     void s_updateDependencies(int dimension)
     {
-        emit updateSlaves(dimension);
-        emit updateDependencies(dimension);
+        Q_EMIT updateSlaves(dimension);
+        Q_EMIT updateDependencies(dimension);
     }
     
     void s_knobSlaved(int dim,
                       bool slaved)
     {
-        emit knobSlaved(dim,slaved);
+        Q_EMIT knobSlaved(dim,slaved);
     }
     
     void s_setValueWithUndoStack(Variant v,
                                  int dim)
     {
-        emit setValueWithUndoStack(v, dim);
+        Q_EMIT setValueWithUndoStack(v, dim);
     }
     
     void s_appendParamEditChange(Variant v,
@@ -136,59 +136,59 @@ public:
                                  bool createNewCommand,
                                  bool setKeyFrame)
     {
-        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
+        Q_EMIT appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
     }
     
     void s_setDirty(bool b)
     {
-        emit dirty(b);
+        Q_EMIT dirty(b);
     }
     
     void s_setFrozen(bool f)
     {
-        emit frozenChanged(f);
+        Q_EMIT frozenChanged(f);
     }
     
     void s_keyFrameMoved(int dimension,int oldTime,int newTime)
     {
-        emit keyFrameMoved(dimension, oldTime, newTime);
+        Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
     }
     
     void s_refreshGuiCurve(int dimension)
     {
-        emit refreshGuiCurve(dimension);
+        Q_EMIT refreshGuiCurve(dimension);
     }
     
     void s_minMaxChanged(double mini, double maxi, int index)
     {
-        emit minMaxChanged(mini,maxi,index);
+        Q_EMIT minMaxChanged(mini,maxi,index);
     }
     
     void s_displayMinMaxChanged(double mini,double maxi,int index)
     {
-        emit displayMinMaxChanged(mini,maxi,index);
+        Q_EMIT displayMinMaxChanged(mini,maxi,index);
     }
     
     void s_helpChanged()
     {
-        emit helpChanged();
+        Q_EMIT helpChanged();
     }
     
     void s_expressionChanged(int dimension)
     {
-        emit expressionChanged(dimension);
+        Q_EMIT expressionChanged(dimension);
     }
     
     void s_derivativeMoved(SequenceTime time,int dimension)
     {
-        emit derivativeMoved(time,dimension);
+        Q_EMIT derivativeMoved(time,dimension);
     }
     
     void s_keyFrameInterpolationChanged(SequenceTime time,int dimension)
     {
-        emit keyFrameInterpolationChanged(time,dimension);
+        Q_EMIT keyFrameInterpolationChanged(time,dimension);
     }
-public slots:
+public Q_SLOTS:
 
     /**
      * @brief Calls KnobI::onAnimationRemoved
@@ -215,7 +215,7 @@ public slots:
      **/
     void onEvaluateValueChangedInOtherThread(int dimension, int reason);
     
-signals:
+Q_SIGNALS:
     
     ///emitted whenever evaluateValueChanged is called in another thread than the main thread
     void evaluateValueChangedInMainThread(int dimension,int reason);

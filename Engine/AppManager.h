@@ -32,6 +32,7 @@ CLANG_DIAG_ON(deprecated)
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
+
 class QMutex;
 
 class AppInstance;
@@ -295,7 +296,7 @@ public:
      **/
     void checkCacheFreeMemoryIsGoodEnough();
     
-    void onCheckerboardSettingsChanged() { emit checkerboardSettingsChanged(); }
+    void onCheckerboardSettingsChanged() { Q_EMIT  checkerboardSettingsChanged(); }
     
     void onOCIOConfigPathChanged(const std::string& path);
     ///Non MT-safe!
@@ -364,7 +365,7 @@ public:
     
     void saveCaches() const;
     
-public slots:
+public Q_SLOTS:
     
 
     ///Closes the application not saving any projects.
@@ -393,7 +394,7 @@ public slots:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
 
-signals:
+Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
@@ -572,7 +573,8 @@ void declareNodeVariableToPython(int appID,const std::string& nodeName);
 void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
 void deleteNodeVariableToPython(const std::string& nodeName);
 void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName);
-    
+  
+std::string PY3String_asString(PyObject* obj);
 } // namespace Natron
 
 

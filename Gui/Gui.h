@@ -447,7 +447,7 @@ public:
     
     void redrawAllViewers();
     
-signals:
+Q_SIGNALS:
 
     void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
     
@@ -456,7 +456,7 @@ signals:
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
 
-public slots:
+public Q_SLOTS:
 
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
@@ -606,7 +606,7 @@ public:
         return _embeddedWidget;
     }
 
-signals:
+Q_SIGNALS:
 
     void closed();
 

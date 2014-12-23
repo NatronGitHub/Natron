@@ -41,7 +41,7 @@ public:
     {
     }
 
-public slots:
+public Q_SLOTS:
 
     void restoreDefaults();
 

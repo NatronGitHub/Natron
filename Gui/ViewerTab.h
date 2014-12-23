@@ -199,7 +199,7 @@ public:
     
 	void redrawGLWidgets();
 
-public slots:
+public Q_SLOTS:
 
     void startPause(bool);
     void abortRendering();

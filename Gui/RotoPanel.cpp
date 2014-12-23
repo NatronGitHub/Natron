@@ -111,7 +111,7 @@ private:
         QList<QTreeWidgetItem*> selection = selectedItems();
 
         if ( index.isValid() && (index.column() != 0) && selection.contains(item) ) {
-            emit itemClicked( item, index.column() );
+            Q_EMIT itemClicked( item, index.column() );
         } else if ( triggerButtonisRight(e) && index.isValid() ) {
             _panel->showItemMenu( item,e->globalPos() );
         } else {
@@ -851,7 +851,7 @@ RotoPanelPrivate::removeItemRecursively(const boost::shared_ptr<RotoItem>& item)
     }
 #endif
 
-    ///deleting the item will emit a selection change which would lead to a deadlock
+    ///deleting the item will Q_EMIT a selection change which would lead to a deadlock
     tree->blockSignals(true);
     delete it->treeItem;
     tree->blockSignals(false);

@@ -97,7 +97,7 @@ public:
      **/
     void disconnectSlotsFromViewerCache();
 
-public slots:
+public Q_SLOTS:
 
     void centerOn(SequenceTime left,SequenceTime right);
 
@@ -128,7 +128,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
-signals:
+Q_SIGNALS:
 
     void frameChanged(SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime);

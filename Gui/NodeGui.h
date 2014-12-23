@@ -101,7 +101,7 @@ public:
     void setAlignment(Qt::Alignment alignment);
     virtual int type() const;
 
-public slots:
+public Q_SLOTS:
 
     void updateGeometry(int, int, int);
     void updateGeometry();
@@ -306,7 +306,7 @@ public:
     
     virtual void refreshStateIndicator();
         
-public slots:
+public Q_SLOTS:
 
     void onSettingsPanelClosed(bool closed);
     
@@ -393,7 +393,7 @@ public slots:
 
     void onParentMultiInstancePositionChanged(int x,int y);
 
-signals:
+Q_SIGNALS:
 
     void nameChanged(QString);
 

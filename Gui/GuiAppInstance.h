@@ -135,7 +135,7 @@ public:
 
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
-public slots:
+public Q_SLOTS:
     
     virtual void redrawAllViewers() OVERRIDE FINAL;
 

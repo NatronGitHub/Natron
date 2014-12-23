@@ -16,8 +16,6 @@
 #include <cfloat>
 #include <stdexcept>
 
-#include <Python.h>
-
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -792,7 +790,7 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
             c->setKeyFrameInterpolation(interp, j);
         }
     }
-    emit keyInterpolationChanged();
+    Q_EMIT keyInterpolationChanged();
 }
 
 void
@@ -877,7 +875,7 @@ KnobGui::setKeyframe(double time,
     
     bool keyAdded = knob->onKeyFrameSet(time, dimension);
     
-    emit keyFrameSet();
+    Q_EMIT keyFrameSet();
     
     if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin()) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
@@ -893,7 +891,7 @@ KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
     
     bool keyAdded = knob->onKeyFrameSet(time, key, dimension);
     
-    emit keyFrameSet();
+    Q_EMIT keyFrameSet();
     if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
@@ -957,7 +955,7 @@ KnobGui::removeKeyFrame(double time,
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     knob->onKeyFrameRemoved(time, dimension);
-    emit keyFrameRemoved();
+    Q_EMIT keyFrameRemoved();
     
 
     assert( knob->getHolder()->getApp() );
@@ -1191,7 +1189,7 @@ KnobGui::onInternalValueChanged(int dimension,
 void
 KnobGui::updateCurveEditorKeyframes()
 {
-    emit keyFrameSet();
+    Q_EMIT keyFrameSet();
 }
 
 void
@@ -1221,7 +1219,7 @@ KnobGui::onInternalKeyRemoved(SequenceTime time,
     boost::shared_ptr<KnobI> knob = getKnob();
 
     knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
-    emit keyFrameRemoved();
+    Q_EMIT keyFrameRemoved();
 }
 
 void
@@ -1517,9 +1515,9 @@ KnobGui::onKnobSlavedChanged(int dimension,
                              bool b)
 {
     if (b) {
-        emit keyFrameRemoved();
+        Q_EMIT keyFrameRemoved();
     } else {
-        emit keyFrameSet();
+        Q_EMIT keyFrameSet();
     }
     setReadOnly_(b, dimension);
 }
@@ -1782,7 +1780,7 @@ KnobGui::onInternalAnimationAboutToBeRemoved()
 void
 KnobGui::onInternalAnimationRemoved()
 {
-    emit keyFrameRemoved();
+    Q_EMIT keyFrameRemoved();
 }
 
 void
@@ -1914,7 +1912,7 @@ KnobGui::getCurve(int dimension) const
 void
 KnobGui::onRefreshGuiCurve(int /*dimension*/)
 {
-    emit refreshCurveEditor();
+    Q_EMIT refreshCurveEditor();
 }
 
 struct EditExpressionDialogPrivate

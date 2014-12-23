@@ -45,7 +45,7 @@ public:
 
     virtual ~RenderingProgressDialog();
 
-public slots:
+public Q_SLOTS:
 
     void onProcessDeleted();
 
@@ -59,7 +59,7 @@ public slots:
 
     void onVideoEngineStopped(int);
 
-signals:
+Q_SIGNALS:
 
     void canceled();
 
@@ -83,7 +83,7 @@ public:
     LogWindow(const QString & log,
               QWidget* parent = 0);
     
-public slots:
+public Q_SLOTS:
     
     void onClearButtonClicked();
 };

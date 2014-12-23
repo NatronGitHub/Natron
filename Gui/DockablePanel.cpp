@@ -1175,7 +1175,7 @@ RightClickableWidget::mousePressEvent(QMouseEvent* e)
     if (buttonDownIsRight(e)) {
         QWidget* underMouse = qApp->widgetAt(e->globalPos());
         if (underMouse == this) {
-            emit rightClicked(e->pos());
+            Q_EMIT rightClicked(e->pos());
             e->accept();
         }
     } else {
@@ -1187,7 +1187,7 @@ void
 RightClickableWidget::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Escape) {
-        emit escapePressed();
+        Q_EMIT escapePressed();
     }
     QWidget::keyPressEvent(e);
 }
@@ -1283,7 +1283,7 @@ DockablePanel::onUndoClicked()
         _imp->_undoButton->setEnabled( _imp->_undoStack->canUndo() );
         _imp->_redoButton->setEnabled( _imp->_undoStack->canRedo() );
     }
-    emit undoneChange();
+    Q_EMIT undoneChange();
 }
 
 void
@@ -1294,7 +1294,7 @@ DockablePanel::onRedoPressed()
         _imp->_undoButton->setEnabled( _imp->_undoStack->canUndo() );
         _imp->_redoButton->setEnabled( _imp->_undoStack->canRedo() );
     }
-    emit redoneChange();
+    Q_EMIT redoneChange();
 }
 
 void
@@ -1326,7 +1326,7 @@ DockablePanel::setClosed(bool c)
         }
         _imp->_isClosed = c;
     }
-    emit closeChanged(c);
+    Q_EMIT closeChanged(c);
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
         boost::shared_ptr<Natron::Node> internalNode = nodePanel->getNode()->getNode();
@@ -1372,7 +1372,7 @@ DockablePanel::closePanel()
         QMutexLocker l(&_imp->_isClosedMutex);
         _imp->_isClosed = true;
     }
-    emit closeChanged(true);
+    Q_EMIT closeChanged(true);
     _imp->_gui->removeVisibleDockablePanel(this);
     _imp->_gui->buildTabFocusOrderPropertiesBin();
 
@@ -1417,9 +1417,9 @@ DockablePanel::minimizeOrMaximize(bool toggled)
 {
     _imp->_minimized = toggled;
     if (_imp->_minimized) {
-        emit minimized();
+        Q_EMIT minimized();
     } else {
-        emit maximized();
+        Q_EMIT maximized();
     }
     _imp->_tabWidget->setVisible(!_imp->_minimized);
     std::vector<QWidget*> _panels;
@@ -1642,7 +1642,7 @@ DockablePanel::onColorButtonClicked()
             QMutexLocker locker(&_imp->_currentColorMutex);
             _imp->_currentColor = c;
         }
-        emit colorChanged(c);
+        Q_EMIT colorChanged(c);
     } else {
         onColorDialogColorChanged(oldColor);
     }

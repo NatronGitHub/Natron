@@ -1067,7 +1067,7 @@ OutputSchedulerThread::run()
                         
                     }
 
-                    emit s_doTreatOnMainThread(frameToRender,!renderFinished, timeToSeek);
+                    Q_EMIT s_doTreatOnMainThread(frameToRender,!renderFinished, timeToSeek);
                                         
                     while (_imp->treatRunning) {
                         _imp->treatCondition.wait(&_imp->treatMutex);
@@ -2581,7 +2581,7 @@ ViewerCurrentFrameRequestScheduler::run()
             {
                 QMutexLocker treatLocker(&_imp->treatMutex);
                 _imp->treatRunning = true;
-                emit s_treatProducedFrameOnMainThread(frames);
+                Q_EMIT s_treatProducedFrameOnMainThread(frames);
                 
                 while (_imp->treatRunning && !_imp->checkForAbortion()) {
                     _imp->treatCondition.wait(&_imp->treatMutex);

@@ -82,7 +82,7 @@ public:
     void removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
     void addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
 
-public slots:
+public Q_SLOTS:
 
     void onAddButtonClicked();
 
@@ -168,7 +168,7 @@ public:
     void setUpdateViewerOnTracking(bool update);
 
     bool isUpdateViewerOnTrackingEnabled() const;
-public slots:
+public Q_SLOTS:
 
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
@@ -179,7 +179,7 @@ public slots:
     
     void onTrackingProgressUpdate(double progress);
     
-signals:
+Q_SIGNALS:
     
     void trackingEnded();
     
@@ -220,7 +220,7 @@ public:
     
     bool isWorking() const;
     
-signals:
+Q_SIGNALS:
     
     void trackingStarted();
     
