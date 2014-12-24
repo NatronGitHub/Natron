@@ -166,7 +166,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         
         std::string pluginID = it->getPluginID();
         
-        if ( appPTR->isBackground() && (pluginID == NATRON_VIEWER_ID || pluginID == "Viewer") ) {
+        if ( appPTR->isBackground() && (pluginID == PLUGINID_NATRON_VIEWER || pluginID == "Viewer") ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
@@ -240,7 +240,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 4) connect the nodes together, and restore the slave/master links for all knobs.
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (it->getPluginID() == NATRON_VIEWER_ID) ) {
+        if ( appPTR->isBackground() && (it->getPluginID() == PLUGINID_NATRON_VIEWER) ) {
             //ignore viewers on background mode
             continue;
         }

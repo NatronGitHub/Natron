@@ -1175,11 +1175,11 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
     std::map<int,Natron::Plugin*> matches;
     
     if (pluginId == "Viewer") {
-        return _imp->findPluginById(NATRON_VIEWER_ID, majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_VIEWER, majorVersion, minorVersion);
     } else if (pluginId == "Dot") {
-        return _imp->findPluginById(NATRON_DOT_ID,majorVersion, minorVersion );
+        return _imp->findPluginById(PLUGINID_NATRON_DOT,majorVersion, minorVersion );
     } else if (pluginId == "DiskCache") {
-        return _imp->findPluginById(NATRON_DISKCACHE_NODE_ID, majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
     }
     
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat

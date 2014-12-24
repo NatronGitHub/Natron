@@ -402,7 +402,7 @@ void
 TabWidget::addNewViewer()
 {
     _gui->setNextViewerAnchor(this);
-    _gui->getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+    _gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                 "",
                                                 -1,-1,
                                                 -1,

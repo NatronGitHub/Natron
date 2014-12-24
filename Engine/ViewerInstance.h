@@ -18,7 +18,6 @@
 #include "Engine/Rect.h"
 #include "Engine/EffectInstance.h"
 
-#define NATRON_VIEWER_ID NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer"
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -236,7 +235,7 @@ private:
 
     virtual std::string getPluginID() const OVERRIDE FINAL
     {
-        return NATRON_VIEWER_ID;
+        return PLUGINID_NATRON_VIEWER;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL

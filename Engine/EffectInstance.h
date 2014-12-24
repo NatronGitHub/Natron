@@ -22,6 +22,24 @@
 #include "Engine/Rect.h"
 #include "Engine/ImageLocker.h"
 
+// Various useful plugin IDs, @see EffectInstance::getPluginID()
+#define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
+#define PLUGINID_OFX_TRACKERPM    "net.sf.openfx.TrackerPM"
+#define PLUGINID_OFX_DOTEXAMPLE   "net.sf.openfx.dotexample"
+#define PLUGINID_OFX_READOIIO     "fr.inria.openfx.ReadOIIO"
+#define PLUGINID_OFX_WRITEOIIO    "fr.inria.openfx.WriteOIIO"
+#define PLUGINID_OFX_ROTO         "net.sf.openfx.RotoPlugin"
+#define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
+#define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
+#define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
+#define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
+
+#define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
+#define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
+#define PLUGINID_NATRON_DOT       (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Dot")
+#define PLUGINID_NATRON_READQT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt")
+#define PLUGINID_NATRON_WRITEQT   (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt")
+
 class Hash64;
 class Format;
 class TimeLine;

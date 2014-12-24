@@ -210,7 +210,7 @@ GuiAppInstance::load(const QString & projectName,
 
     if ( projectName.isEmpty() ) {
         ///if the user didn't specify a projects name in the launch args just create a viewer node.
-        createNode( CreateNodeArgs(NATRON_VIEWER_ID,
+        createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                    "",
                                    -1,-1,
                                    -1,

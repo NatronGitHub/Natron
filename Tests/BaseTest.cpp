@@ -36,13 +36,13 @@ BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
 
-    _dotGeneratorPluginID = QString("net.sf.openfx.dotexample");
+    _dotGeneratorPluginID = PLUGINID_OFX_DOTEXAMPLE;
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
-    _readOIIOPluginID = QString("fr.inria.openfx.ReadOIIO");
+    _readOIIOPluginID = PLUGINID_OFX_READOIIO;
     _allTestPluginIDs.push_back(_readOIIOPluginID);
 
-    _writeOIIOPluginID = QString("fr.inria.openfx.WriteOIIO");
+    _writeOIIOPluginID = PLUGINID_OFX_WRITEOIIO;
     _allTestPluginIDs.push_back(_writeOIIOPluginID);
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
