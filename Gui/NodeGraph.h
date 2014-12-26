@@ -26,6 +26,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Engine/NodeGraphI.h"
 #include "Global/GlobalDefines.h"
 
 class QVBoxLayout;
@@ -47,8 +48,7 @@ namespace Natron {
 class Node;
 }
 
-class NodeGraph
-    : public QGraphicsView, public boost::noncopyable
+class NodeGraph : public QGraphicsView, public NodeGraphI, public boost::noncopyable
 {
     Q_OBJECT
 
@@ -59,7 +59,7 @@ public:
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
-    virtual ~NodeGraph() OVERRIDE;
+    virtual ~NodeGraph();
     
     boost::shared_ptr<NodeCollection> getGroup() const;
 

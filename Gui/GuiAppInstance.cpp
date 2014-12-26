@@ -26,6 +26,7 @@
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
@@ -270,6 +271,11 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
         _imp->_gui->createNewTrackerInterface( nodegui.get() );
     }
 
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    if (isGroup) {
+        _imp->_gui->createGroupGui(node);
+    }
+    
     ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
     if ( !parentMultiInstance) {
         nodegui->initializeInputs();

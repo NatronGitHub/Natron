@@ -22,6 +22,7 @@
 typedef boost::shared_ptr<Natron::Node> NodePtr;
 typedef std::list<NodePtr> NodeList;
 
+class NodeGraphI;
 class ViewerInstance;
 struct NodeCollectionPrivate;
 class NodeCollection : public QObject
@@ -34,6 +35,12 @@ public:
     NodeCollection(AppInstance* app);
     
     virtual ~NodeCollection();
+    
+    void setNodeGraphPointer(NodeGraphI* graph);
+    
+    void discardNodeGraphPointer();
+    
+    NodeGraphI* getNodeGraph() const;
     
     AppInstance* getApplication() const;
     

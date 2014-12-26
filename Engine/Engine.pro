@@ -182,6 +182,7 @@ HEADERS += \
     Node.h \
     NodeGroup.h \
     NodeGroupSerialization.h \
+    NodeGraphI.h \
     NodeWrapper.h \
     NodeGuiI.h \
     NonKeyParams.h \

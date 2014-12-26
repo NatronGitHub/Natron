@@ -69,6 +69,7 @@ class ViewerInstance;
 class PluginGroupNode;
 class Color_Knob;
 class ProcessHandler;
+class NodeCollection;
 class KnobHolder;
 namespace Natron {
 class Node;
@@ -113,6 +114,19 @@ public:
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
+    
+    void createGroupGui(const boost::shared_ptr<Natron::Node>& group);
+    
+    void addGroupGui(NodeGraph* tab,TabWidget* where);
+    
+    void removeGroupGui(NodeGraph* tab,bool deleteData);
+
+    
+    void setLastSelectedGraph(NodeGraph* graph);
+    
+    NodeGraph* getLastSelectedGraph() const;
+    
+    boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
 
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
@@ -137,6 +151,7 @@ public:
        that wants to close. The deleteData flag tells whether we actually want
        to destroy the tab/node or just hide them.*/
     void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData);
+    
 
     Histogram* addNewHistogram();
 

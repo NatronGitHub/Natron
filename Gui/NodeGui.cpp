@@ -1330,23 +1330,6 @@ NodeGui::hideGui()
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         assert(viewerGui);
-
-        const std::list<ViewerTab*> & viewerTabs = _graph->getGui()->getViewersList();
-        ViewerTab* currentlySelectedViewer = _graph->getGui()->getLastSelectedViewer();
-
-        if ( currentlySelectedViewer == viewerGui->getViewerTab() ) {
-            bool foundOne = false;
-            for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
-                if ( ( (*it)->getViewer() != viewerGui ) && (*it)->getInternalNode()->getNode()->isActivated() ) {
-                    foundOne = true;
-                    _graph->getGui()->setLastSelectedViewer( (*it) );
-                    break;
-                }
-            }
-            if (!foundOne) {
-                _graph->getGui()->setLastSelectedViewer(NULL);
-            }
-        }
         viewerGui->clearLastRenderedTexture();
         _graph->getGui()->deactivateViewerTab(isViewer);
     } else {
@@ -1359,6 +1342,15 @@ NodeGui::hideGui()
         }
         if ( node->isTrackerNode() && node->getParentMultiInstanceName().empty() ) {
             _graph->getGui()->removeTrackerInterface(this, false);
+        }
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+        if (isGrp) {
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            assert(graph_i);
+            NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+            assert(graph);
+            _graph->getGui()->removeGroupGui(graph, false);
         }
     }
 } // hideGui

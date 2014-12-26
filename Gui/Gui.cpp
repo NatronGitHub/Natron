@@ -69,6 +69,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/Node.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/NodeGroup.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
@@ -275,13 +276,14 @@ struct GuiPrivate
     mutable QMutex _histogramsMutex;
     std::list<Histogram*> _histograms;
     int _nextHistogramIndex; //< for giving a unique name to histogram tabs
+    
+    ///The node graph (i.e: the view of the scene)
+    NodeGraph* _nodeGraphArea;
+    
+    NodeGraph* _lastFocusedGraph;
 
-    ///The scene managing elements of the node graph.
-    QGraphicsScene* _graphScene;
-
-    ///The node graph (i.e: the view of the _graphScene)
-    NodeGraph *_nodeGraphArea;
-
+    std::list<NodeGraph*> _groups;
+    
     ///The curve editor.
     CurveEditor *_curveEditor;
 
@@ -417,8 +419,9 @@ struct GuiPrivate
           , _histogramsMutex()
           , _histograms()
           , _nextHistogramIndex(1)
-          , _graphScene(0)
           , _nodeGraphArea(0)
+          , _lastFocusedGraph(0)
+          , _groups()
           , _curveEditor(0)
           , _toolBox(0)
           , _propertiesBin(0)
@@ -583,7 +586,11 @@ GuiPrivate::notifyGuiClosing()
             panel->onGuiClosing();
         }
     }
+    _lastFocusedGraph = 0;
     _nodeGraphArea->discardGuiPointer();
+    for (std::list<NodeGraph*>::iterator it = _groups.begin(); it != _groups.end(); ++it) {
+        (*it)->discardGuiPointer();
+    }
 
     {
         QMutexLocker k(&_panesMutex);
@@ -729,6 +736,8 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     _imp->_lastSelectedViewer = addNewViewerTab(v, where);
     v->setUiContext( _imp->_lastSelectedViewer->getViewer() );
 }
+
+
 
 const std::list<boost::shared_ptr<NodeGui> > &
 Gui::getSelectedNodes() const
@@ -1145,11 +1154,95 @@ void Gui::onPropertiesScrolled()
 }
 
 void
+Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group)
+{
+    
+    assert(dynamic_cast<NodeGroup*>(group->getLiveInstance()));
+    boost::shared_ptr<NodeCollection> collection = group->getGroup();
+    assert(collection);
+    
+    QGraphicsScene* scene = new QGraphicsScene(this);
+    scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    NodeGraph* nodeGraph = new NodeGraph(this,collection,scene,this);
+    nodeGraph->setObjectName(kNodeGraphObjectName);
+    registerTab(nodeGraph);
+    
+    _imp->_groups.push_back(nodeGraph);
+
+}
+
+void
+Gui::addGroupGui(NodeGraph* tab,TabWidget* where)
+{
+    assert(tab);
+    assert(where);
+    {
+        std::list<NodeGraph*>::iterator it = std::find(_imp->_groups.begin(), _imp->_groups.end(), tab);
+        if ( it == _imp->_groups.end() ) {
+            _imp->_groups.push_back(tab);
+        }
+    }
+    where->appendTab(tab);
+}
+
+void
+Gui::removeGroupGui(NodeGraph* tab,bool deleteData)
+{
+    tab->hide();
+
+    if (_imp->_lastFocusedGraph == tab) {
+        _imp->_lastFocusedGraph = 0;
+    }
+    TabWidget* container = dynamic_cast<TabWidget*>( tab->parentWidget() );
+    if (container) {
+        container->removeTab(tab);
+    }
+    
+    if (deleteData) {
+        std::list<NodeGraph*>::iterator it = std::find(_imp->_groups.begin(), _imp->_groups.end(), tab);
+        if ( it != _imp->_groups.end() ) {
+            _imp->_groups.erase(it);
+        }
+        tab->deleteLater();
+    }
+
+}
+
+void
+Gui::setLastSelectedGraph(NodeGraph* graph)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->_lastFocusedGraph = graph;
+}
+
+NodeGraph*
+Gui::getLastSelectedGraph() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->_lastFocusedGraph;
+}
+
+
+boost::shared_ptr<NodeCollection>
+Gui::getLastSelectedNodeCollection() const
+{
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    assert(group);
+    return group;
+}
+
+void
 GuiPrivate::createNodeGraphGui()
 {
-    _graphScene = new QGraphicsScene(_gui);
-    _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui,_appInstance->getProject(),_graphScene,_gui);
+    QGraphicsScene* scene = new QGraphicsScene(_gui);
+    scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    _nodeGraphArea = new NodeGraph(_gui,_appInstance->getProject(),scene,_gui);
     _nodeGraphArea->setObjectName(kNodeGraphObjectName);
     _gui->registerTab(_nodeGraphArea);
 }
@@ -1971,7 +2064,19 @@ Gui::removeViewerTab(ViewerTab* tab,
 {
     assert(tab);
     unregisterTab(tab);
-
+    if (_imp->_lastSelectedViewer == tab) {
+        bool foundOne = false;
+        for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+            if ( ( (*it) != tab ) && (*it)->getInternalNode()->getNode()->isActivated() ) {
+                foundOne = true;
+                _imp->_lastSelectedViewer = *it;
+                break;
+            }
+        }
+        if (!foundOne) {
+            _imp->_lastSelectedViewer = 0;
+        }
+    }
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
@@ -2669,7 +2774,15 @@ Gui::createReader()
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString() ,false);
         } else {
             
-#pragma message WARN("Store a pointer to the last used group (nodegraph) instead of the main group")
+            NodeGraph* graph = 0;
+            if (_imp->_lastFocusedGraph) {
+                graph = _imp->_lastFocusedGraph;
+            } else {
+                graph = _imp->_nodeGraphArea;
+            }
+            boost::shared_ptr<NodeCollection> group = graph->getGroup();
+            assert(group);
+
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             CreateNodeArgs args(found->second.c_str(),
@@ -2682,7 +2795,7 @@ Gui::createReader()
                                 true,
                                 QString(),
                                 defaultValues,
-                                getApp()->getProject());
+                                group);
             ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {
@@ -2712,7 +2825,16 @@ Gui::createWriter()
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if ( found != writersForFormat.end() ) {
             
-#pragma message WARN("Store a pointer to the last used group (nodegraph) instead of the main group")
+            NodeGraph* graph = 0;
+            if (_imp->_lastFocusedGraph) {
+                graph = _imp->_lastFocusedGraph;
+            } else {
+                graph = _imp->_nodeGraphArea;
+            }
+            boost::shared_ptr<NodeCollection> group = graph->getGroup();
+            assert(group);
+
+
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
             CreateNodeArgs args(found->second.c_str(),
@@ -2726,7 +2848,7 @@ Gui::createWriter()
                                 true,
                                 QString(),
                                 defaultValues,
-                                getApp()->getProject());
+                                group);
             ret = _imp->_appInstance->createNode(args);
             if (!ret) {
                 return ret;

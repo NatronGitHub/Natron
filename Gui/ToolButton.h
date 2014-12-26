@@ -23,7 +23,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/scoped_ptr.hpp>
 #endif
 class PluginGroupNode;
-class AppInstance;
+class GuiAppInstance;
 
 class QMenu;
 class QAction;
@@ -36,7 +36,7 @@ class ToolButton
 
 public:
 
-    ToolButton( AppInstance* app,
+    ToolButton( GuiAppInstance* app,
                 PluginGroupNode* pluginToolButton,
                 const QString & pluginID,
                 int major,

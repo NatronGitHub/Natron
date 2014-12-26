@@ -397,6 +397,9 @@ NodeGraph::NodeGraph(Gui* gui,
     : QGraphicsView(scene,parent)
       , _imp( new NodeGraphPrivate(gui,this, group) )
 {
+    
+    group->setNodeGraphPointer(this);
+    
     setAcceptDrops(true);
 
     QObject::connect( group.get(), SIGNAL( nodesCleared() ), this, SLOT( onProjectNodesCleared() ) );
@@ -541,6 +544,10 @@ void
 NodeGraph::discardGuiPointer()
 {
     _imp->_gui = 0;
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if (group) {
+        group->discardNodeGraphPointer();
+    }
 }
 
 void
@@ -3530,6 +3537,17 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
             n->setUserSelected(false);
             _imp->_selection.nodes.erase(found);
         }
+        
+        if (internalNode && internalNode->getLiveInstance()) {
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(internalNode->getLiveInstance());
+            if (isGrp) {
+                NodeGraphI* graph_i = isGrp->getNodeGraph();
+                if (graph_i) {
+                    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+                    getGui()->removeGroupGui(graph, true);
+                }
+            }
+        }
     }
     
     if (internalNode) {
@@ -3893,7 +3911,9 @@ void
 NodeGraph::focusInEvent(QFocusEvent* e)
 {
     QGraphicsView::focusInEvent(e);
-
+    if (_imp->_gui) {
+        _imp->_gui->setLastSelectedGraph(this);
+    }
     _imp->_undoStack->setActive();
 }
 

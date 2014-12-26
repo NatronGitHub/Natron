@@ -28,11 +28,14 @@ struct NodeCollectionPrivate
 {
     AppInstance* app;
     
+    NodeGraphI* graph;
+    
     QMutex nodesMutex;
     NodeList nodes;
     
     NodeCollectionPrivate(AppInstance* app)
     : app(app)
+    , graph(0)
     , nodesMutex()
     , nodes()
     {
@@ -55,6 +58,24 @@ AppInstance*
 NodeCollection::getApplication() const
 {
     return _imp->app;
+}
+
+void
+NodeCollection::setNodeGraphPointer(NodeGraphI* graph)
+{
+    _imp->graph = graph;
+}
+
+void
+NodeCollection::discardNodeGraphPointer()
+{
+    _imp->graph = 0;
+}
+
+NodeGraphI*
+NodeCollection::getNodeGraph() const
+{
+    return _imp->graph;
 }
 
 NodeList
