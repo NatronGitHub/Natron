@@ -106,7 +106,7 @@ public:
 
     PlayState playState;
     
-Q_SIGNALS:
+signals:
     
     void fpsChanged(double actualfps,double desiredfps);
 

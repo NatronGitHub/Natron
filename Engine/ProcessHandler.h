@@ -102,7 +102,7 @@ public:
 
     const QString & getProcessLog() const;
 
-public Q_SLOTS:
+public slots:
 
     /**
      * @brief Called whenever the background process requests a new connection to this server,
@@ -153,7 +153,7 @@ public Q_SLOTS:
      **/
     void startProcess();
 
-Q_SIGNALS:
+signals:
 
     void deleted();
 
@@ -201,7 +201,7 @@ public:
      **/
     void writeToOutputChannel(const QString & message);
 
-public Q_SLOTS:
+public slots:
 
     /**
      * @brief Called when the main process wants to create the input channel.

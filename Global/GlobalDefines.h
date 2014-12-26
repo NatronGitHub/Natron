@@ -15,24 +15,10 @@
 #if defined(_WIN32)
 #include <string>
 #include <windows.h>
-#else
-#include <cstdlib>
 #endif
 
 #include "Global/Macros.h"
-
-
-
-#include <ofxhImageEffect.h>
-#include <ofxPixels.h>
-
-///Inlude python before any Qt include otherwise the definition of "slot" might cause an error.
-///http://stackoverflow.com/questions/15078060/embedding-python-in-qt-5/15078676#15078676
-#include <Python.h>
-#undef toupper
-#undef tolower
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/cstdint.hpp>
 #endif
 #include <QtCore/QForeachContainer>
@@ -50,8 +36,8 @@ typedef boost::uint64_t U64;
 typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
-
-
+#include <ofxhImageEffect.h>
+#include <ofxPixels.h>
 
 typedef int SequenceTime;
 
@@ -104,44 +90,25 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphResizeNodeBackDropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
 
-namespace Natron {
+
+#ifdef __NATRON_WIN32__
+namespace NatronWindows {
 /*Converts a std::string to wide string*/
 inline std::wstring
 s2ws(const std::string & s)
 {
-    
-
-#ifdef __NATRON_WIN32__
     int len;
     int slength = (int)s.length() + 1;
+
     len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
     wchar_t* buf = new wchar_t[len];
     MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
     std::wstring r(buf);
     delete[] buf;
+
     return r;
-#else
-    std::wstring dest;
-    
-    size_t max = s.size() * 4;
-    mbtowc (NULL, NULL, max);  /* reset mbtowc */
-    
-    const char* cstr = s.c_str();
-    
-    while (max > 0) {
-        wchar_t w;
-        size_t length = mbtowc(&w,cstr,max);
-        if (length < 1) {
-            break;
-        }
-        dest.push_back(w);
-        cstr += length;
-        max -= length;
-    }
-    return dest;
+}
+}
 #endif
-   
-}
-}
 
 #endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H_

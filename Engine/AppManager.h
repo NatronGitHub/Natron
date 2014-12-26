@@ -11,8 +11,6 @@
 #ifndef NATRON_GLOBAL_APPMANAGER_H_
 #define NATRON_GLOBAL_APPMANAGER_H_
 
-#include <list>
-#include <string>
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
@@ -20,7 +18,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN) 
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -32,7 +30,6 @@ CLANG_DIAG_ON(deprecated)
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
-
 
 class QMutex;
 
@@ -134,7 +131,7 @@ public:
     {
     }
 
-    boost::shared_ptr<Natron::EffectInstance> createOFXEffect(const std::string & pluginID,boost::shared_ptr<Natron::Node> node,
+    Natron::EffectInstance* createOFXEffect(const std::string & pluginID,boost::shared_ptr<Natron::Node> node,
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,
@@ -143,8 +140,6 @@ public:
     void registerAppInstance(AppInstance* app);
 
     AppInstance* getAppInstance(int appID) const WARN_UNUSED_RETURN;
-    
-    int getNumInstances() const WARN_UNUSED_RETURN;
 
     void removeInstance(int appID);
 
@@ -298,7 +293,7 @@ public:
      **/
     void checkCacheFreeMemoryIsGoodEnough();
     
-    void onCheckerboardSettingsChanged() { Q_EMIT  checkerboardSettingsChanged(); }
+    void onCheckerboardSettingsChanged() { emit checkerboardSettingsChanged(); }
     
     void onOCIOConfigPathChanged(const std::string& path);
     ///Non MT-safe!
@@ -343,13 +338,6 @@ public:
     
     void setThreadAsActionCaller(bool actionCaller);
 
-    /**
-     * @brief Returns a list of IDs of all the plug-ins currently loaded.
-     * Each ID can be passed to the AppInstance::createNode function to instantiate a node
-     * with a plug-in.
-     **/
-    std::list<std::string> getPluginIDs() const;
-
     virtual QString getAppFont() const { return ""; }
     virtual int getAppFontSize() const { return 11; }
     
@@ -367,9 +355,9 @@ public:
     
     void saveCaches() const;
     
-public Q_SLOTS:
-
     void toggleAutoHideGraphInputs();
+public slots:
+    
 
     ///Closes the application not saving any projects.
     virtual void exitApp();
@@ -397,7 +385,7 @@ public Q_SLOTS:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
 
-Q_SIGNALS:
+signals:
 
 
     void checkerboardSettingsChanged();
@@ -433,8 +421,6 @@ protected:
     }
     
     virtual void clearLastRenderedTextures() {}
-    
-    virtual void initBuiltinPythonModules();
 
 private:
 
@@ -447,10 +433,6 @@ private:
     void registerEngineMetaTypes() const;
 
     void loadAllPlugins();
-    
-    void initPython(int argc,char* argv[]);
-    
-    void tearDownPython();
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
@@ -533,50 +515,6 @@ getTextureFromCacheOrCreate(const Natron::FrameKey & key,
 {
     return appPTR->getTextureOrCreate(key,params,entryLocker, returnValue);
 }
-    
-/**
-* @brief Returns a list of IDs of all the plug-ins currently loaded.
-* Each ID can be passed to the AppInstance::createNode function to instantiate a node
-* with a plug-in.
-**/
-inline std::list<std::string>
-getPluginIDs()
-{
-    return appPTR->getPluginIDs();
-}
-    
-inline AppInstance*
-getInstance(int idx)
-{
-    return appPTR->getAppInstance(idx);
-}
-    
-inline int
-getNumInstances()
-{
-    return appPTR->getNumInstances();
-}
-
-/**
- * @brief Ensures that the given Python script as imported the given module
- * and returns the position of the start of the next line after the imports. Note that this position
- * can be the first character after the last one in the script.
- **/
-std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script);
-
-/**
- * @brief Evaluates the given python script*
- * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter.
- * @returns True on success, false on failure.
-**/
-bool interpretPythonScript(const std::string& script,std::string* error);
-    
-void declareNodeVariableToPython(int appID,const std::string& nodeName);
-void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
-void deleteNodeVariableToPython(const std::string& nodeName);
-void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName);
-  
-std::string PY3String_asString(PyObject* obj);
 } // namespace Natron
 
 

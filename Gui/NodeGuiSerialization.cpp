@@ -27,7 +27,7 @@ void
 NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui> & n)
 {
     ////All this code is MT-safe
-    _nodeName = n->getNode()->getFullySpecifiedName();
+    _nodeName = n->getNode()->getName_mt_safe();
     QPointF pos = n->getPos_mt_safe();
     _posX = pos.x();
     _posY = pos.y();

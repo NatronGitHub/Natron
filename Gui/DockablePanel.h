@@ -20,23 +20,18 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 #include <QTabWidget>
-#include <QDialog>
 #include "Global/GlobalDefines.h"
-
-#include "Engine/DockablePanelI.h"
 
 class KnobI;
 class KnobGui;
 class KnobHolder;
 class NodeGui;
 class Gui;
-class Page_Knob;
 class QVBoxLayout;
 class Button;
 class QUndoStack;
@@ -86,7 +81,7 @@ public:
     
     DockablePanel* getPanel() const { return panel; }
     
-Q_SIGNALS:
+signals:
     
     void rightClicked(const QPoint& p);
     void escapePressed();
@@ -105,7 +100,6 @@ private:
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
-    , public DockablePanelI
 {
     Q_OBJECT
 
@@ -185,21 +179,7 @@ public:
 
     void onGuiClosing();
 
-    virtual void scanForNewKnobs() OVERRIDE FINAL;
-    
-    void setUserPageActiveIndex();
-    
-    boost::shared_ptr<Page_Knob> getUserPageKnob() const;
-    
-    void getUserPages(std::list<Page_Knob*>& userPages) const;
-    
-    void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
-    
-    int getPagesCount() const;
-    
-    void rebuildUserPages();
-        
-public Q_SLOTS:
+public slots:
 
     /*Internal slot, not meant to be called externally.*/
     void closePanel();
@@ -215,6 +195,9 @@ public Q_SLOTS:
     
     /*initializes the knobs GUI and also the roto context if any*/
     void initializeKnobs();
+
+    /*Internal slot, not meant to be called externally.*/
+    void onKnobDeletion();
 
     /*Internal slot, not meant to be called externally.*/
     void onUndoClicked();
@@ -243,9 +226,7 @@ public Q_SLOTS:
 
     void onHideUnmodifiedButtonClicked(bool checked);
     
-    void onManageUserParametersActionTriggered();
-    
-Q_SIGNALS:
+signals:
 
     /*emitted when the panel is clicked*/
     void selected();
@@ -289,10 +270,10 @@ protected:
 private:
 
 
-    void initializeKnobsInternal();
+    void initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> > & knobs);
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
-        Q_EMIT selected();
+        emit selected();
         QFrame::mousePressEvent(e);
     }
 
@@ -307,7 +288,7 @@ class NodeSettingsPanel
     Q_OBJECT Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
 
     /*Pointer to the node GUI*/
-    boost::weak_ptr<NodeGui> _nodeGUI;
+    boost::shared_ptr<NodeGui> _nodeGUI;
     bool _selected;
     Button* _settingsButton;
     boost::shared_ptr<MultiInstancePanel> _multiPanel;
@@ -316,7 +297,7 @@ public:
 
     explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                Gui* gui,
-                               const boost::shared_ptr<NodeGui> &NodeUi,
+                               boost::shared_ptr<NodeGui> NodeUi,
                                QVBoxLayout* container,
                                QWidget *parent = 0);
 
@@ -331,7 +312,7 @@ public:
 
     boost::shared_ptr<NodeGui> getNode() const
     {
-        return _nodeGUI.lock();
+        return _nodeGUI;
     }
 
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
@@ -346,7 +327,7 @@ private:
     virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
     
     void onSettingsButtonClicked();
     
@@ -375,64 +356,6 @@ private:
     NodeBackDrop* _backdrop;
 };
 
-
-struct ManageUserParamsDialogPrivate;
-class ManageUserParamsDialog : public QDialog
-{
-    Q_OBJECT
-    
-public:
-    
-    
-    ManageUserParamsDialog(DockablePanel* panel,QWidget* parent);
-    
-    virtual ~ManageUserParamsDialog();
-    
-public Q_SLOTS:
-    
-    void onAddClicked();
-    
-    void onDeleteClicked();
-    
-    void onEditClicked();
-    
-    void onUpClicked();
-    
-    void onDownClicked();
-    
-    void onCloseClicked();
-    
-    void onSelectionChanged();
-    
-private:
-    
-    boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
-};
-
-struct AddKnobDialogPrivate;
-class AddKnobDialog : public QDialog
-{
-    Q_OBJECT
-public:
-    
-    AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>& knob,QWidget* parent);
-    
-    virtual ~AddKnobDialog();
-    
-    boost::shared_ptr<KnobI> getKnob() const;
-
-public Q_SLOTS:
-    
-    void onPageCurrentIndexChanged(int index);
-    
-    void onTypeCurrentIndexChanged(int index);
-    
-    void onOkClicked();
-private:
-    
-    boost::scoped_ptr<AddKnobDialogPrivate> _imp;
-};
-
 class VerticalColorBar : public QWidget
 {
     Q_OBJECT
@@ -443,7 +366,7 @@ public:
     
     VerticalColorBar(QWidget* parent);
     
-public Q_SLOTS:
+public slots:
     
     void setColor(const QColor& color);
     

@@ -23,7 +23,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 
 #include "Global/Macros.h"
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]

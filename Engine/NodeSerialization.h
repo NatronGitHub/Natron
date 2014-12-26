@@ -15,7 +15,7 @@
 #include <string>
 
 #include "Global/Macros.h"
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -31,14 +31,13 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
 #define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
-#define NODE_SERIALIZATION_INTRODUCES_USER_KNOBS 4
-#define NODE_SERIALIZATION_INTRODUCES_GROUPS 5
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_GROUPS
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE
 
 namespace Natron {
 class Node;
 }
 class AppInstance;
+
 class NodeSerialization
 {
 public:
@@ -49,7 +48,7 @@ public:
     NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs = true,bool copyKnobs = false);
 
     ////Used to deserialize
-    NodeSerialization()
+    NodeSerialization(AppInstance* app)
         : _isNull(true)
         , _nbKnobs(0)
         , _knobsValues()
@@ -60,6 +59,7 @@ public:
         , _pluginMinorVersion(-1)
         , _hasRotoContext(false)
         , _node()
+        , _app(app)
     {
     }
 
@@ -137,16 +137,6 @@ public:
         return _multiInstanceParentName;
     }
 
-    const std::list<boost::shared_ptr<GroupKnobSerialization> >& getUserPages() const
-    {
-        return _userPages;
-    }
-    
-    const std::list< boost::shared_ptr<NodeSerialization> >& getNodesCollection() const
-    {
-        return _children;
-    }
-    
 private:
 
     bool _isNull;
@@ -162,11 +152,8 @@ private:
     bool _hasRotoContext;
     RotoContextSerialization _rotoContext;
     boost::shared_ptr<Natron::Node> _node;
+    AppInstance* _app;
     std::string _multiInstanceParentName;
-    std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
-    
-    ///If this node is a group, this is the children
-    std::list< boost::shared_ptr<NodeSerialization> > _children;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -178,7 +165,7 @@ private:
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
         ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);
-        
+
         for (KnobValues::const_iterator it = _knobsValues.begin(); it != _knobsValues.end(); ++it) {
             ar & boost::serialization::make_nvp( "item",*(*it) );
         }
@@ -190,23 +177,8 @@ private:
             ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
         }
         ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
-        
-        int userPagesCount = (int)_userPages.size();
-        ar & boost::serialization::make_nvp("UserPagesCount",userPagesCount);
-        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin() ; it != _userPages.end() ;++it ) {
-            ar & boost::serialization::make_nvp("item",**it);
-        }
-       
-        int nodesCount = (int)_children.size();
-        ar & boost::serialization::make_nvp("Children",nodesCount);
-        
-        for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _children.begin();
-             it != _children.end();
-             ++it) {
-            ar & boost::serialization::make_nvp("item",**it);
-        }
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
@@ -215,7 +187,8 @@ private:
             throw std::invalid_argument("The project you're trying to load contains data produced by a more recent "
                                         "version of Natron, which makes it unreadable");
         }
-        
+
+        assert(_app);
         ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
@@ -230,7 +203,7 @@ private:
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
         _isNull = false;
-        
+
         if (version >= NODE_SERIALIZATION_V_INTRODUCES_ROTO) {
             ar & boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
             if (_hasRotoContext) {
@@ -240,29 +213,8 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
             ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
         }
-        
-        if (version >= NODE_SERIALIZATION_INTRODUCES_USER_KNOBS) {
-            int userPagesCount;
-            ar & boost::serialization::make_nvp("UserPagesCount",userPagesCount);
-            for (int i = 0; i < userPagesCount; ++i) {
-                boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization());
-                ar & boost::serialization::make_nvp("item",*s);
-                _userPages.push_back(s);
-            }
-        }
-        
-        if (version >= NODE_SERIALIZATION_INTRODUCES_GROUPS) {
-            int nodesCount ;
-            ar & boost::serialization::make_nvp("Children",nodesCount);
-            
-            for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
-                ar & boost::serialization::make_nvp("item",*s);
-                _children.push_back(s);
-            }
-        }
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 

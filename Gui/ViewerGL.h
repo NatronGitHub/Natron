@@ -14,7 +14,7 @@
 
 #include <vector>
 #include <utility>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -188,7 +188,7 @@ public:
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
     
-public Q_SLOTS:
+public slots:
 
 
     /**
@@ -338,7 +338,7 @@ public:
     
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-Q_SIGNALS:
+signals:
 
     /**
      *@brief Signal emitted when the current zoom factor changed.

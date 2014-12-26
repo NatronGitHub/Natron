@@ -887,10 +887,10 @@ FileSystemModel::setRootPath(const QString& path)
         
         _imp->populateItem(item);
     } else {
-        Q_EMIT directoryLoaded(path);
+        emit directoryLoaded(path);
     }
     
-    Q_EMIT rootPathChanged(path);
+    emit rootPathChanged(path);
 }
 
 
@@ -948,7 +948,7 @@ FileSystemModel::onDirectoryLoadedByGatherer(const QString& directory)
     }
     
     ///Finally notify the client that the directory is ready for use
-    Q_EMIT directoryLoaded(directory);
+    emit directoryLoaded(directory);
 }
 
 void
@@ -1367,7 +1367,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
         addChildToItem(item.get(), it->first, it->second);
     }
     
-    Q_EMIT directoryLoaded( item->absoluteFilePath() );
+    emit directoryLoaded( item->absoluteFilePath() );
 }
 
 void

@@ -15,7 +15,7 @@
 #include <map>
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
@@ -550,7 +550,7 @@ struct RotoContextPrivate
     bool autoKeying;
     bool rippleEdit;
     bool featherLink;
-    boost::weak_ptr<Natron::Node> node;
+    Natron::Node* node;
     U64 age;
 
     ///These are knobs that take the value of the selected splines info.
@@ -579,7 +579,7 @@ struct RotoContextPrivate
     U64 lastRenderHash;
     boost::shared_ptr<Natron::Image> lastRenderedImage;
 
-    RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
+    RotoContextPrivate(Natron::Node* n )
         : rotoContextMutex()
           , layers()
           , autoKeying(true)

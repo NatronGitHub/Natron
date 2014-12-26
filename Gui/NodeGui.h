@@ -13,11 +13,9 @@
 #define NATRON_GUI_NODEGUI_H_
 
 #include <map>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -103,7 +101,7 @@ public:
     void setAlignment(Qt::Alignment alignment);
     virtual int type() const;
 
-public Q_SLOTS:
+public slots:
 
     void updateGeometry(int, int, int);
     void updateGeometry();
@@ -115,7 +113,7 @@ private:
 };
 
 class NodeGui
-: public QObject,public QGraphicsItem, public NodeGuiI, public boost::enable_shared_from_this<NodeGui>
+    : public QObject,public QGraphicsItem, public NodeGuiI
 {
     Q_OBJECT
     Q_INTERFACES(QGraphicsItem)
@@ -128,6 +126,7 @@ public:
     NodeGui(QGraphicsItem *parent = 0);
 
     void initialize(NodeGraph* dag,
+                    const boost::shared_ptr<NodeGui> & thisAsShared,
                     QVBoxLayout *dockContainer,
                     const boost::shared_ptr<Natron::Node> & internalNode,
                     bool requestedByLoad);
@@ -150,7 +149,7 @@ public:
 
     boost::shared_ptr<Natron::Node> getNode() const
     {
-        return _internalNode.lock();
+        return _internalNode;
     }
 
     /*Returns a pointer to the dag gui*/
@@ -307,7 +306,7 @@ public:
     
     virtual void refreshStateIndicator();
         
-public Q_SLOTS:
+public slots:
 
     void onSettingsPanelClosed(bool closed);
     
@@ -396,7 +395,7 @@ public Q_SLOTS:
     
     void setOptionalInputsVisible(bool visible);
 
-Q_SIGNALS:
+signals:
 
     void nameChanged(QString);
 
@@ -440,7 +439,7 @@ private:
     NodeGraph* _graph;
 
     /*pointer to the internal node*/
-    boost::weak_ptr<Natron::Node> _internalNode;
+    boost::shared_ptr<Natron::Node> _internalNode;
 
     /*true if the node is selected by the user*/
     bool _selected;
@@ -481,16 +480,18 @@ private:
 
     ///This is the garphical red line displayed when the node is a clone
     LinkArrow* _slaveMasterLink;
-    boost::weak_ptr<NodeGui> _masterNodeGui;
+    boost::shared_ptr<NodeGui> _masterNodeGui;
 
     ///For each knob that has a link to another parameter, display an arrow
+    ///This might need to be a multimap in the future if an expression refers to several params
     struct LinkedDim
     {
-        std::list<std::pair<KnobI*,KnobI*> > knobs;
+        KnobI* knob;
+        int dimension;
         LinkArrow* arrow;
     };
 
-    typedef std::map<boost::shared_ptr<Natron::Node>,LinkedDim> KnobGuiLinks;
+    typedef std::list<LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
     NodeGuiIndicator* _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
@@ -499,7 +500,7 @@ private:
     QPointF _distanceSinceLastMagnec; //for x and for y
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
-    boost::weak_ptr<NodeGui> _parentMultiInstance;
+    boost::shared_ptr<NodeGui> _parentMultiInstance;
     
     int _renderingStartedCount;
     std::map<int,int> _inputNRenderingStartedCount;

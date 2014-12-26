@@ -52,7 +52,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/KnobSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/Variant.h"
-#include "Engine/NodeGroup.h"
 
 #include "Gui/AnimationButton.h"
 #include "Gui/DockablePanel.h"
@@ -87,6 +86,7 @@ struct KnobGui::KnobGuiPrivate
     AnimationButton* animationButton;
     QMenu* copyRightClickMenu;
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
+    int row;
 
     ////A vector of all other knobs on the same line.
     std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
@@ -107,6 +107,7 @@ struct KnobGui::KnobGuiPrivate
           , animationButton(NULL)
           , copyRightClickMenu( new MenuWithToolTips(container) )
           , fieldLayout(NULL)
+          , row(-1)
           , knobsOnSameLine()
           , containerLayout(NULL)
           , field(NULL)
@@ -116,16 +117,6 @@ struct KnobGui::KnobGuiPrivate
           , guiCurves()
     {
         copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
-    }
-    
-    void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
-    {
-        for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
-            if (*it == knob) {
-                knobsOnSameLine.erase(it);
-                break;
-            }
-        }
     }
 };
 
@@ -153,8 +144,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( handler,SIGNAL( appendParamEditChange(Variant,int,int,bool,bool) ),this,
                       SLOT( onAppendParamEditChanged(Variant,int,int,bool,bool) ) );
     QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
-    QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
-    QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
+    
     _imp->guiCurves.resize(knob->getDimension());
     if (knob->canAnimate()) {
         for (int i = 0; i < knob->getDimension(); ++i) {
@@ -165,30 +155,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
 
 KnobGui::~KnobGui()
 {
-
-}
-
-void
-KnobGui::removeGui()
-{
-    for (std::vector< boost::shared_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it!=_imp->knobsOnSameLine.end(); ++it) {
-        KnobGui* kg = _imp->container->getKnobGui(*it);
-        assert(kg);
-        kg->_imp->removeFromKnobsOnSameLineVector(getKnob());
-    }
-    
-    if (_imp->knobsOnSameLine.empty()) {
-        if (_imp->isOnNewLine) {
-            delete _imp->descriptionLabel;
-        }
-        delete _imp->field;
-    } else {
-        delete _imp->descriptionLabel;
-        delete _imp->animationMenu;
-        delete _imp->animationButton;
-        removeSpecificGui();
-    }
- 
+//    delete _imp->animationButton;
+//    delete _imp->animationMenu;
 }
 
 Gui*
@@ -218,6 +186,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
                    QLabel* label,
                    QHBoxLayout* layout,
+                   int row,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
 {
@@ -225,6 +194,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
 
     _imp->containerLayout = containerLayout;
     _imp->fieldLayout = layout;
+    _imp->row = row;
     _imp->knobsOnSameLine = knobsOnSameLine;
     _imp->field = fieldContainer;
     _imp->descriptionLabel = label;
@@ -237,7 +207,6 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         }
     }
 
-
     if (label) {
         label->setToolTip( toolTip() );
     }
@@ -248,19 +217,35 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         layout->addWidget(_imp->customInteract);
     } else {
         createWidget(layout);
-        updateToolTip();
     }
     if ( knob->isAnimationEnabled() ) {
         createAnimationButton(layout);
     }
     
-   
+    if (!knob->isNewLineTurnedOff() && shouldAddStretch()) {
+        layout->addStretch();
+    }
+
     _imp->widgetCreated = true;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         updateGuiInternal(i);
         onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
     }
+    
+    
+    setEnabledSlot();
+    if (isOnNewLine) {
+
+        fieldContainer->layout()->setAlignment(Qt::AlignLeft);
+        if (!label || !showDescriptionLabel() || label->text().isEmpty()) {
+            containerLayout->addWidget(fieldContainer,row,0, 1, 2);
+        } else {
+            containerLayout->addWidget(fieldContainer,row,1, 1, 1);
+            containerLayout->addWidget(label, row, 0, 1, 1, Qt::AlignRight);
+        }
+    }
+    setSecret();
 }
 
 void
@@ -383,74 +368,46 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         }
         
     } else if (isSlave) {
-        
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(knob->getHolder());
-        if (effect) {
-            _imp->copyRightClickMenu->addSeparator();
-            QAction* unlinkAction = new QAction(tr("Unlink"),_imp->copyRightClickMenu);
-            unlinkAction->setData( QVariant(dimension) );
-            QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
-            _imp->copyRightClickMenu->addAction(unlinkAction);
-            
-            
-            ///a stub action just to indicate what is the master knob.
-            QAction* masterNameAction = new QAction("",_imp->copyRightClickMenu);
-            std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
-            assert(master.second);
-            
-            ///find-out to which node that master knob belongs to
-            std::string nodeName("Linked to: ");
-            
-            boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
-            NodeList allNodes;
-            group->getActiveNodes(&allNodes);
+        _imp->copyRightClickMenu->addSeparator();
+        QAction* unlinkAction = new QAction(tr("Unlink"),_imp->copyRightClickMenu);
+        unlinkAction->setData( QVariant(dimension) );
+        QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
+        _imp->copyRightClickMenu->addAction(unlinkAction);
+
+
+        ///a stub action just to indicate what is the master knob.
+        QAction* masterNameAction = new QAction("",_imp->copyRightClickMenu);
+        std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
+        assert(master.second);
+
+        ///find-out to which node that master knob belongs to
+        std::string nodeName("Linked to: ");
+
+        assert( getKnob()->getHolder()->getApp() );
+        const std::vector<boost::shared_ptr<Natron::Node> > allNodes = knob->getHolder()->getApp()->getProject()->getCurrentNodes();
+        for (U32 i = 0; i < allNodes.size(); ++i) {
+            const std::vector< boost::shared_ptr<KnobI> > & knobs = allNodes[i]->getKnobs();
             bool shouldStop = false;
-            for (NodeList::iterator it = allNodes.begin(); it != allNodes.end() ;++it) {
-                const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
-                
-                for (U32 j = 0; j < knobs.size(); ++j) {
-                    if ( knobs[j].get() == master.second.get() ) {
-                        nodeName.append( (*it)->getName() );
-                        shouldStop = true;
-                        break;
-                    }
-                }
-                if (shouldStop) {
+            for (U32 j = 0; j < knobs.size(); ++j) {
+                if ( knobs[j].get() == master.second.get() ) {
+                    nodeName.append( allNodes[i]->getName() );
+                    shouldStop = true;
                     break;
                 }
             }
-            
-            ///A Knob of a group might be linked to a knob of an internal node of the group
-            NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(effect);
-            if (isGroupNode && !shouldStop) {
-                isGroupNode->getActiveNodes(&allNodes);
-                for (NodeList::iterator it = allNodes.begin(); it != allNodes.end() ;++it) {
-                    const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
-                    bool shouldStop = false;
-                    for (U32 j = 0; j < knobs.size(); ++j) {
-                        if ( knobs[j].get() == master.second.get() ) {
-                            nodeName.append( (*it)->getName() );
-                            shouldStop = true;
-                            break;
-                        }
-                    }
-                    if (shouldStop) {
-                        break;
-                    }
-                }
-
+            if (shouldStop) {
+                break;
             }
-            
-            nodeName.append(".");
-            nodeName.append( master.second->getDescription() );
-            if (master.second->getDimension() > 1) {
-                nodeName.append(".");
-                nodeName.append( master.second->getDimensionName(master.first) );
-            }
-            masterNameAction->setText( nodeName.c_str() );
-            masterNameAction->setEnabled(false);
-            _imp->copyRightClickMenu->addAction(masterNameAction);
         }
+        nodeName.append(".");
+        nodeName.append( master.second->getDescription() );
+        if (master.second->getDimension() > 1) {
+            nodeName.append(".");
+            nodeName.append( master.second->getDimensionName(master.first) );
+        }
+        masterNameAction->setText( nodeName.c_str() );
+        masterNameAction->setEnabled(false);
+        _imp->copyRightClickMenu->addAction(masterNameAction);
     }
 
     addRightClickMenuEntries(_imp->copyRightClickMenu);
@@ -551,7 +508,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 }
             }
             menu->addSeparator();
-        } // if (!isSlave)
+        }
         
 
         if (!isSlave) {
@@ -620,95 +577,8 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 pasteAction->setEnabled(false);
             }
         }
-    } //if ( knob->isAnimationEnabled() ) {
-    
-    menu->addSeparator();
-    if (dimension != -1 || knob->getDimension() == 1) {
-        
-        std::string hasExpr = knob->getExpression(0);
-        
-        QAction* setExprAction = new QAction(!hasExpr.empty() ? tr("Edit expression...") : tr("Set expression..."),menu);
-        QObject::connect(setExprAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
-        setExprAction->setData(dimension);
-        menu->addAction(setExprAction);
-        
-        if (!hasExpr.empty()) {
-            QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
-            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-            clearExprAction->setData(dimension);
-            menu->addAction(clearExprAction);
-        }
-    }
-    
-    if (knob->getDimension() > 1) {
-        QAction* setExprsAction = new QAction(tr("Set expression (all dimensions)"),menu);
-        setExprsAction->setData(-1);
-        QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
-        menu->addAction(setExprsAction);
-        
-        QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
-        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-        clearExprAction->setData(-1);
-        menu->addAction(clearExprAction);
-
     }
 } // createAnimationMenu
-
-void
-KnobGui::onSetExprActionTriggered()
-{
-    QAction* action = qobject_cast<QAction*>(sender());
-    assert(action);
-    
-    int dim = action->data().toInt();
-    
-  
-    EditExpressionDialog* dialog = new EditExpressionDialog(dim,this,_imp->container);
-    
-    QObject::connect( dialog,SIGNAL( accepted() ),this,SLOT( onEditExprDialogFinished() ) );
-    QObject::connect( dialog,SIGNAL( rejected() ),this,SLOT( onEditExprDialogFinished() ) );
-    
-    dialog->show();
-    
-}
-
-void
-KnobGui::onClearExprActionTriggered()
-{
-    QAction* act = qobject_cast<QAction*>(sender());
-    assert(act);
-    int dim = act->data().toInt();
-    pushUndoCommand(new SetExpressionCommand(getKnob(),false,dim,""));
-}
-
-void
-KnobGui::onEditExprDialogFinished()
-{
-    
-    EditExpressionDialog* dialog = qobject_cast<EditExpressionDialog*>( sender() );
-    
-    if (dialog) {
-        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
-        
-        switch (ret) {
-            case QDialog::Accepted: {
-                bool hasRetVar;
-                QString expr = dialog->getExpression(&hasRetVar);
-                std::string stdExpr = expr.toStdString();
-                int dim = dialog->getDimension();
-                std::string existingExpr = getKnob()->getExpression(dim);
-                if (existingExpr != stdExpr) {
-                    pushUndoCommand(new SetExpressionCommand(getKnob(),hasRetVar,dim,stdExpr));
-                }
-            } break;
-            case QDialog::Rejected:
-                break;
-        }
-        
-        dialog->deleteLater();
-
-    }
-}
 
 void
 KnobGui::setSecret()
@@ -718,13 +588,6 @@ KnobGui::setSecret()
         show(); //
     } else {
         hide();
-    }
-    Group_KnobGui* isGrp = dynamic_cast<Group_KnobGui*>(this);
-    if (isGrp) {
-        const std::list<KnobGui*>& children = isGrp->getChildren();
-        for (std::list<KnobGui*>::const_iterator it = children.begin(); it != children.end(); ++it) {
-            (*it)->setSecret();
-        }
     }
 }
 
@@ -826,7 +689,7 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
             c->setKeyFrameInterpolation(interp, j);
         }
     }
-    Q_EMIT keyInterpolationChanged();
+    emit keyInterpolationChanged();
 }
 
 void
@@ -911,7 +774,7 @@ KnobGui::setKeyframe(double time,
     
     bool keyAdded = knob->onKeyFrameSet(time, dimension);
     
-    Q_EMIT keyFrameSet();
+    emit keyFrameSet();
     
     if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin()) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
@@ -927,7 +790,7 @@ KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
     
     bool keyAdded = knob->onKeyFrameSet(time, key, dimension);
     
-    Q_EMIT keyFrameSet();
+    emit keyFrameSet();
     if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
@@ -991,7 +854,7 @@ KnobGui::removeKeyFrame(double time,
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     knob->onKeyFrameRemoved(time, dimension);
-    Q_EMIT keyFrameRemoved();
+    emit keyFrameRemoved();
     
 
     assert( knob->getHolder()->getApp() );
@@ -1010,43 +873,8 @@ KnobGui::getScriptNameHtml() const
 QString
 KnobGui::toolTip() const
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
-    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
     QString tt = getScriptNameHtml();
-    
-    QString realTt;
-    if (!isChoice) {
-        realTt.append( knob->getHintToolTip().c_str() );
-    } else {
-        realTt.append( isChoice->getHintToolTipFull().c_str() );
-    }
-    
-    std::vector<std::string> expressions;
-    bool exprAllSame = true;
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        expressions.push_back(knob->getExpression(i));
-        if (i > 0 && expressions[i] != expressions[0]) {
-            exprAllSame = false;
-        }
-    }
-    
-    QString exprTt;
-    if (exprAllSame) {
-        if (!expressions[0].empty()) {
-            std::string dimName = knob->getDimensionName(0);
-            exprTt = QString("<br>%1 = <b>%2</b></br>").arg(dimName.c_str()).arg(expressions[0].c_str());
-        }
-    } else {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            std::string dimName = knob->getDimensionName(i);
-            QString toAppend = QString("<br>%1 = <b>%2</b></br>").arg(dimName.c_str()).arg(expressions[i].c_str());
-            exprTt.append(toAppend);
-        }
-    }
-    
-    if (!exprTt.isEmpty()) {
-        tt.append(exprTt);
-    }
+    QString realTt( getKnob()->getHintToolTip().c_str() );
 
     if ( !realTt.isEmpty() ) {
         realTt = Qt::convertFromPlainText(realTt,Qt::WhiteSpaceNormal);
@@ -1225,7 +1053,7 @@ KnobGui::onInternalValueChanged(int dimension,
 void
 KnobGui::updateCurveEditorKeyframes()
 {
-    Q_EMIT keyFrameSet();
+    emit keyFrameSet();
 }
 
 void
@@ -1255,7 +1083,7 @@ KnobGui::onInternalKeyRemoved(SequenceTime time,
     boost::shared_ptr<KnobI> knob = getKnob();
 
     knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
-    Q_EMIT keyFrameRemoved();
+    emit keyFrameRemoved();
 }
 
 void
@@ -1422,7 +1250,7 @@ struct LinkToKnobDialogPrivate
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
-    NodeList allNodes;
+    std::vector< boost::shared_ptr<Natron::Node> > allNodes;
     std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
 
     LinkToKnobDialogPrivate(KnobGui* from)
@@ -1462,14 +1290,11 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(from->getKnob()->getHolder());
-    assert(isEffect);
-    boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
-    
-    group->getActiveNodes(&_imp->allNodes);
+    assert( from->getKnob()->getHolder()->getApp() );
+    from->getKnob()->getHolder()->getApp()->getActiveNodes(&_imp->allNodes);
     QStringList nodeNames;
-    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        QString name( (*it)->getName().c_str() );
+    for (U32 i = 0; i < _imp->allNodes.size(); ++i) {
+        QString name( _imp->allNodes[i]->getName().c_str() );
         nodeNames.push_back(name);
         //_imp->nodeSelectionCombo->addItem(name);
     }
@@ -1502,9 +1327,9 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     _imp->knobSelectionCombo->clear();
     boost::shared_ptr<Natron::Node> selectedNode;
     std::string currentNodeName = index.toStdString();
-    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        if ((*it)->getName() == currentNodeName) {
-            selectedNode = *it;
+    for (U32 i = 0; i < _imp->allNodes.size(); ++i) {
+        if (_imp->allNodes[i]->getName() == currentNodeName) {
+            selectedNode = _imp->allNodes[i];
             break;
         }
     }
@@ -1554,9 +1379,9 @@ KnobGui::onKnobSlavedChanged(int dimension,
                              bool b)
 {
     if (b) {
-        Q_EMIT keyFrameRemoved();
+        emit keyFrameRemoved();
     } else {
-        Q_EMIT keyFrameSet();
+        emit keyFrameSet();
     }
     setReadOnly_(b, dimension);
 }
@@ -1819,7 +1644,7 @@ KnobGui::onInternalAnimationAboutToBeRemoved()
 void
 KnobGui::onInternalAnimationRemoved()
 {
-    Q_EMIT keyFrameRemoved();
+    emit keyFrameRemoved();
 }
 
 void
@@ -1902,12 +1727,7 @@ void
 KnobGui::onAnimationLevelChanged(int dim,int level)
 {
     if (!_imp->customInteract) {
-        std::string expr = getKnob()->getExpression(dim);
-        reflectExpressionState(dim,!expr.empty());
-        if (expr.empty()) {
-            reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
-        }
-        
+        reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
     }
 }
 
@@ -1951,253 +1771,6 @@ KnobGui::getCurve(int dimension) const
 void
 KnobGui::onRefreshGuiCurve(int /*dimension*/)
 {
-    Q_EMIT refreshCurveEditor();
+    emit refreshCurveEditor();
 }
 
-struct EditExpressionDialogPrivate
-{
-    KnobGui* knob;
-    int dimension;
-    
-    QVBoxLayout* mainLayout;
-    
-    QLabel* expressionLabel;
-    QTextEdit* expressionEdit;
-    
-    QWidget* midButtonsContainer;
-    QHBoxLayout* midButtonsLayout;
-    
-    Button* useRetButton;
-    Button* helpButton;
-    
-    QLabel* resultLabel;
-    QTextEdit* resultEdit;
-    
-    QDialogButtonBox* buttons;
-    
-    EditExpressionDialogPrivate(int dimension,KnobGui* knob)
-    : knob(knob)
-    , dimension(dimension)
-    , mainLayout(0)
-    , expressionLabel(0)
-    , expressionEdit(0)
-    , midButtonsContainer(0)
-    , midButtonsLayout(0)
-    , useRetButton(0)
-    , helpButton(0)
-    , resultLabel(0)
-    , resultEdit(0)
-    , buttons(0)
-    {
-        
-    }
-};
-
-EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
-: QDialog(parent)
-, _imp(new EditExpressionDialogPrivate(dimension,knob))
-{
-    boost::shared_ptr<KnobI> k = knob->getKnob();
-    
-    QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
-    
-    QString title(tr("Set expression on "));
-    title.append(k->getName().c_str());
-    if (dimension != -1 && k->getDimension() > 1) {
-        title.append(".");
-        title.append(k->getDimensionName(dimension).c_str());
-    }
-    setWindowTitle(title);
-    
-    _imp->mainLayout = new QVBoxLayout(this);
-    
-    QString labelHtml(tr("<br><b>Python</b> expression: </br>"
-                         "<br>For convenience the following module(s) have been imported: </br>"
-                         "<br/>"
-                         "<br><i><font color=orange>from math import *</font></i></br>"
-                         "<br/>"
-                         "<br>Also the following variables have been declared: </br>"
-                         "<br/>"
-                         "<br><b>thisNode</b> which references the current node</br>"
-                         "<br><b>thisParam</b> which references the current param which expression is being edited</br>"
-                         "<br><b>dimension</b> Defined only if the parameter is multi-dimensional, it references the dimension of the parameter "
-                         "which is being edited (0-based index)</br>"
-                         "<br><b>frame</b> which references the current time on the timeline</br>"));
-    
-    _imp->expressionLabel = new QLabel(labelHtml,this);
-    _imp->expressionLabel->setFont(font);
-    _imp->mainLayout->addWidget(_imp->expressionLabel);
-    
-    std::string curExpr = k->getExpression(dimension == -1 ? 0 : dimension);
-    _imp->expressionEdit = new QTextEdit(this);
-    _imp->mainLayout->addWidget(_imp->expressionEdit);
-    _imp->expressionEdit->setPlainText(curExpr.c_str());
-    
-    _imp->midButtonsContainer = new QWidget(this);
-    _imp->midButtonsLayout = new QHBoxLayout(_imp->midButtonsContainer);
-    
-    bool hasRetVariable = k->isExpressionUsingRetVariable(dimension == -1 ? 0 : dimension);
-    
-    
-    _imp->useRetButton = new Button(tr("Multi-line"),_imp->midButtonsContainer);
-    _imp->useRetButton->setToolTip(Qt::convertFromPlainText(tr("When checked the Python expression will be interpreted "
-                                                               "as series of statement. The return value should be then assigned to the "
-                                                               "\"ret\" variable. When unchecked the expression must not contain "
-                                                               "any new line character and the result will be interpreted from the "
-                                                               "interpretation of the single line."),Qt::WhiteSpaceNormal));
-    _imp->useRetButton->setCheckable(true);
-    bool checked = !curExpr.empty() && hasRetVariable;
-    _imp->useRetButton->setChecked(checked);
-    _imp->useRetButton->setDown(checked);
-    QObject::connect(_imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)));
-    
-    _imp->midButtonsLayout->addWidget(_imp->useRetButton);
-    
-    _imp->helpButton = new Button(tr("Help"),_imp->midButtonsContainer);
-    QObject::connect(_imp->helpButton, SIGNAL(clicked(bool)), this, SLOT(onHelpRequested()));
-    _imp->midButtonsLayout->addWidget(_imp->helpButton);
-    _imp->midButtonsLayout->addStretch();
-    
-    _imp->mainLayout->addWidget(_imp->midButtonsContainer);
-    
-    _imp->resultLabel = new QLabel(tr("Result:"),this);
-    _imp->resultLabel->setFont(font);
-    _imp->mainLayout->addWidget(_imp->resultLabel);
-    
-    _imp->resultEdit = new QTextEdit(this);
-    _imp->resultEdit->setFixedHeight(80);
-    _imp->resultEdit->setReadOnly(true);
-    _imp->mainLayout->addWidget(_imp->resultEdit);
-    
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
-    _imp->mainLayout->addWidget(_imp->buttons);
-    QObject::connect(_imp->buttons,SIGNAL(accepted()),this,SLOT(accept()));
-    QObject::connect(_imp->buttons,SIGNAL(rejected()),this,SLOT(reject()));
-    
-    if (!curExpr.empty()) {
-        compileExpression(curExpr.c_str());
-    }
-    QObject::connect(_imp->expressionEdit, SIGNAL(textChanged()), this, SLOT(onTextEditChanged()));
-    _imp->expressionEdit->setFocus();
-}
-
-void
-EditExpressionDialog::onHelpRequested()
-{
-    QString msg(tr("<br>Each node in the current project already has a variable declared with its name, e.g if you have a node named "
-                   "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.</br>"
-                   "<br>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</br>"
-                   "<br/>"
-                   "<br>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:</br>"
-                   "<br>Transform1.rotate</br>"
-                   "<br>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
-                   "identifies a parameter internally.</br>"
-                   "<br/>"
-                   "<br>The <i>thisParam</i> variable has been defined for convenience when editing an expression. It refers to the current parameter. "
-                   "In the same way the <i>dimension</i> variable has been defined and references the current dimension of the parameter which expression is being set"
-                   ".</br>"
-                   "<br/>"
-                   "<br>The <i>dimension</i> is a 0-based index identifying a specific field of a parameter. For instance if we're editing the expression of the y "
-                   "field of the translate parameter of Transform1, the <i>dimension</i> would be 1. </br>"
-                   "<br/>"
-                   "<br>To access values of a parameter several functions are made accessible: </br>"
-                   "<br/>"
-                   "<br>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
-                   "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</br>"
-                   "<br/>"
-                   "<br>Transform1.center.get().x</br>"
-                   "<br/>"
-                   "<br>The <b>getAt(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
-                   "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters which have an animation "
-                   "it would then return their value at the corresponding timeline position.</br>"));
-    Natron::informationDialog(tr("Help").toStdString(), msg.toStdString());
-}
-
-void
-EditExpressionDialog::compileExpression(const QString& expr)
-{
-    std::string exprResult;
-    try {
-        _imp->knob->getKnob()->validateExpression(expr.toStdString(),_imp->dimension == -1 ? 0 : _imp->dimension,_imp->useRetButton->isChecked()
-                                                  ,&exprResult);
-    } catch(const std::exception& e) {
-        QString err = QString("ERROR: %1").arg(e.what());
-        _imp->resultEdit->setPlainText(err);
-        return;
-    }
-    _imp->resultEdit->setPlainText(exprResult.c_str());
-    
-}
-
-QString
-EditExpressionDialog::getExpression(bool* hasRetVariable) const
-{
-    *hasRetVariable = _imp->useRetButton->isChecked();
-    return _imp->expressionEdit->toPlainText();
-}
-
-void
-EditExpressionDialog::onTextEditChanged()
-{
-    compileExpression(_imp->expressionEdit->toPlainText());
-}
-
-void
-EditExpressionDialog::onUseRetButtonClicked(bool useRet)
-{
-    compileExpression(_imp->expressionEdit->toPlainText());
-    _imp->useRetButton->setDown(useRet);
-}
-
-EditExpressionDialog::~EditExpressionDialog()
-{
-    
-}
-
-void
-EditExpressionDialog::keyPressEvent(QKeyEvent* e)
-{
-    if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        accept();
-    } else if (e->key() == Qt::Key_Escape) {
-        reject();
-    } else {
-        QDialog::keyPressEvent(e);
-    }
-    
-}
-
-int
-EditExpressionDialog::getDimension() const
-{
-    return _imp->dimension;
-}
-
-void
-KnobGui::onExprChanged(int dimension)
-{
-    boost::shared_ptr<KnobI> knob = getKnob();
-    std::string exp = knob->getExpression(dimension);
-    reflectExpressionState(dimension,!exp.empty());
-    if (exp.empty()) {
-        reflectAnimationLevel(dimension, knob->getAnimationLevel(dimension));
-        
-    }
-    
-    onHelpChanged();
-}
-
-void
-KnobGui::onHelpChanged()
-{
-    if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setToolTip( toolTip() );
-    }
-    updateToolTip();
-}
-
-void
-KnobGui::onKnobDeletion()
-{
-    _imp->container->deleteKnobGui(getKnob());
-}

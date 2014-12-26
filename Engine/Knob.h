@@ -15,8 +15,6 @@
 #include <vector>
 #include <string>
 #include <set>
-
-
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 
@@ -24,6 +22,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
+
 
 class Curve;
 class KeyFrame;
@@ -36,7 +35,6 @@ namespace Natron {
 class OfxParamOverlayInteract;
 }
 
-class DockablePanelI;
 
 class KnobI;
 class KnobSignalSlotHandler
@@ -58,28 +56,33 @@ public:
     void s_evaluateValueChangedInMainThread(int dimension,
                                             int reason)
     {
-        Q_EMIT evaluateValueChangedInMainThread(dimension,reason);
+        emit evaluateValueChangedInMainThread(dimension,reason);
     }
     
     void s_animationLevelChanged(int dim,int level)
     {
-        Q_EMIT animationLevelChanged(dim,level);
+        emit animationLevelChanged(dim,level);
+    }
+    
+    void s_deleted()
+    {
+        emit deleted();
     }
     
     void s_valueChanged(int dimension,
                         int reason)
     {
-        Q_EMIT valueChanged(dimension,reason);
+        emit valueChanged(dimension,reason);
     }
     
     void s_secretChanged()
     {
-        Q_EMIT secretChanged();
+        emit secretChanged();
     }
     
     void s_enabledChanged()
     {
-        Q_EMIT enabledChanged();
+        emit enabledChanged();
     }
     
     void s_keyFrameSet(SequenceTime time,
@@ -87,42 +90,41 @@ public:
                        int reason,
                        bool added)
     {
-        Q_EMIT keyFrameSet(time,dimension,reason,added);
+        emit keyFrameSet(time,dimension,reason,added);
     }
     
     void s_keyFrameRemoved(SequenceTime time,
                            int dimension,
                            int reason)
     {
-        Q_EMIT keyFrameRemoved(time,dimension,reason);
+        emit keyFrameRemoved(time,dimension,reason);
     }
     
     void s_animationAboutToBeRemoved(int dimension)
     {
-        Q_EMIT animationAboutToBeRemoved(dimension);
+        emit animationAboutToBeRemoved(dimension);
     }
     
     void s_animationRemoved(int dimension)
     {
-        Q_EMIT animationRemoved(dimension);
+        emit animationRemoved(dimension);
     }
     
-    void s_updateDependencies(int dimension)
+    void s_updateSlaves(int dimension)
     {
-        Q_EMIT updateSlaves(dimension);
-        Q_EMIT updateDependencies(dimension);
+        emit updateSlaves(dimension);
     }
     
     void s_knobSlaved(int dim,
                       bool slaved)
     {
-        Q_EMIT knobSlaved(dim,slaved);
+        emit knobSlaved(dim,slaved);
     }
     
     void s_setValueWithUndoStack(Variant v,
                                  int dim)
     {
-        Q_EMIT setValueWithUndoStack(v, dim);
+        emit setValueWithUndoStack(v, dim);
     }
     
     void s_appendParamEditChange(Variant v,
@@ -131,59 +133,49 @@ public:
                                  bool createNewCommand,
                                  bool setKeyFrame)
     {
-        Q_EMIT appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
+        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
     }
     
     void s_setDirty(bool b)
     {
-        Q_EMIT dirty(b);
+        emit dirty(b);
     }
     
     void s_setFrozen(bool f)
     {
-        Q_EMIT frozenChanged(f);
+        emit frozenChanged(f);
     }
     
     void s_keyFrameMoved(int dimension,int oldTime,int newTime)
     {
-        Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
+        emit keyFrameMoved(dimension, oldTime, newTime);
     }
     
     void s_refreshGuiCurve(int dimension)
     {
-        Q_EMIT refreshGuiCurve(dimension);
+        emit refreshGuiCurve(dimension);
     }
     
     void s_minMaxChanged(double mini, double maxi, int index)
     {
-        Q_EMIT minMaxChanged(mini,maxi,index);
+        emit minMaxChanged(mini,maxi,index);
     }
     
     void s_displayMinMaxChanged(double mini,double maxi,int index)
     {
-        Q_EMIT displayMinMaxChanged(mini,maxi,index);
-    }
-    
-    void s_helpChanged()
-    {
-        Q_EMIT helpChanged();
-    }
-    
-    void s_expressionChanged(int dimension)
-    {
-        Q_EMIT expressionChanged(dimension);
+        emit displayMinMaxChanged(mini,maxi,index);
     }
     
     void s_derivativeMoved(SequenceTime time,int dimension)
     {
-        Q_EMIT derivativeMoved(time,dimension);
+        emit derivativeMoved(time,dimension);
     }
     
     void s_keyFrameInterpolationChanged(SequenceTime time,int dimension)
     {
-        Q_EMIT keyFrameInterpolationChanged(time,dimension);
+        emit keyFrameInterpolationChanged(time,dimension);
     }
-public Q_SLOTS:
+public slots:
 
     /**
      * @brief Calls KnobI::onAnimationRemoved
@@ -195,8 +187,6 @@ public Q_SLOTS:
      **/
     void onMasterChanged(int);
     
-    void onExprDependencyChanged(int);
-
     void onMasterKeyFrameSet(SequenceTime time,int dimension,int reason,bool added);
     
     void onMasterKeyFrameRemoved(SequenceTime time,int dimension,int reason);
@@ -210,7 +200,7 @@ public Q_SLOTS:
      **/
     void onEvaluateValueChangedInOtherThread(int dimension, int reason);
     
-Q_SIGNALS:
+signals:
     
     ///emitted whenever evaluateValueChanged is called in another thread than the main thread
     void evaluateValueChangedInMainThread(int dimension,int reason);
@@ -218,6 +208,9 @@ Q_SIGNALS:
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
     void animationLevelChanged(int,int);
+    
+    ///emitted when the destructor is entered
+    void deleted();
     
     ///Emitted when the value is changed with a reason different than eValueChangedReasonUserEdited
     ///This can happen as the result of a setValue() call from the plug-in or by
@@ -260,8 +253,6 @@ Q_SIGNALS:
     ///of the changes that occured in this knob, letting them a chance to update their interface.
     void updateSlaves(int dimension);
     
-    void updateDependencies(int dimension);
-    
     ///Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
     void knobSlaved(int,bool);
     
@@ -279,18 +270,11 @@ Q_SIGNALS:
     void minMaxChanged(double mini, double maxi, int index);
     
     void displayMinMaxChanged(double mini,double maxi,int index);
-    
-    void helpChanged();
-    
-    void expressionChanged(int dimension);
 };
 
 class KnobI
     : public OverlaySupport
 {
-    
-    friend class KnobHolder;
-    
 public:
 
     KnobI()
@@ -301,14 +285,6 @@ public:
     {
     }
 
-protected:
-    /**
-     * @brief Deletes this knob permanantly
-     **/
-    virtual void deleteKnob() = 0;
-    
-public:
-    
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
      * to initialize curves and values. This is separated from the constructor as we need RTTI
@@ -322,18 +298,6 @@ public:
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     virtual bool isDeclaredByPlugin() const = 0;
-    
-    /**
-     * @brief Must flag that the knob was dynamically created to warn the gui it should handle it correctly
-     **/
-    virtual void setDynamicallyCreated() = 0;
-    virtual bool isDynamicallyCreated() const =0;
-    
-    /**
-     * @brief A user knob is a knob created by the user by the gui
-     **/
-    virtual void setAsUserKnob() = 0;
-    virtual bool isUserKnob() const = 0;
 
 
     /**
@@ -490,40 +454,6 @@ public:
      * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonUserEdited
      **/
     void onAnimationRemoved(int dimension);
-    
-    /**
-     * @brief Set an expression on the knob. If this expression is invalid, this function throws an excecption with the error from the
-     * Python interpreter.
-     * @param hasRetVariable If true the expression is expected to be multi-line and have its return value set to the variable "ret", otherwise
-     * the expression is expected to be single-line.
-     * @param force If set to true, this function will not check if the expression is valid nor will it attempt to compile/evaluate it, it will
-     * just store it. This flag is used for serialisation, you should always pass false
-     **/
-    virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) = 0;
-    virtual void clearExpression(int dimension) = 0;
-    virtual std::string getExpression(int dimension) const = 0;
-    
-    /**
-     * @brief Checks that the given expr for the given dimension will produce a correct behaviour.
-     * On success this function returns correctly, otherwise an exception is thrown with the error.
-     * This function also declares some extra python variables via the declareCurrentKnobVariable_Python function.
-     * The new expression is returned.
-     * @param resultAsString[out] The result of the execution of the expression will be written to the string.
-     * @returns A new string containing the modified expression with the 'ret' variable declared if it wasn't already declared
-     * by the user.
-     **/
-    virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable,
-                                           std::string* resultAsString) = 0;
-    
-    /**
-     * @brief Called whenever a dependency through expressions has changed its value. This function will refresh the GUI for this knob.
-     **/
-    virtual void onExprDependencyChanged(KnobI* knob,int dimension) = 0;
-
-    /**
-     * @brief Returns whether the expr at the given dimension uses the ret variable to assign to the return value or not
-     **/
-    virtual bool isExpressionUsingRetVariable(int dimension = 0) const = 0;
 
     /**
      * @brief Called when the master knob has changed its values or keyframes.
@@ -827,24 +757,6 @@ public:
     
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
-    
-    /**
-     * @brief Inserts in the given script after the import lines the declaration of the variable "thisParam" which is in fact a pointer
-     * to this knob. This function also declares the variable "frame" which holds the current time and "value" which holds the current value
-     * at the current time.
-     * @param dimension If not -1 a variable named "dimension" will be declared with the current dimension of the parameter on which the 
-     * expression is applied to.
-     * @returns the index of the start of the next line after the  variable declaration
-     **/
-    static std::size_t declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& script);
-    
-    /**
-     * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
-     * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
-     **/
-    virtual void addListener(bool isExpression,int fromExprDimension,KnobI* knob) = 0;
-    virtual void removeListener(KnobI* knob) = 0;
-
 protected:
 
     /**
@@ -932,7 +844,6 @@ public:
 
 
 ///Skins the API of KnobI by implementing most of the functions in a non templated manner.
-struct KnobHelperPrivate;
 class KnobHelper
     : public KnobI
 {
@@ -960,10 +871,6 @@ public:
 
     virtual ~KnobHelper();
 
-private:
-    virtual void deleteKnob() OVERRIDE FINAL;
-public:
-    
     virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
     virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
@@ -973,11 +880,6 @@ public:
     virtual void setAsInstanceSpecific() OVERRIDE FINAL;
     virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void setDynamicallyCreated() OVERRIDE FINAL;
-    virtual bool isDynamicallyCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    virtual void setAsUserKnob() OVERRIDE FINAL;
-    virtual bool isUserKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.
      * It is set by the factory, do not call it yourself.
@@ -1027,13 +929,6 @@ public:
     virtual boost::shared_ptr<Curve> getCurve(int dimension = 0,bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) OVERRIDE FINAL;
-    virtual void clearExpression(int dimension) OVERRIDE FINAL;
-    virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable,
-                                           std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onExprDependencyChanged(KnobI* knob,int dimension) OVERRIDE FINAL;
-    virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1093,9 +988,6 @@ protected:
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
     void resetMaster(int dimension);
-    
-    ///The return value must be Py_DECRREF
-    PyObject* executeExpression(int dimension) const;
 
 public:
 
@@ -1111,8 +1003,8 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isFromExpr,int fromExprDimension,KnobI* knob) OVERRIDE FINAL;
-    virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
+    void addListener(KnobI* knob);
+    void removeListener(KnobI* knob);
 
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
 
@@ -1135,8 +1027,6 @@ protected:
     {
         (void)dimension;
     }
-    
-    void cloneExpressions(KnobI* other);
 
     /**
      * @brief Override to copy extra properties, such as the entries for a combobox for example.
@@ -1175,16 +1065,9 @@ protected:
     void checkAnimationLevel(int dimension);
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
 
-    
-protected:
-    
-    mutable int _expressionsRecursionLevel;
-    mutable QMutex _expressionRecursionLevelMutex;
-
 private:
-    
-    void expressionChanged(int dimension);
-        
+
+    struct KnobHelperPrivate;
     boost::scoped_ptr<KnobHelperPrivate> _imp;
 };
 
@@ -1403,14 +1286,6 @@ private:
     void makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key);
     
     void queueSetValue(const T& v,int dimension);
-    
-public:
-    
-    T pyObjectToType(PyObject* o) const;
-    
-private:
-    
-    T evaluateExpression(int dimension) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
@@ -1513,19 +1388,6 @@ private:
     StringAnimationManager* _animation;
 };
 
-class Int_Knob;
-class Double_Knob;
-class Bool_Knob;
-class Choice_Knob;
-class Color_Knob;
-class Button_Knob;
-class String_Knob;
-class File_Knob;
-class OutputFile_Knob;
-class Path_Knob;
-class Parametric_Knob;
-class Group_Knob;
-class Page_Knob;
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
@@ -1557,29 +1419,12 @@ public:
     KnobHolder(AppInstance* appInstance);
 
     virtual ~KnobHolder();
-    
-    void setPanelPointer(DockablePanelI* gui);
-    
-    void discardPanelPointer();
-    
-    void refreshKnobs();
-    
-    /**
-     * @brief Dynamically removes a knob (from the GUI also)
-     **/
-    void removeDynamicKnob(KnobI* knob);
-    
-    //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
-    void moveKnobOneStepUp(KnobI* knob);
-    void moveKnobOneStepDown(KnobI* knob);
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
     AppInstance* getApp() const WARN_UNUSED_RETURN;
     boost::shared_ptr<KnobI> getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     const std::vector< boost::shared_ptr<KnobI> > & getKnobs() const WARN_UNUSED_RETURN;
-    
-    std::vector< boost::shared_ptr<KnobI> >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
 
     void onGuiFrozenChange(bool frozen);
     
@@ -1638,44 +1483,6 @@ public:
      **/
     void updateHasAnimation();
     
-    //////////////////////////////////////////////////////////////////////////////////////////
-    /**
-     * @brief These functions below are dynamic in a sense that they can be called at any time (on the main-thread)
-     * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
-     * created, you must call refreshKnobs() that will re-scan for new parameters
-     **/
-    boost::shared_ptr<Int_Knob> createIntKnob(const std::string& name, const std::string& label,const std::string& help,
-                                              bool startNewLine,bool persistent, bool evaluateOnChange, bool animates, int dimension,int min,int max);
-    
-    boost::shared_ptr<Double_Knob> createDoubleKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                    bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max);
-    
-    boost::shared_ptr<Color_Knob> createColorKnob(const std::string& name, const std::string& label,const std::string& help,
-                         bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max);
-    
-    boost::shared_ptr<Bool_Knob> createBoolKnob(const std::string& name, const std::string& label,const std::string& help,
-                        bool startNewLine,bool persistent, bool evaluateOnChange  , bool animates);
-    
-    boost::shared_ptr<Choice_Knob> createChoiceKnob(const std::string& name, const std::string& label,const std::string& help,
-                          bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,const std::vector<std::string>& entries,
-                          const std::vector<std::string>& entriesHelp);
-    
-    boost::shared_ptr<Button_Knob> createButtonKnob(const std::string& name, const std::string& label,const std::string& help,
-                          bool startNewLine);
-    
-    //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
-    boost::shared_ptr<String_Knob> createStringKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                    bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,
-                                                    int type);
-    
-    boost::shared_ptr<File_Knob> createFileKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                    bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences);
-    
-    boost::shared_ptr<OutputFile_Knob> createOuptutFileKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                  bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences);
-    
-    boost::shared_ptr<Path_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                  bool startNewLine,bool persistent, bool evaluateOnChange,bool multiPath);
     /**
      * @brief Returns whether the onKnobValueChanged can be called by a separate thread
      **/
@@ -1683,17 +1490,8 @@ public:
     
 protected:
 
-    boost::shared_ptr<Group_Knob> createGroupKnob(const std::string& name, const std::string& label,const std::string& help,bool setAsTab);
-    
-    boost::shared_ptr<Page_Knob> createPageKnob(const std::string& name, const std::string& label,const std::string& help);
-    
-    boost::shared_ptr<Parametric_Knob> createParametricKnob(const std::string& name, const std::string& label,const std::string& help);
-    
-    //////////////////////////////////////////////////////////////////////////////////////////
-protected:
-    
-    
     bool isEvaluationBlocked() const;
+
 
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).
@@ -1813,9 +1611,11 @@ public:
     /*Add a knob to the vector. This is called by the
        Knob class. Don't call this*/
     void addKnob(boost::shared_ptr<KnobI> k);
-    
-    void insertKnob(int idx, const boost::shared_ptr<KnobI>& k);
 
+
+    /*Removes a knob to the vector. This is called by the
+       Knob class. Don't call this*/
+    void removeKnob(KnobI* k);
 
     void initializeKnobsPublic();
 
@@ -1890,9 +1690,10 @@ public:
     /**
      * @brief Same as onAllKnobsSlaved but called when only 1 knob is slaved
      **/
-    virtual void onKnobSlaved(KnobI* /*slave*/,KnobI* /*master*/,
+    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & /*knob*/,
                               int /*dimension*/,
-                              bool /*isSlave*/)
+                              bool /*isSlave*/,
+                              KnobHolder* /*master*/)
     {
     }
 

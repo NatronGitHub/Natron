@@ -59,21 +59,21 @@ Edge::Edge(int inputNb_,
 , _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
-    if ( (_inputNb != -1) && dest_ ) {
-        _label = new QGraphicsTextItem(QString( dest_->getNode()->getInputLabel(_inputNb).c_str() ),this);
+    if ( (_inputNb != -1) && _dest ) {
+        _label = new QGraphicsTextItem(QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ),this);
         _label->setDefaultTextColor( QColor(200,200,200) );
     }
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(4);
-    Natron::EffectInstance* effect = dest_ ? dest_->getNode()->getLiveInstance() : 0;
+    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
     if (effect) {
         
         _isRotoMask = effect->isInputRotoBrush(_inputNb);
         
         bool autoHide = areOptionalInputsAutoHidden();
-        bool isSelected = dest_->getIsSelected();
+        bool isSelected = _dest->getIsSelected();
         if (effect->isInputMask(_inputNb)) {
             setDashed(true);
             setOptional(true);
@@ -121,9 +121,8 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
 
 Edge::~Edge()
 {
-    boost::shared_ptr<NodeGui> dst = _dest.lock();
-    if (dst) {
-        dst->markInputNull(this);
+    if (_dest) {
+        _dest->markInputNull(this);
     }
 }
 
@@ -132,9 +131,8 @@ Edge::setSource(const boost::shared_ptr<NodeGui> & src)
 {
     _source = src;
     bool autoHide = areOptionalInputsAutoHidden();
-    boost::shared_ptr<NodeGui> dst = _dest.lock();
-    assert(dst);
-    bool isSelected = dst->getIsSelected();
+    assert(_dest);
+    bool isSelected = _dest->getIsSelected();
     if (autoHide && _optional  && !_isRotoMask) {
         if (src || isSelected) {
             show();
@@ -148,8 +146,7 @@ Edge::setSource(const boost::shared_ptr<NodeGui> & src)
 bool
 Edge::areOptionalInputsAutoHidden() const
 {
-    boost::shared_ptr<NodeGui> dst = _dest.lock();
-    return dst ? dst->getDagGui()->areOptionalInputsAutoHidden() : false;
+    return _dest ? _dest->getDagGui()->areOptionalInputsAutoHidden() : false;
 }
 
 void
@@ -159,21 +156,21 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
     _source = src;
     _dest = dst;
     
-    Natron::EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
+    Natron::EffectInstance* effect = _dest ? _dest->getNode()->getLiveInstance() : 0;
 
     if (effect) {
         _isRotoMask = effect->isInputRotoBrush(_inputNb);
     }
     
     if (!_label) {
-        _label = new QGraphicsTextItem(QString( dst->getNode()->getInputLabel(_inputNb).c_str() ),this);
+        _label = new QGraphicsTextItem(QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ),this);
         _label->setDefaultTextColor( QColor(200,200,200) );
     } else {
-        _label->setPlainText( QString( dst->getNode()->getInputLabel(_inputNb).c_str() ) );
+        _label->setPlainText( QString( _dest->getNode()->getInputLabel(_inputNb).c_str() ) );
     }
     if (effect) {
         bool autoHide = areOptionalInputsAutoHidden();
-        bool isSelected = dst->getIsSelected();
+        bool isSelected = _dest->getIsSelected();
         if (effect->isInputMask(_inputNb) && !_isRotoMask) {
             setDashed(true);
             setOptional(true);
@@ -247,55 +244,52 @@ makeEdges(const QRectF & bbox,
 void
 Edge::initLine()
 {
-    if (!_source.lock() && !_dest.lock()) {
+    if (!_source && !_dest) {
         return;
     }
-    
-    boost::shared_ptr<NodeGui> source = _source.lock();
-    boost::shared_ptr<NodeGui> dest = _dest.lock();
 
     double sc = scale();
-    QRectF sourceBBOX = source ? mapFromItem( source.get(), source->boundingRect() ).boundingRect() : QRectF(0,0,1,1);
-    QRectF destBBOX = dest ? mapFromItem( dest.get(), dest->boundingRect() ).boundingRect()  : QRectF(0,0,1,1);
+    QRectF sourceBBOX = _source ? mapFromItem( _source.get(), _source->boundingRect() ).boundingRect() : QRectF(0,0,1,1);
+    QRectF destBBOX = _dest ? mapFromItem( _dest.get(), _dest->boundingRect() ).boundingRect()  : QRectF(0,0,1,1);
     QSize dstNodeSize;
     QSize srcNodeSize;
-    if (dest) {
+    if (_dest) {
         dstNodeSize = QSize( destBBOX.width(),destBBOX.height() );
     }
-    if (source) {
+    if (_source) {
         srcNodeSize = QSize( sourceBBOX.width(),sourceBBOX.height() );
     }
 
     QPointF dst;
 
-    if (dest) {
+    if (_dest) {
         dst = destBBOX.center();
-    } else if (source && !dest) {
+    } else if (_source && !_dest) {
         dst = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
     
     std::vector<QLineF> dstEdges;
     std::vector<QLineF> srcEdges;
-    if (dest) {
+    if (_dest) {
         makeEdges(destBBOX, dstEdges);
     }
-    if (source) {
+    if (_source) {
         makeEdges(sourceBBOX, srcEdges);
     }
     
     
     QPointF srcpt;
     
-    if (source && dest) {
+    if (_source && _dest) {
         /// This is a connected edge, either input or output
         srcpt = sourceBBOX.center();
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-    } else if (!source && dest) {
+    } else if (!_source && _dest) {
         /// The edge is an input edge which is unconnected
         srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
                         dst.y() - (std::sin(_angle) * 100000 * sc) );
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
-    } else if (source && !dest) {
+    } else if (_source && !_dest) {
         /// The edge is an output edge which is unconnected
         srcpt = QPointF( sourceBBOX.x(),sourceBBOX.y() ) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
@@ -306,7 +300,7 @@ Edge::initLine()
     
     QPointF dstIntersection;
     
-    if (dest) {
+    if (_dest) {
         for (int i = 0; i < 4; ++i) {
             QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
             if (type == QLineF::BoundedIntersection) {
@@ -317,7 +311,7 @@ Edge::initLine()
         }
     }
     
-    if (source && dest) {
+    if (_source && _dest) {
 
         QPointF srcInteresect;
         bool foundSrcIntersection = false;
@@ -358,7 +352,7 @@ Edge::initLine()
                 }
             }
         }
-    } else if (!source && dest) {
+    } else if (!_source && _dest) {
 
         ///ok now that we have the direction between dst and srcPt we can get the distance between the center of the node
         ///and the intersection with the bbox. We add UNATTECHED_ARROW_LENGTH to that distance to position srcPt correctly.
@@ -416,7 +410,7 @@ Edge::initLine()
     QPointF arrowIntersect = foundDstIntersection ? dstIntersection : dst;
 
     qreal arrowSize;
-    if (source && dest) {
+    if (_source && _dest) {
         arrowSize = 10. * sc;
     } else {
         arrowSize = 7. * sc;
@@ -545,7 +539,7 @@ Edge::setBendPointVisible(bool visible)
 bool
 Edge::isNearbyBendPoint(const QPointF & scenePoint)
 {
-    assert(_source.lock() && _dest.lock());
+    assert(_source && _dest);
     QPointF pos = mapFromScene(scenePoint);
     if ( ( pos.x() >= (_middlePoint.x() - 10) ) && ( pos.x() <= (_middlePoint.x() + 10) ) &&
          ( pos.y() >= (_middlePoint.y() - 10) ) && ( pos.y() <= (_middlePoint.y() + 10) ) ) {

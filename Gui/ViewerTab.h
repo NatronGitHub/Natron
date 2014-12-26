@@ -18,7 +18,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -199,7 +199,7 @@ public:
     
 	void redrawGLWidgets();
 
-public Q_SLOTS:
+public slots:
 
     void startPause(bool);
     void abortRendering();

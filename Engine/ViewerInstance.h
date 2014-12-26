@@ -173,12 +173,12 @@ public:
                                          const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
-    void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
+    void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
 
-    void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
+    void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
     
-    void s_viewerRenderingEnded() { Q_EMIT viewerRenderingEnded(); }
-public Q_SLOTS:
+    void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
+public slots:
 
 
     void onMipMapLevelChanged(int level);
@@ -194,7 +194,7 @@ public Q_SLOTS:
     void executeDisconnectTextureRequestOnMainThread(int index);
 
 
-Q_SIGNALS:
+signals:
     
     void s_callRedrawOnMainThread();
 

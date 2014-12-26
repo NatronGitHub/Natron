@@ -32,7 +32,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
 CLANG_DIAG_ON(deprecated)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
@@ -201,33 +201,33 @@ public:
 
     void emitSignalClearedInMemoryPortion()
     {
-        Q_EMIT clearedInMemoryPortion();
+        emit clearedInMemoryPortion();
     }
 
     void emitClearedDiskPortion()
     {
-        Q_EMIT clearedDiskPortion();
+        emit clearedDiskPortion();
     }
 
     void emitAddedEntry(SequenceTime time)
     {
-        Q_EMIT addedEntry(time);
+        emit addedEntry(time);
     }
 
     void emitRemovedEntry(SequenceTime time,
                           int storage)
     {
-        Q_EMIT removedEntry(time,storage);
+        emit removedEntry(time,storage);
     }
 
     void emitEntryStorageChanged(SequenceTime time,
                                  int oldStorage,
                                  int newStorage)
     {
-        Q_EMIT entryStorageChanged(time,oldStorage,newStorage);
+        emit entryStorageChanged(time,oldStorage,newStorage);
     }
 
-Q_SIGNALS:
+signals:
 
     void clearedInMemoryPortion();
 
@@ -1321,7 +1321,7 @@ private:
                 if ((*it)->getKey() == key) {
                     returnValue->push_back(*it);
                     
-                    ///Q_EMIT te added signal otherwise when first reading something that's already cached
+                    ///emit te added signal otherwise when first reading something that's already cached
                     ///the timeline wouldn't update
                     if (_signalEmitter) {
                         _signalEmitter->emitAddedEntry( key.getTime() );
@@ -1398,7 +1398,7 @@ private:
                         
                         returnValue->push_back(*it);
                         ret.erase(it);
-                        ///Q_EMIT te added signal otherwise when first reading something that's already cached
+                        ///emit te added signal otherwise when first reading something that's already cached
                         ///the timeline wouldn't update
                         if (_signalEmitter) {
                             _signalEmitter->emitAddedEntry( key.getTime() );

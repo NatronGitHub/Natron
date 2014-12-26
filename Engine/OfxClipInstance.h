@@ -19,7 +19,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #endif
 //ofx
@@ -231,6 +231,7 @@ private:
     };
 
     Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
+    
 };
 
 class OfxImage

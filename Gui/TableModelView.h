@@ -7,7 +7,7 @@
 #ifndef TABLEMODELVIEW_H
 #define TABLEMODELVIEW_H
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -271,7 +271,7 @@ public:
     inline TableItem * itemAt(int x, int y) const;
     QRect visualItemRect(const TableItem *item) const;
 
-Q_SIGNALS:
+signals:
 
     void deleteKeyPressed();
     void itemRightClicked(TableItem* item);
@@ -353,11 +353,11 @@ public:
 
     bool isValid(const QModelIndex &index) const;
 
-public Q_SLOTS:
+public slots:
 
     void onDataChanged(const QModelIndex & index);
 
-Q_SIGNALS:
+signals:
 
     void s_itemChanged(TableItem*);
 

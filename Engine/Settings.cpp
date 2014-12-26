@@ -1115,23 +1115,22 @@ Settings::onKnobValueChanged(KnobI* k,
         std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
         for (std::map<int,AppInstanceRef>::iterator it = apps.begin(); it != apps.end(); ++it) {
-            
-            std::list<ViewerInstance*> allViewers;
-            it->second.app->getProject()->getViewers(&allViewers);
-            for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
-                
-                
-                if (isFirstViewer) {
-                    if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
-                        Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
-                                                                                              "Reverting to 8bits textures.").toStdString() );
-                        _texturesMode->setValue(0,0);
-                        
-                        return;
+            const std::vector<boost::shared_ptr<Node> > nodes = it->second.app->getProject()->getCurrentNodes();
+            for (U32 i = 0; i < nodes.size(); ++i) {
+                assert(nodes[i]);
+                ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
+                if (n) {
+                    if (isFirstViewer) {
+                        if ( !n->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
+                            Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
+                                                                                                  "Reverting to 8bits textures.").toStdString() );
+                            _texturesMode->setValue(0,0);
+
+                            return;
+                        }
                     }
+                    n->renderCurrentFrame(true);
                 }
-                (*it)->renderCurrentFrame(true);
-                
             }
         }
     } else if ( k == _maxViewerDiskCacheGB.get() ) {

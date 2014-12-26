@@ -7,7 +7,7 @@
 #ifndef TRACKERGUI_H
 #define TRACKERGUI_H
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -60,7 +60,7 @@ public:
 
     bool loseFocus(double scaleX, double scaleY);
 
-public Q_SLOTS:
+public slots:
 
     void onAddTrackClicked(bool clicked);
 

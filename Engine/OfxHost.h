@@ -12,7 +12,7 @@
 #define NATRON_ENGINE_OFXHOST_H_
 
 #include <list>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #endif
 #include <ofxhPluginCache.h>
@@ -99,7 +99,7 @@ public:
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(const std::string & name,boost::shared_ptr<Node> node,
+    AbstractOfxEffectInstance* createOfxEffect(const std::string & name,boost::shared_ptr<Node> node,
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,

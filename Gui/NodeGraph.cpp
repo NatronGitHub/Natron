@@ -64,7 +64,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/NoOp.h"
 #include "Engine/OutputSchedulerThread.h"
-#include "Engine/NodeGroup.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -248,9 +247,6 @@ struct NodeGraphPrivate
 {
     NodeGraph* _publicInterface;
     Gui* _gui;
-    
-    boost::weak_ptr<NodeCollection> group;
-    
     QPointF _lastScenePosClick;
     QPointF _lastNodeDragStartPoint;
     QPointF _lastSelectionStartPoint;
@@ -298,11 +294,9 @@ struct NodeGraphPrivate
     bool _mergeMoveCommands;
     
     NodeGraphPrivate(Gui* gui,
-                     NodeGraph* p,
-                     const boost::shared_ptr<NodeCollection>& group)
+                     NodeGraph* p)
         : _publicInterface(p)
           , _gui(gui)
-          , group(group)
           , _lastScenePosClick()
           , _lastNodeDragStartPoint()
           , _lastSelectionStartPoint()
@@ -391,18 +385,14 @@ struct NodeGraphPrivate
 };
 
 NodeGraph::NodeGraph(Gui* gui,
-                     const boost::shared_ptr<NodeCollection>& group,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene,parent)
-      , _imp( new NodeGraphPrivate(gui,this, group) )
+      , _imp( new NodeGraphPrivate(gui,this) )
 {
-    
-    group->setNodeGraphPointer(this);
-    
     setAcceptDrops(true);
 
-    QObject::connect( group.get(), SIGNAL( nodesCleared() ), this, SLOT( onProjectNodesCleared() ) );
+    QObject::connect( _imp->_gui->getApp()->getProject().get(), SIGNAL( nodesCleared() ), this, SLOT( onProjectNodesCleared() ) );
 
     setMouseTracking(true);
     setCacheMode(CacheBackground);
@@ -522,12 +512,6 @@ NodeGraph::getSelectedNodes() const
     return _imp->_selection.nodes;
 }
 
-boost::shared_ptr<NodeCollection>
-NodeGraph::getGroup() const
-{
-    return _imp->group.lock();
-}
-
 QGraphicsItem*
 NodeGraph::getRootItem() const
 {
@@ -544,10 +528,6 @@ void
 NodeGraph::discardGuiPointer()
 {
     _imp->_gui = 0;
-    boost::shared_ptr<NodeCollection> group = getGroup();
-    if (group) {
-        group->discardNodeGraphPointer();
-    }
 }
 
 void
@@ -641,7 +621,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     } else {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
     }
-    node_ui->initialize(this, dockContainer, node, requestedByLoad);
+    node_ui->initialize(this, node_ui, dockContainer, node, requestedByLoad);
 
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
@@ -669,7 +649,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
     }
     _imp->_evtState = DEFAULT;
-    
+
     return node_ui;
 }
 
@@ -802,8 +782,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
         const std::list<Natron::Node* > & outputs = selected->getNode()->getOutputs();
         for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
-            boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
-            NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
+            boost::shared_ptr<NodeGui> output = _imp->_gui->getApp()->getNodeGui(*it);
             assert(output);
             output->moveBelowPositionRecursively(createdNodeRect);
         }
@@ -893,12 +872,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                             false, //<< don't push an undo command
                             true,
                             QString(),
-                            CreateNodeArgs::DefaultValuesList(),
-                            _imp->group.lock());
+                            CreateNodeArgs::DefaultValuesList());
         boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
         assert(dotNode);
-        boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
-        boost::shared_ptr<NodeGui> dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
+        boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
         assert(dotNodeGui);
 
         std::list<boost::shared_ptr<NodeGui> > nodesList;
@@ -1294,19 +1271,9 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                        std::max((mergeHintCenter.y() + mergeHintNodeBbox.height() / 2.),
                                                 selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
-
-                    CreateNodeArgs args(PLUGINID_OFX_MERGE,
-                                        "",
-                                        -1,
-                                        -1,
-                                        -1,
-                                        false,
-                                        newNodePos.x(),newNodePos.y(),
-                                        true,
-                                        true,
-                                        QString(),
-                                        CreateNodeArgs::DefaultValuesList(),
-                                        getGroup());
+                    
+                    CreateNodeArgs args(PLUGINID_OFX_MERGE, "", -1, -1, -1, false, newNodePos.x(), newNodePos.y(), true, true, QString(),
+                                        CreateNodeArgs::DefaultValuesList());
                     
                     boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
                     if (mergeNode) {
@@ -1422,7 +1389,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                             bool found = false;
                             for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
                                  it3 != nodesToMove.end(); ++it3) {
-                                if (it3->node.lock() == *it2) {
+                                if (it3->node == *it2) {
                                     found = true;
                                     break;
                                 }
@@ -1844,8 +1811,7 @@ NodeGraph::onNodeCreationDialogFinished()
                                                                true,
                                                                true,
                                                                QString(),
-                                                               CreateNodeArgs::DefaultValuesList(),
-                                                               getGroup()) );
+                                                               CreateNodeArgs::DefaultValuesList()) );
             }
             break;
         }
@@ -1934,8 +1900,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.nodes.rbegin() );
             const std::list<Natron::Node* > & outputs = lastSelected->getNode()->getOutputs();
             if ( !outputs.empty() ) {
-                boost::shared_ptr<NodeGuiI> output_i = outputs.front()->getNodeGui();
-                boost::shared_ptr<NodeGui> output = boost::dynamic_pointer_cast<NodeGui>(output_i);
+                boost::shared_ptr<NodeGui> output = getGui()->getApp()->getNodeGui( outputs.front() );
                 assert(output);
                 if ( output->getIsSelected() && modCASIsShift(e) ) {
                     std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),
@@ -2031,8 +1996,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                                                                        true,
                                                                        true,
                                                                        QString(),
-                                                                       CreateNodeArgs::DefaultValuesList(),
-                                                                       getGroup()) );
+                                                                       CreateNodeArgs::DefaultValuesList()) );
                         intercepted = true;
                         break;
                     }
@@ -2129,8 +2093,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
                                                           true,
                                                           true,
                                                           QString(),
-                                                          CreateNodeArgs::DefaultValuesList(),
-                                                          getGroup()) );
+                                                          CreateNodeArgs::DefaultValuesList()) );
     }
 
     ///get a pointer to the last user selected viewer
@@ -2143,8 +2106,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     }
 
     ///get a ptr to the NodeGui
-    boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
-    boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    boost::shared_ptr<NodeGui> gui = _imp->_gui->getApp()->getNodeGui(v);
     assert(gui);
 
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
@@ -2324,7 +2286,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
-                                                                                                  "remove these expressions  "
+                                                                                                  "remove these expressions pluginsly "
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString(), false );
@@ -2976,18 +2938,7 @@ NodeGraph::dropEvent(QDropEvent* e)
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             
-            CreateNodeArgs args(found->second.c_str(),
-                                "",
-                                -1,
-                                -1,
-                                -1,
-                                true,
-                                INT_MIN,INT_MIN,
-                                true,
-                                true,
-                                QString(),
-                                defaultValues,
-                                getGroup());
+            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
             boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
         }
     }
@@ -3206,12 +3157,10 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                                "",
                                                                                internalSerialization.getPluginMajorVersion(),
-                                                                               internalSerialization.getPluginMinorVersion(),&internalSerialization,false,
-                                                                               group.lock()) );
+                                                                               internalSerialization.getPluginMinorVersion(),&internalSerialization,false) );
 
     assert(n);
-    boost::shared_ptr<NodeGuiI> gui_i = n->getNodeGui();
-    boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    boost::shared_ptr<NodeGui> gui = _gui->getApp()->getNodeGui(n);
     assert(gui);
 
     int no = 1;
@@ -3233,8 +3182,8 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
 
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
     if ( masterNodeName.empty() ) {
-        std::list<boost::shared_ptr<Natron::Node> > allNodes;
-        _gui->getApp()->getProject()->getActiveNodes(&allNodes);
+        std::vector<boost::shared_ptr<Natron::Node> > allNodes;
+        _gui->getApp()->getActiveNodes(&allNodes);
         n->restoreKnobsLinks(internalSerialization,allNodes);
     } else {
         boost::shared_ptr<Natron::Node> masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
@@ -3500,12 +3449,10 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 void
 NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
 {
-    assert(n);
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
 
-    if (internalNode) {
-        internalNode->deactivate(std::list< Natron::Node* >(),false,false,true,false);
-    }
+    assert(internalNode);
+    internalNode->deactivate(std::list< Natron::Node* >(),false,false,true,false);
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
 
     if ( it != _imp->_nodesTrash.end() ) {
@@ -3537,35 +3484,22 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
             n->setUserSelected(false);
             _imp->_selection.nodes.erase(found);
         }
-        
-        if (internalNode && internalNode->getLiveInstance()) {
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(internalNode->getLiveInstance());
-            if (isGrp) {
-                NodeGraphI* graph_i = isGrp->getNodeGraph();
-                if (graph_i) {
-                    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-                    getGui()->removeGroupGui(graph, true);
-                }
-            }
+    }
+
+    ///remove the node from the clipboard if it is
+    for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = _imp->_nodeClipBoard.nodes.begin();
+         it != _imp->_nodeClipBoard.nodes.end(); ++it) {
+        if ( (*it)->getNode() == internalNode ) {
+            _imp->_nodeClipBoard.nodes.erase(it);
+            break;
         }
     }
-    
-    if (internalNode) {
-        ///remove the node from the clipboard if it is
-        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = _imp->_nodeClipBoard.nodes.begin();
-             it != _imp->_nodeClipBoard.nodes.end(); ++it) {
-            if ( (*it)->getNode() == internalNode ) {
-                _imp->_nodeClipBoard.nodes.erase(it);
-                break;
-            }
-        }
-        
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = _imp->_nodeClipBoard.nodesUI.begin();
-             it != _imp->_nodeClipBoard.nodesUI.end(); ++it) {
-            if ( (*it)->getFullySpecifiedName() == internalNode->getFullySpecifiedName() ) {
-                _imp->_nodeClipBoard.nodesUI.erase(it);
-                break;
-            }
+
+    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = _imp->_nodeClipBoard.nodesUI.begin();
+         it != _imp->_nodeClipBoard.nodesUI.end(); ++it) {
+        if ( (*it)->getName() == internalNode->getName() ) {
+            _imp->_nodeClipBoard.nodesUI.erase(it);
+            break;
         }
     }
 } // deleteNodepluginsly
@@ -3911,9 +3845,7 @@ void
 NodeGraph::focusInEvent(QFocusEvent* e)
 {
     QGraphicsView::focusInEvent(e);
-    if (_imp->_gui) {
-        _imp->_gui->setLastSelectedGraph(this);
-    }
+
     _imp->_undoStack->setActive();
 }
 

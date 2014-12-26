@@ -15,7 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #endif
 CLANG_DIAG_OFF(deprecated)
@@ -134,7 +134,7 @@ public:
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int dim,int lvl);
 
@@ -180,7 +180,7 @@ public:
 
     bool isAnimated() const;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -221,7 +221,7 @@ public:
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -263,7 +263,7 @@ public:
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -308,7 +308,7 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -353,7 +353,7 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -399,7 +399,7 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -443,7 +443,7 @@ public:
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -491,7 +491,7 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -534,7 +534,7 @@ public:
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -584,6 +584,9 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+
+    ///Must be called after all OfxParamInstances have been created
+    void populatePage();
 
 private:
     boost::shared_ptr<Page_Knob> _pageKnob;
@@ -637,7 +640,7 @@ public:
     {
     }
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -709,7 +712,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onKnobAnimationLevelChanged(int,int lvl);
 
@@ -780,7 +783,7 @@ public:
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onCustomBackgroundDrawingRequested();
 

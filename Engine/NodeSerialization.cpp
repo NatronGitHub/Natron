@@ -16,7 +16,6 @@
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/RotoSerialization.h"
-#include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
 NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs,bool copyKnobs)
@@ -30,9 +29,11 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
     , _node()
+    , _app(NULL)
 {
     if (n) {
         _node = n;
+        _app = _node->getApp();
 
         ///All this code is MT-safe
 
@@ -43,21 +44,14 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             dynamic_cast<OfxEffectInstance*>( n->getLiveInstance() )->syncPrivateData_other_thread();
         }
 
-        std::vector< boost::shared_ptr<KnobI> >  knobs = n->getLiveInstance()->getKnobs_mt_safe();
+        const std::vector< boost::shared_ptr<KnobI> > & knobs = n->getKnobs();
 
-        std::list<boost::shared_ptr<KnobI> > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
             Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
             Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
             Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knobs[i].get() );
-            
-            if (isPage && knobs[i]->isUserKnob()) {
-                userPages.push_back(knobs[i]);
-                continue;
-            }
-            
-            if (!knobs[i]->isUserKnob() && knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
+            if (knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
                 
                 ///For choice do a deepclone because we need entries
                 bool doCopyKnobs = isChoice ? true : copyKnobs;
@@ -66,13 +60,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
                 _knobsValues.push_back(newKnobSer);
             }
         }
-        
         _nbKnobs = (int)_knobsValues.size();
-        
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it!=userPages.end(); ++it) {
-            boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
-            _userPages.push_back(s);
-        }
 
         _knobsAge = n->getKnobsAge();
 
@@ -102,21 +90,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         }
 
         _multiInstanceParentName = n->getParentMultiInstanceName();
-        
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
-        if (isGrp) {
-            NodeList nodes;
-            isGrp->getActiveNodes(&nodes);
-            
-            _children.clear();
-            
-            for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
-                boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
-                _children.push_back(state);
-            }
-
-        }
 
         _isNull = false;
     }
 }
+

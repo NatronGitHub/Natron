@@ -79,7 +79,7 @@ public:
 
     void open_file()
     {
-        Q_EMIT openFile();
+        emit openFile();
     }
 
     /**
@@ -88,7 +88,7 @@ public:
      */
     std::string getFileName(int time,int view) const;
 
-Q_SIGNALS:
+signals:
 
     void openFile();
 
@@ -139,7 +139,7 @@ public:
 
     void open_file()
     {
-        Q_EMIT openFile(_sequenceDialog && _isOutputImage);
+        emit openFile(_sequenceDialog && _isOutputImage);
     }
 
     void turnOffSequences()
@@ -154,7 +154,7 @@ public:
 
     QString generateFileNameAtTime(SequenceTime time,int view = 0) const;
 
-Q_SIGNALS:
+signals:
 
     void openFile(bool);
 

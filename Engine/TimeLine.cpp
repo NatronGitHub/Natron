@@ -83,7 +83,7 @@ TimeLine::setFrameRange(SequenceTime first,
     }
 
     if (changed) {
-        Q_EMIT frameRangeChanged(first, last);
+        emit frameRangeChanged(first, last);
         setBoundaries(first,last);
     }
 }
@@ -106,7 +106,7 @@ TimeLine::seekFrame(SequenceTime frame,
         if (_project) {
             _project->setLastTimelineSeekCaller(caller);
         }
-        Q_EMIT frameChanged(frame, (int)reason);
+        emit frameChanged(frame, (int)reason);
     }
 }
 
@@ -122,7 +122,7 @@ TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller)
     if (_project) {
         _project->setLastTimelineSeekCaller(caller);
     }
-    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+    emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -137,7 +137,7 @@ TimeLine::decrementCurrentFrame(Natron::OutputEffectInstance* caller)
     if (_project) {
         _project->setLastTimelineSeekCaller(caller);
     }
-    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+    emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -155,7 +155,7 @@ TimeLine::onFrameChanged(SequenceTime frame)
     if (changed) {
         /*This function is called in response to a signal emitted by a single timeline gui, but we also
            need to sync all the other timelines potentially existing.*/
-        Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
+        emit frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
     }
 }
 
@@ -174,7 +174,7 @@ TimeLine::setBoundaries(SequenceTime leftBound,
     }
 
     if (changed) {
-        Q_EMIT boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonPluginEdited);
+        emit boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonPluginEdited);
     }
 }
 
@@ -194,7 +194,7 @@ TimeLine::onBoundariesChanged(SequenceTime leftBound,
     }
 
     if (changed) {
-        Q_EMIT boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonUserEdited);
+        emit boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonUserEdited);
     }
 }
 
@@ -207,7 +207,7 @@ TimeLine::removeAllKeyframesIndicators()
     bool wasEmpty = _keyframes.empty();
     _keyframes.clear();
     if (!wasEmpty) {
-        Q_EMIT keyframeIndicatorsChanged();
+        emit keyframeIndicatorsChanged();
     }
 }
 
@@ -218,7 +218,7 @@ TimeLine::addKeyframeIndicator(SequenceTime time)
     assert( QThread::currentThread() == qApp->thread() );
 
     _keyframes.push_back(time);
-    Q_EMIT keyframeIndicatorsChanged();
+    emit keyframeIndicatorsChanged();
 }
 
 void
@@ -230,7 +230,7 @@ TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & key
 
     _keyframes.insert( _keyframes.begin(),keys.begin(),keys.end() );
     if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
+        emit keyframeIndicatorsChanged();
     }
 }
 
@@ -243,7 +243,7 @@ TimeLine::removeKeyFrameIndicator(SequenceTime time)
     std::list<SequenceTime>::iterator it = std::find(_keyframes.begin(), _keyframes.end(), time);
     if ( it != _keyframes.end() ) {
         _keyframes.erase(it);
-        Q_EMIT keyframeIndicatorsChanged();
+        emit keyframeIndicatorsChanged();
     }
 }
 
@@ -261,7 +261,7 @@ TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
         }
     }
     if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
+        emit keyframeIndicatorsChanged();
     }
 }
 

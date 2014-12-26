@@ -6,7 +6,7 @@
 
 #ifndef NODEBACKDROP_H
 #define NODEBACKDROP_H
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -90,11 +90,11 @@ public:
     void centerOnIt();
 
     void setVisibleDetails(bool visible);
-Q_SIGNALS:
+signals:
 
     void positionChanged();
 
-public Q_SLOTS:
+public slots:
 
     void onNameChanged(const QString & name);
     void onColorChanged(const QColor & color);

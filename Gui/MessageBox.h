@@ -6,7 +6,7 @@
 
 #ifndef QUESTIONDIALOG_H
 #define MESSAGE_BOX_H
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #endif
 #include <QDialog>
@@ -47,7 +47,7 @@ public:
     
     bool isCheckBoxChecked() const;
     
-public Q_SLOTS:
+public slots:
     
     void onButtonClicked(QAbstractButton* button);
     

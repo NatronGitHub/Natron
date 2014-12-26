@@ -60,7 +60,7 @@ public:
         setFocusPolicy(Qt::NoFocus);
     }
 
-Q_SIGNALS:
+signals:
 
     void animationMenuRequested();
 

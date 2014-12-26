@@ -172,7 +172,7 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
 void
 ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
-    Q_EMIT editingFinished();
+    emit editingFinished();
     QWidget::mouseReleaseEvent(e);
 }
 
@@ -258,7 +258,7 @@ ScaleSliderQWidget::seekInternal(double v)
     if (_imp->initialized) {
         update();
     }
-    Q_EMIT positionChanged(v);
+    emit positionChanged(v);
 }
 
 

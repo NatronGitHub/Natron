@@ -10,7 +10,7 @@
 
 #ifndef PREFERENCESPANEL_H
 #define PREFERENCESPANEL_H
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -41,7 +41,7 @@ public:
     {
     }
 
-public Q_SLOTS:
+public slots:
 
     void restoreDefaults();
 

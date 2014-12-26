@@ -148,18 +148,22 @@ void
 TabWidget::destroyTabs()
 {
     for (U32 i = 0; i < _tabs.size(); ++i) {
-        destroyTab(_tabs[i]);
+        bool mustDelete = destroyTab(_tabs[i]);
+        if (mustDelete) {
+            delete _tabs[i];
+            _tabs[i] = NULL;
+        }
     }
 }
 
-void
+bool
 TabWidget::destroyTab(QWidget* tab)
 {
     /*special care is taken if this is a viewer: we also
        need to delete the viewer node.*/
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     Histogram* isHisto = dynamic_cast<Histogram*>(tab);
-    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+
     if (isViewer) {
         _gui->removeViewerTab(isViewer,false,false);
     } else if (isHisto) {
@@ -168,9 +172,8 @@ TabWidget::destroyTab(QWidget* tab)
         ///Do not delete unique widgets such as the properties bin, node graph or curve editor
         tab->setVisible(false);
     }
-    if (isGraph && _gui->getLastSelectedGraph() == isGraph) {
-        _gui->setLastSelectedGraph(0);
-    }
+
+    return false; // must not be deleted
 }
 
 void
@@ -408,8 +411,7 @@ TabWidget::addNewViewer()
                                                 true,
                                                 true,
                                                 QString(),
-                                                CreateNodeArgs::DefaultValuesList(),
-                                                _gui->getApp()->getProject()) );
+                                                CreateNodeArgs::DefaultValuesList()) );
 }
 
 void
@@ -495,8 +497,11 @@ TabWidget::closeCurrentWidget()
         return;
     }
     removeTab(_currentWidget);
-    destroyTab(_currentWidget);
-    
+    bool mustDelete = destroyTab(_currentWidget);
+    if (mustDelete) {
+        delete _currentWidget;
+        _currentWidget = NULL;
+    }
 }
 
 void
@@ -506,8 +511,11 @@ TabWidget::closeTab(int index)
     QWidget *tab = _tabs[index];
     assert(_tabs[index]);
     removeTab(tab);
-    destroyTab(tab);
-    
+    bool mustDelete = destroyTab(tab);
+    if (mustDelete) {
+        delete tab;
+        // tab was already removed from the _tabs array by removeTab()
+    }
     _gui->getApp()->triggerAutoSave();
 }
 
@@ -822,7 +830,7 @@ TabBar::leaveEvent(QEvent* e)
         QTabBar::leaveEvent(e);
     } else {
         _processingLeaveEvent = true;
-        Q_EMIT mouseLeftTabBar();
+        emit mouseLeftTabBar();
         QTabBar::leaveEvent(e);
         _processingLeaveEvent = false;
     }

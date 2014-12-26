@@ -14,7 +14,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/list.hpp>

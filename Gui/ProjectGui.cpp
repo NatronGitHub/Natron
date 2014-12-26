@@ -23,7 +23,6 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/KnobTypes.h"
@@ -62,7 +61,11 @@ ProjectGui::ProjectGui(Gui* gui)
 
 ProjectGui::~ProjectGui()
 {
-    
+    const std::vector<boost::shared_ptr<Natron::Node> > & nodes = _project->getCurrentNodes();
+
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        nodes[i]->quitAnyProcessing();
+    }
 }
 
 void
@@ -113,11 +116,10 @@ ProjectGui::setVisible(bool visible)
 void
 ProjectGui::createNewFormat()
 {
-    boost::shared_ptr<Natron::Project> project = _project.lock();
-    AddFormatDialog dialog( project.get(),_gui->getApp()->getGui() );
+    AddFormatDialog dialog( _project.get(),_gui->getApp()->getGui() );
 
     if ( dialog.exec() ) {
-        project->setOrAddProjectFormat( dialog.getFormat() );
+        _project->setOrAddProjectFormat( dialog.getFormat() );
     }
 }
 
@@ -138,12 +140,13 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _fromViewerLine->setLayout(_fromViewerLineLayout);
 
     _copyFromViewerCombo = new ComboBox(_fromViewerLine);
-    
-    project->getViewers(&_viewers);
-    
+    const std::vector<boost::shared_ptr<Natron::Node> > & nodes = project->getCurrentNodes();
 
-    for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
-        _copyFromViewerCombo->addItem( (*it)->getName().c_str() );
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+        if (isViewer) {
+            _copyFromViewerCombo->addItem( nodes[i]->getName().c_str() );
+        }
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
@@ -215,11 +218,13 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
 void
 AddFormatDialog::onCopyFromViewer()
 {
+    const std::vector<boost::shared_ptr<Natron::Node> > & nodes = _project->getCurrentNodes();
     QString activeText = _copyFromViewerCombo->itemText( _copyFromViewerCombo->activeIndex() );
 
-    for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
-        if ( (*it)->getName() == activeText.toStdString() ) {
-            ViewerTab* tab = _gui->getViewerTabForInstance(*it);
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if ( nodes[i]->getName() == activeText.toStdString() ) {
+            ViewerInstance* v = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
+            ViewerTab* tab = _gui->getViewerTabForInstance(v);
             RectD f = tab->getViewer()->getRoD(0);
             Format format = tab->getViewer()->getDisplayWindow();
             _widthSpinBox->setValue( f.width() );
@@ -296,16 +301,11 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     const std::list<NodeGuiSerialization> & nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
-        const std::string & name = it->getFullySpecifiedName();
-        boost::shared_ptr<Natron::Node> internalNode = _gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
-        if (!internalNode) {
+        const std::string & name = it->getName();
+        boost::shared_ptr<NodeGui> nGui = _gui->getApp()->getNodeGui(name);
+        if (!nGui) {
             continue;
         }
-        
-        boost::shared_ptr<NodeGuiI> nGui_i = internalNode->getNodeGui();
-        assert(nGui_i);
-        boost::shared_ptr<NodeGui> nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
-        
         nGui->refreshPosition( it->getX(),it->getY(), true );
 
         if ( ( it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled() ) ||

@@ -23,7 +23,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -100,7 +100,7 @@ public:
     void setVisibleAndRefresh(bool visible);
 
     /**
-     * @brief same as setVisibleAndRefresh() but doesn't Q_EMIT any signal for a repaint
+     * @brief same as setVisibleAndRefresh() but doesn't emit any signal for a repaint
      **/
     void setVisible(bool visible);
 
@@ -136,7 +136,7 @@ public:
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
     
-Q_SIGNALS:
+signals:
 
     void curveChanged();
     
@@ -311,7 +311,7 @@ public:
     
     void pushUndoCommand(QUndoCommand* cmd);
 
-public Q_SLOTS:
+public slots:
 
     void refreshDisplayedTangents();
 
@@ -423,7 +423,7 @@ public:
 
     void getCurveColumns(std::map<int,CurveGui*>* columns) const;
 
-public Q_SLOTS:
+public slots:
 
     void open_file();
 
@@ -496,12 +496,12 @@ public:
     
     virtual ~EditKeyFrameDialog();
     
-Q_SIGNALS:
+signals:
     
     void valueChanged(int dimension,double value);
     
     
-public Q_SLOTS:
+public slots:
     
     void onXSpinBoxValueChanged(double d);
     void onYSpinBoxValueChanged(double d);

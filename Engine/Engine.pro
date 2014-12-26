@@ -7,7 +7,7 @@ TARGET = Engine
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc
-CONFIG += boost qt expat cairo python
+CONFIG += boost qt expat cairo 
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 QT -= gui
@@ -46,7 +46,6 @@ win32-msvc* {
 
 SOURCES += \
     AppInstance.cpp \
-    AppInstanceWrapper.cpp \
     AppManager.cpp \
     BlockingBackgroundRender.cpp \
     Curve.cpp \
@@ -74,12 +73,9 @@ SOURCES += \
     Lut.cpp \
     MemoryFile.cpp \
     Node.cpp \
-    NodeGroup.cpp \
-    NodeWrapper.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
-    NodeGroupSerialization.cpp \
     NoOp.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
@@ -89,7 +85,6 @@ SOURCES += \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
     OutputSchedulerThread.cpp \
-    ParameterWrapper.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
     ProcessHandler.cpp \
@@ -105,38 +100,10 @@ SOURCES += \
     Timer.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
-    ../libs/SequenceParsing/SequenceParsing.cpp \
-    NatronEngine/natronengine_module_wrapper.cpp \
-    NatronEngine/natron_wrapper.cpp \
-    NatronEngine/app_wrapper.cpp \
-    NatronEngine/effect_wrapper.cpp \
-    NatronEngine/intparam_wrapper.cpp \
-    NatronEngine/param_wrapper.cpp \
-    NatronEngine/doubleparam_wrapper.cpp \
-    NatronEngine/colortuple_wrapper.cpp \
-    NatronEngine/double2dparam_wrapper.cpp \
-    NatronEngine/double2dtuple_wrapper.cpp \
-    NatronEngine/double3dparam_wrapper.cpp \
-    NatronEngine/double3dtuple_wrapper.cpp \
-    NatronEngine/int2dparam_wrapper.cpp \
-    NatronEngine/int2dtuple_wrapper.cpp \
-    NatronEngine/int3dparam_wrapper.cpp \
-    NatronEngine/int3dtuple_wrapper.cpp \
-    NatronEngine/colorparam_wrapper.cpp \
-    NatronEngine/booleanparam_wrapper.cpp \
-    NatronEngine/buttonparam_wrapper.cpp \
-    NatronEngine/choiceparam_wrapper.cpp \
-    NatronEngine/fileparam_wrapper.cpp \
-    NatronEngine/outputfileparam_wrapper.cpp \
-    NatronEngine/stringparam_wrapper.cpp \
-    NatronEngine/stringparambase_wrapper.cpp \
-    NatronEngine/pathparam_wrapper.cpp \
-    NatronEngine/animatedparam_wrapper.cpp \
-    NatronEngine/parametricparam_wrapper.cpp
+    ../libs/SequenceParsing/SequenceParsing.cpp
 
 HEADERS += \
     AppInstance.h \
-    AppInstanceWrapper.h \
     AppManager.h \
     BlockingBackgroundRender.h \
     Cache.h \
@@ -144,7 +111,6 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
-    DockablePanelI.h \
     DiskCacheNode.h \
     EffectInstance.h \
     FileDownloader.h \
@@ -155,7 +121,6 @@ HEADERS += \
     FrameEntrySerialization.h \
     FrameParams.h \
     FrameParamsSerialization.h \
-    GlobalFunctionsWrapper.h \
     Hash64.h \
     HistogramCPU.h \
     ImageInfo.h \
@@ -180,10 +145,6 @@ HEADERS += \
     Lut.h \
     MemoryFile.h \
     Node.h \
-    NodeGroup.h \
-    NodeGroupSerialization.h \
-    NodeGraphI.h \
-    NodeWrapper.h \
     NodeGuiI.h \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
@@ -199,14 +160,12 @@ HEADERS += \
     OpenGLViewerI.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
-    ParameterWrapper.h \
     Plugin.h \
     PluginMemory.h \
     ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
-    Pyside_Engine_Python.h \
     Rect.h \
     RotoContext.h \
     RotoContextPrivate.h \
@@ -254,36 +213,4 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnOfxExtensions.h \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
-    ../libs/OpenFX_extensions/ofxhParametricParam.h \
-    NatronEngine/natronengine_python.h \
-    NatronEngine/natron_wrapper.h \
-    NatronEngine/app_wrapper.h \
-    NatronEngine/effect_wrapper.h \
-    NatronEngine/intparam_wrapper.h \
-    NatronEngine/param_wrapper.h \
-    NatronEngine/doubleparam_wrapper.h \
-    NatronEngine/colortuple_wrapper.h \
-    NatronEngine/double2dparam_wrapper.h \
-    NatronEngine/double2dtuple_wrapper.h \
-    NatronEngine/double3dparam_wrapper.h \
-    NatronEngine/double3dtuple_wrapper.h \
-    NatronEngine/int2dparam_wrapper.h \
-    NatronEngine/int2dtuple_wrapper.h \
-    NatronEngine/int3dparam_wrapper.h \
-    NatronEngine/int3dtuple_wrapper.h \
-    NatronEngine/colorparam_wrapper.h \
-    NatronEngine/booleanparam_wrapper.h \
-    NatronEngine/buttonparam_wrapper.h \
-    NatronEngine/choiceparam_wrapper.h \
-    NatronEngine/fileparam_wrapper.h \
-    NatronEngine/outputfileparam_wrapper.h \
-    NatronEngine/stringparam_wrapper.h \
-    NatronEngine/stringparambase_wrapper.h \
-    NatronEngine/pathparam_wrapper.h \
-    NatronEngine/animatedparam_wrapper.h \
-    NatronEngine/parametricparam_wrapper.h
-
-
-OTHER_FILES += \
-    typesystem_engine.xml
-
+    ../libs/OpenFX_extensions/ofxhParametricParam.h

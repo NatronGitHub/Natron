@@ -51,13 +51,13 @@ public:
 
     void setDirty(bool b);
 
-Q_SIGNALS:
+signals:
     
     void textDropped();
     
     void textPasted();
     
-public Q_SLOTS:
+public slots:
 
     void onEditingFinished();
 

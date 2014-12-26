@@ -313,8 +313,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 bool pushUndoRedoCommand,
                                 bool addToProject,
                                 const QString& fixedName,
-                                const CreateNodeArgs::DefaultValuesList& paramValues,
-                                const boost::shared_ptr<NodeCollection>& group)
+                                const CreateNodeArgs::DefaultValuesList& paramValues)
 {
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;
@@ -337,11 +336,10 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
-
     if (foundPluginID != PLUGINID_NATRON_VIEWER) { // for now only the viewer can be an inspector.
-        node.reset( new Node(this, group, plugin) );
+        node.reset( new Node(this,plugin) );
     } else {
-        node.reset( new InspectorNode(this, group, plugin) );
+        node.reset( new InspectorNode(this,plugin) );
     }
     
     {
@@ -358,17 +356,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
         }
     }
     
-    
-    if (addToProject) {
-        //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
-        //of the node works
-        _imp->_currentProject->addNode(node);
-    }
-    assert(node);
     try {
-        node->load(foundPluginID,multiInstanceParentName,childIndex, serialization,dontLoadName,fixedName,paramValues);
+        node->load(foundPluginID,multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
-        _imp->_currentProject->removeNode(node);
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
@@ -376,7 +366,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
-        _imp->_currentProject->removeNode(node);
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
@@ -385,11 +374,13 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return boost::shared_ptr<Natron::Node>();
     }
 
-    boost::shared_ptr<Natron::Node> multiInstanceParent = node->getParentMultiInstance();
+    if (addToProject) {
+        _imp->_currentProject->addNodeToProject(node);
+    }
 
     // createNodeGui also sets the filename parameter for reader or writers
     createNodeGui(node,
-                  multiInstanceParent,
+                  multiInstanceParentName,
                   requestedByLoad,
                   autoConnect,
                   xPosHint,
@@ -423,8 +414,7 @@ AppInstance::createNode(const CreateNodeArgs & args)
                               args.pushUndoRedoCommand,
                               args.addToProject,
                               args.fixedName,
-                              args.paramValues,
-                              args.group);
+                              args.paramValues);
 }
 
 boost::shared_ptr<Natron::Node>
@@ -442,14 +432,25 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               false,
                               true,
                               QString(),
-                              CreateNodeArgs::DefaultValuesList(),
-                              args.group);
+                              CreateNodeArgs::DefaultValuesList());
 }
 
 int
 AppInstance::getAppID() const
 {
     return _imp->_appID;
+}
+
+void
+AppInstance::getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> >* activeNodes) const
+{
+    const std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
+
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if ( nodes[i]->isActivated() ) {
+            activeNodes->push_back(nodes[i]);
+        }
+    }
 }
 
 boost::shared_ptr<Natron::Node>
@@ -542,8 +543,7 @@ AppInstance::triggerAutoSave()
 void
 AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
 {
-    NodeList projectNodes;
-    _imp->_currentProject->getActiveNodes(&projectNodes);
+    const std::vector<boost::shared_ptr<Node> > projectNodes = _imp->_currentProject->getCurrentNodes();
     
    
     std::list<RenderWork> renderers;
@@ -554,9 +554,9 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
             boost::shared_ptr<Node> node;
             std::string writerName =  it->writerName.toStdString();
             
-            for (NodeList::const_iterator it2 = projectNodes.begin(); it2 != projectNodes.end(); ++it2) {
-                if ( (*it2)->getName() == writerName) {
-                    node = *it2;
+            for (U32 j = 0; j < projectNodes.size(); ++j) {
+                if ( projectNodes[j]->getName() == writerName) {
+                    node = projectNodes[j];
                     break;
                 }
             }
@@ -584,11 +584,11 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
         }
     } else {
         //start rendering for all writers found in the project
-        for (NodeList::const_iterator it2 = projectNodes.begin(); it2 != projectNodes.end(); ++it2) {
-            if ( (*it2)->getLiveInstance()->isWriter() ) {
+        for (U32 j = 0; j < projectNodes.size(); ++j) {
+            if ( projectNodes[j]->getLiveInstance()->isWriter() ) {
                 
                 RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>( (*it2)->getLiveInstance() );
+                w.writer = dynamic_cast<OutputEffectInstance*>( projectNodes[j]->getLiveInstance() );
                 assert(w.writer);
                 if (w.writer) {
                     w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
@@ -644,22 +644,20 @@ AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*rend
 void
 AppInstance::clearOpenFXPluginsCaches()
 {
-    NodeList activeNodes;
-    _imp->_currentProject->getActiveNodes(&activeNodes);
+    const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
 
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        (*it)->purgeAllInstancesCaches();
+    for (U32 i = 0; i < activeNodes.size(); ++i) {
+        activeNodes[i]->purgeAllInstancesCaches();
     }
 }
 
 void
 AppInstance::clearAllLastRenderedImages()
 {
-    NodeList activeNodes;
-    _imp->_currentProject->getActiveNodes(&activeNodes);
-    
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        (*it)->clearLastRenderedImage();
+    const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
+
+    for (U32 i = 0; i < activeNodes.size(); ++i) {
+        activeNodes[i]->clearLastRenderedImage();
     }
 }
 
@@ -687,21 +685,6 @@ void
 AppInstance::onOCIOConfigPathChanged(const std::string& path)
 {
     _imp->_currentProject->onOCIOConfigPathChanged(path,false);
-}
-
-std::size_t
-AppInstance::declareCurrentAppVariable_Python(std::string& script)
-{
-    size_t firstLine = ensureScriptHasModuleImport(NATRON_ENGINE_PYTHON_MODULE_NAME,script);
-    
-    ///Now define the app variable
-    std::stringstream ss;
-    ss << "app = getInstance(" << getAppID() << ") \n";
-    std::string toInsert = ss.str();
-    script.insert(firstLine, toInsert);
-    
-    return firstLine + toInsert.size();
-
 }
 
 double

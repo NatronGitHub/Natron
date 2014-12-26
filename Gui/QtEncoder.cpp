@@ -176,6 +176,7 @@ QtWriter::knobChanged(KnobI* k,
             _lastFrameKnob->setDisplayMaximum(last);
             _lastFrameKnob->setSecret(false);
 
+            createKnobDynamically();
         }
     }
 }

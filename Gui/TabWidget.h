@@ -81,7 +81,7 @@ public:
     }
 
     
-Q_SIGNALS:
+signals:
     
     void mouseLeftTabBar();
     
@@ -107,14 +107,14 @@ public:
     : QWidget(parent)
     {}
     
-Q_SIGNALS:
+signals:
     
     void mouseLeftTabBar();
 private:
     
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL
     {
-        Q_EMIT mouseLeftTabBar();
+        emit mouseLeftTabBar();
         QWidget::leaveEvent(e);
     }
     
@@ -241,7 +241,7 @@ public:
 
     void discardGuiPointer();
 
-public Q_SLOTS:
+public slots:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/
     void makeCurrentTab(int index);
@@ -303,7 +303,7 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    void destroyTab(QWidget* tab);
+    bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
 private:
 

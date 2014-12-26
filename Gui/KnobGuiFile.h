@@ -64,11 +64,9 @@ public:
 
     virtual ~File_KnobGui() OVERRIDE;
     
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onTextEdited() ;
     
@@ -98,9 +96,7 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
-    virtual void updateToolTip() OVERRIDE FINAL;
+
 private:
 
     void updateLastOpened(const QString &str);
@@ -135,11 +131,9 @@ public:
 
     virtual ~OutputFile_KnobGui() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-    
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
     void onTextEdited() ;
 
@@ -164,9 +158,7 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
-    virtual void updateToolTip() OVERRIDE FINAL;
+
     void updateLastOpened(const QString &str);
 
 private:
@@ -196,12 +188,10 @@ public:
                  DockablePanel *container);
 
     virtual ~Path_KnobGui() OVERRIDE;
-    
-    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+public slots:
 
 
 
@@ -233,9 +223,7 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
-    virtual void updateToolTip() OVERRIDE FINAL;
+
     void updateLastOpened(const QString &str);
 
     /**

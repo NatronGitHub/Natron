@@ -110,12 +110,12 @@ public:
     void setAnimation(int i);
     void setReadOnly(bool readOnly);
 
-public Q_SLOTS:
+public slots:
 
     ///Changes the current index AND emits the signal void currentIndexChanged(int)
     void setCurrentIndex(int index);
 
-    ///Same as setCurrentIndex but does not Q_EMIT any signal.
+    ///Same as setCurrentIndex but does not emit any signal.
     void setCurrentIndex_no_emit(int index);
 
     ///Changes the text displayed by the combobox. It doesn't have to match the text
@@ -128,7 +128,7 @@ public Q_SLOTS:
 
     void setEnabled_natron(bool enabled);
 
-Q_SIGNALS:
+signals:
 
     void currentIndexChanged(int index);
 

@@ -17,9 +17,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #endif
 #include "Engine/Format.h"
 
@@ -36,7 +35,6 @@ class DockablePanel;
 class ProjectGuiSerialization;
 class Gui;
 class NodeGui;
-class ViewerInstance;
 class NodeGuiSerialization;
 namespace boost {
 namespace archive {
@@ -70,7 +68,7 @@ public:
 
     boost::shared_ptr<Natron::Project> getInternalProject() const
     {
-        return _project.lock();
+        return _project;
     }
 
     void save(boost::archive::xml_oarchive & archive) const;
@@ -97,7 +95,7 @@ public:
         return _gui;
     }
 
-public Q_SLOTS:
+public slots:
 
     void createNewFormat();
 
@@ -109,7 +107,7 @@ private:
 
 
     Gui* _gui;
-    boost::weak_ptr<Natron::Project> _project;
+    boost::shared_ptr<Natron::Project> _project;
     DockablePanel* _panel;
     bool _created;
     std::vector<boost::shared_ptr<Color_Knob> > _colorPickersEnabled;
@@ -132,7 +130,7 @@ public:
 
     Format getFormat() const;
 
-public Q_SLOTS:
+public slots:
 
     void onCopyFromViewer();
 
@@ -140,9 +138,6 @@ private:
 
     Gui* _gui;
     Natron::Project* _project;
-    
-    std::list<ViewerInstance*> _viewers;
-    
     QVBoxLayout* _mainLayout;
     QWidget* _fromViewerLine;
     QHBoxLayout* _fromViewerLineLayout;

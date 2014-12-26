@@ -16,12 +16,10 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Gui/GuiAppInstance.h"
-#include "Gui/Gui.h"
-#include "Engine/Project.h"
 
 struct ToolButtonPrivate
 {
-    GuiAppInstance* _app;
+    AppInstance* _app;
     QString _id;
     int _major,_minor;
     QString _label;
@@ -31,7 +29,7 @@ struct ToolButtonPrivate
     QAction* _action;
     PluginGroupNode* _pluginToolButton;
 
-    ToolButtonPrivate(GuiAppInstance* app,
+    ToolButtonPrivate(AppInstance* app,
                       PluginGroupNode* pluginToolButton,
                       const QString & pluginID,
                       int major,
@@ -52,7 +50,7 @@ struct ToolButtonPrivate
     }
 };
 
-ToolButton::ToolButton(GuiAppInstance* app,
+ToolButton::ToolButton(AppInstance* app,
                        PluginGroupNode* pluginToolButton,
                        const QString & pluginID,
                        int major,
@@ -153,19 +151,16 @@ ToolButton::getPluginToolButton() const
 void
 ToolButton::onTriggered()
 {
-    boost::shared_ptr<NodeCollection> group = _imp->_app->getGui()->getLastSelectedNodeCollection();
-    assert(group);
     CreateNodeArgs args(_imp->_id,
-                        "",
-                        _imp->_major,_imp->_minor,
-                        -1,
-                        true,
-                        INT_MIN,INT_MIN,
-                        true,
-                        true,
-                        QString(),
-                        CreateNodeArgs::DefaultValuesList(),
-                        group);
+                   "",
+                   _imp->_major,_imp->_minor,
+                   -1,
+                   true,
+                   INT_MIN,INT_MIN,
+                   true,
+                   true,
+                   QString(),
+                   CreateNodeArgs::DefaultValuesList());
     _imp->_app->createNode( args );
 }
 

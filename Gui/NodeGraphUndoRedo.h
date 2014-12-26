@@ -15,9 +15,8 @@
 
 #include <vector>
 #include <QPointF>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #endif
 #include <QUndoCommand>
 
@@ -43,7 +42,7 @@ public:
 
     struct NodeToMove
     {
-        boost::weak_ptr<NodeGui> node;
+        boost::shared_ptr<NodeGui> node;
         bool isWithinBD;
     };
 
@@ -107,7 +106,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> > _nodes;
+    std::list<boost::shared_ptr<NodeGui> > _nodes;
     std::list<NodeBackDrop*> _bds;
     NodeGraph* _graph;
     bool _firstRedoCalled;
@@ -137,7 +136,7 @@ private:
         ///This list contains only nodes that are not part of the selection: we restore only the
         ///inputs of the outputs nodes of the graph that were not removed
         std::list<Natron::Node* > outputsToRestore;
-        boost::weak_ptr<NodeGui> node;
+        boost::shared_ptr<NodeGui> node;
     };
 
     std::list<NodeToRemove> _nodes;
@@ -165,8 +164,8 @@ private:
                    const boost::shared_ptr<Natron::Node> & newSrc);
     
     Edge* _edge;
-    boost::weak_ptr<NodeGui> _oldSrc,_newSrc;
-    boost::weak_ptr<NodeGui> _dst;
+    boost::shared_ptr<NodeGui> _oldSrc,_newSrc;
+    boost::shared_ptr<NodeGui> _dst;
     NodeGraph* _graph;
     int _inputNb;
 };
@@ -220,8 +219,8 @@ private:
 
     struct NodeToDeclone
     {
-        boost::weak_ptr<NodeGui> node;
-        boost::weak_ptr<Natron::Node> master;
+        boost::shared_ptr<NodeGui> node;
+        boost::shared_ptr<Natron::Node> master;
     };
 
     struct BDToDeclone
@@ -269,7 +268,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<boost::shared_ptr<NodeGui> >_nodes;
 };
 
 class EnableNodesCommand
@@ -284,7 +283,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<boost::shared_ptr<NodeGui> >_nodes;
 };
 
 
@@ -304,13 +303,10 @@ public:
 
 private:
     
-    void getListAsShared(const std::list< boost::weak_ptr<Natron::Node> >& original,
-                         std::list< boost::shared_ptr<Natron::Node> >& shared) const;
-    
     bool _firstRedoCalled;
     bool _isUndone;
-    boost::weak_ptr<NodeGui> _node;
-    std::list< boost::weak_ptr<Natron::Node> > _oldChildren,_newChildren; //< children if multi-instance
+    boost::shared_ptr<NodeGui> _node;
+    std::list< boost::shared_ptr<Natron::Node> > _oldChildren,_newChildren; //< children if multi-instance
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations,_oldSerialization;
 };
 
@@ -329,7 +325,7 @@ public:
     
 private:
     
-    boost::weak_ptr<NodeGui> _node;
+    boost::shared_ptr<NodeGui> _node;
     NodeBackDrop* _bd;
     QString _oldName,_newName;
 };
@@ -348,24 +344,23 @@ public:
     
     struct ExtractedOutput
     {
-        boost::weak_ptr<NodeGui> node;
+        boost::shared_ptr<NodeGui> node;
         std::list<std::pair<int,Natron::Node*> > outputs;
     };
     
     struct ExtractedInput
     {
-        boost::weak_ptr<NodeGui> node;
-        std::vector<boost::weak_ptr<Natron::Node> > inputs;
+        boost::shared_ptr<NodeGui> node;
+        std::vector<boost::shared_ptr<Natron::Node> > inputs;
     };
     
     struct ExtractedTree
     {
         ExtractedOutput output;
         std::list<ExtractedInput> inputs;
-        std::list<boost::weak_ptr<NodeGui> > inbetweenNodes;
+        std::list<boost::shared_ptr<NodeGui> > inbetweenNodes;
     };
 private:
-    
   
     NodeGraph* _graph;
     std::list<ExtractedTree> _trees;

@@ -13,7 +13,7 @@
 #define NATRON_GUI_TIMELINE_H_
 
 #include <list>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -97,7 +97,7 @@ public:
      **/
     void disconnectSlotsFromViewerCache();
 
-public Q_SLOTS:
+public slots:
 
     void centerOn(SequenceTime left,SequenceTime right);
 
@@ -128,7 +128,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
-Q_SIGNALS:
+signals:
 
     void frameChanged(SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime);

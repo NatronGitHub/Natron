@@ -17,7 +17,7 @@
 #include <set>
 
 #include "Global/Macros.h"
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 CLANG_DIAG_OFF(unused-parameter)

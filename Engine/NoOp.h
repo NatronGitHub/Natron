@@ -6,7 +6,7 @@
 
 #ifndef NOOP_H
 #define NOOP_H
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/EffectInstance.h"

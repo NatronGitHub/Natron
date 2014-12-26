@@ -88,9 +88,9 @@ static std::string generateUserFriendlyNatronVersionName()
 
 namespace Natron {
 Project::Project(AppInstance* appInstance)
-    : NodeCollection(appInstance)
-    , KnobHolder(appInstance)
-    , _imp( new ProjectPrivate(this) )
+    : QObject()
+      , KnobHolder(appInstance)
+      , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL( timeout() ), this, SLOT( onAutoSaveTimerTriggered() ) );
 }
@@ -138,8 +138,7 @@ Project::loadProject(const QString & path,
                                                   true,
                                                   true,
                                                   QString(),
-                                                  CreateNodeArgs::DefaultValuesList(),
-                                                  shared_from_this()) );
+                                                  CreateNodeArgs::DefaultValuesList()) );
         }
 
         return false;
@@ -159,8 +158,7 @@ Project::loadProject(const QString & path,
                                                   true,
                                                   true,
                                                   QString(),
-                                                  CreateNodeArgs::DefaultValuesList(),
-                                                  shared_from_this()) );
+                                                  CreateNodeArgs::DefaultValuesList()) );
         }
 
         return false;
@@ -271,10 +269,27 @@ Project::loadProjectInternal(const QString & path,
 
     ifile.close();
     getApp()->endProgress(this);
-    Q_EMIT projectNameChanged(name);
+    emit projectNameChanged(name);
     return ret;
 }
 
+void
+Project::refreshViewersAndPreviews()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if ( !appPTR->isBackground() ) {
+        int time = _imp->timeline->currentFrame();
+        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+            assert(_imp->currentNodes[i]);
+            _imp->currentNodes[i]->computePreviewImage(time);
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance());
+            if (n) {
+                n->getRenderEngine()->renderCurrentFrame(true);
+            }
+        }
+    }
+}
 
 QString
 Project::saveProject(const QString & path,
@@ -475,13 +490,13 @@ Project::saveProjectInternal(const QString & path,
     
     if (!autoSave) {
         _imp->projectName = name;
-        Q_EMIT projectNameChanged(name); //< notify the gui so it can update the title
+        emit projectNameChanged(name); //< notify the gui so it can update the title
         _imp->projectPath = path;
         _imp->hasProjectBeenSavedByUser = true;
         _imp->ageSinceLastSave = time;
     } else {
         if (!isRenderSave) {
-            Q_EMIT projectNameChanged(_imp->projectName + " (*)");
+            emit projectNameChanged(_imp->projectName + " (*)");
         }
     }
     _imp->lastAutoSave = time;
@@ -530,7 +545,20 @@ Project::onAutoSaveTimerTriggered()
     
     ///check that all schedulers are not working.
     ///If so launch an auto-save, otherwise, restart the timer.
-    bool canAutoSave = !hasNodeRendering();
+    bool canAutoSave = true;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end(); ++it) {
+            if ( (*it)->isOutputNode() ) {
+                Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getLiveInstance() );
+                assert(effect);
+                if ( effect->getRenderEngine()->hasThreadsWorking() ) {
+                    canAutoSave = false;
+                    break;
+                }
+            }
+        }
+    }
 
     if (canAutoSave) {
         boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
@@ -635,8 +663,7 @@ Project::findAndTryLoadAutoSave()
                                                           true,
                                                           true,
                                                           QString(),
-                                                          CreateNodeArgs::DefaultValuesList(),
-                                                          shared_from_this()) );
+                                                          CreateNodeArgs::DefaultValuesList()) );
                 } catch (...) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() );
                     getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
@@ -648,8 +675,7 @@ Project::findAndTryLoadAutoSave()
                                                           true,
                                                           true,
                                                           QString(),
-                                                          CreateNodeArgs::DefaultValuesList(),
-                                                          shared_from_this()) );
+                                                          CreateNodeArgs::DefaultValuesList()) );
                 }
 
                 ///Process all events before flagging that we're no longer loading the project
@@ -677,7 +703,7 @@ Project::findAndTryLoadAutoSave()
                 _imp->lastAutoSave = QDateTime::currentDateTime();
                 _imp->ageSinceLastSave = QDateTime();
 
-                Q_EMIT projectNameChanged(_imp->projectName + " (*)");
+                emit projectNameChanged(_imp->projectName + " (*)");
 
                 refreshViewersAndPreviews();
 
@@ -877,7 +903,7 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
     
-    Q_EMIT knobsInitialized();
+    emit knobsInitialized();
 } // initializeKnobs
 
 void
@@ -887,15 +913,14 @@ Project::evaluate(KnobI* knob,
 {
     assert(QThread::currentThread() == qApp->thread());
     if (isSignificant && knob != _imp->formatKnob.get()) {
+        getCurrentNodes();
         
-        NodeList nodes = getNodes();
-        
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
-            assert(*it);
-            (*it)->incrementKnobsAge();
+        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+            assert(_imp->currentNodes[i]);
+            _imp->currentNodes[i]->incrementKnobsAge();
 
             
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>( _imp->currentNodes[i]->getLiveInstance() );
             if (n) {
                 n->renderCurrentFrame(true);
             }
@@ -913,6 +938,111 @@ Project::getProjectDefaultFormat(Format *f) const
     _imp->findFormat(index, f);
 }
 
+///only called on the main thread
+void
+Project::initNodeCountersAndSetName(Node* n)
+{
+    assert(n);
+    int no = 1;
+    std::string baseName(n->getPluginLabel());
+    if (baseName.size() > 3 &&
+        baseName[baseName.size() - 1] == 'X' &&
+        baseName[baseName.size() - 2] == 'F' &&
+        baseName[baseName.size() - 3] == 'O') {
+        baseName = baseName.substr(0,baseName.size() - 3);
+    }
+    bool foundNodeWithName = false;
+    
+    std::string name;
+    {
+        std::stringstream ss;
+        ss << baseName << no;
+        name = ss.str();
+    }
+    do {
+        foundNodeWithName = false;
+        QMutexLocker l(&_imp->nodesLock);
+        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+            if (_imp->currentNodes[i]->getName_mt_safe() == name) {
+                foundNodeWithName = true;
+                break;
+            }
+        }
+        if (foundNodeWithName) {
+            ++no;
+            {
+                std::stringstream ss;
+                ss << baseName << no;
+                name = ss.str();
+            }
+        }
+    } while (foundNodeWithName);
+    n->setName(name.c_str());
+}
+
+
+void
+Project::addNodeToProject(boost::shared_ptr<Natron::Node> n)
+{
+    QMutexLocker l(&_imp->nodesLock);
+
+    _imp->currentNodes.push_back(n);
+}
+
+void
+Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node> & n)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        for (std::vector<boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end(); ++it) {
+            if (*it == n) {
+                _imp->currentNodes.erase(it);
+                break;
+            }
+        }
+    }
+    n->removeReferences();
+}
+
+void
+Project::clearNodes(bool emitSignal)
+{
+    std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        nodesToDelete = _imp->currentNodes;
+    }
+
+    ///First quit any processing
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->quitAnyProcessing();
+    }
+    ///Kill thread pool so threads are killed before killing thread storage
+    QThreadPool::globalInstance()->waitForDone();
+
+
+    ///Kill effects
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->deactivate(std::list<Natron::Node* >(),false,false,true,false);
+    }
+
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->removeReferences();
+    }
+
+
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        _imp->currentNodes.clear();
+    }
+
+    nodesToDelete.clear();
+
+    if (emitSignal) {
+        emit nodesCleared();
+    }
+}
 
 void
 Project::setFrameRange(int first,
@@ -1008,6 +1138,21 @@ int
 Project::getProjectMainView() const
 {
     return _imp->mainView->getValue();
+}
+
+std::vector<boost::shared_ptr<Natron::Node> > Project::getCurrentNodes() const
+{
+    QMutexLocker l(&_imp->nodesLock);
+
+    return _imp->currentNodes;
+}
+
+bool
+Project::hasNodes() const
+{
+    QMutexLocker l(&_imp->nodesLock);
+
+    return !_imp->currentNodes.empty();
 }
 
 QString
@@ -1128,7 +1273,7 @@ Project::load(const ProjectSerialization & obj,const QString& name,const QString
     bool ret = _imp->restoreFromSerialization(obj,name,path,isAutoSave,realFilePath);
     Format f;
     getProjectDefaultFormat(&f);
-    Q_EMIT formatChanged(f);
+    emit formatChanged(f);
     return ret;
 }
 
@@ -1166,21 +1311,26 @@ Project::onKnobValueChanged(KnobI* knob,
         if (found) {
             if (reason == Natron::eValueChangedReasonUserEdited) {
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
-                NodeList nodes = getNodes();
-                for (NodeList::iterator it = nodes.begin(); it != nodes.end();++it) {
+                QMutexLocker k(&_imp->nodesLock);
+                for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end();++it)
+                {
                     (*it)->incrementKnobsAge();
                 }
             }
-            Q_EMIT formatChanged(frmt);
+            emit formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
-        Q_EMIT mustCreateFormat();
+        emit mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
-        Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
+        emit autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
-        NodeList nodes = getNodes();
+        std::vector< boost::shared_ptr<Natron::Node> > nodes ;
+        {
+            QMutexLocker k(&_imp->nodesLock);
+            nodes = _imp->currentNodes;
+        }
         std::list <Natron::Node*> markedNodes;
-        for (NodeList::iterator it = nodes.begin();
+        for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin();
              it != nodes.end();++it)  {
             if ((*it)->isOutputNode()) {
                 (*it)->restoreClipPreferencesRecursive(markedNodes);
@@ -1222,7 +1372,13 @@ Project::isGraphWorthLess() const
      */
 
     ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
-    return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || !hasNodes();
+    int nbNodes;
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        nbNodes = (int)_imp->currentNodes.size();
+    }
+    
+    return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || nbNodes == 0;
 }
 
 void
@@ -1285,8 +1441,8 @@ Project::reset()
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
     _imp->envVars->unblockEvaluation();
     
-    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
-    clearNodes(true);
+    emit projectNameChanged(NATRON_PROJECT_UNTITLED);
+    clearNodes();
 }
 
 bool
@@ -1334,10 +1490,87 @@ Project::setOrAddProjectFormat(const Format & frmt,
         }
     }
     if (formatSet) {
-        Q_EMIT formatChanged(dispW);
+        emit formatChanged(dispW);
     }
 }
 
+///do not need to lock this function as all calls are thread-safe already
+bool
+Project::connectNodes(int inputNumber,
+                      const std::string & parentName,
+                      Node* output)
+{
+    const std::vector<boost::shared_ptr<Node> > nodes = getCurrentNodes();
+
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        assert(nodes[i]);
+        if (nodes[i]->getName() == parentName) {
+            return connectNodes(inputNumber,nodes[i], output);
+        }
+    }
+
+    return false;
+}
+
+bool
+Project::connectNodes(int inputNumber,
+                      boost::shared_ptr<Node> input,
+                      Node* output,
+                      bool force)
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+
+    boost::shared_ptr<Node> existingInput = output->getInput(inputNumber);
+    if (force && existingInput) {
+        bool ok = disconnectNodes(existingInput.get(), output);
+        assert(ok);
+        if (input->getMaxInputCount() > 0) {
+            ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input.get());
+            assert(ok);
+        }
+    }
+    
+    if (!input) {
+        return true;
+    }
+
+
+    if ( !output->connectInput(input, inputNumber) ) {
+        return false;
+    }
+  
+    return true;
+}
+
+bool
+Project::disconnectNodes(Node* input,
+                         Node* output,
+                         bool autoReconnect)
+{
+    boost::shared_ptr<Node> inputToReconnectTo;
+    int indexOfInput = output->inputIndex( input );
+
+    if (indexOfInput == -1) {
+        return false;
+    }
+
+    int inputsCount = input->getMaxInputCount();
+    if (inputsCount == 1) {
+        inputToReconnectTo = input->getInput(0);
+    }
+
+    
+    if (output->disconnectInput(input) < 0) {
+        return false;
+    }
+
+    if (autoReconnect && inputToReconnectTo) {
+        connectNodes(indexOfInput, inputToReconnectTo, output);
+    }
+
+    return true;
+}
 
 bool
 Project::tryLock() const
@@ -1352,12 +1585,146 @@ Project::unlock() const
     _imp->projectLock.unlock();
 }
 
+bool
+Project::autoConnectNodes(boost::shared_ptr<Node> selected,
+                          boost::shared_ptr<Node> created)
+{
+    ///We follow this rule:
+    //        1) selected is output
+    //          a) created is output --> fail
+    //          b) created is input --> connect input
+    //          c) created is regular --> connect input
+    //        2) selected is input
+    //          a) created is output --> connect output
+    //          b) created is input --> fail
+    //          c) created is regular --> connect output
+    //        3) selected is regular
+    //          a) created is output--> connect output
+    //          b) created is input --> connect input
+    //          c) created is regular --> connect output
+
+    ///if true if will connect 'created' as input of 'selected',
+    ///otherwise as output.
+    bool connectAsInput = false;
+
+    ///cannot connect 2 input nodes together: case 2-b)
+    if ( (selected->getMaxInputCount() == 0) && (created->getMaxInputCount() == 0) ) {
+        return false;
+    }
+    ///cannot connect 2 output nodes together: case 1-a)
+    if ( selected->isOutputNode() && created->isOutputNode() ) {
+        return false;
+    }
+
+    ///1)
+    if ( selected->isOutputNode() ) {
+        ///assert we're not in 1-a)
+        assert( !created->isOutputNode() );
+
+        ///for either cases 1-b) or 1-c) we just connect the created node as input of the selected node.
+        connectAsInput = true;
+    }
+    ///2) and 3) are similar exceptfor case b)
+    else {
+        ///case 2 or 3- a): connect the created node as output of the selected node.
+        if ( created->isOutputNode() ) {
+            connectAsInput = false;
+        }
+        ///case b)
+        else if (created->getMaxInputCount() == 0) {
+            assert(selected->getMaxInputCount() != 0);
+            ///case 3-b): connect the created node as input of the selected node
+            connectAsInput = true;
+        }
+        ///case c) connect created as output of the selected node
+        else {
+            connectAsInput = false;
+        }
+    }
+    
+    bool ret = false;
+    if (connectAsInput) {
+        
+        ///connect it to the first input
+        int selectedInput = selected->getPreferredInputForConnection();
+        if (selectedInput != -1) {
+            bool ok = connectNodes(selectedInput, created, selected.get(),true);
+            assert(ok);
+            ret = true;
+        } else {
+            ret = false;
+        }
+        
+    } else {
+        if ( !created->isOutputNode() ) {
+            ///we find all the nodes that were previously connected to the selected node,
+            ///and connect them to the created node instead.
+            std::map<Node*,int> outputsConnectedToSelectedNode;
+            selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
+            for (std::map<Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
+                 it != outputsConnectedToSelectedNode.end(); ++it) {
+                if (it->first->getParentMultiInstanceName().empty()) {
+                    bool ok = disconnectNodes(selected.get(), it->first);
+                    assert(ok);
+                    
+                    (void)connectNodes(it->second, created, it->first);
+                    //assert(ok); Might not be ok if the disconnectNodes() action above was queued
+                }
+            }
+        }
+        ///finally we connect the created node to the selected node
+        int createdInput = created->getPreferredInputForConnection();
+        if (createdInput != -1) {
+            bool ok = connectNodes(createdInput, selected, created.get());
+            assert(ok);
+            ret = true;
+        } else {
+            ret = false;
+        }
+    }
+
+    ///update the render trees
+    std::list<ViewerInstance* > viewers;
+    created->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
+
+    return ret;
+} // autoConnectNodes
+
 qint64
 Project::getProjectCreationTime() const
 {
     QMutexLocker l(&_imp->projectLock);
 
     return _imp->projectCreationTime.toMSecsSinceEpoch();
+}
+
+boost::shared_ptr<Natron::Node> Project::getNodeByName(const std::string & name) const
+{
+    QMutexLocker l(&_imp->nodesLock);
+
+    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+        if (_imp->currentNodes[i]->getName() == name) {
+            return _imp->currentNodes[i];
+        }
+    }
+
+    return boost::shared_ptr<Natron::Node>();
+}
+
+boost::shared_ptr<Natron::Node> Project::getNodePointer(Natron::Node* n) const
+{
+    QMutexLocker l(&_imp->nodesLock);
+
+    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+        if (_imp->currentNodes[i].get() == n) {
+            return _imp->currentNodes[i];
+        }
+    }
+
+    return boost::shared_ptr<Natron::Node>();
 }
 
 Natron::ViewerColorSpaceEnum
@@ -1636,7 +2003,83 @@ Project::fixFilePath(const std::string& projectPathName,const std::string& newPr
     }
 }
     
+void
+Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath,bool blockEval)
+{
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        nodes = _imp->currentNodes;
+    }
+    
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isActivated()) {
+            if (blockEval) {
+                nodes[i]->getLiveInstance()->blockEvaluation();
+            }
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
+            for (U32 j = 0; j < knobs.size(); ++j) {
+                
+                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
+                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
+                if (!isString || isStringKnob || knobs[j] == _imp->envVars) {
+                    continue;
+                }
+                
+                std::string filepath = isString->getValue();
+                
+                if (!filepath.empty()) {
+                    if (fixFilePath(projectPathName, newProjectPath, filepath)) {
+                        isString->setValue(filepath, 0);
+                    }
+                }
+            }
+            if (blockEval) {
+                nodes[i]->getLiveInstance()->unblockEvaluation();
+            }
+            
+        }
+    }
+ 
+}
+    
+void
+Project::fixPathName(const std::string& oldName,const std::string& newName)
+{
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        nodes = _imp->currentNodes;
+    }
+    
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isActivated()) {
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
+            for (U32 j = 0; j < knobs.size(); ++j) {
+                
+                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
+                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
+                if (!isString || isStringKnob || knobs[j] == _imp->envVars) {
+                    continue;
+                }
+                
+                std::string filepath = isString->getValue();
+                
+                if (filepath.size() >= (oldName.size() + 2) &&
+                    filepath[0] == '[' &&
+                    filepath[oldName.size() + 1] == ']' &&
+                    filepath.substr(1,oldName.size()) == oldName) {
+                    
+                    filepath.replace(1, oldName.size(), newName);
+                    isString->setValue(filepath, 0);
+                }
+            }
+            
+        }
+    }
 
+}
+    
     
 bool
 Project::isRelative(const std::string& str)
@@ -1758,16 +2201,18 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     }
 }
 
+void
+Project::setAllNodesAborted(bool aborted)
+{
+    QMutexLocker k(&_imp->nodesLock);
+    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+        _imp->currentNodes[i]->setAborted(aborted);
+    }
+}
 double
 Project::getProjectFrameRate() const
 {
     return _imp->frameRate->getValue();
-}
-    
-boost::shared_ptr<Path_Knob>
-Project::getEnvVarKnob() const
-{
-    return _imp->envVars;
 }
     
 } //namespace Natron

@@ -72,7 +72,7 @@ public:
     const std::vector<int> &getIncrements() const;
 
 
-Q_SIGNALS:
+signals:
 
 
     void incrementChanged(int incr, int index = 0);
@@ -281,14 +281,14 @@ public:
 
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::list<boost::shared_ptr<Natron::Node> > & activeNodes);
+    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::vector<boost::shared_ptr<Natron::Node> > & activeNodes);
 
-public Q_SLOTS:
+public slots:
 
     void onNodeDeactivated();
     void onNodeActivated();
 
-Q_SIGNALS:
+signals:
 
     void incrementChanged(double incr, int index = 0);
 
@@ -417,7 +417,7 @@ public:
     
     void choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data);
 
-Q_SIGNALS:
+signals:
 
     void populated();
 
@@ -500,12 +500,12 @@ public:
 
     void activateAllDimensions()
     {
-        Q_EMIT mustActivateAllDimensions();
+        emit mustActivateAllDimensions();
     }
 
     void setPickingEnabled(bool enabled)
     {
-        Q_EMIT pickingEnabled(enabled);
+        emit pickingEnabled(enabled);
     }
 
     /**
@@ -519,11 +519,11 @@ public:
      **/
     void setValues(double r,double g,double b,double a);
 
-public Q_SLOTS:
+public slots:
 
     void onDimensionSwitchToggled(bool b);
 
-Q_SIGNALS:
+signals:
 
     void pickingEnabled(bool);
 
@@ -658,12 +658,6 @@ public:
                bool declaredByPlugin);
 
     void addKnob(boost::shared_ptr<KnobI> k);
-    void removeKnob(KnobI* k);
-    
-    void moveOneStepUp(KnobI* k);
-    void moveOneStepDown(KnobI* k);
-    
-    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
 
     const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
 
@@ -707,14 +701,6 @@ public:
 
     void addKnob(const boost::shared_ptr<KnobI>& k);
     
-
-    void moveOneStepUp(KnobI* k);
-    void moveOneStepDown(KnobI* k);
-    
-    void removeKnob(KnobI* k);
-    
-    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
-
     const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
     {
         return _children;
@@ -768,12 +754,12 @@ public:
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
+    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
+    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
     Natron::StatusEnum getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
-                                      double *value) const WARN_UNUSED_RETURN;
+                                      double *value) WARN_UNUSED_RETURN;
     Natron::StatusEnum setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
@@ -786,24 +772,24 @@ public:
 
     void loadParametricCurves(const std::list< Curve > & curves);
 
-public Q_SLOTS:
+public slots:
 
     virtual void drawCustomBackground()
     {
-        Q_EMIT customBackgroundRequested();
+        emit customBackgroundRequested();
     }
 
     virtual void initializeOverlayInteract(OverlaySupport* widget)
     {
-        Q_EMIT mustInitializeOverlayInteract(widget);
+        emit mustInitializeOverlayInteract(widget);
     }
 
     virtual void resetToDefault(const QVector<int> & dimensions)
     {
-        Q_EMIT mustResetToDefault(dimensions);
+        emit mustResetToDefault(dimensions);
     }
 
-Q_SIGNALS:
+signals:
 
     //emitted by drawCustomBackground()
     //if you can't overload drawCustomBackground()

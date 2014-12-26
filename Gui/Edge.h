@@ -18,9 +18,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsLineItem>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #endif
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
@@ -72,17 +71,17 @@ public:
 
     boost::shared_ptr<NodeGui> getDest() const
     {
-        return _dest.lock();
+        return _dest;
     }
 
     boost::shared_ptr<NodeGui> getSource() const
     {
-        return _source.lock();
+        return _source;
     }
 
     bool hasSource() const
     {
-        return _source.lock().get() != NULL;
+        return _source != NULL;
     }
 
     void dragSource(const QPointF & src);
@@ -146,8 +145,8 @@ private:
     double _angle;
     QGraphicsTextItem* _label;
     QPolygonF _arrowHead;
-    boost::weak_ptr<NodeGui> _dest;
-    boost::weak_ptr<NodeGui> _source;
+    boost::shared_ptr<NodeGui> _dest;
+    boost::shared_ptr<NodeGui> _source;
     QColor _defaultColor;
     QColor _renderingColor;
     bool _useRenderingColor;
@@ -183,7 +182,7 @@ public:
 
     void setWidth(int lineWidth);
 
-public Q_SLOTS:
+public slots:
 
     /**
      * @brief Called when one of the 2 nodes is moved

@@ -6,10 +6,9 @@
 
 #ifndef ROTOPANEL_H
 #define ROTOPANEL_H
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -37,7 +36,7 @@ class RotoPanel
 public:
 
 
-    RotoPanel(const boost::shared_ptr<NodeGui>& n,
+    RotoPanel(NodeGui* n,
               QWidget* parent = 0);
 
     virtual ~RotoPanel();
@@ -59,10 +58,8 @@ public:
 
     void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                   QTreeWidgetItem* treeItem = NULL);
-    
-    boost::shared_ptr<NodeGui> getNode() const;
 
-public Q_SLOTS:
+public slots:
 
     void onGoToPrevKeyframeButtonClicked();
 

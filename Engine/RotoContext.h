@@ -16,7 +16,7 @@
 #include <set>
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -403,7 +403,7 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
-Q_SIGNALS:
+signals:
 
 #ifdef NATRON_ROTO_INVERTIBLE
     void invertedStateChanged();
@@ -828,7 +828,7 @@ public:
      **/
     int getNextKeyframeTime(int time) const;
 
-Q_SIGNALS:
+signals:
 
     void aboutToClone();
 
@@ -869,7 +869,7 @@ public:
         OTHER ///when the project loader restores the selection
     };
 
-    RotoContext(const boost::shared_ptr<Natron::Node>& node);
+    RotoContext(Natron::Node* node);
 
     virtual ~RotoContext();
     
@@ -1029,8 +1029,6 @@ public:
     
     int getNCurves() const;
     
-    boost::shared_ptr<Natron::Node> getNode() const;
-    
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;
@@ -1058,7 +1056,7 @@ public:
     
     void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
 
-Q_SIGNALS:
+signals:
 
     /**
      * Emitted when the selection is changed. The integer corresponds to the
@@ -1078,7 +1076,7 @@ Q_SIGNALS:
     
     void itemNameChanged(const boost::shared_ptr<RotoItem>&);
 
-public Q_SLOTS:
+public slots:
 
     void onAutoKeyingChanged(bool enabled);
 

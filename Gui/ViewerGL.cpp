@@ -66,7 +66,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/Histogram.h"
-#include "Gui/NodeGui.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2408,7 +2407,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
 
-    Q_EMIT imageChanged(textureIndex);
+    emit imageChanged(textureIndex);
 }
 
 void
@@ -2489,11 +2488,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     Qt::MouseButton button = e->button();
 
     if ( buttonDownIsLeft(e) ) {
-        
-        boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
-        assert(gui_i);
-        boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-        _imp->viewerTab->getGui()->selectNode(gui);
+        _imp->viewerTab->getGui()->selectNode( _imp->viewerTab->getGui()->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
     }
 
     _imp->oldClick = e->pos();
@@ -2626,7 +2621,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             _imp->lastDragStartPos = zoomPos;
             _imp->ms = eMouseStateSelecting;
             if ( !modCASIsControl(e) ) {
-                Q_EMIT selectionCleared();
+                emit selectionCleared();
             }
         }
     }
@@ -2653,7 +2648,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 
     if (_imp->ms == eMouseStateSelecting) {
         mustRedraw = true;
-        Q_EMIT selectionRectangleChanged(true);
+        emit selectionRectangleChanged(true);
     }
 
     _imp->ms = eMouseStateUndefined;
@@ -2820,7 +2815,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             zoomValue = 1; // sometimes, floor(100*0.01) makes 0
         }
         assert(zoomValue > 0);
-        Q_EMIT zoomChanged(zoomValue);
+        emit zoomChanged(zoomValue);
 
         //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
@@ -2996,7 +2991,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     case eMouseStateSelecting: {
         _imp->refreshSelectionRectangle(zoomPos);
         mustRedraw = true;
-        Q_EMIT selectionRectangleChanged(false);
+        emit selectionRectangleChanged(false);
     }; break;
     default: {
         if ( _imp->overlay &&
@@ -3128,10 +3123,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if (!gui) {
         return;
     }
-    
-    boost::shared_ptr<NodeGuiI> nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
-    boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
-    gui->selectNode(nodeGui);
+    gui->selectNode(gui->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
 
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
@@ -3164,7 +3156,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         zoomValue = 1; // sometimes, floor(100*0.01) makes 0
     }
     assert(zoomValue > 0);
-    Q_EMIT zoomChanged(zoomValue);
+    emit zoomChanged(zoomValue);
 
 
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
@@ -3255,7 +3247,7 @@ ViewerGL::fitImageToFormat()
         if (zoomFactorInt == 0) {
             zoomFactorInt = 1;
         }
-        Q_EMIT zoomChanged(zoomFactorInt);
+        emit zoomChanged(zoomFactorInt);
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor

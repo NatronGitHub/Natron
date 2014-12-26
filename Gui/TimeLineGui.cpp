@@ -566,7 +566,7 @@ TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->_timeline->currentFrame() ) {
         _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
-        Q_EMIT frameChanged(time);
+        emit frameChanged(time);
         update();
     }
 }
@@ -610,7 +610,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     if (_imp->_state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->_timeline->currentFrame() ) {
             _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
-            Q_EMIT frameChanged(tseq);
+            emit frameChanged(tseq);
         }
         distortViewPort = true;
         _imp->_alphaCursor = false;
@@ -621,11 +621,11 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         int distFromLast = std::abs(e->x() - lastPos);
         if (distFromFirst  > distFromLast) { // moving last frame anchor
             if (_imp->_timeline->leftBound() <= tseq) {
-                Q_EMIT boundariesChanged(_imp->_timeline->leftBound(), tseq);
+                emit boundariesChanged(_imp->_timeline->leftBound(), tseq);
             }
         } else { // moving first frame anchor
             if (_imp->_timeline->rightBound() >= tseq) {
-                Q_EMIT boundariesChanged( tseq, _imp->_timeline->rightBound() );
+                emit boundariesChanged( tseq, _imp->_timeline->rightBound() );
             }
         }
         distortViewPort = true;
@@ -677,7 +677,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             SequenceTime tseq = std::floor(t + 0.5);
             if ( tseq != _imp->_timeline->currentFrame() ) {
                 _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
-                Q_EMIT frameChanged(tseq);
+                emit frameChanged(tseq);
             }
 
         }
@@ -725,7 +725,7 @@ TimeLineGui::setBoundaries(SequenceTime first,
                            SequenceTime last)
 {
     if (first <= last) {
-        Q_EMIT boundariesChanged(first,last);
+        emit boundariesChanged(first,last);
         update();
     }
 }

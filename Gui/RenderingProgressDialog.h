@@ -18,7 +18,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -45,7 +45,7 @@ public:
 
     virtual ~RenderingProgressDialog();
 
-public Q_SLOTS:
+public slots:
 
     void onProcessDeleted();
 
@@ -59,7 +59,7 @@ public Q_SLOTS:
 
     void onVideoEngineStopped(int);
 
-Q_SIGNALS:
+signals:
 
     void canceled();
 
@@ -83,7 +83,7 @@ public:
     LogWindow(const QString & log,
               QWidget* parent = 0);
     
-public Q_SLOTS:
+public slots:
     
     void onClearButtonClicked();
 };

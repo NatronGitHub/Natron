@@ -73,7 +73,7 @@ Int_Knob::setIncrement(int incr,
         throw "Int_Knob::setIncrement , dimension out of range";
     }
     _increments[index] = incr;
-    Q_EMIT incrementChanged(_increments[index], index);
+    emit incrementChanged(_increments[index], index);
 }
 
 void
@@ -86,7 +86,7 @@ Int_Knob::setIncrement(const std::vector<int> &incr)
             qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
             continue;
         }
-        Q_EMIT incrementChanged(_increments[i], i);
+        emit incrementChanged(_increments[i], i);
     }
 }
 
@@ -226,7 +226,7 @@ Double_Knob::setIncrement(double incr,
     }
     
     _increments[index] = incr;
-    Q_EMIT incrementChanged(_increments[index], index);
+    emit incrementChanged(_increments[index], index);
 }
 
 void
@@ -238,7 +238,7 @@ Double_Knob::setDecimals(int decis,
     }
     
     _decimals[index] = decis;
-    Q_EMIT decimalsChanged(_decimals[index], index);
+    emit decimalsChanged(_decimals[index], index);
 }
 
 
@@ -248,7 +248,7 @@ Double_Knob::setIncrement(const std::vector<double> &incr)
     assert( incr.size() == (U32)getDimension() );
     _increments = incr;
     for (U32 i = 0; i < incr.size(); ++i) {
-        Q_EMIT incrementChanged(_increments[i], i);
+        emit incrementChanged(_increments[i], i);
     }
 }
 
@@ -258,7 +258,7 @@ Double_Knob::setDecimals(const std::vector<int> &decis)
     assert( decis.size() == (U32)getDimension() );
     _decimals = decis;
     for (U32 i = 0; i < decis.size(); ++i) {
-        Q_EMIT decimalsChanged(decis[i], i);
+        emit decimalsChanged(decis[i], i);
     }
 }
 
@@ -318,7 +318,7 @@ Double_Knob::serializeTracks(std::list<SerializedTrack>* tracks)
 
 void
 Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
-                           const std::list<boost::shared_ptr<Node> > & activeNodes)
+                           const std::vector<boost::shared_ptr<Node> > & activeNodes)
 {
     ///get a shared_ptr to this
     assert( getHolder() );
@@ -340,10 +340,10 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
         if (it->rotoNodeName == lastNodeName) {
             roto = lastRoto;
         } else {
-            for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end() ;++it2) {
-                if ((*it2)->getName() == it->rotoNodeName) {
-                    lastNodeName = (*it2)->getName();
-                    boost::shared_ptr<RotoContext> rotoCtx = (*it2)->getRotoContext();
+            for (U32 i = 0; i < activeNodes.size(); ++i) {
+                if (activeNodes[i]->getName() == it->rotoNodeName) {
+                    lastNodeName = activeNodes[i]->getName();
+                    boost::shared_ptr<RotoContext> rotoCtx = activeNodes[i]->getRotoContext();
                     assert(rotoCtx);
                     lastRoto = rotoCtx.get();
                     roto = rotoCtx.get();
@@ -548,7 +548,7 @@ Choice_Knob::populateChoices(const std::vector<std::string> &entries,
         _entriesHelp = entriesHelp;
         _entries = entries;
     }
-    Q_EMIT populated();
+    emit populated();
 }
 
 std::vector<std::string>
@@ -880,97 +880,11 @@ Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     
     if ( found == _children.end() ) {
-        
-        boost::shared_ptr<KnobI> parent = k->getParentKnob();
-        if (parent) {
-            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(parent.get());
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
-            if (isGrp) {
-                isGrp->removeKnob(k.get());
-            } else if (isPage) {
-                isPage->removeKnob(k.get());
-            }
-        }
-        
         _children.push_back(k);
         boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
         assert(thisSharedPtr);
         k->setParentKnob(thisSharedPtr);
     }
-}
-
-void
-Group_Knob::removeKnob(KnobI* k)
-{
-    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
-        if (it->get() == k) {
-            _children.erase(it);
-            return;
-        }
-    }
-}
-
-void
-Group_Knob::moveOneStepUp(KnobI* k)
-{
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
-            if (i == 0) {
-                break;
-            }
-            boost::shared_ptr<KnobI> tmp = _children[i - 1];
-            _children[i - 1] = _children[i];
-            _children[i] = tmp;
-            break;
-        }
-    }
-}
-
-void
-Group_Knob::moveOneStepDown(KnobI* k)
-{
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
-            if (i == _children.size() - 1) {
-                break;
-            }
-            boost::shared_ptr<KnobI> tmp = _children[i + 1];
-            _children[i + 1] = _children[i];
-            _children[i] = tmp;
-            break;
-        }
-    }
-}
-
-void
-Group_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
-{
-    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-    
-    if ( found != _children.end() || index < 0) {
-        return;
-    }
-    
-    boost::shared_ptr<KnobI> parent = k->getParentKnob();
-    if (parent) {
-        Group_Knob* isGrp = dynamic_cast<Group_Knob*>(parent.get());
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
-        if (isGrp) {
-            isGrp->removeKnob(k.get());
-        } else if (isPage) {
-            isPage->removeKnob(k.get());
-        }
-    }
-    if (index >= (int)_children.size()) {
-        _children.push_back(k);
-    } else {
-        std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin();
-        std::advance(it, index);
-        _children.insert(it, k);
-    }
-    boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-    assert(thisSharedPtr);
-    k->setParentKnob(thisSharedPtr);
 }
 
 const std::vector< boost::shared_ptr<KnobI> > &
@@ -1020,73 +934,6 @@ Page_Knob::addKnob(const boost::shared_ptr<KnobI> &k)
         }
     }
 }
-
-void
-Page_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
-{
-    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-    
-    if ( found != _children.end() || index < 0) {
-        return;
-    }
-    
-    if (index >= (int)_children.size()) {
-        _children.push_back(k);
-    } else {
-        std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin();
-        std::advance(it, index);
-        _children.insert(it, k);
-    }
-    if (!k->getParentKnob()) {
-        boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-        assert(thisSharedPtr);
-        k->setParentKnob(thisSharedPtr);
-    }
-}
-
-void
-Page_Knob::removeKnob(KnobI* k)
-{
-    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
-        if (it->get() == k) {
-            _children.erase(it);
-            return;
-        }
-    }
-}
-
-void
-Page_Knob::moveOneStepUp(KnobI* k)
-{
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
-            if (i == 0) {
-                break;
-            }
-            boost::shared_ptr<KnobI> tmp = _children[i - 1];
-            _children[i - 1] = _children[i];
-            _children[i] = tmp;
-            break;
-        }
-    }
-}
-
-void
-Page_Knob::moveOneStepDown(KnobI* k)
-{
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
-            if (i == _children.size() - 1) {
-                break;
-            }
-            boost::shared_ptr<KnobI> tmp = _children[i + 1];
-            _children[i + 1] = _children[i];
-            _children[i] = tmp;
-            break;
-        }
-    }
-}
-
 
 /******************************Parametric_Knob**************************************/
 
@@ -1207,7 +1054,7 @@ Parametric_Knob::addControlPoint(int dimension,
     KeyFrame k(key,value);
     k.setInterpolation(Natron::eKeyframeTypeCubic);
     _curves[dimension]->addKeyFrame(k);
-    Q_EMIT curveChanged(dimension);
+    emit curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1215,7 +1062,7 @@ Parametric_Knob::addControlPoint(int dimension,
 Natron::StatusEnum
 Parametric_Knob::getValue(int dimension,
                           double parametricPosition,
-                          double *returnValue) const
+                          double *returnValue)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
@@ -1232,7 +1079,7 @@ Parametric_Knob::getValue(int dimension,
 
 Natron::StatusEnum
 Parametric_Knob::getNControlPoints(int dimension,
-                                   int *returnValue) const
+                                   int *returnValue)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
@@ -1247,7 +1094,7 @@ Natron::StatusEnum
 Parametric_Knob::getNthControlPoint(int dimension,
                                     int nthCtl,
                                     double *key,
-                                    double *value) const
+                                    double *value)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
@@ -1275,7 +1122,7 @@ Parametric_Knob::setNthControlPoint(int dimension,
         return eStatusFailed;
     }
     _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
-    Q_EMIT curveChanged(dimension);
+    emit curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1290,7 +1137,7 @@ Parametric_Knob::deleteControlPoint(int dimension,
     }
     
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
-    Q_EMIT curveChanged(dimension);
+    emit curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1303,7 +1150,7 @@ Parametric_Knob::deleteAllControlPoints(int dimension)
         return eStatusFailed;
     }
     _curves[dimension]->clearKeyFrames();
-    Q_EMIT curveChanged(dimension);
+    emit curveChanged(dimension);
     
     return eStatusOK;
 }
@@ -1365,6 +1212,6 @@ Parametric_Knob::resetExtraToDefaultValue(int dimension)
 {
     QVector<int> dimensions(1);
     dimensions[0] = dimension;
-    Q_EMIT mustResetToDefault(dimensions);
+    emit mustResetToDefault(dimensions);
 }
 

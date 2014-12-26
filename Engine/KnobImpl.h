@@ -14,22 +14,13 @@
 
 #include "Knob.h"
 
-
-
 #include <cfloat>
 #include <stdexcept>
 #include <string>
-
-
-#include <shiboken.h>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#ifndef Q_MOC_RUN
 #include <boost/math/special_functions/fpclassify.hpp>
 #endif
-
 #include <QString>
-#include <QDebug>
-
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
@@ -292,53 +283,6 @@ Knob<bool>::clampToMinMax(const bool& value,int /*dimension*/) const
     return value;
 }
 
-template <>
-int
-Knob<int>::pyObjectToType(PyObject* o) const
-{
-    return (int)PyInt_AsLong(o);
-}
-
-template <>
-bool
-Knob<bool>::pyObjectToType(PyObject* o) const
-{
-    if (PyObject_IsTrue(o) == 1) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-template <>
-double
-Knob<double>::pyObjectToType(PyObject* o) const
-{
-    return (double)PyFloat_AsDouble(o);
-}
-
-template <>
-std::string
-Knob<std::string>::pyObjectToType(PyObject* o) const
-{
-    return std::string(Natron::PY3String_asString(o));
-}
-
-template <typename T>
-T Knob<T>::evaluateExpression(int dimension) const
-{
-    PyObject *ret;
-    try {
-        ret = executeExpression(dimension);
-    } catch (...) {
-        return T();
-    }
-    
-    T val =  pyObjectToType(ret);
-    Py_DECREF(ret); //< new ref
-    return val;
-}
-
 //Declare the specialization before defining it to avoid the following
 //error: explicit specialization of 'getValueAtTime' after instantiation
 template<>
@@ -348,17 +292,6 @@ template<>
 std::string
 Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
 {
-    std::string hasExpr = getExpression(dimension);
-    if (!hasExpr.empty()) {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            std::string ret = evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            return ret;
-        }
-    }
-    
     if ( isAnimated(dimension) ) {
         SequenceTime time;
         if ( !getHolder() || !getHolder()->getApp() ) {
@@ -397,26 +330,6 @@ template <typename T>
 T
 Knob<T>::getValue(int dimension,bool clamp) const
 {
-    std::string hasExpr = getExpression(dimension);
-    if (!hasExpr.empty()) {
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            T ret = evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            
-            
-            if (clamp) {
-                return clampToMinMax(ret,dimension);
-            } else {
-                return ret;
-            }
-        }
-      
-    }
-    
     if ( isAnimated(dimension) ) {
         return getValueAtTime(getCurrentTime(), dimension,clamp);
     }
@@ -453,25 +366,11 @@ std::string
 Knob<std::string>::getValueAtTime(double time,
                                   int dimension,bool /*clampToMinMax*/,bool byPassMaster) const
 {
-    
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
 
-    std::string hasExpr = getExpression(dimension);
-    if (!hasExpr.empty()) {
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            std::string ret =  evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            return ret;
-        }
-        
-    }
-    
+
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
@@ -524,27 +423,8 @@ Knob<T>::getValueAtTime(double time,
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
-    
-    std::string hasExpr = getExpression(dimension);
-    if (!hasExpr.empty()) {
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
 
-            ++_expressionsRecursionLevel;
-            T ret = evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            
-            if (clamp) {
-                return clampToMinMax(ret,dimension);
-            } else {
-                return ret;
-            }
-            
-        }
-    }
-    
+
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
@@ -995,7 +875,7 @@ Knob<T>::unSlave(int dimension,
         }
     }
     if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
+        getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),dimension,false, master.second->getHolder() );
     }
     evaluateValueChange(dimension, reason, true);
 }
@@ -1056,9 +936,6 @@ Knob<std::string>::unSlave(int dimension,
     resetMaster(dimension);
 
     _signalSlotHandler->s_valueChanged(dimension,reason);
-    if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( this,master.second.get(),dimension,false );
-    }
     if (reason == Natron::eValueChangedReasonPluginEdited) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
     }
@@ -1360,6 +1237,7 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
         
         if (_signalSlotHandler && isAnimated(i)) {
             _signalSlotHandler->s_valueChanged(i, Natron::eValueChangedReasonTimeChanged);
+            //_signalSlotHandler->s_updateSlaves(i);
         }
         checkAnimationLevel(i);
     }
@@ -1611,7 +1489,6 @@ Knob<T>::clone(KnobI* other,
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
     cloneValues(other);
-    cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if (i == dimension || dimension == -1) {
             boost::shared_ptr<Curve> thisCurve = getCurve(i,true);
@@ -1648,7 +1525,6 @@ Knob<T>::clone(KnobI* other,
         return;
     }
     cloneValues(other);
-    cloneExpressions(other);
     int dimMin = std::min( getDimension(), other->getDimension() );
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
@@ -1683,7 +1559,6 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
     cloneValues(other);
-    cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
             if (_signalSlotHandler) {

@@ -33,7 +33,7 @@ public:
         return _checked;
     }
 
-public Q_SLOTS:
+public slots:
 
     void setChecked(bool);
 
@@ -41,11 +41,11 @@ private:
     virtual void mousePressEvent(QMouseEvent* /*e*/) OVERRIDE FINAL
     {
         if ( isEnabled() ) {
-            Q_EMIT checked(!_checked);
+            emit checked(!_checked);
         }
     }
 
-Q_SIGNALS:
+signals:
     void checked(bool);
 
 private:
