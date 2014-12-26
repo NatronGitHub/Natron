@@ -651,6 +651,9 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     
     if (canContinue) {
         pushFramesToRenderInternal(frame, nThreads);
+    } else {
+        ///Still wake up threads that may still sleep
+        _imp->framesToRenderNotEmptyCond.wakeAll();
     }
 }
 
@@ -668,16 +671,34 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
         _imp->allRenderThreadsInactiveCond.wakeOne();
     }
     
+    ///Simple heuristic to limit the size of the internal buffer.
+    ///If the buffer grows too much, we will keep shared ptr to images, hence keep them in RAM which
+    ///can lead to RAM issue for the end user.
+    ///We can end up in this situation for very simple graphs where the rendering of the output node (the writer or viewer)
+    ///is much slower than things upstream, hence the buffer grows quickly, and fills up the RAM.
+    int nbThreadsHardware = appPTR->getHardwareIdealThreadCount();
+    bool bufferFull;
+    {
+        QMutexLocker k(&_imp->bufMutex);
+        bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+    }
+    
     QMutexLocker l(&_imp->framesToRenderMutex);
-    while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
+    while ((bufferFull || _imp->framesToRender.empty()) && !thread->mustQuit() ) {
         
         ///Notify that we're no longer doing work
         thread->notifyIsRunning(false);
         
         
         _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
+        
+        {
+            QMutexLocker k(&_imp->bufMutex);
+            bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+        }
     }
     
+   
     if (!_imp->framesToRender.empty()) {
         
         ///Notify that we're running for good, will do nothing if flagged already running

@@ -350,6 +350,14 @@ AppManager::parseCmdLineArgs(int argc,
         }
     }
 
+    if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
+        AppManager::printUsage(argv[0]);
+        
+        return false;
+    }
+    if (expectedFrameRange) {
+        appendFakeFrameRange(frameRanges);
+    }
     return true;
 } // parseCmdLineArgs
 
@@ -803,6 +811,8 @@ AppManager::writeToOutputPipe(const QString & longMessage,
                               const QString & shortMessage)
 {
     if (!_imp->_backgroundIPC) {
+        
+        QMutexLocker k(&_imp->_ofxLogMutex);
         ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
         std::cout << longMessage.toStdString() << std::endl;
         return false;
