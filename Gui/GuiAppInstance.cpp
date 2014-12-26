@@ -26,6 +26,7 @@
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
@@ -65,6 +66,8 @@ struct GuiAppInstancePrivate
           , _previewProvider(new FileDialogPreviewProvider)
     {
     }
+    
+    void findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n);
 };
 
 GuiAppInstance::GuiAppInstance(int appID)
@@ -147,6 +150,16 @@ GuiAppInstance::isClosing() const
 }
 
 void
+GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n)
+{
+    _gui->findOrCreateToolButton(n);
+    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+        findOrCreateToolButtonRecursive(*it);
+    }
+}
+
+void
 GuiAppInstance::load(const QString & projectName,
                      const std::list<AppInstance::RenderRequest>& /*writersWork*/)
 {
@@ -156,10 +169,9 @@ GuiAppInstance::load(const QString & projectName,
 
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::list<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
-    for (std::list<PluginGroupNode*>::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
-        assert(*it);
-        _imp->_gui->findOrCreateToolButton(*it);
+    const std::list<boost::shared_ptr<PluginGroupNode> > & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
+    for (std::list<boost::shared_ptr<PluginGroupNode>  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+        _imp->findOrCreateToolButtonRecursive(*it);
     }
     emit pluginsPopulated();
 

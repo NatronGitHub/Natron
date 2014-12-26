@@ -289,7 +289,7 @@ struct GuiPrivate
     QToolBar* _toolBox;
 
     ///a vector of all the toolbuttons
-    std::vector<ToolButton*> _toolButtons;
+    std::vector<ToolButton* > _toolButtons;
 
     ///holds the properties dock
     QWidget *_propertiesBin;
@@ -2176,10 +2176,10 @@ Gui::findExistingToolButton(const QString & label) const
 }
 
 ToolButton*
-Gui::findOrCreateToolButton(PluginGroupNode* plugin)
+Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin)
 {
     for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
-        if ( _imp->_toolButtons[i]->getID() == plugin->getID() && _imp->_toolButtons[i]->getPluginMajor() == plugin->getMajorVersion()) {
+        if ( _imp->_toolButtons[i]->getPluginToolButton() == plugin) {
             return _imp->_toolButtons[i];
         }
     }
@@ -2211,7 +2211,15 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
         //if the plugin has no children and no parent, put it in the "others" group
         if ( !plugin->hasParent() ) {
             ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
-            PluginGroupNode* othersToolButton = appPTR->findPluginToolButtonOrCreate(PLUGIN_GROUP_DEFAULT,PLUGIN_GROUP_DEFAULT, PLUGIN_GROUP_DEFAULT_ICON_PATH,1,0);
+            
+            QStringList grouping(PLUGIN_GROUP_DEFAULT);
+            boost::shared_ptr<PluginGroupNode> othersToolButton =
+            appPTR->findPluginToolButtonOrCreate(grouping,
+                                                 PLUGIN_GROUP_DEFAULT,
+                                                 PLUGIN_GROUP_DEFAULT_ICON_PATH,
+                                                 PLUGIN_GROUP_DEFAULT_ICON_PATH,
+                                                 1,
+                                                 0);
             othersToolButton->tryAddChild(plugin);
 
             //if the othersGroup doesn't exist, create it
