@@ -2735,10 +2735,12 @@ SequenceFileDialog::createViewerPreviewNode()
                         false,
                         false,
                         NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME,
-                        CreateNodeArgs::DefaultValuesList());
+                        CreateNodeArgs::DefaultValuesList(),
+                        _gui->getApp()->getProject());
     
     boost::shared_ptr<Natron::Node> viewer = _gui->getApp()->createNode(args);
-    _preview->viewerNode = _gui->getApp()->getNodeGui(viewer);
+    boost::shared_ptr<NodeGuiI> viewerNodeGui = viewer->getNodeGui();
+    _preview->viewerNode = boost::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
     _preview->viewerUI = dynamic_cast<ViewerGL*>(dynamic_cast<ViewerInstance*>(viewer->getLiveInstance())->getUiContext())->getViewerTab();
@@ -2784,10 +2786,12 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
                                 false,
                                 false,
                                 QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->second.c_str()),
-                                CreateNodeArgs::DefaultValuesList());
+                                CreateNodeArgs::DefaultValuesList(),
+                                _gui->getApp()->getProject());
             
             boost::shared_ptr<Natron::Node> reader = _gui->getApp()->createNode(args);
-            boost::shared_ptr<NodeGui> readerGui = _gui->getApp()->getNodeGui(reader);
+            boost::shared_ptr<NodeGuiI> readerGui_i = reader->getNodeGui();
+            boost::shared_ptr<NodeGui> readerGui = boost::dynamic_pointer_cast<NodeGui>(readerGui_i);
             assert(readerGui);
             readerGui->hideGui();
             _preview->readerNodes.insert(std::make_pair(found->second,readerGui));

@@ -41,6 +41,7 @@ class NodeSerialization;
 class NodeGuiSerialization;
 class NodeBackDropSerialization;
 class NodeBackDrop;
+class NodeCollection;
 struct NodeGraphPrivate;
 namespace Natron {
 class Node;
@@ -54,10 +55,13 @@ class NodeGraph
 public:
 
     explicit NodeGraph(Gui* gui,
+                       const boost::shared_ptr<NodeCollection>& group,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
     virtual ~NodeGraph() OVERRIDE;
+    
+    boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,

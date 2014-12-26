@@ -30,6 +30,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include <boost/bind.hpp>
+#include <boost/weak_ptr.hpp>
 
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
@@ -61,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 
 namespace {
-typedef std::list < std::pair<boost::shared_ptr<Node>,bool> > Nodes;
+typedef std::list < std::pair<boost::weak_ptr<Node>,bool> > Nodes;
 
 boost::shared_ptr<Double_Knob>
 getCenterKnobForTracker(Node* node)
@@ -80,7 +81,7 @@ struct MultiInstancePanelPrivate
 {
     MultiInstancePanel* publicInterface;
     bool guiCreated;
-    boost::shared_ptr<NodeGui> mainInstance;
+    boost::weak_ptr<NodeGui> mainInstance;
     //pair <pointer,selected?>
     Nodes instances;
     TableView* view;
@@ -119,7 +120,7 @@ struct MultiInstancePanelPrivate
 
     boost::shared_ptr<Natron::Node> getMainInstance() const
     {
-        return mainInstance->getNode();
+        return mainInstance.lock()->getNode();
     }
 
     /**
@@ -241,7 +242,7 @@ struct MultiInstancePanelPrivate
 
     void pushUndoCommand(QUndoCommand* cmd)
     {
-        mainInstance->getSettingPanel()->pushUndoCommand(cmd);
+        mainInstance.lock()->getSettingPanel()->pushUndoCommand(cmd);
     }
 
     boost::shared_ptr<Natron::Node> getInstanceFromItem(TableItem* item) const;
@@ -337,10 +338,16 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::getMainInstance() const
     return _imp->getMainInstance();
 }
 
+boost::shared_ptr<NodeGui>
+MultiInstancePanel::getMainInstanceGui() const
+{
+    return _imp->mainInstance.lock();
+}
+
 Gui*
 MultiInstancePanel::getGui() const
 {
-    return _imp->mainInstance->getDagGui()->getGui();
+    return _imp->mainInstance.lock()->getDagGui()->getGui();
 }
 
 std::string
@@ -547,7 +554,8 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
                         false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
                         true,
                         QString(),
-                        CreateNodeArgs::DefaultValuesList());
+                        CreateNodeArgs::DefaultValuesList(),
+                        mainInstance->getGroup());
     boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(args);
 
     _imp->addTableRow(newInstance);
@@ -559,7 +567,7 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
     return newInstance;
 }
 
-const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool> > &
+const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool> > &
 MultiInstancePanel::getInstances() const
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -676,8 +684,8 @@ MultiInstancePanel::selectNode(const boost::shared_ptr<Natron::Node> & node,
 
     int index = -1;
     int i = 0;
-    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++i) {
-        if (it->first == node) {
+    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++i) {
+        if (it->first.lock() == node) {
             index = i;
             break;
         }
@@ -694,8 +702,8 @@ MultiInstancePanel::removeNodeFromSelection(const boost::shared_ptr<Natron::Node
     int index = -1;
     int i = 0;
 
-    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++i) {
-        if (it->first == node) {
+    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++i) {
+        if (it->first.lock() == node) {
             index = i;
             break;
         }
@@ -732,9 +740,9 @@ MultiInstancePanel::selectNodes(const std::list<Natron::Node*> & nodes,
     QItemSelection newSelection;
     for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         int i = 0;
-        for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
+        for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
              it2 != _imp->instances.end(); ++it2,++i) {
-            if (it2->first.get() == *it) {
+            if (it2->first.lock().get() == *it) {
                 QItemSelection sel( _imp->model->index(i, 0),_imp->model->index(i,_imp->view->columnCount() - 1) );
                 newSelection.merge(sel, QItemSelectionModel::Select);
                 break;
@@ -847,7 +855,7 @@ MultiInstancePanel::getNodeIndex(const boost::shared_ptr<Natron::Node> & node) c
     Nodes::iterator it = _imp->instances.begin();
 
     for (; it != _imp->instances.end(); ++it,++i) {
-        if (it->first == node) {
+        if (it->first.lock() == node) {
             return i;
         }
     }
@@ -881,9 +889,9 @@ MultiInstancePanel::removeInstancesInternal()
 
     for (std::set<int>::iterator it = rows.begin(); it != rows.end(); ++it) {
         assert( *it >= 0 && *it < (int)_imp->instances.size() );
-        std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
+        std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
         std::advance(it2, *it);
-        instances.push_back(it2->first);
+        instances.push_back(it2->first.lock());
     }
     _imp->pushUndoCommand( new RemoveNodeCommand(this,instances) );
 }
@@ -897,7 +905,7 @@ MultiInstancePanel::onSelectAllButtonClicked()
 bool
 MultiInstancePanel::isSettingsPanelVisible() const
 {
-    NodeSettingsPanel* panel = _imp->mainInstance->getSettingPanel();
+    NodeSettingsPanel* panel = _imp->mainInstance.lock()->getSettingPanel();
 
     assert(panel);
 
@@ -991,7 +999,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
         it->first->getLiveInstance()->unblockEvaluation();
 
         for (Nodes::iterator it2 = _imp->instances.begin(); it2 != _imp->instances.end(); ++it2) {
-            if (it2->first.get() == it->first) {
+            if (it2->first.lock().get() == it->first) {
                 it2->second = false;
                 break;
             }
@@ -1054,7 +1062,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
             }
         }
         for (Nodes::iterator it2 = _imp->instances.begin(); it2 != _imp->instances.end(); ++it2) {
-            if (it2->first.get() == it->first) {
+            if (it2->first.lock().get() == it->first) {
                 it2->second = true;
                 break;
             }
@@ -1092,10 +1100,11 @@ MultiInstancePanelPrivate::getNodesFromSelection(const QModelIndexList & indexes
 
     for (std::set<int>::iterator it = rows.begin(); it != rows.end(); ++it) {
         assert( *it >= 0 && *it < (int)instances.size() );
-        std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it2 = instances.begin();
+        std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it2 = instances.begin();
         std::advance(it2, *it);
-        if ( !it2->first->isNodeDisabled() ) {
-            nodes->push_back( std::make_pair(it2->first.get(), it2->second) );
+        boost::shared_ptr<Node> node = it2->first.lock();
+        if ( !node->isNodeDisabled() ) {
+            nodes->push_back( std::make_pair(node.get(), it2->second) );
         }
     }
 }
@@ -1105,9 +1114,9 @@ MultiInstancePanelPrivate::getInstanceFromItem(TableItem* item) const
 {
     assert( item->row() >= 0 && item->row() < (int)instances.size() );
     int i = 0;
-    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it,++i) {
+    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it,++i) {
         if ( i == item->row() ) {
-            return it->first;
+            return it->first.lock();
         }
     }
 
@@ -1122,7 +1131,7 @@ boost::shared_ptr<KnobI> MultiInstancePanel::getKnobForItem(TableItem* item,
     assert( modelIndex.row() < (int)_imp->instances.size() );
     Nodes::iterator nIt = _imp->instances.begin();
     std::advance( nIt, modelIndex.row() );
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = nIt->first->getKnobs();
+    const std::vector<boost::shared_ptr<KnobI> > & knobs = nIt->first.lock()->getKnobs();
     int instanceSpecificIndex = 1; //< 1 because we skip the enable cell
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isInstanceSpecific() ) {
@@ -1159,7 +1168,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
     assert( modelIndex.row() < (int)_imp->instances.size() );
     Nodes::iterator nIt = _imp->instances.begin();
     std::advance( nIt, modelIndex.row() );
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = nIt->first->getKnobs();
+    const std::vector<boost::shared_ptr<KnobI> > & knobs = nIt->first.lock()->getKnobs();
     int instanceSpecificIndex = 1; //< 1 because we skip the enable cell
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isInstanceSpecific() ) {
@@ -1234,7 +1243,7 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
             assert( i < (int)_imp->instances.size() );
             Nodes::iterator it = _imp->instances.begin();
             std::advance(it, i);
-            boost::shared_ptr<KnobI> enabledKnob = it->first->getKnobByName(kDisableNodeKnobName);
+            boost::shared_ptr<KnobI> enabledKnob = it->first.lock()->getKnobByName(kDisableNodeKnobName);
             assert(enabledKnob);
             Bool_Knob* bKnob = dynamic_cast<Bool_Knob*>( enabledKnob.get() );
             assert(bKnob);
@@ -1266,8 +1275,9 @@ MultiInstancePanel::onInstanceKnobValueChanged(int dim,
     int rowIndex = 0;
     int colIndex = 1;
     for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++rowIndex) {
-        if ( holder == it->first->getLiveInstance() ) {
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first->getKnobs();
+        boost::shared_ptr<Node> node = it->first.lock();
+        if ( holder == node->getLiveInstance() ) {
+            const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if ( knobs[i]->isInstanceSpecific() ) {
                     if (knobs[i] == knob) {
@@ -1343,9 +1353,9 @@ MultiInstancePanel::getSelectedInstances(std::list<Natron::Node*>* instances) co
 
     for (std::set<int>::iterator it = rows.begin(); it != rows.end(); ++it) {
         assert( *it >= 0 && *it < (int)_imp->instances.size() );
-        std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
+        std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
         std::advance(it2, *it);
-        instances->push_back( it2->first.get() );
+        instances->push_back( it2->first.lock().get() );
     }
 }
 
@@ -1365,7 +1375,7 @@ MultiInstancePanel::resetAllInstances()
     _imp->view->selectionModel()->clear();
     std::list<Natron::Node*> all;
     for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
-        all.push_back( it->first.get() );
+        all.push_back( it->first.lock().get() );
     }
     resetInstances(all);
 }
@@ -1441,7 +1451,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
 {
     if ( !k->isDeclaredByPlugin() ) {
         if (k->getName() == kDisableNodeKnobName) {
-            _imp->mainInstance->onDisabledKnobToggled( dynamic_cast<Bool_Knob*>(k)->getValue() );
+            _imp->mainInstance.lock()->onDisabledKnobToggled( dynamic_cast<Bool_Knob*>(k)->getValue() );
         }
     } else {
         if (reason == Natron::eValueChangedReasonUserEdited) {
@@ -1454,7 +1464,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             ///onSelectionChanged for an explanation why)
             for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
                 if (it->second) {
-                    boost::shared_ptr<KnobI> sameKnob = it->first->getKnobByName( k->getName() );
+                    boost::shared_ptr<KnobI> sameKnob = it->first.lock()->getKnobByName( k->getName() );
                     assert(sameKnob);
                     Knob<int>* isInt = dynamic_cast<Knob<int>*>( sameKnob.get() );
                     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( sameKnob.get() );
@@ -1670,10 +1680,10 @@ TrackerPanel::onAverageTracksButtonClicked()
     boost::shared_ptr<Node> newInstance = addInstanceInternal(true);
     ///give an appropriate name to the new instance
     int avgIndex = 0;
-    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > > & allInstances = getInstances();
-    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = allInstances.begin();
+    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > > & allInstances = getInstances();
+    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = allInstances.begin();
          it != allInstances.end(); ++it) {
-        if ( QString( it->first->getName().c_str() ).contains("average",Qt::CaseInsensitive) ) {
+        if ( QString( it->first.lock()->getName().c_str() ).contains("average",Qt::CaseInsensitive) ) {
             ++avgIndex;
         }
     }
@@ -2100,16 +2110,18 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
                                                                                 true,
                                                                                 true,
                                                                                 QString(),
-                                                                                CreateNodeArgs::DefaultValuesList()) );
+                                                                                CreateNodeArgs::DefaultValuesList(),
+                                                                                publicInterface->getMainInstance()->getGroup()) );
     if (!cornerPin) {
         return;
     }
 
     ///Move the node on the right of the tracker node
-    boost::shared_ptr<NodeGui> cornerPinGui = app->getNodeGui(cornerPin);
+    boost::shared_ptr<NodeGuiI> cornerPinGui_i = cornerPin->getNodeGui();
+    NodeGui* cornerPinGui = dynamic_cast<NodeGui*>(cornerPinGui_i.get());
     assert(cornerPinGui);
 
-    boost::shared_ptr<NodeGui> mainInstanceGui = app->getNodeGui( publicInterface->getMainInstance() );
+    boost::shared_ptr<NodeGui> mainInstanceGui = publicInterface->getMainInstanceGui();
     assert(mainInstanceGui);
 
     QPointF mainInstancePos = mainInstanceGui->scenePos();

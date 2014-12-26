@@ -52,6 +52,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/KnobSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/Variant.h"
+#include "Engine/NodeGroup.h"
 
 #include "Gui/AnimationButton.h"
 #include "Gui/DockablePanel.h"
@@ -382,46 +383,74 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         }
         
     } else if (isSlave) {
-        _imp->copyRightClickMenu->addSeparator();
-        QAction* unlinkAction = new QAction(tr("Unlink"),_imp->copyRightClickMenu);
-        unlinkAction->setData( QVariant(dimension) );
-        QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
-        _imp->copyRightClickMenu->addAction(unlinkAction);
-
-
-        ///a stub action just to indicate what is the master knob.
-        QAction* masterNameAction = new QAction("",_imp->copyRightClickMenu);
-        std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
-        assert(master.second);
-
-        ///find-out to which node that master knob belongs to
-        std::string nodeName("Linked to: ");
-
-        assert( getKnob()->getHolder()->getApp() );
-        const std::vector<boost::shared_ptr<Natron::Node> > allNodes = knob->getHolder()->getApp()->getProject()->getCurrentNodes();
-        for (U32 i = 0; i < allNodes.size(); ++i) {
-            const std::vector< boost::shared_ptr<KnobI> > & knobs = allNodes[i]->getKnobs();
+        
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(knob->getHolder());
+        if (effect) {
+            _imp->copyRightClickMenu->addSeparator();
+            QAction* unlinkAction = new QAction(tr("Unlink"),_imp->copyRightClickMenu);
+            unlinkAction->setData( QVariant(dimension) );
+            QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
+            _imp->copyRightClickMenu->addAction(unlinkAction);
+            
+            
+            ///a stub action just to indicate what is the master knob.
+            QAction* masterNameAction = new QAction("",_imp->copyRightClickMenu);
+            std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
+            assert(master.second);
+            
+            ///find-out to which node that master knob belongs to
+            std::string nodeName("Linked to: ");
+            
+            boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
+            NodeList allNodes;
+            group->getActiveNodes(&allNodes);
             bool shouldStop = false;
-            for (U32 j = 0; j < knobs.size(); ++j) {
-                if ( knobs[j].get() == master.second.get() ) {
-                    nodeName.append( allNodes[i]->getName() );
-                    shouldStop = true;
+            for (NodeList::iterator it = allNodes.begin(); it != allNodes.end() ;++it) {
+                const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
+                
+                for (U32 j = 0; j < knobs.size(); ++j) {
+                    if ( knobs[j].get() == master.second.get() ) {
+                        nodeName.append( (*it)->getName() );
+                        shouldStop = true;
+                        break;
+                    }
+                }
+                if (shouldStop) {
                     break;
                 }
             }
-            if (shouldStop) {
-                break;
+            
+            ///A Knob of a group might be linked to a knob of an internal node of the group
+            NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(effect);
+            if (isGroupNode && !shouldStop) {
+                isGroupNode->getActiveNodes(&allNodes);
+                for (NodeList::iterator it = allNodes.begin(); it != allNodes.end() ;++it) {
+                    const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
+                    bool shouldStop = false;
+                    for (U32 j = 0; j < knobs.size(); ++j) {
+                        if ( knobs[j].get() == master.second.get() ) {
+                            nodeName.append( (*it)->getName() );
+                            shouldStop = true;
+                            break;
+                        }
+                    }
+                    if (shouldStop) {
+                        break;
+                    }
+                }
+
             }
-        }
-        nodeName.append(".");
-        nodeName.append( master.second->getDescription() );
-        if (master.second->getDimension() > 1) {
+            
             nodeName.append(".");
-            nodeName.append( master.second->getDimensionName(master.first) );
+            nodeName.append( master.second->getDescription() );
+            if (master.second->getDimension() > 1) {
+                nodeName.append(".");
+                nodeName.append( master.second->getDimensionName(master.first) );
+            }
+            masterNameAction->setText( nodeName.c_str() );
+            masterNameAction->setEnabled(false);
+            _imp->copyRightClickMenu->addAction(masterNameAction);
         }
-        masterNameAction->setText( nodeName.c_str() );
-        masterNameAction->setEnabled(false);
-        _imp->copyRightClickMenu->addAction(masterNameAction);
     }
 
     addRightClickMenuEntries(_imp->copyRightClickMenu);
@@ -1393,7 +1422,7 @@ struct LinkToKnobDialogPrivate
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
-    std::vector< boost::shared_ptr<Natron::Node> > allNodes;
+    NodeList allNodes;
     std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
 
     LinkToKnobDialogPrivate(KnobGui* from)
@@ -1433,11 +1462,14 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
-    assert( from->getKnob()->getHolder()->getApp() );
-    from->getKnob()->getHolder()->getApp()->getActiveNodes(&_imp->allNodes);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(from->getKnob()->getHolder());
+    assert(isEffect);
+    boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
+    
+    group->getActiveNodes(&_imp->allNodes);
     QStringList nodeNames;
-    for (U32 i = 0; i < _imp->allNodes.size(); ++i) {
-        QString name( _imp->allNodes[i]->getName().c_str() );
+    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+        QString name( (*it)->getName().c_str() );
         nodeNames.push_back(name);
         //_imp->nodeSelectionCombo->addItem(name);
     }
@@ -1470,9 +1502,9 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     _imp->knobSelectionCombo->clear();
     boost::shared_ptr<Natron::Node> selectedNode;
     std::string currentNodeName = index.toStdString();
-    for (U32 i = 0; i < _imp->allNodes.size(); ++i) {
-        if (_imp->allNodes[i]->getName() == currentNodeName) {
-            selectedNode = _imp->allNodes[i];
+    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+        if ((*it)->getName() == currentNodeName) {
+            selectedNode = *it;
             break;
         }
     }

@@ -550,7 +550,7 @@ struct RotoContextPrivate
     bool autoKeying;
     bool rippleEdit;
     bool featherLink;
-    Natron::Node* node;
+    boost::weak_ptr<Natron::Node> node;
     U64 age;
 
     ///These are knobs that take the value of the selected splines info.
@@ -579,7 +579,7 @@ struct RotoContextPrivate
     U64 lastRenderHash;
     boost::shared_ptr<Natron::Image> lastRenderedImage;
 
-    RotoContextPrivate(Natron::Node* n )
+    RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
         : rotoContextMutex()
           , layers()
           , autoKeying(true)

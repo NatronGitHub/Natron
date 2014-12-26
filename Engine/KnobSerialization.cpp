@@ -81,7 +81,7 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
 
 void
 KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
-                                    const std::vector<boost::shared_ptr<Natron::Node> > & allNodes)
+                                    const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
 {
     int i = 0;
 
@@ -89,9 +89,9 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
         if (it->masterDimension != -1) {
             ///we need to cycle through all the nodes of the project to find the real master
             boost::shared_ptr<Natron::Node> masterNode;
-            for (U32 k = 0; k < allNodes.size(); ++k) {
-                if (allNodes[k]->getName() == it->masterNodeName) {
-                    masterNode = allNodes[k];
+            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end() ;++it2) {
+                if ((*it2)->getName() == it->masterNodeName) {
+                    masterNode = *it2;
                     break;
                 }
             }
@@ -121,7 +121,7 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
 
 void
 KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI> & knob,
-                                 const std::vector<boost::shared_ptr<Natron::Node> > & allNodes)
+                                 const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
 {
     Double_Knob* isDouble = dynamic_cast<Double_Knob*>( knob.get() );
 

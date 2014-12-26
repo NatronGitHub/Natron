@@ -721,7 +721,7 @@ ViewerInstance::renderViewer_internal(int view,
     
     {
         
-        EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),inArgs.activeInputIndex);
+        EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),inArgs.activeInputIndex);
         
         Node::ParallelRenderArgsSetter frameRenderArgs(inArgs.activeInputToRender->getNode().get(),
                                                        inArgs.params->time,

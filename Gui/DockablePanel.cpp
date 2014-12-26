@@ -712,9 +712,9 @@ DockablePanel::onRestoreDefaultsButtonClicked()
     boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
 
     if (multiPanel) {
-        const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = multiPanel->getInstances();
-        for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first->getKnobs();
+        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = multiPanel->getInstances();
+        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first.lock()->getKnobs();
             for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 Button_Knob* isBtn = dynamic_cast<Button_Knob*>( it2->get() );
                 Page_Knob* isPage = dynamic_cast<Page_Knob*>( it2->get() );
@@ -1374,17 +1374,17 @@ DockablePanel::setClosed(bool c)
 
         if (panel) {
             ///show all selected instances
-            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
-            std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+            const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
+            std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
 			if (!childrenInstances.empty()) {
 				++next;
 			}
-            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+            for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end(); ++it,++next) {
                 if (c) {
-                    it->first->hideKeyframesFromTimeline( next == childrenInstances.end() );
+                    it->first.lock()->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 } else if (!c && it->second) {
-                    it->first->showKeyframesOnTimeline( next == childrenInstances.end() );
+                    it->first.lock()->showKeyframesOnTimeline( next == childrenInstances.end() );
                 }
 				if (next == childrenInstances.end()) {
 					--next;
@@ -1422,15 +1422,17 @@ DockablePanel::closePanel()
         internalNode->hideKeyframesFromTimeline(true);
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
         if (panel) {
-            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
-            std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+            const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
+            std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
 			if (!childrenInstances.empty()) {
 				++next;
 			}
-            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+            for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end(); ++it,++next) {
-                if ( it->second && (it->first != internalNode) ) {
-                    it->first->hideKeyframesFromTimeline( next == childrenInstances.end() );
+                
+                NodePtr node = it->first.lock();
+                if ( it->second && (node != internalNode) ) {
+                    node->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 }
 				if (next == childrenInstances.end()) {
 					--next;
@@ -1911,7 +1913,7 @@ VerticalColorBar::paintEvent(QPaintEvent* /*e*/)
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                      Gui* gui,
-                                     boost::shared_ptr<NodeGui> NodeUi,
+                                     const boost::shared_ptr<NodeGui> &NodeUi,
                                      QVBoxLayout* container,
                                      QWidget *parent)
     : DockablePanel(gui,
@@ -1948,7 +1950,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
 
 NodeSettingsPanel::~NodeSettingsPanel()
 {
-    _nodeGUI->removeSettingsPanel();
+    getNode()->removeSettingsPanel();
 }
 
 void
@@ -1962,14 +1964,14 @@ NodeSettingsPanel::setSelected(bool s)
 void
 NodeSettingsPanel::centerOnItem()
 {
-    _nodeGUI->centerGraphOnIt();
+    getNode()->centerGraphOnIt();
 }
 
 RotoPanel*
 NodeSettingsPanel::initializeRotoPanel()
 {
-    if ( _nodeGUI->getNode()->isRotoNode() ) {
-        return new RotoPanel(_nodeGUI.get(),this);
+    if ( getNode()->getNode()->isRotoNode() ) {
+        return new RotoPanel(_nodeGUI.lock(),this);
     } else {
         return NULL;
     }
@@ -1989,7 +1991,8 @@ NodeSettingsPanel::onSettingsButtonClicked()
     QMenu menu(this);
     menu.setFont(QFont(appFont,appFontSize));
     
-    boost::shared_ptr<Natron::Node> master = _nodeGUI->getNode()->getMasterNode();
+    boost::shared_ptr<NodeGui> node = getNode();
+    boost::shared_ptr<Natron::Node> master = node->getNode()->getMasterNode();
     
     QAction* importPresets = new QAction(tr("Import presets"),&menu);
     QObject::connect(importPresets,SIGNAL(triggered()),this,SLOT(onImportPresetsActionTriggered()));
@@ -2011,7 +2014,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
     menu.addAction(setKeyOnAll);
     menu.addAction(removeAnimationOnAll);
     
-    if (master || _nodeGUI->getDagGui()->getGui()->isGUIFrozen()) {
+    if (master || node->getDagGui()->getGui()->isGUIFrozen()) {
         importPresets->setEnabled(false);
         exportAsPresets->setEnabled(false);
         setKeyOnAll->setEnabled(false);
@@ -2047,7 +2050,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         boost::archive::xml_iarchive iArchive(ifile);
         iArchive >> boost::serialization::make_nvp("NodesCount",nNodes);
         for (int i = 0; i < nNodes ;++i) {
-            boost::shared_ptr<NodeSerialization> node(new NodeSerialization(getHolder()->getApp()));
+            boost::shared_ptr<NodeSerialization> node(new NodeSerialization());
             iArchive >> boost::serialization::make_nvp("Node",*node);
             nodeSerialization.push_back(node);
         }
@@ -2058,15 +2061,16 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         Natron::errorDialog("Presets",e.what());
         return;
     }
-    if (nodeSerialization.front()->getPluginID() != _nodeGUI->getNode()->getPluginID()) {
+    boost::shared_ptr<NodeGui> node = getNode();
+    if (nodeSerialization.front()->getPluginID() != node->getNode()->getPluginID()) {
         QString err = QString(tr("You cannot load ") + filename.c_str()  + tr(" which are presets for the plug-in ") +
                               nodeSerialization.front()->getPluginID().c_str() + tr(" on the plug-in ") +
-                              _nodeGUI->getNode()->getPluginID().c_str());
+                              node->getNode()->getPluginID().c_str());
         Natron::errorDialog(tr("Presets").toStdString(),err.toStdString());
         return;
     }
     
-    _nodeGUI->restoreInternal(_nodeGUI,nodeSerialization);
+    node->restoreInternal(node,nodeSerialization);
 }
 
 
@@ -2099,8 +2103,9 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         return;
     }
 
+    boost::shared_ptr<NodeGui> node = getNode();
     std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
-    _nodeGUI->serializeInternal(nodeSerialization,true);
+    node->serializeInternal(nodeSerialization,true);
     try {
          
         int nNodes = nodeSerialization.size();

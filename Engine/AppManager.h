@@ -134,7 +134,7 @@ public:
     {
     }
 
-    Natron::EffectInstance* createOFXEffect(const std::string & pluginID,boost::shared_ptr<Natron::Node> node,
+    boost::shared_ptr<Natron::EffectInstance> createOFXEffect(const std::string & pluginID,boost::shared_ptr<Natron::Node> node,
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,

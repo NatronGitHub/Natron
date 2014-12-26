@@ -41,7 +41,8 @@ App::createNode(const std::string& pluginID,int majorVersion, int minorVersion) 
                         false,
                         true,
                         QString(),
-                        CreateNodeArgs::DefaultValuesList());
+                        CreateNodeArgs::DefaultValuesList(),
+                        _instance->getProject());
     boost::shared_ptr<Natron::Node> node = _instance->createNode(args);
     if (node) {
         return new Effect(node);
@@ -65,9 +66,9 @@ std::list<Effect*>
 App::getNodes() const
 {
     std::list<Effect*> ret;
-    std::vector<boost::shared_ptr<Natron::Node> > nodes = _instance->getProject()->getCurrentNodes();
+    NodeList nodes = _instance->getProject()->getNodes();
     
-    for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
         if ((*it)->isActivated() && (*it)->getParentMultiInstanceName().empty()) {
             ret.push_back(new Effect(*it));
         }

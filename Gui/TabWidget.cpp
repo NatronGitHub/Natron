@@ -411,7 +411,8 @@ TabWidget::addNewViewer()
                                                 true,
                                                 true,
                                                 QString(),
-                                                CreateNodeArgs::DefaultValuesList()) );
+                                                CreateNodeArgs::DefaultValuesList(),
+                                                _gui->getApp()->getProject()) );
 }
 
 void

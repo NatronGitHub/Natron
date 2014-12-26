@@ -26,6 +26,7 @@ CLANG_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
@@ -50,6 +51,7 @@ class KnobHolder;
 class Double_Knob;
 class NodeGuiI;
 class RotoContext;
+class NodeCollection;
 namespace Natron {
 class Plugin;
 class OutputEffectInstance;
@@ -58,7 +60,7 @@ class EffectInstance;
 class LibraryBinary;
 
 class Node
-    : public QObject
+    : public QObject, public boost::enable_shared_from_this<Natron::Node>
 {
     Q_OBJECT
 
@@ -68,10 +70,13 @@ public:
 
 
     Node(AppInstance* app,
+         const boost::shared_ptr<NodeCollection>& group,
          Natron::Plugin* plugin);
 
     virtual ~Node();
 
+    boost::shared_ptr<NodeCollection> getGroup() const;
+    
     const Natron::Plugin* getPlugin() const;
     
     /**
@@ -88,7 +93,6 @@ public:
     void load(const std::string & pluginID,
               const std::string & parentMultiInstanceName,
               int childIndex,
-              const boost::shared_ptr<Natron::Node> & thisShared,
               const NodeSerialization & serialization,
               bool dontLoadName,
               const QString& fixedName,
@@ -122,7 +126,7 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization & serialization,const std::vector<boost::shared_ptr<Natron::Node> > & allNodes);
+    void restoreKnobsLinks(const NodeSerialization & serialization,const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
     
     void restoreUserKnobs(const NodeSerialization& serialization);
     
@@ -140,7 +144,7 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setLiveInstance(Natron::EffectInstance* liveInstance);
+    void setLiveInstance(const boost::shared_ptr<Natron::EffectInstance>& liveInstance);
 
     Natron::EffectInstance* getLiveInstance() const;
 
@@ -152,7 +156,7 @@ public:
      **/
     bool isMultiInstance() const;
     
-    Natron::Node* getParentMultiInstance() const;
+    boost::shared_ptr<Natron::Node> getParentMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
     std::string getParentMultiInstanceName() const;
@@ -377,8 +381,10 @@ public:
      **/
     bool replaceInput(const boost::shared_ptr<Node>& input,int inputNumber);
     
-    void setNodeGuiPointer(NodeGuiI* gui);
+    void setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui);
 
+    boost::shared_ptr<NodeGuiI> getNodeGui() const;
+    
     bool isSettingsPanelOpened() const;
     
     bool shouldCacheOutput() const;
@@ -409,6 +415,13 @@ public:
     const std::string & getName() const;
     std::string getName_mt_safe() const;
 
+    /**
+     @brief Returns the name of the node, prepended by the name of all the group containing it, e.g:
+     * - a node in the "root" project would be: Blur1
+     * - a node within the group 1 of the project would be : <g>group1</g>Blur1
+     * - a node within the group 1 of the group 1 of the project would be : <g>group1</g><g>group1</g>Blur1
+     **/
+    std::string getFullySpecifiedName() const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -931,6 +944,7 @@ class InspectorNode
 public:
 
     InspectorNode(AppInstance* app,
+                  const boost::shared_ptr<NodeCollection>& group,
                   Natron::Plugin* plugin);
 
     virtual ~InspectorNode();

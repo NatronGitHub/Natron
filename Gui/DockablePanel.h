@@ -22,6 +22,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 #include <QTabWidget>
@@ -306,7 +307,7 @@ class NodeSettingsPanel
     Q_OBJECT Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
 
     /*Pointer to the node GUI*/
-    boost::shared_ptr<NodeGui> _nodeGUI;
+    boost::weak_ptr<NodeGui> _nodeGUI;
     bool _selected;
     Button* _settingsButton;
     boost::shared_ptr<MultiInstancePanel> _multiPanel;
@@ -315,7 +316,7 @@ public:
 
     explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                Gui* gui,
-                               boost::shared_ptr<NodeGui> NodeUi,
+                               const boost::shared_ptr<NodeGui> &NodeUi,
                                QVBoxLayout* container,
                                QWidget *parent = 0);
 
@@ -330,7 +331,7 @@ public:
 
     boost::shared_ptr<NodeGui> getNode() const
     {
-        return _nodeGUI;
+        return _nodeGUI.lock();
     }
 
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const

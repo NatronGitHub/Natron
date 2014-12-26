@@ -60,7 +60,7 @@ public:
         return _previewEnabled;
     }
 
-    const std::string & getName() const
+    const std::string & getFullySpecifiedName() const
     {
         return _nodeName;
     }

@@ -48,6 +48,7 @@
 #include "Engine/Rect.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/NoOp.h"
+#include "Engine/Project.h"
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
@@ -807,11 +808,8 @@ AppManager::abortAnyProcessing()
         _imp->_wasAbortAnyProcessingCalled = true;
     }
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        std::vector<boost::shared_ptr<Natron::Node> > nodes;
-        it->second.app->getActiveNodes(&nodes);
-        for (U32 i = 0; i < nodes.size(); ++i) {
-            nodes[i]->quitAnyProcessing();
-        }
+        
+        it->second.app->getProject()->quitAnyProcessingForAllNodes();
     }
 }
 
@@ -1243,7 +1241,7 @@ AppManager::getPluginBinary(const QString & pluginId,
     
 }
 
-Natron::EffectInstance*
+boost::shared_ptr<Natron::EffectInstance>
 AppManager::createOFXEffect(const std::string & pluginID,
                             boost::shared_ptr<Natron::Node> node,
                             const NodeSerialization* serialization,

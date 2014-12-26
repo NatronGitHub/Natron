@@ -869,7 +869,7 @@ public:
         OTHER ///when the project loader restores the selection
     };
 
-    RotoContext(Natron::Node* node);
+    RotoContext(const boost::shared_ptr<Natron::Node>& node);
 
     virtual ~RotoContext();
     
@@ -1028,6 +1028,8 @@ public:
     std::list< boost::shared_ptr<Bezier> > getCurvesByRenderOrder() const;
     
     int getNCurves() const;
+    
+    boost::shared_ptr<Natron::Node> getNode() const;
     
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;

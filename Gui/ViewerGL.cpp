@@ -66,6 +66,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/Histogram.h"
+#include "Gui/NodeGui.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2488,7 +2489,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     Qt::MouseButton button = e->button();
 
     if ( buttonDownIsLeft(e) ) {
-        _imp->viewerTab->getGui()->selectNode( _imp->viewerTab->getGui()->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
+        
+        boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+        assert(gui_i);
+        boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+        _imp->viewerTab->getGui()->selectNode(gui);
     }
 
     _imp->oldClick = e->pos();
@@ -3123,7 +3128,10 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if (!gui) {
         return;
     }
-    gui->selectNode(gui->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
+    
+    boost::shared_ptr<NodeGuiI> nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+    boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
+    gui->selectNode(nodeGui);
 
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;

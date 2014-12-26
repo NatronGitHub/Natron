@@ -3701,7 +3701,7 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 ////////////////////////////////////RotoContext////////////////////////////////////
 
 
-RotoContext::RotoContext(Natron::Node* node)
+RotoContext::RotoContext(const boost::shared_ptr<Natron::Node>& node)
     : _imp( new RotoContextPrivate(node) )
 {
    
@@ -3874,10 +3874,16 @@ RotoContext::isRippleEditEnabled() const
     return _imp->rippleEdit;
 }
 
+boost::shared_ptr<Natron::Node>
+RotoContext::getNode() const
+{
+    return _imp->node.lock();
+}
+
 int
 RotoContext::getTimelineCurrentTime() const
 {
-    return _imp->node->getApp()->getTimeLine()->currentFrame();
+    return getNode()->getApp()->getTimeLine()->currentFrame();
 }
 
 boost::shared_ptr<Bezier>
@@ -4622,7 +4628,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4654,7 +4660,7 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4721,7 +4727,7 @@ RotoContext::getCurvesByRenderOrder() const
     std::list< boost::shared_ptr<Bezier> > ret;
     
     ///Note this might not be the timeline's current frame if this is a render thread.
-    int time = _imp->node->getLiveInstance()->getThreadLocalRenderTime();
+    int time = getNode()->getLiveInstance()->getThreadLocalRenderTime();
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         if ( !_imp->layers.empty() ) {
@@ -4824,7 +4830,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    _imp->node->getLiveInstance()->evaluate_public(NULL, true,Natron::eValueChangedReasonUserEdited);
+    getNode()->getLiveInstance()->evaluate_public(NULL, true,Natron::eValueChangedReasonUserEdited);
 }
 
 U64
@@ -4883,7 +4889,7 @@ RotoContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& item)
 std::string
 RotoContext::getRotoNodeName() const
 {
-    return _imp->node->getName_mt_safe();
+    return getNode()->getName_mt_safe();
 }
 
 void
@@ -4996,12 +5002,13 @@ RotoContext::renderMask(bool useCache,
         }
     }
 
-
+    boost::shared_ptr<Node> node = getNode();
+    
     boost::shared_ptr<Natron::ImageParams> params;
     ImagePtr image;
     
     if (!byPassCache) {
-        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components,
+        node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components,
                                                                            depth, components, 3,/*nodeRoD,*/false, inputImages, &image);
         if (image) {
             params = image->getParams();
@@ -5011,7 +5018,7 @@ RotoContext::renderMask(bool useCache,
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
     if (!image) {
-        ImageLocker imgLocker(_imp->node->getLiveInstance());
+        ImageLocker imgLocker(node->getLiveInstance());
         
         params = Natron::Image::makeParams( 0,
                                            nodeRoD,
@@ -5098,7 +5105,7 @@ RotoContext::renderMask(bool useCache,
 
 
     ////////////////////////////////////
-    if ( _imp->node->aborted() ) {
+    if ( node->aborted() ) {
         //if render was aborted, remove the frame from the cache as it contains only garbage
         appPTR->removeFromNodeCache(image);
     } else {

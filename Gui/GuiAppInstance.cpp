@@ -36,7 +36,7 @@ using namespace Natron;
 struct GuiAppInstancePrivate
 {
     Gui* _gui; //< ptr to the Gui interface
-    std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeGui> > _nodeMapping; //< a mapping between all nodes and their respective gui. FIXME: it should go away.
+
     std::list< boost::shared_ptr<ProcessHandler> > _activeBgProcesses;
     QMutex _activeBgProcessesMutex;
     bool _isClosing;
@@ -56,7 +56,6 @@ struct GuiAppInstancePrivate
 
     GuiAppInstancePrivate()
         : _gui(NULL)
-          , _nodeMapping()
           , _activeBgProcesses()
           , _activeBgProcessesMutex()
           , _isClosing(false)
@@ -116,7 +115,6 @@ GuiAppInstance::aboutToQuit()
     
     deletePreviewProvider();
     _imp->_isClosing = true;
-    _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
     _imp->_gui->close();
     _imp->_gui->setParent(NULL);
 }
@@ -129,7 +127,6 @@ GuiAppInstance::~GuiAppInstance()
     ///clear nodes prematurely so that any thread running is stopped
     getProject()->clearNodes(false);
 
-    _imp->_nodeMapping.clear();
     QCoreApplication::processEvents();
 //#ifndef __NATRON_WIN32__
     _imp->_gui->getNodeGraph()->discardGuiPointer();
@@ -219,7 +216,8 @@ GuiAppInstance::load(const QString & projectName,
                                    true,
                                    true,
                                    QString(),
-                                   CreateNodeArgs::DefaultValuesList()) );
+                                   CreateNodeArgs::DefaultValuesList(),
+                                   getProject()) );
     } else {
         ///Otherwise just load the project specified.
         QFileInfo info(projectName);
@@ -234,8 +232,8 @@ GuiAppInstance::load(const QString & projectName,
 } // load
 
 void
-GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
-                              const std::string & multiInstanceParentName,
+GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
+                              const boost::shared_ptr<Natron::Node>& parentMultiInstance,
                               bool loadRequest,
                               bool autoConnect,
                               double xPosHint,
@@ -248,14 +246,14 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
     boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
 
     assert(nodegui);
-    if ( !multiInstanceParentName.empty() ) {
+    if ( parentMultiInstance && nodegui) {
         nodegui->hideGui();
 
 
-        boost::shared_ptr<NodeGui> parentNodeGui = getNodeGui(multiInstanceParentName);
-        nodegui->setParentMultiInstance(parentNodeGui);
+        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parentMultiInstance->getNodeGui();
+        assert(parentNodeGui_i);
+        nodegui->setParentMultiInstance(boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i));
     }
-    _imp->_nodeMapping.insert( std::make_pair(node,nodegui) );
 
     ///It needs to be here because we rely on the _nodeMapping member
     bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
@@ -268,15 +266,15 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
         _imp->_gui->createNewRotoInterface( nodegui.get() );
     }
 
-    if ( node->isTrackerNode() && multiInstanceParentName.empty() ) {
+    if ( node->isTrackerNode() && !parentMultiInstance ) {
         _imp->_gui->createNewTrackerInterface( nodegui.get() );
     }
 
     ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
-    if ( multiInstanceParentName.empty() ) {
+    if ( !parentMultiInstance) {
         nodegui->initializeInputs();
     }
-
+    
     nodegui->initializeKnobs();
 
     if (!loadRequest) {
@@ -287,7 +285,7 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
     _imp->_gui->addNodeGuiToCurveEditor(nodegui);
 
 
-    if ( !loadRequest && multiInstanceParentName.empty() ) {
+    if ( !loadRequest && !parentMultiInstance ) {
         if ( (selectedNodes.size() == 1) && autoConnect ) {
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
                 if (*it != nodegui) {
@@ -330,58 +328,15 @@ GuiAppInstance::shouldRefreshPreview() const
     return !_imp->_gui->isUserScrubbingTimeline();
 }
 
-boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const boost::shared_ptr<Node> & n) const
-{
-    return getNodeGui(n.get());
-}
-
-boost::shared_ptr<NodeGui>
-GuiAppInstance::getNodeGui(Natron::Node* n) const 
-{
-    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin();
-         it != _imp->_nodeMapping.end(); ++it) {
-        if (it->first.get() == n) {
-            return it->second;
-        }
-    }
-    return boost::shared_ptr<NodeGui>();
-}
-
-boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const std::string & nodeName) const
-{
-    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin();
-         it != _imp->_nodeMapping.end(); ++it) {
-        assert(it->first && it->second);
-        if (it->first->getName() == nodeName) {
-            return it->second;
-        }
-    }
-
-    return boost::shared_ptr<NodeGui>();
-}
-
-boost::shared_ptr<Node> GuiAppInstance::getNode(const boost::shared_ptr<NodeGui> & n) const
-{
-    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin(); it != _imp->_nodeMapping.end(); ++it) {
-        if (it->second == n) {
-            return it->first;
-        }
-    }
-
-    return boost::shared_ptr<Node>();
-}
 
 void
 GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
 {
     if ( !isClosing() ) {
-        getProject()->removeNodeFromProject( n->getNode() );
-        n->getNode()->removeReferences();
-    }
-    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodeMapping.begin(); it != _imp->_nodeMapping.end(); ++it) {
-        if (it->second == n) {
-            _imp->_nodeMapping.erase(it);
-            break;
+        boost::shared_ptr<Natron::Node> internalNode = n->getNode();
+        if (internalNode) {
+            getProject()->removeNode(internalNode);
+            internalNode->removeReferences();
         }
     }
 }
@@ -662,11 +617,6 @@ GuiAppInstance::onProcessFinished()
     }
 }
 
-void
-GuiAppInstance::clearNodeGuiMapping()
-{
-    _imp->_nodeMapping.clear();
-}
 
 void
 GuiAppInstance::notifyRenderProcessHandlerStarted(const QString & sequenceName,

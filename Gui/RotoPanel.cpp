@@ -159,7 +159,7 @@ enum ColorDialogEdition
 struct RotoPanelPrivate
 {
     RotoPanel* publicInterface;
-    NodeGui* node;
+    boost::weak_ptr<NodeGui> node;
     boost::shared_ptr<RotoContext> context;
     QVBoxLayout* mainLayout;
     QWidget* splineContainer;
@@ -190,7 +190,7 @@ struct RotoPanelPrivate
     ColorDialogEdition dialogEdition;
 
     RotoPanelPrivate(RotoPanel* publicInter,
-                     NodeGui*  n)
+                     const boost::shared_ptr<NodeGui>&   n)
         : publicInterface(publicInter)
           , node(n)
           , context( n->getNode()->getRotoContext())
@@ -247,7 +247,7 @@ struct RotoPanelPrivate
     void insertItemInternal(int reason, int time, const boost::shared_ptr<RotoItem>& item);
 };
 
-RotoPanel::RotoPanel(NodeGui* n,
+RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
                      QWidget* parent)
     : QWidget(parent)
       , _imp( new RotoPanelPrivate(this,n) )
@@ -257,7 +257,7 @@ RotoPanel::RotoPanel(NodeGui* n,
     QObject::connect( _imp->context.get(),SIGNAL( itemRemoved(const boost::shared_ptr<RotoItem>&,int) ),this,SLOT( onItemRemoved(const boost::shared_ptr<RotoItem>&,int) ) );
     QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime,int) ), this,
                       SLOT( onTimeChanged(SequenceTime, int) ) );
-    QObject::connect( n, SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
+    QObject::connect( n.get(), SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
 
     _imp->mainLayout = new QVBoxLayout(this);
 
@@ -581,7 +581,7 @@ RotoPanel::onSelectedBezierAboutToClone()
             for (std::set<int>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 markers.push_back(*it2);
             }
-            _imp->node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers,true);
+            getNode()->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers,true);
         }
     }
 }
@@ -605,7 +605,7 @@ RotoPanel::onSelectedBezierCloned()
                 markers.push_back(*it2);
             }
             it->second = keys;
-            _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
+            getNode()->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
         }
     }
 }
@@ -807,6 +807,12 @@ RotoPanelPrivate::insertItemRecursively(int time,
     expandRecursively(treeItem);
 } // insertItemRecursively
 
+boost::shared_ptr<NodeGui>
+RotoPanel::getNode() const
+{
+    return _imp->node.lock();
+}
+
 void
 RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                     QTreeWidgetItem* treeItem)
@@ -884,7 +890,7 @@ RotoPanelPrivate::insertItemInternal(int reason,
             for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
                 markers.push_back(*it2);
             }
-            node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
+            node.lock()->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
         }
     }
     if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
@@ -913,7 +919,7 @@ RotoPanel::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
         if ( it != _imp->keyframes.end() ) {
             for (std::set<int>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                _imp->node->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(*it2);
+                getNode()->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(*it2);
             }
             _imp->keyframes.erase(it);
         }
@@ -1341,7 +1347,7 @@ RotoPanel::onItemSelectionChanged()
     _imp->selectedItems.clear();
 
     ///Don't allow any selection to be made if the roto is a clone of another roto  node.
-    if ( _imp->node->getNode()->getMasterNode() ) {
+    if ( getNode()->getNode()->getMasterNode() ) {
         _imp->tree->selectionModel()->clear();
 
         return;
@@ -1640,7 +1646,7 @@ TreeWidget::keyPressEvent(QKeyEvent* e)
 void
 RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 {
-    NodeSettingsPanel* panel = _imp->node->getSettingPanel();
+    NodeSettingsPanel* panel = getNode()->getSettingPanel();
 
     assert(panel);
     panel->pushUndoCommand(cmd);
@@ -1649,7 +1655,7 @@ RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 std::string
 RotoPanel::getNodeName() const
 {
-    return _imp->node->getNode()->getName();
+    return getNode()->getNode()->getName();
 }
 
 boost::shared_ptr<RotoContext>
@@ -1828,7 +1834,7 @@ RotoPanelPrivate::setItemKey(const boost::shared_ptr<RotoItem>& item,
     if ( it != keyframes.end() ) {
         std::pair<std::set<int>::iterator,bool> ret = it->second.insert(time);
         if (ret.second) {
-            node->getNode()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+            node.lock()->getNode()->getApp()->getTimeLine()->addKeyframeIndicator(time);
         }
     } else {
         std::set<int> keys;
@@ -1847,7 +1853,7 @@ RotoPanelPrivate::removeItemKey(const boost::shared_ptr<RotoItem>& item,
         std::set<int>::iterator it2 = it->second.find(time);
         if ( it2 != it->second.end() ) {
             it->second.erase(it2);
-            node->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+            node.lock()->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
         }
     }
 }
@@ -1855,6 +1861,7 @@ RotoPanelPrivate::removeItemKey(const boost::shared_ptr<RotoItem>& item,
 void
 RotoPanel::onSettingsPanelClosed(bool closed)
 {
+    boost::shared_ptr<TimeLine> timeline = getNode()->getNode()->getApp()->getTimeLine();
     if (closed) {
         ///remove all keyframes from the structure kept
         for (TreeItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
@@ -1866,7 +1873,7 @@ RotoPanel::onSettingsPanelClosed(bool closed)
                     for (std::set<int>::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
                         markers.push_back(*it3);
                     }
-                    _imp->node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers,true);
+                    timeline->removeMultipleKeyframeIndicator(markers,true);
                     _imp->keyframes.erase(it2);
                 }
             }
@@ -1884,7 +1891,7 @@ RotoPanel::onSettingsPanelClosed(bool closed)
                     markers.push_back(*it3);
                 }
                 _imp->keyframes.insert( std::make_pair(isBezier, keys) );
-                _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
+                timeline->addMultipleKeyframeIndicatorsAdded(markers,true);
             }
         }
     }

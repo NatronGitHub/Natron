@@ -19,6 +19,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 #include "Engine/Format.h"
 
@@ -35,6 +36,7 @@ class DockablePanel;
 class ProjectGuiSerialization;
 class Gui;
 class NodeGui;
+class ViewerInstance;
 class NodeGuiSerialization;
 namespace boost {
 namespace archive {
@@ -68,7 +70,7 @@ public:
 
     boost::shared_ptr<Natron::Project> getInternalProject() const
     {
-        return _project;
+        return _project.lock();
     }
 
     void save(boost::archive::xml_oarchive & archive) const;
@@ -107,7 +109,7 @@ private:
 
 
     Gui* _gui;
-    boost::shared_ptr<Natron::Project> _project;
+    boost::weak_ptr<Natron::Project> _project;
     DockablePanel* _panel;
     bool _created;
     std::vector<boost::shared_ptr<Color_Knob> > _colorPickersEnabled;
@@ -138,6 +140,9 @@ private:
 
     Gui* _gui;
     Natron::Project* _project;
+    
+    std::list<ViewerInstance*> _viewers;
+    
     QVBoxLayout* _mainLayout;
     QWidget* _fromViewerLine;
     QHBoxLayout* _fromViewerLineLayout;

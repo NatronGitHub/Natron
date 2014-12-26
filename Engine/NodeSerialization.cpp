@@ -16,6 +16,7 @@
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/RotoSerialization.h"
+#include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
 NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs,bool copyKnobs)
@@ -29,11 +30,9 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
     , _node()
-    , _app(NULL)
 {
     if (n) {
         _node = n;
-        _app = _node->getApp();
 
         ///All this code is MT-safe
 
@@ -103,8 +102,21 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         }
 
         _multiInstanceParentName = n->getParentMultiInstanceName();
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
+        if (isGrp) {
+            NodeList nodes;
+            isGrp->getActiveNodes(&nodes);
+            
+            _children.clear();
+            
+            for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+                boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+                _children.push_back(state);
+            }
+
+        }
 
         _isNull = false;
     }
 }
-

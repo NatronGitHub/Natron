@@ -74,10 +74,12 @@ SOURCES += \
     Lut.cpp \
     MemoryFile.cpp \
     Node.cpp \
+    NodeGroup.cpp \
     NodeWrapper.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
+    NodeGroupSerialization.cpp \
     NoOp.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
@@ -178,6 +180,8 @@ HEADERS += \
     Lut.h \
     MemoryFile.h \
     Node.h \
+    NodeGroup.h \
+    NodeGroupSerialization.h \
     NodeWrapper.h \
     NodeGuiI.h \
     NonKeyParams.h \

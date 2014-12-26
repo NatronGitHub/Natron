@@ -16,6 +16,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Gui/GuiAppInstance.h"
+#include "Engine/Project.h"
 
 struct ToolButtonPrivate
 {
@@ -152,15 +153,16 @@ void
 ToolButton::onTriggered()
 {
     CreateNodeArgs args(_imp->_id,
-                   "",
-                   _imp->_major,_imp->_minor,
-                   -1,
-                   true,
-                   INT_MIN,INT_MIN,
-                   true,
-                   true,
-                   QString(),
-                   CreateNodeArgs::DefaultValuesList());
+                        "",
+                        _imp->_major,_imp->_minor,
+                        -1,
+                        true,
+                        INT_MIN,INT_MIN,
+                        true,
+                        true,
+                        QString(),
+                        CreateNodeArgs::DefaultValuesList(),
+                        _imp->_app->getProject());
     _imp->_app->createNode( args );
 }
 

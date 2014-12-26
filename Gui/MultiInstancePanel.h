@@ -53,9 +53,11 @@ public:
 
     int getNodeIndex(const boost::shared_ptr<Natron::Node> & node) const;
 
-    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > > & getInstances() const;
+    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > > & getInstances() const;
     virtual std::string getName_mt_safe() const OVERRIDE FINAL;
     boost::shared_ptr<Natron::Node> getMainInstance() const;
+    
+    boost::shared_ptr<NodeGui> getMainInstanceGui() const;
 
     void getSelectedInstances(std::list<Natron::Node*>* instances) const;
 

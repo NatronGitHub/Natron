@@ -27,6 +27,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
@@ -3332,13 +3333,12 @@ void
 RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points)
 {
     std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > > knobs;
-    std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
-
-    _imp->node->getNode()->getApp()->getActiveNodes(&activeNodes);
-    for (U32 i = 0; i < activeNodes.size(); ++i) {
-        if ( activeNodes[i]->isTrackerNode() ) {
-            boost::shared_ptr<KnobI> k = activeNodes[i]->getKnobByName("center");
-            boost::shared_ptr<KnobI> name = activeNodes[i]->getKnobByName(kOfxParamStringSublabelName);
+    NodeList activeNodes;
+    _imp->node->getNode()->getGroup()->getActiveNodes(&activeNodes);
+    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        if ( (*it)->isTrackerNode() ) {
+            boost::shared_ptr<KnobI> k = (*it)->getKnobByName("center");
+            boost::shared_ptr<KnobI> name = (*it)->getKnobByName(kOfxParamStringSublabelName);
             if (k && name) {
                 boost::shared_ptr<Double_Knob> dk = boost::dynamic_pointer_cast<Double_Knob>(k);
                 String_Knob* nameKnob = dynamic_cast<String_Knob*>( name.get() );

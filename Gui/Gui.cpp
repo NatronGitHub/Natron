@@ -1149,7 +1149,7 @@ GuiPrivate::createNodeGraphGui()
 {
     _graphScene = new QGraphicsScene(_gui);
     _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui,_graphScene,_gui);
+    _nodeGraphArea = new NodeGraph(_gui,_appInstance->getProject(),_graphScene,_gui);
     _nodeGraphArea->setObjectName(kNodeGraphObjectName);
     _gui->registerTab(_nodeGraphArea);
 }
@@ -1975,7 +1975,10 @@ Gui::removeViewerTab(ViewerTab* tab,
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
-        _imp->_nodeGraphArea->removeNode( _imp->_appInstance->getNodeGui( tab->getInternalNode()->getNode() ) );
+        boost::shared_ptr<NodeGuiI> guiI = tab->getInternalNode()->getNode()->getNodeGui();
+        boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
+        assert(gui);
+        _imp->_nodeGraphArea->removeNode(gui);
     } else {
         tab->hide();
 
@@ -2642,7 +2645,8 @@ Gui::createNewViewer()
                                                          true,
                                                          true,
                                                          QString(),
-                                                         CreateNodeArgs::DefaultValuesList()) );
+                                                         CreateNodeArgs::DefaultValuesList(),
+                                                         getApp()->getProject()) );
 }
 
 boost::shared_ptr<Natron::Node>
@@ -2664,6 +2668,8 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString() ,false);
         } else {
+            
+#pragma message WARN("Store a pointer to the last used group (nodegraph) instead of the main group")
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             CreateNodeArgs args(found->second.c_str(),
@@ -2675,7 +2681,8 @@ Gui::createReader()
                                 true,
                                 true,
                                 QString(),
-                                defaultValues);
+                                defaultValues,
+                                getApp()->getProject());
             ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {
@@ -2705,9 +2712,21 @@ Gui::createWriter()
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if ( found != writersForFormat.end() ) {
             
+#pragma message WARN("Store a pointer to the last used group (nodegraph) instead of the main group")
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),
+                                "",
+                                -1,
+                                -1,
+                                -1,
+                                true,
+                                INT_MIN,INT_MIN,
+                                true,
+                                true,
+                                QString(),
+                                defaultValues,
+                                getApp()->getProject());
             ret = _imp->_appInstance->createNode(args);
             if (!ret) {
                 return ret;
@@ -3382,29 +3401,13 @@ Gui::onCurrentUndoStackChanged(QUndoStack* stack)
 void
 Gui::refreshAllPreviews()
 {
-    int time = _imp->_appInstance->getTimeLine()->currentFrame();
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-
-    _imp->_appInstance->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        if ( nodes[i]->isPreviewEnabled() ) {
-            nodes[i]->refreshPreviewImage(time);
-        }
-    }
+    _imp->_appInstance->getProject()->refreshPreviews();
 }
 
 void
 Gui::forceRefreshAllPreviews()
 {
-    int time = _imp->_appInstance->getTimeLine()->currentFrame();
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-
-    _imp->_appInstance->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        if ( nodes[i]->isPreviewEnabled() ) {
-            nodes[i]->computePreviewImage(time);
-        }
-    }
+    _imp->_appInstance->getProject()->forceRefreshPreviews();
 }
 
 void
@@ -4473,10 +4476,11 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
             if (node) {
                 boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
                 if (multiInstance) {
-                    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-                    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        if (node->isSettingsPanelVisible() && it->first->isActivated() && it->second && !it->first->isNodeDisabled()) {
-                            nodes.push_back(it->first);
+                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                        NodePtr instance = it->first.lock();
+                        if (node->isSettingsPanelVisible() && instance->isActivated() && it->second && !instance->isNodeDisabled()) {
+                            nodes.push_back(instance);
                         }
                     }
                     boost::shared_ptr<Natron::Node> internalNode = node->getNode();

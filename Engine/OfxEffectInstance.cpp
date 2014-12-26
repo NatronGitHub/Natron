@@ -216,7 +216,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->createRotoContextConditionnally();
             
             getNode()->initializeInputs();
-            getNode()->initializeKnobs( serialization ? *serialization : NodeSerialization( getApp() ), disableRenderScaleSupport ? 1 : 0 );
+            getNode()->initializeKnobs( serialization ? *serialization : NodeSerialization(), disableRenderScaleSupport ? 1 : 0 );
             
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
@@ -861,7 +861,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     /**
      * The plug-in might call getImage, set a valid thread storage on the tree.
      **/
-    Node::ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+    Node::ParallelRenderArgsSetter frameRenderArgs(getNode().get(),
                                                    time,
                                                    0 /*view*/,
                                                    true,
@@ -2386,7 +2386,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<Button_Knob*>(k) && _node->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<Button_Knob*>(k) && getNode()->isNodeDisabled() ) {
         return;
     }
 

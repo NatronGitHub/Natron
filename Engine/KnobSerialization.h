@@ -692,7 +692,7 @@ public:
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,const std::vector<boost::shared_ptr<Natron::Node> > & allNodes);
+    void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
     
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
@@ -711,7 +711,7 @@ public:
 
     static boost::shared_ptr<KnobI> createKnob(const std::string & typeName,int dimension);
 
-    void restoreTracks(const boost::shared_ptr<KnobI> & knob,const std::vector<boost::shared_ptr<Natron::Node> > & allNodes);
+    void restoreTracks(const boost::shared_ptr<KnobI> & knob,const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
 
     const TypeExtraData* getExtraData() const { return _extraData; }
     

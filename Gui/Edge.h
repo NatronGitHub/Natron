@@ -20,6 +20,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
@@ -71,17 +72,17 @@ public:
 
     boost::shared_ptr<NodeGui> getDest() const
     {
-        return _dest;
+        return _dest.lock();
     }
 
     boost::shared_ptr<NodeGui> getSource() const
     {
-        return _source;
+        return _source.lock();
     }
 
     bool hasSource() const
     {
-        return _source != NULL;
+        return _source.lock().get() != NULL;
     }
 
     void dragSource(const QPointF & src);
@@ -145,8 +146,8 @@ private:
     double _angle;
     QGraphicsTextItem* _label;
     QPolygonF _arrowHead;
-    boost::shared_ptr<NodeGui> _dest;
-    boost::shared_ptr<NodeGui> _source;
+    boost::weak_ptr<NodeGui> _dest;
+    boost::weak_ptr<NodeGui> _source;
     QColor _defaultColor;
     QColor _renderingColor;
     bool _useRenderingColor;

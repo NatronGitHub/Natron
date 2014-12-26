@@ -318,7 +318,7 @@ Double_Knob::serializeTracks(std::list<SerializedTrack>* tracks)
 
 void
 Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
-                           const std::vector<boost::shared_ptr<Node> > & activeNodes)
+                           const std::list<boost::shared_ptr<Node> > & activeNodes)
 {
     ///get a shared_ptr to this
     assert( getHolder() );
@@ -340,10 +340,10 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
         if (it->rotoNodeName == lastNodeName) {
             roto = lastRoto;
         } else {
-            for (U32 i = 0; i < activeNodes.size(); ++i) {
-                if (activeNodes[i]->getName() == it->rotoNodeName) {
-                    lastNodeName = activeNodes[i]->getName();
-                    boost::shared_ptr<RotoContext> rotoCtx = activeNodes[i]->getRotoContext();
+            for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end() ;++it2) {
+                if ((*it2)->getName() == it->rotoNodeName) {
+                    lastNodeName = (*it2)->getName();
+                    boost::shared_ptr<RotoContext> rotoCtx = (*it2)->getRotoContext();
                     assert(rotoCtx);
                     lastRoto = rotoCtx.get();
                     roto = rotoCtx.get();

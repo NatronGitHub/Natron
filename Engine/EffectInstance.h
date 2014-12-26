@@ -15,6 +15,8 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
@@ -108,6 +110,7 @@ class ImageParams;
 class EffectInstance
     : public NamedKnobHolder
     , public LockManagerI<Natron::Image>
+    , public boost::enable_shared_from_this<Natron::EffectInstance>
 {
 public:
 
@@ -198,7 +201,7 @@ public:
      **/
     boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN
     {
-        return _node;
+    return _node.lock();
     }
 
     /**
@@ -1211,7 +1214,7 @@ protected:
     }
    
     
-    boost::shared_ptr<Node> _node; //< the node holding this effect
+    boost::weak_ptr<Node> _node; //< the node holding this effect
 
 private:
 

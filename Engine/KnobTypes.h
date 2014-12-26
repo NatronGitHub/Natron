@@ -281,7 +281,7 @@ public:
 
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::vector<boost::shared_ptr<Natron::Node> > & activeNodes);
+    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::list<boost::shared_ptr<Natron::Node> > & activeNodes);
 
 public Q_SLOTS:
 

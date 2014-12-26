@@ -37,6 +37,7 @@ struct AppInstancePrivate;
 class KnobSerialization;
 class KnobHolder;
 class ProcessHandler;
+class NodeCollection;
 namespace Natron {
 class Node;
 class Project;
@@ -61,6 +62,7 @@ struct CreateNodeArgs
     
     typedef std::list< boost::shared_ptr<KnobSerialization> > DefaultValuesList;
     DefaultValuesList paramValues; //< values of parameters to set before creating the plug-in
+    boost::shared_ptr<NodeCollection> group;
     
     ///Constructor used to create a new node
     explicit CreateNodeArgs(const QString & pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
@@ -74,19 +76,21 @@ struct CreateNodeArgs
                             bool pushUndoRedoCommand , //< should we push a new undo/redo command on the GUI? DEFAULT = true
                             bool addToProject, //< should we add the node to the project ? DEFAULT = true
                             const QString & fixedName,  //< if non empty, this will be the name of the node DEFAULT = empty
-                            const DefaultValuesList& paramValues) //< parameters to set before creating the plugin
+                            const DefaultValuesList& paramValues,  //< parameters to set before creating the plugin
+                            const boost::shared_ptr<NodeCollection>& group) //< the group into which to create this node
         : pluginID(pluginID)
-          , majorV(majorVersion)
-          , minorV(minorVersion)
-          , multiInstanceParentName(multiInstanceParentName)
-          , childIndex(childIndex)
-          , autoConnect(autoConnect)
-          , xPosHint(xPosHint)
-          , yPosHint(yPosHint)
-          , pushUndoRedoCommand(pushUndoRedoCommand)
-          , addToProject(addToProject)
-          , fixedName(fixedName)
-          , paramValues(paramValues)
+    , majorV(majorVersion)
+    , minorV(minorVersion)
+    , multiInstanceParentName(multiInstanceParentName)
+    , childIndex(childIndex)
+    , autoConnect(autoConnect)
+    , xPosHint(xPosHint)
+    , yPosHint(yPosHint)
+    , pushUndoRedoCommand(pushUndoRedoCommand)
+    , addToProject(addToProject)
+    , fixedName(fixedName)
+    , paramValues(paramValues)
+    , group(group)
     {
     }
     
@@ -100,20 +104,23 @@ struct LoadNodeArgs
     bool dontLoadName;
     std::string multiInstanceParentName;
     const NodeSerialization* serialization;
-
+    boost::shared_ptr<NodeCollection> group;
+    
     ///Constructor used to load a node from the project serialization
     LoadNodeArgs(const QString & pluginID,
                  const std::string & multiInstanceParentName,
                  int majorVersion,
                  int minorVersion,
                  const NodeSerialization* serialization,
-                 bool dontLoadName)
+                 bool dontLoadName,
+                 const boost::shared_ptr<NodeCollection>& group)
         : pluginID(pluginID)
-          , majorV(majorVersion)
-          , minorV(minorVersion)
-          , dontLoadName(dontLoadName) //< used when copy/pasting nodes to avoid duplicates in names
-          , multiInstanceParentName(multiInstanceParentName)
-          , serialization(serialization)
+    , majorV(majorVersion)
+    , minorV(minorVersion)
+    , dontLoadName(dontLoadName) //< used when copy/pasting nodes to avoid duplicates in names
+    , multiInstanceParentName(multiInstanceParentName)
+    , serialization(serialization)
+    , group(group)
     {
     }
 };
@@ -172,8 +179,6 @@ public:
 
     ///Same as createNode but used when loading a project
     boost::shared_ptr<Natron::Node> loadNode(const LoadNodeArgs & args);
-
-    void getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> > *activeNodes) const;
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
@@ -283,14 +288,6 @@ public:
     
     double getProjectFrameRate() const;
 
-    /**
-     * @brief Clears any shared ptr to NodeGuis left
-     **/
-    virtual void clearNodeGuiMapping()
-    {
-    }
-
-
     virtual std::string openImageFileDialog() { return std::string(); }
     virtual std::string saveImageFileDialog() { return std::string(); }
 
@@ -337,8 +334,8 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void createNodeGui(boost::shared_ptr<Natron::Node> /*node*/,
-                               const std::string & /*multiInstanceParentName*/,
+    virtual void createNodeGui(const boost::shared_ptr<Natron::Node>& /*node*/,
+                               const boost::shared_ptr<Natron::Node>&  /*parentmultiinstance*/,
                                bool /*loadRequest*/,
                                bool /*autoConnect*/,
                                double /*xPosHint*/,
@@ -364,7 +361,8 @@ private:
                                                        const NodeSerialization & serialization,bool dontLoadName,
                                                        int childIndex,bool autoConnect,double xPosHint,double yPosHint,
                                                        bool pushUndoRedoCommand,bool addToProject,const QString& fixedName,
-                                                       const CreateNodeArgs::DefaultValuesList& paramValues);
+                                                       const CreateNodeArgs::DefaultValuesList& paramValues,
+                                                       const boost::shared_ptr<NodeCollection>& group);
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 

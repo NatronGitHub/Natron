@@ -66,12 +66,6 @@ public:
                       const std::list<RenderRequest> &writersWork = std::list<AppInstance::RenderRequest>()) OVERRIDE FINAL;
     Gui* getGui() const WARN_UNUSED_RETURN;
 
-    //////////
-    boost::shared_ptr<NodeGui> getNodeGui(const boost::shared_ptr<Natron::Node> & n) const WARN_UNUSED_RETURN;
-    boost::shared_ptr<NodeGui> getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
-    boost::shared_ptr<NodeGui> getNodeGui(const std::string & nodeName) const WARN_UNUSED_RETURN;
-    boost::shared_ptr<Natron::Node> getNode(const boost::shared_ptr<NodeGui> & n) const WARN_UNUSED_RETURN;
-
     /**
      * @brief Remove the node n from the mapping in GuiAppInstance and from the project so the pointer is no longer
      * referenced anywhere. This function is called on nodes that were already deleted by the user but were kept into
@@ -123,7 +117,6 @@ public:
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
-    virtual void clearNodeGuiMapping() OVERRIDE FINAL;
 
 
     boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
@@ -147,8 +140,8 @@ public Q_SLOTS:
 private:
 
     virtual void createBackDrop() OVERRIDE FINAL;
-    virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,
-                               const std::string & multiInstanceParentName,
+    virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
+                               const boost::shared_ptr<Natron::Node>&  parentMultiInstance,
                                bool loadRequest,
                                bool autoConnect,
                                double xPosHint,double yPosHint,

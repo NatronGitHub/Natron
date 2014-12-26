@@ -89,10 +89,7 @@ struct ProjectPrivate
     boost::shared_ptr<String_Knob> saveDate;
     
     boost::shared_ptr<TimeLine> timeline; // global timeline
-    mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
     bool autoSetProjectFormat;
-    std::vector< boost::shared_ptr<Natron::Node> > currentNodes;
-    Natron::Project* project;
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
