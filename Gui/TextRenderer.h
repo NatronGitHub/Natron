@@ -6,7 +6,7 @@
 
 #ifndef NATRON_GUI_TEXTRENDERER_H_
 #define NATRON_GUI_TEXTRENDERER_H_
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 class QString;

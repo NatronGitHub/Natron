@@ -54,8 +54,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , saveDate()
       , timeline( new TimeLine(project) )
       , autoSetProjectFormat(appPTR->getCurrentSettings()->isAutoProjectFormatEnabled())
-      , currentNodes()
-      , project(project)
       , lastTimelineSeekCaller()
       , isLoadingProjectMutex()
       , isLoadingProject(false)
@@ -75,8 +73,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                          bool isAutoSave,
                                          const QString& realFilePath)
 {
-    
-    bool mustShowErrorsLog = false;
     
     /*1st OFF RESTORE THE PROJECT KNOBS*/
 
@@ -102,8 +98,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     autoSetProjectFormat = false;
 
     const std::list< boost::shared_ptr<KnobSerialization> > & projectSerializedValues = obj.getProjectKnobsValues();
-    const std::vector< boost::shared_ptr<KnobI> > & projectKnobs = project->getKnobs();
-
+    const std::vector< boost::shared_ptr<KnobI> > & projectKnobs = _publicInterface->getKnobs();
 
     /// 1) restore project's knobs.
     for (U32 i = 0; i < projectKnobs.size(); ++i) {
@@ -151,172 +146,28 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     ///for each node of 0.2 / nbNodes
     
     /// 3) Restore the nodes
-    const std::list< NodeSerialization > & serializedNodes = obj.getNodesSerialization();
+    
     bool hasProjectAWriter = false;
-
-    ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
-    ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
-    ///This map contains all the parents that must be reconnected and an iterator to the child serialization
-    std::map<boost::shared_ptr<Natron::Node>, std::list<NodeSerialization>::const_iterator > parentsToReconnect;
-
-    /*first create all nodes*/
-    int nodesRestored = 0;
-    for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-        ++nodesRestored;
-        
-        std::string pluginID = it->getPluginID();
-        
-        if ( appPTR->isBackground() && (pluginID == PLUGINID_NATRON_VIEWER || pluginID == "Viewer") ) {
-            //if the node is a viewer, don't try to load it in background mode
-            continue;
-        }
-
-        ///If the node is a multiinstance child find in all the serialized nodes if the parent exists.
-        ///If not, create it
-
-        if ( !it->getMultiInstanceParentName().empty() ) {
-            bool foundParent = false;
-            for (std::list< NodeSerialization >::const_iterator it2 = serializedNodes.begin(); it2 != serializedNodes.end(); ++it2) {
-                if ( it2->getPluginLabel() == it->getMultiInstanceParentName() ) {
-                    foundParent = true;
-                    break;
-                }
-            }
-            if (!foundParent) {
-                ///Maybe it was created so far by another child who created it so look into the nodes
-                for (std::vector<boost::shared_ptr<Natron::Node> >::iterator it2 = currentNodes.begin(); it2 != currentNodes.end(); ++it2) {
-                    if ( (*it2)->getName() == it->getMultiInstanceParentName() ) {
-                        foundParent = true;
-                        break;
-                    }
-                }
-                ///Create the parent
-                if (!foundParent) {
-                    boost::shared_ptr<Natron::Node> parent = project->getApp()->createNode( CreateNodeArgs( pluginID.c_str(),
-                                                                                                            "",
-                                                                                                            it->getPluginMajorVersion(),
-                                                                                                            it->getPluginMinorVersion(),
-                                                                                                           -1,
-                                                                                                           true,
-                                                                                                           INT_MIN,
-                                                                                                           INT_MIN,
-                                                                                                           true,
-                                                                                                           true,
-                                                                                                           QString(),
-                                                                                                           CreateNodeArgs::DefaultValuesList()) );
-                    parent->setName( it->getMultiInstanceParentName().c_str() );
-                    parentsToReconnect.insert( std::make_pair(parent, it) );
-                }
-            }
-        }
-
-        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode( LoadNodeArgs(pluginID.c_str()
-                                                                                      ,it->getMultiInstanceParentName()
-                                                                                      ,it->getPluginMajorVersion()
-                                                                                      ,it->getPluginMinorVersion(),&(*it),false) );
-        if (!n) {
-            QString text( QObject::tr("The node ") );
-            text.append( pluginID.c_str() );
-            text.append( QObject::tr(" was found in the script but doesn't seem \n"
-                                     "to exist in the currently loaded plug-ins.") );
-            appPTR->writeToOfxLog_mt_safe(text);
-            mustShowErrorsLog = true;
-            continue;
-        }
-        if ( n->isOutputNode() ) {
-            hasProjectAWriter = true;
-        }
-        if (serializedNodes.size() > 0) {
-            _publicInterface->getApp()->progressUpdate(_publicInterface, (0.2 * nodesRestored) / serializedNodes.size());
-        }
-    }
-
+    
+    bool ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
+                                                                    _publicInterface->shared_from_this(), &hasProjectAWriter);
 
     if ( !hasProjectAWriter && appPTR->isBackground() ) {
-        project->clearNodes();
+        _publicInterface->clearNodes(true);
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
 
-
-    /// 4) connect the nodes together, and restore the slave/master links for all knobs.
-    for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (it->getPluginID() == PLUGINID_NATRON_VIEWER) ) {
-            //ignore viewers on background mode
-            continue;
-        }
-
-
-        boost::shared_ptr<Natron::Node> thisNode;
-        for (U32 j = 0; j < currentNodes.size(); ++j) {
-            if ( currentNodes[j]->getName() == it->getPluginLabel() ) {
-                thisNode = currentNodes[j];
-                break;
-            }
-        }
-        if (!thisNode) {
-            continue;
-        }
-
-        ///for all nodes that are part of a multi-instance, fetch the main instance node pointer
-        const std::string & parentName = it->getMultiInstanceParentName();
-        if ( !parentName.empty() ) {
-            thisNode->fetchParentMultiInstancePointer();
-        }
-
-        ///restore slave/master link if any
-        const std::string & masterNodeName = it->getMasterNodeName();
-        if ( !masterNodeName.empty() ) {
-            ///find such a node
-            boost::shared_ptr<Natron::Node> masterNode;
-            for (U32 j = 0; j < currentNodes.size(); ++j) {
-                if (currentNodes[j]->getName() == masterNodeName) {
-                    masterNode = currentNodes[j];
-                    break;
-                }
-            }
-            if (!masterNode) {
-                appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString(it->getPluginLabel().c_str()) + " and " + masterNodeName.c_str()));
-                mustShowErrorsLog = true;
-            }
-            thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
-        } else {
-            thisNode->restoreKnobsLinks(*it,currentNodes);
-        }
-
-        const std::vector<std::string> & inputs = it->getInputs();
-        for (U32 j = 0; j < inputs.size(); ++j) {
-            if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode.get()) ) {
-                std::string message = std::string("Failed to connect node ") + it->getPluginLabel() + " to " + inputs[j];
-                appPTR->writeToOfxLog_mt_safe(message.c_str());
-                mustShowErrorsLog =true;
-            }
-        }
-    }
-
-    ///Also reconnect parents of multiinstance nodes that were created on the fly
-    for (std::map<boost::shared_ptr<Natron::Node>, std::list<NodeSerialization>::const_iterator >::const_iterator
-         it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
-        const std::vector<std::string> & inputs = it->second->getInputs();
-        for (U32 j = 0; j < inputs.size(); ++j) {
-            if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],it->first.get()) ) {
-                std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + inputs[j];
-                appPTR->writeToOfxLog_mt_safe(message.c_str());
-                mustShowErrorsLog =true;
-
-            }
-        }
-    }
-    
-    _publicInterface->getApp()->progressUpdate(_publicInterface, 0.25);
     
     ///The next for loop is about 50% of loading time of a project
     
     ///Now that everything is connected, check clip preferences on all OpenFX effects
     std::list<Natron::Node*> markedNodes;
     std::list<Natron::Node*> nodesToRestorePreferences;
-    for (U32 i = 0; i < currentNodes.size(); ++i) {
-        if (currentNodes[i]->isOutputNode()) {
-            nodesToRestorePreferences.push_back(currentNodes[i].get());
+    
+    NodeList nodes = _publicInterface->getNodes();
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ((*it)->isOutputNode()) {
+            nodesToRestorePreferences.push_back(it->get());
         }
     }
     
@@ -337,7 +188,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     ageSinceLastSave = time;
     lastAutoSave = time;
     
-    return !mustShowErrorsLog;
+    return ok;
 } // restoreFromSerialization
 
 bool

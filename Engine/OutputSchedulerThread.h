@@ -11,7 +11,7 @@
 
 #ifndef OUTPUTSCHEDULERTHREAD_H
 #define OUTPUTSCHEDULERTHREAD_H
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -202,7 +202,7 @@ public:
     
     void doAbortRenderingOnMainThread (bool blocking)
     {
-        emit s_abortRenderingOnMainThread(blocking);
+        Q_EMIT s_abortRenderingOnMainThread(blocking);
     }
     
     
@@ -257,7 +257,7 @@ public:
     
     
     
-public slots:
+public Q_SLOTS:
     
     void doTreatFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
@@ -276,7 +276,7 @@ public slots:
      * If you want to abortRendering() from one of those threads, call doAbortRenderingOnMainThreadInstead
      **/
     void abortRendering(bool blocking);
-signals:
+Q_SIGNALS:
     
     void s_doTreatOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
@@ -533,11 +533,11 @@ public:
     
     bool hasThreadsWorking() const;
     
-public slots:
+public Q_SLOTS:
     
     void doTreatProducedFrameOnMainThread(const BufferableObjectList& frames);
     
-signals:
+Q_SIGNALS:
     
     void s_treatProducedFrameOnMainThread(const BufferableObjectList& frames);
     
@@ -614,7 +614,7 @@ public:
      **/
     bool hasThreadsWorking() const;
     
-public slots:
+public Q_SLOTS:
 
     
     /**
@@ -637,7 +637,7 @@ public slots:
     void abortRendering_Blocking() { abortRendering(true); }
 
     
-signals:
+Q_SIGNALS:
     
     /**
      * @brief Emitted when the fps has changed
@@ -674,12 +674,12 @@ protected:
 private:
     
     /**
-     * The following functions are called by the OutputThreadScheduler to emit the corresponding signals
+     * The following functions are called by the OutputThreadScheduler to Q_EMIT the corresponding signals
      **/
-    void s_fpsChanged(double actual,double desired) { emit fpsChanged(actual, desired); }
-    void s_frameRendered(int time) { emit frameRendered(time); }
-    void s_renderFinished(int retCode) { emit renderFinished(retCode); }
-    void s_refreshAllKnobs() { emit refreshAllKnobs(); }
+    void s_fpsChanged(double actual,double desired) { Q_EMIT fpsChanged(actual, desired); }
+    void s_frameRendered(int time) { Q_EMIT frameRendered(time); }
+    void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
+    void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
     boost::scoped_ptr<RenderEnginePrivate> _imp;
 };
 

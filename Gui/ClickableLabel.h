@@ -69,7 +69,7 @@ public:
 
     void setSunken(bool s);
 
-signals:
+Q_SIGNALS:
     void clicked(bool);
 
 private:

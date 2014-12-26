@@ -239,20 +239,23 @@ TrackerGui::drawOverlays(double scaleX,
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
 
         ///For each instance: <pointer,selected ? >
-        const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-        for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            if (it->first->isNodeDisabled()) {
+        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            
+            boost::shared_ptr<Natron::Node> instance = it->first.lock();
+            
+            if (instance->isNodeDisabled()) {
                 continue;
             }
             if (it->second) {
                 ///The track is selected, use the plug-ins interact
-                Natron::EffectInstance* effect = it->first->getLiveInstance();
+                Natron::EffectInstance* effect = instance->getLiveInstance();
                 assert(effect);
                 effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
                 effect->drawOverlay_public(scaleX,scaleY);
             } else {
                 ///Draw a custom interact, indicating the track isn't selected
-                boost::shared_ptr<KnobI> newInstanceKnob = it->first->getKnobByName("center");
+                boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
                 assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
                 Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
                 assert(dblKnob);
@@ -348,10 +351,12 @@ TrackerGui::penDown(double scaleX,
 
     _imp->viewer->getViewer()->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        if ( it->second && !it->first->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = it->first->getLiveInstance();
+    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        if ( it->second && !instance->isNodeDisabled() ) {
+            Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
@@ -359,8 +364,10 @@ TrackerGui::penDown(double scaleX,
     }
 
     double selectionTol = pixelScale.first * 10.;
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        boost::shared_ptr<KnobI> newInstanceKnob = it->first->getKnobByName("center");
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
         assert(dblKnob);
@@ -371,7 +378,7 @@ TrackerGui::penDown(double scaleX,
         if ( ( pos.x() >= (x - selectionTol) ) && ( pos.x() <= (x + selectionTol) ) &&
              ( pos.y() >= (y - selectionTol) ) && ( pos.y() <= (y + selectionTol) ) ) {
             if (!it->second) {
-                _imp->panel->selectNode( it->first, modCASIsControl(e) );
+                _imp->panel->selectNode( instance, modCASIsControl(e) );
             }
             didSomething = true;
         }
@@ -419,11 +426,13 @@ TrackerGui::penMotion(double scaleX,
                       QMouseEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        if ( it->second && !it->first->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = it->first->getLiveInstance();
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        if ( it->second && !instance->isNodeDisabled() ) {
+            Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
             if ( effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos) ) {
@@ -449,11 +458,13 @@ TrackerGui::penUp(double scaleX,
                   QMouseEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        if ( it->second && !it->first->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = it->first->getLiveInstance();
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        if ( it->second && !instance->isNodeDisabled() ) {
+            Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
@@ -482,10 +493,12 @@ TrackerGui::keyDown(double scaleX,
 
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        if ( it->second && !it->first->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = it->first->getLiveInstance();
+    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        if ( it->second && !instance->isNodeDisabled() ) {
+            Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyDown_public(scaleX, scaleY, natronKey, natronMod);
@@ -554,10 +567,12 @@ TrackerGui::keyUp(double scaleX,
 
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        if ( it->second && !it->first->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = it->first->getLiveInstance();
+    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        if ( it->second && !instance->isNodeDisabled() ) {
+            Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyUp_public(scaleX, scaleY, natronKey, natronMod);
@@ -585,10 +600,12 @@ TrackerGui::loseFocus(double scaleX,
 
     _imp->controlDown = 0;
 
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        if ( it->second && !it->first->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = it->first->getLiveInstance();
+    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        if ( it->second && !instance->isNodeDisabled() ) {
+            Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
             didSomething |= effect->onOverlayFocusLost_public(scaleX, scaleY);
@@ -608,9 +625,11 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
     _imp->viewer->getViewer()->getSelectionRectangle(l, r, b, t);
 
     std::list<Natron::Node*> currentSelection;
-    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        boost::shared_ptr<KnobI> newInstanceKnob = it->first->getKnobByName("center");
+    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        
+        boost::shared_ptr<Node> instance = it->first.lock();
+        boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
         assert(dblKnob);
@@ -619,8 +638,8 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         y = dblKnob->getValue(1);
         if ( (x >= l) && (x <= r) && (y >= b) && (y <= t) ) {
             ///assert that the node is really not part of the selection
-            assert( std::find( currentSelection.begin(),currentSelection.end(),it->first.get() ) == currentSelection.end() );
-            currentSelection.push_back( it->first.get() );
+            assert( std::find( currentSelection.begin(),currentSelection.end(),instance.get() ) == currentSelection.end() );
+            currentSelection.push_back( instance.get() );
         }
     }
     _imp->panel->selectNodes( currentSelection, (_imp->controlDown > 0) );

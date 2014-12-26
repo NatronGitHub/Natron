@@ -196,7 +196,7 @@ SpinBox::interpretReturn()
 {
     if ( validateText() ) {
         //setValue_internal(text().toDouble(), true, true); // force a reformat
-        emit valueChanged( value() );
+        Q_EMIT valueChanged( value() );
     }
 }
 
@@ -269,7 +269,7 @@ SpinBox::increment(int delta,
         val = std::max( miniD, std::min(val, maxiD) );
         if (val != oldVal) {
             setValue(val);
-            emit valueChanged(val);
+            Q_EMIT valueChanged(val);
         }
         
         return;
@@ -548,7 +548,7 @@ SpinBox::increment(int delta,
     // Set the selection
     assert( newPos + 1 <= newStr.size() );
     setSelection(newPos + 1, -1);
-    emit valueChanged( value() );
+    Q_EMIT valueChanged( value() );
 } // increment
 
 void
@@ -599,7 +599,7 @@ SpinBox::focusOutEvent(QFocusEvent* e)
     if (newValue != _imp->valueWhenEnteringFocus) {
         if ( validateText() ) {
             //setValue_internal(text().toDouble(), true, true); // force a reformat
-            emit valueChanged( value() );
+            Q_EMIT valueChanged( value() );
         }
     }
     LineEdit::focusOutEvent(e);

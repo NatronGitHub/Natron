@@ -33,10 +33,15 @@
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 #define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
+
+//Define here the name of the Engine module that was chosen in the typesystem_engine.xml
+#define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
+
 #define NATRON_ENV_VAR_NAME_START_TAG "<Name>"
 #define NATRON_ENV_VAR_NAME_END_TAG "</Name>"
 #define NATRON_ENV_VAR_VALUE_START_TAG "<Value>"
 #define NATRON_ENV_VAR_VALUE_END_TAG "</Value>"
+
 #define NATRON_PROJECT_ENV_VAR_MAX_RECURSION 100
 #define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"

@@ -536,7 +536,7 @@ HistogramCPU::run()
             QMutexLocker l(&_imp->producedMutex);
             _imp->produced.push_back(ret);
         }
-        emit histogramProduced();
+        Q_EMIT histogramProduced();
     }
 } // run
 

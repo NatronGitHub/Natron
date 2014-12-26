@@ -228,7 +228,7 @@ NodeBackDrop::setPos_mt_safe(const QPointF & pos)
         QMutexLocker l(&_imp->positionMutex);
         setPos(pos);
     }
-    emit positionChanged();
+    Q_EMIT positionChanged();
 }
 
 QPointF

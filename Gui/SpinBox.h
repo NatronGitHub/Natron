@@ -11,7 +11,7 @@
 
 #ifndef NATRON_GUI_FEEDBACKSPINBOX_H_
 #define NATRON_GUI_FEEDBACKSPINBOX_H_
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Gui/LineEdit.h"
@@ -84,11 +84,11 @@ private:
 
     bool validateText();
 
-signals:
+Q_SIGNALS:
 
     void valueChanged(double d);
 
-public slots:
+public Q_SLOTS:
 
     void setValue(double d);
 

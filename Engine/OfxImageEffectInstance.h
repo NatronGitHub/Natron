@@ -12,7 +12,7 @@
 
 #include <string>
 #include <cstdarg>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include <ofxhImageEffect.h>

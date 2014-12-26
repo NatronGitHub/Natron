@@ -30,7 +30,9 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 
+
 #include <nuke/fnOfxExtensions.h>
+
 
 using namespace Natron;
 
@@ -555,8 +557,6 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.y2 = optionalBounds->y2;
     }
 
-    
-
     Natron::ImageComponentsEnum comps =  ofxComponentsToNatronComponents( getComponents() );
     Natron::ImageBitDepthEnum bitDepth = ofxDepthToNatronDepth( getPixelDepth() );
     double par = getAspectRatio();
@@ -612,7 +612,9 @@ OfxClipInstance::getImageInternal(OfxTime time,
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
                                            view,false,pixelRoI,RectD(),comps,bitDepth,3,true,inputImages);
         image = inputNode->renderRoI(args);
+
         _nodeInstance->addThreadLocalInputImageTempPointer(image);
+
         renderWindow = pixelRoI;
         
     } else {
@@ -845,6 +847,7 @@ OfxClipInstance::getAssociatedNode() const
         return _nodeInstance->getInput( getInputNb() );
     }
 }
+
 
 
 void

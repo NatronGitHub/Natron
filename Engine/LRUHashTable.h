@@ -30,7 +30,7 @@
 #include <map>
 #include <list>
 #include <utility>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(redeclared-class-member)
 #include <boost/bimap/list_of.hpp>

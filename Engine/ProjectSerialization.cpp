@@ -20,23 +20,11 @@ ProjectSerialization::initialize(const Natron::Project* project)
 {
     ///All the code in this function is MT-safe
 
-    std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
-    std::vector<boost::shared_ptr<Natron::Node> > nodes = project->getCurrentNodes();
-
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        if ( nodes[i]->isActivated() || (nodes[i]->isMultiInstance() && nodes[i]->getParentMultiInstanceName().empty())) {
-            activeNodes.push_back(nodes[i]);
-        }
-    }
-
-    _serializedNodes.clear();
-    for (U32 i = 0; i < activeNodes.size(); ++i) {
-        NodeSerialization state(activeNodes[i]);
-        _serializedNodes.push_back(state);
-    }
+    _nodes.initialize(*project);
+    
     project->getAdditionalFormats(&_additionalFormats);
 
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = project->getKnobs();
+    std::vector< boost::shared_ptr<KnobI> > knobs = project->getKnobs_mt_safe();
     for (U32 i = 0; i < knobs.size(); ++i) {
         Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
         Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );

@@ -1214,7 +1214,7 @@ RotoDrawableItem::setOverlayColor(const double *color)
         QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, color, sizeof(double) * 4);
     }
-    emit overlayColorChanged();
+    Q_EMIT overlayColorChanged();
 }
 
 boost::shared_ptr<Bool_Knob> RotoDrawableItem::getActivatedKnob() const
@@ -1918,7 +1918,7 @@ Bezier::clone(const RotoItem* other)
         return;
     }
     
-    emit aboutToClone();
+    Q_EMIT aboutToClone();
     {
         QMutexLocker l(&itemMutex);
         assert( otherBezier->_imp->featherPoints.size() == otherBezier->_imp->points.size() );
@@ -1937,7 +1937,7 @@ Bezier::clone(const RotoItem* other)
         _imp->finished = otherBezier->_imp->finished;
     }
     RotoDrawableItem::clone(other);
-    emit cloned();
+    Q_EMIT cloned();
 }
 
 Bezier::~Bezier()
@@ -2005,7 +2005,7 @@ Bezier::addControlPoint(double x,
         }
         _imp->featherPoints.insert(_imp->featherPoints.end(),fp);
     }
-    emit controlPointAdded();
+    Q_EMIT controlPointAdded();
     return p;
 }
 
@@ -2145,7 +2145,7 @@ Bezier::addControlPointAfterIndex(int index,
             setKeyframe(currentTime);
         }
     }
-    emit controlPointAdded();
+    Q_EMIT controlPointAdded();
     return p;
 } // addControlPointAfterIndex
 
@@ -2271,7 +2271,7 @@ Bezier::removeControlPointByIndex(int index)
         std::advance(itF, index);
         _imp->featherPoints.erase(itF);
     }
-    emit controlPointRemoved();
+    Q_EMIT controlPointRemoved();
 }
 
 #pragma message WARN("Roto: refactor the following!!! too much copy/paste between these move* functions!!!")
@@ -2353,7 +2353,7 @@ Bezier::movePointByIndex(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 } // movePointByIndex
 
@@ -2412,7 +2412,7 @@ Bezier::moveFeatherByIndex(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 } // moveFeatherByIndex
 
@@ -2454,7 +2454,7 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
     }
 
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 }
 
@@ -2522,7 +2522,7 @@ Bezier::moveLeftBezierPoint(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 } // moveLeftBezierPoint
 
@@ -2591,7 +2591,7 @@ Bezier::moveRightBezierPoint(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 } // moveRightBezierPoint
 
@@ -2641,7 +2641,7 @@ Bezier::setLeftBezierPoint(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 }
 
@@ -2690,7 +2690,7 @@ Bezier::setRightBezierPoint(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 }
 
@@ -2746,7 +2746,7 @@ Bezier::setPointAtIndex(bool feather,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 }
 
@@ -2797,7 +2797,7 @@ Bezier::movePointLeftAndRightIndex(BezierCP & p,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 }
 
@@ -2850,7 +2850,7 @@ Bezier::smoothPointAtIndex(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 }
 
@@ -2883,7 +2883,7 @@ Bezier::cuspPointAtIndex(int index,
         setKeyframe(time);
     }
     if (keySet) {
-        emit keyframeSet(time);
+        Q_EMIT keyframeSet(time);
     }
 }
 
@@ -2928,7 +2928,7 @@ Bezier::setKeyframe(int time)
             }
         }
     }
-    emit keyframeSet(time);
+    Q_EMIT keyframeSet(time);
 }
 
 void
@@ -2951,7 +2951,7 @@ Bezier::removeKeyframe(int time)
             (*fp)->removeKeyframe(time);
         }
     }
-    emit keyframeRemoved(time);
+    Q_EMIT keyframeRemoved(time);
 }
 
 void
@@ -2982,8 +2982,8 @@ Bezier::moveKeyframe(int oldTime,int newTime)
         (*fp)->setRightBezierPointAtTime(newTime, rx, ry);
         
     }
-    emit keyframeRemoved(oldTime);
-    emit keyframeSet(newTime);
+    Q_EMIT keyframeRemoved(oldTime);
+    Q_EMIT keyframeSet(newTime);
 }
 
 int
@@ -3701,7 +3701,7 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 ////////////////////////////////////RotoContext////////////////////////////////////
 
 
-RotoContext::RotoContext(Natron::Node* node)
+RotoContext::RotoContext(const boost::shared_ptr<Natron::Node>& node)
     : _imp( new RotoContextPrivate(node) )
 {
    
@@ -3769,7 +3769,7 @@ RotoContext::addLayer()
 
         _imp->lastInsertedItem = item;
     }
-    emit itemInserted(RotoContext::OTHER);
+    Q_EMIT itemInserted(RotoContext::OTHER);
 
     clearSelection(RotoContext::OTHER);
     select(item, RotoContext::OTHER);
@@ -3874,10 +3874,16 @@ RotoContext::isRippleEditEnabled() const
     return _imp->rippleEdit;
 }
 
+boost::shared_ptr<Natron::Node>
+RotoContext::getNode() const
+{
+    return _imp->node.lock();
+}
+
 int
 RotoContext::getTimelineCurrentTime() const
 {
-    return _imp->node->getApp()->getTimeLine()->currentFrame();
+    return getNode()->getApp()->getTimeLine()->currentFrame();
 }
 
 boost::shared_ptr<Bezier>
@@ -3926,7 +3932,7 @@ RotoContext::makeBezier(double x,
         parentLayer->addItem(curve);
     }
     _imp->lastInsertedItem = curve;
-    emit itemInserted(RotoContext::OTHER);
+    Q_EMIT itemInserted(RotoContext::OTHER);
 
     clearSelection(RotoContext::OTHER);
     select(curve, RotoContext::OTHER);
@@ -3968,7 +3974,7 @@ RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
             }
         }
     }
-    emit itemRemoved(item,(int)reason);
+    Q_EMIT itemRemoved(item,(int)reason);
 }
 
 void
@@ -3985,7 +3991,7 @@ RotoContext::removeItem(const boost::shared_ptr<RotoItem>& item,
         }
         removeItemRecursively(item,reason);
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4010,7 +4016,7 @@ RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
         }
         _imp->lastInsertedItem = item;
     }
-    emit itemInserted(reason);
+    Q_EMIT itemInserted(reason);
 }
 
 const std::list< boost::shared_ptr<RotoLayer> > &
@@ -4208,7 +4214,7 @@ RotoContext::select(const boost::shared_ptr<RotoItem> & b,
         QMutexLocker l(&_imp->rotoContextMutex);
         selectInternal(b);
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4221,7 +4227,7 @@ RotoContext::select(const std::list<boost::shared_ptr<Bezier> > & beziers,
             selectInternal(*it);
         }
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4234,7 +4240,7 @@ RotoContext::select(const std::list<boost::shared_ptr<RotoItem> > & items,
             selectInternal(*it);
         }
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4245,7 +4251,7 @@ RotoContext::deselect(const boost::shared_ptr<RotoItem> & b,
         QMutexLocker l(&_imp->rotoContextMutex);
         deselectInternal(b);
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4258,7 +4264,7 @@ RotoContext::deselect(const std::list<boost::shared_ptr<Bezier> > & beziers,
             deselectInternal(*it);
         }
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4271,7 +4277,7 @@ RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> > & items,
             deselectInternal(*it);
         }
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4283,7 +4289,7 @@ RotoContext::clearSelection(RotoContext::SelectionReason reason)
             deselectInternal( _imp->selectedItems.front() );
         }
     }
-    emit selectionChanged( (int)reason );
+    Q_EMIT selectionChanged( (int)reason );
 }
 
 void
@@ -4490,7 +4496,7 @@ RotoContext::setLastItemLocked(const boost::shared_ptr<RotoItem> &item)
         QMutexLocker l(&_imp->rotoContextMutex);
         _imp->lastLockedItem = item;
     }
-    emit itemLockedChanged();
+    Q_EMIT itemLockedChanged();
 }
 
 boost::shared_ptr<RotoItem>
@@ -4622,7 +4628,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4654,7 +4660,7 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
-        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4721,7 +4727,7 @@ RotoContext::getCurvesByRenderOrder() const
     std::list< boost::shared_ptr<Bezier> > ret;
     
     ///Note this might not be the timeline's current frame if this is a render thread.
-    int time = _imp->node->getLiveInstance()->getThreadLocalRenderTime();
+    int time = getNode()->getLiveInstance()->getThreadLocalRenderTime();
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         if ( !_imp->layers.empty() ) {
@@ -4824,7 +4830,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    _imp->node->getLiveInstance()->evaluate_public(NULL, true,Natron::eValueChangedReasonUserEdited);
+    getNode()->getLiveInstance()->evaluate_public(NULL, true,Natron::eValueChangedReasonUserEdited);
 }
 
 U64
@@ -4871,25 +4877,25 @@ RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item)
     _imp->inverted->setAllDimensionsEnabled(enabled);
 #endif
 
-    emit itemLockedChanged();
+    Q_EMIT itemLockedChanged();
 }
 
 void
 RotoContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& item)
 {
-    emit itemNameChanged(item);
+    Q_EMIT itemNameChanged(item);
 }
 
 std::string
 RotoContext::getRotoNodeName() const
 {
-    return _imp->node->getName_mt_safe();
+    return getNode()->getName_mt_safe();
 }
 
 void
 RotoContext::emitRefreshViewerOverlays()
 {
-    emit refreshViewerOverlays();
+    Q_EMIT refreshViewerOverlays();
 }
 
 void
@@ -4996,12 +5002,13 @@ RotoContext::renderMask(bool useCache,
         }
     }
 
-
+    boost::shared_ptr<Node> node = getNode();
+    
     boost::shared_ptr<Natron::ImageParams> params;
     ImagePtr image;
     
     if (!byPassCache) {
-        _imp->node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components,
+        node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components,
                                                                            depth, components, 3,/*nodeRoD,*/false, inputImages, &image);
         if (image) {
             params = image->getParams();
@@ -5011,7 +5018,7 @@ RotoContext::renderMask(bool useCache,
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
     if (!image) {
-        ImageLocker imgLocker(_imp->node->getLiveInstance());
+        ImageLocker imgLocker(node->getLiveInstance());
         
         params = Natron::Image::makeParams( 0,
                                            nodeRoD,
@@ -5098,7 +5105,7 @@ RotoContext::renderMask(bool useCache,
 
 
     ////////////////////////////////////
-    if ( _imp->node->aborted() ) {
+    if ( node->aborted() ) {
         //if render was aborted, remove the frame from the cache as it contains only garbage
         appPTR->removeFromNodeCache(image);
     } else {

@@ -1,0 +1,511 @@
+<?xml version="1.0"?>
+<!--  Natron
+ 
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ contact: immarespond at gmail dot com
+ -->
+<typesystem package="NatronEngine">
+    
+    <!--Load QtCore typesystem-->
+    <load-typesystem name="typesystem_core.xml" generate="no" />
+    
+    <!--Primitives-->
+    <primitive-type name="bool"/>
+    <primitive-type name="double"/>
+    <primitive-type name="real"/>
+    <primitive-type name="int"/>
+    <primitive-type name="short"/>
+    <primitive-type name="unsigned short"/>
+    <primitive-type name="ushort"/>
+    <primitive-type name="unsigned int" />
+    <primitive-type name="signed int" />
+    <primitive-type name="char"/>
+    <primitive-type name="unsigned char"/>
+    <primitive-type name="long"/>
+    <primitive-type name="unsigned long"/>
+    <primitive-type name="long long"/>
+    <primitive-type name="unsigned long long"/>
+    <primitive-type name="std::string"/>
+    
+    <primitive-type name="std::size_t" target-lang-api-name="PyLong">
+        <conversion-rule>
+            <native-to-target>
+                return PyLong_FromSize_t(%in);
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyLong">
+                    %out = %OUTTYPE(PyLong_AsSsize_t(%in));
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </primitive-type>
+    
+    <!--std::pair from/to Python pair-->
+    <container-type name="std::pair" type="pair">
+        <include file-name="utility" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                PyObject* %out = PyTuple_New(2);
+                PyTuple_SET_ITEM(%out, 0, %CONVERTTOPYTHON[%INTYPE_0](%in.first));
+                PyTuple_SET_ITEM(%out, 1, %CONVERTTOPYTHON[%INTYPE_1](%in.second));
+                return %out;
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    %out.first = %CONVERTTOCPP[%OUTTYPE_0](PySequence_Fast_GET_ITEM(%in, 0));
+                    %out.second = %CONVERTTOCPP[%OUTTYPE_1](PySequence_Fast_GET_ITEM(%in, 1));
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--Templates for type conversions used many times-->
+    <template name="stdListToPyList">
+        PyObject* %out = PyList_New((int) %in.size());
+        %INTYPE::const_iterator it = %in.begin();
+        for (int idx = 0; it != %in.end(); ++it, ++idx) {
+        %INTYPE_0 cppItem(*it);
+        PyList_SET_ITEM(%out, idx, %CONVERTTOPYTHON[%INTYPE_0](cppItem));
+        }
+        return %out;
+    </template>
+    <template name="pyListToStdList">
+        for (int i = 0; i &lt; PySequence_Size(%in); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, i));
+        %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        %out.push_back(cppItem);
+        }
+    </template>
+    
+    <template name="stdVectorToPyList">
+        %INTYPE::size_type vectorSize = %in.size();
+        PyObject* %out = PyList_New((int) vectorSize);
+        for (%INTYPE::size_type idx = 0; idx &lt; vectorSize; ++idx) {
+        %INTYPE_0 cppItem(%in[idx]);
+        PyList_SET_ITEM(%out, idx, %CONVERTTOPYTHON[%INTYPE_0](cppItem));
+        }
+        return %out;
+    </template>
+    <template name="pySeqToStdVector">
+        int vectorSize = PySequence_Size(%in);
+        %out.reserve(vectorSize);
+        for (int idx = 0; idx &lt; vectorSize; ++idx) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, idx));
+        %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        %out.push_back(cppItem);
+        }
+    </template>
+    <template name="stdMapToPyDict">
+        PyObject* %out = PyDict_New();
+        %INTYPE::const_iterator it = %in.begin();
+        for (; it != %in.end(); ++it) {
+        %INTYPE_0 key = it.key();
+        %INTYPE_1 value = it.value();
+        PyObject* pyKey = %CONVERTTOPYTHON[%INTYPE_0](key);
+        PyObject* pyValue = %CONVERTTOPYTHON[%INTYPE_1](value);
+        PyDict_SetItem(%out, pyKey, pyValue);
+        Py_DECREF(pyKey);
+        Py_DECREF(pyValue);
+        }
+        return %out;
+    </template>
+    <template name="pyDictToStdMap">
+        PyObject* key;
+        PyObject* value;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(%in, &amp;pos, &amp;key, &amp;value)) {
+        %OUTTYPE_0 cppKey = %CONVERTTOCPP[%OUTTYPE_0](key);
+        %OUTTYPE_1 cppValue = %CONVERTTOCPP[%OUTTYPE_1](value);
+        %out.insert(cppKey, cppValue);
+        }
+    </template>
+
+    
+    <!--std::list from/to Python list-->
+    <container-type name="std::list" type="list">
+        <include file-name="list" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="stdListToPyList"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    <insert-template name="pyListToStdList"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::vector from/to Python list-->
+    <container-type name="std::vector" type="vector">
+        <include file-name="vector" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="stdVectorToPyList"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    <insert-template name="pySeqToStdVector"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::set from/to Python map-->
+    <container-type name="std::set" type="set">
+        <include file-name="set" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="stdListToPyList"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PySequence">
+                    <insert-template name="pyListToStdList"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+
+    <!--std::map from/to Python map-->
+    <container-type name="std::map" type="map">
+        <include file-name="map" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="stdMapToPyDict"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyDict">
+                    <insert-template name="pyDictToStdMap"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+    <!--std::multimap from/to Python map-->
+    <container-type name="std::multimap" type="multi-map">
+        <include file-name="map" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                <insert-template name="stdMapToPyDict"/>
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="PyDict">
+                    <insert-template name="pyDictToStdMap"/>
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+    
+     <!--Natron global enums-->
+    <namespace-type name="Natron">
+    <enum-type name="StatusEnum"/>
+    <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
+    <enum-type name="KeyframeTypeEnum"/>
+    <enum-type name="PixmapEnum"/>
+    <enum-type name="ValueChangedReasonEnum"/>
+    <enum-type name="AnimationLevelEnum"/>
+    <enum-type name="ImageComponentsEnum"/>
+    <enum-type name="ImageBitDepthEnum"/>
+    <enum-type name="ImagePremultiplicationEnum"/>
+    <enum-type name="ViewerCompositingOperatorEnum"/>
+    <enum-type name="ViewerColorSpaceEnum"/>
+    <enum-type name="OrientationEnum"/>
+    <enum-type name="PlaybackModeEnum"/>
+    </namespace-type>
+    
+   
+
+    <object-type name="App">
+        <modify-function signature="createNode(std::string,int, int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getNode(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getNodes()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) effects.size());
+                int idx = 0;
+                for (std::list&lt;Effect*&gt;::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Effect*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+
+        </modify-function>
+    </object-type>
+        
+    <object-type name="Effect" copyable="false">
+        <modify-function signature="getInput(int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParams()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Param*&gt; params = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) params.size());
+                int idx = 0;
+                for (std::list&lt;Param*&gt;::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+                    PyObject* item = %CONVERTTOPYTHON[Param*](*it);
+                    // Ownership transferences.
+                    Shiboken::Object::getOwnership(item);
+                    PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+
+    </object-type>
+    <object-type name="Param"/>
+    <object-type name="AnimatedParam">
+        <modify-function signature="getKeyTime(int,int,double*)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double time;
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;time);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[bool](%0));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](time));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="IntParam"/>
+    <value-type name="Int2DTuple"/>
+    <object-type name="Int2DParam">
+        <modify-function signature="get(Int2DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="get(int,Int2DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <value-type name="Int3DTuple"/>
+    <object-type name="Int3DParam">
+        <modify-function signature="get(Int3DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="get(int,Int3DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Int3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Int3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Int3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="DoubleParam"/>
+    <value-type name="Double2DTuple"/>
+    <object-type name="Double2DParam">
+        <modify-function signature="get(Double2DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="get(int,Double2DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double2DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double2DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double2DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <value-type name="Double3DTuple"/>
+    <object-type name="Double3DParam">
+        <modify-function signature="get(Double3DTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="get(int,Double3DTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="Double3DTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Double3DTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[Double3DTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <value-type name="ColorTuple"/>
+    <object-type name="ColorParam">
+        <modify-function signature="get(ColorTuple&amp;)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="ColorTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                ColorTuple t;
+                %CPPSELF.%FUNCTION_NAME(t);
+                %PYARG_0 = %CONVERTTOPYTHON[ColorTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="get(int,ColorTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="ColorTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                ColorTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[ColorTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="BooleanParam"/>
+    <object-type name="ChoiceParam"/>
+    <object-type name="ButtonParam"/>
+    <object-type name="StringParamBase"/>
+    <object-type name="StringParam"/>
+    <object-type name="FileParam"/>
+    <object-type name="OutputFileParam"/>
+    <object-type name="PathParam"/>
+    <object-type name="ParametricParam">
+        <modify-function signature="getNthControlPoint(int,int,double*,double*)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double key,value;
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;key,&amp;value);
+                %PYARG_0 = PyTuple_New(3);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[Natron::StatusEnum](%0));
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](key));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](value));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getCurveColor(int,ColorTuple&amp;)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="ColorTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                ColorTuple t;
+                %CPPSELF.%FUNCTION_NAME(%1,t);
+                %PYARG_0 = %CONVERTTOPYTHON[ColorTuple](t);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    
+    <rejection class="App" field-name="_instance"/>
+    <rejection class="Effect" field-name="_node"/>
+    <rejection class="*" field-name="_imp"/>
+    
+    <!--Global functions to Natron process-->
+    <function signature="getPluginIDs()"/>
+    <function signature="getNumInstances()"/>
+    <function signature="getInstance(int)"/>
+        
+    
+
+</typesystem>
+
+

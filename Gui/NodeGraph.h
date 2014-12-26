@@ -20,12 +20,13 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Engine/NodeGraphI.h"
 #include "Global/GlobalDefines.h"
 
 class QVBoxLayout;
@@ -41,23 +42,26 @@ class NodeSerialization;
 class NodeGuiSerialization;
 class NodeBackDropSerialization;
 class NodeBackDrop;
+class NodeCollection;
 struct NodeGraphPrivate;
 namespace Natron {
 class Node;
 }
 
-class NodeGraph
-    : public QGraphicsView, public boost::noncopyable
+class NodeGraph : public QGraphicsView, public NodeGraphI, public boost::noncopyable
 {
     Q_OBJECT
 
 public:
 
     explicit NodeGraph(Gui* gui,
+                       const boost::shared_ptr<NodeCollection>& group,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
-    virtual ~NodeGraph() OVERRIDE;
+    virtual ~NodeGraph();
+    
+    boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
@@ -151,7 +155,7 @@ public:
     
     bool areOptionalInputsAutoHidden() const;
 
-   public slots:
+   public Q_SLOTS:
 
     void deleteSelection();
 
@@ -268,7 +272,7 @@ public:
     
     virtual ~FindNodeDialog();
     
-public slots:
+public Q_SLOTS:
     
     void onOkClicked();
     void onCancelClicked();

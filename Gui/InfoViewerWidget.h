@@ -52,7 +52,7 @@ public:
     void setMousePos(QPoint p);
 
     static void removeTrailingZeroes(QString& str);
-public slots:
+public Q_SLOTS:
 
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();

@@ -1,0 +1,184 @@
+//  Natron
+//
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
+#ifndef NODEGROUP_H
+#define NODEGROUP_H
+
+#include <list>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
+#include "Engine/EffectInstance.h"
+
+typedef boost::shared_ptr<Natron::Node> NodePtr;
+typedef std::list<NodePtr> NodeList;
+
+class NodeGraphI;
+class ViewerInstance;
+struct NodeCollectionPrivate;
+class NodeCollection : public QObject
+{
+    
+    Q_OBJECT
+    
+public:
+    
+    NodeCollection(AppInstance* app);
+    
+    virtual ~NodeCollection();
+    
+    void setNodeGraphPointer(NodeGraphI* graph);
+    
+    void discardNodeGraphPointer();
+    
+    NodeGraphI* getNodeGraph() const;
+    
+    AppInstance* getApplication() const;
+    
+    /**
+     * @brief Returns a copy of the nodes within the collection. MT-safe.
+     **/
+    NodeList getNodes() const;
+    
+    /**
+     * @brief Adds a node to the collection. MT-safe.
+     **/
+    void addNode(const NodePtr& node);
+    
+    /**
+     * @brief Removes a node from the collection. MT-safe.
+     **/
+    void removeNode(const NodePtr& node);
+    
+    /**
+     * @brief Removes all nodes within the collection. MT-safe.
+     **/
+    void clearNodes(bool emitSignal);
+    
+    /**
+     * @brief Set the name of the node to be a unique node name within the collection. MT-safe.
+     **/
+    void initNodeName(Natron::Node* node);
+    
+    /**
+     * @brief Returns true if there is one or more nodes in the collection.
+     **/
+    bool hasNodes() const;
+    
+    /**
+     * @brief Returns true if a node is currently rendering in this collection. This is recursive and will look
+     * into all sub collections too
+     **/
+    bool hasNodeRendering() const;
+    
+    /**
+     * @brief Connects the node 'input' to the node 'output' on the input number 'inputNumber'
+     * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
+     * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
+     **/
+    bool connectNodes(int inputNumber,const NodePtr& input,Natron::Node* output,bool force = false);
+    
+    /**
+     * @brief Same as above where inputName is the name of the node input.
+     **/
+    bool connectNodes(int inputNumber,const std::string & inputName,Natron::Node* output);
+    
+    /**
+     * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
+     * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
+     * 1 input, and it was connected, it will connect output to the input of  'input'.
+     **/
+    bool disconnectNodes(Natron::Node* input,Natron::Node* output,bool autoReconnect = false);
+
+    
+    /**
+     * @brief Attempts to connect automatically selected and created together, depending on their role (output / filter / input).
+     **/
+    bool autoConnectNodes(const NodePtr& selected,const NodePtr& created);
+    
+    /**
+     * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
+     * If no such node could be found, NULL is returned.
+     **/
+    NodePtr getNodeByName(const std::string & name) const;
+    
+    /**
+     * @brief Same as getNodeByName() but recursive on each sub groups. As a node in a subgroup can have the same name
+     * of a node in another group, the node name is "specified", e.g: <g>group1</g><g>group1</g>Blur1 to uniquely identify it.
+     * @see Node::getFullySpecifiedName
+     **/
+    NodePtr getNodeByFullySpecifiedName(const std::string& fullySpecifiedName) const;
+    
+    /**
+     * @brief Refresh recursively all previews and all viewers of each node and each sub-group
+     **/
+    void refreshViewersAndPreviews();
+    void refreshPreviews();
+    void forceRefreshPreviews();
+    
+    /**
+     * @brief Set the aborted flag on all nodes recursively on each subgroup.
+     **/
+    void setAllNodesAborted(bool aborted);
+
+    /**
+     * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
+     * change the file-path to be relative to the newProjectPath.
+     **/
+    void fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath,bool blockEval);
+    
+    
+    /**
+     * @brief For all active nodes, if it has a file-path parameter using the oldName of a variable, it will turn it into the
+     * newName.
+     **/
+    void fixPathName(const std::string& oldName,const std::string& newName);
+    
+    /**
+     * @brief Get a list of all active nodes
+     **/
+    void getActiveNodes(NodeList* nodes) const;
+    
+    /**
+     * @brief Get all viewers in the group and sub groups
+     **/
+    void getViewers(std::list<ViewerInstance*>* viewers) const;
+    
+    /**
+     * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
+     **/
+    void quitAnyProcessingForAllNodes();
+    
+Q_SIGNALS:
+    
+    void nodesCleared();
+    
+private:
+    
+    boost::scoped_ptr<NodeCollectionPrivate> _imp;
+};
+
+struct NodeGroupPrivate;
+class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
+{
+public:
+    
+    NodeGroup(const NodePtr &node);
+    
+    virtual ~NodeGroup();
+    
+private:
+    
+    boost::scoped_ptr<NodeGroupPrivate> _imp;
+};
+
+#endif // NODEGROUP_H

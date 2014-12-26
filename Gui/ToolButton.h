@@ -19,11 +19,11 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 class PluginGroupNode;
-class AppInstance;
+class GuiAppInstance;
 
 class QMenu;
 class QAction;
@@ -36,7 +36,7 @@ class ToolButton
 
 public:
 
-    ToolButton( AppInstance* app,
+    ToolButton( GuiAppInstance* app,
                 PluginGroupNode* pluginToolButton,
                 const QString & pluginID,
                 int major,
@@ -70,7 +70,7 @@ public:
 
     PluginGroupNode* getPluginToolButton() const;
 
-public slots:
+public Q_SLOTS:
 
     void onTriggered();
 

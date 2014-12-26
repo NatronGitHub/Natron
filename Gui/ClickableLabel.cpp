@@ -24,7 +24,7 @@ ClickableLabel::mousePressEvent(QMouseEvent* e)
 {
     if ( isEnabled() ) {
         _toggled = !_toggled;
-        emit clicked(_toggled);
+        Q_EMIT clicked(_toggled);
     }
     QLabel::mousePressEvent(e);
 }

@@ -173,7 +173,7 @@ void
 TableModel::onDataChanged(const QModelIndex & index)
 {
     if ( TableItem * i = item(index) ) {
-        emit s_itemChanged(i);
+        Q_EMIT s_itemChanged(i);
     }
 }
 
@@ -311,7 +311,7 @@ TableModel::setItem(int row,
     _imp->tableItems[i] = item;
 
     QModelIndex idx = QAbstractTableModel::index(row, column);
-    emit dataChanged(idx, idx);
+    Q_EMIT dataChanged(idx, idx);
 }
 
 TableItem *
@@ -326,7 +326,7 @@ TableModel::takeItem(int row,
         itm->id = -1;
         _imp->tableItems[i] = 0;
         QModelIndex ind = index(itm);
-        emit dataChanged(ind, ind);
+        Q_EMIT dataChanged(ind, ind);
     }
 
     return itm;
@@ -384,7 +384,7 @@ TableModel::removeItem(TableItem *item)
     if (i != -1) {
         _imp->tableItems[i] = 0;
         QModelIndex idx = index(item);
-        emit dataChanged(idx, idx);
+        Q_EMIT dataChanged(idx, idx);
 
         return;
     }
@@ -392,7 +392,7 @@ TableModel::removeItem(TableItem *item)
     i = _imp->horizontalHeaderItems.indexOf(item);
     if (i != -1) {
         _imp->horizontalHeaderItems[i] = 0;
-        emit headerDataChanged(Qt::Horizontal, i, i);
+        Q_EMIT headerDataChanged(Qt::Horizontal, i, i);
 
         return;
     }
@@ -423,7 +423,7 @@ TableModel::setHorizontalHeaderItem(int section,
         item->itemFlags = Qt::ItemFlags(int(item->itemFlags) | ItemIsHeaderItem);
     }
     _imp->horizontalHeaderItems[section] = item;
-    emit headerDataChanged(Qt::Horizontal, section, section);
+    Q_EMIT headerDataChanged(Qt::Horizontal, section, section);
 }
 
 TableItem *
@@ -683,12 +683,12 @@ TableModel::itemChanged(TableItem *item)
     if (item->flags() & ItemIsHeaderItem) {
         int column = _imp->horizontalHeaderItems.indexOf(item);
         if (column >= 0) {
-            emit headerDataChanged(Qt::Horizontal, column, column);
+            Q_EMIT headerDataChanged(Qt::Horizontal, column, column);
         }
     } else {
         QModelIndex idx = index(item);
         if ( idx.isValid() ) {
-            emit dataChanged(idx, idx);
+            Q_EMIT dataChanged(idx, idx);
         }
     }
 }
@@ -983,7 +983,7 @@ TableView::mouseReleaseEvent(QMouseEvent* e)
     TableItem* item = itemAt( e->pos() );
 
     if ( triggerButtonisRight(e) && index.isValid() ) {
-        emit itemRightClicked(item);
+        Q_EMIT itemRightClicked(item);
     } else {
         QTreeView::mouseReleaseEvent(e);
     }
@@ -993,7 +993,7 @@ void
 TableView::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Delete) || (e->key() == Qt::Key_Backspace) ) {
-        emit deleteKeyPressed();
+        Q_EMIT deleteKeyPressed();
         e->accept();
     }
 

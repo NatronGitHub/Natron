@@ -11,7 +11,7 @@
 
 #ifndef ROTOGUI_H
 #define ROTOGUI_H
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -203,7 +203,7 @@ public:
 
     void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & cp);
 
-signals:
+Q_SIGNALS:
 
     /**
      * @brief Emitted when the selected role changes
@@ -212,7 +212,7 @@ signals:
 
     void selectedToolChanged(int);
 
-public slots:
+public Q_SLOTS:
 
     void updateSelectionFromSelectionRectangle(bool onRelease);
 

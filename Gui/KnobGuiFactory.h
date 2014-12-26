@@ -14,7 +14,7 @@
 
 #include <string>
 #include <map>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 class KnobI;

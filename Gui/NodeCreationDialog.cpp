@@ -117,7 +117,7 @@ CompleterLineEdit::setTextFromIndex(const QModelIndex & index)
     QString text = index.data().toString();
 
     setText(text);
-    emit itemCompletionChosen();
+    Q_EMIT itemCompletionChosen();
     _imp->listView->hide();
     if (_imp->quickExitEnabled) {
         _imp->dialog->accept();
@@ -173,7 +173,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
         _imp->listView->hide();
         if (_imp->model->rowCount() == 1) {
             setText( _imp->model->index(0).data().toString() );
-            emit itemCompletionChosen();
+            Q_EMIT itemCompletionChosen();
             if (_imp->quickExitEnabled) {
                 _imp->dialog->accept();
             }
@@ -183,7 +183,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             QModelIndexList indexes = selection.indexes();
             if (indexes.size() == 1) {
                 setText( _imp->model->index( indexes[0].row() ).data().toString() );
-                emit itemCompletionChosen();
+                Q_EMIT itemCompletionChosen();
                 if (_imp->quickExitEnabled) {
                     _imp->dialog->accept();
                 }

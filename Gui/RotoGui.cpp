@@ -27,6 +27,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
@@ -309,14 +310,14 @@ RotoToolButton::handleSelection()
     QAction* curAction = defaultAction();
 
     if ( !isDown() ) {
-        emit triggered(curAction);
+        Q_EMIT triggered(curAction);
     } else {
         QList<QAction*> allAction = actions();
         for (int i = 0; i < allAction.size(); ++i) {
             if (allAction[i] == curAction) {
                 int next = ( i == (allAction.size() - 1) ) ? 0 : i + 1;
                 setDefaultAction(allAction[next]);
-                emit triggered(allAction[next]);
+                Q_EMIT triggered(allAction[next]);
                 break;
             }
         }
@@ -646,15 +647,15 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     switch (actionRole) {
     case SELECTION_ROLE:
         toolButton = _imp->selectTool;
-        emit roleChanged( (int)previousRole,(int)SELECTION_ROLE );
+        Q_EMIT roleChanged( (int)previousRole,(int)SELECTION_ROLE );
         break;
     case POINTS_EDITION_ROLE:
         toolButton = _imp->pointsEditionTool;
-        emit roleChanged( (int)previousRole,(int)POINTS_EDITION_ROLE );
+        Q_EMIT roleChanged( (int)previousRole,(int)POINTS_EDITION_ROLE );
         break;
     case BEZIER_EDITION_ROLE:
         toolButton = _imp->bezierEditionTool;
-        emit roleChanged( (int)previousRole,(int)BEZIER_EDITION_ROLE );
+        Q_EMIT roleChanged( (int)previousRole,(int)BEZIER_EDITION_ROLE );
         break;
     default:
         assert(false);
@@ -688,7 +689,7 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     _imp->selectedRole = toolButton;
     _imp->selectedTool = (Roto_Tool)data.x();
     if (emitSignal) {
-        emit selectedToolChanged( (int)_imp->selectedTool );
+        Q_EMIT selectedToolChanged( (int)_imp->selectedTool );
     }
 } // onToolActionTriggeredInternal
 
@@ -3332,13 +3333,12 @@ void
 RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points)
 {
     std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > > knobs;
-    std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
-
-    _imp->node->getNode()->getApp()->getActiveNodes(&activeNodes);
-    for (U32 i = 0; i < activeNodes.size(); ++i) {
-        if ( activeNodes[i]->isTrackerNode() ) {
-            boost::shared_ptr<KnobI> k = activeNodes[i]->getKnobByName("center");
-            boost::shared_ptr<KnobI> name = activeNodes[i]->getKnobByName(kOfxParamStringSublabelName);
+    NodeList activeNodes;
+    _imp->node->getNode()->getGroup()->getActiveNodes(&activeNodes);
+    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        if ( (*it)->isTrackerNode() ) {
+            boost::shared_ptr<KnobI> k = (*it)->getKnobByName("center");
+            boost::shared_ptr<KnobI> name = (*it)->getKnobByName(kOfxParamStringSublabelName);
             if (k && name) {
                 boost::shared_ptr<Double_Knob> dk = boost::dynamic_pointer_cast<Double_Knob>(k);
                 String_Knob* nameKnob = dynamic_cast<String_Knob*>( name.get() );

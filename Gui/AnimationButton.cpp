@@ -84,7 +84,7 @@ AnimationButton::mouseReleaseEvent(QMouseEvent* e)
 {
     _dragging = false;
     QPushButton::mouseReleaseEvent(e);
-    emit animationMenuRequested();
+    Q_EMIT animationMenuRequested();
 }
 
 void

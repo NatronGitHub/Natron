@@ -232,6 +232,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                 case 2:
                     fillColor.setRgb(21,97,248);
                     break;
+                case 3:
+                    fillColor.setRgb(180, 200, 100);
+                    break;
                     
             }
         }
@@ -451,8 +454,8 @@ ComboBox::setCurrentText(const QString & text)
     int index = setCurrentText_internal(text);
 
     if (index != -1) {
-        emit currentIndexChanged(index);
-        emit currentIndexChanged( getCurrentIndexText() );
+        Q_EMIT currentIndexChanged(index);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 
@@ -509,6 +512,9 @@ ComboBox::activeIndex() const
 QString
 ComboBox::getCurrentIndexText() const
 {
+    if (_actions.empty()) {
+        return QString();
+    }
     assert( _currentIndex < (int)_actions.size() );
 
     return _actions[_currentIndex]->text();
@@ -545,9 +551,9 @@ ComboBox::setCurrentIndex(int index)
         return;
     }
     if ( setCurrentIndex_internal(index) ) {
-        ///emit the signal only if the entry changed
-        emit currentIndexChanged(_currentIndex);
-        emit currentIndexChanged( getCurrentIndexText() );
+        ///Q_EMIT the signal only if the entry changed
+        Q_EMIT currentIndexChanged(_currentIndex);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 

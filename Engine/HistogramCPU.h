@@ -8,7 +8,7 @@
 #define HISTOGRAMCPU_H
 #include <vector>
 #include <QThread>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -57,7 +57,7 @@ public:
 
     void quitAnyComputation();
 
-signals:
+Q_SIGNALS:
 
     void histogramProduced();
 

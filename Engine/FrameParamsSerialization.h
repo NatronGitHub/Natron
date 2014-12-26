@@ -14,7 +14,7 @@
 
 #include "Global/Macros.h"
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_OFF_48(unused-local-typedefs) //-Wunused-local-typedefs
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]

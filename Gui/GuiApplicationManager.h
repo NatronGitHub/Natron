@@ -145,7 +145,7 @@ public:
     virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
-public slots:
+public Q_SLOTS:
 
 
     ///Closes the application, asking the user to save each opened project that has unsaved changes

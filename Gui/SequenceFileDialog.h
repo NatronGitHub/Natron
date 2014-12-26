@@ -18,7 +18,7 @@
 #include <utility>
 #include <set>
 #include <list>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -116,7 +116,7 @@ public:
     
     void removeRowIndex(const QModelIndex& index);
 
-public slots:
+public Q_SLOTS:
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void layoutChanged();
 
@@ -152,7 +152,7 @@ class FavoriteView
 {
     Q_OBJECT
 
-signals:
+Q_SIGNALS:
     void urlRequested(const QUrl &url);
 
 public:
@@ -187,7 +187,7 @@ public:
     void rename(const QModelIndex & index,const QString & name);
 
     
-public slots:
+public Q_SLOTS:
     void clicked(const QModelIndex &index);
     void showMenu(const QPoint &position);
     void removeEntry();
@@ -255,7 +255,7 @@ public:
 
     
     
-public slots:
+public Q_SLOTS:
     
     void onCurrentIndexChanged(int index);
 private:
@@ -408,7 +408,7 @@ public:
      **/
     virtual void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order) OVERRIDE FINAL;
     
-public slots:
+public Q_SLOTS:
 
     ///same as setDirectory but with a QModelIndex
     void enterDirectory(const QModelIndex & index);
@@ -650,7 +650,7 @@ public:
     {
     }
 
-public slots:
+public Q_SLOTS:
 
     void openDir();
 };

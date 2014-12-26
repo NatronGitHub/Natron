@@ -69,6 +69,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/Node.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/NodeGroup.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
@@ -275,13 +276,14 @@ struct GuiPrivate
     mutable QMutex _histogramsMutex;
     std::list<Histogram*> _histograms;
     int _nextHistogramIndex; //< for giving a unique name to histogram tabs
+    
+    ///The node graph (i.e: the view of the scene)
+    NodeGraph* _nodeGraphArea;
+    
+    NodeGraph* _lastFocusedGraph;
 
-    ///The scene managing elements of the node graph.
-    QGraphicsScene* _graphScene;
-
-    ///The node graph (i.e: the view of the _graphScene)
-    NodeGraph *_nodeGraphArea;
-
+    std::list<NodeGraph*> _groups;
+    
     ///The curve editor.
     CurveEditor *_curveEditor;
 
@@ -417,8 +419,9 @@ struct GuiPrivate
           , _histogramsMutex()
           , _histograms()
           , _nextHistogramIndex(1)
-          , _graphScene(0)
           , _nodeGraphArea(0)
+          , _lastFocusedGraph(0)
+          , _groups()
           , _curveEditor(0)
           , _toolBox(0)
           , _propertiesBin(0)
@@ -583,7 +586,11 @@ GuiPrivate::notifyGuiClosing()
             panel->onGuiClosing();
         }
     }
+    _lastFocusedGraph = 0;
     _nodeGraphArea->discardGuiPointer();
+    for (std::list<NodeGraph*>::iterator it = _groups.begin(); it != _groups.end(); ++it) {
+        (*it)->discardGuiPointer();
+    }
 
     {
         QMutexLocker k(&_panesMutex);
@@ -729,6 +736,8 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     _imp->_lastSelectedViewer = addNewViewerTab(v, where);
     v->setUiContext( _imp->_lastSelectedViewer->getViewer() );
 }
+
+
 
 const std::list<boost::shared_ptr<NodeGui> > &
 Gui::getSelectedNodes() const
@@ -1145,11 +1154,95 @@ void Gui::onPropertiesScrolled()
 }
 
 void
+Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group)
+{
+    
+    assert(dynamic_cast<NodeGroup*>(group->getLiveInstance()));
+    boost::shared_ptr<NodeCollection> collection = group->getGroup();
+    assert(collection);
+    
+    QGraphicsScene* scene = new QGraphicsScene(this);
+    scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    NodeGraph* nodeGraph = new NodeGraph(this,collection,scene,this);
+    nodeGraph->setObjectName(kNodeGraphObjectName);
+    registerTab(nodeGraph);
+    
+    _imp->_groups.push_back(nodeGraph);
+
+}
+
+void
+Gui::addGroupGui(NodeGraph* tab,TabWidget* where)
+{
+    assert(tab);
+    assert(where);
+    {
+        std::list<NodeGraph*>::iterator it = std::find(_imp->_groups.begin(), _imp->_groups.end(), tab);
+        if ( it == _imp->_groups.end() ) {
+            _imp->_groups.push_back(tab);
+        }
+    }
+    where->appendTab(tab);
+}
+
+void
+Gui::removeGroupGui(NodeGraph* tab,bool deleteData)
+{
+    tab->hide();
+
+    if (_imp->_lastFocusedGraph == tab) {
+        _imp->_lastFocusedGraph = 0;
+    }
+    TabWidget* container = dynamic_cast<TabWidget*>( tab->parentWidget() );
+    if (container) {
+        container->removeTab(tab);
+    }
+    
+    if (deleteData) {
+        std::list<NodeGraph*>::iterator it = std::find(_imp->_groups.begin(), _imp->_groups.end(), tab);
+        if ( it != _imp->_groups.end() ) {
+            _imp->_groups.erase(it);
+        }
+        tab->deleteLater();
+    }
+
+}
+
+void
+Gui::setLastSelectedGraph(NodeGraph* graph)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->_lastFocusedGraph = graph;
+}
+
+NodeGraph*
+Gui::getLastSelectedGraph() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->_lastFocusedGraph;
+}
+
+
+boost::shared_ptr<NodeCollection>
+Gui::getLastSelectedNodeCollection() const
+{
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    assert(group);
+    return group;
+}
+
+void
 GuiPrivate::createNodeGraphGui()
 {
-    _graphScene = new QGraphicsScene(_gui);
-    _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui,_graphScene,_gui);
+    QGraphicsScene* scene = new QGraphicsScene(_gui);
+    scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    _nodeGraphArea = new NodeGraph(_gui,_appInstance->getProject(),scene,_gui);
     _nodeGraphArea->setObjectName(kNodeGraphObjectName);
     _gui->registerTab(_nodeGraphArea);
 }
@@ -1778,7 +1871,8 @@ Gui::loadStyleSheet()
                        .arg("rgb(200,200,200)") // %5: text colour
                        .arg("rgb(86,117,156)") // %6: interpolated value color
                        .arg("rgb(21,97,248)") // %7: keyframe value color
-                       .arg("rgb(0,0,0)") ); // %8: disabled editable text
+                       .arg("rgb(0,0,0)")  // %8: disabled editable text
+                       .arg("rgb(180, 200, 100)") ); // %9: expression background color
     }
 }
 
@@ -1877,7 +1971,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
         _imp->_viewerTabs.push_back(tab);
     }
     where->appendTab(tab);
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 
     return tab;
 }
@@ -1910,7 +2004,7 @@ Gui::addViewerTab(ViewerTab* tab,
         }
     }
     where->appendTab(tab);
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 }
 
 void
@@ -1970,11 +2064,26 @@ Gui::removeViewerTab(ViewerTab* tab,
 {
     assert(tab);
     unregisterTab(tab);
-
+    if (_imp->_lastSelectedViewer == tab) {
+        bool foundOne = false;
+        for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+            if ( ( (*it) != tab ) && (*it)->getInternalNode()->getNode()->isActivated() ) {
+                foundOne = true;
+                _imp->_lastSelectedViewer = *it;
+                break;
+            }
+        }
+        if (!foundOne) {
+            _imp->_lastSelectedViewer = 0;
+        }
+    }
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
-        _imp->_nodeGraphArea->removeNode( _imp->_appInstance->getNodeGui( tab->getInternalNode()->getNode() ) );
+        boost::shared_ptr<NodeGuiI> guiI = tab->getInternalNode()->getNode()->getNodeGui();
+        boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
+        assert(gui);
+        _imp->_nodeGraphArea->removeNode(gui);
     } else {
         tab->hide();
 
@@ -1994,7 +2103,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             tab->deleteLater();
         }
     }
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 }
 
 Histogram*
@@ -2641,7 +2750,8 @@ Gui::createNewViewer()
                                                          true,
                                                          true,
                                                          QString(),
-                                                         CreateNodeArgs::DefaultValuesList()) );
+                                                         CreateNodeArgs::DefaultValuesList(),
+                                                         getApp()->getProject()) );
 }
 
 boost::shared_ptr<Natron::Node>
@@ -2663,6 +2773,16 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString() ,false);
         } else {
+            
+            NodeGraph* graph = 0;
+            if (_imp->_lastFocusedGraph) {
+                graph = _imp->_lastFocusedGraph;
+            } else {
+                graph = _imp->_nodeGraphArea;
+            }
+            boost::shared_ptr<NodeCollection> group = graph->getGroup();
+            assert(group);
+
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             CreateNodeArgs args(found->second.c_str(),
@@ -2674,7 +2794,8 @@ Gui::createReader()
                                 true,
                                 true,
                                 QString(),
-                                defaultValues);
+                                defaultValues,
+                                group);
             ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {
@@ -2704,9 +2825,30 @@ Gui::createWriter()
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if ( found != writersForFormat.end() ) {
             
+            NodeGraph* graph = 0;
+            if (_imp->_lastFocusedGraph) {
+                graph = _imp->_lastFocusedGraph;
+            } else {
+                graph = _imp->_nodeGraphArea;
+            }
+            boost::shared_ptr<NodeCollection> group = graph->getGroup();
+            assert(group);
+
+
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),
+                                "",
+                                -1,
+                                -1,
+                                -1,
+                                true,
+                                INT_MIN,INT_MIN,
+                                true,
+                                true,
+                                QString(),
+                                defaultValues,
+                                group);
             ret = _imp->_appInstance->createNode(args);
             if (!ret) {
                 return ret;
@@ -2836,13 +2978,13 @@ Gui::errorDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml, buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml, buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(0,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2865,13 +3007,13 @@ Gui::errorDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeError,
                                             QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
@@ -2895,13 +3037,13 @@ Gui::warningDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(1,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2924,13 +3066,13 @@ Gui::warningDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeWarning,
                                             QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
@@ -2954,13 +3096,13 @@ Gui::informationDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(2,QString( title.c_str() ),QString( text.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonYes);
     }
 }
 
@@ -2983,13 +3125,13 @@ Gui::informationDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
+        Q_EMIT doDialogWithStopAskingCheckbox((int)MessageBox::eMessageBoxTypeInformation,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)Natron::eStandardButtonOk);
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -3002,6 +3144,7 @@ Gui::onDoDialog(int type,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
+
     QString msg = useHtml ? content : Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
 
     if (type == 0) {
@@ -3018,8 +3161,10 @@ Gui::onDoDialog(int type,
         if (msg.count() > 1000) {
             QGridLayout *layout = qobject_cast<QGridLayout *>(info.layout());
             if (layout) {
-                QTextEdit *edit = new QTextEdit(msg);
+                QTextEdit *edit = new QTextEdit();
                 edit->setReadOnly(true);
+                edit->setAcceptRichText(true);
+                edit->setHtml(msg);
                 layout->addWidget(edit, 0, 1);
             }
         }
@@ -3057,13 +3202,13 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
+        Q_EMIT doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
+        Q_EMIT doDialog(3,QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
     }
 
     return _imp->_lastQuestionDialogAnswer;
@@ -3089,14 +3234,14 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
+        Q_EMIT onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        emit onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
+        Q_EMIT onDoDialogWithStopAskingCheckbox((int)Natron::MessageBox::eMessageBoxTypeQuestion,
                                               QString( title.c_str() ),QString( message.c_str() ),useHtml,buttons,(int)defaultButton);
     }
     
@@ -3378,29 +3523,13 @@ Gui::onCurrentUndoStackChanged(QUndoStack* stack)
 void
 Gui::refreshAllPreviews()
 {
-    int time = _imp->_appInstance->getTimeLine()->currentFrame();
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-
-    _imp->_appInstance->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        if ( nodes[i]->isPreviewEnabled() ) {
-            nodes[i]->refreshPreviewImage(time);
-        }
-    }
+    _imp->_appInstance->getProject()->refreshPreviews();
 }
 
 void
 Gui::forceRefreshAllPreviews()
 {
-    int time = _imp->_appInstance->getTimeLine()->currentFrame();
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-
-    _imp->_appInstance->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        if ( nodes[i]->isPreviewEnabled() ) {
-            nodes[i]->computePreviewImage(time);
-        }
-    }
+    _imp->_appInstance->getProject()->forceRefreshPreviews();
 }
 
 void
@@ -3574,7 +3703,7 @@ Gui::activateViewerTab(ViewerInstance* viewer)
             }
         }
     }
-    emit viewersChanged();
+    Q_EMIT viewersChanged();
 }
 
 void
@@ -3906,12 +4035,13 @@ void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
     NodeGui* node = qobject_cast<NodeGui*>( sender() );
+
     if (!node) {
         return;
     }
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
     if (isViewer) {
-        emit viewersChanged();
+        Q_EMIT viewersChanged();
     }
 }
 
@@ -4447,7 +4577,7 @@ FloatingWidget::resizeEvent(QResizeEvent* e)
 void
 FloatingWidget::closeEvent(QCloseEvent* e)
 {
-    emit closed();
+    Q_EMIT closed();
 
     closeWidgetRecursively(_embeddedWidget);
     removeEmbeddedWidget();
@@ -4468,10 +4598,11 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
             if (node) {
                 boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
                 if (multiInstance) {
-                    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-                    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        if (node->isSettingsPanelVisible() && it->first->isActivated() && it->second && !it->first->isNodeDisabled()) {
-                            nodes.push_back(it->first);
+                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                        NodePtr instance = it->first.lock();
+                        if (node->isSettingsPanelVisible() && instance->isActivated() && it->second && !instance->isNodeDisabled()) {
+                            nodes.push_back(instance);
                         }
                     }
                     boost::shared_ptr<Natron::Node> internalNode = node->getNode();

@@ -13,6 +13,7 @@
 #define NODEGUII_H
 
 
+
 class NodeGuiI
 {
 public :

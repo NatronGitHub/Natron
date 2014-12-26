@@ -13,7 +13,7 @@
 #define NATRON_GUI_KNOBGUITYPES_H_
 
 #include <vector> // Int_KnobGui
-
+#include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -96,10 +96,12 @@ public:
                 DockablePanel *container);
 
     virtual ~Int_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onSpinBoxValueChanged();
 
@@ -136,9 +138,12 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
+    QWidget *container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::shared_ptr<Int_Knob> _knob;
@@ -163,10 +168,12 @@ public:
                  DockablePanel *container);
 
     virtual ~Bool_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onCheckBoxStateChanged(bool);
 
@@ -181,7 +188,8 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
 private:
 
     AnimatedCheckBox *_checkBox;
@@ -207,10 +215,12 @@ public:
                    DockablePanel *container);
 
     virtual ~Double_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
     void onSliderEditingFinished();
@@ -250,9 +260,12 @@ private:
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
+    QWidget *container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::shared_ptr<Double_Knob> _knob;
@@ -278,6 +291,8 @@ public:
 
     virtual ~Button_KnobGui() OVERRIDE;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+    
     virtual bool showDescriptionLabel() const
     {
         return false;
@@ -285,7 +300,7 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void emitValueChanged();
 
@@ -326,10 +341,12 @@ public:
                    DockablePanel *container);
 
     virtual ~Choice_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onCurrentIndexChanged(int i);
 
@@ -345,13 +362,16 @@ private:
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
     boost::shared_ptr<Choice_Knob> _knob;
 };
 
-
 //=========================
+
 class Separator_KnobGui
     : public KnobGui
 {
@@ -366,6 +386,8 @@ public:
                       DockablePanel *container);
 
     virtual ~Separator_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual bool showDescriptionLabel() const
     {
@@ -415,7 +437,7 @@ public:
     virtual ~ColorPickerLabel() OVERRIDE
     {
     }
-
+    
     bool isPickingEnabled() const
     {
         return _pickingEnabled;
@@ -425,7 +447,7 @@ public:
 
     void setPickingEnabled(bool enabled);
 
-signals:
+Q_SIGNALS:
 
     void pickingEnabled(bool);
 
@@ -458,10 +480,12 @@ public:
                   DockablePanel *container);
 
     virtual ~Color_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onColorChanged();
     void onMinMaxChanged(double mini, double maxi, int index);
@@ -482,7 +506,7 @@ public slots:
 
     void onDialogCurrentColorChanged(const QColor & color);
 
-signals:
+Q_SIGNALS:
 
     void dimensionSwitchToggled(bool b);
 
@@ -500,7 +524,9 @@ private:
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
     void updateLabel(double r, double g, double b, double a);
 
 private:
@@ -566,7 +592,7 @@ public:
 
     void setDirty(bool b);
 
-signals:
+Q_SIGNALS:
 
     void editingFinished();
 
@@ -599,10 +625,12 @@ public:
                    DockablePanel *container);
 
     virtual ~String_KnobGui() OVERRIDE;
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     ///if the knob is not multiline
     void onLineChanged();
@@ -645,7 +673,9 @@ private:
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    
     void mergeFormat(const QTextCharFormat & fmt);
 
     void restoreTextInfoFromString();
@@ -703,13 +733,17 @@ public:
 
     virtual ~Group_KnobGui() OVERRIDE;
 
-    void addKnob(KnobGui *child, int row);
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+    
+    void addKnob(KnobGui *child);
+    
+    const std::list<KnobGui*>& getChildren() const { return _children; }
 
     bool isChecked() const;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
     void setChecked(bool b);
 
 private:
@@ -731,7 +765,7 @@ private:
 private:
     bool _checked;
     GroupBoxLabel *_button;
-    std::vector< std::pair< KnobGui *, int> > _children;
+    std::list<KnobGui*> _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     //enabled too
     boost::shared_ptr<Group_Knob> _knob;
@@ -752,6 +786,9 @@ public:
 
     Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
                        DockablePanel *container);
+    
+    virtual void removeSpecificGui() OVERRIDE FINAL;
+    
     virtual bool showDescriptionLabel() const
     {
         return false;
@@ -760,7 +797,7 @@ public:
     virtual ~Parametric_KnobGui() OVERRIDE;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-public slots:
+public Q_SLOTS:
 
     void onCurveChanged(int dimension);
 
@@ -786,6 +823,7 @@ private:
 
 private:
     // TODO: PIMPL
+    QWidget* treeColumn;
     CurveWidget* _curveWidget;
     QTreeWidget* _tree;
     Button* _resetButton;

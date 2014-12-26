@@ -19,7 +19,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Global/GlobalDefines.h"
@@ -59,7 +59,17 @@ public:
             DockablePanel* container);
 
     virtual ~KnobGui() OVERRIDE;
-
+    
+    void removeGui();
+    
+protected:
+    /**
+     * @brief Override this to delete all user interface created for this knob
+     **/
+    virtual void removeSpecificGui() = 0;
+    
+    
+public:
 
     /**
      * @brief This function must return a pointer to the internal knob.
@@ -83,7 +93,6 @@ public:
                    QWidget* fieldContainer,
                    QLabel* label,
                    QHBoxLayout* layout,
-                   int row,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
 
@@ -152,7 +161,7 @@ public:
             if (ret == KnobHelper::KEYFRAME_ADDED) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
             }
-            emit keyFrameSet();
+            Q_EMIT keyFrameSet();
         }
         if (refreshGui) {
             updateGUI(dimension);
@@ -171,6 +180,8 @@ public:
     
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
+    
+    virtual void onKnobDeletion() OVERRIDE FINAL;
 
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
 
@@ -187,7 +198,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-public slots:
+public Q_SLOTS:
 
     void onRefreshGuiCurve(int dimension);
     
@@ -276,7 +287,16 @@ public slots:
 
     void updateCurveEditorKeyframes();
 
-signals:
+    void onSetExprActionTriggered();
+    
+    void onClearExprActionTriggered();
+    
+    void onEditExprDialogFinished();
+    
+    void onExprChanged(int dimension);
+    
+    void onHelpChanged();
+Q_SIGNALS:
 
     void knobUndoneChange();
 
@@ -341,7 +361,11 @@ private:
                                        Natron::AnimationLevelEnum /*level*/)
     {
     }
+    
+    virtual void reflectExpressionState(int /*dimension*/,bool /*hasExpr*/) {}
 
+    virtual void updateToolTip() {}
+    
     void createAnimationMenu(QMenu* menu,int dimension);
 
     void createAnimationButton(QHBoxLayout* layout);
@@ -371,13 +395,44 @@ public:
 
     boost::shared_ptr<KnobI> getSelectedKnobs() const;
 
-public slots:
+public Q_SLOTS:
 
     void onNodeComboEditingFinished();
 
 private:
 
     boost::scoped_ptr<LinkToKnobDialogPrivate> _imp;
+};
+
+
+struct EditExpressionDialogPrivate;
+class EditExpressionDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent);
+    
+    virtual ~EditExpressionDialog();
+    
+    int getDimension() const;
+    
+    QString getExpression(bool* hasRetVariable) const;
+public Q_SLOTS:
+    
+    void onUseRetButtonClicked(bool useRet);
+    void onTextEditChanged();
+    void onHelpRequested();
+    
+private:
+    
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    void compileExpression(const QString& expr);
+    
+    boost::scoped_ptr<EditExpressionDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_KNOBGUI_H_

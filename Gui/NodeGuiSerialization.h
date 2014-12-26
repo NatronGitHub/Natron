@@ -14,7 +14,7 @@
 #define NODEGUISERIALIZATION_H
 
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -32,8 +32,7 @@ class NodeGuiSerialization
 public:
 
     NodeGuiSerialization()
-        : _nodeName()
-        , _posX(0.)
+        : _posX(0.)
         , _posY(0.)
         , _previewEnabled(false)
         , _r(0.)
@@ -61,7 +60,7 @@ public:
         return _previewEnabled;
     }
 
-    const std::string & getName() const
+    const std::string & getFullySpecifiedName() const
     {
         return _nodeName;
     }

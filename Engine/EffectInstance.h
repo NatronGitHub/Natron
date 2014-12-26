@@ -12,9 +12,11 @@
 #ifndef NATRON_ENGINE_EFFECTINSTANCE_H_
 #define NATRON_ENGINE_EFFECTINSTANCE_H_
 #include <list>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
@@ -126,6 +128,7 @@ class ImageParams;
 class EffectInstance
     : public NamedKnobHolder
     , public LockManagerI<Natron::Image>
+    , public boost::enable_shared_from_this<Natron::EffectInstance>
 {
 public:
 
@@ -216,7 +219,7 @@ public:
      **/
     boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN
     {
-        return _node;
+    return _node.lock();
     }
 
     /**
@@ -603,6 +606,7 @@ public:
 
     bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
 
+
     void getThreadLocalInputImages(std::list<boost::shared_ptr<Natron::Image> >* images) const;
 
     void addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img);
@@ -618,6 +622,7 @@ public:
      **/
     bool isFrameVaryingOrAnimated_Recursive() const;
 
+    
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -853,18 +858,6 @@ public:
      * @brief Called on generator effects upon creation if they have an image input file field.
      **/
     void openImageFileKnob();
-
-
-    /**
-     * @brief
-     * You must call this in order to notify the GUI of any change (add/delete) for knobs not made during
-     * initializeKnobs().
-     * For example you may want to remove some knobs in response to a value changed of another knob.
-     * This is something that OpenFX does not provide but we make it possible for Natron plugins.
-     * - To properly delete a knob just call the destructor of the knob.
-     * - To properly delete
-     **/
-    void createKnobDynamically();
 
 
     /**
@@ -1239,7 +1232,7 @@ protected:
     }
    
     
-    boost::shared_ptr<Node> _node; //< the node holding this effect
+    boost::weak_ptr<Node> _node; //< the node holding this effect
 
 private:
 
@@ -1366,7 +1359,9 @@ private:
 
 
     virtual void onAllKnobsSlaved(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
-    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & knob,int dimension,bool isSlave,KnobHolder* master) OVERRIDE FINAL;
+    virtual void onKnobSlaved(KnobI* slave,KnobI* master,
+                              int dimension,
+                              bool isSlave) OVERRIDE FINAL;
 
 
     struct TiledRenderingFunctorArgs

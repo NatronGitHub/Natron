@@ -15,7 +15,7 @@
 
 #include "Engine/FrameEntry.h"
 #include "Engine/TextureRectSerialization.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/serialization/version.hpp>
 #endif
 #define FRAME_KEY_INTRODUCES_INPUT_NAME 2

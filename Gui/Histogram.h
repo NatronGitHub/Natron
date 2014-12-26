@@ -14,7 +14,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtOpenGL/QGLWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -52,7 +52,7 @@ public:
 
     void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
 
-public slots:
+public Q_SLOTS:
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 

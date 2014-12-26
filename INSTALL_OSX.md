@@ -100,6 +100,8 @@ boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
 EOF
 ```
 
+###Build with Makefile
+
 If you installed libraries using Homebrew, use the following
 config.pri:
 
@@ -115,6 +117,7 @@ EOF
 ```
 
 ## Build with Makefile
+
 You can generate a makefile by typing
 
 	qmake -r Project.pro
@@ -152,6 +155,10 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 ## Testing
 
 	(cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
+
+## Generating Python bindings
+
+shiboken-3.4 Engine/Pyside_Engine_Python.h --include-paths=/Users/alexandre/development/Engine:/Users/alexandre/development/Natron/Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/typesystem_engine.xml
 
 ## OpenFX plugins
 

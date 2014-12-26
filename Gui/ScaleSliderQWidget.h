@@ -15,7 +15,7 @@
 
 
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 CLANG_DIAG_OFF(deprecated)
@@ -69,11 +69,11 @@ public:
     void setReadOnly(bool ro);
 
     
-signals:
+Q_SIGNALS:
     void editingFinished();
     void positionChanged(double);
 
-public slots:
+public Q_SLOTS:
 
     void seekScalePosition(double v);
 

@@ -7,7 +7,7 @@ TARGET = NatronRenderer
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc
-CONFIG += boost qt expat cairo 
+CONFIG += boost qt expat cairo python
 
 TEMPLATE = app
 

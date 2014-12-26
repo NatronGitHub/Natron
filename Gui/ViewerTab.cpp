@@ -1483,7 +1483,10 @@ ViewerTab::eventFilter(QObject *target,
 {
     if (e->type() == QEvent::MouseButtonPress) {
         if (_imp->gui && _imp->app) {
-            _imp->gui->selectNode( _imp->app->getNodeGui( _imp->viewerNode->getNode() ) );
+            boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerNode->getNode()->getNodeGui();
+            assert(gui_i);
+            boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+            _imp->gui->selectNode(gui);
         }
     }
 
@@ -1529,6 +1532,7 @@ void
 ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
 {
+
     if ( !_imp->app || !_imp->viewer ||  _imp->app->isClosing() || isFileDialogViewer() || _imp->gui->isGUIFrozen()) {
         return;
     }

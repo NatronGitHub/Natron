@@ -12,7 +12,7 @@
 #ifndef NATRON_GUI_GUI_H_
 #define NATRON_GUI_GUI_H_
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -69,6 +69,7 @@ class ViewerInstance;
 class PluginGroupNode;
 class Color_Knob;
 class ProcessHandler;
+class NodeCollection;
 class KnobHolder;
 namespace Natron {
 class Node;
@@ -113,6 +114,19 @@ public:
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
+    
+    void createGroupGui(const boost::shared_ptr<Natron::Node>& group);
+    
+    void addGroupGui(NodeGraph* tab,TabWidget* where);
+    
+    void removeGroupGui(NodeGraph* tab,bool deleteData);
+
+    
+    void setLastSelectedGraph(NodeGraph* graph);
+    
+    NodeGraph* getLastSelectedGraph() const;
+    
+    boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
 
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
@@ -137,6 +151,7 @@ public:
        that wants to close. The deleteData flag tells whether we actually want
        to destroy the tab/node or just hide them.*/
     void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData);
+    
 
     Histogram* addNewHistogram();
 
@@ -448,8 +463,9 @@ public:
     void redrawAllViewers();
     
     void toggleAutoHideGraphInputs();
-    
-signals:
+
+Q_SIGNALS:
+
 
     void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
     
@@ -458,7 +474,7 @@ signals:
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
 
-public slots:
+public Q_SLOTS:
 
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
@@ -608,7 +624,7 @@ public:
         return _embeddedWidget;
     }
 
-signals:
+Q_SIGNALS:
 
     void closed();
 

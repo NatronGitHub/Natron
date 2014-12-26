@@ -11,7 +11,7 @@
 #ifndef SHORTCUTEDITOR_H
 #define SHORTCUTEDITOR_H
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_OFF_48(unused-local-typedefs) // /opt/boost/include/boost/serialization/static_warning.hpp:104:18: warning: typedef 'STATIC_WARNING_LINE102' locally defined but not used [-Wunused-local-typedefs]
 #include <boost/scoped_ptr.hpp>
 GCC_DIAG_OFF_48(unused-local-typedefs)
@@ -36,7 +36,7 @@ public:
 
     void addShortcut(BoundAction* action);
     
-public slots:
+public Q_SLOTS:
 
     void onSelectionChanged();
 

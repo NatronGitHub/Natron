@@ -10,7 +10,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
