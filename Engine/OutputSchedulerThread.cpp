@@ -1887,37 +1887,47 @@ DefaultScheduler::treatFrame(const BufferedFrames& frames)
     
     const double par = _effect->getPreferredAspectRatio();
     
-    (void)_effect->getRegionOfDefinition_public(hash,frame.time, scale, frame.view, &rod, &isProjectFormat);
-    rod.toPixelEnclosing(0, par, &roi);
-
     Natron::SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
     bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
     
-    Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
-                                                   frame.time,
-                                                   frame.view,
-                                                   false,  // is this render due to user interaction ?
-                                                   canOnlyHandleOneView, // is this sequential ?
-                                                   true,
-                                                   hash,
+    for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+        (void)_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat);
+        rod.toPixelEnclosing(0, par, &roi);
+        
+        Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+                                                       it->time,
+                                                       it->view,
+                                                       false,  // is this render due to user interaction ?
+                                                       canOnlyHandleOneView, // is this sequential ?
+                                                       true,
+                                                       hash,
+                                                       false,
+                                                       _effect->getApp()->getTimeLine().get());
+        
+        ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
+        assert(inputImage);
+        
+        std::list<ImagePtr> inputImages;
+        inputImages.push_back(inputImage);
+        Natron::EffectInstance::RenderRoIArgs args(frame.time,
+                                                   scale,0,
+                                                   it->view,
+                                                   true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
+                                                   roi,
+                                                   rod,
+                                                   components,
+                                                   imageDepth,
+                                                   3,
                                                    false,
-                                                   _effect->getApp()->getTimeLine().get());
-    
-    
-    Natron::EffectInstance::RenderRoIArgs args(frame.time,
-                                               scale,0,
-                                               frame.view,
-                                               true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
-                                               roi,
-                                               rod,
-                                               components,
-                                               imageDepth,
-                                               3);
-    try {
-        (void)_effect->renderRoI(args);
-    } catch (const std::exception& e) {
-        notifyRenderFailure(e.what());
+                                                   inputImages);
+        try {
+            (void)_effect->renderRoI(args);
+        } catch (const std::exception& e) {
+            notifyRenderFailure(e.what());
+        }
+
     }
+    
 }
 
 void

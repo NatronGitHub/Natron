@@ -2212,7 +2212,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     ///Pre-render input images before allocating the image if we need to render
     if (!rectsToRender.empty()) {
+        
         if (!renderInputImagesForRoI(createInCache,
+                                     args.inputImagesList,
                                      args.time,
                                      args.view,
                                      par,
@@ -2503,6 +2505,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
 bool
 EffectInstance::renderInputImagesForRoI(bool createImageInCache,
+                                        const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
                                         SequenceTime time,
                                         int view,
                                         double par,
@@ -2562,6 +2565,11 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         inputsRoi->erase(foundRoI);
         inputsRoi->insert(std::make_pair(transformRerouteInput->getInput(newTransformedInputNb), transformedRenderWindow));
         
+    }
+    
+    if (!argsInputImages.empty()) {
+        *inputImages = argsInputImages;
+        return true;
     }
     
     for (FramesNeededMap::const_iterator it2 = framesNeeded.begin(); it2 != framesNeeded.end(); ++it2) {

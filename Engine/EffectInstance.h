@@ -1301,6 +1301,7 @@ private:
 );
 
     bool renderInputImagesForRoI(bool createImageInCache,
+                                 const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
                                  SequenceTime time,
                                  int view,
                                  double par,
