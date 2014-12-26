@@ -129,7 +129,7 @@ Project::loadProject(const QString & path,
         }
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !appPTR->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
                                                   -1,
@@ -150,7 +150,7 @@ Project::loadProject(const QString & path,
         }
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !appPTR->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
                                                   -1,
@@ -626,7 +626,7 @@ Project::findAndTryLoadAutoSave()
                     loadOK = loadProjectInternal(savesDir.path() + QDir::separator(), entry,true,existingFilePath);
                 } catch (const std::exception & e) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() + ": " + e.what() );
-                    getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+                    getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           -1,
@@ -639,7 +639,7 @@ Project::findAndTryLoadAutoSave()
                                                           shared_from_this()) );
                 } catch (...) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() );
-                    getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+                    getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           -1,

@@ -753,17 +753,17 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     bool hasShortcut = true;
 
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if (pluginID == "net.sf.openfx.TransformPlugin") {
+    if (pluginID == PLUGINID_OFX_TRANSFORM) {
         symbol = Qt::Key_T;
-    } else if (pluginID == "net.sf.openfx.RotoPlugin") {
+    } else if (pluginID == PLUGINID_OFX_ROTO) {
         symbol = Qt::Key_O;
-    } else if (pluginID == "net.sf.openfx.MergePlugin") {
+    } else if (pluginID == PLUGINID_OFX_MERGE) {
         symbol = Qt::Key_M;
-    } else if (pluginID == "net.sf.openfx.GradePlugin") {
+    } else if (pluginID == PLUGINID_OFX_GRADE) {
         symbol = Qt::Key_G;
-    } else if (pluginID == "net.sf.openfx.ColorCorrectPlugin") {
+    } else if (pluginID == PLUGINID_OFX_COLORCORRECT) {
         symbol = Qt::Key_C;
-    } else if (pluginID == "net.sf.cimg.CImgBlur") {
+    } else if (pluginID == PLUGINID_OFX_BLURCIMG) {
         symbol = Qt::Key_B;
     } else {
         hasShortcut = false;

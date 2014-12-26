@@ -1189,7 +1189,9 @@ Image::checkForNaNs(const RectI& roi)
         float* const end = pix +  compsCount * roi.width();
         
         for (;pix < end; ++pix) {
-            if (boost::math::isnan(*pix) || boost::math::isinf(*pix)) {
+            // we remove NaNs, but infinity values should pose no problem
+            // (if they do, please explain here which ones)
+            if (boost::math::isnan(*pix)/* || boost::math::isinf(*pix)*/) {
                 *pix = 1.;
                 hasnan = true;
             }

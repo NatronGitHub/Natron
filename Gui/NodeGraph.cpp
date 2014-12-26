@@ -882,7 +882,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     } else if (selectedBendPoint) {
         _imp->setNodesBendPointsVisible(false);
 
-        CreateNodeArgs args(NATRON_DOT_ID,
+        CreateNodeArgs args(PLUGINID_NATRON_DOT,
                             std::string(),
                             -1,
                             -1,
@@ -1295,7 +1295,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
                     
-                    CreateNodeArgs args("net.sf.openfx.MergePlugin",
+                    CreateNodeArgs args(PLUGINID_OFX_MERGE,
                                         "",
                                         -1,
                                         -1,
@@ -1307,6 +1307,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                         QString(),
                                         CreateNodeArgs::DefaultValuesList(),
                                         getGroup());
+
                     
                     boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
                     if (mergeNode) {
@@ -2120,7 +2121,7 @@ void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
     if ( !_imp->_gui->getLastSelectedViewer() ) {
-        _imp->_gui->getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+        _imp->_gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           -1,

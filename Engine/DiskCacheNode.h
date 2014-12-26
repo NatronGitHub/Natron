@@ -11,7 +11,7 @@
 #define DISKCACHENODE_H
 
 #include "Engine/EffectInstance.h"
-#define NATRON_DISKCACHE_NODE_ID NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache"
+
 struct DiskCacheNodePrivate;
 class DiskCacheNode : public Natron::OutputEffectInstance
 {
@@ -43,7 +43,7 @@ public:
     
     virtual std::string getPluginID() const WARN_UNUSED_RETURN
     {
-        return NATRON_DISKCACHE_NODE_ID;
+        return PLUGINID_NATRON_DISKCACHE;
     }
 
     virtual std::string getPluginLabel() const WARN_UNUSED_RETURN

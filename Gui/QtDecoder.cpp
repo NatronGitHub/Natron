@@ -60,7 +60,7 @@ QtReader::~QtReader()
 std::string
 QtReader::getPluginID() const
 {
-    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt";;
+    return PLUGINID_NATRON_READQT;
 }
 
 std::string

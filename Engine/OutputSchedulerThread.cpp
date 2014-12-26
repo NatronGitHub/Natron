@@ -651,6 +651,9 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     
     if (canContinue) {
         pushFramesToRenderInternal(frame, nThreads);
+    } else {
+        ///Still wake up threads that may still sleep
+        _imp->framesToRenderNotEmptyCond.wakeAll();
     }
 }
 
@@ -668,16 +671,34 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
         _imp->allRenderThreadsInactiveCond.wakeOne();
     }
     
+    ///Simple heuristic to limit the size of the internal buffer.
+    ///If the buffer grows too much, we will keep shared ptr to images, hence keep them in RAM which
+    ///can lead to RAM issue for the end user.
+    ///We can end up in this situation for very simple graphs where the rendering of the output node (the writer or viewer)
+    ///is much slower than things upstream, hence the buffer grows quickly, and fills up the RAM.
+    int nbThreadsHardware = appPTR->getHardwareIdealThreadCount();
+    bool bufferFull;
+    {
+        QMutexLocker k(&_imp->bufMutex);
+        bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+    }
+    
     QMutexLocker l(&_imp->framesToRenderMutex);
-    while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
+    while ((bufferFull || _imp->framesToRender.empty()) && !thread->mustQuit() ) {
         
         ///Notify that we're no longer doing work
         thread->notifyIsRunning(false);
         
         
         _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
+        
+        {
+            QMutexLocker k(&_imp->bufMutex);
+            bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+        }
     }
     
+   
     if (!_imp->framesToRender.empty()) {
         
         ///Notify that we're running for good, will do nothing if flagged already running
@@ -1867,37 +1888,47 @@ DefaultScheduler::treatFrame(const BufferedFrames& frames)
     
     const double par = _effect->getPreferredAspectRatio();
     
-    (void)_effect->getRegionOfDefinition_public(hash,frame.time, scale, frame.view, &rod, &isProjectFormat);
-    rod.toPixelEnclosing(0, par, &roi);
-
     Natron::SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
     bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
     
-    Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
-                                                   frame.time,
-                                                   frame.view,
-                                                   false,  // is this render due to user interaction ?
-                                                   canOnlyHandleOneView, // is this sequential ?
-                                                   true,
-                                                   hash,
+    for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+        (void)_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat);
+        rod.toPixelEnclosing(0, par, &roi);
+        
+        Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+                                                       it->time,
+                                                       it->view,
+                                                       false,  // is this render due to user interaction ?
+                                                       canOnlyHandleOneView, // is this sequential ?
+                                                       true,
+                                                       hash,
+                                                       false,
+                                                       _effect->getApp()->getTimeLine().get());
+        
+        ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
+        assert(inputImage);
+        
+        std::list<ImagePtr> inputImages;
+        inputImages.push_back(inputImage);
+        Natron::EffectInstance::RenderRoIArgs args(frame.time,
+                                                   scale,0,
+                                                   it->view,
+                                                   true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
+                                                   roi,
+                                                   rod,
+                                                   components,
+                                                   imageDepth,
+                                                   3,
                                                    false,
-                                                   _effect->getApp()->getTimeLine().get());
-    
-    
-    Natron::EffectInstance::RenderRoIArgs args(frame.time,
-                                               scale,0,
-                                               frame.view,
-                                               true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
-                                               roi,
-                                               rod,
-                                               components,
-                                               imageDepth,
-                                               3);
-    try {
-        (void)_effect->renderRoI(args);
-    } catch (const std::exception& e) {
-        notifyRenderFailure(e.what());
+                                                   inputImages);
+        try {
+            (void)_effect->renderRoI(args);
+        } catch (const std::exception& e) {
+            notifyRenderFailure(e.what());
+        }
+
     }
+    
 }
 
 void

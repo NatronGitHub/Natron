@@ -2741,7 +2741,7 @@ Gui::saveAndIncrVersion()
 void
 Gui::createNewViewer()
 {
-    (void)_imp->_appInstance->createNode( CreateNodeArgs(NATRON_VIEWER_ID,
+    (void)_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                          "",
                                                          -1,-1,
                                                          -1,

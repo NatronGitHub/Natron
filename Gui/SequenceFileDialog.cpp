@@ -2725,7 +2725,7 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args(NATRON_VIEWER_ID,
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER,
                         "",
                         -1,-1,
                         -1,

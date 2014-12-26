@@ -594,7 +594,6 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
                (pluginIdentifier == "tuttle.colortransfer") ||
                (pluginIdentifier == "tuttle.colortransform") ||
                (pluginIdentifier == "tuttle.ctl") ||
-               (pluginIdentifier == "tuttle.gamma") ||
                (pluginIdentifier == "tuttle.invert") ||
                (pluginIdentifier == "tuttle.lut") ||
                (pluginIdentifier == "tuttle.normalize") ) {
@@ -605,7 +604,8 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
         out.push_back(PLUGIN_GROUP_COLOR);
         s = "OCIO";
 
-    } else if ( (pluginIdentifier == "tuttle.mathoperator") ) {
+    } else if ( (pluginIdentifier == "tuttle.gamma") ||
+               (pluginIdentifier == "tuttle.mathoperator") ) {
         out.push_back(PLUGIN_GROUP_COLOR);
         s = "Math";
 

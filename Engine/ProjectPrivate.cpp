@@ -152,10 +152,12 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     bool ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
                                                                     _publicInterface->shared_from_this(), &hasProjectAWriter);
 
+
     if ( !hasProjectAWriter && appPTR->isBackground() ) {
         _publicInterface->clearNodes(true);
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
+
     
     ///The next for loop is about 50% of loading time of a project
     

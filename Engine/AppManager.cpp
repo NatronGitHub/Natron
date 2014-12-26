@@ -359,6 +359,14 @@ AppManager::parseCmdLineArgs(int argc,
         }
     }
 
+    if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
+        AppManager::printUsage(argv[0]);
+        
+        return false;
+    }
+    if (expectedFrameRange) {
+        appendFakeFrameRange(frameRanges);
+    }
     return true;
 } // parseCmdLineArgs
 
@@ -818,6 +826,8 @@ AppManager::writeToOutputPipe(const QString & longMessage,
                               const QString & shortMessage)
 {
     if (!_imp->_backgroundIPC) {
+        
+        QMutexLocker k(&_imp->_ofxLogMutex);
         ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
         std::cout << longMessage.toStdString() << std::endl;
         return false;
@@ -1190,11 +1200,11 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
     std::map<int,Natron::Plugin*> matches;
     
     if (pluginId == "Viewer") {
-        return _imp->findPluginById(NATRON_VIEWER_ID, majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_VIEWER, majorVersion, minorVersion);
     } else if (pluginId == "Dot") {
-        return _imp->findPluginById(NATRON_DOT_ID,majorVersion, minorVersion );
+        return _imp->findPluginById(PLUGINID_NATRON_DOT,majorVersion, minorVersion );
     } else if (pluginId == "DiskCache") {
-        return _imp->findPluginById(NATRON_DISKCACHE_NODE_ID, majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
     }
     
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat

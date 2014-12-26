@@ -77,7 +77,7 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
 #ifdef __NATRON_WIN32__
     _library = LoadLibrary( binaryPath.c_str() );
 #elif defined(__NATRON_UNIX__)
-    _library = dlopen(binaryPath.c_str(),RTLD_LAZY);
+    _library = dlopen(binaryPath.c_str(), RTLD_LAZY|RTLD_LOCAL);
 #endif
     if (!_library) {
 #ifdef __NATRON_UNIX__

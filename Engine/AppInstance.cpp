@@ -337,7 +337,8 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
-    if (foundPluginID != NATRON_VIEWER_ID) { // for now only the viewer can be an inspector.
+
+    if (foundPluginID != PLUGINID_NATRON_VIEWER) { // for now only the viewer can be an inspector.
         node.reset( new Node(this, group, plugin) );
     } else {
         node.reset( new InspectorNode(this, group, plugin) );
