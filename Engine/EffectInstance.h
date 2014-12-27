@@ -41,6 +41,9 @@
 #define PLUGINID_NATRON_DOT       (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Dot")
 #define PLUGINID_NATRON_READQT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt")
 #define PLUGINID_NATRON_WRITEQT   (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt")
+#define PLUGINID_NATRON_GROUP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Group")
+#define PLUGINID_NATRON_INPUT     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Input")
+#define PLUGINID_NATRON_OUTPUT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Output")
 
 class Hash64;
 class Format;
@@ -48,6 +51,7 @@ class TimeLine;
 class OverlaySupport;
 class PluginMemory;
 class BlockingBackgroundRender;
+class NodeSerialization;
 class RenderEngine;
 class BufferableObject;
 namespace Transform {
@@ -1104,6 +1108,7 @@ public:
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
     virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason,SequenceTime time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
+
     Natron::StatusEnum beginSequenceRender_public(SequenceTime first, SequenceTime last,
                                               SequenceTime step, bool interactive, const RenderScale & scale,
                                               bool isSequentialRender, bool isRenderResponseToUserInteraction,

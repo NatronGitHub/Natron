@@ -12,12 +12,13 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 
+class Bool_Knob;
 /**
  * @brief A NoOp is an effect that doesn't do anything. It is useful for scripting (adding custom parameters)
  * and it is also used to implement the "Dot" node.
  **/
 class NoOpBase
-    : public Natron::EffectInstance
+    : public Natron::OutputEffectInstance
 {
 public:
 
@@ -33,7 +34,7 @@ public:
         return 0;
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 1;
     }
@@ -68,6 +69,11 @@ public:
                                             Natron::EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+    
     
 private:
 
@@ -114,5 +120,108 @@ public:
         return "";
     }
 };
+
+
+class GroupInput
+: public NoOpBase
+{
+    boost::shared_ptr<Bool_Knob> optional;
+    
+public:
+    
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    {
+        return new GroupInput(n);
+    }
+    
+    GroupInput(boost::shared_ptr<Natron::Node> n)
+    : NoOpBase(n)
+    {
+    }
+    
+    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return PLUGINID_NATRON_INPUT;
+    }
+    
+    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return "Input";
+    }
+    
+    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return "";
+    }
+    
+    virtual int getMaxInputCount() const OVERRIDE FINAL  WARN_UNUSED_RETURN
+    {
+        return 0;
+    }
+    
+    virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    virtual void initializeKnobs() OVERRIDE FINAL;
+    
+    virtual void knobChanged(KnobI* k,
+                             Natron::ValueChangedReasonEnum /*reason*/,
+                             int /*view*/,
+                             SequenceTime /*time*/,
+                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+    
+    
+};
+
+
+class GroupOutput
+: public NoOpBase
+{
+public:
+    
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    {
+        return new GroupOutput(n);
+    }
+    
+    GroupOutput(boost::shared_ptr<Natron::Node> n)
+    : NoOpBase(n)
+    {
+    }
+    
+    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return PLUGINID_NATRON_OUTPUT;
+    }
+    
+    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return "Output";
+    }
+    
+    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return "";
+    }
+    
+    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return 1;
+    }
+    
+    virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+    
+};
+
+
 
 #endif // NOOP_H

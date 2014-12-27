@@ -101,6 +101,11 @@ public:
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
 
+private:
+    void loadKnob(const boost::shared_ptr<KnobI> & knob,const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
+                  bool updateKnobGui = false);
+public:
+    
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
    
@@ -389,6 +394,10 @@ public:
     
     bool shouldCacheOutput() const;
 
+    /**
+     * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
+     **/
+    void setPosition(double x,double y);
     
 private:
     /**
@@ -702,7 +711,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(const NodeSerialization & serialization,int renderScaleSupportPref);
+    void initializeKnobs(int renderScaleSupportPref);
 
     void onSetSupportRenderScaleMaybeSet(int support);
     
@@ -912,8 +921,6 @@ private:
                                        std::list<Natron::Node*>& markedNodes);
     
 
-
-    void loadKnob(const boost::shared_ptr<KnobI> & knob,const NodeSerialization & serialization,bool updateKnobGui = false);
 
 
     /**

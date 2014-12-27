@@ -24,7 +24,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 void
-NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui> & n)
+NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
     _nodeName = n->getNode()->getFullySpecifiedName();

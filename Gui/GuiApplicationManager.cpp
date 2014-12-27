@@ -769,7 +769,11 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
         hasShortcut = false;
     }
     plugin->setHasShortcut(hasShortcut);
-    _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
+    
+    if (Natron::isPluginCreatable(plugin->getPluginID().toStdString())) {
+        _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
+    }
+    
 }
 
 void

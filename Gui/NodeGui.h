@@ -123,7 +123,7 @@ class NodeGui
 public:
     
     
-    typedef std::map<int,Edge*> InputEdgesMap;
+    typedef std::vector<Edge*> InputEdges;
 
     NodeGui(QGraphicsItem *parent = 0);
 
@@ -162,6 +162,10 @@ public:
     virtual bool isSettingsPanelOpened() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void setPosition(double x,double y) OVERRIDE FINAL;
+    
+    virtual void getPosition(double *x, double* y) const OVERRIDE FINAL;
+ 
+    virtual void getSize(double* w, double* h) const OVERRIDE FINAL;
 
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE FINAL;
@@ -187,7 +191,7 @@ public:
 
     /*Returns a ref to the vector of all the input arrows. This can be used
        to query the src and dst of a specific arrow.*/
-    const std::map<int,Edge*> & getInputsArrows() const
+    const std::vector<Edge*> & getInputsArrows() const
     {
         return _inputEdges;
     }
@@ -466,7 +470,7 @@ private:
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
-    std::map<int,Edge*> _inputEdges;
+    std::vector<Edge*> _inputEdges;
     Edge* _outputEdge;
     NodeSettingsPanel* _settingsPanel;
 

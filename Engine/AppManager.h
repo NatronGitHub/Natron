@@ -558,6 +558,11 @@ getNumInstances()
 }
 
 /**
+ * @brief Returns true if the plug-in ID can be instantiated by the GUI
+ **/
+bool isPluginCreatable(const std::string& pluginID);
+
+/**
  * @brief Ensures that the given Python script as imported the given module
  * and returns the position of the start of the next line after the imports. Note that this position
  * can be the first character after the last one in the script.

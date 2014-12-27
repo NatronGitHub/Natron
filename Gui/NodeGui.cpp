@@ -297,7 +297,13 @@ NodeGui::createPanel(QVBoxLayout* container,
 
         if (!requestedByLoad) {
             if ( node->getParentMultiInstanceName().empty() ) {
-                _graph->getGui()->addVisibleDockablePanel(panel);
+                
+                std::string pluginID = node->getPluginID();
+                if (pluginID == PLUGINID_NATRON_OUTPUT) {
+                    panel->setClosed(true);
+                } else {
+                    _graph->getGui()->addVisibleDockablePanel(panel);
+                }
             }
         } else {
             if (panel) {
@@ -580,9 +586,9 @@ NodeGui::refreshPosition(double x,
 
 
         if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) && continueMagnet ) {
-            for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+            for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
                 ///For each input try to find if the magnet should be enabled
-                boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
+                boost::shared_ptr<NodeGui> inputSource = (*it)->getSource();
                 if (inputSource) {
                     QSize inputSize = inputSource->getSize();
                     QPointF inputScenePos = inputSource->scenePos();
@@ -648,10 +654,10 @@ NodeGui::setAboveItem(QGraphicsItem* item)
         return;
     }
     item->stackBefore(this);
-    for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
+    for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        boost::shared_ptr<NodeGui> inputSource = (*it)->getSource();
         if (inputSource.get() != item) {
-            item->stackBefore(it->second);
+            item->stackBefore((*it));
         }
     }
     if (_outputEdge) {
@@ -678,13 +684,13 @@ NodeGui::refreshDashedStateOfEdges()
         
         int nbInputsConnected = 0;
         
-        for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
-            if (i->first == activeInputs[0] || i->first == activeInputs[1]) {
-                i->second->setDashed(false);
+        for (U32 i = 0; i < _inputEdges.size() ; ++i) {
+            if ((int)i == activeInputs[0] || (int)i == activeInputs[1]) {
+                _inputEdges[i]->setDashed(false);
             } else {
-                i->second->setDashed(true);
+                _inputEdges[i]->setDashed(true);
             }
-            if (i->second->getSource()) {
+            if (_inputEdges[i]->getSource()) {
                 ++nbInputsConnected;
             }
         }
@@ -698,17 +704,22 @@ void
 NodeGui::refreshEdges()
 {
     const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = getNode()->getInputs_mt_safe();
+    if (_inputEdges.size() != nodeInputs.size()) {
+        return;
+    }
     
-    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
-        assert(i->first < (int)nodeInputs.size() && i->first >= 0);
-        if (nodeInputs[i->first]) {
-            boost::shared_ptr<NodeGuiI> nodeInputGui_i = nodeInputs[i->first]->getNodeGui();
-            if (nodeInputGui_i) {
-                boost::shared_ptr<NodeGui> node = boost::dynamic_pointer_cast<NodeGui>(nodeInputGui_i);
-                i->second->setSource(node);
-            }
+    for (U32 i = 0; i < _inputEdges.size(); ++i) {
+        assert(i < nodeInputs.size() && i >= 0);
+        assert(_inputEdges[i]);
+        if (nodeInputs[i]) {
+            boost::shared_ptr<NodeGuiI> nodeInputGui_i = nodeInputs[i]->getNodeGui();
+            assert(nodeInputGui_i);
+            boost::shared_ptr<NodeGui> node = boost::dynamic_pointer_cast<NodeGui>(nodeInputGui_i);
+            _inputEdges[i]->setSource(node);
+        } else {
+            _inputEdges[i]->initLine();
         }
-        i->second->initLine();
+        
     }
     if (_outputEdge) {
         _outputEdge->initLine();
@@ -817,47 +828,51 @@ NodeGui::initializeInputs()
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
-    int inputnb = node->getMaxInputCount();
-
-    ///Delete all un-necessary inputs that may exist (This is true for inspector nodes)
-    while ( (int)_inputEdges.size() > inputnb ) {
-        InputEdgesMap::iterator it = _inputEdges.end();
-        --it;
-        delete it->second;
-        _inputEdges.erase(it);
+    std::vector<NodePtr> inputs = node->getInputs_copy();
+    
+    ///Delete all  inputs that may exist
+    for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        delete *it;
     }
+    _inputEdges.clear();
+    
 
     ///Make new edge for all non existing inputs
-    boost::shared_ptr<NodeGui> thisShared = _graph->getNodeGuiSharedPtr(this);
-    for (int i = 0; i < inputnb; ++i) {
-        if ( _inputEdges.find(i) == _inputEdges.end() ) {
-            Edge* edge = new Edge( i,0.,thisShared,parentItem() );
-            if ( node->getLiveInstance()->isInputRotoBrush(i) || !isVisible()) {
-                edge->setActive(false);
-                edge->hide();
-            }
-            _inputEdges.insert( make_pair(i,edge) );
-        }
-    }
-
+    boost::shared_ptr<NodeGui> thisShared = shared_from_this();
+    
     int emptyInputsCount = 0;
-    for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( !it->second->hasSource() &&
-            !node->getLiveInstance()->isInputMask(it->first) &&
-            !node->getLiveInstance()->isInputRotoBrush(it->first)) {
-            ++emptyInputsCount;
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        Edge* edge = new Edge( i,0.,thisShared,parentItem() );
+        if ( node->getLiveInstance()->isInputRotoBrush(i) || !isVisible()) {
+            edge->setActive(false);
+            edge->hide();
         }
+        if (inputs[i]) {
+            boost::shared_ptr<NodeGuiI> gui_i = inputs[i]->getNodeGui();
+            assert(gui_i);
+            boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+            assert(gui);
+            edge->setSource(gui);
+        } else {
+            if (!node->getLiveInstance()->isInputMask(i) &&
+                !node->getLiveInstance()->isInputRotoBrush(i)) {
+                ++emptyInputsCount;
+            }
+        }
+        _inputEdges.push_back(edge);
+        
     }
 
+    refreshDashedStateOfEdges();
+    
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>( node.get() );
     if (isInspector) {
         ///if the node is an inspector and it has only 1 empty input, display it aside
         if ( (emptyInputsCount == 1) && (node->getMaxInputCount() > 1) ) {
-            for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-                if ( !it->second->hasSource() ) {
-                    it->second->setAngle(M_PI);
-                    it->second->initLine();
-
+            for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+                if ( !(*it)->hasSource() ) {
+                    (*it)->setAngle(M_PI);
+                    (*it)->initLine();
                     return;
                 }
             }
@@ -869,12 +884,12 @@ NodeGui::initializeInputs()
     double angle = M_PI - piDividedbyX;
   
     int maskIndex = 0;
-    for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if (!it->second->hasSource() &&
-            !node->getLiveInstance()->isInputRotoBrush(it->first)) {
+    for (U32 i = 0; i < _inputEdges.size(); ++i) {
+        if (!_inputEdges[i]->hasSource() &&
+            !node->getLiveInstance()->isInputRotoBrush(i)) {
             double edgeAngle;
             bool decrAngle = true;
-            if (node->getLiveInstance()->isInputMask(it->first)) {
+            if (node->getLiveInstance()->isInputMask(i)) {
                 if (maskIndex == 0) {
                     edgeAngle = 0;
                     decrAngle = false;
@@ -889,11 +904,11 @@ NodeGui::initializeInputs()
             } else {
                 edgeAngle = angle;
             }
-            it->second->setAngle(edgeAngle);
+            _inputEdges[i]->setAngle(edgeAngle);
             if (decrAngle) {
                 angle -= piDividedbyX;
             }
-            it->second->initLine();
+            _inputEdges[i]->initLine();
         }
     }
 } // initializeInputs
@@ -941,16 +956,14 @@ NodeGui::setOptionalInputsVisible(bool visible)
 {
     ///Don't do this for inspectors
     NodePtr node = getNode();
-    if (dynamic_cast<InspectorNode*>(node.get())) {
-        return;
-    }
+  
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
-        for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-            if (node->getLiveInstance()->isInputOptional(it->first) &&
-                !node->getInput(it->first) &&
-                !it->second->isRotoEdge()) {
-                it->second->setVisible(visible);
+        for (U32 i = 0; i < _inputEdges.size() ; ++i) {
+            if (node->getLiveInstance()->isInputOptional(i) &&
+                !node->getInput(i) &&
+                !_inputEdges[i]->isRotoEdge()) {
+                _inputEdges[i]->setVisible(visible);
             }
         }
     }
@@ -963,8 +976,8 @@ NodeGui::boundingRectWithEdges() const
     QRectF bbox = boundingRect();
 
     ret = mapToScene(bbox).boundingRect();
-    for (InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        ret = ret.united( it->second->mapToScene( it->second->boundingRect() ).boundingRect() );
+    for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        ret = ret.united( (*it)->mapToScene( (*it)->boundingRect() ).boundingRect() );
     }
 
     return ret;
@@ -1100,32 +1113,28 @@ NodeGui::connectEdge(int edgeNumber)
 {
     const std::vector<boost::shared_ptr<Natron::Node> > & inputs = getNode()->getInputs_mt_safe();
 
-    if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) ) {
+    if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || _inputEdges.size() != inputs.size() ) {
         return false;
     }
 
     boost::shared_ptr<NodeGui> src;
     if (inputs[edgeNumber]) {
         boost::shared_ptr<NodeGuiI> ngi = inputs[edgeNumber]->getNodeGui();
-        src = boost::dynamic_pointer_cast<NodeGui>(src);
+        src = boost::dynamic_pointer_cast<NodeGui>(ngi);
     }
-    InputEdgesMap::const_iterator it2 = _inputEdges.find(edgeNumber);
-    if ( it2 == _inputEdges.end() ) {
-        return false;
-    } else {
-        it2->second->setSource(src);
-        it2->second->initLine();
-
-        return true;
-    }
+    
+   
+    _inputEdges[edgeNumber]->setSource(src);
+    return true;
+    
 }
 
 Edge*
 NodeGui::hasEdgeNearbyPoint(const QPointF & pt)
 {
-    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
-        if ( i->second->contains( i->second->mapFromScene(pt) ) ) {
-            return i->second;
+    for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        if ( (*it)->contains( (*it)->mapFromScene(pt) ) ) {
+            return (*it);
         }
     }
     if ( _outputEdge && _outputEdge->contains( _outputEdge->mapFromScene(pt) ) ) {
@@ -1138,10 +1147,10 @@ NodeGui::hasEdgeNearbyPoint(const QPointF & pt)
 Edge*
 NodeGui::hasBendPointNearbyPoint(const QPointF & pt)
 {
-    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
-        if ( i->second->hasSource() && i->second->isBendPointVisible() ) {
-            if ( i->second->isNearbyBendPoint(pt) ) {
-                return i->second;
+    for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        if ( (*it)->hasSource() && (*it)->isBendPointVisible() ) {
+            if ( (*it)->isNearbyBendPoint(pt) ) {
+                return (*it);
             }
         }
     }
@@ -1166,12 +1175,12 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
     Edge* closest = 0;
     double closestSquareDist = 0;
 
-    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
-        QLineF edgeLine = i->second->line();
+    for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        QLineF edgeLine = (*it)->line();
         for (int j = 0; j < 4; ++j) {
             if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
                 if (!closest) {
-                    closest = i->second;
+                    closest = *it;
                     closestSquareDist = ( intersection.x() - middleRect.x() ) * ( intersection.x() - middleRect.x() )
                                         + ( intersection.y() - middleRect.y() ) * ( intersection.y() - middleRect.y() );
                 } else {
@@ -1179,7 +1188,7 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
                                   + ( intersection.y() - middleRect.y() ) * ( intersection.y() - middleRect.y() );
                     if (dist < closestSquareDist) {
                         closestSquareDist = dist;
-                        closest = i->second;
+                        closest = *it;
                     }
                 }
                 break;
@@ -1210,11 +1219,11 @@ NodeGui::showGui()
     show();
     setActive(true);
     NodePtr node = getNode();
-    for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        _graph->scene()->addItem(it->second);
-        it->second->setParentItem( parentItem() );
-        if ( !node->getLiveInstance()->isInputRotoBrush(it->first) ) {
-            it->second->setActive(true);
+    for (U32 i = 0; i < _inputEdges.size() ;++i) {
+        _graph->scene()->addItem(_inputEdges[i]);
+        _inputEdges[i]->setParentItem( parentItem() );
+        if ( !node->getLiveInstance()->isInputRotoBrush(i) ) {
+            _inputEdges[i]->setActive(true);
         }
     }
     if (_outputEdge) {
@@ -1286,7 +1295,7 @@ NodeGui::activate(bool triggerRender)
         }
     }
     _graph->restoreFromTrash(this);
-    _graph->getGui()->getCurveEditor()->addNode( _graph->getNodeGuiSharedPtr(this) );
+    _graph->getGui()->getCurveEditor()->addNode(shared_from_this());
 
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
@@ -1305,12 +1314,12 @@ NodeGui::hideGui()
     }
     hide();
     setActive(false);
-    for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( it->second->scene() ) {
-            it->second->scene()->removeItem(it->second);
+    for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        if ( (*it)->scene() ) {
+            (*it)->scene()->removeItem((*it));
         }
-        it->second->setActive(false);
-        it->second->setSource( boost::shared_ptr<NodeGui>() );
+        (*it)->setActive(false);
+        (*it)->setSource( boost::shared_ptr<NodeGui>() );
     }
     if (_outputEdge) {
         if ( _outputEdge->scene() ) {
@@ -1508,7 +1517,7 @@ NodeGui::getKnobs() const
 void
 NodeGui::serialize(NodeGuiSerialization* serializationObject) const
 {
-    serializationObject->initialize( _graph->getNodeGuiSharedPtr(this) );
+    serializationObject->initialize(this);
 }
 
 void
@@ -1643,20 +1652,18 @@ NodeGui::setVisibleDetails(bool visible)
     if (_nameItem) {
         _nameItem->setVisible(visible);
     }
-    for (std::map<int,Edge*>::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
-        it->second->setVisibleDetails(visible);
+    for (InputEdges::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        (*it)->setVisibleDetails(visible);
     }
 }
 
 void
 NodeGui::onInputNRenderingStarted(int input)
 {
+    assert(input >= 0 && input < (int)_inputEdges.size());
     std::map<int,int>::iterator itC = _inputNRenderingStartedCount.find(input);
     if (itC == _inputNRenderingStartedCount.end()) {
-        std::map<int,Edge*>::iterator it = _inputEdges.find(input);
-        if ( it != _inputEdges.end() ) {
-            it->second->turnOnRenderingColor();
-        }
+        _inputEdges[input]->turnOnRenderingColor();
         _inputNRenderingStartedCount.insert(std::make_pair(input,1));
     }
     
@@ -1670,10 +1677,7 @@ NodeGui::onInputNRenderingFinished(int input)
         
         --itC->second;
         if (!itC->second) {
-            std::map<int,Edge*>::iterator it = _inputEdges.find(input);
-            if ( it != _inputEdges.end() ) {
-                it->second->turnOffRenderingColor();
-            }
+            _inputEdges[input]->turnOffRenderingColor();
             _inputNRenderingStartedCount.erase(itC);
         }
     }
@@ -1706,10 +1710,10 @@ NodeGui::moveAbovePositionRecursively(const QRectF & r)
 
     if ( r.intersects(sceneRect) ) {
         changePosition(0,-r.height() - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        for (std::map<int,Edge*>::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-            if ( it->second->hasSource() ) {
+        for (U32 i = 0; i < _inputEdges.size(); ++i) {
+            if ( _inputEdges[i]->hasSource() ) {
                 sceneRect = mapToScene( boundingRect() ).boundingRect();
-                it->second->getSource()->moveAbovePositionRecursively(sceneRect);
+                _inputEdges[i]->getSource()->moveAbovePositionRecursively(sceneRect);
             }
         }
     }
@@ -1900,19 +1904,17 @@ void
 NodeGui::deleteReferences()
 {
     removeUndoStack();
-    for (InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        Edge* e = it->second;
-        if (e) {
-            QGraphicsScene* scene = e->scene();
-            if (scene) {
-                scene->removeItem(e);
-            }
-            e->setParentItem(NULL);
-            delete e;
+    for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        
+        QGraphicsScene* scene = (*it)->scene();
+        if (scene) {
+            scene->removeItem((*it));
         }
+        (*it)->setParentItem(NULL);
+        delete *it;
     }
     _inputEdges.clear();
-
+    
     if (_outputEdge) {
         QGraphicsScene* scene = _outputEdge->scene();
         if (scene) {
@@ -2078,8 +2080,8 @@ void
 NodeGui::setScale_natron(double scale)
 {
     setScale(scale);
-    for (std::map<int,Edge*>::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        it->second->setScale(scale);
+    for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        (*it)->setScale(scale);
     }
 
     if (_outputEdge) {
@@ -2097,8 +2099,8 @@ NodeGui::setScale_natron(double scale)
 void
 NodeGui::removeHighlightOnAllEdges()
 {
-    for (std::map<int,Edge*>::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        it->second->setUseHighlight(false);
+    for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        (*it)->setUseHighlight(false);
     }
     if (_outputEdge) {
         _outputEdge->setUseHighlight(false);
@@ -2111,12 +2113,10 @@ NodeGui::getInputArrow(int inputNb) const
     if (inputNb == -1) {
         return _outputEdge;
     }
-    std::map<int, Edge*>::const_iterator it = _inputEdges.find(inputNb);
-    if ( it != _inputEdges.end() ) {
-        return it->second;
+    if (inputNb >= (int)_inputEdges.size()) {
+        return 0;
     }
-
-    return NULL;
+    return _inputEdges[inputNb];
 }
 
 Edge*
@@ -2516,4 +2516,20 @@ void
 NodeGui::setPosition(double x,double y)
 {
     refreshPosition(x, y, true);
+}
+
+void
+NodeGui::getPosition(double *x, double* y) const
+{
+    QPointF pos = getPos_mt_safe();
+    *x = pos.x();
+    *y = pos.y();
+}
+
+void
+NodeGui::getSize(double* w, double* h) const
+{
+    QSize s = getSize();
+    *w = s.width();
+    *h = s.height();
 }

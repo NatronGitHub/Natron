@@ -32,6 +32,7 @@ class NodeCollection : public QObject
     
 public:
     
+    
     NodeCollection(AppInstance* app);
     
     virtual ~NodeCollection();
@@ -158,6 +159,21 @@ public:
      **/
     void quitAnyProcessingForAllNodes();
     
+    /**
+     * @brief Callback called when a node of the collection is being deactivated
+     **/
+    virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    
+    /**
+     * @brief Callback called when a node of the collection is being activated
+     **/
+    virtual void notifyNodeActivated(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    
+    /**
+     * @brief Callback called when an input of the group changed
+     **/
+    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    
 Q_SIGNALS:
     
     void nodesCleared();
@@ -172,13 +188,72 @@ class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
 {
 public:
     
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    {
+        return new NodeGroup(n);
+    }
+
+    
     NodeGroup(const NodePtr &node);
     
     virtual ~NodeGroup();
     
+    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return 1;
+    }
+    
+    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return 0;
+    }
+    
+    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return PLUGINID_NATRON_GROUP;
+    }
+    
+    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return "Group";
+    }
+    
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
+    {
+        grouping->push_back(PLUGIN_GROUP_OTHER);
+    }
+    
+    virtual EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return EffectInstance::eRenderSafetyFullySafeFrame;
+    }
+    
+    virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    
+    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+
+    virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    virtual void notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
 private:
+    
+    virtual void initializeKnobs() OVERRIDE FINAL;
     
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
+
 
 #endif // NODEGROUP_H

@@ -404,6 +404,11 @@ NodeGraph::NodeGraph(Gui* gui,
 
     QObject::connect( group.get(), SIGNAL( nodesCleared() ), this, SLOT( onProjectNodesCleared() ) );
 
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
+    if (isGrp) {
+        QObject::connect(isGrp->getNode().get(), SIGNAL(nameChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
+    }
+    
     setMouseTracking(true);
     setCacheMode(CacheBackground);
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
@@ -667,6 +672,8 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     if (pushUndoRedoCommand) {
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
+    } else if (!requestedByLoad) {
+        selectNode(node_ui, false);
     }
     _imp->_evtState = DEFAULT;
     
@@ -778,10 +785,10 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
         QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
 
         ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
-        const std::map<int,Edge*> & selectedNodeInputs = selected->getInputsArrows();
-        for (std::map<int,Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
-            if ( it->second->hasSource() ) {
-                it->second->getSource()->moveAbovePositionRecursively(createdNodeRect);
+        const std::vector<Edge*> & selectedNodeInputs = selected->getInputsArrows();
+        for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
+            if ( (*it)->hasSource() ) {
+                (*it)->getSource()->moveAbovePositionRecursively(createdNodeRect);
             }
         }
     }
@@ -1203,11 +1210,10 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             break;
                         }
                         
-                        const std::map<int,Edge*> & inputEdges = n->getInputsArrows();
-                        std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
-                        assert( foundInput != inputEdges.end() );
-                        pushUndoCommand( new ConnectCommand( this,foundInput->second,
-                                                                  foundInput->second->getSource(),_imp->_arrowSelected->getSource() ) );
+                        Edge* foundInput = n->getInputArrow(preferredInput);
+                        assert(foundInput);
+                        pushUndoCommand( new ConnectCommand( this,foundInput,
+                                                                  foundInput->getSource(),_imp->_arrowSelected->getSource() ) );
                     }
                 }
                 foundSrc = true;
@@ -1232,6 +1238,8 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             ///now if there was a hint displayed, use it to actually make connections.
             if (_imp->_highLightedEdge) {
                 boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
+                
+                _imp->_highLightedEdge->setUseHighlight(false);
                 if ( _imp->_highLightedEdge->isOutputEdge() ) {
                     int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
                     if (prefInput != -1) {
@@ -1267,7 +1275,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         }
                     }
                 }
-                _imp->_highLightedEdge->setUseHighlight(false);
+                
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
@@ -1909,10 +1917,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///the first valid input node
         if ( !_imp->_selection.nodes.empty() ) {
             boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.nodes.rbegin() );
-            const std::map<int,Edge*> & inputs = lastSelected->getInputsArrows();
-            for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-                if ( it->second->hasSource() ) {
-                    boost::shared_ptr<NodeGui> input = it->second->getSource();
+            const std::vector<Edge*> & inputs = lastSelected->getInputsArrows();
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if ( inputs[i]->hasSource() ) {
+                    boost::shared_ptr<NodeGui> input = inputs[i]->getSource();
                     if ( input->getIsSelected() && modCASIsShift(e) ) {
                         std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),
                                                                                            _imp->_selection.nodes.end(),lastSelected);
@@ -1921,7 +1929,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                             _imp->_selection.nodes.erase(found);
                         }
                     } else {
-                        selectNode( it->second->getSource(), modCASIsShift(e) );
+                        selectNode( inputs[i]->getSource(), modCASIsShift(e) );
                     }
                     break;
                 }
@@ -2068,15 +2076,15 @@ NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
     _bendPointsVisible = visible;
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        const std::map<int,Edge*> & edges = (*it)->getInputsArrows();
-        for (std::map<int,Edge*>::const_iterator it2 = edges.begin(); it2 != edges.end(); ++it2) {
+        const std::vector<Edge*> & edges = (*it)->getInputsArrows();
+        for (std::vector<Edge*>::const_iterator it2 = edges.begin(); it2 != edges.end(); ++it2) {
             if (visible) {
-                if ( !it2->second->isOutputEdge() && it2->second->hasSource() && (it2->second->line().length() > 50) ) {
-                    it2->second->setBendPointVisible(visible);
+                if ( !(*it2)->isOutputEdge() && (*it2)->hasSource() && ((*it2)->line().length() > 50) ) {
+                    (*it2)->setBendPointVisible(visible);
                 }
             } else {
-                if ( !it2->second->isOutputEdge() ) {
-                    it2->second->setBendPointVisible(visible);
+                if ( !(*it2)->isOutputEdge() ) {
+                    (*it2)->setBendPointVisible(visible);
                 }
             }
         }
@@ -2166,14 +2174,15 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
 
     ///if the node doesn't have the input 'inputNb' created yet, populate enough input
     ///so it can be created.
-    NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);
-    while ( it == gui->getInputsArrows().end() ) {
+    Edge* foundInput = gui->getInputArrow(inputNB);
+    while (!foundInput) {
         v->addEmptyInput();
-        it = gui->getInputsArrows().find(inputNB);
+        foundInput = gui->getInputArrow(inputNB);
     }
-
+    assert(foundInput);
+  
     ///and push a connect command to the selected node.
-    pushUndoCommand( new ConnectCommand(this,it->second,it->second->getSource(),selected) );
+    pushUndoCommand( new ConnectCommand(this,foundInput,foundInput->getSource(),selected) );
 
     ///Set the viewer as the selected node (also wipe the current selection)
     selectNode(gui,false);
@@ -2306,6 +2315,13 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 {
+    if (node->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
+        Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
+                                                                     "needs to exist for the group to work properly.")
+                            .toStdString());
+        return;
+    }
+
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -2354,7 +2370,7 @@ NodeGraph::deleteSelection()
             std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = getNodesWithinBackDrop(*it);
             for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
-                if ( found == nodesToRemove.end() ) {
+                if ( found == nodesToRemove.end()) {
                     nodesToRemove.push_back(*it2);
                 }
             }
@@ -2362,6 +2378,14 @@ NodeGraph::deleteSelection()
 
 
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+            
+            if ((*it)->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
+                Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
+                                                                             "needs to exist for the group to work properly.")
+                                    .toStdString());
+                return;
+            }
+            
             const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
             for (U32 i = 0; i < knobs.size(); ++i) {
@@ -3472,25 +3496,6 @@ NodeGraph::decloneSelectedNodes()
     pushUndoCommand( new DecloneMultipleNodesCommand(this,nodesToDeclone,_imp->_selection.bds) );
 }
 
-boost::shared_ptr<NodeGui>
-NodeGraph::getNodeGuiSharedPtr(const NodeGui* n) const
-{
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        if ( (*it).get() == n ) {
-            return *it;
-        }
-    }
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        if ( (*it).get() == n ) {
-            return *it;
-        }
-    }
-    ///it must either be in the trash or in the active nodes
-    assert(false);
-
-    return boost::shared_ptr<NodeGui>();
-}
-
 void
 NodeGraph::setUndoRedoStackLimit(int limit)
 {
@@ -4355,4 +4360,16 @@ void
 NodeGraph::extractSelectedNode()
 {
     pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
+}
+
+void
+NodeGraph::onGroupNameChanged(const QString& name)
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    getGui()->unregisterTab(this);
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        parent->setTabName(this, name);
+    }
+    getGui()->registerTab(this);
 }

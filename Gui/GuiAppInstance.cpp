@@ -242,7 +242,13 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                               bool pushUndoRedoCommand)
 {
     
-    std::list<boost::shared_ptr<NodeGui> >  selectedNodes = _imp->_gui->getSelectedNodes();
+    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeGraphI* graph_i = group->getNodeGraph();
+    assert(graph_i);
+    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+    assert(graph);
+    
+    std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
 
     boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
 
@@ -295,7 +301,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
         if ( (selectedNodes.size() == 1) && autoConnect ) {
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
                 if (*it != nodegui) {
-                    getProject()->autoConnectNodes((*it)->getNode(), node);
+                    group->autoConnectNodes((*it)->getNode(), node);
                     break;
                 }
             }

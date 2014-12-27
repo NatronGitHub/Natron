@@ -20,6 +20,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/TimeLine.h"
+#include "Engine/NoOp.h"
 #include "Engine/ViewerInstance.h"
 
 using namespace Natron;
@@ -88,8 +89,10 @@ NodeCollection::getNodes() const
 void
 NodeCollection::addNode(const NodePtr& node)
 {
-    QMutexLocker k(&_imp->nodesMutex);
-    _imp->nodes.push_back(node);
+    {
+        QMutexLocker k(&_imp->nodesMutex);
+        _imp->nodes.push_back(node);
+    }
 }
 
 
@@ -645,7 +648,10 @@ NodeCollection::fixPathName(const std::string& oldName,const std::string& newNam
 
 struct NodeGroupPrivate
 {
+    std::vector<boost::shared_ptr<Node> > inputs;
+    
     NodeGroupPrivate()
+    : inputs()
     {
         
     }
@@ -653,13 +659,116 @@ struct NodeGroupPrivate
 
 NodeGroup::NodeGroup(const NodePtr &node)
 : OutputEffectInstance(node)
-, NodeCollection(node->getApp())
+, NodeCollection(node ? node->getApp() : 0)
 , _imp(new NodeGroupPrivate())
 {
+    setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 }
 
 
 NodeGroup::~NodeGroup()
 {
     
+}
+
+std::string
+NodeGroup::getDescription() const
+{
+    return "Use this to nest multiple nodes into a single node. The original nodes will be replaced by the Group node and its "
+    "content is available in a separate NodeGraph tab. You can add user parameters to the Group node which can drive "
+    "parameters of nodes nested within the Group. To specify the outputs and inputs of the Group node, you may add multiple "
+    "Input node within the group and exactly 1 Output node.";
+}
+
+void
+NodeGroup::addAcceptedComponents(int /*inputNb*/,
+                                std::list<Natron::ImageComponentsEnum>* comps)
+{
+    comps->push_back(Natron::eImageComponentRGB);
+    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(Natron::eImageComponentAlpha);
+}
+
+void
+NodeGroup::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+{
+    depths->push_back(Natron::eImageBitDepthByte);
+    depths->push_back(Natron::eImageBitDepthShort);
+    depths->push_back(Natron::eImageBitDepthFloat);
+}
+
+int
+NodeGroup::getMaxInputCount() const
+{
+    return (int)_imp->inputs.size();
+}
+
+std::string
+NodeGroup::getInputLabel(int inputNb) const
+{
+    if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
+        return std::string();
+    }
+    
+    ///If the input name starts with "input" remove it, otherwise keep the full name
+    QString inputName(_imp->inputs[inputNb]->getName_mt_safe().c_str());
+    if (inputName.startsWith("input",Qt::CaseInsensitive)) {
+        inputName.remove(0, 5);
+    }
+    return inputName.toStdString();
+}
+
+bool
+NodeGroup::isInputOptional(int inputNb) const
+{
+    if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
+        return false;
+    }
+    GroupInput* input = dynamic_cast<GroupInput*>(_imp->inputs[inputNb]->getLiveInstance());
+    assert(input);
+    boost::shared_ptr<KnobI> knob = input->getKnobByName("optional");
+    assert(knob);
+    Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
+    assert(isBool);
+    return isBool->getValue();
+}
+
+void
+NodeGroup::initializeKnobs()
+{
+   
+}
+
+void
+NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
+{
+    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+    if (isInput) {
+        for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+            if (node == *it) {
+                _imp->inputs.erase(it);
+                getNode()->initializeInputs();
+                return;
+            }
+        }
+        ///The input must have been tracked before
+        assert(false);
+    }
+}
+
+void
+NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
+{
+    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+    if (isInput) {
+        _imp->inputs.push_back(node);
+        getNode()->initializeInputs();
+    }
+
+}
+
+void
+NodeGroup::notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/)
+{
+    getNode()->initializeInputs();
 }

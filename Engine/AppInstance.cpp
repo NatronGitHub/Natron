@@ -332,6 +332,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
         }
         
     }
+    
+    if (pluginID == PLUGINID_NATRON_INPUT) {
+        Natron::Project* isProject = dynamic_cast<Natron::Project*>(group.get());
+        if (isProject) {
+            Natron::errorDialog("Plugin error", std::string("You can only create an Input node within a Group"));
+            return node;
+        }
+    }
+    
+    
+    
     if (!plugin) {
         return node;
     }
@@ -362,13 +373,13 @@ AppInstance::createNodeInternal(const QString & pluginID,
     if (addToProject) {
         //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
         //of the node works
-        _imp->_currentProject->addNode(node);
+        group->addNode(node);
     }
     assert(node);
     try {
         node->load(foundPluginID,multiInstanceParentName,childIndex, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
-        _imp->_currentProject->removeNode(node);
+        group->removeNode(node);
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
@@ -376,7 +387,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
-        _imp->_currentProject->removeNode(node);
+        group->removeNode(node);
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
@@ -395,8 +406,52 @@ AppInstance::createNodeInternal(const QString & pluginID,
                   xPosHint,
                   yPosHint,
                   pushUndoRedoCommand);
+    
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
 
-
+    if (isGrp && !requestedByLoad) {
+        
+        //if the node is a group and we're not loading the project, create one input and one output
+        NodePtr input,output;
+        
+        {
+            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT,
+                                std::string(),
+                                -1,
+                                -1,
+                                -1,
+                                false, //< don't autoconnect
+                                INT_MIN,
+                                INT_MIN,
+                                false, //<< don't push an undo command
+                                true,
+                                QString(),
+                                CreateNodeArgs::DefaultValuesList(),
+                                isGrp);
+            output = createNode(args);
+            output->setName("Output");
+            assert(output);
+        }
+        {
+            CreateNodeArgs args(PLUGINID_NATRON_INPUT,
+                                std::string(),
+                                -1,
+                                -1,
+                                -1,
+                                true, // autoconnect
+                                INT_MIN,
+                                INT_MIN,
+                                false, //<< don't push an undo command
+                                true,
+                                QString(),
+                                CreateNodeArgs::DefaultValuesList(),
+                                isGrp);
+            input = createNode(args);
+            assert(input);
+        }
+       
+    }
+    
     return node;
 } // createNodeInternal
 

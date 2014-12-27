@@ -112,8 +112,6 @@ public:
 
     void centerOnItem(QGraphicsItem* item);
 
-    boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
-
     void setUndoRedoStackLimit(int limit);
 
     void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
@@ -219,6 +217,8 @@ public:
     void onNodeNameEditDialogFinished();
     
     void toggleAutoTurbo();
+    
+    void onGroupNameChanged(const QString& name);
     
 private:
 

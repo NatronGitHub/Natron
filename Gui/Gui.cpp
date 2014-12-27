@@ -705,7 +705,15 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool autoConnect)
 {
     assert(_imp->_nodeGraphArea);
-    boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
+    
+    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    assert(group);
+    NodeGraphI* graph_i = group->getNodeGraph();
+    assert(graph_i);
+    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+    assert(graph);
+    
+    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
                                                                              xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
     QObject::connect( nodeGui.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
@@ -1157,18 +1165,31 @@ void
 Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group)
 {
     
-    assert(dynamic_cast<NodeGroup*>(group->getLiveInstance()));
-    boost::shared_ptr<NodeCollection> collection = group->getGroup();
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(group->getLiveInstance()->shared_from_this());
+    assert(isGrp);
+    boost::shared_ptr<NodeCollection> collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
     assert(collection);
+    
+    TabWidget* where = 0;
+    if (_imp->_lastFocusedGraph) {
+        TabWidget* isTab = dynamic_cast<TabWidget*>(_imp->_lastFocusedGraph->parentWidget());
+        if (isTab) {
+            where = isTab;
+        } else {
+            QMutexLocker k(&_imp->_panesMutex);
+            assert(!_imp->_panes.empty());
+            where = _imp->_panes.front();
+        }
+    }
     
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this,collection,scene,this);
-    nodeGraph->setObjectName(kNodeGraphObjectName);
+    nodeGraph->setObjectName(group->getName_mt_safe().c_str());
     registerTab(nodeGraph);
-    
     _imp->_groups.push_back(nodeGraph);
 
+    where->appendTab(nodeGraph);
 }
 
 void
@@ -2080,10 +2101,15 @@ Gui::removeViewerTab(ViewerTab* tab,
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
-        boost::shared_ptr<NodeGuiI> guiI = tab->getInternalNode()->getNode()->getNodeGui();
+        NodePtr internalNode = tab->getInternalNode()->getNode();
+        boost::shared_ptr<NodeGuiI> guiI = internalNode->getNodeGui();
         boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
         assert(gui);
-        _imp->_nodeGraphArea->removeNode(gui);
+        NodeGraphI* graph_i = internalNode->getGroup()->getNodeGraph();
+        assert(graph_i);
+        NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+        assert(graph);
+        graph->removeNode(gui);
     } else {
         tab->hide();
 
@@ -2287,6 +2313,10 @@ Gui::findExistingToolButton(const QString & label) const
 ToolButton*
 Gui::findOrCreateToolButton(PluginGroupNode* plugin)
 {
+    if (!Natron::isPluginCreatable(plugin->getID().toStdString())) {
+        return 0;
+    }
+    
     for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
         if ( _imp->_toolButtons[i]->getID() == plugin->getID() && _imp->_toolButtons[i]->getPluginMajor() == plugin->getMajorVersion()) {
             return _imp->_toolButtons[i];

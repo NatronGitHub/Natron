@@ -4350,6 +4350,7 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
     return ret;
 }
 
+
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)
       , _writerCurrentFrame(0)

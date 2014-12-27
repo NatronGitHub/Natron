@@ -21,6 +21,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/AppManager.h"
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
@@ -237,6 +238,10 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     std::string stdInitialFilter = initialFilter.toStdString();
     int i = 0;
     for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it,++i) {
+        
+        if (!Natron::isPluginCreatable(it->first)) {
+            continue;
+        }
         
         if (it->second.size() == 1) {
             QString name = (*it->second.begin())->generateUserFriendlyPluginID();

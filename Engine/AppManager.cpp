@@ -967,6 +967,54 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
     {
+        boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&GroupOutput::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), "", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+    }
+    {
+        boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&GroupInput::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), "", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+    }
+    {
+        boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&NodeGroup::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        groupNode->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), "", "", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion());
+    }
+    {
         boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
         std::map<std::string,void*> functions;
         functions.insert( std::make_pair("BuildEffect", (void*)&Dot::BuildEffect) );
@@ -2522,6 +2570,14 @@ void declareParameterAsNodeField(const std::string& nodeName,const std::string& 
     QString str = QString("%1.%2 = %1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
     std::string script = str.toStdString();
     runScriptWithEngineImport(script);
+}
+    
+bool isPluginCreatable(const std::string& pluginID)
+{
+    if (pluginID == PLUGINID_NATRON_OUTPUT) {
+        return false;
+    }
+    return true;
 }
     
 } //Namespace Natron

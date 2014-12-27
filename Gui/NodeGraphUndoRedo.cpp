@@ -513,18 +513,9 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
                 _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, newSrc, inspector);
             }
         }
-        ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
-        NodeGui::InputEdgesMap::const_iterator it = dst->getInputsArrows().find(_inputNb);
-        while ( it == dst->getInputsArrows().end() ) {
-            inspector->addEmptyInput();
-            it = dst->getInputsArrows().find(_inputNb);
-        }
-        _edge = it->second;
-        _inputNb = _edge->getInputNumber();
-
+      
         
     } else {
-        //_edge->setSource(_newSrc);
         
         if (oldSrc && newSrc) {
             internalDst->replaceInput(newSrc, _inputNb);
@@ -731,13 +722,13 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
 {
     QSize nodeSize = currentNode->getSize();
     boost::shared_ptr<Natron::Node> internalNode = currentNode->getNode();
-    const std::map<int,Edge*> & inputs = currentNode->getInputsArrows();
+    const std::vector<Edge*> & inputs = currentNode->getInputsArrows();
     NodeGuiPtr firstNonMaskInput;
     std::list<NodeGuiPtr> otherNonMaskInputs;
     std::list<NodeGuiPtr> maskInputs;
 
-    for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-        NodeGuiPtr source = it->second->getSource();
+    for (U32 i = 0; i < inputs.size() ; ++i) {
+        NodeGuiPtr source = inputs[i]->getSource();
         
         ///Check if the source is selected
         std::list<NodeGuiPtr>::const_iterator foundSelected = std::find(selectedNodes.begin(),selectedNodes.end(),source);
@@ -746,7 +737,7 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
         }
         
         if (source) {
-            bool isMask = internalNode->getLiveInstance()->isInputMask(it->first);
+            bool isMask = internalNode->getLiveInstance()->isInputMask(i);
             if (!firstNonMaskInput && !isMask) {
                 firstNonMaskInput = source;
                 for (std::list<TreeNode>::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
@@ -1220,9 +1211,9 @@ static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,co
     } else {
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
-        const std::map<int,Edge*>& inputs = node->getInputsArrows();
-        for (std::map<int,Edge*>::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
-            boost::shared_ptr<NodeGui> input = it2->second->getSource();
+        const std::vector<Edge*>& inputs = node->getInputsArrows();
+        for (std::vector<Edge*>::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
+            boost::shared_ptr<NodeGui> input = (*it2)->getSource();
             if (input) {
                 addTreeInputs(nodes, input, tree, markedNodes);
             }
@@ -1252,9 +1243,9 @@ ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const st
                 tree.output.outputs.push_back(std::make_pair(idx,*it2));
             }
             
-            const std::map<int,Edge*>& inputs = (*it)->getInputsArrows();
-            for (std::map<int,Edge*>::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
-                boost::shared_ptr<NodeGui> input = it2->second->getSource();
+            const std::vector<Edge*>& inputs = (*it)->getInputsArrows();
+            for (U32 i = 0; i < inputs.size(); ++i) {
+                boost::shared_ptr<NodeGui> input = inputs[i]->getSource();
                 if (input) {
                     addTreeInputs(nodes, input, tree, markedNodes);
                 }

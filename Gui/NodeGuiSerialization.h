@@ -43,7 +43,7 @@ public:
     {
     }
 
-    void initialize(const boost::shared_ptr<NodeGui> & n);
+    void initialize(const NodeGui* n);
 
     double getX() const
     {

@@ -5,10 +5,12 @@
 
 
 #include "NoOp.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/Transform.h"
 
 NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
-    : Natron::EffectInstance(n)
+    : Natron::OutputEffectInstance(n)
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -63,4 +65,43 @@ NoOpBase::getTransform(SequenceTime /*time*/,
     transform->d = 0.; transform->e = 1.; transform->f = 0.;
     transform->g = 0.; transform->h = 0.; transform->i = 1.;
     return Natron::eStatusOK;
+}
+
+std::string
+GroupInput::getDescription() const
+{
+    return "This node can only be used within a Group. It adds an input arrow to the group.";
+}
+
+void
+GroupInput::initializeKnobs()
+{
+    boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Controls");
+    page->setName("controls");
+    
+    optional = Natron::createKnob<Bool_Knob>(this, "Optional");
+    optional->setHintToolTip("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
+                             "for the render to work. ");
+    optional->setAnimationEnabled(false);
+    optional->setName("optional");
+    page->addKnob(optional);
+}
+
+void
+GroupInput::knobChanged(KnobI* k,
+                 Natron::ValueChangedReasonEnum /*reason*/,
+                 int /*view*/,
+                 SequenceTime /*time*/,
+                 bool /*originatedFromMainThread*/)
+{
+    if (k == optional.get()) {
+        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+        group->notifyInputOptionalStateChanged(getNode());
+    }
+}
+
+std::string
+GroupOutput::getDescription() const
+{
+    return "This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.";
 }

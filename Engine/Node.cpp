@@ -398,7 +398,11 @@ Node::load(const std::string & pluginID,
         
         createRotoContextConditionnally();
         initializeInputs();
-        initializeKnobs(serialization,renderScaleSupportPreference);
+        initializeKnobs(renderScaleSupportPreference);
+        
+        if (!serialization.isNull()) {
+            loadKnobs(serialization);
+        }
         if (!paramValues.empty()) {
             setValuesFromSerialization(paramValues);
         }
@@ -449,7 +453,7 @@ Node::load(const std::string & pluginID,
     
     if (!nameSet) {
         if (fixedName.isEmpty()) {
-            getApp()->getProject()->initNodeName(this);
+            getGroup()->initNodeName(this);
         } else {
             setName(fixedName);
         }
@@ -462,6 +466,8 @@ Node::load(const std::string & pluginID,
         updateEffectLabelKnob( QString( parentMultiInstanceName.c_str() ) + '_' + QString::number(childIndex) );
     }
     declarePythonFields();
+    
+    getGroup()->notifyNodeActivated(thisShared);
     
     computeHash();
     assert(_imp->liveInstance);
@@ -608,25 +614,29 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     ///Only called from the main thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->knobsInitialized);
+    if (serialization.isNull()) {
+        return;
+    }
     
     const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size(); ++j) {
-        loadKnob(nodeKnobs[j], serialization,updateKnobGui);
+        loadKnob(nodeKnobs[j], serialization.getKnobsValues(),updateKnobGui);
     }
     ///now restore the roto context if the node has a roto context
     if (serialization.hasRotoContext() && _imp->rotoContext) {
         _imp->rotoContext->load( serialization.getRotoContext() );
     }
     
+    restoreUserKnobs(serialization);
+
     setKnobsAge( serialization.getKnobsAge() );
 }
 
 void
 Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
-               const NodeSerialization & serialization,bool updateKnobGui)
+               const std::list< boost::shared_ptr<KnobSerialization> > & knobsValues,bool updateKnobGui)
 {
-    const NodeSerialization::KnobValues & knobsValues = serialization.getKnobsValues();
     
     ///try to find a serialized value for this knob
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
@@ -1282,13 +1292,15 @@ Node::makeInfoForInput(int inputNumber) const
 }
 
 void
-Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSupportPref)
+Node::initializeKnobs(int renderScaleSupportPref)
 {
     ////Only called by the main-thread
     _imp->liveInstance->blockEvaluation();
     
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
+    
+
     _imp->liveInstance->initializeKnobsPublic();
     
     ///If the effect has a mask, add additionnal mask controls
@@ -1322,11 +1334,6 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
                                             "Setting this to None is the same as disabling the mask.");
             std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
             maskChannelKnob->setName(channelMaskName);
-            
-            
-            ///and load it
-            loadKnob(enableMaskKnob, serialization);
-            loadKnob(maskChannelKnob, serialization);
         }
     }
     
@@ -1341,7 +1348,6 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->nodeLabelKnob->setUsesRichText(true);
     _imp->nodeLabelKnob->setHintToolTip("This label gets appended to the node name on the node graph.");
     _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
-    loadKnob(_imp->nodeLabelKnob, serialization);
     
     _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Force caching", 1, false);
     _imp->forceCaching->setName("forceCaching");
@@ -1353,7 +1359,6 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
                                        "images.");
     _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
-    loadKnob(_imp->forceCaching,serialization);
     
     _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Preview enabled",1,false);
     assert(_imp->previewEnabledKnob);
@@ -1374,7 +1379,6 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->disableNodeKnob->turnOffNewLine();
     _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
     _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
-    loadKnob(_imp->disableNodeKnob, serialization);
     
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Render high def. upstream",1,false);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
@@ -1391,7 +1395,6 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
         _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
     }
     _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
-    loadKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported, serialization);
     
     _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Info",1,false);
     _imp->infoPage->setName("info");
@@ -1438,7 +1441,6 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
     
-    restoreUserKnobs(serialization);
     
     Q_EMIT knobsInitialized();
 } // initializeKnobs
@@ -2314,6 +2316,11 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     ///_imp->liveInstance->clearPluginMemoryChunks();
     clearLastRenderedImage();
     
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if (group) {
+        group->notifyNodeDeactivated(shared_from_this());
+    }
+    
     if (hideGui) {
         Q_EMIT deactivated(triggerRender);
     }
@@ -2332,7 +2339,7 @@ Node::activate(const std::list< Node* > & outputsToRestore,
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    if (!_imp->liveInstance) {
+    if (!_imp->liveInstance || isActivated()) {
         return;
     }
     
@@ -2383,6 +2390,11 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     {
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
+    }
+    
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if (group) {
+        group->notifyNodeActivated(shared_from_this());
     }
     //Natron::declareNodeVariableToPython(getApp()->getAppID(), getName());
 
@@ -3878,6 +3890,15 @@ Node::shouldCacheOutput() const
 }
 
 void
+Node::setPosition(double x,double y)
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (gui) {
+        gui->setPosition(x, y);
+    }
+}
+
+void
 Node::setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui)
 {
     assert(!_imp->guiPointer.lock());
@@ -4049,7 +4070,7 @@ InspectorNode::removeEmptyInputs()
     /*While there're NULL inputs at the tail of the map,remove them.
      Stops at the first non-NULL input.*/
     while (_inputsCount > 1) {
-        if ( (getInput(_inputsCount - 1) == NULL) && (getInput(_inputsCount - 2) == NULL) ) {
+        if ( (!getInput(_inputsCount - 1)) && (!getInput(_inputsCount - 2)) ) {
             --_inputsCount;
             initializeInputs();
         } else {
