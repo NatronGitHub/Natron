@@ -1209,11 +1209,31 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
 Natron::Plugin*
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
-                            int /*minorVersion*/) const
+                            int /*minorVersion*/,
+                            bool convertToLowerCase) const
 {
-    std::map<int,Natron::Plugin*> matches;
-
-    PluginsMap::const_iterator foundID = _imp->_plugins.find(pluginId.toStdString());
+    PluginsMap::const_iterator foundID = _imp->_plugins.end();
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        QString realID;
+        if (convertToLowerCase &&
+            !pluginId.startsWith(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.")) {
+            
+            QString lowerCase = QString(it->first.c_str()).toLower();
+            if (lowerCase == pluginId) {
+                foundID = it;
+                break;
+            }
+            
+        } else {
+            if (QString(it->first.c_str()) == pluginId) {
+                foundID = it;
+                break;
+            }
+        }
+    }
+    
+    
+    
     if (foundID != _imp->_plugins.end()) {
         
         assert(!foundID->second.empty());

@@ -139,6 +139,11 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 autoSetProjectDirectory(isAutoSave ? realFilePath : path);
             }
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
+        } else if (projectKnobs[i] == natronVersion) {
+            std::string v = natronVersion->getValue();
+            if (v == "Natron v1.0.0") {
+                _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
+            }
         }
 
     }

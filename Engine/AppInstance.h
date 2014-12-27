@@ -307,6 +307,14 @@ public:
 
     virtual void toggleAutoHideGraphInputs() {}
     
+    /**
+     * @brief In Natron v1.0.0 plug-in IDs were lower case only due to a bug in OpenFX host support.
+     * To be able to load projects created in Natron v1.0.0 we must identity that the project was created in this version
+     * and try to load plug-ins with their lower case ID instead.
+     **/
+    void setProjectWasCreatedWithLowerCaseIDs(bool b);
+    bool wasProjectCreatedWithLowerCaseIDs() const;
+    
 public slots:
 
     void quit();

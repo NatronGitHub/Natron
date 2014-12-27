@@ -39,12 +39,13 @@ struct AppInstancePrivate
 {
     boost::shared_ptr<Natron::Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
-
-
+    bool _projectCreatedWithLowerCaseIDs;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
-        : _currentProject( new Natron::Project(app) )
-          , _appID(appID)
+    : _currentProject( new Natron::Project(app) )
+    , _appID(appID)
+    , _projectCreatedWithLowerCaseIDs(false)
     {
     }
 };
@@ -319,7 +320,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     Natron::Plugin* plugin = 0;
 
     try {
-        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
+        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
@@ -691,4 +692,16 @@ double
 AppInstance::getProjectFrameRate() const
 {
     return _imp->_currentProject->getProjectFrameRate();
+}
+
+void
+AppInstance::setProjectWasCreatedWithLowerCaseIDs(bool b)
+{
+    _imp->_projectCreatedWithLowerCaseIDs = b;
+}
+
+bool
+AppInstance::wasProjectCreatedWithLowerCaseIDs() const
+{
+    return _imp->_projectCreatedWithLowerCaseIDs;
 }
