@@ -292,6 +292,7 @@ struct NodeGraphPrivate
     double _accumDelta;
     bool _detailsVisible;
     bool _mergeMoveCommands;
+    bool _hasMovedOnce;
     
     NodeGraphPrivate(Gui* gui,
                      NodeGraph* p)
@@ -338,6 +339,7 @@ struct NodeGraphPrivate
           , _accumDelta(0)
           , _detailsVisible(false)
           , _mergeMoveCommands(false)
+          , _hasMovedOnce(false)
     {
     }
 
@@ -952,6 +954,7 @@ void
 NodeGraph::mousePressEvent(QMouseEvent* e)
 {
     assert(e);
+    _imp->_hasMovedOnce = false;
     _imp->_mergeMoveCommands = false;
     if ( buttonDownIsMiddle(e) ) {
         _imp->_evtState = MOVING_AREA;
@@ -1250,7 +1253,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     _imp->_firstMove = true;
     _imp->_evtState = DEFAULT;
     _imp->_nodesWithinBDAtPenDown.clear();
-    if (state == ARROW_DRAGGING) {
+    if (state == ARROW_DRAGGING && _imp->_hasMovedOnce) {
         
         QRectF sceneR = visibleSceneRect();
         
@@ -1459,7 +1462,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).x();
     double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).y();
 
-    
+    _imp->_hasMovedOnce = true;
 
     
     QRectF sceneR = visibleSceneRect();
@@ -3350,10 +3353,12 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
 
-
+    //We don't want the clone to have the same hash has the original
+    n->incrementKnobsAge();
+    
     gui->copyFrom(guiSerialization);
     QPointF newPos = gui->pos() + offset;
-    gui->refreshPosition( newPos.x(), newPos.y() );
+    gui->setPosition( newPos.x(), newPos.y() );
     gui->forceComputePreview( _gui->getApp()->getProject()->currentFrame() );
 
     return gui;
