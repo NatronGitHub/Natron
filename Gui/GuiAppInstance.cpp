@@ -300,14 +300,14 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
 
 
     if ( !loadRequest && multiInstanceParentName.empty() ) {
-        if ( (selectedNodes.size() == 1) && autoConnect ) {
-            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
-                if (*it != nodegui) {
-                    getProject()->autoConnectNodes((*it)->getNode(), node);
-                    break;
-                }
-            }
-        }
+//        if ( (selectedNodes.size() == 1) && autoConnect ) {
+//            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
+//                if (*it != nodegui) {
+//                    getProject()->autoConnectNodes((*it)->getNode(), node);
+//                    break;
+//                }
+//            }
+//        }
         
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );

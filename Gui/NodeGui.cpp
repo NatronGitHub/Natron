@@ -679,7 +679,9 @@ NodeGui::refreshDashedStateOfEdges()
             }
         }
         if (nbInputsConnected == 0) {
-            _inputEdges[0]->setDashed(false);
+            if (_inputEdges[0]) {
+                _inputEdges[0]->setDashed(false);
+            }
         }
     }
 }
@@ -801,14 +803,15 @@ NodeGui::initializeInputs()
     int inputnb = _internalNode->getMaxInputCount();
 
     ///Delete all un-necessary inputs that may exist (This is true for inspector nodes)
-    while ( (int)_inputEdges.size() > inputnb ) {
-        InputEdgesMap::iterator it = _inputEdges.end();
-        --it;
+    for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         delete it->second;
-        _inputEdges.erase(it);
     }
+    _inputEdges.clear();
 
     ///Make new edge for all non existing inputs
+    int emptyInputsCount = 0;
+
+    boost::shared_ptr<Natron::Node> internalNode = getNode();
     boost::shared_ptr<NodeGui> thisShared = _graph->getNodeGuiSharedPtr(this);
     for (int i = 0; i < inputnb; ++i) {
         if ( _inputEdges.find(i) == _inputEdges.end() ) {
@@ -817,25 +820,31 @@ NodeGui::initializeInputs()
                 edge->setActive(false);
                 edge->hide();
             }
+            boost::shared_ptr<Natron::Node> input = internalNode->getInput(i);
+            if (input) {
+             
+                boost::shared_ptr<NodeGui> gui = getDagGui()->getGui()->getApp()->getNodeGui(input);
+                if (gui) {
+                    edge->setSource(gui);
+                }
+            } else {
+                if (!internalNode->getLiveInstance()->isInputMask(i) &&
+                    !internalNode->getLiveInstance()->isInputRotoBrush(i)) {
+                    ++emptyInputsCount;
+                }
+            }
             _inputEdges.insert( make_pair(i,edge) );
         }
     }
 
-    int emptyInputsCount = 0;
-    for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( !it->second->hasSource() &&
-            !_internalNode->getLiveInstance()->isInputMask(it->first) &&
-            !_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
-            ++emptyInputsCount;
-        }
-    }
-
+    refreshDashedStateOfEdges();
+    
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>( _internalNode.get() );
     if (isInspector) {
         ///if the node is an inspector and it has only 1 empty input, display it aside
         if ( (emptyInputsCount == 1) && (_internalNode->getMaxInputCount() > 1) ) {
             for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-                if ( !it->second->hasSource() ) {
+                if ( it->second && !it->second->hasSource() ) {
                     it->second->setAngle(M_PI);
                     it->second->initLine();
 
@@ -1100,7 +1109,7 @@ Edge*
 NodeGui::hasEdgeNearbyPoint(const QPointF & pt)
 {
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
-        if ( i->second->contains( i->second->mapFromScene(pt) ) ) {
+        if ( i->second && i->second->contains( i->second->mapFromScene(pt) ) ) {
             return i->second;
         }
     }
@@ -1115,7 +1124,7 @@ Edge*
 NodeGui::hasBendPointNearbyPoint(const QPointF & pt)
 {
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
-        if ( i->second->hasSource() && i->second->isBendPointVisible() ) {
+        if ( i->second && i->second->hasSource() && i->second->isBendPointVisible() ) {
             if ( i->second->isNearbyBendPoint(pt) ) {
                 return i->second;
             }

@@ -3687,10 +3687,11 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     }
     
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while (_inputsCount <= inputNumber) {
+    while (inputNumber >= _inputsCount) {
         ///this function might not succeed if we already have 10 inputs OR the last input is already empty
         addEmptyInput();
     }
+  
     
     if ( !Node::connectInput(input, inputNumber) ) {
         
