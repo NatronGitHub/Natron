@@ -341,7 +341,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     projectPath = isAutoSave ? realFilePath : path;
     ageSinceLastSave = time;
     lastAutoSave = time;
-    
+    _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
     return !mustShowErrorsLog;
 } // restoreFromSerialization
 
