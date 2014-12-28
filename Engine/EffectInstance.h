@@ -480,7 +480,6 @@ public:
                                              Natron::ImageComponentsEnum nodeComponentsPref,
                                              int channelForAlpha,
                                              /*const RectD& rod,*/
-                                             bool treatUnavailablePixelsAsRendered,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
