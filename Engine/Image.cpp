@@ -1185,7 +1185,7 @@ Image::checkForNaNs(const RectI& roi)
     bool hasnan = false;
     for (int y = roi.y1; y < roi.y2; ++y) {
         
-        float* pix = (float*)pixelAt(roi.x1, roi.y1);
+        float* pix = (float*)pixelAt(roi.x1, y);
         float* const end = pix +  compsCount * roi.width();
         
         for (;pix < end; ++pix) {
