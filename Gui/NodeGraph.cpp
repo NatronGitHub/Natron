@@ -817,35 +817,39 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             position.setX(x  - createdNodeSize.width() / 2.);
             position.setY(y);
             
-            ///Create a dot to make things nicer
-            CreateNodeArgs args(PLUGINID_NATRON_DOT,
-                                std::string(),
-                                -1,
-                                -1,
-                                -1,
-                                false, //< don't autoconnect
-                                INT_MIN,
-                                INT_MIN,
-                                false, //<< don't push an undo command
-                                true,
-                                QString(),
-                                CreateNodeArgs::DefaultValuesList());
-            boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
-            assert(dotNode);
-            boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
-            assert(dotNodeGui);
-            
-            QSize dotSize = dotNodeGui->getSize();
-            dotNodeGui->setPosition(x - dotSize.width() / 2., selectedCenter.y() - dotSize.height() / 2.);
-            
-            ///connect the nodes
-            
             int index = selectedNodeInternal->getPreferredInputForConnection();
             if (index != -1) {
+                
+                ///Create a dot to make things nicer
+                CreateNodeArgs args(PLUGINID_NATRON_DOT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    -1,
+                                    false, //< don't autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false, //<< don't push an undo command
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList());
+                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                assert(dotNode);
+                boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
+                assert(dotNodeGui);
+                
+                QSize dotSize = dotNodeGui->getSize();
+                dotNodeGui->setPosition(x - dotSize.width() / 2., selectedCenter.y() - dotSize.height() / 2.);
+                
+                ///connect the nodes
+                
+                int index = selectedNodeInternal->getPreferredInputForConnection();
+                
                 bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal.get(), true);
                 assert(ok);
                 
                 proj->connectNodes(0, createdNodeInternal, dotNode.get());
+                
             }
         }
     }
@@ -907,39 +911,42 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             double y = selectedCenter.y() + selectedBbox.height() / 2.
             + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
             double x = selectedCenter.x() + (int)outputs.size() * 150;
-
+            
             position.setX(x  - createdNodeSize.width() / 2.);
             position.setY(y);
             
-            ///Create a dot to make things nicer
-            CreateNodeArgs args(PLUGINID_NATRON_DOT,
-                                std::string(),
-                                -1,
-                                -1,
-                                -1,
-                                false, //< don't autoconnect
-                                INT_MIN,
-                                INT_MIN,
-                                false, //<< don't push an undo command
-                                true,
-                                QString(),
-                                CreateNodeArgs::DefaultValuesList());
-            boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
-            assert(dotNode);
-            boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
-            assert(dotNodeGui);
-            
-            QSize dotSize = dotNodeGui->getSize();
-            dotNodeGui->setPosition(x - dotSize.width() / 2., selectedCenter.y() - dotSize.height() / 2.);
-            
-            ///connect the nodes
-            
             int index = createdNodeInternal->getPreferredInputForConnection();
             if (index != -1) {
+                ///Create a dot to make things nicer
+                CreateNodeArgs args(PLUGINID_NATRON_DOT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    -1,
+                                    false, //< don't autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false, //<< don't push an undo command
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList());
+                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                assert(dotNode);
+                boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
+                assert(dotNodeGui);
+                
+                QSize dotSize = dotNodeGui->getSize();
+                dotNodeGui->setPosition(x - dotSize.width() / 2., selectedCenter.y() - dotSize.height() / 2.);
+                
+                ///connect the nodes
+                
+                int index = createdNodeInternal->getPreferredInputForConnection();
+                
                 bool ok = proj->connectNodes(index, dotNode, createdNodeInternal.get(), true);
                 assert(ok);
                 
                 proj->connectNodes(0, selectedNodeInternal, dotNode.get());
+                
             }
         }
         
@@ -1366,7 +1373,11 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     } else if (state == NODE_DRAGGING) {
         if ( !_imp->_selection.nodes.empty() ) {
             ///now if there was a hint displayed, use it to actually make connections.
+            
             if (_imp->_highLightedEdge) {
+                
+                _imp->_highLightedEdge->setUseHighlight(false);
+
                 boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
                 if ( _imp->_highLightedEdge->isOutputEdge() ) {
                     int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
@@ -1403,7 +1414,6 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         }
                     }
                 }
-                _imp->_highLightedEdge->setUseHighlight(false);
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
