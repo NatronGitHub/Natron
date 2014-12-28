@@ -401,6 +401,10 @@ void
 TabWidget::addNewViewer()
 {
     _gui->setNextViewerAnchor(this);
+    
+    NodeGraph* lastFocusedGraph = _gui->getLastSelectedGraph();
+    NodeGraph* graph = lastFocusedGraph ? lastFocusedGraph : _gui->getNodeGraph();
+    assert(graph);
     _gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                 "",
                                                 -1,-1,
@@ -411,7 +415,7 @@ TabWidget::addNewViewer()
                                                 true,
                                                 QString(),
                                                 CreateNodeArgs::DefaultValuesList(),
-                                                _gui->getApp()->getProject()) );
+                                                graph->getGroup()) );
 }
 
 void

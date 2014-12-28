@@ -417,6 +417,9 @@ public:
     void removeVisibleDockablePanel(DockablePanel* panel);
 
     NodeBackDrop* createBackDrop(bool requestedByLoad,const NodeBackDropSerialization & serialization);
+    
+    NodeBackDrop* getBackdropByFullySpecifiedName(const std::string& fullySpecifiedName) const;
+    
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
     void setToolButtonMenuOpened(QToolButton* button);
@@ -466,6 +469,7 @@ public:
 
     void getNodeBackDrops(std::list<NodeBackDrop*>& backdrops) const;
     
+    void centerAllNodeGraphsWithTimer();
 Q_SIGNALS:
 
 

@@ -23,6 +23,7 @@
 #include <QDebug>
 #include <QThread>
 #include <QCheckBox>
+#include <QTimer>
 #include <QTextEdit>
 
 #if QT_VERSION >= 0x050000
@@ -2782,6 +2783,8 @@ Gui::saveAndIncrVersion()
 void
 Gui::createNewViewer()
 {
+    NodeGraph* graph = _imp->_lastFocusedGraph ? _imp->_lastFocusedGraph : _imp->_nodeGraphArea;
+    assert(graph);
     (void)_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                          "",
                                                          -1,-1,
@@ -2792,7 +2795,7 @@ Gui::createNewViewer()
                                                          true,
                                                          QString(),
                                                          CreateNodeArgs::DefaultValuesList(),
-                                                         getApp()->getProject()) );
+                                                         graph->getGroup()) );
 }
 
 boost::shared_ptr<Natron::Node>
@@ -4382,11 +4385,14 @@ Gui::createBackDrop(bool requestedByLoad,
     
     std::string toFind;
     std::string recurseName;
-    NodeGroup::getNodeNameAndRemainder_RightToLeft(serialization.getFullySpecifiedName(), toFind, recurseName);
+    if (!serialization.isNull()) {
+        NodeGroup::getNodeNameAndRemainder_RightToLeft(serialization.getFullySpecifiedName(), toFind, recurseName);
+    }
     
     if (recurseName.empty()) {
         //The backdrop is in the root project
-        return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
+        NodeGraph* graph = _imp->_lastFocusedGraph ? _imp->_lastFocusedGraph : _imp->_nodeGraphArea;
+        return graph->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
         
     } else {
         ///Get the node group found
@@ -4407,6 +4413,11 @@ Gui::createBackDrop(bool requestedByLoad,
     
 }
 
+NodeBackDrop*
+Gui::getBackdropByFullySpecifiedName(const std::string& fullySpecifiedName) const
+{
+    return _imp->_nodeGraphArea->getBackdropByFullySpecifiedName(fullySpecifiedName);
+}
 
 void
 Gui::connectViewersToViewerCache()
@@ -4534,6 +4545,9 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         }
     }
     _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
+    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
+        (*it)->onGuiFrozenChanged(clicked);
+    }
 }
 
 bool
@@ -4713,6 +4727,15 @@ Gui::getNodeBackDrops(std::list<NodeBackDrop*>& backdrops) const
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
         std::list<NodeBackDrop*> bds = (*it)->getActiveBackDrops();
         backdrops.insert(backdrops.begin(), bds.begin(), bds.end());
+    }
+}
+
+void
+Gui::centerAllNodeGraphsWithTimer()
+{
+    QTimer::singleShot( 25, _imp->_nodeGraphArea, SLOT(centerOnAllNodes()));
+    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
+        QTimer::singleShot( 25, *it, SLOT(centerOnAllNodes()));
     }
 }
 

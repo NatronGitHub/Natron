@@ -3955,7 +3955,7 @@ Node::declareCurrentNodeVariable_Python(std::string& script)
     
     ///Now define the thisNode variable
     std::stringstream ss;
-    ss << "thisNode = " << getName_mt_safe() <<  "\n";
+    ss << "thisNode = " << getFullySpecifiedName() <<  "\n";
     std::string toInsert = ss.str();
     script.insert(startLine, toInsert);
     return startLine + toInsert.size();

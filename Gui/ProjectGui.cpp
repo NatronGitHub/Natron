@@ -434,11 +434,23 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         if (*it == kNatronProjectSettingsPanelSerializationName) {
             _gui->setVisibleProjectSettingsPanel();
         } else {
-            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodesGui.begin(); it2 != nodesGui.end(); ++it2) {
-                if ( (*it2)->getNode()->getName() == *it ) {
-                    NodeSettingsPanel* panel = (*it2)->getSettingPanel();
+            
+            NodePtr node = getInternalProject()->getNodeByFullySpecifiedName(*it);
+            if (node) {
+                boost::shared_ptr<NodeGuiI> nodeGui_i = node->getNodeGui();
+                assert(nodeGui_i);
+                NodeGui* nodeGui = dynamic_cast<NodeGui*>(nodeGui_i.get());
+                assert(nodeGui);
+                NodeSettingsPanel* panel = nodeGui->getSettingPanel();
+                if (panel) {
+                    nodeGui->setVisibleSettingsPanel(true);
+                }
+            } else {
+                NodeBackDrop* bd = getGui()->getBackdropByFullySpecifiedName(*it);
+                if (bd) {
+                    DockablePanel* panel = bd->getSettingsPanel();
                     if (panel) {
-                        (*it2)->setVisibleSettingsPanel(true);
+                        panel->setClosed(false);
                     }
                 }
             }
@@ -460,7 +472,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
         _gui->getNodeGraph()->clearSelection();
     }
-    QTimer::singleShot( 25, _gui->getNodeGraph(), SLOT(centerOnAllNodes()));
+    _gui->centerAllNodeGraphsWithTimer();
 } // load
 
 std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const

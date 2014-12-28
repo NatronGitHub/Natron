@@ -34,6 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
+#include "Gui/NodeBackDrop.h"
 #include "Gui/DockablePanel.h"
 
 
@@ -113,11 +114,17 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         if ( isPanel && isPanel->isVisible() ) {
             KnobHolder* holder = isPanel->getHolder();
             assert(holder);
-            NamedKnobHolder* namedHolder = dynamic_cast<NamedKnobHolder*>(holder);
-            if (namedHolder) {
-                _openedPanelsOrdered.push_back( namedHolder->getName_mt_safe() );
-            } else if ( holder->isProject() ) {
+            
+            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+            NodeBackDrop* isBd = dynamic_cast<NodeBackDrop*>(holder);
+            Natron::Project* isProject = dynamic_cast<Natron::Project*>(holder);
+
+            if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
+            } else if (isEffect) {
+                _openedPanelsOrdered.push_back(isEffect->getNode()->getFullySpecifiedName());
+            } else if (isBd) {
+                _openedPanelsOrdered.push_back(isBd->getFullySpecifiedName());
             }
         }
     }

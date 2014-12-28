@@ -389,6 +389,7 @@ struct NodeGraphPrivate
 
     void toggleSelectedNodesEnabled();
     
+    NodeBackDrop* getBackDropByName(const std::string& name,const std::string& recurseName) const;
     
 };
 
@@ -3988,6 +3989,46 @@ std::list<NodeBackDrop*>
 NodeGraph::getBackDrops() const
 {
     return _imp->_backdrops;
+}
+
+NodeBackDrop*
+NodeGraphPrivate::getBackDropByName(const std::string& name,const std::string& recurseName) const
+{
+    if (recurseName.empty()) {
+        for (std::list<NodeBackDrop*>::const_iterator it = _backdrops.begin(); it != _backdrops.end(); ++it) {
+            if ((*it)->getName_mt_safe() == name) {
+                return *it;
+            }
+        }
+    } else {
+        NodePtr grpNode = group.lock()->getNodeByName(name);
+        if (grpNode) {
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(grpNode->getLiveInstance());
+            assert(isGrp);
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            assert(graph_i);
+            NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+            assert(graph);
+            return graph->getBackdropByFullySpecifiedName(recurseName);
+        }
+    }
+    return 0;
+    
+}
+
+NodeBackDrop*
+NodeGraph::getBackdropByName(const std::string& name) const
+{
+    return _imp->getBackDropByName(name, std::string());
+}
+
+NodeBackDrop*
+NodeGraph::getBackdropByFullySpecifiedName(const std::string& fullName) const
+{
+    std::string toFind;
+    std::string recurseName;
+    NodeGroup::getNodeNameAndRemainder_LeftToRight(fullName, toFind, recurseName);
+    return _imp->getBackDropByName(toFind, recurseName);
 }
 
 std::list<NodeBackDrop*>

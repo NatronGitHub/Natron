@@ -122,6 +122,11 @@ public:
     bool checkIfBackDropNameExists(const QString & n,const NodeBackDrop* bd) const;
 
     std::list<NodeBackDrop*> getBackDrops() const;
+    
+    NodeBackDrop* getBackdropByName(const std::string& name) const;
+    
+    NodeBackDrop* getBackdropByFullySpecifiedName(const std::string& fullName) const;
+    
     std::list<NodeBackDrop*> getActiveBackDrops() const;
 
     /**
