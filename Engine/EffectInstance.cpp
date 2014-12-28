@@ -4540,7 +4540,8 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
     checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
     markedNodes.push_back(node.get());
     
-    const std::list<Natron::Node*> & outputs = node->getOutputs();
+    std::list<Natron::Node*>  outputs;
+    node->getOutputsWithGroupRedirection(outputs);
     for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         (*it)->getLiveInstance()->checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction,markedNodes);
     }

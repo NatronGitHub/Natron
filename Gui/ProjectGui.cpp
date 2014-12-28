@@ -259,38 +259,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     const std::map<std::string, ViewerData > & viewersProjections = obj.getViewersProjections();
     
 
-    ///now restore the backdrops
-    const std::list<NodeBackDropSerialization> & backdrops = obj.getBackdrops();
-    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        NodeBackDrop* bd = _gui->createBackDrop(true,*it);
-
-        if ( it->isSelected() ) {
-            _gui->getNodeGraph()->selectBackDrop(bd, true);
-        }
-    }
-
-    ///now restore backdrops slave/master links
-    std::list<NodeBackDrop*> newBDs = _gui->getNodeGraph()->getBackDrops();
-    for (std::list<NodeBackDrop*>::iterator it = newBDs.begin(); it != newBDs.end(); ++it) {
-        ///find its serialization
-        for (std::list<NodeBackDropSerialization>::const_iterator it2 = backdrops.begin(); it2 != backdrops.end(); ++it2) {
-            if ( it2->getName() == (*it)->getName_mt_safe() ) {
-                std::string masterName = it2->getMasterBackdropName();
-                if ( !masterName.empty() ) {
-                    ///search the master backdrop by name
-                    for (std::list<NodeBackDrop*>::iterator it3 = newBDs.begin(); it3 != newBDs.end(); ++it3) {
-                        if ( (*it3)->getName_mt_safe() == masterName ) {
-                            (*it)->slaveTo(*it3);
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-        }
-    }
-
-
     ///default color for nodes
     float defR,defG,defB;
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -425,6 +393,38 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             panel->addRow( (*it)->getNode() );
         }
     }
+    
+    ///now restore the backdrops
+    const std::list<NodeBackDropSerialization> & backdrops = obj.getBackdrops();
+    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
+        NodeBackDrop* bd = _gui->createBackDrop(true,*it);
+        
+        if ( it->isSelected() ) {
+            _gui->getNodeGraph()->selectBackDrop(bd, true);
+        }
+    }
+    
+    ///now restore backdrops slave/master links
+    std::list<NodeBackDrop*> newBDs = _gui->getNodeGraph()->getBackDrops();
+    for (std::list<NodeBackDrop*>::iterator it = newBDs.begin(); it != newBDs.end(); ++it) {
+        ///find its serialization
+        for (std::list<NodeBackDropSerialization>::const_iterator it2 = backdrops.begin(); it2 != backdrops.end(); ++it2) {
+            if ( it2->getFullySpecifiedName() == (*it)->getFullySpecifiedName() ) {
+                std::string masterName = it2->getMasterBackdropName();
+                if ( !masterName.empty() ) {
+                    ///search the master backdrop by name
+                    for (std::list<NodeBackDrop*>::iterator it3 = newBDs.begin(); it3 != newBDs.end(); ++it3) {
+                        if ( (*it3)->getName_mt_safe() == masterName ) {
+                            (*it)->slaveTo(*it3);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
 
 
     ///now restore opened settings panels

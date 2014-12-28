@@ -2110,7 +2110,7 @@ EditExpressionDialog::onHelpRequested()
                    "<br>The <b>getAt(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
                    "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters which have an animation "
                    "it would then return their value at the corresponding timeline position.</br>"));
-    Natron::informationDialog(tr("Help").toStdString(), msg.toStdString());
+    Natron::informationDialog(tr("Help").toStdString(), msg.toStdString(),true);
 }
 
 void

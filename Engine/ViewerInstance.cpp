@@ -334,16 +334,17 @@ ViewerInstance::renderViewer(int view,
 
 static void checkTreeCanRender_internal(Node* node,bool* ret)
 {
-    const std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (!inputs[i]) {
+    int maxInput = node->getMaxInputCount();
+    for (int i = 0; i < maxInput; ++i) {
+        NodePtr input = node->getInput(i);
+        if (!input) {
             if (!node->getLiveInstance()->isInputOptional(i)) {
                 *ret = false;
                 return;
             }
             
         } else {
-            checkTreeCanRender_internal(inputs[i].get(), ret);
+            checkTreeCanRender_internal(input.get(), ret);
             if (!ret) {
                 return;
             }

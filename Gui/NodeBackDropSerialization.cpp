@@ -27,10 +27,10 @@ NodeBackDropSerialization::initialize(const NodeBackDrop* n)
     r = color.redF();
     g = color.greenF();
     b = color.blueF();
-    name = n->getName_mt_safe();
+    name = n->getFullySpecifiedName();
     NodeBackDrop* master = n->getMaster();
     if (master) {
-        masterBackdropName = master->getName_mt_safe();
+        masterBackdropName = master->getFullySpecifiedName();
     }
     selected = n->getIsSelected();
     _isNull = false;

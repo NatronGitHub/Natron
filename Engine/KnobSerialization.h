@@ -134,9 +134,15 @@ struct ValueSerialization
     std::string _expression;
     bool _exprHasRetVar;
     
+    ///Load
+    ValueSerialization(const boost::shared_ptr<KnobI> & knob,
+                       int dimension);
+    
+    ///Save
     ValueSerialization(const boost::shared_ptr<KnobI> & knob,
                        int dimension,
-                       bool save);
+                       bool exprHasRetVar,
+                       const std::string& expr);
 
     
     template<class Archive>
@@ -376,7 +382,7 @@ class KnobSerialization : public KnobSerializationBase
         ar & boost::serialization::make_nvp("Secret",secret);
 
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(_knob,i,true);
+            ValueSerialization vs(_knob,i,_expressions[i].second,_expressions[i].first);
             ar & boost::serialization::make_nvp("item",vs);
         }
 
@@ -472,7 +478,7 @@ class KnobSerialization : public KnobSerializationBase
         }
         
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(_knob,i,false);
+            ValueSerialization vs(_knob,i);
             ar & boost::serialization::make_nvp("item",vs);
             _masters.push_back(vs._master);
             _expressions.push_back(std::make_pair(vs._expression,vs._exprHasRetVar));
@@ -603,8 +609,15 @@ public:
         } else {
             _knob = knob;
         }
+        
+        
+        
         _typeName = knob->typeName();
         _dimension = knob->getDimension();
+        
+        for (int i = 0; i < _dimension ; ++i) {
+            _expressions.push_back(std::make_pair(knob->getExpression(i),knob->isExpressionUsingRetVariable(i)));
+        }
         
         _isUserKnob = knob->isUserKnob();
         _label = knob->getDescription();

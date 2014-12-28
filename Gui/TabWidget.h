@@ -196,6 +196,11 @@ public:
 
         return _currentWidget;
     }
+    
+    /**
+     * @brief Set w as the current widget of the tab
+     **/
+    void setCurrentWidget(QWidget* w);
 
     void dettachTabs();
     static bool moveTab(QWidget* what,TabWidget* where);

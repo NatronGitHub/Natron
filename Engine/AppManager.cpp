@@ -2529,11 +2529,11 @@ void declareNodeVariableToPython(int appID,const std::string& nodeName)
     
 void setNodeVariableToPython(const std::string& oldName,const std::string& newName)
 {
-    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
-    int hasOldVar = PyObject_HasAttrString(pModule,oldName.c_str()); //find out if it already exists
-    if (!hasOldVar) {
-        throw std::invalid_argument("Python: Trying to rename an unexisting node");
-    }
+//    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
+//    int hasOldVar = PyObject_HasAttrString(pModule,oldName.c_str()); //find out if it already exists
+//    if (!hasOldVar) {
+//        throw std::invalid_argument("Python: Trying to rename an unexisting node");
+//    }
 
     QString str = QString("%1 = %2 \ndel %2").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
@@ -2551,22 +2551,22 @@ void deleteNodeVariableToPython(const std::string& nodeName)
     
 void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName)
 {
-    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
-    PyObject *node = PyObject_GetAttrString(pModule,nodeName.c_str()); //find out if it already exists
-    if (node) {
-        
-        int hasParam = PyObject_HasAttrString(pModule,parameterName.c_str()); //find out if it already exists
-        
-        Py_DECREF(node);
-        
-        if (hasParam) {
-            ///the param is already defined
-            return;
-        }
-        
-    } else {
-        throw std::invalid_argument("Python: Unexisting node name");
-    }
+//    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
+//    PyObject *node = PyObject_GetAttrString(pModule,nodeName.c_str()); //find out if it already exists
+//    if (node) {
+//        
+//        int hasParam = PyObject_HasAttrString(pModule,parameterName.c_str()); //find out if it already exists
+//        
+//        Py_DECREF(node);
+//        
+//        if (hasParam) {
+//            ///the param is already defined
+//            return;
+//        }
+//        
+//    } else {
+//        throw std::invalid_argument("Python: Unexisting node name");
+//    }
     QString str = QString("%1.%2 = %1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
     std::string script = str.toStdString();
     runScriptWithEngineImport(script);

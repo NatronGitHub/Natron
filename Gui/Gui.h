@@ -464,6 +464,8 @@ public:
     
     void toggleAutoHideGraphInputs();
 
+    void getNodeBackDrops(std::list<NodeBackDrop*>& backdrops) const;
+    
 Q_SIGNALS:
 
 

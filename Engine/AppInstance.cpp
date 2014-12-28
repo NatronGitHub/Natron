@@ -508,9 +508,9 @@ AppInstance::getAppID() const
 }
 
 boost::shared_ptr<Natron::Node>
-AppInstance::getNodeByName(const std::string & name) const
+AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
 {
-    return _imp->_currentProject->getNodeByName(name);
+    return _imp->_currentProject->getNodeByFullySpecifiedName(name);
 }
 
 boost::shared_ptr<Natron::Project>

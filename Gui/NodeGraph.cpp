@@ -1760,6 +1760,29 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                 (*it)->beginEditKnobs();
             }
             _imp->_gui->putSettingsPanelFirst( (*it)->getSettingPanel() );
+            
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+            if (isGrp) {
+                NodeGraphI* graph_i = isGrp->getNodeGraph();
+                assert(graph_i);
+                NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+                if (graph) {
+                    TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+                    if (isParentTab) {
+                        isParentTab->setCurrentWidget(graph);
+                    } else {
+                        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+                        
+                        ///We're in the double click event, it should've entered the focus in event beforehand!
+                        assert(lastSelectedGraph == this);
+                        
+                        isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+                        assert(isParentTab);
+                        isParentTab->setCurrentWidget(graph);
+                    }
+                }
+            }
+            
             getGui()->getApp()->redrawAllViewers();
 
             return;
@@ -3243,14 +3266,14 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     
     std::stringstream ss;
     ss << internalSerialization.getPluginLabel();
-    ss << '.';
+    ss << '_';
     ss << no;
-    while ( _publicInterface->checkIfNodeNameExists( ss.str(),gui.get() ) ) {
+    while ( group.lock()->checkIfNodeNameExists( ss.str(),n.get() ) ) {
         ++no;
         ss.str( std::string() );
         ss.clear();
         ss << internalSerialization.getPluginLabel();
-        ss << '.';
+        ss << '_';
         ss << no;
     }
 
@@ -3311,7 +3334,10 @@ NodeGraphPrivate::pasteBackdrop(const NodeBackDropSerialization & serialization,
                                 const QPointF & offset)
 {
     NodeBackDrop* bd = new NodeBackDrop(_publicInterface,_root);
-    QString name( serialization.getName().c_str() );
+    
+    std::string baseName,groupPrefix;
+    NodeCollection::getNodeNameAndRemainder_RightToLeft(serialization.getFullySpecifiedName(), baseName, groupPrefix);
+    QString name( baseName.c_str() );
 
     name.append(" - copy");
     QString bearName = name;
@@ -3780,18 +3806,6 @@ NodeGraph::checkIfBackDropNameExists(const QString & n,
     return false;
 }
 
-bool
-NodeGraph::checkIfNodeNameExists(const std::string & n,
-                                 const NodeGui* node) const
-{
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        if ( (it->get() != node) && ( (*it)->getNode()->getName() == n ) ) {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 std::list<NodeBackDrop*>
 NodeGraph::getBackDrops() const
@@ -4338,7 +4352,11 @@ void
 EditNodeNameDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,_imp->bd,_imp->field->text()));
+        QString newName = _imp->field->text();
+        QString oldName = QString(_imp->node->getNode()->getName().c_str());
+        if (_imp->node->trySetName(newName)) {
+            _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,_imp->bd,oldName,newName));
+        }
         accept();
     } else if (e->key() == Qt::Key_Escape) {
         reject();

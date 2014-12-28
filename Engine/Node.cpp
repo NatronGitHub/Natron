@@ -48,6 +48,7 @@
 #include "Engine/Settings.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NoOp.h"
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 0.5
@@ -373,7 +374,7 @@ Node::load(const std::string & pluginID,
     }
     
     if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
-        setName( serialization.getPluginLabel().c_str() );
+        setName_no_error_check( serialization.getPluginLabel().c_str() );
         nameSet = true;
     }
     
@@ -549,17 +550,19 @@ Node::computeHash()
                 isViewer->getActiveInputs(activeInput[0], activeInput[1]);
                 
                 for (int i = 0; i < 2; ++i) {
-                    if ( (activeInput[i] >= 0) && _imp->inputs[activeInput[i]] ) {
-                        _imp->hash.append( _imp->inputs[activeInput[i]]->getHashValue() );
+                    NodePtr input = getInput(activeInput[i]);
+                    if (input) {
+                        _imp->hash.append(input->getHashValue() );
                     }
                 }
             } else {
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                    if (_imp->inputs[i]) {
+                    NodePtr input = getInput(i);
+                    if (input) {
                         ///Add the index of the input to its hash.
                         ///Explanation: if we didn't add this, just switching inputs would produce a similar
                         ///hash.
-                        _imp->hash.append(_imp->inputs[i]->getHashValue() + i);
+                        _imp->hash.append(input->getHashValue() + i);
                     }
                 }
             }
@@ -578,7 +581,9 @@ Node::computeHash()
     }
     
     ///call it on all the outputs
-    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+    std::list<Node*> outputs;
+    getOutputsWithGroupRedirection(outputs);
+    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->computeHash();
     }
@@ -995,7 +1000,7 @@ Node::removeReferences()
         isOutput->getRenderEngine()->quitEngine();
     }
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
-    Natron::deleteNodeVariableToPython(getName());
+    Natron::deleteNodeVariableToPython(getFullySpecifiedName());
     _imp->liveInstance.reset();
 }
 
@@ -1152,9 +1157,8 @@ Node::getName_mt_safe() const
 
 static void prependGroupNameRecursive(const boost::shared_ptr<NodeGroup>& group,std::string& name)
 {
-    name.insert(0, Project::escapeXML("</g>"));
+    name.insert(0,".");
     name.insert(0, group->getName_mt_safe());
-    name.insert(0, Project::escapeXML("<g>"));
     boost::shared_ptr<NodeCollection> hasParentGroup = group->getNode()->getGroup();
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
@@ -1175,17 +1179,38 @@ Node::getFullySpecifiedName() const
 }
 
 void
-Node::setName(const QString & name)
+Node::setName_no_error_check(const QString & name)
 {
-    std::string oldName;
+    setNameInternal(name);
+}
+
+void
+Node::setNameInternal(const QString& name)
+{
+    std::string oldName = getName_mt_safe();
+    std::string fullOldName = getFullySpecifiedName();
     std::string newName = name.toStdString();
+    
+    ///Replace any '.' by a '_' to avoid Python syntax errors
+    for (std::size_t i = 0; i < newName.size(); ++i) {
+        if (newName[i] == '.') {
+            newName[i] = '_';
+        }
+    }
     {
         QMutexLocker l(&_imp->nameMutex);
-        oldName = _imp->name;
         _imp->name = newName;
     }
+    
+    std::string fullySpecifiedName = getFullySpecifiedName();
+    
     if (!oldName.empty()) {
-        Natron::setNodeVariableToPython(oldName,newName);
+        
+        try {
+            Natron::setNodeVariableToPython(fullOldName,fullySpecifiedName);
+        } catch (const std::exception& e) {
+            qDebug() << e.what();
+        }
         
         const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
         
@@ -1211,11 +1236,45 @@ Node::setName(const QString & name)
                 break;
             }
         }
-       
+        
     }
     
     Q_EMIT nameChanged(name);
 }
+
+bool
+Node::setName(const QString& name)
+{
+    bool nameHasDot = false;
+    bool nameOnlyComposedOfDigits = true;
+    for (int i = 0; i < name.size(); ++i) {
+        if (!name[i].isDigit()) {
+            nameOnlyComposedOfDigits = false;
+        }
+        if (name[i] == '.') {
+            nameHasDot = true;
+            break;
+        }
+    }
+    if ( name.isEmpty() ) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
+        return false;
+    } else if (nameHasDot) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node name cannot contain a '.' for scripting purposes.").toStdString() );
+        return false;
+    } else if (nameOnlyComposedOfDigits) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node name cannot be composed only of digits.").toStdString() );
+        return false;
+    } else if (getGroup()->checkIfNodeNameExists( name.toStdString(), this)) {
+        Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the graph.").toStdString() );
+        return false;
+    }
+    
+    
+    setNameInternal(name);
+    return true;
+}
+
 
 AppInstance*
 Node::getApp() const
@@ -1508,19 +1567,66 @@ Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
             viewers->push_back(thisViewer);
         }
     } else {
-        if ( QThread::currentThread() == qApp->thread() ) {
-            for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-                assert(*it);
-                (*it)->hasViewersConnected(viewers);
+        std::list<Node*> outputs;
+        getOutputsWithGroupRedirection(outputs);
+     
+        for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            assert(*it);
+            (*it)->hasViewersConnected(viewers);
+        }
+        
+    }
+}
+
+void
+Node::getOutputsWithGroupRedirection(std::list<Node*>& outputs) const
+{
+
+    QMutexLocker l(&_imp->outputsMutex);
+    
+    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+        assert(*it);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        GroupOutput* isOutput = dynamic_cast<GroupOutput*>((*it)->getLiveInstance());
+        if (isGrp) {
+            
+            int indexInGroupInput = -1;
+            for (int i = 0; i < isGrp->getMaxInputCount(); ++i) {
+                if ((*it)->getInput(i).get() == this) {
+                    indexInGroupInput = i;
+                    break;
+                }
+            }
+            if (indexInGroupInput != -1) {
+                std::vector<boost::shared_ptr<Natron::Node> > groupInputs;
+                isGrp->getInputs(&groupInputs);
+                assert((int)groupInputs.size() == isGrp->getMaxInputCount());
+                
+                NodePtr groupInput = groupInputs[indexInGroupInput];
+                if (groupInput) {
+                    std::list<Node*> nodeOutputs;
+                    groupInput->getOutputs_mt_safe(nodeOutputs);
+                    for (std::list<Node*>::iterator it2 = nodeOutputs.begin(); it2 != nodeOutputs.end(); ++it2) {
+                        outputs.push_back(*it2);
+                    }
+                }
+            }
+        } else if (isOutput){
+            boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
+            assert(collection);
+            isGrp = dynamic_cast<NodeGroup*>(collection.get());
+            assert(isGrp);
+            
+            std::list<Node*> groupOutputs;
+            isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+            for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+                outputs.push_back(*it2);
             }
         } else {
-            QMutexLocker l(&_imp->outputsMutex);
-            for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-                assert(*it);
-                (*it)->hasViewersConnected(viewers);
-            }
+            outputs.push_back(*it);
         }
     }
+
 }
 
 void
@@ -1612,7 +1718,26 @@ Node::getInput(int index) const
         return boost::shared_ptr<Node>();
     }
     
-    return _imp->inputs[index];
+    boost::shared_ptr<Node> ret =  _imp->inputs[index];
+    if (ret) {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(ret->getLiveInstance());
+        if (isGrp) {
+            ret =  isGrp->getOutputNodeInput();
+        }
+        
+        if (ret) {
+            GroupInput* isInput = dynamic_cast<GroupInput*>(ret->getLiveInstance());
+            if (isInput) {
+                boost::shared_ptr<NodeCollection> collection = ret->getGroup();
+                assert(collection);
+                isGrp = dynamic_cast<NodeGroup*>(collection.get());
+                assert(isGrp);
+                ret = isGrp->getRealInputForInput(ret);
+            }
+        }
+        
+    }
+    return ret;
 }
 
 const std::vector<boost::shared_ptr<Natron::Node> > &
@@ -2329,7 +2454,6 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         _imp->activated = false;
     }
     
-   // Natron::deleteNodeVariableToPython(getName());
 } // deactivate
 
 void
@@ -2396,7 +2520,6 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     if (group) {
         group->notifyNodeActivated(shared_from_this());
     }
-    //Natron::declareNodeVariableToPython(getApp()->getAppID(), getName());
 
     Q_EMIT activated(triggerRender);
 } // activate
@@ -3832,12 +3955,13 @@ void
 Node::declarePythonFields()
 {
     std::locale locale;
-    Natron::declareNodeVariableToPython(getApp()->getAppID(), getName());
+    std::string fullName = getFullySpecifiedName();
+    Natron::declareNodeVariableToPython(getApp()->getAppID(), fullName);
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         const std::string& knobName = knobs[i]->getName();
         if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
-            Natron::declareParameterAsNodeField(getName(), knobName);
+            Natron::declareParameterAsNodeField(fullName, knobName);
         }
     }
 }

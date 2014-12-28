@@ -21,7 +21,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 
 #include "Gui/Gui.h"
 #include "Gui/DockablePanel.h"
@@ -281,31 +283,19 @@ NodeBackDrop::setName(const QString & str)
     _imp->settingsPanel->setName(str);
 }
 
-void
+bool
 NodeBackDrop::trySetName(const QString& newName)
 {
-    bool mustRestoreOldName = false;
-    QString oldName;
-    
-    
-
+  
     if ( newName.isEmpty() ) {
         Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
-        mustRestoreOldName = true;
-    } else {
-        if ( _imp->graph->checkIfBackDropNameExists(newName,this) ) {
-            mustRestoreOldName = true;
-            Natron::errorDialog( tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString() );
-            oldName = getName();
-        }
+        return false;
+    } else if (_imp->graph->checkIfBackDropNameExists(newName,this)) {
+        Natron::errorDialog( tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString() );
+        return false;
     }
-
-    if (mustRestoreOldName) {
-        setName(oldName);
-    } else {
-        setName(newName);
-    }
-
+    setName(newName);
+    return true;
 }
 
 void
@@ -591,9 +581,37 @@ NodeBackDropPrivate::restoreFromSerialization(const NodeBackDropSerialization &s
     boost::shared_ptr<String_Knob> labelKnob = _publicInterface->getLabelKnob();
     assert(labelKnob);
     labelKnob->clone( serialization.getLabelSerialization().get() );
-    _publicInterface->setName( serialization.getName().c_str() );
+    
+    std::string baseName;
+    std::string groupPrefix;
+    NodeCollection::getNodeNameAndRemainder_RightToLeft(serialization.getFullySpecifiedName(), baseName, groupPrefix);
+    _publicInterface->setName( baseName.c_str() );
     _publicInterface->refreshTextLabelFromKnob();
 }
+
+static void prependGroupNameRecursive(const boost::shared_ptr<NodeGroup>& group,std::string& name)
+{
+    name.insert(0,".");
+    name.insert(0, group->getName_mt_safe());
+    boost::shared_ptr<NodeCollection> hasParentGroup = group->getNode()->getGroup();
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    if (isGrp) {
+        prependGroupNameRecursive(isGrp, name);
+    }
+}
+
+std::string
+NodeBackDrop::getFullySpecifiedName() const
+{
+    std::string ret = getName_mt_safe();
+    boost::shared_ptr<NodeCollection> hasParentGroup = _imp->graph->getGroup();
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    if (isGrp) {
+        prependGroupNameRecursive(isGrp, ret);
+    }
+    return ret;
+}
+
 
 void
 NodeBackDrop::centerOnIt()

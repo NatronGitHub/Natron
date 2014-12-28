@@ -22,6 +22,9 @@
 typedef boost::shared_ptr<Natron::Node> NodePtr;
 typedef std::list<NodePtr> NodeList;
 
+namespace Natron {
+class Node;
+}
 class NodeGraphI;
 class ViewerInstance;
 struct NodeCollectionPrivate;
@@ -107,10 +110,28 @@ public:
     bool autoConnectNodes(const NodePtr& selected,const NodePtr& created);
     
     /**
+     * @brief Returns true if a node has the give name n in the group. This is not called recursively on subgroups.
+     **/
+    bool checkIfNodeNameExists(const std::string & n,const Natron::Node* caller) const;
+
+    /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
      * If no such node could be found, NULL is returned.
      **/
     NodePtr getNodeByName(const std::string & name) const;
+    
+    /**
+     * @brief Given a fully specified name, e.g: Group1.Group2.Blur1.1, this function extracts the first node name (starting from the left)
+     * and put it in the variable 'name'. In this example, name = Group1 
+     * The 'remainder' contains the rest of the string, without the separating '.', i.e in this example: Group2.Blur1.1
+     **/
+    static void getNodeNameAndRemainder_LeftToRight(const std::string& fullySpecifiedName,std::string& name,std::string& remainder);
+    
+    /**
+     * @brief Same as getNodeNameAndRemainder_LeftToRight excepts that this function scans the fullySpecifiedName from right to left,
+     * hence in the example above, name = Blur1.1 and remainder = Group1.Group2
+     **/
+    static void getNodeNameAndRemainder_RightToLeft(const std::string& fullySpecifiedName,std::string& name,std::string& remainder);
     
     /**
      * @brief Same as getNodeByName() but recursive on each sub groups. As a node in a subgroup can have the same name
@@ -148,6 +169,8 @@ public:
      * @brief Get a list of all active nodes
      **/
     void getActiveNodes(NodeList* nodes) const;
+    
+    void getActiveNodesExpandGroups(NodeList* nodes) const;
     
     /**
      * @brief Get all viewers in the group and sub groups
@@ -248,6 +271,14 @@ public:
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     virtual void notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    
+    boost::shared_ptr<Natron::Node> getOutputNode() const;
+    
+    boost::shared_ptr<Natron::Node> getOutputNodeInput() const;
+    
+    boost::shared_ptr<Natron::Node> getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) const;
+    
+    void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;

@@ -715,7 +715,7 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
     
     boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
                                                                              xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
-    QObject::connect( nodeGui.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
+    QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
     return nodeGui;
@@ -1922,8 +1922,11 @@ Gui::maximize(TabWidget* what)
 
             bool hasNodeGraphOrCurveEditor = false;
             for (int i = 0; i < what->count(); ++i) {
-                QString tabName = what->tabAt(i)->objectName();
-                if ( (tabName == kNodeGraphObjectName) || (tabName == kCurveEditorObjectName) ) {
+                QWidget* tab = what->tabAt(i);
+                assert(tab);
+                NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+                CurveEditor* isEditor = dynamic_cast<CurveEditor*>(tab);
+                if (isGraph || isEditor) {
                     hasNodeGraphOrCurveEditor = true;
                     break;
                 }
@@ -4064,12 +4067,12 @@ Gui::getCairoVersion() const
 void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
-    NodeGui* node = qobject_cast<NodeGui*>( sender() );
+    Natron::Node* node = qobject_cast<Natron::Node*>( sender() );
 
     if (!node) {
         return;
     }
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
     if (isViewer) {
         Q_EMIT viewersChanged();
     }
@@ -4368,7 +4371,32 @@ NodeBackDrop*
 Gui::createBackDrop(bool requestedByLoad,
                     const NodeBackDropSerialization & serialization)
 {
-    return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
+    
+    std::string toFind;
+    std::string recurseName;
+    NodeGroup::getNodeNameAndRemainder_RightToLeft(serialization.getFullySpecifiedName(), toFind, recurseName);
+    
+    if (recurseName.empty()) {
+        //The backdrop is in the root project
+        return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
+        
+    } else {
+        ///Get the node group found
+        boost::shared_ptr<Natron::Node> node = getApp()->getProject()->getNodeByFullySpecifiedName(recurseName);
+        
+        ///The node should exist so far
+        assert(node);
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+        NodeGraphI* graph_i = isGrp->getNodeGraph();
+        assert(graph_i);
+        NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+        assert(graph);
+        
+        return graph->createBackDrop(_imp->_layoutPropertiesBin, requestedByLoad, serialization);
+    }
+    
+    
 }
 
 
@@ -4665,5 +4693,18 @@ void
 Gui::toggleAutoHideGraphInputs()
 {
     _imp->_nodeGraphArea->toggleAutoHideInputs(false);
+}
+
+void
+Gui::getNodeBackDrops(std::list<NodeBackDrop*>& backdrops) const
+{
+    if (_imp->_nodeGraphArea) {
+        std::list<NodeBackDrop*> bds = _imp->_nodeGraphArea->getActiveBackDrops();
+        backdrops.insert(backdrops.begin(), bds.begin(), bds.end());
+    }
+    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
+        std::list<NodeBackDrop*> bds = (*it)->getActiveBackDrops();
+        backdrops.insert(backdrops.begin(), bds.begin(), bds.end());
+    }
 }
 

@@ -299,7 +299,7 @@ public:
     void restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
     
-    void trySetName(const QString& newName);
+    bool trySetName(const QString& newName);
     
     void setMergeHintActive(bool active);
     
@@ -401,8 +401,6 @@ public Q_SLOTS:
     void setOptionalInputsVisible(bool visible);
 
 Q_SIGNALS:
-
-    void nameChanged(QString);
 
     void positionChanged(int x,int y);
 

@@ -54,7 +54,7 @@ App::createNode(const std::string& pluginID,int majorVersion, int minorVersion) 
 Effect*
 App::getNode(const std::string& name) const
 {
-    boost::shared_ptr<Natron::Node> node = _instance->getProject()->getNodeByName(name);
+    boost::shared_ptr<Natron::Node> node = _instance->getNodeByFullySpecifiedName(name);
     if (node && node->isActivated()) {
         return new Effect(node);
     } else {

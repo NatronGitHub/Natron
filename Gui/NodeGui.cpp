@@ -147,7 +147,6 @@ NodeGui::initialize(NodeGraph* dag,
 
     internalNode->setNodeGuiPointer(thisAsShared);
 
-    QObject::connect( this, SIGNAL( nameChanged(QString) ), internalNode.get(), SLOT( setName(QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInternalNameChanged(QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( refreshEdgesGUI() ),this,SLOT( refreshEdges() ) );
     QObject::connect( internalNode.get(), SIGNAL( knobsInitialized() ),this,SLOT( initializeKnobs() ) );
@@ -234,7 +233,7 @@ NodeGui::initialize(NodeGraph* dag,
     ///Link the position of the node to the position of the parent multi-instance
     const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
     if ( !parentMultiInstanceName.empty() ) {
-        boost::shared_ptr<Natron::Node> parentNode = dag->getGui()->getApp()->getNodeByName(parentMultiInstanceName);
+        boost::shared_ptr<Natron::Node> parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
         boost::shared_ptr<NodeGuiI> parentNodeGui_I = parentNode->getNodeGui();
         assert(parentNode && parentNodeGui_I);
         NodeGui* parentNodeGui = dynamic_cast<NodeGui*>(parentNodeGui_I.get());
@@ -994,29 +993,8 @@ NodeGui::isNearby(QPointF &point)
     return r.contains(p);
 }
 
-void
-NodeGui::setName(const QString & name_)
-{
-    onInternalNameChanged(name_);
-    _settingNameFromGui = true;
-    Q_EMIT nameChanged(name_);
-    _settingNameFromGui = false;
-}
 
-void
-NodeGui::onInternalNameChanged(const QString & s)
-{
-    if (_settingNameFromGui) {
-        return;
-    }
 
-    setNameItemHtml(s,_nodeLabel);
-
-    if (_settingsPanel) {
-        _settingsPanel->setName(s);
-    }
-    scene()->update();
-}
 
 Edge*
 NodeGui::firstAvailableEdge()
@@ -1832,6 +1810,7 @@ NodeGui::onKnobsLinksChanged()
         KnobGuiLinks::iterator foundGuiLink = _knobsLinks.find(it->masterNode);
         if (foundGuiLink != _knobsLinks.end()) {
             
+            //We already have a link to the master node
             bool found = false;
 
             for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
@@ -1841,6 +1820,8 @@ NodeGui::onKnobsLinksChanged()
                 }
             }
             if (!found) {
+                ///There's no link for this knob, add info to the tooltip of the link arrow
+                
                 foundGuiLink->second.knobs.push_back(std::make_pair(it->slave,it->master));
                 QString fullTooltip;
                 for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
@@ -1849,24 +1830,27 @@ NodeGui::onKnobsLinksChanged()
                 }
             }
         } else {
-            boost::shared_ptr<NodeGuiI> master_i = it->masterNode->getNodeGui();
-            boost::shared_ptr<NodeGui> master = boost::dynamic_pointer_cast<NodeGui>(master_i);
-            assert(master);
-            LinkArrow* arrow = new LinkArrow( master.get(),this,parentItem() );
-            arrow->setWidth(2);
-            arrow->setColor( QColor(143,201,103) );
-            arrow->setArrowHeadColor( QColor(200,255,200) );
             
-            QString tt = makeLinkString(it->masterNode.get(),it->master,node.get(),it->slave);
-            arrow->setToolTip(tt);
-            if ( !getDagGui()->areKnobLinksVisible() ) {
-                arrow->setVisible(false);
+            ///There's no link to the master node yet
+            if (it->masterNode->getNodeGui().get() != this) {
+                boost::shared_ptr<NodeGuiI> master_i = it->masterNode->getNodeGui();
+                boost::shared_ptr<NodeGui> master = boost::dynamic_pointer_cast<NodeGui>(master_i);
+                assert(master);
+                LinkArrow* arrow = new LinkArrow( master.get(),this,parentItem() );
+                arrow->setWidth(2);
+                arrow->setColor( QColor(143,201,103) );
+                arrow->setArrowHeadColor( QColor(200,255,200) );
+                
+                QString tt = makeLinkString(it->masterNode.get(),it->master,node.get(),it->slave);
+                arrow->setToolTip(tt);
+                if ( !getDagGui()->areKnobLinksVisible() ) {
+                    arrow->setVisible(false);
+                }
+                LinkedDim guilink;
+                guilink.knobs.push_back(std::make_pair(it->slave,it->master));
+                guilink.arrow = arrow;
+                _knobsLinks.insert(std::make_pair(it->masterNode,guilink));
             }
-            LinkedDim guilink;
-            guilink.knobs.push_back(std::make_pair(it->slave,it->master));
-            guilink.arrow = arrow;
-            _knobsLinks.insert(std::make_pair(it->masterNode,guilink));
-
         }
 
     }
@@ -2475,35 +2459,39 @@ DotGui::shape() const
 }
 
 void
+NodeGui::onInternalNameChanged(const QString & s)
+{
+    if (_settingNameFromGui) {
+        return;
+    }
+    
+    setNameItemHtml(s,_nodeLabel);
+    
+    if (_settingsPanel) {
+        _settingsPanel->setName(s);
+    }
+    scene()->update();
+}
+
+void
+NodeGui::setName(const QString & name_)
+{
+    trySetName(name_);
+}
+
+bool
 NodeGui::trySetName(const QString& newName)
 {
-    bool mustRestoreOldName = false;
-    QString oldName;
-    
-    if ( newName.isEmpty() ) {
-        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
-        mustRestoreOldName = true;
-    } else {
-        if ( _graph->checkIfNodeNameExists( newName.toStdString(), this ) ) {
-            mustRestoreOldName = true;
-            Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString() );
-            oldName = getNode()->getLiveInstance()->getName().c_str();
-        }
-        
+    _settingNameFromGui = true;
+    if (!getNode()->setName(newName)) {
+        _settingNameFromGui = false;
+        return false;
     }
+    _settingNameFromGui = false;
     
-    DockablePanel* panel = getSettingPanel();
-    if (mustRestoreOldName) {
-        if (panel) {
-            panel->setName(oldName);
-        }
-    } else {
-        if (panel) {
-            panel->setName(newName);
-        }
-        Q_EMIT nameChanged(newName);
-    }
-
+    onInternalNameChanged(newName);
+    return true;
+   
 }
 
 bool

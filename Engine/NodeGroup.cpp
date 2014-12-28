@@ -10,6 +10,7 @@
  */
 
 #include "NodeGroup.h"
+#include <locale>
 #include <QThreadPool>
 #include <QCoreApplication>
 
@@ -31,7 +32,7 @@ struct NodeCollectionPrivate
     
     NodeGraphI* graph;
     
-    QMutex nodesMutex;
+    mutable QMutex nodesMutex;
     NodeList nodes;
     
     NodeCollectionPrivate(AppInstance* app)
@@ -42,6 +43,8 @@ struct NodeCollectionPrivate
     {
         
     }
+    
+    NodePtr findNodeInternal(const std::string& name,const std::string& recurseName) const;
 };
 
 NodeCollection::NodeCollection(AppInstance* app)
@@ -120,6 +123,21 @@ NodeCollection::getActiveNodes(NodeList* nodes) const
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ((*it)->isActivated()) {
             nodes->push_back(*it);
+        }
+    }
+}
+
+void
+NodeCollection::getActiveNodesExpandGroups(NodeList* nodes) const
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        if ((*it)->isActivated()) {
+            nodes->push_back(*it);
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+            if (isGrp) {
+                isGrp->getActiveNodesExpandGroups(nodes);
+            }
         }
     }
 }
@@ -506,41 +524,12 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,const NodePtr& created)
 } // autoConnectNodes
 
 NodePtr
-NodeCollection::getNodeByName(const std::string & name) const
+NodeCollectionPrivate::findNodeInternal(const std::string& name,const std::string& recurseName) const
 {
-    QMutexLocker k(&_imp->nodesMutex);
-    for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+    QMutexLocker k(&nodesMutex);
+    for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->getName_mt_safe() == name) {
-            return *it;
-        }
-    }
-    return NodePtr();
-}
-
-NodePtr
-NodeCollection::getNodeByFullySpecifiedName(const std::string& fullySpecifiedName) const
-{
-    std::size_t foundGroupTagStart = fullySpecifiedName.find("&lt");
-    
-    std::string toFind;
-    std::string recurseName;
-    bool recurse = false;
-    if (foundGroupTagStart != std::string::npos) {
-        std::size_t foundGroupTagEnd = fullySpecifiedName.find("&gt",foundGroupTagStart);
-        if (foundGroupTagEnd != std::string::npos) {
-            toFind = fullySpecifiedName.substr(foundGroupTagStart + 3, foundGroupTagEnd - foundGroupTagStart + 3);
-            recurseName = fullySpecifiedName.substr(foundGroupTagEnd, std::string::npos);
-            recurse = true;
-        } else {
-            toFind = fullySpecifiedName;
-        }
-    } else {
-        toFind = fullySpecifiedName;
-    }
-    QMutexLocker k(&_imp->nodesMutex);
-    for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ((*it)->getName_mt_safe() == toFind) {
-            if (recurse) {
+            if (!recurseName.empty()) {
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
                 assert(isGrp);
                 return isGrp->getNodeByFullySpecifiedName(recurseName);
@@ -549,7 +538,62 @@ NodeCollection::getNodeByFullySpecifiedName(const std::string& fullySpecifiedNam
         }
     }
     return NodePtr();
+
 }
+
+NodePtr
+NodeCollection::getNodeByName(const std::string & name) const
+{
+    return _imp->findNodeInternal(name,std::string());
+}
+
+void
+NodeCollection::getNodeNameAndRemainder_LeftToRight(const std::string& fullySpecifiedName,std::string& name,std::string& remainder)
+{
+    std::size_t foundDot = fullySpecifiedName.find_first_of('.');
+    
+    if (foundDot != std::string::npos) {
+        
+        name = fullySpecifiedName.substr(0, foundDot);
+        if (foundDot + 1 < fullySpecifiedName.size()) {
+            remainder = fullySpecifiedName.substr(foundDot + 1, std::string::npos);
+        }
+        
+    } else {
+        name = fullySpecifiedName;
+    }
+    
+}
+
+void
+NodeCollection::getNodeNameAndRemainder_RightToLeft(const std::string& fullySpecifiedName,std::string& name,std::string& remainder)
+{
+    std::size_t foundDot = fullySpecifiedName.find_last_of('.');
+    if (foundDot != std::string::npos) {
+        
+        name = fullySpecifiedName.substr(foundDot + 1, std::string::npos);
+        if (foundDot > 0) {
+            remainder = fullySpecifiedName.substr(0, foundDot - 1);
+        }
+        
+    } else {
+        name = fullySpecifiedName;
+    }
+
+}
+
+
+NodePtr
+NodeCollection::getNodeByFullySpecifiedName(const std::string& fullySpecifiedName) const
+{
+    
+    std::string toFind;
+    std::string recurseName;
+    getNodeNameAndRemainder_LeftToRight(fullySpecifiedName, toFind, recurseName);
+   return _imp->findNodeInternal(toFind,recurseName);
+   
+}
+
 
 void
 NodeCollection::setAllNodesAborted(bool aborted)
@@ -645,10 +689,25 @@ NodeCollection::fixPathName(const std::string& oldName,const std::string& newNam
     
 }
 
+bool
+NodeCollection::checkIfNodeNameExists(const std::string & n,const Natron::Node* caller) const
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        if ( (it->get() != caller) && ( (*it)->getName_mt_safe() == n ) ) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+
 
 struct NodeGroupPrivate
 {
-    std::vector<boost::shared_ptr<Node> > inputs;
+    std::vector<boost::weak_ptr<Node> > inputs;
+    boost::weak_ptr<Node> output;
     
     NodeGroupPrivate()
     : inputs()
@@ -711,7 +770,11 @@ NodeGroup::getInputLabel(int inputNb) const
     }
     
     ///If the input name starts with "input" remove it, otherwise keep the full name
-    QString inputName(_imp->inputs[inputNb]->getName_mt_safe().c_str());
+    NodePtr input = _imp->inputs[inputNb].lock();
+    if (!input) {
+        return std::string();
+    }
+    QString inputName(input->getName_mt_safe().c_str());
     if (inputName.startsWith("input",Qt::CaseInsensitive)) {
         inputName.remove(0, 5);
     }
@@ -724,7 +787,12 @@ NodeGroup::isInputOptional(int inputNb) const
     if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
         return false;
     }
-    GroupInput* input = dynamic_cast<GroupInput*>(_imp->inputs[inputNb]->getLiveInstance());
+    
+    NodePtr n = _imp->inputs[inputNb].lock();
+    if (!n) {
+        return false;
+    }
+    GroupInput* input = dynamic_cast<GroupInput*>(n->getLiveInstance());
     assert(input);
     boost::shared_ptr<KnobI> knob = input->getKnobByName("optional");
     assert(knob);
@@ -744,9 +812,14 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
 {
     GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
     if (isInput) {
-        for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
-            if (node == *it) {
-                _imp->inputs.erase(it);
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr input = _imp->inputs[i].lock();
+            if (node == input) {
+                
+                ///Also disconnect the real input
+                getNode()->disconnectInput(i);
+                
+                _imp->inputs.erase(_imp->inputs.begin() + i);
                 getNode()->initializeInputs();
                 return;
             }
@@ -754,6 +827,11 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
         ///The input must have been tracked before
         assert(false);
     }
+    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+    if (isOutput) {
+        _imp->output.reset();
+    }
+
 }
 
 void
@@ -764,11 +842,49 @@ NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
         _imp->inputs.push_back(node);
         getNode()->initializeInputs();
     }
-
+    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+    if (isOutput) {
+        _imp->output = node;
+    }
 }
 
 void
 NodeGroup::notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/)
 {
     getNode()->initializeInputs();
+}
+
+boost::shared_ptr<Natron::Node>
+NodeGroup::getOutputNode() const
+{
+    return _imp->output.lock();
+}
+
+boost::shared_ptr<Natron::Node>
+NodeGroup::getOutputNodeInput() const
+{
+    NodePtr output = _imp->output.lock();
+    if (output) {
+        return output->getInput(0);
+    }
+    return NodePtr();
+}
+
+boost::shared_ptr<Natron::Node>
+NodeGroup::getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) const
+{
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].lock() == input) {
+            return getNode()->getInput(i);
+        }
+    }
+    return boost::shared_ptr<Natron::Node>();
+}
+
+void
+NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const
+{
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        inputs->push_back(_imp->inputs[i].lock());
+    }
 }

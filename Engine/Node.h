@@ -335,6 +335,11 @@ public:
 
     const std::list<Node* > & getOutputs() const;
     void getOutputs_mt_safe(std::list<Node*>& outputs) const;
+    
+    /**
+     * @brief Same as above but enters into subgroups
+     **/
+    void getOutputsWithGroupRedirection(std::list<Node*>& outputs) const;
 
     /**
      * @brief Each input name is appended to the vector, in the same order
@@ -795,12 +800,23 @@ public:
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
      **/
     void declarePythonFields();
+    
+    /**
+     * @brief Set the node name.
+     * @returns True upon success, false otherwise. An error dialog will be displayed upon error.
+     **/
+    bool setName(const QString & name);
+
+    void setName_no_error_check(const QString & name);
+    
+private:
+    
+    void setNameInternal(const QString& name);
 
 public Q_SLOTS:
 
     void setKnobsAge(U64 newAge);
 
-    void setName(const QString & name);
 
 
     void doRefreshEdgesGUI()

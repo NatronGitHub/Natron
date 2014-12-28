@@ -180,12 +180,11 @@ public:
     ///Same as createNode but used when loading a project
     boost::shared_ptr<Natron::Node> loadNode(const LoadNodeArgs & args);
 
-    /**
-     * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
-     * If no such node could be found, NULL is returned.
-     **/
-    boost::shared_ptr<Natron::Node> getNodeByName(const std::string & name) const;
+  
+    boost::shared_ptr<Natron::Node> getNodeByFullySpecifiedName(const std::string & name) const;
+    
     boost::shared_ptr<Natron::Project> getProject() const;
+    
     boost::shared_ptr<TimeLine> getTimeLine() const;
 
     /*true if the user is NOT scrubbing the timeline*/

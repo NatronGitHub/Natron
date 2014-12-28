@@ -1139,18 +1139,17 @@ LoadNodePresetsCommand::redo()
 
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
                                                      NodeBackDrop* bd,
+                                                     const QString& oldName,
                                                      const QString& newName)
 : QUndoCommand()
 , _node(node)
 , _bd(bd)
+, _oldName(oldName)
 , _newName(newName)
+, _firstRedoCalled(false)
 {
     assert(node || bd);
-    if (node) {
-        _oldName = node->getNode()->getName().c_str();
-    } else if (bd) {
-        _oldName = bd->getName();
-    }
+   
 }
 
 RenameNodeUndoRedoCommand::~RenameNodeUndoRedoCommand()
@@ -1172,12 +1171,16 @@ RenameNodeUndoRedoCommand::undo()
 
 void RenameNodeUndoRedoCommand::redo()
 {
-    NodeGuiPtr node = _node.lock();
-    if (node) {
-        node->trySetName(_newName);
-    } else if (_bd) {
-        _bd->trySetName(_newName);
+    if (_firstRedoCalled) {
+        NodeGuiPtr node = _node.lock();
+        
+        if (node) {
+            node->trySetName(_newName);
+        } else if (_bd) {
+            _bd->trySetName(_newName);
+        }
     }
+    _firstRedoCalled = true;
     setText(QObject::tr("Rename node"));
 }
 

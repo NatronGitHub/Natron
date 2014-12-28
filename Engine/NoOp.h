@@ -207,7 +207,7 @@ public:
     
     virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return "";
+        return "Source";
     }
     
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN

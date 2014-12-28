@@ -36,18 +36,27 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Splitter.h"
 #include "Gui/DockablePanel.h"
 
+
+
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 {
-    std::list<boost::shared_ptr<NodeGui> > activeNodes = projectGui->getVisibleNodes();
-
+    NodeList activeNodes;
+    projectGui->getInternalProject()->getActiveNodesExpandGroups(&activeNodes);
+    
     _serializedNodes.clear();
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        if ((*it)->isVisible()) {
+    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        boost::shared_ptr<NodeGuiI> nodegui_i = (*it)->getNodeGui();
+        if (!nodegui_i) {
+            continue;
+        }
+        boost::shared_ptr<NodeGui> nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+        
+        if (nodegui->isVisible()) {
             NodeGuiSerialization state;
-            (*it)->serialize(&state);
+            nodegui->serialize(&state);
             _serializedNodes.push_back(state);
-            ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
+            ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);
@@ -89,7 +98,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         _histograms.push_back( (*it)->objectName().toStdString() );
     }
 
-    std::list<NodeBackDrop*> backdrops = projectGui->getGui()->getNodeGraph()->getActiveBackDrops();
+    std::list<NodeBackDrop*> backdrops;
+    projectGui->getGui()->getNodeBackDrops(backdrops);
     for (std::list<NodeBackDrop*>::iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
         NodeBackDropSerialization s;
         s.initialize(*it);

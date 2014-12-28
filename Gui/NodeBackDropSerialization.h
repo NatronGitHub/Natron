@@ -34,7 +34,7 @@ public:
 
     void initialize(const NodeBackDrop* n);
 
-    std::string getName() const
+    std::string getFullySpecifiedName() const
     {
         return name;
     }

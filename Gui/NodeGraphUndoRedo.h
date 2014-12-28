@@ -321,6 +321,7 @@ public:
     
     RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
                               NodeBackDrop* bd,
+                              const QString& oldName,
                               const QString& newName);
     
     virtual ~RenameNodeUndoRedoCommand();
@@ -332,6 +333,7 @@ private:
     boost::weak_ptr<NodeGui> _node;
     NodeBackDrop* _bd;
     QString _oldName,_newName;
+    bool _firstRedoCalled;
 };
 
 class ExtractNodeUndoRedoCommand

@@ -152,6 +152,8 @@ TabWidget::destroyTabs()
     }
 }
 
+
+
 void
 TabWidget::destroyTab(QWidget* tab)
 {
@@ -729,6 +731,18 @@ TabWidget::removeTab(QWidget* widget)
         assert(tab == widget);
         (void)tab;
     }
+}
+
+void
+TabWidget::setCurrentWidget(QWidget* w)
+{
+    for (U32 i = 0; i < _tabs.size(); ++i) {
+        if (_tabs[i] == w) {
+            makeCurrentTab(i);
+            return;
+        }
+    }
+    appendTab(w);
 }
 
 void
