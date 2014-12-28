@@ -270,6 +270,8 @@ Project::loadProjectInternal(const QString & path,
     }
 
     ifile.close();
+    
+    _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
     getApp()->endProgress(this);
     Q_EMIT projectNameChanged(name);
     return ret;

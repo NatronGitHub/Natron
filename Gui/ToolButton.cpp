@@ -15,6 +15,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QMenu>
 CLANG_DIAG_ON(deprecated)
 
+#include <boost/weak_ptr.hpp>
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Engine/Project.h"
@@ -29,10 +30,10 @@ struct ToolButtonPrivate
     QMenu* _menu;
     std::vector<ToolButton*> _children;
     QAction* _action;
-    PluginGroupNode* _pluginToolButton;
+    boost::weak_ptr<PluginGroupNode> _pluginToolButton;
 
     ToolButtonPrivate(GuiAppInstance* app,
-                      PluginGroupNode* pluginToolButton,
+                      const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                       const QString & pluginID,
                       int major,
                       int minor,
@@ -52,8 +53,9 @@ struct ToolButtonPrivate
     }
 };
 
+
 ToolButton::ToolButton(GuiAppInstance* app,
-                       PluginGroupNode* pluginToolButton,
+                       const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                        const QString & pluginID,
                        int major,
                        int minor,
@@ -144,10 +146,10 @@ ToolButton::setAction(QAction* action)
     _imp->_action = action;
 }
 
-PluginGroupNode*
+boost::shared_ptr<PluginGroupNode>
 ToolButton::getPluginToolButton() const
 {
-    return _imp->_pluginToolButton;
+    return _imp->_pluginToolButton.lock();
 }
 
 void

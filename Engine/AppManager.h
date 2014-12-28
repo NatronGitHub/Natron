@@ -154,7 +154,10 @@ public:
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
     const Natron::PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
     QMutex* getMutexForPlugin(const QString & pluginId,int major,int minor) const WARN_UNUSED_RETURN;
-    Natron::Plugin* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
+    Natron::Plugin* getPluginBinary(const QString & pluginId,
+                                    int majorVersion,
+                                    int minorVersion,
+                                    bool convertToLowerCase) const WARN_UNUSED_RETURN;
     Natron::Plugin* getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/

@@ -694,7 +694,9 @@ NodeGui::refreshDashedStateOfEdges()
             }
         }
         if (nbInputsConnected == 0) {
-            _inputEdges[0]->setDashed(false);
+            if (_inputEdges[0]) {
+                _inputEdges[0]->setDashed(false);
+            }
         }
     }
 }
@@ -859,7 +861,7 @@ NodeGui::initializeInputs()
             }
         }
         _inputEdges.push_back(edge);
-        
+
     }
 
     refreshDashedStateOfEdges();
@@ -869,9 +871,10 @@ NodeGui::initializeInputs()
         ///if the node is an inspector and it has only 1 empty input, display it aside
         if ( (emptyInputsCount == 1) && (node->getMaxInputCount() > 1) ) {
             for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-                if ( !(*it)->hasSource() ) {
+                if ( (*it) && !(*it)->hasSource() ) {
                     (*it)->setAngle(M_PI);
                     (*it)->initLine();
+
                     return;
                 }
             }
@@ -1111,7 +1114,7 @@ Edge*
 NodeGui::hasEdgeNearbyPoint(const QPointF & pt)
 {
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( (*it)->contains( (*it)->mapFromScene(pt) ) ) {
+        if ( (*it) && (*it)->contains( (*it)->mapFromScene(pt) ) ) {
             return (*it);
         }
     }
@@ -1126,7 +1129,7 @@ Edge*
 NodeGui::hasBendPointNearbyPoint(const QPointF & pt)
 {
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if ( (*it)->hasSource() && (*it)->isBendPointVisible() ) {
+        if ( (*it) && (*it)->hasSource() && (*it)->isBendPointVisible() ) {
             if ( (*it)->isNearbyBendPoint(pt) ) {
                 return (*it);
             }

@@ -367,6 +367,7 @@ Natron::StatusEnum
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
                                                  ViewerArgs* outArgs)
 {
+    
     if (textureIndex == 0) {
         QMutexLocker l(&_imp->activeInputsMutex);
         outArgs->activeInputIndex =  _imp->activeInputs[0];

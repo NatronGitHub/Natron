@@ -296,6 +296,7 @@ struct NodeGraphPrivate
     double _accumDelta;
     bool _detailsVisible;
     bool _mergeMoveCommands;
+    bool _hasMovedOnce;
     
     NodeGraphPrivate(Gui* gui,
                      NodeGraph* p,
@@ -344,6 +345,7 @@ struct NodeGraphPrivate
           , _accumDelta(0)
           , _detailsVisible(false)
           , _mergeMoveCommands(false)
+          , _hasMovedOnce(false)
     {
     }
 
@@ -648,6 +650,11 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     }
     node_ui->initialize(this, dockContainer, node, requestedByLoad);
 
+    
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        _imp->_nodes.push_back(node_ui);
+    }
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
         if (_imp->_selection.nodes.empty()) {
@@ -661,10 +668,6 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
         }
     }
 
-    {
-        QMutexLocker l(&_imp->_nodesMutex);
-        _imp->_nodes.push_back(node_ui);
-    }
     QUndoStack* nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
         _imp->_gui->registerNewUndoStack(nodeStack);
@@ -747,6 +750,13 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             }
         }
     }
+    
+    boost::shared_ptr<Natron::Node> createdNodeInternal = node->getNode();
+    boost::shared_ptr<Natron::Node> selectedNodeInternal;
+    if (selected) {
+       selectedNodeInternal = selected->getNode();
+    }
+
 
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
@@ -763,6 +773,10 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             behavior = 0;
         }
     }
+    
+   
+    boost::shared_ptr<Natron::Project> proj = getGui()->getApp()->getProject();
+
 
     ///default
     QPointF position;
@@ -772,48 +786,204 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     }
     ///pop it above the selected node
     else if (behavior == 1) {
+        
+        ///If this is the first connected input, insert it in a "linear" way so the tree remains vertical
+        int nbConnectedInput = 0;
+        
+        const std::vector<Edge*> & selectedNodeInputs = selected->getInputsArrows();
+        for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin() ; it != selectedNodeInputs.end() ; ++it) {
+            boost::shared_ptr<NodeGui> input;
+            if (*it) {
+                input = (*it)->getSource();
+            }
+            if (input) {
+                ++nbConnectedInput;
+            }
+        }
+        
+        ///connect it to the first input
         QSize selectedNodeSize = selected->getSize();
         QSize createdNodeSize = node->getSize();
-        QPointF selectedNodeMiddlePos = selected->scenePos() +
-                                        QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
 
-
-        position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
-        position.setY( selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES
-                       - createdNodeSize.height() );
-
-        QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
-
-        ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
-        const std::vector<Edge*> & selectedNodeInputs = selected->getInputsArrows();
-        for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
-            if ( (*it)->hasSource() ) {
-                (*it)->getSource()->moveAbovePositionRecursively(createdNodeRect);
+        
+        if (nbConnectedInput == 0) {
+            
+            QPointF selectedNodeMiddlePos = selected->scenePos() +
+            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+            
+            
+            position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
+            position.setY( selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES
+                          - createdNodeSize.height() );
+            
+            QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
+            
+            ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
+            
+            for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
+                if ( (*it)->hasSource() ) {
+                    (*it)->getSource()->moveAbovePositionRecursively(createdNodeRect);
+                }
+            }
+            
+            int selectedInput = selectedNodeInternal->getPreferredInputForConnection();
+            if (selectedInput != -1) {
+                bool ok = proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal.get(),true);
+                assert(ok);
+            }
+            
+        } else {
+            
+            
+            QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
+            QPointF selectedCenter = selectedBbox.center();
+            
+            double y = selectedCenter.y() - selectedNodeSize.height() / 2.
+            - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
+            double x = selectedCenter.x() + nbConnectedInput * 150;
+            
+            position.setX(x  - createdNodeSize.width() / 2.);
+            position.setY(y);
+            
+            int index = selectedNodeInternal->getPreferredInputForConnection();
+            if (index != -1) {
+                
+                ///Create a dot to make things nicer
+                CreateNodeArgs args(PLUGINID_NATRON_DOT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    -1,
+                                    false, //< don't autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false, //<< don't push an undo command
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    createdNodeInternal->getGroup());
+                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                assert(dotNode);
+                boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+                assert(dotNodeGui_i);
+                
+                double dotW,dotH;
+                dotNodeGui_i->getSize(&dotW,&dotH);
+                dotNodeGui_i->setPosition(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                
+                ///connect the nodes
+                
+                int index = selectedNodeInternal->getPreferredInputForConnection();
+                
+                bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal.get(), true);
+                assert(ok);
+                
+                proj->connectNodes(0, createdNodeInternal, dotNode.get());
+                
             }
         }
     }
     ///pop it below the selected node
     else {
-        QSize selectedNodeSize = selected->getSize();
-        QSize createdNodeSize = node->getSize();
-        QPointF selectedNodeMiddlePos = selected->scenePos() +
-                                        QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
 
-        ///actually move the created node where the selected node is
-        position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
-        position.setY(selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-
-        QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
-
-        ///and move the selected node below recusively
-        const std::list<Natron::Node* > & outputs = selected->getNode()->getOutputs();
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
-            NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
-            assert(output);
-            output->moveBelowPositionRecursively(createdNodeRect);
+        const std::list<Natron::Node*>& outputs = selectedNodeInternal->getOutputs();
+        if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
+            QSize selectedNodeSize = selected->getSize();
+            QSize createdNodeSize = node->getSize();
+            QPointF selectedNodeMiddlePos = selected->scenePos() +
+            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+            
+            ///actually move the created node where the selected node is
+            position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
+            position.setY(selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+            
+            QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
+            
+            ///and move the selected node below recusively
+            const std::list<Natron::Node* > & outputs = selected->getNode()->getOutputs();
+            for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                assert(*it);
+                boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
+                assert(output_i);
+                NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
+                output->moveBelowPositionRecursively(createdNodeRect);
+            }
+            
+            if ( !createdNodeInternal->isOutputNode() ) {
+                ///we find all the nodes that were previously connected to the selected node,
+                ///and connect them to the created node instead.
+                std::map<Natron::Node*,int> outputsConnectedToSelectedNode;
+                selectedNodeInternal->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
+                for (std::map<Natron::Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
+                     it != outputsConnectedToSelectedNode.end(); ++it) {
+                    if (it->first->getParentMultiInstanceName().empty()) {
+                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
+                        assert(ok);
+                        
+                        (void)proj->connectNodes(it->second, createdNodeInternal, it->first);
+                        //assert(ok); Might not be ok if the disconnectNodes() action above was queued
+                    }
+                }
+            }
+            
+            ///finally we connect the created node to the selected node
+            int createdInput = createdNodeInternal->getPreferredInputForConnection();
+            if (createdInput != -1) {
+                bool ok = proj->connectNodes(createdInput, selectedNodeInternal, createdNodeInternal.get());
+                assert(ok);
+            }
+            
+        } else {
+            ///the created node is an output node and the selected node already has several outputs, create it aside
+            QSize createdNodeSize = node->getSize();
+            QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
+            QPointF selectedCenter = selectedBbox.center();
+            
+            double y = selectedCenter.y() + selectedBbox.height() / 2.
+            + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
+            double x = selectedCenter.x() + (int)outputs.size() * 150;
+            
+            position.setX(x  - createdNodeSize.width() / 2.);
+            position.setY(y);
+            
+            int index = createdNodeInternal->getPreferredInputForConnection();
+            if (index != -1) {
+                ///Create a dot to make things nicer
+                CreateNodeArgs args(PLUGINID_NATRON_DOT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    -1,
+                                    false, //< don't autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false, //<< don't push an undo command
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    createdNodeInternal->getGroup());
+                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                assert(dotNode);
+                boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+                assert(dotNodeGui_i);
+                
+                double dotW,dotH;
+                dotNodeGui_i->getSize(&dotW,&dotH);
+                dotNodeGui_i->setPosition(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                
+                ///connect the nodes
+                
+                int index = createdNodeInternal->getPreferredInputForConnection();
+                
+                bool ok = proj->connectNodes(index, dotNode, createdNodeInternal.get(), true);
+                assert(ok);
+                
+                proj->connectNodes(0, selectedNodeInternal, dotNode.get());
+                
+            }
         }
+        
+        
     }
     position = node->mapFromScene(position);
     position = node->mapToParent(position);
@@ -824,6 +994,7 @@ void
 NodeGraph::mousePressEvent(QMouseEvent* e)
 {
     assert(e);
+    _imp->_hasMovedOnce = false;
     _imp->_mergeMoveCommands = false;
     if ( buttonDownIsMiddle(e) ) {
         _imp->_evtState = MOVING_AREA;
@@ -1124,7 +1295,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     _imp->_firstMove = true;
     _imp->_evtState = DEFAULT;
     _imp->_nodesWithinBDAtPenDown.clear();
-    if (state == ARROW_DRAGGING) {
+    if (state == ARROW_DRAGGING && _imp->_hasMovedOnce) {
         
         QRectF sceneR = visibleSceneRect();
         
@@ -1236,7 +1407,11 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     } else if (state == NODE_DRAGGING) {
         if ( !_imp->_selection.nodes.empty() ) {
             ///now if there was a hint displayed, use it to actually make connections.
+            
             if (_imp->_highLightedEdge) {
+                
+                _imp->_highLightedEdge->setUseHighlight(false);
+
                 boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
                 
                 _imp->_highLightedEdge->setUseHighlight(false);
@@ -1275,7 +1450,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         }
                     }
                 }
-                
+
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
@@ -1345,7 +1520,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).x();
     double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).y();
 
-    
+    _imp->_hasMovedOnce = true;
 
     
     QRectF sceneR = visibleSceneRect();
@@ -2106,7 +2281,7 @@ NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
                     (*it2)->setBendPointVisible(visible);
                 }
             } else {
-                if ( !(*it2)->isOutputEdge() ) {
+                if ( (*it2) && !(*it2)->isOutputEdge() ) {
                     (*it2)->setBendPointVisible(visible);
                 }
             }
@@ -3293,10 +3468,12 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
 
-
+    //We don't want the clone to have the same hash has the original
+    n->incrementKnobsAge();
+    
     gui->copyFrom(guiSerialization);
     QPointF newPos = gui->pos() + offset;
-    gui->refreshPosition( newPos.x(), newPos.y() );
+    gui->setPosition( newPos.x(), newPos.y() );
     gui->forceComputePreview( _gui->getApp()->getProject()->currentFrame() );
 
     return gui;

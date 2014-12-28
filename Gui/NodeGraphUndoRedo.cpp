@@ -256,7 +256,9 @@ AddMultipleNodesCommand::redo()
     
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
+        if ((*it)->getUiContext()) {
+            (*it)->renderCurrentFrame(true);
+        }
     }
 
 

@@ -804,8 +804,9 @@ EffectInstance::aborted() const
                 
                 if (args.canAbort) {
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
-                    return args.nodeHash != getHash() ||
+                    bool ret = args.nodeHash != getHash() ||
                     args.time != args.timeline->currentFrame();
+                    return ret;
                 } else {
                     return false;
                 }
@@ -1479,7 +1480,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     Natron::ImageComponentsEnum nodePrefComps,
                                                     int /*channelForAlpha*/,
                                                     /*const RectD& rod,*/
-                                                    bool treatUnavailablePixelsAsRendered,
                                                     const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
@@ -1605,7 +1605,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 imageToConvert->downscaleMipMap(imageToConvert->getBounds(),
                                                 imageToConvert->getMipMapLevel(), img->getMipMapLevel() ,
                                                 useCache && imageToConvert->usesBitMap(),
-                                                treatUnavailablePixelsAsRendered,
                                                 img.get());
                 
                 imageToConvert = img;
@@ -2026,11 +2025,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
     boost::shared_ptr<ImageParams> cachedImgParams;
     
-    bool treatUnavailablePixelsAsRendered = !frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction;
-    
     bool isBeingRenderedElsewhere = false;
     getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,args.bitdepth, args.components,
-                                        outputDepth, outputComponents,args.channelForAlpha,/*rod,*/treatUnavailablePixelsAsRendered,args.inputImagesList, &image);
+                                        outputDepth, outputComponents,args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
 
     
     if (byPassCache) {
@@ -2199,7 +2196,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                             args.bitdepth, args.components,
                                             outputDepth,outputComponents,
-                                            args.channelForAlpha,/*rod,*/treatUnavailablePixelsAsRendered,args.inputImagesList, &image);
+                                            args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
         if (image) {
             cachedImgParams = image->getParams();
             ///We check what is left to render.
@@ -2377,7 +2374,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             RectI bounds;
             rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
             downscaledImage.reset( new Natron::Image(outputComponents, rod, downscaledImageBounds, args.mipMapLevel, image->getPixelAspectRatio(), outputDepth, true) );
-            image->downscaleMipMap(image->getBounds(), 0, args.mipMapLevel, true, treatUnavailablePixelsAsRendered, downscaledImage.get());
+            image->downscaleMipMap(image->getBounds(), 0, args.mipMapLevel, true, downscaledImage.get());
         }
     }
     
@@ -2468,7 +2465,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     if (renderRetCode != eRenderRoIStatusRenderFailed && renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
         assert(image->getMipMapLevel() == 0);
         roi.intersect(image->getBounds(), &roi);
-        image->downscaleMipMap(roi, 0, args.mipMapLevel, false, true, downscaledImage.get());
+        image->downscaleMipMap(roi, 0, args.mipMapLevel, false, downscaledImage.get());
     }
     
     ///The image might need to be converted to fit the original requested format
@@ -3252,7 +3249,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             ///of the multi-threading.
             if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                 assert(fullScaleImage != downscaledImage);
-                fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false, false,downscaledImage.get() );
+                bool isBeingRendered;
+                fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false,downscaledImage.get() );
                 downscaledImage->markForRendered(downscaledRectToRender);
             } else {
                 fullScaleImage->markForRendered(renderRectToRender);

@@ -1065,9 +1065,13 @@ Node::getPreferredInputForConnection()
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
     std::list<int> optionalEmptyInputs;
+    std::list<int> optionalEmptyMasks;
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->liveInstance->isInputRotoBrush(i)) {
+                continue;
+            }
             if (!_imp->inputs[i]) {
                 if ( !_imp->liveInstance->isInputOptional(i) ) {
                     if (firstNonOptionalEmptyInput == -1) {
@@ -1075,7 +1079,11 @@ Node::getPreferredInputForConnection()
                         break;
                     }
                 } else {
-                    optionalEmptyInputs.push_back(i);
+                    if (_imp->liveInstance->isInputMask(i)) {
+                        optionalEmptyMasks.push_back(i);
+                    } else {
+                        optionalEmptyInputs.push_back(i);
+                    }
                 }
             }
         }
@@ -1115,6 +1123,8 @@ Node::getPreferredInputForConnection()
                 return *first;
             }
 
+        } else if (!optionalEmptyMasks.empty()) {
+            return optionalEmptyMasks.front();
         } else {
             return -1;
         }
@@ -4132,10 +4142,11 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     }
     
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while (_inputsCount <= inputNumber) {
+    while (inputNumber >= _inputsCount) {
         ///this function might not succeed if we already have 10 inputs OR the last input is already empty
         addEmptyInput();
     }
+  
     
     if ( !Node::connectInput(input, inputNumber) ) {
         

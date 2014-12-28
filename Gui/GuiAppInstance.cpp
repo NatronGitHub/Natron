@@ -27,6 +27,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
@@ -65,6 +66,8 @@ struct GuiAppInstancePrivate
           , _previewProvider(new FileDialogPreviewProvider)
     {
     }
+    
+    void findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n);
 };
 
 GuiAppInstance::GuiAppInstance(int appID)
@@ -145,6 +148,16 @@ GuiAppInstance::isClosing() const
 }
 
 void
+GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n)
+{
+    _gui->findOrCreateToolButton(n);
+    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+        findOrCreateToolButtonRecursive(*it);
+    }
+}
+
+void
 GuiAppInstance::load(const QString & projectName,
                      const std::list<AppInstance::RenderRequest>& /*writersWork*/)
 {
@@ -154,10 +167,9 @@ GuiAppInstance::load(const QString & projectName,
 
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::list<PluginGroupNode*> & _toolButtons = appPTR->getPluginsToolButtons();
-    for (std::list<PluginGroupNode*>::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
-        assert(*it);
-        _imp->_gui->findOrCreateToolButton(*it);
+    const std::list<boost::shared_ptr<PluginGroupNode> > & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
+    for (std::list<boost::shared_ptr<PluginGroupNode>  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+        _imp->findOrCreateToolButtonRecursive(*it);
     }
     Q_EMIT pluginsPopulated();
 
@@ -295,22 +307,11 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
     ///must be called after initializeKnobs as it populates the node's knobs in the curve editor;
     _imp->_gui->addNodeGuiToCurveEditor(nodegui);
-
-
-    if ( !loadRequest && !parentMultiInstance ) {
-        if ( (selectedNodes.size() == 1) && autoConnect ) {
-            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
-                if (*it != nodegui) {
-                    group->autoConnectNodes((*it)->getNode(), node);
-                    break;
-                }
-            }
-        }
-        
-        ///we make sure we can have a clean preview.
-        node->computePreviewImage( getTimeLine()->currentFrame() );
-
-    }
+    
+    ///we make sure we can have a clean preview.
+    node->computePreviewImage( getTimeLine()->currentFrame() );
+    
+    
     if (!loadRequest && !isViewer) {
         triggerAutoSave();
     }

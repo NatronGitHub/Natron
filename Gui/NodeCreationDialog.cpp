@@ -237,7 +237,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     QString initialFilterName;
     std::string stdInitialFilter = initialFilter.toStdString();
     int i = 0;
-    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it,++i) {
+    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         
         if (!Natron::isPluginCreatable(it->first)) {
             continue;
@@ -252,28 +252,38 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
                 name = name.left(indexOfBracket);
             }
             ids.push_back(name);
+            if (it->first == stdInitialFilter) {
+                initialFilterName = names[i];
+            }
+            ++i;
         } else {
+            QString bestMajorName;
             for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 QString name;
                 if (it2 == it->second.rbegin()) {
                     name = (*it2)->generateUserFriendlyPluginID();
+                    bestMajorName = name;
                 } else {
                     name = (*it2)->generateUserFriendlyPluginIDMajorEncoded();
                 }
                 names.push_back(name);
+                
                 
                 int indexOfBracket = name.lastIndexOf("  [");
                 if (indexOfBracket != -1) {
                     name = name.left(indexOfBracket);
                 }
                 ids.push_back(name);
+                
+                ++i;
+
+            }
+            if (it->first == stdInitialFilter) {
+                initialFilterName = bestMajorName;
             }
         }
         
-        if (it->first == stdInitialFilter) {
-            initialFilterName = names[i];
-        }
-    }
+            }
     
     
     ids.sort();
