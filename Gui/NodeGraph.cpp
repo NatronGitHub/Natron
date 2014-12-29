@@ -1948,7 +1948,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                         isParentTab->setCurrentWidget(graph);
                     } else {
                         NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
-                        
+                        QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
                         ///We're in the double click event, it should've entered the focus in event beforehand!
                         assert(lastSelectedGraph == this);
                         

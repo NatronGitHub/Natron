@@ -105,6 +105,7 @@ Int_KnobGui::removeSpecificGui()
 {
     container->setParent(NULL);
     delete container;
+    _spinBoxes.clear();
 }
 
 void
@@ -784,6 +785,7 @@ Double_KnobGui::~Double_KnobGui()
 void Double_KnobGui::removeSpecificGui()
 {
     delete container;
+    _spinBoxes.clear();
 }
 
 void

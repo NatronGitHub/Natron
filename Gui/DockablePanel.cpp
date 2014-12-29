@@ -2466,11 +2466,27 @@ ManageUserParamsDialog::onDeleteClicked()
 void
 ManageUserParamsDialog::onEditClicked()
 {
+    
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
                 if (it->item == selection[i]) {
+                    
+                    std::list<KnobI*> listeners;
+                    it->knob->getListeners(listeners);
+                    if (!listeners.empty()) {
+                        Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Edit parameter").toStdString(),
+                                                                                tr("This parameter has one or several "
+                                                                                   "parameters from which other parameters "
+                                                                                   "of the project rely on through expressions "
+                                                                                   "or links. Editing this parameter will "
+                                                                                   "remove these expressions. Do you wish to continue ?").toStdString(), false);
+                        if (rep == Natron::eStandardButtonNo) {
+                            return;
+                        }
+                    }
+                    
                     AddKnobDialog dialog(_imp->panel,it->knob,this);
                     if (dialog.exec()) {
                         it->knob = dialog.getKnob();

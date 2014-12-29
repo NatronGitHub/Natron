@@ -91,10 +91,12 @@ namespace { // protect local classes in anonymous namespace
 
 struct Node::Implementation
 {
-    Implementation(AppInstance* app_,
+    Implementation(Node* publicInterface,
+                   AppInstance* app_,
                    const boost::shared_ptr<NodeCollection>& collection,
                    Natron::Plugin* plugin_)
-    : group(collection)
+    : _publicInterface(publicInterface)
+    , group(collection)
     , app(app_)
     , pluginID()
     , knobsInitialized(false)
@@ -184,6 +186,11 @@ struct Node::Implementation
     void restoreUserKnobsRecursive(const std::list<boost::shared_ptr<KnobSerializationBase> >& knobs,
                                    const boost::shared_ptr<Group_Knob>& group,
                                    const boost::shared_ptr<Page_Knob>& page);
+    
+    void restoreKnobLinksRecursive(const GroupKnobSerialization* group,
+                                   const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
+    
+    Node* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
@@ -317,7 +324,7 @@ Node::Node(AppInstance* app,
            const boost::shared_ptr<NodeCollection>& group,
            Natron::Plugin* plugin)
 : QObject()
-, _imp( new Implementation(app,group,plugin) )
+, _imp( new Implementation(this,app,group,plugin) )
 {
     QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
     QObject::connect(this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()));
@@ -684,6 +691,30 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
 }
 
 void
+Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* group,
+                                                const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
+{
+    const std::list <boost::shared_ptr<KnobSerializationBase> >&  children = group->getChildren();
+    for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+        GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>(it->get());
+        KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>(it->get());
+        if (isGrp) {
+            restoreKnobLinksRecursive(isGrp,allNodes);
+        } else {
+            boost::shared_ptr<KnobI> knob =  _publicInterface->getKnobByName( isRegular->getName() );
+            if (!knob) {
+                appPTR->writeToOfxLog_mt_safe("Couldn't find a parameter named " + QString((*it)->getName().c_str()));
+                continue;
+            }
+            isRegular->restoreKnobLinks(knob,allNodes);
+            isRegular->restoreExpressions(knob);
+            isRegular->restoreTracks(knob,allNodes);
+
+        }
+    }
+}
+
+void
 Node::restoreKnobsLinks(const NodeSerialization & serialization,
                         const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
 {
@@ -702,6 +733,12 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         (*it)->restoreExpressions(knob);
         (*it)->restoreTracks(knob,allNodes);
     }
+    
+    const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
+    for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
+        _imp->restoreKnobLinksRecursive(it->get(), allNodes);
+    }
+    
 }
 
 void
@@ -3542,7 +3579,9 @@ Node::onEffectKnobValueChanged(KnobI* what,
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputInfo = makeInfoForInput(i);
-            _imp->inputFormats[i]->setValue(inputInfo, 0);
+            if (i < (int)_imp->inputFormats.size() && _imp->inputFormats[i]) {
+                _imp->inputFormats[i]->setValue(inputInfo, 0);
+            }
         }
         std::string outputInfo = makeInfoForInput(-1);
         _imp->outputFormat->setValue(outputInfo, 0);

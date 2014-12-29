@@ -342,6 +342,12 @@ KnobHelper::~KnobHelper()
 void
 KnobHelper::deleteKnob()
 {
+    for (std::list<KnobI*>::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        for (int i = 0; i < (*it)->getDimension(); ++i) {
+            (*it)->clearExpression(i);
+        }
+    }
+    
     if (_imp->parentKnob) {
         Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(_imp->parentKnob.get());
         Page_Knob* isPage = dynamic_cast<Page_Knob*>(_imp->parentKnob.get());

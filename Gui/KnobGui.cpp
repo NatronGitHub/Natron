@@ -98,22 +98,25 @@ struct KnobGui::KnobGuiPrivate
 
     std::vector< boost::shared_ptr<Curve> > guiCurves;
     
+    bool guiRemoved;
+    
     KnobGuiPrivate(DockablePanel* container)
-        : triggerNewLine(true)
-          , spacingBetweenItems(0)
-          , widgetCreated(false)
-          , container(container)
-          , animationMenu(NULL)
-          , animationButton(NULL)
-          , copyRightClickMenu( new MenuWithToolTips(container) )
-          , fieldLayout(NULL)
-          , knobsOnSameLine()
-          , containerLayout(NULL)
-          , field(NULL)
-          , descriptionLabel(NULL)
-          , isOnNewLine(false)
-          , customInteract(NULL)
-          , guiCurves()
+    : triggerNewLine(true)
+    , spacingBetweenItems(0)
+    , widgetCreated(false)
+    , container(container)
+    , animationMenu(NULL)
+    , animationButton(NULL)
+    , copyRightClickMenu( new MenuWithToolTips(container) )
+    , fieldLayout(NULL)
+    , knobsOnSameLine()
+    , containerLayout(NULL)
+    , field(NULL)
+    , descriptionLabel(NULL)
+    , isOnNewLine(false)
+    , customInteract(NULL)
+    , guiCurves()
+    , guiRemoved(false)
     {
         copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
     }
@@ -188,7 +191,7 @@ KnobGui::removeGui()
         delete _imp->animationButton;
         removeSpecificGui();
     }
- 
+    _imp->guiRemoved = true;
 }
 
 Gui*
@@ -2176,6 +2179,9 @@ EditExpressionDialog::getDimension() const
 void
 KnobGui::onExprChanged(int dimension)
 {
+    if (_imp->guiRemoved) {
+        return;
+    }
     boost::shared_ptr<KnobI> knob = getKnob();
     std::string exp = knob->getExpression(dimension);
     reflectExpressionState(dimension,!exp.empty());

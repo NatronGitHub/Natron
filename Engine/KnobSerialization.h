@@ -849,7 +849,7 @@ public:
         
     }
     
-    const std::list <boost::shared_ptr<KnobSerializationBase> >& getChildren()
+    const std::list <boost::shared_ptr<KnobSerializationBase> >& getChildren() const
     {
         return _children;
     }
