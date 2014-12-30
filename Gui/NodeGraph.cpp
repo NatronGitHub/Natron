@@ -132,6 +132,7 @@ enum EVENT_STATE
 {
     DEFAULT,
     MOVING_AREA,
+    ZOOMING_AREA,
     ARROW_DRAGGING,
     NAVIGATOR_DRAGGING,
     NODE_DRAGGING,
@@ -972,6 +973,11 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     bool didSomething = false;
 
     _imp->_lastScenePosClick = mapToScene( e->pos() );
+    
+    if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
+        _imp->_evtState = ZOOMING_AREA;
+        return;
+    }
 
     boost::shared_ptr<NodeGui> selected;
     Edge* selectedEdge = 0;
@@ -1806,6 +1812,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             return;
         }
     } break;
+        case ZOOMING_AREA: {
+            QPoint lastPos = mapFromScene(_imp->_lastScenePosClick);
+            int delta = 2*((e->x() - lastPos.x()) - (e->y() - lastPos.y()));
+            wheelEventInternal(modCASIsControl(e),delta);
+        } break;
     default:
         break;
     } // switch
@@ -2360,14 +2371,9 @@ NodeGraph::setVisibleNodeDetails(bool visible)
 }
 
 void
-NodeGraph::wheelEvent(QWheelEvent* e)
+NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
 {
-    if (e->orientation() != Qt::Vertical) {
-        return;
-    }
-    QPointF newPos = mapToScene( e->pos() );
-    
-    double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
+    double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
     
     QTransform transfo = transform();
     
@@ -2382,31 +2388,15 @@ NodeGraph::wheelEvent(QWheelEvent* e)
         setVisibleNodeDetails(true);
     }
     
-    if (modCASIsControl(e) && _imp->_magnifiedNode) {
+    if (ctrlDown && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
             _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode->scale();
         }
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
-//        QPointF centerScene = visibleSceneRect().center();
-//        QPoint center = visibleWidgetRect().center();
-//        QPointF deltaScene;
-//        deltaScene.rx() = e->x() - center.x();
-//        deltaScene.ry() = e->y() - center.y();
-//        QTransform t = transform();
-//        centerOn(newPos);
-//        //t.translate(-deltaScene.x(),-deltaScene.y());
-//        t.scale(scaleFactor,scaleFactor);
-//        //t.translate(deltaScene.x(),deltaScene.y());
-//        setTransform(t);
-//        centerOn(centerScene);
- 
-        //       scale(scaleFactor,scaleFactor);
-        //QPointF delta =
-        
 
-        _imp->_accumDelta += e->delta();
+        _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
             scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
             setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
@@ -2414,8 +2404,20 @@ NodeGraph::wheelEvent(QWheelEvent* e)
             _imp->_accumDelta = 0;
         }
         _imp->_refreshOverlays = true;
-
+        
     }
+
+}
+
+void
+NodeGraph::wheelEvent(QWheelEvent* e)
+{
+    if (e->orientation() != Qt::Vertical) {
+        return;
+    }
+    QPointF newPos = mapToScene( e->pos() );
+    
+    wheelEventInternal(modCASIsControl(e), e->delta());
     _imp->_lastScenePosClick = newPos;
 }
 

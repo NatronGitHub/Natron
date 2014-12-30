@@ -79,11 +79,12 @@ namespace { // protect local classes in anonymous namespace
 enum EventStateEnum
 {
     eEventStateDraggingView = 0,
-    eEventStateDraggingKeys = 1,
-    eEventStateSelecting = 2,
-    eEventStateDraggingTangent = 3,
-    eEventStateDraggingTimeline = 4,
-    eEventStateNone = 5
+    eEventStateDraggingKeys,
+    eEventStateSelecting,
+    eEventStateDraggingTangent,
+    eEventStateDraggingTimeline,
+    eEventStateZooming,
+    eEventStateNone
 };
 
 struct SelectedKey_belongs_to_curve
@@ -2453,6 +2454,11 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
         // no need to updateGL()
         return;
+    } else if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
+        // Alt + middle = zoom
+        _imp->_state = eEventStateZooming;
+        _imp->_oldClick = e->pos();
+        return;
     }
 
     // is the click near the multiple-keyframes selection box center?
@@ -2743,7 +2749,31 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingTimeline:
         _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(),NULL, Natron::eTimelineChangeReasonCurveEditorSeek );
         break;
-
+    case eEventStateZooming: {
+        int delta = 2*((e->x() - _imp->_oldClick.x()) - (e->y() - _imp->_oldClick.y()));
+        // Wheel: zoom values and time, keep point under mouse
+        
+        const double zoomFactor_min = 0.0001;
+        const double zoomFactor_max = 10000.;
+        double zoomFactor;
+        double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        }
+        _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+        if (_imp->_drawSelectedKeyFramesBbox) {
+            refreshSelectedKeysBbox();
+        }
+        refreshDisplayedTangents();
+        
+        update();
+    } break;
     case eEventStateNone:
         assert(0);
         break;

@@ -50,7 +50,8 @@ namespace { // protext local classes in anonymous namespace
 enum EventStateEnum
 {
     DRAGGING_VIEW = 0,
-    NONE = 1
+    ZOOMING_VIEW,
+    NONE
 };
 }
 
@@ -1164,7 +1165,13 @@ Histogram::mousePressEvent(QMouseEvent* e)
         _imp->oldClick = e->pos();
     } else if ( buttonDownIsRight(e) ) {
         _imp->showMenu( e->globalPos() );
+    } else if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
+        // Alt + middle = zoom
+        _imp->state = ZOOMING_VIEW;
+        _imp->oldClick = e->pos();
+        return;
     }
+
 }
 
 void
@@ -1187,8 +1194,35 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
     case DRAGGING_VIEW:
         _imp->zoomCtx.translate(dx, dy);
         _imp->hasBeenModifiedSinceResize = true;
-        computeHistogramAndRefresh();
-        break;
+            computeHistogramAndRefresh();
+            break;
+        case ZOOMING_VIEW: {
+            
+            int delta = 2*((e->x() - _imp->oldClick.x()) - (e->y() - _imp->oldClick.y()));
+            
+            const double zoomFactor_min = 0.000001;
+            const double zoomFactor_max = 1000000.;
+            double zoomFactor;
+            double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+            QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+            
+            
+            
+            // Wheel: zoom values and time, keep point under mouse
+            zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+            if (zoomFactor <= zoomFactor_min) {
+                zoomFactor = zoomFactor_min;
+                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+            } else if (zoomFactor > zoomFactor_max) {
+                zoomFactor = zoomFactor_max;
+                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+            }
+            _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+            
+            _imp->hasBeenModifiedSinceResize = true;
+            
+            computeHistogramAndRefresh();
+    } break;
     case NONE:
         _imp->updatePicker( newClick_opengl.x() );
         update();
