@@ -2342,6 +2342,8 @@ RotoGui::keyDown(double /*scaleX*/,
     } else if (key == Qt::Key_Escape) {
         _imp->clearSelection();
         didSomething = true;
+    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, modifiers, key) ) {
+        lockSelectedCurves();
     }
 
     return didSomething;
@@ -2931,15 +2933,16 @@ void
 RotoGui::onCurveLockedChanged()
 {
     boost::shared_ptr<RotoItem> item = _imp->context->getLastItemLocked();
-
-    assert(item);
-    bool changed = false;
     if (item) {
-        _imp->onCurveLockedChangedRecursive(item, &changed);
-    }
-
-    if (changed) {
-        _imp->viewer->redraw();
+        assert(item);
+        bool changed = false;
+        if (item) {
+            _imp->onCurveLockedChangedRecursive(item, &changed);
+        }
+        
+        if (changed) {
+            _imp->viewer->redraw();
+        }
     }
 }
 
@@ -3059,32 +3062,56 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 
     menu.setFont( QFont(appFont,appFontSize) );
 
-    QAction* selectAllAction = new QAction(tr("Select All"),&menu);
-    selectAllAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_A) );
+    ActionWithShortcut* selectAllAction = new ActionWithShortcut(kShortcutGroupRoto,
+                                                                 kShortcutIDActionRotoSelectAll,
+                                                                 kShortcutDescActionRotoSelectAll,&menu);
     menu.addAction(selectAllAction);
 
-    QAction* deleteCurve = new QAction(tr("Delete"),&menu);
-    deleteCurve->setShortcut( QKeySequence(Qt::Key_Backspace) );
+    ActionWithShortcut* deleteCurve = new ActionWithShortcut(kShortcutGroupRoto,
+                                                             kShortcutIDActionRotoDelete,
+                                                             kShortcutDescActionRotoDelete,&menu);
     menu.addAction(deleteCurve);
 
-    QAction* openCloseCurve = new QAction(tr("Open/Close curve"),&menu);
+    ActionWithShortcut* openCloseCurve = new ActionWithShortcut(kShortcutGroupRoto,
+                                                                kShortcutIDActionRotoCloseBezier,
+                                                                kShortcutDescActionRotoCloseBezier
+                                                                ,&menu);
     menu.addAction(openCloseCurve);
 
-    QAction* smoothAction = new QAction(tr("Smooth points"),&menu);
-    smoothAction->setShortcut( QKeySequence(Qt::Key_Z) );
+    ActionWithShortcut* smoothAction = new ActionWithShortcut(kShortcutGroupRoto,
+                                                              kShortcutIDActionRotoSmooth,
+                                                              kShortcutDescActionRotoSmooth
+                                                              ,&menu);
     menu.addAction(smoothAction);
 
-    QAction* cuspAction = new QAction(tr("Cusp points"),&menu);
-    cuspAction->setShortcut( QKeySequence(Qt::SHIFT + Qt::Key_Z) );
+    ActionWithShortcut* cuspAction = new ActionWithShortcut(kShortcutGroupRoto,
+                                                            kShortcutIDActionRotoCuspBezier,
+                                                            kShortcutDescActionRotoCuspBezier
+                                                            ,&menu);
     menu.addAction(cuspAction);
 
-    QAction* removeFeather = new QAction(tr("Remove feather"),&menu);
-    removeFeather->setShortcut( QKeySequence(Qt::SHIFT + Qt::Key_E) );
+    ActionWithShortcut* removeFeather = new ActionWithShortcut(kShortcutGroupRoto,
+                                                               kShortcutIDActionRotoRemoveFeather,
+                                                               kShortcutDescActionRotoRemoveFeather
+                                                               ,&menu);
     menu.addAction(removeFeather);
+    
+    ActionWithShortcut* lockShape = new ActionWithShortcut(kShortcutGroupRoto,
+                                                               kShortcutIDActionRotoLockCurve,
+                                                               kShortcutDescActionRotoLockCurve
+                                                               ,&menu);
+    menu.addAction(lockShape);
 
-    QAction* linkTo = new QAction(tr("Link to track..."),&menu);
+
+    ActionWithShortcut* linkTo = new ActionWithShortcut(kShortcutGroupRoto,
+                                                        kShortcutIDActionRotoLinkToTrack,
+                                                        kShortcutDescActionRotoLinkToTrack
+                                                        ,&menu);
     menu.addAction(linkTo);
-    QAction* unLinkFrom = new QAction(tr("Unlink from track"),&menu);
+    ActionWithShortcut* unLinkFrom = new ActionWithShortcut(kShortcutGroupRoto,
+                                                            kShortcutIDActionRotoUnlinkToTrack,
+                                                            kShortcutDescActionRotoUnlinkToTrack
+                                                 ,&menu);
     menu.addAction(unLinkFrom);
 
 
@@ -3144,6 +3171,8 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
         }
 
         pushUndoCommand( new UnLinkFromTrackUndoCommand(this,points) );
+    } else if (ret == lockShape) {
+        lockSelectedCurves();
     }
 } // showMenuForCurve
 
@@ -3210,6 +3239,20 @@ RotoGui::removeFeatherForSelectedCurve()
 }
 
 void
+RotoGui::lockSelectedCurves()
+{
+    ///Make a copy because setLocked will change the selection internally and invalidate the iterator
+    SelectedBeziers selection = _imp->rotoData->selectedBeziers;
+    
+    for (SelectedBeziers::const_iterator it = selection.begin(); it != selection.end(); ++it) {
+
+        (*it)->setLocked(true, false);
+    }
+    _imp->clearSelection();
+    _imp->viewer->redraw();
+}
+
+void
 RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
                                  const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & cp)
 {
@@ -3222,31 +3265,47 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
 
     menu.setFont( QFont(appFont,appFontSize) );
 
-    QAction* deleteCp = new QAction(tr("Delete"),&menu);
-    deleteCp->setShortcut( QKeySequence(Qt::Key_Backspace) );
+    ActionWithShortcut* deleteCp =new ActionWithShortcut(kShortcutGroupRoto,
+                                                         kShortcutIDActionRotoDelete,
+                                                         kShortcutDescActionRotoDelete,&menu);
     menu.addAction(deleteCp);
 
-    QAction* smoothAction = new QAction(tr("Smooth points"),&menu);
-    smoothAction->setShortcut( QKeySequence(Qt::Key_Z) );
+    ActionWithShortcut* smoothAction = new ActionWithShortcut(kShortcutGroupRoto,
+                                                              kShortcutIDActionRotoSmooth,
+                                                              kShortcutDescActionRotoSmooth
+                                                              ,&menu);
+
     menu.addAction(smoothAction);
 
-    QAction* cuspAction = new QAction(tr("Cusp points"),&menu);
-    cuspAction->setShortcut( QKeySequence(Qt::SHIFT + Qt::Key_Z) );
+    ActionWithShortcut* cuspAction = new ActionWithShortcut(kShortcutGroupRoto,
+                                                            kShortcutIDActionRotoCuspBezier,
+                                                            kShortcutDescActionRotoCuspBezier
+                                                            ,&menu);
     menu.addAction(cuspAction);
 
-    QAction* removeFeather = new QAction(tr("Remove feather"),&menu);
-    removeFeather->setShortcut( QKeySequence(Qt::SHIFT + Qt::Key_E) );
+    ActionWithShortcut* removeFeather = new ActionWithShortcut(kShortcutGroupRoto,
+                                                               kShortcutIDActionRotoRemoveFeather,
+                                                               kShortcutDescActionRotoRemoveFeather
+                                                               ,&menu);
+
     menu.addAction(removeFeather);
 
     menu.addSeparator();
 
     boost::shared_ptr<Double_Knob> isSlaved = cp.first->isSlaved();
-    QAction* linkTo = 0,*unLinkFrom = 0;
+    ActionWithShortcut* linkTo = 0,*unLinkFrom = 0;
     if (!isSlaved) {
-        linkTo = new QAction(tr("Link to track..."),&menu);
+        linkTo = new ActionWithShortcut(kShortcutGroupRoto,
+                                        kShortcutIDActionRotoLinkToTrack,
+                                        kShortcutDescActionRotoLinkToTrack
+                                        ,&menu);
+
         menu.addAction(linkTo);
     } else {
-        unLinkFrom = new QAction(tr("Unlink from track"),&menu);
+        unLinkFrom = new ActionWithShortcut(kShortcutGroupRoto,
+                                            kShortcutIDActionRotoUnlinkToTrack,
+                                            kShortcutDescActionRotoUnlinkToTrack
+                                            ,&menu);
         menu.addAction(unLinkFrom);
     }
 

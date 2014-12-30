@@ -292,6 +292,15 @@
 #define kShortcutIDActionRotoRemoveFeather "rmvFeather"
 #define kShortcutDescActionRotoRemoveFeather "Remove feather"
 
+#define kShortcutIDActionRotoLinkToTrack "linkToTrack"
+#define kShortcutDescActionRotoLinkToTrack "Link to track"
+
+#define kShortcutIDActionRotoUnlinkToTrack "unlinkFromTrack"
+#define kShortcutDescActionRotoUnlinkToTrack "Unlink from track"
+
+#define kShortcutIDActionRotoLockCurve "lock"
+#define kShortcutDescActionRotoLockCurve "Lock shape"
+
 ///////////TRACKING SHORTCUTS
 #define kShortcutIDActionTrackingSelectAll "selectAll"
 #define kShortcutDescActionTrackingSelectAll "Select All tracks"

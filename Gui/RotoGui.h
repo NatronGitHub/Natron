@@ -203,6 +203,7 @@ public:
 
     void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & cp);
 
+    
 signals:
 
     /**
@@ -250,7 +251,8 @@ public slots:
     void smoothSelectedCurve();
     void cuspSelectedCurve();
     void removeFeatherForSelectedCurve();
-
+    void lockSelectedCurves();
+    
 private:
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
