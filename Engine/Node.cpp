@@ -1497,7 +1497,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                                        "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
                                                                        "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
                                                                        "faster to render but will have to be recomputed when zooming in/out in the Viewer.");
-    if (renderScaleSupportPref == 1) {
+    if (renderScaleSupportPref == 0 && getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
         _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
     }
     _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
