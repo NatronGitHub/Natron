@@ -197,9 +197,21 @@ public:
      **/
     virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
     
+    /**
+     * @brief Callback called when an input of the group changed
+     **/
+    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+
+    
+    /**
+     * @brief Callback called when a node of the collection is being activated
+     **/
+    virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    
 Q_SIGNALS:
     
     void nodesCleared();
+    
     
 private:
     
@@ -209,6 +221,7 @@ private:
 struct NodeGroupPrivate;
 class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
 {
+    
 public:
     
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
@@ -261,6 +274,8 @@ public:
     
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -271,6 +286,8 @@ public:
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     virtual void notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     
     boost::shared_ptr<Natron::Node> getOutputNode() const;
     

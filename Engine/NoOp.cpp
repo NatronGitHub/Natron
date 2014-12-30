@@ -85,6 +85,13 @@ GroupInput::initializeKnobs()
     optional->setAnimationEnabled(false);
     optional->setName("optional");
     page->addKnob(optional);
+    
+    mask = Natron::createKnob<Bool_Knob>(this, "Mask");
+    mask->setHintToolTip("When checked, this input of the group will be considered as a mask. A mask is always optional.");
+    mask->setAnimationEnabled(false);
+    mask->setName("isMask");
+    page->addKnob(mask);
+
 }
 
 void
@@ -97,6 +104,16 @@ GroupInput::knobChanged(KnobI* k,
     if (k == optional.get()) {
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged(getNode());
+    } else if (k == mask.get()) {
+        bool isMask = mask->getValue();
+        if (isMask) {
+            optional->setValue(true, 0);
+        } else {
+            optional->setValue(false, 0);
+        }
+        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+        group->notifyInputMaskStateChanged(getNode());
+        
     }
 }
 

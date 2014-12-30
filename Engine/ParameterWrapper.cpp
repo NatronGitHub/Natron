@@ -215,19 +215,23 @@ IntParam::get() const
     return _intKnob->getValue(0);
 }
 
-void
-Int2DParam::get(Int2DTuple& ret) const
+Int2DTuple
+Int2DParam::get() const
 {
+    Int2DTuple ret;
     ret.x = _intKnob->getValue(0);
     ret.y = _intKnob->getValue(1);
+    return ret;
 }
 
-void
-Int3DParam::get(Int3DTuple& ret) const
+Int3DTuple
+Int3DParam::get() const
 {
+    Int3DTuple ret;
     ret.x = _intKnob->getValue(0);
     ret.y = _intKnob->getValue(1);
     ret.z = _intKnob->getValue(2);
+    return ret;
 }
 
 int
@@ -236,20 +240,24 @@ IntParam::get(int frame) const
     return _intKnob->getValueAtTime(frame,0);
 }
 
-void
-Int2DParam::get(int frame,Int2DTuple &ret) const
+Int2DTuple
+Int2DParam::get(int frame) const
 {
+    Int2DTuple ret;
     ret.x = _intKnob->getValueAtTime(frame,0);
     ret.y = _intKnob->getValueAtTime(frame,1);
+    return ret;
 }
 
 
-void
-Int3DParam::get(int frame, Int3DTuple& ret) const
+Int3DTuple
+Int3DParam::get(int frame) const
 {
+    Int3DTuple ret;
     ret.x = _intKnob->getValueAtTime(frame,0);
     ret.y = _intKnob->getValueAtTime(frame,1);
     ret.z = _intKnob->getValueAtTime(frame,2);
+    return ret;
 }
 
 
@@ -421,19 +429,23 @@ DoubleParam::get() const
     return _doubleKnob->getValue(0);
 }
 
-void
-Double2DParam::get(Double2DTuple& ret) const
+Double2DTuple
+Double2DParam::get() const
 {
+    Double2DTuple ret;
     ret.x = _doubleKnob->getValue(0);
     ret.y = _doubleKnob->getValue(1);
+    return ret;
 }
 
-void
-Double3DParam::get(Double3DTuple & ret) const
+Double3DTuple
+Double3DParam::get() const
 {
+    Double3DTuple ret;
     ret.x = _doubleKnob->getValue(0);
     ret.y = _doubleKnob->getValue(1);
     ret.z = _doubleKnob->getValue(2);
+    return ret;
 }
 
 double
@@ -442,20 +454,23 @@ DoubleParam::get(int frame) const
     return _doubleKnob->getValueAtTime(frame, 0);
 }
 
-void
-Double2DParam::get(int frame, Double2DTuple& ret) const
+Double2DTuple
+Double2DParam::get(int frame) const
 {
+    Double2DTuple ret;
     ret.x = _doubleKnob->getValueAtTime(frame, 0);
     ret.y = _doubleKnob->getValueAtTime(frame, 1);
+    return ret;
 }
 
-void
-Double3DParam::get(int frame, Double3DTuple &ret) const
+Double3DTuple
+Double3DParam::get(int frame) const
 {
-
+    Double3DTuple ret;
     ret.x = _doubleKnob->getValueAtTime(frame, 0);
     ret.y = _doubleKnob->getValueAtTime(frame, 1);
     ret.z = _doubleKnob->getValueAtTime(frame, 2);
+    return ret;
 }
 
 void
@@ -623,24 +638,27 @@ ColorParam::~ColorParam()
 }
 
 
-void
-ColorParam::get(ColorTuple & ret) const
+ColorTuple
+ColorParam::get() const
 {
+    ColorTuple ret;
     ret.r = _colorKnob->getValue(0);
     ret.g = _colorKnob->getValue(1);
     ret.b = _colorKnob->getValue(2);
     ret.a = _colorKnob->getDimension() == 4 ? _colorKnob->getValue(3) : 1.;
+    return ret;
 }
 
 
-void
-ColorParam::get(int frame, ColorTuple &ret) const
+ColorTuple
+ColorParam::get(int frame) const
 {
-    
+    ColorTuple ret;
     ret.r = _colorKnob->getValueAtTime(frame, 0);
     ret.g = _colorKnob->getValueAtTime(frame, 1);
     ret.b = _colorKnob->getValueAtTime(frame, 2);
     ret.a = _colorKnob->getDimension() == 4 ? _colorKnob->getValueAtTime(frame, 2) : 1.;
+    return ret;
 }
 
 void

@@ -109,13 +109,13 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: get(ColorTuple&)const
-    // 1: get(int,ColorTuple&)const
+    // 0: get()const
+    // 1: get(int)const
     if (numArgs == 0) {
-        overloadId = 0; // get(ColorTuple&)const
+        overloadId = 0; // get()const
     } else if (numArgs == 1
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 1; // get(int,ColorTuple&)const
+        overloadId = 1; // get(int)const
     }
 
     // Function signature not found.
@@ -123,41 +123,29 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // get(ColorTuple & ret) const
+        case 0: // get() const
         {
 
             if (!PyErr_Occurred()) {
-                // get(ColorTuple&)const
-                // Begin code injection
-
-                ColorTuple t;
-                cppSelf->get(t);
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], &t);
-                return pyResult;
-
-                // End of code injection
-
-
+                // get()const
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParam*>(cppSelf)->get());
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
-        case 1: // get(int frame, ColorTuple & ret) const
+        case 1: // get(int frame) const
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get(int,ColorTuple&)const
-                // Begin code injection
-
-                ColorTuple t;
-                cppSelf->get(cppArg0,t);
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], &t);
-                return pyResult;
-
-                // End of code injection
-
-
+                // get(int)const
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParam*>(cppSelf)->get(cppArg0));
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
@@ -170,7 +158,7 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_ColorParamFunc_get_TypeError:
-        const char* overloads[] = {"NatronEngine.ColorTuple", "int, NatronEngine.ColorTuple", 0};
+        const char* overloads[] = {"", "int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.get", overloads);
         return 0;
 }

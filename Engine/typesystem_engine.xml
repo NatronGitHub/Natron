@@ -294,161 +294,134 @@
         </modify-function>
     </object-type>
     <object-type name="IntParam"/>
-    <value-type name="Int2DTuple"/>
-    <object-type name="Int2DParam">
-        <modify-function signature="get(Int2DTuple&amp;)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Int2DTuple"/>
-            </modify-argument>
+    <object-type name="Int2DTuple">
+        <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
-                Int2DTuple t;
-                %CPPSELF.%FUNCTION_NAME(t);
-                %PYARG_0 = %CONVERTTOPYTHON[Int2DTuple](t);
-                return %PYARG_0;
+                if (_i &lt; 0 || _i &gt;= 2) {
+                PyErr_BadArgument();
+                return 0;
+                } else {
+                int ret;
+                switch (_i) {
+                case 0:
+                ret = %CPPSELF.x;
+                break;
+                case 1:
+                ret = %CPPSELF.y;
+                break;
+                }
+                return  %CONVERTTOPYTHON[int](ret);
+                }
             </inject-code>
-        </modify-function>
-        <modify-function signature="get(int,Int2DTuple&amp;)const">
-            <modify-argument index="2">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Int2DTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                Int2DTuple t;
-                %CPPSELF.%FUNCTION_NAME(%1,t);
-                %PYARG_0 = %CONVERTTOPYTHON[Int2DTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
+        </add-function>
     </object-type>
-    <value-type name="Int3DTuple"/>
+    <object-type name="Int2DParam">
+    </object-type>
+    <object-type name="Int3DTuple">
+        <add-function signature="__getitem__(int)"  return-type="PyObject*">
+            <inject-code class="target" position="beginning">
+                if (_i &lt; 0 || _i &gt;= 3) {
+                PyErr_BadArgument();
+                return 0;
+                } else {
+                int ret;
+                switch (_i) {
+                case 0:
+                ret = %CPPSELF.x;
+                break;
+                case 1:
+                ret = %CPPSELF.y;
+                break;
+                case 2:
+                ret = %CPPSELF.z;
+                break;
+                }
+                return  %CONVERTTOPYTHON[int](ret);
+                }
+            </inject-code>
+        </add-function>
+    </object-type>
     <object-type name="Int3DParam">
-        <modify-function signature="get(Int3DTuple&amp;)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Int3DTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                Int3DTuple t;
-                %CPPSELF.%FUNCTION_NAME(t);
-                %PYARG_0 = %CONVERTTOPYTHON[Int3DTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
-        <modify-function signature="get(int,Int3DTuple&amp;)const">
-            <modify-argument index="2">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Int3DTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                Int3DTuple t;
-                %CPPSELF.%FUNCTION_NAME(%1,t);
-                %PYARG_0 = %CONVERTTOPYTHON[Int3DTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
     </object-type>
     <object-type name="DoubleParam"/>
-    <value-type name="Double2DTuple"/>
+    <object-type name="Double2DTuple">
+        <add-function signature="__getitem__(int)"  return-type="PyObject*">
+            <inject-code class="target" position="beginning">
+                if (_i &lt; 0 || _i &gt;= 2) {
+                PyErr_BadArgument();
+                return 0;
+                } else {
+                double ret;
+                switch (_i) {
+                case 0:
+                ret = %CPPSELF.x;
+                break;
+                case 1:
+                ret = %CPPSELF.y;
+                break;
+                }
+                return  %CONVERTTOPYTHON[double](ret);
+                }
+            </inject-code>
+        </add-function>
+    </object-type>
     <object-type name="Double2DParam">
-        <modify-function signature="get(Double2DTuple&amp;)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Double2DTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                Double2DTuple t;
-                %CPPSELF.%FUNCTION_NAME(t);
-                %PYARG_0 = %CONVERTTOPYTHON[Double2DTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
-        <modify-function signature="get(int,Double2DTuple&amp;)const">
-            <modify-argument index="2">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Double2DTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                Double2DTuple t;
-                %CPPSELF.%FUNCTION_NAME(%1,t);
-                %PYARG_0 = %CONVERTTOPYTHON[Double2DTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
     </object-type>
-    <value-type name="Double3DTuple"/>
+    <object-type name="Double3DTuple">
+        <add-function signature="__getitem__(int)"  return-type="PyObject*">
+            <inject-code class="target" position="beginning">
+                if (_i &lt; 0 || _i &gt;= 3) {
+                PyErr_BadArgument();
+                return 0;
+                } else {
+                double ret;
+                switch (_i) {
+                case 0:
+                ret = %CPPSELF.x;
+                break;
+                case 1:
+                ret = %CPPSELF.y;
+                break;
+                case 2:
+                ret = %CPPSELF.z;
+                break;
+                }
+                return  %CONVERTTOPYTHON[double](ret);
+                }
+            </inject-code>
+        </add-function>
+    </object-type>
     <object-type name="Double3DParam">
-        <modify-function signature="get(Double3DTuple&amp;)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Double3DTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                Double3DTuple t;
-                %CPPSELF.%FUNCTION_NAME(t);
-                %PYARG_0 = %CONVERTTOPYTHON[Double3DTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
-        <modify-function signature="get(int,Double3DTuple&amp;)const">
-            <modify-argument index="2">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="Double3DTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                Double3DTuple t;
-                %CPPSELF.%FUNCTION_NAME(%1,t);
-                %PYARG_0 = %CONVERTTOPYTHON[Double3DTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
     </object-type>
-    <value-type name="ColorTuple"/>
+    <object-type name="ColorTuple">
+        <add-function signature="__getitem__(int)"  return-type="PyObject*">
+            <inject-code class="target" position="beginning">
+                if (_i &lt; 0 || _i &gt;= 4) {
+                    PyErr_BadArgument();
+                    return 0;
+                } else {
+                    double ret;
+                    switch (_i) {
+                    case 0:
+                        ret = %CPPSELF.r;
+                        break;
+                    case 1:
+                        ret = %CPPSELF.g;
+                        break;
+                    case 2:
+                        ret = %CPPSELF.b;
+                        break;
+                    case 3:
+                        ret = %CPPSELF.a;
+                        break;
+
+                    }
+                    return  %CONVERTTOPYTHON[double](ret);
+                }
+            </inject-code>
+        </add-function>
+    </object-type>
     <object-type name="ColorParam">
-        <modify-function signature="get(ColorTuple&amp;)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="ColorTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                ColorTuple t;
-                %CPPSELF.%FUNCTION_NAME(t);
-                %PYARG_0 = %CONVERTTOPYTHON[ColorTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
-        <modify-function signature="get(int,ColorTuple&amp;)const">
-            <modify-argument index="2">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="ColorTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                ColorTuple t;
-                %CPPSELF.%FUNCTION_NAME(%1,t);
-                %PYARG_0 = %CONVERTTOPYTHON[ColorTuple](t);
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
     </object-type>
     <object-type name="BooleanParam"/>
     <object-type name="ChoiceParam"/>

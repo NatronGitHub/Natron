@@ -25,64 +25,15 @@ Sbk_Double3DTuple_Init(PyObject* self, PyObject* args, PyObject* kwds)
         return -1;
 
     ::Double3DTuple* cptr = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "Double3DTuple", 0, 1, &(pyArgs[0])))
-        return -1;
-
-
-    // Overloaded function decisor
-    // 0: Double3DTuple()
-    // 1: Double3DTuple(Double3DTuple)
-    if (numArgs == 0) {
-        overloadId = 0; // Double3DTuple()
-    } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))) {
-        overloadId = 1; // Double3DTuple(Double3DTuple)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_Double3DTuple_Init_TypeError;
 
     // Call function/method
-    switch (overloadId) {
-        case 0: // Double3DTuple()
-        {
+    {
 
-            if (!PyErr_Occurred()) {
-                // Double3DTuple()
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cptr = new ::Double3DTuple();
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            }
-            break;
-        }
-        case 1: // Double3DTuple(const Double3DTuple & Double3DTuple)
-        {
-            if (!Shiboken::Object::isValid(pyArgs[0]))
-                return -1;
-            ::Double3DTuple cppArg0_local = ::Double3DTuple();
-            ::Double3DTuple* cppArg0 = &cppArg0_local;
-            if (Shiboken::Conversions::isImplicitConversion((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], pythonToCpp[0]))
-                pythonToCpp[0](pyArgs[0], &cppArg0_local);
-            else
-                pythonToCpp[0](pyArgs[0], &cppArg0);
-
-
-            if (!PyErr_Occurred()) {
-                // Double3DTuple(Double3DTuple)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cptr = new ::Double3DTuple(*cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            }
-            break;
+        if (!PyErr_Occurred()) {
+            // Double3DTuple()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cptr = new ::Double3DTuple();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -90,38 +41,50 @@ Sbk_Double3DTuple_Init(PyObject* self, PyObject* args, PyObject* kwds)
         delete cptr;
         return -1;
     }
-    if (!cptr) goto Sbk_Double3DTuple_Init_TypeError;
-
     Shiboken::Object::setValidCpp(sbkSelf, true);
     Shiboken::BindingManager::instance().registerWrapper(sbkSelf, cptr);
 
 
     return 1;
-
-    Sbk_Double3DTuple_Init_TypeError:
-        const char* overloads[] = {"", "NatronEngine.Double3DTuple", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double3DTuple", overloads);
-        return -1;
-}
-
-static PyObject* Sbk_Double3DTuple___copy__(PyObject* self)
-{
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    ::Double3DTuple& cppSelf = *(((::Double3DTuple*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (SbkObject*)self)));
-    PyObject* pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], &cppSelf);
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
 }
 
 static PyMethodDef Sbk_Double3DTuple_methods[] = {
 
-    {"__copy__", (PyCFunction)Sbk_Double3DTuple___copy__, METH_NOARGS},
     {0} // Sentinel
 };
+
+PyObject* Sbk_Double3DTupleFunc___getitem__(PyObject* self, Py_ssize_t _i)
+{
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    ::Double3DTuple* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Double3DTuple*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (SbkObject*)self));
+    // Begin code injection
+
+    if (_i < 0 || _i >= 3) {
+    PyErr_BadArgument();
+    return 0;
+    } else {
+    double ret;
+    switch (_i) {
+    case 0:
+    ret = cppSelf->x;
+    break;
+    case 1:
+    ret = cppSelf->y;
+    break;
+    case 2:
+    ret = cppSelf->z;
+    break;
+    }
+    return  Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+    }
+
+    // End of code injection
+}
 
 static PyObject* Sbk_Double3DTuple_get_x(PyObject* self, void*)
 {
@@ -242,6 +205,8 @@ static int Sbk_Double3DTuple_clear(PyObject* self)
 }
 // Class Definition -----------------------------------------------
 extern "C" {
+static PySequenceMethods Sbk_Double3DTuple_TypeAsSequence;
+
 static SbkObjectType Sbk_Double3DTuple_Type = { { {
     PyVarObject_HEAD_INIT(&SbkObjectType_Type, 0)
     /*tp_name*/             "NatronEngine.Double3DTuple",
@@ -319,26 +284,16 @@ static PyObject* Double3DTuple_PTR_CppToPython_Double3DTuple(const void* cppIn) 
     return Shiboken::Object::newObject(&Sbk_Double3DTuple_Type, const_cast<void*>(cppIn), false, false, typeName);
 }
 
-// C++ to Python copy conversion.
-static PyObject* Double3DTuple_COPY_CppToPython_Double3DTuple(const void* cppIn) {
-    return Shiboken::Object::newObject(&Sbk_Double3DTuple_Type, new ::Double3DTuple(*((::Double3DTuple*)cppIn)), true, true);
-}
-
-// Python to C++ copy conversion.
-static void Double3DTuple_PythonToCpp_Double3DTuple_COPY(PyObject* pyIn, void* cppOut) {
-    *((::Double3DTuple*)cppOut) = *((::Double3DTuple*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (SbkObject*)pyIn));
-}
-static PythonToCppFunc is_Double3DTuple_PythonToCpp_Double3DTuple_COPY_Convertible(PyObject* pyIn) {
-    if (PyObject_TypeCheck(pyIn, (PyTypeObject*)&Sbk_Double3DTuple_Type))
-        return Double3DTuple_PythonToCpp_Double3DTuple_COPY;
-    return 0;
-}
-
 void init_Double3DTuple(PyObject* module)
 {
+    // type supports sequence protocol
+    memset(&Sbk_Double3DTuple_TypeAsSequence, 0, sizeof(PySequenceMethods));
+    Sbk_Double3DTuple_TypeAsSequence.sq_item = &Sbk_Double3DTupleFunc___getitem__;
+    Sbk_Double3DTuple_Type.super.ht_type.tp_as_sequence = &Sbk_Double3DTuple_TypeAsSequence;
+
     SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_Double3DTuple_Type);
 
-    if (!Shiboken::ObjectType::introduceWrapperType(module, "Double3DTuple", "Double3DTuple",
+    if (!Shiboken::ObjectType::introduceWrapperType(module, "Double3DTuple", "Double3DTuple*",
         &Sbk_Double3DTuple_Type, &Shiboken::callCppDestructor< ::Double3DTuple >)) {
         return;
     }
@@ -347,18 +302,13 @@ void init_Double3DTuple(PyObject* module)
     SbkConverter* converter = Shiboken::Conversions::createConverter(&Sbk_Double3DTuple_Type,
         Double3DTuple_PythonToCpp_Double3DTuple_PTR,
         is_Double3DTuple_PythonToCpp_Double3DTuple_PTR_Convertible,
-        Double3DTuple_PTR_CppToPython_Double3DTuple,
-        Double3DTuple_COPY_CppToPython_Double3DTuple);
+        Double3DTuple_PTR_CppToPython_Double3DTuple);
 
     Shiboken::Conversions::registerConverterName(converter, "Double3DTuple");
     Shiboken::Conversions::registerConverterName(converter, "Double3DTuple*");
     Shiboken::Conversions::registerConverterName(converter, "Double3DTuple&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Double3DTuple).name());
 
-    // Add Python to C++ copy (value, not pointer neither reference) conversion to type converter.
-    Shiboken::Conversions::addPythonToCppValueConversion(converter,
-        Double3DTuple_PythonToCpp_Double3DTuple_COPY,
-        is_Double3DTuple_PythonToCpp_Double3DTuple_COPY_Convertible);
 
 
 }

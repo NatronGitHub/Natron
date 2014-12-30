@@ -25,64 +25,15 @@ Sbk_ColorTuple_Init(PyObject* self, PyObject* args, PyObject* kwds)
         return -1;
 
     ::ColorTuple* cptr = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "ColorTuple", 0, 1, &(pyArgs[0])))
-        return -1;
-
-
-    // Overloaded function decisor
-    // 0: ColorTuple()
-    // 1: ColorTuple(ColorTuple)
-    if (numArgs == 0) {
-        overloadId = 0; // ColorTuple()
-    } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArgs[0])))) {
-        overloadId = 1; // ColorTuple(ColorTuple)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ColorTuple_Init_TypeError;
 
     // Call function/method
-    switch (overloadId) {
-        case 0: // ColorTuple()
-        {
+    {
 
-            if (!PyErr_Occurred()) {
-                // ColorTuple()
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cptr = new ::ColorTuple();
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            }
-            break;
-        }
-        case 1: // ColorTuple(const ColorTuple & ColorTuple)
-        {
-            if (!Shiboken::Object::isValid(pyArgs[0]))
-                return -1;
-            ::ColorTuple cppArg0_local = ::ColorTuple();
-            ::ColorTuple* cppArg0 = &cppArg0_local;
-            if (Shiboken::Conversions::isImplicitConversion((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], pythonToCpp[0]))
-                pythonToCpp[0](pyArgs[0], &cppArg0_local);
-            else
-                pythonToCpp[0](pyArgs[0], &cppArg0);
-
-
-            if (!PyErr_Occurred()) {
-                // ColorTuple(ColorTuple)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cptr = new ::ColorTuple(*cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            }
-            break;
+        if (!PyErr_Occurred()) {
+            // ColorTuple()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cptr = new ::ColorTuple();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -90,38 +41,54 @@ Sbk_ColorTuple_Init(PyObject* self, PyObject* args, PyObject* kwds)
         delete cptr;
         return -1;
     }
-    if (!cptr) goto Sbk_ColorTuple_Init_TypeError;
-
     Shiboken::Object::setValidCpp(sbkSelf, true);
     Shiboken::BindingManager::instance().registerWrapper(sbkSelf, cptr);
 
 
     return 1;
-
-    Sbk_ColorTuple_Init_TypeError:
-        const char* overloads[] = {"", "NatronEngine.ColorTuple", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorTuple", overloads);
-        return -1;
-}
-
-static PyObject* Sbk_ColorTuple___copy__(PyObject* self)
-{
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    ::ColorTuple& cppSelf = *(((::ColorTuple*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (SbkObject*)self)));
-    PyObject* pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], &cppSelf);
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
 }
 
 static PyMethodDef Sbk_ColorTuple_methods[] = {
 
-    {"__copy__", (PyCFunction)Sbk_ColorTuple___copy__, METH_NOARGS},
     {0} // Sentinel
 };
+
+PyObject* Sbk_ColorTupleFunc___getitem__(PyObject* self, Py_ssize_t _i)
+{
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    ::ColorTuple* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ColorTuple*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (SbkObject*)self));
+    // Begin code injection
+
+    if (_i < 0 || _i >= 4) {
+        PyErr_BadArgument();
+        return 0;
+    } else {
+        double ret;
+        switch (_i) {
+        case 0:
+            ret = cppSelf->r;
+            break;
+        case 1:
+            ret = cppSelf->g;
+            break;
+        case 2:
+            ret = cppSelf->b;
+            break;
+        case 3:
+            ret = cppSelf->a;
+            break;
+
+        }
+        return  Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+    }
+
+    // End of code injection
+}
 
 static PyObject* Sbk_ColorTuple_get_g(PyObject* self, void*)
 {
@@ -276,6 +243,8 @@ static int Sbk_ColorTuple_clear(PyObject* self)
 }
 // Class Definition -----------------------------------------------
 extern "C" {
+static PySequenceMethods Sbk_ColorTuple_TypeAsSequence;
+
 static SbkObjectType Sbk_ColorTuple_Type = { { {
     PyVarObject_HEAD_INIT(&SbkObjectType_Type, 0)
     /*tp_name*/             "NatronEngine.ColorTuple",
@@ -353,26 +322,16 @@ static PyObject* ColorTuple_PTR_CppToPython_ColorTuple(const void* cppIn) {
     return Shiboken::Object::newObject(&Sbk_ColorTuple_Type, const_cast<void*>(cppIn), false, false, typeName);
 }
 
-// C++ to Python copy conversion.
-static PyObject* ColorTuple_COPY_CppToPython_ColorTuple(const void* cppIn) {
-    return Shiboken::Object::newObject(&Sbk_ColorTuple_Type, new ::ColorTuple(*((::ColorTuple*)cppIn)), true, true);
-}
-
-// Python to C++ copy conversion.
-static void ColorTuple_PythonToCpp_ColorTuple_COPY(PyObject* pyIn, void* cppOut) {
-    *((::ColorTuple*)cppOut) = *((::ColorTuple*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (SbkObject*)pyIn));
-}
-static PythonToCppFunc is_ColorTuple_PythonToCpp_ColorTuple_COPY_Convertible(PyObject* pyIn) {
-    if (PyObject_TypeCheck(pyIn, (PyTypeObject*)&Sbk_ColorTuple_Type))
-        return ColorTuple_PythonToCpp_ColorTuple_COPY;
-    return 0;
-}
-
 void init_ColorTuple(PyObject* module)
 {
+    // type supports sequence protocol
+    memset(&Sbk_ColorTuple_TypeAsSequence, 0, sizeof(PySequenceMethods));
+    Sbk_ColorTuple_TypeAsSequence.sq_item = &Sbk_ColorTupleFunc___getitem__;
+    Sbk_ColorTuple_Type.super.ht_type.tp_as_sequence = &Sbk_ColorTuple_TypeAsSequence;
+
     SbkNatronEngineTypes[SBK_COLORTUPLE_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_ColorTuple_Type);
 
-    if (!Shiboken::ObjectType::introduceWrapperType(module, "ColorTuple", "ColorTuple",
+    if (!Shiboken::ObjectType::introduceWrapperType(module, "ColorTuple", "ColorTuple*",
         &Sbk_ColorTuple_Type, &Shiboken::callCppDestructor< ::ColorTuple >)) {
         return;
     }
@@ -381,18 +340,13 @@ void init_ColorTuple(PyObject* module)
     SbkConverter* converter = Shiboken::Conversions::createConverter(&Sbk_ColorTuple_Type,
         ColorTuple_PythonToCpp_ColorTuple_PTR,
         is_ColorTuple_PythonToCpp_ColorTuple_PTR_Convertible,
-        ColorTuple_PTR_CppToPython_ColorTuple,
-        ColorTuple_COPY_CppToPython_ColorTuple);
+        ColorTuple_PTR_CppToPython_ColorTuple);
 
     Shiboken::Conversions::registerConverterName(converter, "ColorTuple");
     Shiboken::Conversions::registerConverterName(converter, "ColorTuple*");
     Shiboken::Conversions::registerConverterName(converter, "ColorTuple&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::ColorTuple).name());
 
-    // Add Python to C++ copy (value, not pointer neither reference) conversion to type converter.
-    Shiboken::Conversions::addPythonToCppValueConversion(converter,
-        ColorTuple_PythonToCpp_ColorTuple_COPY,
-        is_ColorTuple_PythonToCpp_ColorTuple_COPY_Convertible);
 
 
 }

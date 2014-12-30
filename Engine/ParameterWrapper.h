@@ -344,8 +344,8 @@ public:
     
     virtual ~Int2DParam() {}
     
-    void get(Int2DTuple& ret) const;
-    void get(int frame, Int2DTuple& ret) const;
+    Int2DTuple get() const;
+    Int2DTuple get(int frame) const;
     void set(int x, int y);
     void set(int x, int y, int frame);
 };
@@ -358,8 +358,8 @@ public:
     
     virtual ~Int3DParam() {}
     
-    void get(Int3DTuple& ret) const;
-    void get(int frame, Int3DTuple& ret) const;
+    Int3DTuple get() const;
+    Int3DTuple get(int frame) const;
     void set(int x, int y, int z);
     void set(int x, int y, int z, int frame);
 };
@@ -489,8 +489,8 @@ public:
     
     virtual ~Double2DParam() {}
     
-    void get(Double2DTuple& ret) const;
-    void get(int frame, Double2DTuple& ret) const;
+    Double2DTuple get() const;
+    Double2DTuple get(int frame) const;
     void set(double x, double y);
     void set(double x, double y, int frame);
 };
@@ -503,8 +503,8 @@ public:
     
     virtual ~Double3DParam() {}
     
-    void get(Double3DTuple& ret) const;
-    void get(int frame, Double3DTuple& ret) const;
+    Double3DTuple get() const;
+    Double3DTuple get(int frame) const;
     void set(double x, double y, double z);
     void set(double x, double y, double z, int frame);
 };
@@ -524,8 +524,8 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    void get(ColorTuple& ret) const;
-    void get(int frame,ColorTuple& ret) const;
+    ColorTuple get() const;
+    ColorTuple get(int frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values

@@ -801,6 +801,27 @@ NodeGroup::isInputOptional(int inputNb) const
     return isBool->getValue();
 }
 
+bool
+NodeGroup::isInputMask(int inputNb) const
+{
+    
+    if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
+        return false;
+    }
+    
+    NodePtr n = _imp->inputs[inputNb].lock();
+    if (!n) {
+        return false;
+    }
+    GroupInput* input = dynamic_cast<GroupInput*>(n->getLiveInstance());
+    assert(input);
+    boost::shared_ptr<KnobI> knob = input->getKnobByName("isMask");
+    assert(knob);
+    Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
+    assert(isBool);
+    return isBool->getValue();
+}
+
 void
 NodeGroup::initializeKnobs()
 {
@@ -852,6 +873,21 @@ void
 NodeGroup::notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/)
 {
     getNode()->initializeInputs();
+}
+
+void
+NodeGroup::notifyInputMaskStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/)
+{
+    getNode()->initializeInputs();
+}
+
+void
+NodeGroup::notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node)
+{
+    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+    if (isInput) {
+        getNode()->initializeInputs();
+    }
 }
 
 boost::shared_ptr<Natron::Node>

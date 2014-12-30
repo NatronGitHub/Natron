@@ -1219,7 +1219,8 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         Natron::ensureScriptHasModuleImport("math", script);
         
         std::size_t firstLine = effect->getNode()->declareCurrentNodeVariable_Python(script);
-        ///Now define the app variable
+        
+        ///Now define the variables in the scope
         std::stringstream ss;
         ss << "thisParam = thisNode.getParam(\"" << knob->getName() << "\") \n";
         ss << "frame = thisParam.getCurrentTime() \n";

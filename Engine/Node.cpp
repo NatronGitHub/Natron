@@ -1286,6 +1286,7 @@ Node::setNameInternal(const QString& name)
         
     }
     
+    _imp->group.lock()->notifyNodeNameChanged(shared_from_this());
     Q_EMIT nameChanged(name);
 }
 
@@ -1722,7 +1723,6 @@ Node::initializeInputs()
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
-    int oldCount = (int)_imp->inputs.size();
     int inputCount = getMaxInputCount();
     
     {
@@ -1730,12 +1730,11 @@ Node::initializeInputs()
         _imp->inputs.resize(inputCount);
         _imp->inputLabels.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
-        if (inputCount > oldCount) {
-            for (int i = oldCount; i < inputCount; ++i) {
-                _imp->inputLabels[i] = _imp->liveInstance->getInputLabel(i);
-                _imp->inputs[i].reset();
-            }
+        for (int i = 0; i < inputCount; ++i) {
+            _imp->inputLabels[i] = _imp->liveInstance->getInputLabel(i);
+            _imp->inputs[i].reset();
         }
+        
         
         ///Set the components the plug-in accepts
         _imp->inputsComponents.resize(inputCount);
