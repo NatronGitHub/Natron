@@ -1235,20 +1235,23 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
     }
 }
 
-static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesisPos,const std::string& str) {
-    assert(openingParenthesisPos < str.size() && str.at(openingParenthesisPos) == '(');
+static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
+                                                  char openingChar,
+                                                  char closingChar,
+                                                  const std::string& str) {
+    assert(openingParenthesisPos < str.size() && str.at(openingParenthesisPos) == openingChar);
     
     int noOpeningParenthesisFound = 0;
     int i = openingParenthesisPos + 1;
     
     while (i < (int)str.size()) {
-        if (str.at(i) == ')') {
+        if (str.at(i) == closingChar) {
             if (noOpeningParenthesisFound == 0) {
                 break;
             } else {
                 --noOpeningParenthesisFound;
             }
-        } else if (str.at(i) == '(') {
+        } else if (str.at(i) == openingChar) {
             ++noOpeningParenthesisFound;
         }
         ++i;
@@ -1295,7 +1298,7 @@ static bool parseTokenFrom(const std::string& str,const std::string& token,std::
 
     }
     
-    std::size_t endingParenthesis = getMatchingParenthesisPosition(pos, str);
+    std::size_t endingParenthesis = getMatchingParenthesisPosition(pos, '(', ')',  str);
     if (endingParenthesis == std::string::npos) {
         throw std::invalid_argument("Invalid expr");
     }
@@ -1324,9 +1327,18 @@ static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& toke
     while (couldFindToken) {
         
         if (findDotAfterParenthesis ) {
-            if (tokenStart + tokenSize < str.size() && str.at(tokenStart + tokenSize) == '.') {
-                //remove the 2 characters, e.g: ".x" of the tuple
-                str.erase(tokenStart + tokenSize, 2);
+            if (tokenStart + tokenSize < str.size()) {
+                if (str.at(tokenStart + tokenSize) == '.') {
+                    //remove the 2 characters, e.g: ".x" of the tuple
+                    str.erase(tokenStart + tokenSize, 2);
+                } else if (str.at(tokenStart + tokenSize) == '[') {
+                    std::size_t closingbracePos = getMatchingParenthesisPosition(tokenStart + tokenSize, '[', ']', str);
+                    if (closingbracePos == std::string::npos) {
+                        throw std::invalid_argument("Invalid expr");
+                    }
+                    str.erase(tokenStart + tokenSize, closingbracePos - (tokenStart + tokenSize) + 1);
+                }
+                
             }
         }
 
@@ -2232,21 +2244,19 @@ KnobHelper::onMasterChanged(KnobI* master,
 void
 KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
 {
-    int dim = -1;
-    
+    std::set<int> dimensionsToEvaluate;
     {
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
             std::list<KnobI*>::iterator found = std::find(_imp->expressions[i].dependencies.begin(),_imp->expressions[i].dependencies.end(),knob);
             if (found != _imp->expressions[i].dependencies.end()) {
-                dim = i;
-                break;
+                dimensionsToEvaluate.insert(i);
             }
         }
     }
-    assert(dim != -1);
-    evaluateValueChange(dim, Natron::eValueChangedReasonSlaveRefresh, true);
-    
+    for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
+        evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh, true);
+    }
 }
 
 void
