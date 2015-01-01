@@ -1098,7 +1098,9 @@ KnobHelper::evaluateValueChange(int dimension,
     
     if (!guiFrozen  && _signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
-        _signalSlotHandler->s_updateDependencies(dimension);
+        if (getHolder() && !getHolder()->isEvaluationBlocked()) {
+            _signalSlotHandler->s_updateDependencies(dimension);
+        }
         checkAnimationLevel(dimension);
     }
 }
@@ -2897,7 +2899,7 @@ void
 KnobHolder::initializeKnobsPublic()
 {
     initializeKnobs();
-
+    _imp->knobsInitialized = true;
 }
 
 void

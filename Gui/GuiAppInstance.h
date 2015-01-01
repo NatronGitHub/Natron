@@ -30,11 +30,13 @@ class KnobHolder;
 struct FileDialogPreviewProvider
 {
     ViewerTab* viewerUI;
+    boost::shared_ptr<Natron::Node> viewerNodeInternal;
     boost::shared_ptr<NodeGui> viewerNode;
-    std::map<std::string,boost::shared_ptr<NodeGui> > readerNodes;
+    std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > > readerNodes;
     
     FileDialogPreviewProvider()
     : viewerUI(0)
+    , viewerNodeInternal()
     , viewerNode()
     , readerNodes()
     {}

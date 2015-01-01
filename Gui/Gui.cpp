@@ -702,20 +702,24 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool requestedByLoad,
                     double xPosHint,
                     double yPosHint,
-                    bool pushUndoRedoCommand,
-                    bool autoConnect)
+                   bool pushUndoRedoCommand,
+                   bool autoConnect)
 {
     assert(_imp->_nodeGraphArea);
     
     boost::shared_ptr<NodeCollection> group = node->getGroup();
-    assert(group);
-    NodeGraphI* graph_i = group->getNodeGraph();
-    assert(graph_i);
-    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-    assert(graph);
     
+    NodeGraph* graph;
+    if (group) {
+        NodeGraphI* graph_i = group->getNodeGraph();
+        assert(graph_i);
+        graph = dynamic_cast<NodeGraph*>(graph_i);
+        assert(graph);
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
     boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
-                                                                             xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
+                                                              xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
     QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 

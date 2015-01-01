@@ -166,9 +166,7 @@ struct Node::Implementation
     , persistentMessageType(0)
     , persistentMessageMutex()
     , guiPointer()
-    {
-        assert(collection);
-        
+    {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
         gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
@@ -189,6 +187,8 @@ struct Node::Implementation
     
     void restoreKnobLinksRecursive(const GroupKnobSerialization* group,
                                    const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
+    
+    void ifGroupForceHashChangeOfInputs();
     
     Node* _publicInterface;
     
@@ -475,7 +475,10 @@ Node::load(const std::string & pluginID,
     }
     declarePythonFields();
     
-    getGroup()->notifyNodeActivated(thisShared);
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if (group) {
+        group->notifyNodeActivated(thisShared);
+    }
     
     computeHash();
     assert(_imp->liveInstance);
@@ -1251,7 +1254,7 @@ Node::setNameInternal(const QString& name)
     
     std::string fullySpecifiedName = getFullySpecifiedName();
     
-    if (!oldName.empty()) {
+    if (!oldName.empty() && getGroup()) {
         
         try {
             Natron::setNodeVariableToPython(fullOldName,fullySpecifiedName);
@@ -1286,7 +1289,9 @@ Node::setNameInternal(const QString& name)
         
     }
     
-    _imp->group.lock()->notifyNodeNameChanged(shared_from_this());
+    if (getGroup()) {
+        _imp->group.lock()->notifyNodeNameChanged(shared_from_this());
+    }
     Q_EMIT nameChanged(name);
 }
 
@@ -1313,7 +1318,7 @@ Node::setName(const QString& name)
     } else if (nameOnlyComposedOfDigits) {
         Natron::errorDialog( tr("Node name").toStdString(), tr("A node name cannot be composed only of digits.").toStdString() );
         return false;
-    } else if (getGroup()->checkIfNodeNameExists( name.toStdString(), this)) {
+    } else if (getGroup() && getGroup()->checkIfNodeNameExists( name.toStdString(), this)) {
         Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the graph.").toStdString() );
         return false;
     }
@@ -1722,17 +1727,22 @@ Node::initializeInputs()
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    
     int inputCount = getMaxInputCount();
     
+    InputsV oldInputs;
     {
         QMutexLocker l(&_imp->inputsMutex);
+        oldInputs = _imp->inputs;
         _imp->inputs.resize(inputCount);
         _imp->inputLabels.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         for (int i = 0; i < inputCount; ++i) {
             _imp->inputLabels[i] = _imp->liveInstance->getInputLabel(i);
-            _imp->inputs[i].reset();
+            if (i < (int)oldInputs.size()) {
+                _imp->inputs[i] = oldInputs[i];
+            } else {
+                _imp->inputs[i].reset();
+            }
         }
         
         
@@ -2041,7 +2051,24 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     ///Recompute the hash
     computeHash();
     
+    _imp->ifGroupForceHashChangeOfInputs();
+    
     return true;
+}
+
+void
+Node::Implementation::ifGroupForceHashChangeOfInputs()
+{
+    ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(liveInstance.get());
+    if (isGrp) {
+        std::list<Natron::Node* > inputsOutputs;
+        isGrp->getInputsOutputs(&inputsOutputs);
+        for (std::list<Natron::Node* >::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
+            (*it)->incrementKnobsAge();
+            (*it)->computeHash();
+        }
+    }
 }
 
 bool
@@ -2098,6 +2125,9 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
     
     ///Recompute the hash
     computeHash();
+    
+    _imp->ifGroupForceHashChangeOfInputs();
+    
     return true;
 }
 
@@ -2178,6 +2208,9 @@ Node::switchInput0And1()
     onInputChanged(inputAIndex);
     onInputChanged(inputBIndex);
     computeHash();
+    
+    _imp->ifGroupForceHashChangeOfInputs();
+
 } // switchInput0And1
 
 void
@@ -2252,6 +2285,7 @@ Node::disconnectInput(int inputNumber)
     onInputChanged(inputNumber);
     computeHash();
     
+    _imp->ifGroupForceHashChangeOfInputs();
     return inputNumber;
 }
 
@@ -2283,6 +2317,8 @@ Node::disconnectInput(Node* input)
                 Q_EMIT inputChanged(i);
                 onInputChanged(i);
                 computeHash();
+                
+                _imp->ifGroupForceHashChangeOfInputs();                
                 l.relock();
                 
                 return i;
@@ -3989,6 +4025,10 @@ Node::dequeueActions()
 std::size_t
 Node::declareCurrentNodeVariable_Python(std::string& script)
 {
+    if (!getGroup()) {
+        return std::string::npos;
+    }
+    
     size_t startLine = getApp()->declareCurrentAppVariable_Python(script);
     
     ///Now define the thisNode variable
@@ -4002,6 +4042,10 @@ Node::declareCurrentNodeVariable_Python(std::string& script)
 void
 Node::declarePythonFields()
 {
+    if (!getGroup()) {
+        return ;
+    }
+    
     std::locale locale;
     std::string fullName = getFullySpecifiedName();
     Natron::declareNodeVariableToPython(getApp()->getAppID(), fullName);
@@ -4187,7 +4231,6 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
   
     
     if ( !Node::connectInput(input, inputNumber) ) {
-        
         computeHash();
     }
     tryAddEmptyInput();

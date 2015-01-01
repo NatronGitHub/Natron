@@ -2313,9 +2313,18 @@ Color_KnobGui::onColorChanged()
     if (_dimension >= 4) {
         newValues.push_back(a);
     }
-
-    updateLabel(r, g, b, a);
-    pushUndoCommand( new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues,false) );
+    std::list<double> oldValues = _knob->getValueForEachDimension_mt_safe();
+    assert(oldValues.size() == newValues.size());
+    std::list<double>::iterator itNew = newValues.begin();
+    for (std::list<double>::iterator it = oldValues.begin() ; it != oldValues.end() ; ++it, ++itNew) {
+        if (*it != *itNew) {
+            updateLabel(r, g, b, a);
+            pushUndoCommand( new KnobUndoCommand<double>(this, oldValues, newValues,false) );
+            break;
+        }
+    }
+    
+    
 }
 
 void

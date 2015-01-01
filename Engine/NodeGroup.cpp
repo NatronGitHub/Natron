@@ -600,7 +600,7 @@ NodeCollection::setAllNodesAborted(bool aborted)
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->setAborted(true);
+        (*it)->setAborted(aborted);
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             isGrp->setAllNodesAborted(aborted);
@@ -915,6 +915,16 @@ NodeGroup::getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) co
         }
     }
     return boost::shared_ptr<Natron::Node>();
+}
+
+void
+NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes) const
+{
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        std::list<Natron::Node*> outputs;
+        _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
+        nodes->insert(nodes->end(), outputs.begin(),outputs.end());
+    }
 }
 
 void

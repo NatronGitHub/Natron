@@ -93,19 +93,21 @@ GuiAppInstance::deletePreviewProvider()
     if (_imp->_previewProvider) {
         if (_imp->_previewProvider->viewerNode) {
             _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-            boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
+            boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNodeInternal;
             ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
             assert(liveInstance);
             node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
             liveInstance->invalidateUiContext();
             node->removeReferences();
             _imp->_previewProvider->viewerNode->deleteReferences();
+            _imp->_previewProvider->viewerNodeInternal.reset();
         }
         
-        for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
+        for (std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator it =
+             _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second->getNode()->removeReferences();
-            it->second->deleteReferences();
+            it->second.first->removeReferences();
+            it->second.second->deleteReferences();
         }
         _imp->_previewProvider->readerNodes.clear();
         
@@ -255,13 +257,20 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 {
     
     boost::shared_ptr<NodeCollection> group = node->getGroup();
-    NodeGraphI* graph_i = group->getNodeGraph();
-    assert(graph_i);
-    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-    assert(graph);
+    
+    NodeGraph* graph;
+    
+    if (group) {
+        NodeGraphI* graph_i = group->getNodeGraph();
+        assert(graph_i);
+        graph = dynamic_cast<NodeGraph*>(graph_i);
+        assert(graph);
+    } else {
+        graph = _imp->_gui->getNodeGraph();
+    }
     
     std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
-
+    
     boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
 
     assert(nodegui);

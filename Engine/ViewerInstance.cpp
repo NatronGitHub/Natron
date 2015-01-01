@@ -1385,7 +1385,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
             *dst_pixels++ = b;
             *dst_pixels++ = a;
 
-            src_pixels += args.closestPowerOf2 * 4;
+            src_pixels += args.closestPowerOf2 * nComps;
         }
         ++dstY;
     }

@@ -296,6 +296,8 @@ public:
     boost::shared_ptr<Natron::Node> getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) const;
     
     void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const;
+    
+    void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;

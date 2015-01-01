@@ -1681,6 +1681,8 @@ public:
      **/
     virtual bool canHandleEvaluateOnChangeInOtherThread() const { return false; }
     
+    bool isEvaluationBlocked() const;
+
 protected:
 
     boost::shared_ptr<Group_Knob> createGroupKnob(const std::string& name, const std::string& label,const std::string& help,bool setAsTab);
@@ -1690,10 +1692,11 @@ protected:
     boost::shared_ptr<Parametric_Knob> createParametricKnob(const std::string& name, const std::string& label,const std::string& help);
     
     //////////////////////////////////////////////////////////////////////////////////////////
+    
+    
+    
 protected:
-    
-    
-    bool isEvaluationBlocked() const;
+
 
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).
