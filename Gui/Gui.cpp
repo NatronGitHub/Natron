@@ -1431,7 +1431,7 @@ Gui::exportLayout()
     std::vector<std::string> filters;
 
     filters.push_back(NATRON_LAYOUT_FILE_EXT);
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::eFileDialogModeSave,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
@@ -1493,7 +1493,7 @@ Gui::importLayout()
     std::vector<std::string> filters;
 
     filters.push_back(NATRON_LAYOUT_FILE_EXT);
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::eFileDialogModeOpen,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         std::ifstream ifile;
@@ -2733,7 +2733,7 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir,this,allowRelativePaths);
+    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.selectedFiles();
@@ -2776,7 +2776,7 @@ Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir,this,allowRelativePaths);
+    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::eFileDialogModeSave,initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.filesToSave();
@@ -3827,7 +3827,7 @@ Gui::debugImage(const Natron::Image* image,
     ///offset the pointer to 0,0
     from -= ( ( rod.bottom() * image->getRowElements() ) + rod.left() * image->getComponentsCount() );
     lut->to_byte_packed(output.bits(), from, rod, rod, rod,
-                        Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,false);
+                        Natron::Color::ePixelPackingRGBA,Natron::Color::ePixelPackingBGRA, true,false);
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr + ".png") : filename;

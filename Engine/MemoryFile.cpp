@@ -59,7 +59,7 @@ struct MemoryFilePrivate
     {
     }
 
-    void openInternal(MemoryFile::FileOpenMode open_mode);
+    void openInternal(MemoryFile::FileOpenModeEnum open_mode);
 
     void closeMapping();
 };
@@ -70,7 +70,7 @@ MemoryFile::MemoryFile()
 }
 
 MemoryFile::MemoryFile(const std::string & filepath,
-                       FileOpenMode open_mode)
+                       FileOpenModeEnum open_mode)
     : _imp( new MemoryFilePrivate(filepath) )
 {
     _imp->openInternal(open_mode);
@@ -78,7 +78,7 @@ MemoryFile::MemoryFile(const std::string & filepath,
 
 MemoryFile::MemoryFile(const std::string & filepath,
                        size_t size,
-                       FileOpenMode open_mode)
+                       FileOpenModeEnum open_mode)
     : _imp( new MemoryFilePrivate(filepath) )
 {
     _imp->openInternal(open_mode);
@@ -87,7 +87,7 @@ MemoryFile::MemoryFile(const std::string & filepath,
 
 void
 MemoryFile::open(const std::string & filepath,
-                 FileOpenMode open_mode)
+                 FileOpenModeEnum open_mode)
 {
     if (!_imp->path.empty() || _imp->data) {
         return;
@@ -97,7 +97,7 @@ MemoryFile::open(const std::string & filepath,
 }
 
 void
-MemoryFilePrivate::openInternal(MemoryFile::FileOpenMode open_mode)
+MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 {
 #if defined(__NATRON_UNIX__)
     /*********************************************************
@@ -108,18 +108,18 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenMode open_mode)
     *********************************************************/
     int posix_open_mode = O_RDWR;
     switch (open_mode) {
-    case MemoryFile::if_exists_fail_if_not_exists_create:
+    case MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate:
         posix_open_mode |= O_EXCL | O_CREAT;
         break;
-    case MemoryFile::if_exists_keep_if_dont_exists_fail:
+    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail:
         break;
-    case MemoryFile::if_exists_keep_if_dont_exists_create:
+    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate:
         posix_open_mode |= O_CREAT;
         break;
-    case MemoryFile::if_exists_truncate_if_not_exists_fail:
+    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseFail:
         posix_open_mode |= O_TRUNC;
         break;
-    case MemoryFile::if_exists_truncate_if_not_exists_create:
+    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseCreate:
         posix_open_mode |= O_TRUNC | O_CREAT;
         break;
     default:
@@ -184,19 +184,19 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenMode open_mode)
     *********************************************************/
     int windows_open_mode;
     switch (open_mode) {
-    case MemoryFile::if_exists_fail_if_not_exists_create:
+    case MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate:
         windows_open_mode = CREATE_NEW;
         break;
-    case MemoryFile::if_exists_keep_if_dont_exists_fail:
+    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail:
         windows_open_mode = OPEN_EXISTING;
         break;
-    case MemoryFile::if_exists_keep_if_dont_exists_create:
+    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate:
         windows_open_mode = OPEN_ALWAYS;
         break;
-    case MemoryFile::if_exists_truncate_if_not_exists_fail:
+    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseFail:
         windows_open_mode = TRUNCATE_EXISTING;
         break;
-    case MemoryFile::if_exists_truncate_if_not_exists_create:
+    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseCreate:
         windows_open_mode = CREATE_ALWAYS;
         break;
     default:

@@ -350,14 +350,14 @@ struct ViewerGL::Implementation
      **/
     void activateShaderRGB(int texIndex);
 
-    enum WipePolygonType
+    enum WipePolygonEnum
     {
-        POLYGON_EMPTY = 0,  // don't draw anything
-        POLYGON_FULL,  // draw the whole texture as usual
-        POLYGON_PARTIAL, // use the polygon returned to draw
+        eWipePolygonEmpty = 0,  // don't draw anything
+        eWipePolygonFull,  // draw the whole texture as usual
+        eWipePolygonPartial, // use the polygon returned to draw
     };
 
-    WipePolygonType getWipePolygon(const RectD & texRectClipped, //!< in canonical coordinates
+    WipePolygonEnum getWipePolygon(const RectD & texRectClipped, //!< in canonical coordinates
                                    QPolygonF & polygonPoints,
                                    bool rightPlane) const;
 
@@ -450,13 +450,13 @@ static const GLubyte triangleStrip[28] = {
 void
 ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
                            int textureIndex,
-                           ViewerGL::DrawPolygonMode polygonMode)
+                           ViewerGL::DrawPolygonModeEnum polygonMode)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    bool useShader = getBitDepth() != OpenGLViewerI::BYTE && _imp->supportsGLSL;
+    bool useShader = getBitDepth() != OpenGLViewerI::eBitDepthByte && _imp->supportsGLSL;
 
     
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
@@ -520,7 +520,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         //clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
 
-    if (polygonMode != ALL_PLANE) {
+    if (polygonMode != eDrawPolygonModeWhole) {
         /// draw only  the plane defined by the wipe handle
         QPolygonF polygonPoints,polygonTexCoords;
         RectD floatRectClippedToRoI;
@@ -528,12 +528,12 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         floatRectClippedToRoI.y1 = rectClippedToRoI.y1;
         floatRectClippedToRoI.x2 = rectClippedToRoI.x2;
         floatRectClippedToRoI.y2 = rectClippedToRoI.y2;
-        Implementation::WipePolygonType polyType = _imp->getWipePolygon(floatRectClippedToRoI, polygonPoints, polygonMode == WIPE_RIGHT_PLANE);
+        Implementation::WipePolygonEnum polyType = _imp->getWipePolygon(floatRectClippedToRoI, polygonPoints, polygonMode == eDrawPolygonModeWipeRight);
 
-        if (polyType == Implementation::POLYGON_EMPTY) {
+        if (polyType == Implementation::eWipePolygonEmpty) {
             ///don't draw anything
             return;
-        } else if (polyType == Implementation::POLYGON_PARTIAL) {
+        } else if (polyType == Implementation::eWipePolygonPartial) {
             _imp->getPolygonTextureCoordinates(polygonPoints, canonicalTexRect, polygonTexCoords);
 
             _imp->bindTextureAndActivateShader(textureIndex, useShader);
@@ -551,11 +551,11 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
 
         } else {
             ///draw the all polygon as usual
-            polygonMode = ALL_PLANE;
+            polygonMode = eDrawPolygonModeWhole;
         }
     }
 
-    if (polygonMode == ALL_PLANE) {
+    if (polygonMode == eDrawPolygonModeWhole) {
         
         
         
@@ -676,7 +676,7 @@ ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF & polygon
     }
 }
 
-ViewerGL::Implementation::WipePolygonType
+ViewerGL::Implementation::WipePolygonEnum
 ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
                                          QPolygonF & polygonPoints,
                                          bool rightPlane) const
@@ -744,7 +744,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
 
     if ( (numIntersec != 0) && (numIntersec != 2) ) {
         ///Don't bother drawing the polygon, it is most certainly not visible in this case
-        return ViewerGL::Implementation::POLYGON_EMPTY;
+        return ViewerGL::Implementation::eWipePolygonEmpty;
     }
 
     ///determine the orientation of the planes
@@ -754,11 +754,11 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
         ///the bottom left corner is on the left plane
         if ( (crossProd > 0) && ( (center.x() >= texRectClipped.x2) || (center.y() >= texRectClipped.y2) ) ) {
             ///the plane is invisible because the wipe handle is below or on the left of the texRectClipped
-            return rightPlane ? ViewerGL::Implementation::POLYGON_EMPTY : ViewerGL::Implementation::POLYGON_FULL;
+            return rightPlane ? ViewerGL::Implementation::eWipePolygonEmpty : ViewerGL::Implementation::eWipePolygonFull;
         }
 
         ///otherwise we draw the entire texture as usual
-        return rightPlane ? ViewerGL::Implementation::POLYGON_FULL : ViewerGL::Implementation::POLYGON_EMPTY;
+        return rightPlane ? ViewerGL::Implementation::eWipePolygonFull : ViewerGL::Implementation::eWipePolygonEmpty;
     } else {
         ///we have 2 intersects
         assert(validIntersectionsIndex[0] != -1 && validIntersectionsIndex[1] != -1);
@@ -860,7 +860,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
         }
     }
 
-    return ViewerGL::Implementation::POLYGON_PARTIAL;
+    return ViewerGL::Implementation::eWipePolygonPartial;
 } // getWipePolygon
 
 ViewerGL::ViewerGL(ViewerTab* parent,
@@ -1123,40 +1123,40 @@ ViewerGL::paintGL()
 
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorMinus) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorUnder) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
 
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorOver) {
@@ -1168,26 +1168,26 @@ ViewerGL::paintGL()
                         premultB = Natron::eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
                     }
                     BlendSetter b(premultB);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
                 }
                 if (drawTexture[0]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
 
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_LEFT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeLeft);
 
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else {
                 if (drawTexture[0]) {
                     glDisable(GL_BLEND);
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
 
                 }
             }
@@ -2363,11 +2363,11 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    OpenGLViewerI::BitDepth bd = getBitDepth();
+    OpenGLViewerI::BitDepthEnum bd = getBitDepth();
     assert(textureIndex == 0 || textureIndex == 1);
-    if (bd == OpenGLViewerI::BYTE) {
+    if (bd == OpenGLViewerI::eBitDepthByte) {
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte);
-    } else if ( (bd == OpenGLViewerI::FLOAT) || (bd == OpenGLViewerI::HALF_FLOAT) ) {
+    } else if ( (bd == OpenGLViewerI::eBitDepthFloat) || (bd == OpenGLViewerI::eBitDepthHalf) ) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat);
     }
@@ -3594,18 +3594,18 @@ ViewerGL::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
-OpenGLViewerI::BitDepth
+OpenGLViewerI::BitDepthEnum
 ViewerGL::getBitDepth() const
 {
     // MT-SAFE
     ///supportsGLSL is set on the main thread only once on startup, it doesn't need to be protected.
     if (!_imp->supportsGLSL) {
-        return OpenGLViewerI::BYTE;
+        return OpenGLViewerI::eBitDepthByte;
     } else {
         // FIXME: casting an int to an enum!
 
         ///the bitdepth value is locked by the knob holding that value itself.
-        return (OpenGLViewerI::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
+        return (OpenGLViewerI::BitDepthEnum)appPTR->getCurrentSettings()->getViewersBitDepth();
     }
 }
 

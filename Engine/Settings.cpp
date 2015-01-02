@@ -687,7 +687,7 @@ Settings::initializeKnobs()
     _diskCachePath->setAnimationEnabled(false);
     _diskCachePath->setMultiPath(false);
     
-    QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
     std::string diskCacheTt("WARNING: Changing this parameter requires a restart of the application. \n"
                             "This is points to the location where " NATRON_APPLICATION_NAME " on-disk caches will be. "
                             "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "

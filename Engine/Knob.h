@@ -851,11 +851,11 @@ class KnobHelper
 
 public:
 
-    enum ValueChangedReturnCode
+    enum ValueChangedReturnCodeEnum
     {
-        NO_KEYFRAME_ADDED = 0,
-        KEYFRAME_MODIFIED,
-        KEYFRAME_ADDED
+        eValueChangedReturnCodeNoKeyframeAdded = 0,
+        eValueChangedReturnCodeKeyframeModified,
+        eValueChangedReturnCodeKeyframeAdded
     };
 
     /**
@@ -1126,7 +1126,7 @@ private:
      * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
      * then a new keyframe will be set at the current time.
      **/
-    ValueChangedReturnCode setValue(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,
+    ValueChangedReturnCodeEnum setValue(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,
                                     KeyFrame* newKey) WARN_UNUSED_RETURN;
     /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
@@ -1145,21 +1145,21 @@ public:
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
-    ValueChangedReturnCode setValue(const T & value,int dimension,bool turnOffAutoKeying = false);
+    ValueChangedReturnCodeEnum setValue(const T & value,int dimension,bool turnOffAutoKeying = false);
 
     /**
      * @brief Calls setValue 
      * @param reason Can either be Natron::eValueChangedReasonUserEdited or Natron::eValueChangedReasonNatronGuiEdited
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns A status according to the operation that was made to the keyframe.
-     * @see ValueChangedReturnCode
+     * @see ValueChangedReturnCodeEnum
      **/
-    ValueChangedReturnCode onValueChanged(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey);
+    ValueChangedReturnCodeEnum onValueChanged(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey);
     
     /**
      * @brief Calls setValue with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
-    ValueChangedReturnCode setValueFromPlugin(const T & value,int dimension);
+    ValueChangedReturnCodeEnum setValueFromPlugin(const T & value,int dimension);
 
     /**
      * @brief This is called by the plugin when a set value call would happen during  an interact action.
@@ -1404,11 +1404,11 @@ class KnobHolder
 
 public:
 
-    enum MultipleParamsEditLevel
+    enum MultipleParamsEditEnum
     {
-        PARAM_EDIT_OFF = 0, //< The knob should not use multiple edits command
-        PARAM_EDIT_ON_CREATE_NEW_COMMAND, //< The knob should use multiple edits command and create a new one that will not merge with others
-        PARAM_EDIT_ON //< The knob should use multiple edits command and merge it with priors command (if any)
+        eMultipleParamsEditOff = 0, //< The knob should not use multiple edits command
+        eMultipleParamsEditOnCreateNewCommand, //< The knob should use multiple edits command and create a new one that will not merge with others
+        eMultipleParamsEditOn //< The knob should use multiple edits command and merge it with priors command (if any)
     };
 
     /**
@@ -1432,9 +1432,9 @@ public:
 
     void refreshInstanceSpecificKnobsOnly(SequenceTime time);
 
-    KnobHolder::MultipleParamsEditLevel getMultipleParamsEditLevel() const;
+    KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
 
-    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level);
+    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level);
 
     virtual bool isProject() const
     {

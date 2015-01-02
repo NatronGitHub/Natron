@@ -128,17 +128,17 @@ struct NodeClipBoard
     }
 };
 
-enum EVENT_STATE
+enum EventStateEnum
 {
-    DEFAULT,
-    MOVING_AREA,
-    ZOOMING_AREA,
-    ARROW_DRAGGING,
-    NAVIGATOR_DRAGGING,
-    NODE_DRAGGING,
-    BACKDROP_DRAGGING,
-    BACKDROP_RESIZING,
-    SELECTION_RECT,
+    eEventStateNone,
+    eEventStateMovingArea,
+    eEventStateZoomingArea,
+    eEventStateDraggingArrow,
+    eEventStateDraggingNavigator,
+    eEventStateDraggingNode,
+    eEventStateDraggingBackdrop,
+    eEventStateResizingBackdrop,
+    eEventStateSelectionRect,
 };
 
 struct NodeSelection
@@ -251,7 +251,7 @@ struct NodeGraphPrivate
     QPointF _lastScenePosClick;
     QPointF _lastNodeDragStartPoint;
     QPointF _lastSelectionStartPoint;
-    EVENT_STATE _evtState;
+    EventStateEnum _evtState;
     boost::shared_ptr<NodeGui> _magnifiedNode;
     double _nodeSelectedScaleBeforeMagnif;
     bool _magnifOn;
@@ -302,7 +302,7 @@ struct NodeGraphPrivate
           , _lastScenePosClick()
           , _lastNodeDragStartPoint()
           , _lastSelectionStartPoint()
-          , _evtState(DEFAULT)
+          , _evtState(eEventStateNone)
           , _magnifiedNode()
           , _nodeSelectedScaleBeforeMagnif(1.)
           , _magnifOn(false)
@@ -652,7 +652,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     if (pushUndoRedoCommand) {
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
     }
-    _imp->_evtState = DEFAULT;
+    _imp->_evtState = eEventStateNone;
 
     return node_ui;
 }
@@ -965,7 +965,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     _imp->_hasMovedOnce = false;
     _imp->_mergeMoveCommands = false;
     if ( buttonDownIsMiddle(e) ) {
-        _imp->_evtState = MOVING_AREA;
+        _imp->_evtState = eEventStateMovingArea;
 
         return;
     }
@@ -975,7 +975,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     _imp->_lastScenePosClick = mapToScene( e->pos() );
     
     if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
-        _imp->_evtState = ZOOMING_AREA;
+        _imp->_evtState = eEventStateZoomingArea;
         return;
     }
 
@@ -1023,7 +1023,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                     _imp->_selection.nodes.erase(it);
                 }
             }
-            _imp->_evtState = NODE_DRAGGING;
+            _imp->_evtState = eEventStateDraggingNode;
             _imp->_lastNodeDragStartPoint = selected->pos();
         } else if ( buttonDownIsRight(e) ) {
             if ( !selected->getIsSelected() ) {
@@ -1078,13 +1078,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         pushUndoCommand( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
 
         
-        _imp->_evtState = NODE_DRAGGING;
+        _imp->_evtState = eEventStateDraggingNode;
         _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
         didSomething = true;
     } else if (selectedEdge) {
         _imp->_arrowSelected = selectedEdge;
         didSomething = true;
-        _imp->_evtState = ARROW_DRAGGING;
+        _imp->_evtState = eEventStateDraggingArrow;
     }
     
     ///Test if mouse is inside the navigator
@@ -1095,13 +1095,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             updateNavigator();
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
-            _imp->_evtState = NAVIGATOR_DRAGGING;
+            _imp->_evtState = eEventStateDraggingNavigator;
             didSomething = true;
         }
     }
                       
 
-    if (_imp->_evtState == DEFAULT) {
+    if (_imp->_evtState == eEventStateNone) {
         ///check if nearby a backdrop
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
             if ( buttonDownIsLeft(e) ) {
@@ -1124,10 +1124,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                         }
 
                         if (nearbyHeader) {
-                            _imp->_evtState = BACKDROP_DRAGGING;
+                            _imp->_evtState = eEventStateDraggingBackdrop;
                         } else if (nearbyResizeHandle) {
                             _imp->_backdropResized = *it;
-                            _imp->_evtState = BACKDROP_RESIZING;
+                            _imp->_evtState = eEventStateResizingBackdrop;
                         }
                     } else if ( buttonDownIsRight(e) ) {
                         if ( !(*it)->getIsSelected() ) {
@@ -1139,7 +1139,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             }
         }
     }
-    if (_imp->_evtState == BACKDROP_DRAGGING) {
+    if (_imp->_evtState == eEventStateDraggingBackdrop) {
         ///build the _nodesWithinBDAtPenDown map
         _imp->_nodesWithinBDAtPenDown.clear();
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
@@ -1151,7 +1151,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     }
     
     ///Don't forget to reset back to null the _backdropResized pointer
-    if (_imp->_evtState != BACKDROP_RESIZING) {
+    if (_imp->_evtState != eEventStateResizingBackdrop) {
         _imp->_backdropResized = NULL;
     }
 
@@ -1164,13 +1164,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( !modCASIsShift(e) ) {
                 deselect();
             }
-            _imp->_evtState = SELECTION_RECT;
+            _imp->_evtState = eEventStateSelectionRect;
             _imp->_lastSelectionStartPoint = _imp->_lastScenePosClick;
             QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
             _imp->_selectionRect->show();
         } else if ( buttonDownIsMiddle(e) ) {
-            _imp->_evtState = MOVING_AREA;
+            _imp->_evtState = eEventStateMovingArea;
             QGraphicsView::mousePressEvent(e);
         }
     }
@@ -1259,14 +1259,14 @@ NodeGraph::deselect()
 void
 NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 {
-    EVENT_STATE state = _imp->_evtState;
+    EventStateEnum state = _imp->_evtState;
 
     _imp->_nodesWithinBDAtPenDown.clear();
     _imp->_mergeMoveCommands = false;
     _imp->_firstMove = true;
-    _imp->_evtState = DEFAULT;
+    _imp->_evtState = eEventStateNone;
     _imp->_nodesWithinBDAtPenDown.clear();
-    if (state == ARROW_DRAGGING && _imp->_hasMovedOnce) {
+    if (state == eEventStateDraggingArrow && _imp->_hasMovedOnce) {
         
         QRectF sceneR = visibleSceneRect();
         
@@ -1376,7 +1376,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         
         nodeHoldingEdge->refreshEdges();
         scene()->update();
-    } else if (state == NODE_DRAGGING) {
+    } else if (state == eEventStateDraggingNode) {
         if ( !_imp->_selection.nodes.empty() ) {
             ///now if there was a hint displayed, use it to actually make connections.
             
@@ -1462,7 +1462,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 _imp->_mergeHintNode.reset();
             }
         }
-    } else if (state == SELECTION_RECT) {
+    } else if (state == eEventStateSelectionRect) {
         _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
@@ -1482,7 +1482,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
     
     QRectF sceneR = visibleSceneRect();
-    if (_imp->_evtState != SELECTION_RECT && _imp->_evtState != ARROW_DRAGGING) {
+    if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
         boost::shared_ptr<NodeGui> selected;
         Edge* selectedEdge = 0;
@@ -1528,7 +1528,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     bool mustUpdateNavigator = false;
     ///Apply actions
     switch (_imp->_evtState) {
-    case ARROW_DRAGGING: {
+    case eEventStateDraggingArrow: {
         QPointF np = _imp->_arrowSelected->mapFromScene(newPos);
         if ( _imp->_arrowSelected->isOutputEdge() ) {
             _imp->_arrowSelected->dragDest(np);
@@ -1537,8 +1537,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         }
         break;
     }
-    case NODE_DRAGGING:
-    case BACKDROP_DRAGGING: {
+    case eEventStateDraggingNode:
+    case eEventStateDraggingBackdrop: {
         if ( !_imp->_selection.nodes.empty() || !_imp->_selection.bds.empty() ) {
             std::list<MoveMultipleNodesCommand::NodeToMove> nodesToMove;
             for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
@@ -1550,8 +1550,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             }
             //= _imp->_selection.nodes;
 
-            if ( ( ( _imp->_evtState == BACKDROP_DRAGGING) && !modCASIsControl(e) ) ||
-                 ( _imp->_evtState == NODE_DRAGGING) ) {
+            if ( ( ( _imp->_evtState == eEventStateDraggingBackdrop) && !modCASIsControl(e) ) ||
+                 ( _imp->_evtState == eEventStateDraggingNode) ) {
                 ///For all backdrops also move all the nodes contained within it
                 for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
                     
@@ -1777,13 +1777,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         setCursor( QCursor(Qt::ClosedHandCursor) );
         break;
     }
-    case MOVING_AREA: {
+    case eEventStateMovingArea: {
         mustUpdateNavigator = true;
         _imp->_root->moveBy(dx, dy);
         setCursor( QCursor(Qt::SizeAllCursor) );
         break;
     }
-    case BACKDROP_RESIZING: {
+    case eEventStateResizingBackdrop: {
         mustUpdateNavigator = true;
         assert(_imp->_backdropResized);
         QPointF p = _imp->_backdropResized->scenePos();
@@ -1792,7 +1792,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
-    case SELECTION_RECT: {
+    case eEventStateSelectionRect: {
         QPointF startDrag = _imp->_selectionRect->mapFromScene(_imp->_lastSelectionStartPoint);
         QPointF cur = _imp->_selectionRect->mapFromScene(newPos);
         double xmin = std::min( cur.x(),startDrag.x() );
@@ -1802,7 +1802,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
         break;
     }
-    case NAVIGATOR_DRAGGING: {
+    case eEventStateDraggingNavigator: {
         QPointF mousePosSceneCoordinates;
         bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
         if (insideNavigator) {
@@ -1812,7 +1812,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             return;
         }
     } break;
-        case ZOOMING_AREA: {
+        case eEventStateZoomingArea: {
             QPoint lastPos = mapFromScene(_imp->_lastScenePosClick);
             int delta = 2*((e->x() - lastPos.x()) - (e->y() - lastPos.y()));
             wheelEventInternal(modCASIsControl(e),delta);

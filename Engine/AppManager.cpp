@@ -397,7 +397,7 @@ AppManager::load(int &argc,
     _imp->idealThreadCount = QThread::idealThreadCount();
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
-    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) ;
+    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) ;
 
 #if QT_VERSION < 0x050000
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
@@ -1483,7 +1483,7 @@ AppManager::setDiskCacheLocation(const QString& path)
     if (d.exists() && !path.isEmpty()) {
         _imp->diskCachesLocation = path;
     } else {
-        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
     }
     
 }

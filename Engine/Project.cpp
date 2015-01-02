@@ -429,7 +429,7 @@ Project::saveProjectInternal(const QString & path,
     }
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
-    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::TempLocation);
+    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     tmpFilename.append( QDir::separator() );
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
@@ -1412,7 +1412,7 @@ Project::removeAutoSaves()
 QString
 Project::autoSavesDir()
 {
-    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) + QDir::separator() + "Autosaves";
+    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData) + QDir::separator() + "Autosaves";
 }
 
 void

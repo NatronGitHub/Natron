@@ -817,7 +817,7 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
             maskInputsPos.push_back(p);
         }
 
-        ///Now that we built the tree at this level, call this function again on the inputs that we just treated
+        ///Now that we built the tree at this level, call this function again on the inputs that we just processed
         if (firstNonMaskInput) {
             buildTreeInternal(selectedNodes, firstNonMaskInput.get(),firstNonMaskInputPos, usedNodes);
         }

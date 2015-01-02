@@ -166,7 +166,7 @@ public:
 SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmit the stylesheet to the dialog
                                        const std::vector<std::string> & filters, // the user accepted file types
                                        bool isSequenceDialog, // true if this dialog can display sequences
-                                       FileDialogMode mode, // if it is an open or save dialog
+                                       FileDialogModeEnum mode, // if it is an open or save dialog
                                        const std::string & currentDirectory,// the directory to show first
                                        Gui* gui,
                                        bool allowRelativePaths)
@@ -256,7 +256,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsWidget = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
-    if (mode == OPEN_DIALOG) {
+    if (mode == eFileDialogModeOpen) {
         _lookInLabel = new QLabel(tr("Look in:"),_buttonsWidget);
     } else {
         _lookInLabel = new QLabel(tr("Save in:"),_buttonsWidget);
@@ -335,7 +335,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     _centerAreaLayout->addWidget(_centerSplitter);
     
-    if (mode == OPEN_DIALOG && isSequenceDialog) {
+    if (mode == eFileDialogModeOpen && isSequenceDialog) {
         QPixmap pixPreviewButtonEnabled,pixPreviewButtonDisabled;
         appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &pixPreviewButtonEnabled);
         appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &pixPreviewButtonDisabled);
@@ -396,20 +396,20 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     QObject::connect( _sequenceButton,SIGNAL( currentIndexChanged(int) ),this,SLOT( sequenceComboBoxSlot(int) ) );
     _selectionLayout->addWidget(_sequenceButton);
 
-    if ( !isSequenceDialog || (_dialogMode == DIR_DIALOG) ) {
+    if ( !isSequenceDialog || (_dialogMode == eFileDialogModeDir) ) {
         _sequenceButton->setVisible(false);
     }
     _selectionLineEdit = new LineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
 
-    if ( (mode == SequenceFileDialog::OPEN_DIALOG) || (mode == SequenceFileDialog::DIR_DIALOG) ) {
+    if ( (mode == SequenceFileDialog::eFileDialogModeOpen) || (mode == SequenceFileDialog::eFileDialogModeDir) ) {
         _openButton = new Button(tr("Open"),_selectionWidget);
     } else {
         _openButton = new Button(tr("Save"),_selectionWidget);
     }
     _selectionLayout->addWidget(_openButton);
 
-    if (_dialogMode != DIR_DIALOG) {
+    if (_dialogMode != eFileDialogModeDir) {
         QObject::connect( _openButton, SIGNAL( clicked() ), this, SLOT( openSelectedFiles() ) );
     } else {
         QObject::connect( _openButton,SIGNAL( clicked() ),this,SLOT( selectDirectory() ) );
@@ -422,10 +422,10 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLineLayout->setContentsMargins(0, 0, 0, 0);
     _filterLineWidget->setLayout(_filterLineLayout);
 
-    if (_dialogMode == OPEN_DIALOG) {
+    if (_dialogMode == eFileDialogModeOpen) {
         _filterLabel = new QLabel(tr("Filter:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
-    } else if (_dialogMode == SAVE_DIALOG) {
+    } else if (_dialogMode == eFileDialogModeSave) {
         _filterLabel = new QLabel(tr("File type:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }
@@ -438,7 +438,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     QString filter = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
 
-    if (_dialogMode == SAVE_DIALOG) {
+    if (_dialogMode == eFileDialogModeSave) {
         _fileExtensionCombo = new ComboBox(_filterWidget);
         for (int i = 0; i < _filters.size(); ++i) {
             _fileExtensionCombo->addItem( _filters[i] );
@@ -450,7 +450,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         }
     }
 
-    if (_dialogMode != DIR_DIALOG) {
+    if (_dialogMode != eFileDialogModeDir) {
         _filterLineEdit = new LineEdit(_filterWidget);
         _filterLayout->addWidget(_filterLineEdit);
         _filterLineEdit->setText(filter);
@@ -494,7 +494,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     QItemSelectionModel *selectionModel = _view->selectionModel();
     QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this, SLOT( onSelectionChanged() ) );
     QObject::connect( _selectionLineEdit, SIGNAL( textChanged(QString) ),this, SLOT( autoCompleteFileName(QString) ) );
-    if (_dialogMode == SAVE_DIALOG) {
+    if (_dialogMode == eFileDialogModeSave) {
         QObject::connect( _selectionLineEdit,SIGNAL( textEdited(QString) ),this,SLOT( onSelectionLineEditing(QString) ) );
     }
     QObject::connect( _view, SIGNAL( customContextMenuRequested(QPoint) ),
@@ -506,13 +506,13 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     createMenuActions();
 
-    if (_dialogMode == OPEN_DIALOG) {
+    if (_dialogMode == eFileDialogModeOpen) {
         if (isSequenceDialog) {
             setWindowTitle( tr("Open Sequence") );
         } else {
             setWindowTitle( tr("Open File") );
         }
-    } else if (_dialogMode == SAVE_DIALOG) {
+    } else if (_dialogMode == eFileDialogModeSave) {
         if (isSequenceDialog) {
             setWindowTitle( tr("Save Sequence") );
         } else {
@@ -698,7 +698,7 @@ SequenceFileDialog::restoreState(const QByteArray & state)
 void
 SequenceFileDialog::setFileExtensionOnLineEdit(const QString & ext)
 {
-    assert(_dialogMode == SAVE_DIALOG);
+    assert(_dialogMode == eFileDialogModeSave);
 
     QString str  = _selectionLineEdit->text();
     if ( str.isEmpty() ) {
@@ -868,7 +868,7 @@ SequenceFileDialog::onSelectionChanged()
     proxyAndSetLineEditText(absolutePath);
 
     if (!item->isDir()) {
-        if (_dialogMode == SAVE_DIALOG) {
+        if (_dialogMode == eFileDialogModeSave) {
             QString extension = item->fileExtension();
             for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
                 if ( _fileExtensionCombo->itemText(i) == extension ) {
@@ -913,14 +913,14 @@ SequenceFileDialog::setDirectory(const QString &directory)
     }
     _requestedDir = newDirectory;
     _model->setRootPath(newDirectory);
-    _createDirButton->setEnabled(_dialogMode != OPEN_DIALOG);
+    _createDirButton->setEnabled(_dialogMode != eFileDialogModeOpen);
     if ( !newDirectory.isEmpty() && newDirectory.at(newDirectory.size() - 1) != QChar('/') ) {
         newDirectory.append("/");
     }
 
     _selectionLineEdit->blockSignals(true);
 
-    if ( (_dialogMode == OPEN_DIALOG) || (_dialogMode == DIR_DIALOG) ) {
+    if ( (_dialogMode == eFileDialogModeOpen) || (_dialogMode == eFileDialogModeDir) ) {
         proxyAndSetLineEditText(newDirectory);
     } else {
         ///find out if there's already a filename typed by the user
@@ -1435,9 +1435,9 @@ SequenceFileDialog::openSelectedFiles()
 {
     QString str = _selectionLineEdit->text();
 
-    if (_dialogMode != DIR_DIALOG) {
+    if (_dialogMode != eFileDialogModeDir) {
         if ( !isDirectory(str) ) {
-            if (_dialogMode == OPEN_DIALOG) {
+            if (_dialogMode == eFileDialogModeOpen) {
                 std::string pattern = selectedFiles();
                 if ( !pattern.empty() ) {
                     teardownPreview();
@@ -1732,7 +1732,7 @@ SequenceFileDialog::selectedFiles()
 std::string
 SequenceFileDialog::filesToSave()
 {
-    assert(_dialogMode == SAVE_DIALOG);
+    assert(_dialogMode == eFileDialogModeSave);
     QString text = _selectionLineEdit->text();
     ///Find last dot position and remove everything after the extension which we might added on the line edit
     int lastDotPos = text.lastIndexOf('.');
@@ -2690,7 +2690,7 @@ SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,
 void
 SequenceFileDialog::onSelectionLineEditing(const QString & text)
 {
-    if (_dialogMode != SAVE_DIALOG) {
+    if (_dialogMode != eFileDialogModeSave) {
         return;
     }
     QString textCpy = text;

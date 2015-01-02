@@ -1478,10 +1478,10 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
 }
 
 namespace  {
-enum ExportTransformType
+enum ExportTransformTypeEnum
 {
-    STABILIZE,
-    MATCHMOVE
+    eExportTransformTypeStabilize,
+    eExportTransformTypeMatchMove
 };
 }
 
@@ -1522,7 +1522,7 @@ struct TrackerPanelPrivate
     {
     }
 
-    void createTransformFromSelection(const std::list<Node*> & selection,bool linked,ExportTransformType type);
+    void createTransformFromSelection(const std::list<Node*> & selection,bool linked,ExportTransformTypeEnum type);
 
     void createCornerPinFromSelection(const std::list<Node*> & selection,bool linked,bool useTransformRefFrame,bool invert);
     
@@ -2012,16 +2012,16 @@ TrackerPanel::onExportButtonClicked()
 //            _imp->createCornerPinFromSelection(selection, false, true);
 //            break;
 //        case 4:
-//            _imp->createTransformFromSelection(selection, true, STABILIZE);
+//            _imp->createTransformFromSelection(selection, true, eExportTransformTypeStabilize);
 //            break;
 //        case 5:
-//            _imp->createTransformFromSelection(selection, true, MATCHMOVE);
+//            _imp->createTransformFromSelection(selection, true, eExportTransformTypeMatchMove);
 //            break;
 //        case 6:
-//            _imp->createTransformFromSelection(selection, false, STABILIZE);
+//            _imp->createTransformFromSelection(selection, false, eExportTransformTypeStabilize);
 //            break;
 //        case 7:
-//            _imp->createTransformFromSelection(selection, false, MATCHMOVE);
+//            _imp->createTransformFromSelection(selection, false, eExportTransformTypeMatchMove);
 //            break;
 //        default:
 //            break;
@@ -2050,7 +2050,7 @@ TrackerPanel::onExportButtonClicked()
 void
 TrackerPanelPrivate::createTransformFromSelection(const std::list<Node*> & /*selection*/,
                                                   bool /*linked*/,
-                                                  ExportTransformType /*type*/)
+                                                  ExportTransformTypeEnum /*type*/)
 {
 }
 

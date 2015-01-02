@@ -8,27 +8,27 @@ class StandardPaths
 {
 public:
 
-    enum StandardLocation
+    enum StandardLocationEnum
     {
-        DesktopLocation = 0,
-        DocumentsLocation,
-        FontsLocation,
-        ApplicationsLocation,
-        MusicLocation,
-        MoviesLocation,
-        PicturesLocation,
-        TempLocation,
-        HomeLocation,
-        DataLocation,
-        CacheLocation,
-        GenericDataLocation,
-        RuntimeLocation,
-        ConfigLocation,
-        DownloadLocation,
-        GenericCacheLocation
+        eStandardLocationDesktop = 0,
+        eStandardLocationDocuments,
+        eStandardLocationFonts,
+        eStandardLocationApplications,
+        eStandardLocationMusic,
+        eStandardLocationMovies,
+        eStandardLocationPictures,
+        eStandardLocationTemp,
+        eStandardLocationHome,
+        eStandardLocationData,
+        eStandardLocationCache,
+        eStandardLocationGenericData,
+        eStandardLocationRuntime,
+        eStandardLocationConfig,
+        eStandardLocationDownload,
+        eStandardLocationGenericCache
     };
 
-    static QString writableLocation(StandardLocation type);
+    static QString writableLocation(StandardLocationEnum type);
 
 private:
 

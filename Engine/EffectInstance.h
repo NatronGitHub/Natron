@@ -1382,11 +1382,11 @@ private:
         boost::shared_ptr<Natron::Image>  renderMappedImage;
     };
 
-    enum RenderingFunctorRet
+    enum RenderingFunctorRetEnum
     {
-        eRenderingFunctorFailed, //< must stop rendering
-        eRenderingFunctorOK, //< ok, move on
-        eRenderingFunctorTakeImageLock //< take the image lock because another thread is rendering part of something we need
+        eRenderingFunctorRetFailed, //< must stop rendering
+        eRenderingFunctorRetOK, //< ok, move on
+        eRenderingFunctorRetTakeImageLock //< take the image lock because another thread is rendering part of something we need
     };
 
     ///These are the image passed to the plug-in to render
@@ -1410,12 +1410,12 @@ private:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRet tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
+    RenderingFunctorRetEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                              const ParallelRenderArgs& frameArgs,
                                              bool setThreadLocalStorage,
                                              const RectI & downscaledRectToRender );
 
-    RenderingFunctorRet tiledRenderingFunctor(const RenderArgs & args,
+    RenderingFunctorRetEnum tiledRenderingFunctor(const RenderArgs & args,
                                              const ParallelRenderArgs& frameArgs,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              bool setThreadLocalStorage,

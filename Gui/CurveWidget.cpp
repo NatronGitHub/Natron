@@ -71,9 +71,8 @@ using namespace Natron;
 
 #define DERIVATIVE_ROUND_PRECISION 3.
 
-static double AXIS_MAX = 100000.;
-static double AXIS_MIN = -100000.;
-
+#define AXIS_MAX 100000.
+#define AXIS_MIN -100000.
 
 namespace { // protect local classes in anonymous namespace
 enum EventStateEnum
@@ -680,8 +679,8 @@ public:
      **/
     Curves::const_iterator isNearbyCurve(const QPoint &pt,double* x = NULL,double *y = NULL) const;
     std::pair<CurveGui*,KeyFrame> isNearbyKeyFrame(const QPoint & pt) const;
-    std::pair<MoveTangentCommand::SelectedDerivative, KeyPtr> isNearbyTangent(const QPoint & pt) const;
-    std::pair<MoveTangentCommand::SelectedDerivative, KeyPtr> isNearbySelectedTangentText(const QPoint & pt) const;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbyTangent(const QPoint & pt) const;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbySelectedTangentText(const QPoint & pt) const;
 
     bool isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) const;
 
@@ -744,7 +743,7 @@ public:
     QLineF _selectedKeyFramesCrossHorizLine;
     boost::shared_ptr<TimeLine> _timeline;
     bool _timelineEnabled;
-    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr> _selectedDerivative;
+    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
     boost::scoped_ptr<QUndoStack> _undoStack;
@@ -1319,7 +1318,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     return KeyPtr();
 }
 
-std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr >
+std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr >
 CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
 {
     // always running in the main thread
@@ -1334,26 +1333,26 @@ CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
                 ( pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                 ( pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                 ( pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
-                return std::make_pair(MoveTangentCommand::LEFT_TANGENT,*it);
+                return std::make_pair(MoveTangentCommand::eSelectedTangentLeft,*it);
             } else if ( ( pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                        ( pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                        ( pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
                        ( pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
-                return std::make_pair(MoveTangentCommand::RIGHT_TANGENT,*it);
+                return std::make_pair(MoveTangentCommand::eSelectedTangentRight,*it);
             }
         }
     }
 
-    return std::make_pair( MoveTangentCommand::LEFT_TANGENT,KeyPtr() );
+    return std::make_pair( MoveTangentCommand::eSelectedTangentLeft,KeyPtr() );
 }
 
-std::pair<MoveTangentCommand::SelectedDerivative, KeyPtr>
+std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr>
 CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if (_selectedKeyFrames.size() != 1) {
-        return std::make_pair( MoveTangentCommand::LEFT_TANGENT,KeyPtr() );
+        return std::make_pair( MoveTangentCommand::eSelectedTangentLeft,KeyPtr() );
     }
     QFontMetrics fm(_widget->font());
     int yOffset = 4;
@@ -1376,14 +1375,14 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
             
             if (pt.x() >= topLeft_LeftTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_LeftTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
                 pt.y() >= topLeft_LeftTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_LeftTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
-                return std::make_pair(MoveTangentCommand::LEFT_TANGENT, *it);
+                return std::make_pair(MoveTangentCommand::eSelectedTangentLeft, *it);
             } else if (pt.x() >= topLeft_RightTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_RightTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
                        pt.y() >= topLeft_RightTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_RightTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
-                return std::make_pair(MoveTangentCommand::RIGHT_TANGENT, *it);
+                return std::make_pair(MoveTangentCommand::eSelectedTangentRight, *it);
             }
         }
     }
-    return std::make_pair( MoveTangentCommand::LEFT_TANGENT,KeyPtr() );
+    return std::make_pair( MoveTangentCommand::eSelectedTangentLeft,KeyPtr() );
 }
 
 bool
@@ -2336,7 +2335,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     
     
     std::pair<CurveGui*,KeyFrame > selectedKey = _imp->isNearbyKeyFrame( e->pos() );
-    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
     if (selectedKey.first || selectedTan.second) {
         return;
     }
@@ -2350,9 +2349,9 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     if (keyText) {
         selectedText = keyText;
     } else {
-        std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
+        std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
         if (tangentText.second) {
-            if (tangentText.first == MoveTangentCommand::LEFT_TANGENT) {
+            if (tangentText.first == MoveTangentCommand::eSelectedTangentLeft) {
                 mode = EditKeyFrameDialog::eEditModeLeftDerivative;
             } else {
                 mode = EditKeyFrameDialog::eEditModeRightDerivative;
@@ -2511,7 +2510,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     
     ////
     // is the click near a derivative manipulator?
-    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //select the derivative only if it is not a constant keyframe
     if ( selectedTan.second && (selectedTan.second->key.getInterpolation() != eKeyframeTypeConstant) ) {
@@ -2525,7 +2524,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         return;
     }
     
-    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
+    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
     if (tangentText.second) {
         return;
     }
@@ -2656,7 +2655,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     //set cursor depending on the situation
 
     //find out if there is a nearby  derivative handle
-    std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //if the selected keyframes rectangle is drawn and we're nearby the cross
     if ( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
@@ -2676,7 +2675,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
             } else {
                 
                 
-                std::pair<MoveTangentCommand::SelectedDerivative,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
+                std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
                 if (tangentText.second) {
                      setCursor( QCursor(Qt::IBeamCursor));
                 } else {
@@ -3626,7 +3625,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _startLayout = new QHBoxLayout(_startContainer);
     _startLabel = new QLabel(tr("X start value:"),_startContainer);
     _startLayout->addWidget(_startLabel);
-    _startSpinBox = new SpinBox(_startContainer,SpinBox::DOUBLE_SPINBOX);
+    _startSpinBox = new SpinBox(_startContainer,SpinBox::eSpinBoxTypeDouble);
     _startSpinBox->setValue(0);
     _startLayout->addWidget(_startSpinBox);
     _mainLayout->addWidget(_startContainer);
@@ -3636,7 +3635,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _incrLayout = new QHBoxLayout(_incrContainer);
     _incrLabel = new QLabel(tr("X increment:"),_incrContainer);
     _incrLayout->addWidget(_incrLabel);
-    _incrSpinBox = new SpinBox(_incrContainer,SpinBox::DOUBLE_SPINBOX);
+    _incrSpinBox = new SpinBox(_incrContainer,SpinBox::eSpinBoxTypeDouble);
     _incrSpinBox->setValue(0.01);
     _incrLayout->addWidget(_incrSpinBox);
     _mainLayout->addWidget(_incrContainer);
@@ -3647,7 +3646,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         _endLayout = new QHBoxLayout(_endContainer);
         _endLabel = new QLabel(tr("X end value:"),_endContainer);
         _endLayout->addWidget(_endLabel);
-        _endSpinBox = new SpinBox(_endContainer,SpinBox::DOUBLE_SPINBOX);
+        _endSpinBox = new SpinBox(_endContainer,SpinBox::eSpinBoxTypeDouble);
         _endSpinBox->setValue(1);
         _endLayout->addWidget(_endSpinBox);
         _mainLayout->addWidget(_endContainer);
@@ -3674,7 +3673,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         column._curveLayout = new QHBoxLayout(column._curveContainer);
         column._curveLabel = new QLabel( curves[i]->getName() + tr(" column:") );
         column._curveLayout->addWidget(column._curveLabel);
-        column._curveSpinBox = new SpinBox(column._curveContainer,SpinBox::INT_SPINBOX);
+        column._curveSpinBox = new SpinBox(column._curveContainer,SpinBox::eSpinBoxTypeInt);
         column._curveSpinBox->setValue( (double)i + 1. );
         column._curveLayout->addWidget(column._curveSpinBox);
         _curveColumns.push_back(column);
@@ -3708,13 +3707,13 @@ ImportExportCurveDialog::open_file()
     std::vector<std::string> filters;
     filters.push_back("*");
     if (_isExportDialog) {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::SAVE_DIALOG,"",_gui,false);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeSave,"",_gui,false);
         if ( dialog.exec() ) {
             std::string file = dialog.filesToSave();
             _fileLineEdit->setText( file.c_str() );
         }
     } else {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG,"",_gui,false);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeOpen,"",_gui,false);
         if ( dialog.exec() ) {
             std::string files = dialog.selectedFiles();
             if ( !files.empty() ) {
@@ -3847,12 +3846,12 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     _imp->xLabel = new QLabel(xLabel,_imp->boxContainer);
     _imp->boxLayout->addWidget(_imp->xLabel);
     
-    SpinBox::SPINBOX_TYPE xType;
+    SpinBox::SpinBoxTypeEnum xType;
     
     if (mode == eEditModeKeyframePosition) {
-        xType = key->curve->areKeyFramesTimeClampedToIntegers() ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
+        xType = key->curve->areKeyFramesTimeClampedToIntegers() ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
     } else {
-        xType = SpinBox::DOUBLE_SPINBOX;
+        xType = SpinBox::eSpinBoxTypeDouble;
     }
     
     _imp->xSpinbox = new SpinBox(_imp->boxContainer,xType);
@@ -3868,7 +3867,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
         
         bool clampedToInt = key->curve->areKeyFramesValuesClampedToIntegers() ;
         bool clampedToBool = key->curve->areKeyFramesValuesClampedToBooleans();
-        SpinBox::SPINBOX_TYPE yType = (clampedToBool || clampedToInt) ? SpinBox::INT_SPINBOX : SpinBox::DOUBLE_SPINBOX;
+        SpinBox::SpinBoxTypeEnum yType = (clampedToBool || clampedToInt) ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
         
         _imp->ySpinbox = new SpinBox(_imp->boxContainer,yType);
         
@@ -3933,11 +3932,11 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
 void
 EditKeyFrameDialog::moveDerivativeTo(double d)
 {
-    MoveTangentCommand::SelectedDerivative deriv;
+    MoveTangentCommand::SelectedTangentEnum deriv;
     if (_imp->mode == eEditModeLeftDerivative) {
-        deriv = MoveTangentCommand::LEFT_TANGENT;
+        deriv = MoveTangentCommand::eSelectedTangentLeft;
     } else {
-        deriv = MoveTangentCommand::RIGHT_TANGENT;
+        deriv = MoveTangentCommand::eSelectedTangentRight;
     }
     _imp->curveWidget->pushUndoCommand(new MoveTangentCommand(_imp->curveWidget,deriv,_imp->key,d));
 

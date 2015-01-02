@@ -35,7 +35,7 @@ struct RenderViewerArgs
 {
     RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
                      const TextureRect & texRect_,
-                     ViewerInstance::DisplayChannels channels_,
+                     ViewerInstance::DisplayChannelsEnum channels_,
                       Natron::ImagePremultiplicationEnum srcPremult_,
                      int closestPowerOf2_,
                      int bitDepth_,
@@ -58,7 +58,7 @@ struct RenderViewerArgs
 
     boost::shared_ptr<const Natron::Image> inputImage;
     TextureRect texRect;
-    ViewerInstance::DisplayChannels channels;
+    ViewerInstance::DisplayChannelsEnum channels;
     Natron::ImagePremultiplicationEnum srcPremult;
     int closestPowerOf2;
     int bitDepth;
@@ -138,7 +138,7 @@ public:
           , viewerParamsGain(1.)
           , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
           , viewerParamsAutoContrast(false)
-          , viewerParamsChannels(ViewerInstance::RGB)
+          , viewerParamsChannels(eDisplayChannelsRGB)
           , viewerMipMapLevel(0)
           , activeInputsMutex()
           , activeInputs()
@@ -233,7 +233,7 @@ public:
     Natron::ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;
-    DisplayChannels viewerParamsChannels;
+    DisplayChannelsEnum viewerParamsChannels;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
     
     ////Commented-out: Now that the VideoEngine is gone, there can be several threads running  the render function

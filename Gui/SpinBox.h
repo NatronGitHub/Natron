@@ -28,13 +28,14 @@ class SpinBox
 
 public:
 
-    enum SPINBOX_TYPE
+    enum SpinBoxTypeEnum
     {
-        INT_SPINBOX = 0,DOUBLE_SPINBOX
+        eSpinBoxTypeInt = 0,
+        eSpinBoxTypeDouble
     };
 
     explicit SpinBox(QWidget* parent = 0,
-                     SPINBOX_TYPE type = INT_SPINBOX);
+                     SpinBoxTypeEnum type = eSpinBoxTypeInt);
 
     virtual ~SpinBox() OVERRIDE;
 

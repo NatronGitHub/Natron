@@ -156,7 +156,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
+        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
 
         ///set the copy/link actions in the right click menu
@@ -684,8 +684,8 @@ Double_KnobGui::valueAccordingToType(bool normalize,
     }
 
     if (dimension == 0) {
-        Double_Knob::NormalizedState state = _knob->getNormalizedState(dimension);
-        if (state == Double_Knob::NORMALIZATION_X) {
+        Double_Knob::NormalizedStateEnum state = _knob->getNormalizedState(dimension);
+        if (state == Double_Knob::eNormalizedStateX) {
             Format f;
             getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
             if (normalize) {
@@ -693,7 +693,7 @@ Double_KnobGui::valueAccordingToType(bool normalize,
             } else {
                 *value *= f.width();
             }
-        } else if (state == Double_Knob::NORMALIZATION_Y) {
+        } else if (state == Double_Knob::eNormalizedStateY) {
             Format f;
             getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
             if (normalize) {
@@ -792,7 +792,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
+        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
         
         ///set the copy/link actions in the right click menu
@@ -1547,17 +1547,17 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<double> & maximums = _knob->getMaximums();
 #endif
     
-    _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+    _rBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
     QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
 
     if (_dimension >= 3) {
-        _gBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _gBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
-        _bBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _bBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     }
     if (_dimension >= 4) {
-        _aBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _aBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     }
 

@@ -100,7 +100,7 @@ public:
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
 
-    OpenGLViewerI::BitDepth getBitDepth() const OVERRIDE FINAL;
+    OpenGLViewerI::BitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -418,18 +418,18 @@ private:
     void initShaderGLSL(); // init shaders
 
 
-    enum DrawPolygonMode
+    enum DrawPolygonModeEnum
     {
-        ALL_PLANE = 0,
-        WIPE_LEFT_PLANE,
-        WIPE_RIGHT_PLANE
+        eDrawPolygonModeWhole = 0,
+        eDrawPolygonModeWipeLeft,
+        eDrawPolygonModeWipeRight
     };
 
     /**
      *@brief Fill the rendering VAO with vertices and texture coordinates
      * that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonMode polygonMode);
+    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonModeEnum polygonMode);
 
     /**
      *@brief Makes the viewer display black only.

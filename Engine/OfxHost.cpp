@@ -444,7 +444,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
     //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
     //on windows:
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + QDir::separator() + "OFXCache.xml";
     std::ifstream ifs( ofxcachename.toStdString().c_str() );
     if ( ifs.is_open() ) {
         OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
@@ -520,7 +520,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                 p->getIdentifier().c_str(),
                                 foundReader != contexts.end(),
                                 foundWriter != contexts.end(),
-                                new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
+                                new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
                                 p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
                                 p->getVersionMajor(), p->getVersionMinor() );
 
@@ -575,7 +575,7 @@ void
 Natron::OfxHost::writeOFXCache()
 {
     /// and write a new cache, long version with everything in there
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
 
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();
@@ -590,7 +590,7 @@ Natron::OfxHost::writeOFXCache()
 void
 Natron::OfxHost::clearPluginsLoadedCache()
 {
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
 
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();

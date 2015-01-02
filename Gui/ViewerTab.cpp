@@ -510,7 +510,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->addWidget(_imp->secondSettingsRow);
 
-    _imp->gainBox = new SpinBox(_imp->secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
+    _imp->gainBox = new SpinBox(_imp->secondSettingsRow,SpinBox::eSpinBoxTypeDouble);
     _imp->gainBox->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
                                     "Multiplies the image by \nthis amount before display.") );
     _imp->gainBox->setIncrement(0.1);
@@ -624,7 +624,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerButtonsContainer->setLayout(_imp->playerLayout);
     _imp->mainLayout->addWidget(_imp->playerButtonsContainer);
 
-    _imp->currentFrameBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::INT_SPINBOX);
+    _imp->currentFrameBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::eSpinBoxTypeInt);
     _imp->currentFrameBox->setValue(0);
     _imp->currentFrameBox->setToolTip("<p><b>" + tr("Current frame number") + "</b></p>");
     _imp->playerLayout->addWidget(_imp->currentFrameBox);
@@ -845,7 +845,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerLayout->addWidget(_imp->canEditFpsBox);
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
     
-    _imp->fpsBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
+    _imp->fpsBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::eSpinBoxTypeDouble);
     _imp->fpsBox->setReadOnly(_imp->fpsLocked);
     _imp->fpsBox->decimals(1);
     _imp->fpsBox->setValue(24.0);
@@ -1177,7 +1177,7 @@ ViewerTab::startPause(bool b)
             _imp->gui->onFreezeUIButtonClicked(true);
         }
         boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_FORWARD);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionForward);
     }
 }
 
@@ -1225,7 +1225,7 @@ ViewerTab::startBackward(bool b)
             _imp->gui->onFreezeUIButtonClicked(true);
         }
         boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_BACKWARD);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionBackward);
 
     }
 }
@@ -1449,29 +1449,29 @@ ViewerTab::onGainSliderChanged(double v)
 void
 ViewerTab::onViewerChannelsChanged(int i)
 {
-    ViewerInstance::DisplayChannels channels;
+    ViewerInstance::DisplayChannelsEnum channels;
 
     switch (i) {
     case 0:
-        channels = ViewerInstance::LUMINANCE;
+        channels = ViewerInstance::eDisplayChannelsY;
         break;
     case 1:
-        channels = ViewerInstance::RGB;
+        channels = ViewerInstance::eDisplayChannelsRGB;
         break;
     case 2:
-        channels = ViewerInstance::R;
+        channels = ViewerInstance::eDisplayChannelsR;
         break;
     case 3:
-        channels = ViewerInstance::G;
+        channels = ViewerInstance::eDisplayChannelsG;
         break;
     case 4:
-        channels = ViewerInstance::B;
+        channels = ViewerInstance::eDisplayChannelsB;
         break;
     case 5:
-        channels = ViewerInstance::A;
+        channels = ViewerInstance::eDisplayChannelsA;
         break;
     default:
-        channels = ViewerInstance::RGB;
+        channels = ViewerInstance::eDisplayChannelsRGB;
         break;
     }
     _imp->viewerNode->setDisplayChannels(channels);
@@ -2070,25 +2070,25 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
 std::string
 ViewerTab::getChannelsString() const
 {
-    ViewerInstance::DisplayChannels c = _imp->viewerNode->getChannels();
+    ViewerInstance::DisplayChannelsEnum c = _imp->viewerNode->getChannels();
 
     switch (c) {
-    case ViewerInstance::RGB:
+    case ViewerInstance::eDisplayChannelsRGB:
 
         return "RGB";
-    case ViewerInstance::R:
+    case ViewerInstance::eDisplayChannelsR:
 
         return "R";
-    case ViewerInstance::G:
+    case ViewerInstance::eDisplayChannelsG:
 
         return "G";
-    case ViewerInstance::B:
+    case ViewerInstance::eDisplayChannelsB:
 
         return "B";
-    case ViewerInstance::A:
+    case ViewerInstance::eDisplayChannelsA:
 
         return "A";
-    case ViewerInstance::LUMINANCE:
+    case ViewerInstance::eDisplayChannelsY:
 
         return "Luminance";
         break;
@@ -2449,7 +2449,7 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         assert(roto == _imp->currentRoto.second);
 
         ///Remove the previous buttons bar
-        int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentRoto.second->getButtonsBar( (RotoGui::Roto_Role)previousRole ) );
+        int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole ) );
         assert(buttonsBarIndex >= 0);
         _imp->mainLayout->removeItem( _imp->mainLayout->itemAt(buttonsBarIndex) );
 
@@ -2457,7 +2457,7 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         ///Set the new buttons bar
         int viewerIndex = _imp->mainLayout->indexOf(_imp->viewerContainer);
         assert(viewerIndex >= 0);
-        _imp->mainLayout->insertWidget( viewerIndex, _imp->currentRoto.second->getButtonsBar( (RotoGui::Roto_Role)newRole ) );
+        _imp->mainLayout->insertWidget( viewerIndex, _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole ) );
     }
 }
 
@@ -2466,7 +2466,7 @@ ViewerTab::updateRotoSelectedTool(int tool,
                                   RotoGui* sender)
 {
     if ( _imp->currentRoto.second && (_imp->currentRoto.second != sender) ) {
-        _imp->currentRoto.second->setCurrentTool( (RotoGui::Roto_Tool)tool,false );
+        _imp->currentRoto.second->setCurrentTool( (RotoGui::RotoToolEnum)tool,false );
     }
 }
 

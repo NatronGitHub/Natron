@@ -413,10 +413,10 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
     const std::string & doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) ) {
-        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_X);
+        _knob->setNormalizedState(0, Double_Knob::eNormalizedStateX);
     } else if ( (doubleType == kOfxParamDoubleTypeNormalisedY) ||
                 ( doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) ) {
-        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_Y);
+        _knob->setNormalizedState(0, Double_Knob::eNormalizedStateY);
     }
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
@@ -1344,8 +1344,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     const std::string & doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
     if ( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
-        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_X);
-        _knob->setNormalizedState(1, Double_Knob::NORMALIZATION_Y);
+        _knob->setNormalizedState(0, Double_Knob::eNormalizedStateX);
+        _knob->setNormalizedState(1, Double_Knob::eNormalizedStateY);
     }
     
     bool isSpatial = doubleType == kOfxParamDoubleTypeNormalisedXY ||

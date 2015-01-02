@@ -534,7 +534,7 @@ Knob<T>::QueuedSetValue::~QueuedSetValue()
 }
 
 template <typename T>
-KnobHelper::ValueChangedReturnCode
+KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::setValue(const T & v,
                   int dimension,
                   Natron::ValueChangedReasonEnum reason,
@@ -544,7 +544,7 @@ Knob<T>::setValue(const T & v,
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
 
-    KnobHelper::ValueChangedReturnCode ret = NO_KEYFRAME_ADDED;
+    KnobHelper::ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
@@ -554,16 +554,16 @@ Knob<T>::setValue(const T & v,
 #endif
     
     if ( holder && (reason == Natron::eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
-        KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
-        case KnobHolder::PARAM_EDIT_OFF:
+        case KnobHolder::eMultipleParamsEditOff:
         default:
             break;
-        case KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND: {
+        case KnobHolder::eMultipleParamsEditOnCreateNewCommand: {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
-                holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
+                holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
@@ -578,7 +578,7 @@ Knob<T>::setValue(const T & v,
             }
             break;
         }
-        case KnobHolder::PARAM_EDIT_ON: {
+        case KnobHolder::eMultipleParamsEditOn: {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
@@ -615,7 +615,7 @@ Knob<T>::setValue(const T & v,
     ///If we cannot set value, queue it
     if (holder && !holder->canSetValue()) {
         
-        KnobHelper::ValueChangedReturnCode returnValue;
+        KnobHelper::ValueChangedReturnCodeEnum returnValue;
         
         SequenceTime time = getCurrentTime();
         KeyFrame k;
@@ -633,21 +633,21 @@ Knob<T>::setValue(const T & v,
                 hasKeyAtTime = curve->getKeyFrameWithTime(time, &existingKey);
             }
             if (hasAnimation && hasKeyAtTime) {
-                returnValue =  KEYFRAME_MODIFIED;
+                returnValue =  eValueChangedReturnCodeKeyframeModified;
                 setInternalCurveHasChanged(dimension, true);
             } else if (hasAnimation) {
-                returnValue =  KEYFRAME_ADDED;
+                returnValue =  eValueChangedReturnCodeKeyframeAdded;
                 setInternalCurveHasChanged(dimension, true);
             } else {
-                returnValue =  NO_KEYFRAME_ADDED;
+                returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
             }
 
         } else {
-            returnValue =  NO_KEYFRAME_ADDED;
+            returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
     
         
-        boost::shared_ptr<QueuedSetValue> qv(new QueuedSetValue(dimension,v,k,returnValue != NO_KEYFRAME_ADDED));
+        boost::shared_ptr<QueuedSetValue> qv(new QueuedSetValue(dimension,v,k,returnValue != eValueChangedReturnCodeNoKeyframeAdded));
         
         {
             QMutexLocker kql(&_setValuesQueueMutex);
@@ -684,13 +684,13 @@ Knob<T>::setValue(const T & v,
         
         bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
         if (addedKeyFrame) {
-            ret = KEYFRAME_ADDED;
+            ret = eValueChangedReturnCodeKeyframeAdded;
         } else {
-            ret = KEYFRAME_MODIFIED;
+            ret = eValueChangedReturnCodeKeyframeModified;
         }
     }
 
-    if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
+    if (ret == eValueChangedReturnCodeNoKeyframeAdded) { //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason, true);
     }
     {
@@ -757,23 +757,23 @@ Knob<T>::setValueAtTime(int time,
 #endif
     
     if ( holder && (reason == Natron::eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
-        KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
-        case KnobHolder::PARAM_EDIT_OFF:
+        case KnobHolder::eMultipleParamsEditOff:
         default:
             break;
-        case KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND: {
+        case KnobHolder::eMultipleParamsEditOnCreateNewCommand: {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
-                holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
+                holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
                 _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
 
                 return true;
             }
             break;
         }
-        case KnobHolder::PARAM_EDIT_ON: {
+        case KnobHolder::eMultipleParamsEditOn: {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
@@ -810,9 +810,9 @@ Knob<T>::setValueAtTime(int time,
         bool hasAnimation = curve->isAnimated();
         bool hasKeyAtTime = curve->getKeyFrameWithTime(time, &k);
         if (hasAnimation && hasKeyAtTime) {
-            return KEYFRAME_MODIFIED;
+            return eValueChangedReturnCodeKeyframeModified;
         } else {
-            return KEYFRAME_ADDED;
+            return eValueChangedReturnCodeKeyframeAdded;
         }
 
     } else {
@@ -945,7 +945,7 @@ Knob<std::string>::unSlave(int dimension,
 }
 
 template<typename T>
-KnobHelper::ValueChangedReturnCode
+KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::setValue(const T & value,
                   int dimension,
                   bool turnOffAutoKeying)
@@ -960,7 +960,7 @@ Knob<T>::setValue(const T & value,
 }
 
 template<typename T>
-KnobHelper::ValueChangedReturnCode
+KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::onValueChanged(const T & value,
                         int dimension,
                         Natron::ValueChangedReasonEnum reason,
@@ -971,7 +971,7 @@ Knob<T>::onValueChanged(const T & value,
 }
 
 template<typename T>
-KnobHelper::ValueChangedReturnCode
+KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::setValueFromPlugin(const T & value,int dimension)
 {
     KeyFrame newKey;

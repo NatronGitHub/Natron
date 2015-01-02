@@ -3125,7 +3125,7 @@ std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
 Bezier::isNearbyControlPoint(double x,
                              double y,
                              double acceptance,
-                             ControlPointSelectionPref pref,
+                             ControlPointSelectionPrefEnum pref,
                              int* index) const
 {
     ///only called on the main-thread
@@ -3135,7 +3135,7 @@ Bezier::isNearbyControlPoint(double x,
     boost::shared_ptr<BezierCP> cp,fp;
 
     switch (pref) {
-    case FEATHER_FIRST: {
+    case eControlPointSelectionPrefFeatherFirst: {
         BezierCPs::const_iterator itF = _imp->findFeatherPointNearby(x, y, acceptance, time, index);
         if ( itF != _imp->featherPoints.end() ) {
             fp = *itF;
@@ -3157,8 +3157,8 @@ Bezier::isNearbyControlPoint(double x,
         }
         break;
     }
-    case CONTROL_POINT_FIRST:
-    case WHATEVER_FIRST:
+    case eControlPointSelectionPrefControlPointFirst:
+    case eControlPointSelectionPrefWhateverFirst:
     default: {
         BezierCPs::const_iterator it = _imp->findControlPointNearby(x, y, acceptance, time, index);
         if ( it != _imp->points.end() ) {
@@ -3574,7 +3574,7 @@ bool
 Bezier::pointInPolygon(const Point & p,
                        const std::list<Point> & polygon,
                        const RectD & featherPolyBBox,
-                       FillRule rule)
+                       FillRuleEnum rule)
 {
     ///first check if the point lies inside the bounding box
     if ( (p.x < featherPolyBBox.x1) || (p.x >= featherPolyBBox.x2) || (p.y < featherPolyBBox.y1) || (p.y >= featherPolyBBox.y2)
@@ -3596,7 +3596,7 @@ Bezier::pointInPolygon(const Point & p,
         point_line_intersection(*last_pt, *last_start, p, &winding_number);
     }
 
-    return rule == WindingFill
+    return rule == eFillRuleWinding
            ? (winding_number != 0)
            : ( (winding_number % 2) != 0 );
 }
@@ -3681,7 +3681,7 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
                Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
                should follow this orientation.
              */
-            bool inside = pointInPolygon(extent, featherPolygon,featherPolyBBox,Bezier::OddEvenFill);
+            bool inside = pointInPolygon(extent, featherPolygon,featherPolyBBox,Bezier::eFillRuleOddEven);
             if ( ( !inside && (featherDistance > 0) ) || ( inside && (featherDistance < 0) ) ) {
                 //*fp = extent;
                 fp->x = cp.x + ret.x * featherDistance;
@@ -3715,7 +3715,7 @@ RotoContext::createBaseLayer()
     ////Add the base layer
     boost::shared_ptr<RotoLayer> base = addLayer();
     
-    deselect(base,RotoContext::OTHER);
+    deselect(base, eSelectionReasonOther);
 }
 
 RotoContext::~RotoContext()
@@ -3769,10 +3769,10 @@ RotoContext::addLayer()
 
         _imp->lastInsertedItem = item;
     }
-    emit itemInserted(RotoContext::OTHER);
+    emit itemInserted(eSelectionReasonOther);
 
-    clearSelection(RotoContext::OTHER);
-    select(item, RotoContext::OTHER);
+    clearSelection(eSelectionReasonOther);
+    select(item, eSelectionReasonOther);
 
     return item;
 } // addLayer
@@ -3926,10 +3926,10 @@ RotoContext::makeBezier(double x,
         parentLayer->addItem(curve);
     }
     _imp->lastInsertedItem = curve;
-    emit itemInserted(RotoContext::OTHER);
+    emit itemInserted(eSelectionReasonOther);
 
-    clearSelection(RotoContext::OTHER);
-    select(curve, RotoContext::OTHER);
+    clearSelection(eSelectionReasonOther);
+    select(curve, eSelectionReasonOther);
 
     if ( isAutoKeyingEnabled() ) {
         curve->setKeyframe( getTimelineCurrentTime() );
@@ -3941,7 +3941,7 @@ RotoContext::makeBezier(double x,
 
 void
 RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
-                                   SelectionReason reason)
+                                   SelectionReasonEnum reason)
 {
     boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
     boost::shared_ptr<RotoItem> foundSelected;
@@ -3973,7 +3973,7 @@ RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
 
 void
 RotoContext::removeItem(const boost::shared_ptr<RotoItem>& item,
-                        SelectionReason reason)
+                        SelectionReasonEnum reason)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3992,7 +3992,7 @@ void
 RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
                      int indexInLayer,
                      const boost::shared_ptr<RotoItem> & item,
-                     SelectionReason reason)
+                     SelectionReasonEnum reason)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4155,7 +4155,7 @@ linkItemsKnobsRecursively(RotoContext* ctx,
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
 
         if (isBezier) {
-            ctx->select(isBezier,RotoContext::OTHER);
+            ctx->select(isBezier, RotoContext::eSelectionReasonOther);
         } else if (isLayer) {
             linkItemsKnobsRecursively(ctx, isLayer);
         }
@@ -4193,7 +4193,7 @@ RotoContext::load(const RotoContextSerialization & obj)
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
         if (isBezier) {
-            select(isBezier,RotoContext::OTHER);
+            select(isBezier,eSelectionReasonOther);
         } else if (isLayer) {
             linkItemsKnobsRecursively(this, isLayer);
         }
@@ -4202,7 +4202,7 @@ RotoContext::load(const RotoContextSerialization & obj)
 
 void
 RotoContext::select(const boost::shared_ptr<RotoItem> & b,
-                    RotoContext::SelectionReason reason)
+                    RotoContext::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4213,7 +4213,7 @@ RotoContext::select(const boost::shared_ptr<RotoItem> & b,
 
 void
 RotoContext::select(const std::list<boost::shared_ptr<Bezier> > & beziers,
-                    RotoContext::SelectionReason reason)
+                    RotoContext::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4226,7 +4226,7 @@ RotoContext::select(const std::list<boost::shared_ptr<Bezier> > & beziers,
 
 void
 RotoContext::select(const std::list<boost::shared_ptr<RotoItem> > & items,
-                    RotoContext::SelectionReason reason)
+                    RotoContext::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4239,7 +4239,7 @@ RotoContext::select(const std::list<boost::shared_ptr<RotoItem> > & items,
 
 void
 RotoContext::deselect(const boost::shared_ptr<RotoItem> & b,
-                      RotoContext::SelectionReason reason)
+                      RotoContext::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4250,7 +4250,7 @@ RotoContext::deselect(const boost::shared_ptr<RotoItem> & b,
 
 void
 RotoContext::deselect(const std::list<boost::shared_ptr<Bezier> > & beziers,
-                      RotoContext::SelectionReason reason)
+                      RotoContext::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4263,7 +4263,7 @@ RotoContext::deselect(const std::list<boost::shared_ptr<Bezier> > & beziers,
 
 void
 RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> > & items,
-                      RotoContext::SelectionReason reason)
+                      RotoContext::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4275,7 +4275,7 @@ RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> > & items,
 }
 
 void
-RotoContext::clearSelection(RotoContext::SelectionReason reason)
+RotoContext::clearSelection(RotoContext::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -5226,7 +5226,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
            Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
            should follow this orientation.
          */
-        bool inside = Bezier::pointInPolygon(p1, featherPolygon,featherPolyBBox,Bezier::OddEvenFill);
+        bool inside = Bezier::pointInPolygon(p1, featherPolygon,featherPolyBBox,Bezier::eFillRuleOddEven);
         if ( ( !inside && (featherDist < 0) ) || ( inside && (featherDist > 0) ) ) {
             p1.x = cur->x - dx * absFeatherDist;
             p1.y = cur->y - dy * absFeatherDist;
@@ -5291,7 +5291,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                    Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
                    should follow this orientation.
                  */
-                inside = Bezier::pointInPolygon(p2, featherPolygon, featherPolyBBox,Bezier::OddEvenFill);
+                inside = Bezier::pointInPolygon(p2, featherPolygon, featherPolyBBox,Bezier::eFillRuleOddEven);
                 if ( ( !inside && (featherDist < 0) ) || ( inside && (featherDist > 0) ) ) {
                     p2.x = cur->x - dx * absFeatherDist;
                     p2.y = cur->y - dy * absFeatherDist;

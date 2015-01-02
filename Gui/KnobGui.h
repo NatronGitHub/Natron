@@ -141,7 +141,7 @@ public:
                  Natron::ValueChangedReasonEnum reason)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        KnobHelper::ValueChangedReturnCode ret;
+        KnobHelper::ValueChangedReturnCodeEnum ret;
         if (reason == Natron::eValueChangedReasonUserEdited) {
             ret = knob->onValueChanged(v, dimension, Natron::eValueChangedReasonUserEdited, newKey);
         } else {
@@ -149,7 +149,7 @@ public:
         }
         if (ret > 0) {
             assert(newKey);
-            if (ret == KnobHelper::KEYFRAME_ADDED) {
+            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
             }
             emit keyFrameSet();
