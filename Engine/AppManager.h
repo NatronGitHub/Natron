@@ -460,6 +460,18 @@ private:
 };
 
 namespace Natron {
+    
+struct PyCallback
+{
+    std::string expression; //< the one modified by Natron
+    std::string originalExpression; //< the one input by the user
+    
+    PyObject* code;
+    PyObject* global_dict;
+    
+    PyCallback() : expression(), originalExpression(),  code(0), global_dict(0) {}
+};
+    
 void errorDialog(const std::string & title,const std::string & message, bool useHtml = false);
 void errorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
@@ -577,13 +589,19 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
  * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter.
  * @returns True on success, false on failure.
 **/
-bool interpretPythonScript(const std::string& script,std::string* error);
+bool interpretPythonScript(const std::string& script,std::string* error,PyObject** mainModule);
+  
+/**
+ * @brief A wrapper around interpretPythonScript which calls ensureScriptHasModuleImport with NATRON_ENGINE_PYTHON_MODULE_NAME
+ **/
+void runScriptWithEngineImport(std::string& script);
     
 void declareNodeVariableToPython(int appID,const std::string& nodeName);
 void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
 void deleteNodeVariableToPython(const std::string& nodeName);
 void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName);
-  
+void compilePyScript(const std::string& script,PyObject** code,PyObject** globalDict);
+
 std::string PY3String_asString(PyObject* obj);
 } // namespace Natron
 

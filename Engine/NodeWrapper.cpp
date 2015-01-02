@@ -13,6 +13,7 @@
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/EffectInstance.h"
 
 Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
 : _node(node)
@@ -176,4 +177,10 @@ Effect::getParam(const std::string& name) const
     } else {
         return NULL;
     }
+}
+
+int
+Effect::getCurrentTime() const
+{
+    return _node->getLiveInstance()->getCurrentTime();
 }

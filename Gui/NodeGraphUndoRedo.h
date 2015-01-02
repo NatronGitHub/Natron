@@ -373,5 +373,26 @@ private:
     std::list<ExtractedTree> _trees;
 };
 
+class SetKnobChangedCallbackCommand
+: public QUndoCommand
+{
+public:
+    
+    SetKnobChangedCallbackCommand(const boost::shared_ptr<NodeGui> & node,
+                                  const std::string& oldScript,
+                                  const std::string& newScript);
+    
+    virtual ~SetKnobChangedCallbackCommand();
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    void setScript(const std::string& script);
+    
+    boost::weak_ptr<NodeGui> _node;
+    std::string _oldScript,_newScript;
+};
+
 
 #endif // NODEGRAPHUNDOREDO_H

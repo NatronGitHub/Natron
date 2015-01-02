@@ -289,29 +289,34 @@ struct EffectInstance::RenderArgs
 
 struct EffectInstance::Implementation
 {
-    Implementation()
-        : renderAbortedMutex()
-          , renderAborted(false)
-          , renderArgs()
-          , frameRenderArgs()
-          , beginEndRenderCount()
-          , inputImages()
-          , lastRenderArgsMutex()
-          , lastRenderHash(0)
-          , lastImage()
-          , duringInteractActionMutex()
-          , duringInteractAction(false)
-          , pluginMemoryChunksMutex()
-          , pluginMemoryChunks()
-          , supportsRenderScale(eSupportsMaybe)
-          , actionsCache()
+    Implementation(EffectInstance* publicInterface)
+    : _publicInterface(publicInterface)
+    , renderAbortedMutex()
+    , renderAborted(false)
+    , renderArgs()
+    , frameRenderArgs()
+    , beginEndRenderCount()
+    , inputImages()
+    , lastRenderArgsMutex()
+    , lastRenderHash(0)
+    , lastImage()
+    , duringInteractActionMutex()
+    , duringInteractAction(false)
+    , pluginMemoryChunksMutex()
+    , pluginMemoryChunks()
+    , supportsRenderScale(eSupportsMaybe)
+    , actionsCache()
 #if NATRON_ENABLE_TRIMAP
-          , imagesBeingRenderedMutex()
-          , imagesBeingRendered()
+    , imagesBeingRenderedMutex()
+    , imagesBeingRendered()
 #endif
+    , knobChangedCallbackMutex()
+    , knobChangedCallback()
     {
     }
 
+    EffectInstance* _publicInterface;
+    
     mutable QReadWriteLock renderAbortedMutex;
     bool renderAborted; //< was rendering aborted ?
 
@@ -364,6 +369,22 @@ struct EffectInstance::Implementation
     typedef std::map<ImagePtr,IBRPtr > IBRMap;
     IBRMap imagesBeingRendered;
 #endif
+    
+    
+    QMutex knobChangedCallbackMutex;
+    PyCallback knobChangedCallback;
+    
+    void clearKnobChangedCallback()
+    {
+        assert(!knobChangedCallbackMutex.tryLock());
+        knobChangedCallback.expression.clear();
+        knobChangedCallback.originalExpression.clear();
+        Py_XDECREF(knobChangedCallback.code); //< new ref
+        knobChangedCallback.code = 0;
+        knobChangedCallback.global_dict = 0; //< python borrowed ref!
+    }
+    
+    void executeKnobChangedCallback(KnobI* k);
     
     void setDuringInteractAction(bool b)
     {
@@ -657,7 +678,7 @@ EffectInstance::addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natr
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
     : NamedKnobHolder(node ? node->getApp() : NULL)
       , _node(node)
-      , _imp(new Implementation)
+      , _imp(new Implementation(this))
 {
 }
 
@@ -3249,7 +3270,6 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             ///of the multi-threading.
             if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                 assert(fullScaleImage != downscaledImage);
-                bool isBeingRendered;
                 fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false,downscaledImage.get() );
                 downscaledImage->markForRendered(downscaledRectToRender);
             } else {
@@ -4115,6 +4135,23 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
     
+    ///If there's a knobChanged Python callback, run it
+    bool hasPythonCB;
+    {
+        QMutexLocker k(&_imp->knobChangedCallbackMutex);
+        hasPythonCB = !_imp->knobChangedCallback.expression.empty();
+    }
+    
+    if (hasPythonCB && k) {
+        
+        try {
+            _imp->executeKnobChangedCallback(k);
+        } catch (const std::exception& e) {
+            qDebug() << "Failure to execute paramChanged callback: " << e.what();
+        }
+    }
+
+    
     ///Clear input images pointers that were stored in getImage() for the main-thread.
     ///This is safe to do so because if this is called while in render() it won't clear the input images
     ///pointers for the render thread. This is helpful for analysis effects which call getImage() on the main-thread
@@ -4346,6 +4383,81 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
     bool ret = false;
     isFrameVaryingOrAnimated_impl(this,&ret);
     return ret;
+}
+
+bool
+EffectInstance::hasKnobChangedCallback() const
+{
+    QMutexLocker k(&_imp->knobChangedCallbackMutex);
+    return !_imp->knobChangedCallback.originalExpression.empty();
+}
+
+std::string
+EffectInstance::getKnobsChangedCallback() const
+{
+    QMutexLocker k(&_imp->knobChangedCallbackMutex);
+    return _imp->knobChangedCallback.originalExpression;
+}
+
+void
+EffectInstance::Implementation::executeKnobChangedCallback(KnobI* k)
+{
+    std::string script;
+    {
+        QMutexLocker k(&knobChangedCallbackMutex);
+        script = knobChangedCallback.expression;
+    }
+    std::size_t firstLine =  _publicInterface->getNode()->declareCurrentNodeVariable_Python(script);
+
+    std::stringstream ss;
+    ss << "thisParam = thisNode.getParam(\"" << k->getName() << "\") \n";
+    ss << "frame = thisNode.getCurrentTime() \n";
+    std::string toInsert = ss.str();
+    script.insert(firstLine, toInsert);
+    
+    ///Try to interpret the script, throw an exception upon failure
+    std::string error;
+    PyObject* mainModule;
+    if (!interpretPythonScript(script, &error, &mainModule)) {
+        throw std::runtime_error(error);
+    }
+
+}
+
+void
+EffectInstance::setKnobChangedCallback(const std::string & callback)
+{
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    if (knobs.empty()) {
+        return;
+    }
+    
+    {
+        QMutexLocker k(&_imp->knobChangedCallbackMutex);
+        _imp->clearKnobChangedCallback();
+    }
+    if (callback.empty()) {
+        return;
+    }
+    
+    ///We cannot compile the script because we need the "thisParam" variable to be dynamic and compiled code embeds declarations into it.
+    {
+        QMutexLocker k(&_imp->knobChangedCallbackMutex);
+        _imp->knobChangedCallback.expression = callback;
+        _imp->knobChangedCallback.originalExpression = callback;
+    }
+
+    
+    ///This may throw an exc upon failure
+    try {
+        _imp->executeKnobChangedCallback(knobs.front().get());
+    } catch (std::exception& e) {
+        QMutexLocker k(&_imp->knobChangedCallbackMutex);
+        _imp->knobChangedCallback.expression.clear();
+        _imp->knobChangedCallback.originalExpression.clear();
+    }
+
+    
 }
 
 

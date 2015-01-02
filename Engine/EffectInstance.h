@@ -764,6 +764,12 @@ public:
 
     virtual bool shouldCacheOutput() const;
 
+    void setKnobChangedCallback(const std::string & callback);
+
+    bool hasKnobChangedCallback() const;
+
+    std::string getKnobsChangedCallback() const;
+
 protected:
 
 
@@ -1101,6 +1107,7 @@ protected:
     {
         return Natron::eStatusOK;
     }
+
 
 public:
 

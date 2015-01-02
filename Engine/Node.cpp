@@ -644,7 +644,7 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     }
     
     restoreUserKnobs(serialization);
-
+    
     setKnobsAge( serialization.getKnobsAge() );
 }
 
@@ -742,6 +742,8 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         _imp->restoreKnobLinksRecursive(it->get(), allNodes);
     }
     
+    _imp->liveInstance->setKnobChangedCallback(serialization.getKnobChangedCallback());
+
 }
 
 void

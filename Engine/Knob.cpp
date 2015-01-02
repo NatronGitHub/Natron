@@ -1401,7 +1401,8 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     
     ///This will register the listeners
     std::string error;
-    bool success = Natron::interpretPythonScript(expressionCopy, &error);
+    PyObject* mainModule;
+    bool success = Natron::interpretPythonScript(expressionCopy, &error,&mainModule);
     if (!error.empty()) {
         qDebug() << error.c_str();
     }
@@ -1410,18 +1411,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     
 }
 
-static void compileExpression(const std::string& expression,PyObject** code,PyObject** globalDict)
-{
-    *globalDict = PyModule_GetDict(PyImport_AddModule("__main__"));
-    *code = (PyObject*)Py_CompileString(expression.c_str(), "<string>", Py_file_input);
-    if (PyErr_Occurred() || !*code) {
-#ifdef DEBUG
-        PyErr_Print();
-#endif
-        //In theory it should not happen since in validateExpression we ran the interpreter using PyRun_SimpleString
-        throw std::runtime_error("failed to compile the expression");
-    }
-}
+
 
 std::string
 KnobHelper::validateExpression(const std::string& expression,int dimension,bool hasRetVariable,std::string* resultAsString)
@@ -1453,29 +1443,12 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
         assert(_expressionsRecursionLevel == 0);
         ++_expressionsRecursionLevel;
         
-        //this is python code to redirect stdout/stderr
-        std::string stdOutErr =
-        "import sys \n"
-        "class CatchOutErr:\n"
-        "   def __init__(self):\n"
-        "       self.value = ''\n"
-        "   def write(self, txt):\n"
-        "       self.value += txt\n"
-        "catchOutErr = CatchOutErr()\n"
-        "sys.stdout = catchOutErr\n"
-        "sys.stderr = catchOutErr\n";
-        
-        PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
-        PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
-        PyRun_SimpleString(exprCpy.c_str());
-        PyObject *catcher = PyObject_GetAttrString(pModule,"catchOutErr"); //get our catchOutErr created above, new ref
-        assert(catcher);
-        
-        PyErr_Print(); //make python print any errors
-        
-        PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object, new ref
-        
-        PyObject *ret = PyObject_GetAttrString(pModule,"ret"); //get our ret variable created above
+        PyObject* mainModule;
+        if (!interpretPythonScript(exprCpy, &error, &mainModule)) {
+            --_expressionsRecursionLevel;
+            throw std::runtime_error(error);
+        }
+        PyObject *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
         
         if (!ret || PyErr_Occurred()) {
 #ifdef DEBUG
@@ -1484,21 +1457,9 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
             --_expressionsRecursionLevel;
             throw std::runtime_error("return value must be assigned to the \"ret\" variable");
         }
-        
-        error = std::string(PY3String_asString(output));
-        
-        Py_DECREF(catcher);
-        Py_DECREF(output);
-        
-        
-        
+  
         --_expressionsRecursionLevel;
-        
-        if (!error.empty()) {
-            throw std::runtime_error(error);
-        }
-        
-        
+
         /// execute
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(this);
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(this);
@@ -1545,7 +1506,7 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
         _imp->expressions[dimension].hasRet = hasRetVariable;
         
         ///This may throw an exception upon failure
-        compileExpression(exprCpy, &_imp->expressions[dimension].code, &_imp->expressions[dimension].global_dict);
+        compilePyScript(exprCpy, &_imp->expressions[dimension].code, &_imp->expressions[dimension].global_dict);
     }
     
     

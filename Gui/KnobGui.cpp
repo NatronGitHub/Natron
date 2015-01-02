@@ -194,6 +194,13 @@ KnobGui::removeGui()
     _imp->guiRemoved = true;
 }
 
+void
+KnobGui::callDeleteLater()
+{
+    _imp->guiRemoved = true;
+    deleteLater();
+}
+
 Gui*
 KnobGui::getGui() const
 {
@@ -667,7 +674,7 @@ KnobGui::onSetExprActionTriggered()
     
   
     EditExpressionDialog* dialog = new EditExpressionDialog(dim,this,_imp->container);
-    
+    dialog->create(getKnob()->getExpression(dim == -1 ? 0 : dim).c_str(), true);
     QObject::connect( dialog,SIGNAL( accepted() ),this,SLOT( onEditExprDialogFinished() ) );
     QObject::connect( dialog,SIGNAL( rejected() ),this,SLOT( onEditExprDialogFinished() ) );
     
@@ -688,7 +695,7 @@ void
 KnobGui::onEditExprDialogFinished()
 {
     
-    EditExpressionDialog* dialog = qobject_cast<EditExpressionDialog*>( sender() );
+    EditExpressionDialog* dialog = dynamic_cast<EditExpressionDialog*>( sender() );
     
     if (dialog) {
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
@@ -1036,8 +1043,7 @@ KnobGui::toolTip() const
     QString exprTt;
     if (exprAllSame) {
         if (!expressions[0].empty()) {
-            std::string dimName = knob->getDimensionName(0);
-            exprTt = QString("<br>%1 = <b>%2</b></br>").arg(dimName.c_str()).arg(expressions[0].c_str());
+            exprTt = QString("<br>ret = <b>%1</b></br>").arg(expressions[0].c_str());
         }
     } else {
         for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1957,11 +1963,8 @@ KnobGui::onRefreshGuiCurve(int /*dimension*/)
     Q_EMIT refreshCurveEditor();
 }
 
-struct EditExpressionDialogPrivate
+struct EditScriptDialogPrivate
 {
-    KnobGui* knob;
-    int dimension;
-    
     QVBoxLayout* mainLayout;
     
     QLabel* expressionLabel;
@@ -1978,10 +1981,8 @@ struct EditExpressionDialogPrivate
     
     QDialogButtonBox* buttons;
     
-    EditExpressionDialogPrivate(int dimension,KnobGui* knob)
-    : knob(knob)
-    , dimension(dimension)
-    , mainLayout(0)
+    EditScriptDialogPrivate()
+    : mainLayout(0)
     , expressionLabel(0)
     , expressionEdit(0)
     , midButtonsContainer(0)
@@ -1996,65 +1997,76 @@ struct EditExpressionDialogPrivate
     }
 };
 
-EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
+EditScriptDialog::EditScriptDialog(QWidget* parent)
 : QDialog(parent)
-, _imp(new EditExpressionDialogPrivate(dimension,knob))
+, _imp(new EditScriptDialogPrivate())
 {
-    boost::shared_ptr<KnobI> k = knob->getKnob();
     
-    QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
     
-    QString title(tr("Set expression on "));
-    title.append(k->getName().c_str());
-    if (dimension != -1 && k->getDimension() > 1) {
-        title.append(".");
-        title.append(k->getDimensionName(dimension).c_str());
-    }
-    setWindowTitle(title);
+}
+
+void
+EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
+{
+    setTitle();
     
+    QFont font(appFont,appFontSize);
     _imp->mainLayout = new QVBoxLayout(this);
     
-    QString labelHtml(tr("<br><b>Python</b> expression: </br>"
-                         "<br>For convenience the following module(s) have been imported: </br>"
-                         "<br/>"
-                         "<br><i><font color=orange>from math import *</font></i></br>"
-                         "<br/>"
-                         "<br>Also the following variables have been declared: </br>"
-                         "<br/>"
-                         "<br><b>thisNode</b> which references the current node</br>"
-                         "<br><b>thisParam</b> which references the current param which expression is being edited</br>"
-                         "<br><b>dimension</b> Defined only if the parameter is multi-dimensional, it references the dimension of the parameter "
-                         "which is being edited (0-based index)</br>"
-                         "<br><b>frame</b> which references the current time on the timeline</br>"));
+    QStringList modules;
+    getImportedModules(modules);
+    std::list<std::pair<QString,QString> > variables;
+    getDeclaredVariables(variables);
+    QString labelHtml(tr("<br><b>Python</b> script: </br>"));
+    if (!modules.empty()) {
+        labelHtml.append(tr("<br>For convenience the following module(s) have been imported: </br> <br/>"));
+        for (int i = 0; i < modules.size(); ++i) {
+            QString toAppend = QString("<br><i><font color=orange>from %1 import *</font></i></br>").arg(modules[i]);
+            labelHtml.append(toAppend);
+        }
+        labelHtml.append("<br/>");
+    }
+    if (!variables.empty()) {
+        labelHtml.append(tr("<br>Also the following variables have been declared: </br>"
+                         "<br/>"));
+        for (std::list<std::pair<QString,QString> > ::iterator it = variables.begin(); it != variables.end(); ++it) {
+            QString toAppend = QString("<br><b>%1</b>: %2</br>").arg(it->first).arg(it->second);
+            labelHtml.append(toAppend);
+        }
+    }
     
     _imp->expressionLabel = new QLabel(labelHtml,this);
     _imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
-    std::string curExpr = k->getExpression(dimension == -1 ? 0 : dimension);
     _imp->expressionEdit = new QTextEdit(this);
+    QFontMetrics fm = _imp->expressionEdit->fontMetrics();
+    _imp->expressionEdit->setTabStopWidth(4 * fm.width(' '));
     _imp->mainLayout->addWidget(_imp->expressionEdit);
-    _imp->expressionEdit->setPlainText(curExpr.c_str());
+    _imp->expressionEdit->setPlainText(initialScript);
     
     _imp->midButtonsContainer = new QWidget(this);
     _imp->midButtonsLayout = new QHBoxLayout(_imp->midButtonsContainer);
+
     
-    bool hasRetVariable = k->isExpressionUsingRetVariable(dimension == -1 ? 0 : dimension);
+    if (makeUseRetButton) {
+        
+        bool retVariable = hasRetVariable();
+        _imp->useRetButton = new Button(tr("Multi-line"),_imp->midButtonsContainer);
+        _imp->useRetButton->setToolTip(Qt::convertFromPlainText(tr("When checked the Python expression will be interpreted "
+                                                                   "as series of statement. The return value should be then assigned to the "
+                                                                   "\"ret\" variable. When unchecked the expression must not contain "
+                                                                   "any new line character and the result will be interpreted from the "
+                                                                   "interpretation of the single line."),Qt::WhiteSpaceNormal));
+        _imp->useRetButton->setCheckable(true);
+        bool checked = !initialScript.isEmpty() && retVariable;
+        _imp->useRetButton->setChecked(checked);
+        _imp->useRetButton->setDown(checked);
+        QObject::connect(_imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)));
+        _imp->midButtonsLayout->addWidget(_imp->useRetButton);
+
+    }
     
-    
-    _imp->useRetButton = new Button(tr("Multi-line"),_imp->midButtonsContainer);
-    _imp->useRetButton->setToolTip(Qt::convertFromPlainText(tr("When checked the Python expression will be interpreted "
-                                                               "as series of statement. The return value should be then assigned to the "
-                                                               "\"ret\" variable. When unchecked the expression must not contain "
-                                                               "any new line character and the result will be interpreted from the "
-                                                               "interpretation of the single line."),Qt::WhiteSpaceNormal));
-    _imp->useRetButton->setCheckable(true);
-    bool checked = !curExpr.empty() && hasRetVariable;
-    _imp->useRetButton->setChecked(checked);
-    _imp->useRetButton->setDown(checked);
-    QObject::connect(_imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)));
-    
-    _imp->midButtonsLayout->addWidget(_imp->useRetButton);
     
     _imp->helpButton = new Button(tr("Help"),_imp->midButtonsContainer);
     QObject::connect(_imp->helpButton, SIGNAL(clicked(bool)), this, SLOT(onHelpRequested()));
@@ -2077,88 +2089,114 @@ EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* 
     QObject::connect(_imp->buttons,SIGNAL(accepted()),this,SLOT(accept()));
     QObject::connect(_imp->buttons,SIGNAL(rejected()),this,SLOT(reject()));
     
-    if (!curExpr.empty()) {
-        compileExpression(curExpr.c_str());
+    if (!initialScript.isEmpty()) {
+        compileAndSetResult(initialScript);
     }
     QObject::connect(_imp->expressionEdit, SIGNAL(textChanged()), this, SLOT(onTextEditChanged()));
     _imp->expressionEdit->setFocus();
 }
 
-void
-EditExpressionDialog::onHelpRequested()
-{
-    QString msg(tr("<br>Each node in the current project already has a variable declared with its name, e.g if you have a node named "
-                   "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.</br>"
-                   "<br>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</br>"
-                   "<br/>"
-                   "<br>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:</br>"
-                   "<br>Transform1.rotate</br>"
-                   "<br>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
-                   "identifies a parameter internally.</br>"
-                   "<br/>"
-                   "<br>The <i>thisParam</i> variable has been defined for convenience when editing an expression. It refers to the current parameter. "
-                   "In the same way the <i>dimension</i> variable has been defined and references the current dimension of the parameter which expression is being set"
-                   ".</br>"
-                   "<br/>"
-                   "<br>The <i>dimension</i> is a 0-based index identifying a specific field of a parameter. For instance if we're editing the expression of the y "
-                   "field of the translate parameter of Transform1, the <i>dimension</i> would be 1. </br>"
-                   "<br/>"
-                   "<br>To access values of a parameter several functions are made accessible: </br>"
-                   "<br/>"
-                   "<br>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
-                   "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</br>"
-                   "<br/>"
-                   "<br>Transform1.center.get().x</br>"
-                   "<br/>"
-                   "<br>The <b>getAt(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
-                   "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters which have an animation "
-                   "it would then return their value at the corresponding timeline position.</br>"));
-    Natron::informationDialog(tr("Help").toStdString(), msg.toStdString(),true);
-}
 
 void
-EditExpressionDialog::compileExpression(const QString& expr)
+EditScriptDialog::compileAndSetResult(const QString& script)
 {
-    std::string exprResult;
-    try {
-        _imp->knob->getKnob()->validateExpression(expr.toStdString(),_imp->dimension == -1 ? 0 : _imp->dimension,_imp->useRetButton->isChecked()
-                                                  ,&exprResult);
-    } catch(const std::exception& e) {
-        QString err = QString("ERROR: %1").arg(e.what());
-        _imp->resultEdit->setPlainText(err);
-        return;
-    }
-    _imp->resultEdit->setPlainText(exprResult.c_str());
-    
+    QString ret = compileExpression(script);
+    _imp->resultEdit->setPlainText(ret);
 }
 
 QString
-EditExpressionDialog::getExpression(bool* hasRetVariable) const
+EditScriptDialog::getHelpPart1()
 {
-    *hasRetVariable = _imp->useRetButton->isChecked();
+    return tr("<br>Each node in the current project already has a variable declared with its name, e.g if you have a node named "
+              "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.</br>"
+              "<br/>"
+              "<br>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:</br>"
+              "<br>Transform1.rotate</br>"
+              "<br>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
+              "identifies a parameter internally.</br>");
+}
+
+QString
+EditScriptDialog::getHelpThisNodeVariable()
+{
+    return tr("<br>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</br>");
+}
+
+QString
+EditScriptDialog::getHelpThisParamVariable()
+{
+    return tr("<br>The <i>thisParam</i> variable has been defined for convenience when editing an expression. It refers to the current parameter.</br>");
+}
+
+QString
+EditScriptDialog::getHelpDimensionVariable()
+{
+    return tr("<br>In the same way the <i>dimension</i> variable has been defined and references the current dimension of the parameter which expression is being set"
+              ".</br>"
+              "<br>The <i>dimension</i> is a 0-based index identifying a specific field of a parameter. For instance if we're editing the expression of the y "
+              "field of the translate parameter of Transform1, the <i>dimension</i> would be 1. </br>");
+
+}
+
+QString
+EditScriptDialog::getHelpPart2()
+{
+    return tr("<br>To access values of a parameter several functions are made accessible: </br>"
+              "<br/>"
+              "<br>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
+              "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</br>"
+              "<br/>"
+              "<br>Transform1.center.get().x</br>"
+              "<br/>"
+              "<br>The <b>get(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
+              "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters with an animation "
+              "it would then return their value at the corresponding timeline position. That value would then be either interpolated "
+              "with the current interpolation filter, or the exact keyframe at that time if one exists.</br>");
+}
+
+void
+EditScriptDialog::onHelpRequested()
+{
+    QString help = getCustomHelp();
+    Natron::informationDialog(tr("Help").toStdString(), help.toStdString(),true);
+}
+
+
+QString
+EditScriptDialog::getExpression(bool* hasRetVariable) const
+{
+    if (_imp->useRetButton) {
+        *hasRetVariable = _imp->useRetButton->isChecked();
+    }
     return _imp->expressionEdit->toPlainText();
 }
 
-void
-EditExpressionDialog::onTextEditChanged()
+bool
+EditScriptDialog::isUseRetButtonChecked() const
 {
-    compileExpression(_imp->expressionEdit->toPlainText());
+    return _imp->useRetButton->isChecked();
 }
 
 void
-EditExpressionDialog::onUseRetButtonClicked(bool useRet)
+EditScriptDialog::onTextEditChanged()
 {
-    compileExpression(_imp->expressionEdit->toPlainText());
+    compileAndSetResult(_imp->expressionEdit->toPlainText());
+}
+
+void
+EditScriptDialog::onUseRetButtonClicked(bool useRet)
+{
+    compileAndSetResult(_imp->expressionEdit->toPlainText());
     _imp->useRetButton->setDown(useRet);
 }
 
-EditExpressionDialog::~EditExpressionDialog()
+EditScriptDialog::~EditScriptDialog()
 {
     
 }
 
 void
-EditExpressionDialog::keyPressEvent(QKeyEvent* e)
+EditScriptDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
         accept();
@@ -2170,10 +2208,79 @@ EditExpressionDialog::keyPressEvent(QKeyEvent* e)
     
 }
 
+
+EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
+: EditScriptDialog(parent)
+, _dimension(dimension)
+, _knob(knob)
+{
+    
+}
+
 int
 EditExpressionDialog::getDimension() const
 {
-    return _imp->dimension;
+    return _dimension;
+}
+
+
+void
+EditExpressionDialog::setTitle()
+{
+    boost::shared_ptr<KnobI> k = _knob->getKnob();
+    
+    QString title(tr("Set expression on "));
+    title.append(k->getName().c_str());
+    if (_dimension != -1 && k->getDimension() > 1) {
+        title.append(".");
+        title.append(k->getDimensionName(_dimension).c_str());
+    }
+    setWindowTitle(title);
+
+}
+
+bool
+EditExpressionDialog::hasRetVariable() const
+{
+    return _knob->getKnob()->isExpressionUsingRetVariable(_dimension == -1 ? 0 : _dimension);
+}
+
+QString
+EditExpressionDialog::compileExpression(const QString& expr)
+{
+    
+    std::string exprResult;
+    try {
+        _knob->getKnob()->validateExpression(expr.toStdString(),_dimension == -1 ? 0 : _dimension,isUseRetButtonChecked()
+                                                  ,&exprResult);
+    } catch(const std::exception& e) {
+        QString err = QString(tr("ERROR") + ": %1").arg(e.what());
+        return err;
+    }
+    return exprResult.c_str();
+}
+
+
+QString
+EditExpressionDialog::getCustomHelp()
+{
+    return getHelpPart1() + "<br/>" + getHelpThisNodeVariable() + "<br/>" + getHelpThisParamVariable() + "<br/>" + getHelpDimensionVariable() + "<br/>" + getHelpPart2();
+}
+
+
+void
+EditExpressionDialog::getImportedModules(QStringList& modules) const
+{
+    modules.push_back("math");
+}
+
+void
+EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const
+{
+    variables.push_back(std::make_pair("thisNode", tr("the current node")));
+    variables.push_back(std::make_pair("thisParam", tr("the current param being edited")));
+    variables.push_back(std::make_pair("dimension", tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index")));
+    variables.push_back(std::make_pair("frame", tr("the current time on the timeline")));
 }
 
 void
@@ -2207,3 +2314,51 @@ KnobGui::onKnobDeletion()
 {
     _imp->container->deleteKnobGui(getKnob());
 }
+
+EditKnobChangedCBDialog::EditKnobChangedCBDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent)
+: EditScriptDialog(parent)
+, _node(node)
+{
+    
+}
+
+void
+EditKnobChangedCBDialog::getImportedModules(QStringList& /*modules*/) const
+{
+    
+}
+
+void
+EditKnobChangedCBDialog::getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const
+{
+    variables.push_back(std::make_pair("thisNode", tr("the current node")));
+    variables.push_back(std::make_pair("thisParam", tr("the current param being edited")));
+    variables.push_back(std::make_pair("frame", tr("the current time on the timeline")));
+}
+
+void
+EditKnobChangedCBDialog::setTitle()
+{
+    QString title = QString("Set paramChanged callback on %1").arg(_node->getNode()->getName_mt_safe().c_str());
+    setWindowTitle(title);
+}
+
+QString
+EditKnobChangedCBDialog::compileExpression(const QString& expr)
+{
+    try {
+        _node->getNode()->getLiveInstance()->setKnobChangedCallback(expr.toStdString());
+    } catch (const std::exception& e)
+    {
+        return tr("ERROR: ") + QString(e.what());
+    }
+    return QString("Script OK");
+}
+
+QString
+EditKnobChangedCBDialog::getCustomHelp()
+{
+    return getHelpPart1() + "<br/>" + getHelpThisNodeVariable() + "<br/>" + getHelpThisParamVariable()  + "<br/>" + getHelpPart2();
+}
+
+

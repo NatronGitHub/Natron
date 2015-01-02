@@ -188,6 +188,34 @@ static PyObject* Sbk_EffectFunc_disconnectInput(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_getCurrentTime(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getCurrentTime()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = const_cast<const ::Effect*>(cppSelf)->getCurrentTime();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_getInput(PyObject* self, PyObject* pyArg)
 {
     ::Effect* cppSelf = 0;
@@ -444,6 +472,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"canSetInput", (PyCFunction)Sbk_EffectFunc_canSetInput, METH_VARARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
+    {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
     {"getMaxInputCount", (PyCFunction)Sbk_EffectFunc_getMaxInputCount, METH_NOARGS},
     {"getName", (PyCFunction)Sbk_EffectFunc_getName, METH_NOARGS},

@@ -98,6 +98,12 @@ public:
      **/
     Param* getParam(const std::string& name) const;
     
+    /**
+     * @brief Get the current time on the timeline or the time of the frame being rendered by the caller thread if a render
+     * is ongoing in that thread.
+     **/
+    int getCurrentTime() const;
+    
 };
 
 #endif // NODEWRAPPER_H

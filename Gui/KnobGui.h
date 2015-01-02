@@ -46,6 +46,7 @@ class Button;
 class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
 class Gui;
+class NodeGui;
 
 class KnobGui
     : public QObject,public KnobGuiI
@@ -61,6 +62,8 @@ public:
     virtual ~KnobGui() OVERRIDE;
     
     void removeGui();
+    
+    void callDeleteLater();
     
 protected:
     /**
@@ -405,34 +408,122 @@ private:
 };
 
 
-struct EditExpressionDialogPrivate;
-class EditExpressionDialog : public QDialog
+struct EditScriptDialogPrivate;
+class EditScriptDialog : public QDialog
 {
     Q_OBJECT
     
 public:
     
-    EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent);
+    EditScriptDialog(QWidget* parent);
     
-    virtual ~EditExpressionDialog();
+    virtual ~EditScriptDialog();
     
-    int getDimension() const;
+    void create(const QString& initialScript,bool makeUseRetButton);
     
     QString getExpression(bool* hasRetVariable) const;
+    
+    bool isUseRetButtonChecked() const;
+    
 public Q_SLOTS:
     
     void onUseRetButtonClicked(bool useRet);
     void onTextEditChanged();
     void onHelpRequested();
     
+    
+protected:
+    
+    virtual void setTitle() = 0;
+    
+    virtual bool hasRetVariable() const { return false; }
+    
+    virtual void getImportedModules(QStringList& modules) const = 0;
+    
+    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const = 0;
+    
+    virtual QString compileExpression(const QString& expr) = 0;
+
+    static QString getHelpPart1();
+    
+    static QString getHelpThisNodeVariable();
+    
+    static QString getHelpThisParamVariable();
+    
+    static QString getHelpDimensionVariable();
+    
+    static QString getHelpPart2();
+    
+    virtual QString getCustomHelp() = 0;
+
 private:
     
+    void compileAndSetResult(const QString& script);
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
-    void compileExpression(const QString& expr);
     
-    boost::scoped_ptr<EditExpressionDialogPrivate> _imp;
+    boost::scoped_ptr<EditScriptDialogPrivate> _imp;
 };
+
+class EditExpressionDialog : public EditScriptDialog
+{
+    
+    int _dimension;
+    KnobGui* _knob;
+    
+public:
+    
+    EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent);
+    
+    virtual ~EditExpressionDialog()
+    {
+    }
+    
+    int getDimension() const;
+
+private:
+    
+    virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;
+    
+    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const OVERRIDE FINAL;
+    
+    virtual bool hasRetVariable() const OVERRIDE FINAL;
+    
+    virtual void setTitle() OVERRIDE FINAL;
+    
+    virtual QString compileExpression(const QString& expr) OVERRIDE FINAL;
+
+    virtual QString getCustomHelp() OVERRIDE FINAL;
+
+};
+
+class EditKnobChangedCBDialog : public EditScriptDialog
+{
+    
+    boost::shared_ptr<NodeGui> _node;
+    
+public:
+    
+    EditKnobChangedCBDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent);
+    
+    virtual ~EditKnobChangedCBDialog()
+    {
+    }
+    
+private:
+    
+    virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;
+    
+    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const OVERRIDE FINAL;
+    
+    virtual void setTitle() OVERRIDE FINAL;
+    
+    virtual QString compileExpression(const QString& expr) OVERRIDE FINAL;
+    
+    virtual QString getCustomHelp() OVERRIDE FINAL;
+    
+};
+
 
 #endif // NATRON_GUI_KNOBGUI_H_

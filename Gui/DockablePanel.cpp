@@ -573,7 +573,7 @@ DockablePanel::~DockablePanel()
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
             it->first->setKnobGuiPointer(0);
-            it->second->deleteLater();
+            it->second->callDeleteLater();
         }
     }
 }
@@ -1748,14 +1748,29 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         
         boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
         QMenu menu(this);
+        menu.setFont( QFont(appFont,appFontSize) );
 
         QAction* userParams = new QAction(tr("Manage user parameters..."),&menu);
         menu.addAction(userParams);
         
-        menu.setFont( QFont(appFont,appFontSize) );
+        bool hasCb = isEffect->hasKnobChangedCallback();
+        
+        QAction* setKnobChangedCb;
+        if (!hasCb) {
+            setKnobChangedCb = new QAction(tr("Set paramChanged callback..."),&menu);
+        } else {
+            setKnobChangedCb = new QAction(tr("Edit paramChanged callback..."),&menu);
+        }
+        menu.addAction(setKnobChangedCb);
+        
+        QAction* clearKnobChangedCb = new QAction(tr("Remove paramChanged callback"),&menu);
+        clearKnobChangedCb->setEnabled(hasCb);
+        menu.addAction(clearKnobChangedCb);
+        menu.addSeparator();
 
         QAction* setKeys = new QAction(tr("Set key on all parameters"),&menu);
         menu.addAction(setKeys);
+        
         QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
         menu.addAction(removeAnimation);
         
@@ -1771,6 +1786,10 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
             removeAnimationOnAllParameters();
         } else if (ret == userParams) {
             onManageUserParametersActionTriggered();
+        } else if (ret == setKnobChangedCb) {
+            onSetKnobChangedCallbackActionTriggered();
+        } else if (ret == clearKnobChangedCb) {
+            onClearKnobChangedCallbackActionTriggered();
         }
     }
 } // onRightClickMenuRequested
@@ -2021,6 +2040,25 @@ NodeSettingsPanel::onSettingsButtonClicked()
     QAction* manageUserParams = new QAction(tr("Manage user parameters..."),&menu);
     QObject::connect(manageUserParams,SIGNAL(triggered()),this,SLOT(onManageUserParametersActionTriggered()));
     menu.addAction(manageUserParams);
+    
+    bool hasCb = node->getNode()->getLiveInstance()->hasKnobChangedCallback();
+    
+    QAction* setKnobChangedCb;
+    if (!hasCb) {
+        setKnobChangedCb = new QAction(tr("Set paramChanged callback..."),&menu);
+    } else {
+        setKnobChangedCb = new QAction(tr("Edit paramChanged callback..."),&menu);
+    }
+
+    QObject::connect(setKnobChangedCb,SIGNAL(triggered()),this,SLOT(onSetKnobChangedCallbackActionTriggered()));
+    menu.addAction(setKnobChangedCb);
+    
+    QAction* clearKnobChangedCb = new QAction(tr("Remove paramChanged callback"),&menu);
+    clearKnobChangedCb->setEnabled(hasCb);
+    QObject::connect(clearKnobChangedCb,SIGNAL(triggered()),this,SLOT(onClearKnobChangedCallbackActionTriggered()));
+    menu.addAction(clearKnobChangedCb);
+    menu.addSeparator();
+
     
     QAction* setKeyOnAll = new QAction(tr("Set key on all parameters"),&menu);
     QObject::connect(setKeyOnAll,SIGNAL(triggered()),this,SLOT(setKeyOnAllParameters()));
@@ -3945,4 +3983,67 @@ AddKnobDialogPrivate::setVisiblePage(bool visible)
         parentPage->setVisible(visible);
         parentPageLabel->setVisible(visible);
     }
+}
+
+void
+DockablePanel::onSetKnobChangedCallbackActionTriggered()
+{
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    assert(isNodePanel);
+    
+    boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
+    
+    EditKnobChangedCBDialog* dialog = new EditKnobChangedCBDialog(node,this);
+    dialog->create(node->getNode()->getLiveInstance()->getKnobsChangedCallback().c_str(), false);
+    QObject::connect( dialog,SIGNAL( accepted() ),this,SLOT( onEditKnobChangedCallbackDialogFinished() ) );
+    QObject::connect( dialog,SIGNAL( rejected() ),this,SLOT( onEditKnobChangedCallbackDialogFinished() ) );
+    
+    dialog->show();
+
+}
+
+void
+DockablePanel::onClearKnobChangedCallbackActionTriggered()
+{
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    assert(isNodePanel);
+    
+    boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
+    std::string existingExpr = node->getNode()->getLiveInstance()->getKnobsChangedCallback();
+    if (!existingExpr.empty()) {
+        pushUndoCommand(new SetKnobChangedCallbackCommand(node,existingExpr,std::string()));
+    }
+}
+
+
+void
+DockablePanel::onEditKnobChangedCallbackDialogFinished()
+{
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    assert(isNodePanel);
+    
+    boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
+    EditScriptDialog* dialog = qobject_cast<EditScriptDialog*>( sender() );
+    
+    if (dialog) {
+        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
+        
+        switch (ret) {
+            case QDialog::Accepted: {
+                bool hasRetVar;
+                QString expr = dialog->getExpression(&hasRetVar);
+                std::string stdExpr = expr.toStdString();
+                std::string existingExpr = node->getNode()->getLiveInstance()->getKnobsChangedCallback();
+                if (existingExpr != stdExpr) {
+                    pushUndoCommand(new SetKnobChangedCallbackCommand(node,existingExpr,stdExpr));
+                }
+            } break;
+            case QDialog::Rejected:
+                break;
+        }
+        
+        dialog->deleteLater();
+        
+    }
+
 }

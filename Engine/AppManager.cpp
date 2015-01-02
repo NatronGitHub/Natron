@@ -2489,7 +2489,7 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
 
 }
     
-bool interpretPythonScript(const std::string& script,std::string* error)
+bool interpretPythonScript(const std::string& script,std::string* error,PyObject** mainModule)
 {
     //this is python code to redirect stdout/stderr
     std::string stdOutErr =
@@ -2502,10 +2502,10 @@ bool interpretPythonScript(const std::string& script,std::string* error)
     "catchOutErr = CatchOutErr()\n"
     "sys.stdout = catchOutErr\n"
     "sys.stderr = catchOutErr\n";
-    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
+    *mainModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
     PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
     PyRun_SimpleString(script.c_str());
-    PyObject *catcher = PyObject_GetAttrString(pModule,"catchOutErr"); //get our catchOutErr created above, new ref
+    PyObject *catcher = PyObject_GetAttrString(*mainModule,"catchOutErr"); //get our catchOutErr created above, new ref
     assert(catcher);
     
     PyErr_Print(); //make python print any errors
@@ -2522,11 +2522,12 @@ bool interpretPythonScript(const std::string& script,std::string* error)
     return true;
 }
     
-static void runScriptWithEngineImport(std::string& script)
+void runScriptWithEngineImport(std::string& script)
 {
     ensureScriptHasModuleImport(NATRON_ENGINE_PYTHON_MODULE_NAME,script);
     std::string error;
-    interpretPythonScript(script,&error);
+    PyObject* mainModule;
+    interpretPythonScript(script,&error,&mainModule);
 #ifdef DEBUG
     if (!error.empty()) {
         qDebug() << error.c_str();
@@ -2598,6 +2599,18 @@ bool isPluginCreatable(const std::string& pluginID)
         return false;
     }
     return true;
+}
+    
+void compilePyScript(const std::string& script,PyObject** code,PyObject** globalDict)
+{
+    *globalDict = PyModule_GetDict(PyImport_AddModule("__main__"));
+    *code = (PyObject*)Py_CompileString(script.c_str(), "<string>", Py_file_input);
+    if (PyErr_Occurred() || !*code) {
+#ifdef DEBUG
+        PyErr_Print();
+#endif
+        throw std::runtime_error("failed to compile the script");
+    }
 }
     
 } //Namespace Natron
