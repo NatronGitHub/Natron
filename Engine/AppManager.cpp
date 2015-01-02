@@ -2489,7 +2489,7 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
 
 }
     
-bool interpretPythonScript(const std::string& script,std::string* error,PyObject** mainModule)
+bool interpretPythonScript(const std::string& script,std::string* error,std::string* output,PyObject** mainModule)
 {
     //this is python code to redirect stdout/stderr
     std::string stdOutErr =
@@ -2499,22 +2499,34 @@ bool interpretPythonScript(const std::string& script,std::string* error,PyObject
     "       self.value = ''\n"
     "   def write(self, txt):\n"
     "       self.value += txt\n"
-    "catchOutErr = CatchOutErr()\n"
-    "sys.stdout = catchOutErr\n"
-    "sys.stderr = catchOutErr\n";
+    "catchOut = CatchOutErr()\n"
+    "catchErr = CatchOutErr()\n"
+    "sys.stdout = catchOut\n"
+    "sys.stderr = catchErr\n";
     *mainModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
     PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
     PyRun_SimpleString(script.c_str());
-    PyObject *catcher = PyObject_GetAttrString(*mainModule,"catchOutErr"); //get our catchOutErr created above, new ref
-    assert(catcher);
+    PyObject *err = PyObject_GetAttrString(*mainModule,"catchErr"); //get our catchOutErr created above, new ref
+    assert(err);
+    
+    PyObject *out = 0;
+    if (output) {
+        out = PyObject_GetAttrString(*mainModule,"catchOut"); //get our catchOutErr created above, new ref
+        assert(out);
+    }
     
     PyErr_Print(); //make python print any errors
     
-    PyObject *output = PyObject_GetAttrString(catcher,"value"); //get the stdout and stderr from our catchOutErr object, new ref
-    *error = std::string(PY3String_asString(output));
-    
-    Py_DECREF(catcher);
-    Py_DECREF(output);
+    PyObject *errorObj = PyObject_GetAttrString(err,"value"); //get the  stderr from our catchErr object, new ref
+    if (output) {
+        PyObject *outObj = PyObject_GetAttrString(out,"value"); //get the stdout from our catchOut object, new ref
+        *error = std::string(PY3String_asString(errorObj));
+        *output = std::string(PY3String_asString(outObj));
+        Py_DECREF(out);
+        Py_DECREF(outObj);
+    }
+    Py_DECREF(err);
+    Py_DECREF(errorObj);
     
     if (!error->empty()) {
         return false;
@@ -2525,9 +2537,9 @@ bool interpretPythonScript(const std::string& script,std::string* error,PyObject
 void runScriptWithEngineImport(std::string& script)
 {
     ensureScriptHasModuleImport(NATRON_ENGINE_PYTHON_MODULE_NAME,script);
-    std::string error;
+    std::string error,output;
     PyObject* mainModule;
-    interpretPythonScript(script,&error,&mainModule);
+    interpretPythonScript(script,&error,&output,&mainModule);
 #ifdef DEBUG
     if (!error.empty()) {
         qDebug() << error.c_str();

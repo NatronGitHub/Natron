@@ -1402,7 +1402,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     ///This will register the listeners
     std::string error;
     PyObject* mainModule;
-    bool success = Natron::interpretPythonScript(expressionCopy, &error,&mainModule);
+    bool success = Natron::interpretPythonScript(expressionCopy, &error,NULL, &mainModule);
     if (!error.empty()) {
         qDebug() << error.c_str();
     }
@@ -1444,7 +1444,7 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
         ++_expressionsRecursionLevel;
         
         PyObject* mainModule;
-        if (!interpretPythonScript(exprCpy, &error, &mainModule)) {
+        if (!interpretPythonScript(exprCpy, &error, 0, &mainModule)) {
             --_expressionsRecursionLevel;
             throw std::runtime_error(error);
         }

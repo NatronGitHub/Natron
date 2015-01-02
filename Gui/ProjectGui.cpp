@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeBackDrop.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/ScriptEditor.h"
 
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
@@ -472,6 +473,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
         _gui->getNodeGraph()->clearSelection();
     }
+    
+    _gui->getScriptEditor()->setInputScript(obj.getInputScript().c_str());
     _gui->centerAllNodeGraphsWithTimer();
 } // load
 

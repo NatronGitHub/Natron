@@ -44,8 +44,11 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/MenuWithToolTips.h"
+#include "Gui/ScriptEditor.h"
+
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
+
 
 using namespace Natron;
 
@@ -231,6 +234,7 @@ TabWidget::createMenu()
     menu.addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
     menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
     menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
+    menu.addAction( tr("Script editor here"), this, SLOT( moveScriptEditorHere() ) );
     menu.addSeparator();
     
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
@@ -523,6 +527,12 @@ TabWidget::movePropertiesBinHere()
     moveTab(_gui->getPropertiesBin(), this);
 }
 
+void
+TabWidget::moveScriptEditorHere()
+{
+    moveTab(_gui->getScriptEditor(), this);
+}
+
 TabWidget*
 TabWidget::splitInternal(bool autoSave,
                          Qt::Orientation orientation)
@@ -647,6 +657,9 @@ TabWidget::appendTab(const QIcon & icon,
                 }
             }
         }
+        if (!widget->isVisible()) {
+            widget->setVisible(true);
+        }
         _floatButton->setEnabled(true);
     }
     makeCurrentTab(_tabs.size() - 1);
@@ -671,6 +684,10 @@ TabWidget::insertTab(int index,
         _tabBar->insertTab(index,icon,title);
         _tabBar->updateGeometry(); //< necessary
         _modifyingTabBar = false;
+        if (!widget->isVisible()) {
+            widget->setVisible(true);
+        }
+        
     } else {
         appendTab(widget);
     }

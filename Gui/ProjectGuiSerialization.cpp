@@ -36,7 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Splitter.h"
 #include "Gui/NodeBackDrop.h"
 #include "Gui/DockablePanel.h"
-
+#include "Gui/ScriptEditor.h"
 
 
 void
@@ -128,6 +128,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             }
         }
     }
+    
+    _scriptEditorInput = projectGui->getGui()->getScriptEditor()->getAutoSavedScript().toStdString();
 } // initialize
 
 void

@@ -262,6 +262,8 @@ public Q_SLOTS:
     void newHistogramHere();
 
     void movePropertiesBinHere();
+    
+    void moveScriptEditorHere();
 
     void onSplitHorizontally()
     {

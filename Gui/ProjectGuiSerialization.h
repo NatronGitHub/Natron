@@ -45,7 +45,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_EXERNALISE_GUI_LAYOUT 6
 #define PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL 7
 #define PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT 8
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT
+#define PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR 9
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
@@ -533,6 +534,8 @@ class ProjectGuiSerialization
     ///All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
 
+    std::string _scriptEditorInput;
+    
     ///The boost version passed to load(), this is not used on save
     unsigned int _version;
 
@@ -549,6 +552,7 @@ class ProjectGuiSerialization
         ar & boost::serialization::make_nvp("Histograms",_histograms);
         ar & boost::serialization::make_nvp("Backdrops",_backdrops);
         ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
+        ar & boost::serialization::make_nvp("ScriptEditorInput",_scriptEditorInput);
     }
 
     template<class Archive>
@@ -578,6 +582,9 @@ class ProjectGuiSerialization
         }
         if (version >= PROJECT_GUI_INTRODUCES_PANELS) {
             ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
+        }
+        if (version >= PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR) {
+            ar & boost::serialization::make_nvp("ScriptEditorInput",_scriptEditorInput);
         }
         _version = version;
     }
@@ -630,6 +637,11 @@ public:
     const std::list<std::string> & getOpenedPanels() const
     {
         return _openedPanelsOrdered;
+    }
+    
+    const std::string& getInputScript() const
+    {
+        return _scriptEditorInput;
     }
 
     unsigned int getVersion() const

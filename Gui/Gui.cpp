@@ -26,6 +26,7 @@
 #include <QTimer>
 #include <QTextEdit>
 
+
 #if QT_VERSION >= 0x050000
 #include <QScreen>
 #endif
@@ -100,6 +101,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeBackDrop.h"
 #include "Gui/MessageBox.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/ScriptEditor.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -355,6 +357,8 @@ struct GuiPrivate
     ShortCutEditor* shortcutEditor;
     
     bool leftToolBarDisplayedOnHoverOnly;
+    
+    ScriptEditor* _scriptEditor;
 
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
@@ -462,6 +466,7 @@ struct GuiPrivate
           , _aboutToClose(false)
           , shortcutEditor(0)
           , leftToolBarDisplayedOnHoverOnly(false)
+          , _scriptEditor(0)
     {
     }
 
@@ -482,6 +487,8 @@ struct GuiPrivate
     void createNodeGraphGui();
 
     void createCurveEditorGui();
+    
+    void createScriptEditorGui();
     
     ///If there's only 1 non-floating pane in the main window, return it, otherwise returns NULL
     TabWidget* getOnly1NonFloatingPane(int & count) const;
@@ -1039,6 +1046,7 @@ Gui::setupUi()
 
     _imp->createNodeGraphGui();
     _imp->createCurveEditorGui();
+    _imp->createScriptEditorGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
@@ -1279,6 +1287,15 @@ GuiPrivate::createCurveEditorGui()
     _curveEditor = new CurveEditor(_gui,_appInstance->getTimeLine(),_gui);
     _curveEditor->setObjectName(kCurveEditorObjectName);
     _gui->registerTab(_curveEditor);
+}
+
+void
+GuiPrivate::createScriptEditorGui()
+{
+    _scriptEditor = new ScriptEditor(_gui);
+    _scriptEditor->setObjectName("ScriptEditor");
+    _scriptEditor->hide();
+    _gui->registerTab(_scriptEditor);
 }
 
 void
@@ -3931,6 +3948,12 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
+ScriptEditor*
+Gui::getScriptEditor() const
+{
+    return _imp->_scriptEditor;
+}
+
 QWidget*
 Gui::getPropertiesBin() const
 {
@@ -4014,6 +4037,18 @@ void
 Gui::updateLastSequenceSavedPath(const QString & path)
 {
     _imp->_lastSaveSequenceOpenedDir = path;
+}
+
+void
+Gui::updateLastSavedProjectPath(const QString& project)
+{
+    _imp->_lastSaveProjectOpenedDir = project;
+}
+
+void
+Gui::updateLastOpenedProjectPath(const QString& project)
+{
+    _imp->_lastLoadProjectOpenedDir = project;
 }
 
 void

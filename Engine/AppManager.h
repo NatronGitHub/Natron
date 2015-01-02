@@ -370,6 +370,8 @@ public:
     
     void saveCaches() const;
     
+    void makeNewPythonEnv(PyObject** globalDict);
+    
 public Q_SLOTS:
 
     void toggleAutoHideGraphInputs();
@@ -587,9 +589,10 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
 /**
  * @brief Evaluates the given python script*
  * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter.
+ * @param output[out] The string will contain any result printed by the script on stdout. This argument may be passed NULL
  * @returns True on success, false on failure.
 **/
-bool interpretPythonScript(const std::string& script,std::string* error,PyObject** mainModule);
+bool interpretPythonScript(const std::string& script,std::string* error,std::string* output,PyObject** mainModule);
   
 /**
  * @brief A wrapper around interpretPythonScript which calls ensureScriptHasModuleImport with NATRON_ENGINE_PYTHON_MODULE_NAME

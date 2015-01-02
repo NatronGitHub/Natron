@@ -90,6 +90,8 @@ SOURCES += \
     RotoPanel.cpp \
     RotoUndoCommand.cpp \
     ScaleSliderQWidget.cpp \
+    ScriptEditor.cpp \
+    ScriptTextEdit.cpp \
     SequenceFileDialog.cpp \
     Shaders.cpp \
     SerializableWindow.cpp \
@@ -107,7 +109,6 @@ SOURCES += \
     TrackerGui.cpp \
     ViewerGL.cpp \
     ViewerTab.cpp
-
 HEADERS += \
     AboutWindow.h \
     ActionShortcuts.h \
@@ -156,6 +157,8 @@ HEADERS += \
     RotoPanel.h \
     RotoUndoCommand.h \
     ScaleSliderQWidget.h \
+    ScriptEditor.h \
+    ScriptTextEdit.h \
     SequenceFileDialog.h \
     Shaders.h \
     SerializableWindow.h \

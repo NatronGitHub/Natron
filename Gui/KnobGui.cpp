@@ -73,6 +73,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/NodeCreationDialog.h"
+#include "Gui/ScriptTextEdit.h"
 
 using namespace Natron;
 
@@ -633,9 +634,9 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     } //if ( knob->isAnimationEnabled() ) {
     
     menu->addSeparator();
+    std::string hasExpr = knob->getExpression(0);
     if (dimension != -1 || knob->getDimension() == 1) {
         
-        std::string hasExpr = knob->getExpression(0);
         
         QAction* setExprAction = new QAction(!hasExpr.empty() ? tr("Edit expression...") : tr("Set expression..."),menu);
         QObject::connect(setExprAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
@@ -651,16 +652,19 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     }
     
     if (knob->getDimension() > 1) {
-        QAction* setExprsAction = new QAction(tr("Set expression (all dimensions)"),menu);
-        setExprsAction->setData(-1);
-        QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
-        menu->addAction(setExprsAction);
+            QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
+                                                  tr("Set expression (all dimensions)"),menu);
+            setExprsAction->setData(-1);
+            QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
+            menu->addAction(setExprsAction);
+        if (!hasExpr.empty()) {
+            
+            QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
+            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
+            clearExprAction->setData(-1);
+            menu->addAction(clearExprAction);
+        }
         
-        QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
-        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-        clearExprAction->setData(-1);
-        menu->addAction(clearExprAction);
-
     }
 } // createAnimationMenu
 
@@ -1968,7 +1972,7 @@ struct EditScriptDialogPrivate
     QVBoxLayout* mainLayout;
     
     QLabel* expressionLabel;
-    QTextEdit* expressionEdit;
+    ScriptTextEdit* expressionEdit;
     
     QWidget* midButtonsContainer;
     QHBoxLayout* midButtonsLayout;
@@ -1977,7 +1981,7 @@ struct EditScriptDialogPrivate
     Button* helpButton;
     
     QLabel* resultLabel;
-    QTextEdit* resultEdit;
+    ScriptTextEdit* resultEdit;
     
     QDialogButtonBox* buttons;
     
@@ -2039,7 +2043,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     _imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
-    _imp->expressionEdit = new QTextEdit(this);
+    _imp->expressionEdit = new ScriptTextEdit(this);
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
     _imp->expressionEdit->setTabStopWidth(4 * fm.width(' '));
     _imp->mainLayout->addWidget(_imp->expressionEdit);
@@ -2079,7 +2083,8 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     _imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
-    _imp->resultEdit = new QTextEdit(this);
+    _imp->resultEdit = new ScriptTextEdit(this);
+    _imp->resultEdit->setOutput(true);
     _imp->resultEdit->setFixedHeight(80);
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);

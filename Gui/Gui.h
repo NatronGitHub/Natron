@@ -63,6 +63,7 @@ class NodeBackDropSerialization;
 class RotoGui;
 class FloatingWidget;
 class BoundAction;
+class ScriptEditor;
 
 //Natron engine
 class ViewerInstance;
@@ -353,6 +354,8 @@ public:
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
+    ScriptEditor* getScriptEditor() const;
+    
     QVBoxLayout* getPropertiesLayout() const;
     QWidget* getPropertiesBin() const;
     const std::map<std::string,QWidget*> & getRegisteredTabs() const;
@@ -360,6 +363,10 @@ public:
     void updateLastSequenceOpenedPath(const QString & path);
 
     void updateLastSequenceSavedPath(const QString & path);
+    
+    void updateLastSavedProjectPath(const QString& project);
+    
+    void updateLastOpenedProjectPath(const QString& project);
 
     void setUndoRedoStackLimit(int limit);
 
