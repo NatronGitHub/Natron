@@ -298,11 +298,6 @@ public:
         return x1 <= kOfxFlagInfiniteMin || x2 >= kOfxFlagInfiniteMax || y1 <= kOfxFlagInfiniteMin || y2 >= kOfxFlagInfiniteMax;
     }
 
-    // implicit casts are very dangerous - to say the least -
-    explicit operator bool() const {
-        return !isNull();
-    }
-
     void clear()
     {
         x1 = 0;
@@ -640,11 +635,6 @@ public:
     bool isNull() const
     {
         return (x2 <= x1) || (y2 <= y1);
-    }
-
-    // implicit casts are very dangerous - to say the least -
-    explicit operator bool() const {
-        return !isNull();
     }
 
     void clear()
