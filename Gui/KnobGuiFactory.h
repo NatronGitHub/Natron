@@ -47,8 +47,6 @@ private:
         return _loadedKnobs;
     }
 
-    void loadKnobPlugins();
-
     void loadBultinKnobs();
 };
 

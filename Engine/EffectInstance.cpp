@@ -4417,8 +4417,7 @@ EffectInstance::Implementation::executeKnobChangedCallback(KnobI* k)
     
     ///Try to interpret the script, throw an exception upon failure
     std::string error;
-    PyObject* mainModule;
-    if (!interpretPythonScript(script, &error, NULL,  &mainModule)) {
+    if (!interpretPythonScript(script, &error, NULL)) {
         throw std::runtime_error(error);
     }
 

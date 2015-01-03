@@ -451,7 +451,6 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
                                const boost::shared_ptr<NodeGui> & newSrc,
                                QUndoCommand *parent)
     : QUndoCommand(parent),
-      _edge(edge),
       _oldSrc(oldSrc),
       _newSrc(newSrc),
       _dst( edge->getDest() ),

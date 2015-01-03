@@ -21,6 +21,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Engine/NodeGroupWrapper.h"
 #include "Engine/ParameterWrapper.h"
 
 namespace Natron {
@@ -29,7 +30,7 @@ class Node;
 
 class Param;
 
-class Effect
+class Effect : public Group
 {
     boost::shared_ptr<Natron::Node> _node;
     
@@ -39,6 +40,8 @@ public:
     
     ~Effect();
     
+    boost::shared_ptr<Natron::Node> getInternalNode() const;
+    
     bool isNull() const
     {
         if (_node) {
@@ -47,6 +50,12 @@ public:
             return true;
         }
     }
+    
+    /**
+     * @brief Removes the node from the project. It will no longer be possible to use it.
+     * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
+     **/
+    void destroy(bool autoReconnect = true);
     
     /**
      * @brief Returns the maximum number of inputs that can be connected to the node.
@@ -103,6 +112,7 @@ public:
      * is ongoing in that thread.
      **/
     int getCurrentTime() const;
+    
     
 };
 

@@ -16,11 +16,12 @@
 #ifndef APPINSTANCEWRAPPER_H
 #define APPINSTANCEWRAPPER_H
 
+
 #include "Engine/NodeWrapper.h"
 
 class AppInstance;
 
-class App
+class App : public Group
 {
     AppInstance* _instance;
     
@@ -31,11 +32,16 @@ public:
     
     int getAppID() const;
     
-    Effect* createNode(const std::string& pluginID,int majorVersion = -1, int minorVersion = -1) const;
-    
-    Effect* getNode(const std::string& name) const;
-    
-    std::list<Effect*> getNodes() const;
+    /**
+     * @brief Creates a new instance of the plugin identified by the given pluginID.
+     * @param majorVersion If different than -1, it will try to load a specific major version
+     * of the plug-in, otherwise it will default to the greatest major version found for that plug-in.
+     * @param group If not NULL, this should be a pointer to a group node where-in to insert the newly created effect.
+     * If NULL, the newly created node will be inserted in the project's root.
+     **/
+    Effect* createNode(const std::string& pluginID,
+                       int majorVersion = -1,
+                       Effect* group = 0) const;
 };
 
 

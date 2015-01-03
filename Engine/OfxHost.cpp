@@ -420,11 +420,11 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
 #endif
 
-    QStringList extraPluginsSearchPaths = appPTR->getCurrentSettings()->getPluginsExtraSearchPaths();
-    for (int i = 0; i < extraPluginsSearchPaths.size(); ++i) {
-        std::string path = extraPluginsSearchPaths.at(i).toStdString();
-        if ( !path.empty() ) {
-            OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
+    std::list<std::string> extraPluginsSearchPaths;
+    appPTR->getCurrentSettings()->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
+    for (std::list<std::string>::iterator it = extraPluginsSearchPaths.begin(); it != extraPluginsSearchPaths.end(); ++it) {
+        if ( !(*it).empty() ) {
+            OFX::Host::PluginCache::getPluginCache()->addFileToPath(*it);
         }
     }
 

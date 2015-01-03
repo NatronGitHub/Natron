@@ -35,7 +35,7 @@ typedef KnobGui *(*KnobGuiBuilder)(boost::shared_ptr<KnobI> knob, DockablePanel*
 /***********************************FACTORY******************************************/
 KnobGuiFactory::KnobGuiFactory()
 {
-    loadKnobPlugins();
+    loadBultinKnobs();
 }
 
 KnobGuiFactory::~KnobGuiFactory()
@@ -44,28 +44,6 @@ KnobGuiFactory::~KnobGuiFactory()
         delete it->second;
     }
     _loadedKnobs.clear();
-}
-
-void
-KnobGuiFactory::loadKnobPlugins()
-{
-    std::vector<LibraryBinary *> plugins = AppManager::loadPlugins(NATRON_KNOBS_PLUGINS_PATH);
-    std::vector<std::string> functions;
-
-    functions.push_back("BuildKnobGui");
-    for (U32 i = 0; i < plugins.size(); ++i) {
-        if ( plugins[i]->loadFunctions(functions) ) {
-            std::pair<bool, KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
-            if (builder.first) {
-                KnobHelper *knob = builder.second(NULL, "", 1);
-                _loadedKnobs.insert( make_pair(knob->typeName(), plugins[i]) );
-                delete knob;
-            }
-        } else {
-            delete plugins[i];
-        }
-    }
-    loadBultinKnobs();
 }
 
 template<typename K, typename KG>

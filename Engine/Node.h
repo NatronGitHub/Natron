@@ -80,6 +80,12 @@ public:
     const Natron::Plugin* getPlugin() const;
     
     /**
+     * @brief Used internally when instanciating a Python template, we first make a group and then pass a pointer
+     * to the real plugin.
+     **/
+    void switchInternalPlugin(Natron::Plugin* plugin);
+    
+    /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
      * This function also loads all parameters. Node connections will not be setup in this method.
      * @param pluginID The ID of the effect to create
@@ -475,6 +481,7 @@ public:
                     , bool reconnect = true
                     , bool hideGui = true
                     , bool triggerRender = true);
+    
 
     /* @brief Make this node active. It will appear
        again on the node graph.
@@ -488,6 +495,12 @@ public:
     void activate(const std::list< Node* > & outputsToRestore = std::list< Node* >(),
                   bool restoreAll = true,
                   bool triggerRender = true);
+    
+    /**
+     * @brief Calls deactivate() and then remove the node from the project. It will no longer be possible to use it.
+     * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
+     **/
+    void destroyNode(bool autoReconnect);
 
     /**
      * @brief Forwarded to the live effect instance

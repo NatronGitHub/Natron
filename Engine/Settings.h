@@ -121,7 +121,7 @@ public:
 
     bool isAutoPreviewOnForNewProjects() const;
 
-    QStringList getPluginsExtraSearchPaths() const;
+    void getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const;
 
     bool isRenderInSeparatedProcessEnabled() const;
 
@@ -225,6 +225,10 @@ public:
     
     void setOptionalInputsAutoHidden(bool hidden);
     bool areOptionalInputsAutoHidden() const;
+    
+    void getPythonTemplateSearchPaths(std::list<std::string>* templates) const;
+    void appendPythonTemplatePath(const std::string& path);
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -326,6 +330,7 @@ private:
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
+    boost::shared_ptr<Path_Knob> _templatesPluginPaths;
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     boost::shared_ptr<Page_Knob> _pluginsTab;

@@ -205,8 +205,19 @@ public:
 
     bool isMultiPath() const;
 
+    void getPaths(std::list<std::string>* paths) const;
+    
+    ///Doesn't work if isMultiPath() == false
+    void getVariables(std::list<std::pair<std::string,std::string> >* paths) const;
+    
+    void setPaths(const std::list<std::pair<std::string,std::string> >& paths);
+    
+    void prependPath(const std::string& path) ;
+    void appendPath(const std::string& path) ;
 
 private:
+    
+    static std::string generateUniquePathID(const std::list<std::pair<std::string,std::string> >& paths);
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;

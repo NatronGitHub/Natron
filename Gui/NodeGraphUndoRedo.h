@@ -164,7 +164,6 @@ private:
     void doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
                    const boost::shared_ptr<Natron::Node> & newSrc);
     
-    Edge* _edge;
     boost::weak_ptr<NodeGui> _oldSrc,_newSrc;
     boost::weak_ptr<NodeGui> _dst;
     NodeGraph* _graph;

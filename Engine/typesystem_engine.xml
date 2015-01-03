@@ -219,18 +219,13 @@
     
    
 
-    <object-type name="App">
-        <modify-function signature="createNode(std::string,int, int)const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
+    <object-type name="Group" copyable="false">
         <modify-function signature="getNode(std::string)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getNodes()const">
+        <modify-function signature="getChildren()const">
             <inject-code class="target" position="beginning">
                 std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
                 PyObject* ret = PyList_New((int) effects.size());
@@ -243,9 +238,21 @@
                 }
                 return ret;
             </inject-code>
-
+            
         </modify-function>
     </object-type>
+    <object-type name="App" copyable="false">
+        <modify-function signature="createNode(std::string,int,Effect*)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
+    </object-type>
+    
         
     <object-type name="Effect" copyable="false">
         <modify-function signature="getInput(int)const">
@@ -272,7 +279,16 @@
                 return ret;
             </inject-code>
         </modify-function>
-
+        <modify-function signature="destroy(bool)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <!-- It doesn't seem that Shiboken allows to remove an overload:
+         signature 'getNode(std::string)const' for function modification in 'Effect' not found. Possible candidates: getNode(std::string)const in Group
+         -->
+        <!--<modify-function signature="getNode(std::string)const" remove="all">
+        </modify-function>-->
     </object-type>
     <object-type name="Param"/>
     <object-type name="AnimatedParam">

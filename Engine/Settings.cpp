@@ -709,9 +709,9 @@ Settings::initializeKnobs()
     _pluginsTab = Natron::createKnob<Page_Knob>(this, "Plug-ins");
     _pluginsTab->setName("plugins");
     
-    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
+    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "OpenFX plugins search path");
     _extraPluginPaths->setName("extraPluginsSearchPaths");
-    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for plugins. "
+    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for OpenFX plugins. "
                                                    "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
                                                    "The priority order for system-wide plugins, from high to low, is:\n"
                                                    "- plugins found in OFX_PLUGIN_PATH\n"
@@ -734,6 +734,13 @@ Settings::initializeKnobs()
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
     
+    _templatesPluginPaths = Natron::createKnob<Path_Knob>(this, "Template plugins search path");
+    _templatesPluginPaths->setName("templatePluginsSearchPath");
+    _templatesPluginPaths->setHintToolTip("Search path where " NATRON_APPLICATION_NAME " should scan for Python templates scripts. "
+                                          "The search paths for templates can also be specified using the NATRON_PATH environment variable.");
+    _templatesPluginPaths->setMultiPath(true);
+    _pluginsTab->addKnob(_templatesPluginPaths);
+    
     _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plugins");
     _loadBundledPlugins->setName("useBundledPlugins");
     _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " also uses the plugins bundled "
@@ -746,7 +753,8 @@ Settings::initializeKnobs()
     _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer bundled plugins over system-wide plugins");
     _preferBundledPlugins->setName("preferBundledPlugins");
     _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the "
-                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins.");
+                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins "
+                                          "if they have the same internal ID.");
     _preferBundledPlugins->setAnimationEnabled(false);
     _pluginsTab->addKnob(_preferBundledPlugins);
     
@@ -1676,49 +1684,10 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
     }
 }
 
-QStringList
-Settings::getPluginsExtraSearchPaths() const
+void
+Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
 {
-    std::string paths = _extraPluginPaths->getValue().c_str();
-    QStringList variables;
-    
-    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
-    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
-    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
-    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
-    
-    size_t i = paths.find(startNameTag);
-    while (i != std::string::npos) {
-        i += startNameTag.size();
-        assert(i < paths.size());
-        size_t endNamePos = paths.find(endNameTag,i);
-        assert(endNamePos != std::string::npos && endNamePos < paths.size());
-        
-        std::string name,value;
-        while (i < endNamePos) {
-            name.push_back(paths[i]);
-            ++i;
-        }
-        
-        i = paths.find(startValueTag,i);
-        i += startValueTag.size();
-        assert(i != std::string::npos && i < paths.size());
-        
-        size_t endValuePos = paths.find(endValueTag,i);
-        assert(endValuePos != std::string::npos && endValuePos < paths.size());
-        
-        while (i < endValuePos) {
-            value.push_back(paths.at(i));
-            ++i;
-        }
-        
-        // In order to use XML tags, the text inside the tags has to be unescaped.
-        variables.push_back(Project::unescapeXML(value).c_str());
-        
-        i = paths.find(startNameTag,i);
-    }
-
-    return variables;
+    _extraPluginPaths->getPaths(paths);
 }
 
 void
@@ -2195,4 +2164,16 @@ bool
 Settings::areOptionalInputsAutoHidden() const
 {
     return _hideOptionalInputsAutomatically->getValue();
+}
+
+void
+Settings::getPythonTemplateSearchPaths(std::list<std::string>* templates) const
+{
+    _templatesPluginPaths->getPaths(templates);
+}
+
+void
+Settings::appendPythonTemplatePath(const std::string& path)
+{
+    _templatesPluginPaths->appendPath(path);
 }

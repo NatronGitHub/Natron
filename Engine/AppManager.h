@@ -164,15 +164,6 @@ public:
     Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
     const std::vector<Format*> & getFormats() const WARN_UNUSED_RETURN;
 
-    /*Tries to load all plugins in directory "where"*/
-    static std::vector<Natron::LibraryBinary*> loadPlugins (const QString & where) WARN_UNUSED_RETURN;
-
-    /*Tries to load all plugins in directory "where" that contains all the functions described by
-       their name in "functions".*/
-    static std::vector<Natron::LibraryBinary*> loadPluginsAndFindFunctions(const QString & where,
-                                                                           const std::vector<std::string> & functions) WARN_UNUSED_RETURN;
-
-
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
      **/
@@ -277,7 +268,7 @@ public:
     {
     }
 
-    void registerPlugin(const QStringList & groups,
+    Natron::Plugin* registerPlugin(const QStringList & groups,
                         const QString & pluginID,
                         const QString & pluginLabel,
                         const QString & pluginIconPath,
@@ -370,7 +361,7 @@ public:
     
     void saveCaches() const;
     
-    void makeNewPythonEnv(PyObject** globalDict);
+    PyObject* getMainModule();
     
 public Q_SLOTS:
 
@@ -448,6 +439,8 @@ private:
                       const QStringList & writers,
                       const std::list<std::pair<int,int> >& frameRanges,
                       const QString & mainProcessServerName);
+    
+    void loadPythonTemplates();
 
     void registerEngineMetaTypes() const;
 
@@ -585,19 +578,27 @@ bool isPluginCreatable(const std::string& pluginID);
  * can be the first character after the last one in the script.
  **/
 std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script);
+    
+/**
+ * @brief If the script contains import modules commands, this will return the position of the first character
+ * of the next line after the last import call, if there's any, otherwise it returns 0.
+ **/
+std::size_t findNewLineStartAfterImports(std::string& script);
 
 /**
+ * @brief Return a handle to the __main__ Python module, containing all global definitions.
+ **/
+PyObject* getMainModule();
+    
+/**
  * @brief Evaluates the given python script*
- * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter.
+ * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter. This argument may be passed NULL,
+ * however in Gui sessions, the error will not be printed in the console so it will just ignore any Python error.
  * @param output[out] The string will contain any result printed by the script on stdout. This argument may be passed NULL
  * @returns True on success, false on failure.
 **/
-bool interpretPythonScript(const std::string& script,std::string* error,std::string* output,PyObject** mainModule);
-  
-/**
- * @brief A wrapper around interpretPythonScript which calls ensureScriptHasModuleImport with NATRON_ENGINE_PYTHON_MODULE_NAME
- **/
-void runScriptWithEngineImport(std::string& script);
+bool interpretPythonScript(const std::string& script,std::string* error,std::string* output);
+
     
 void declareNodeVariableToPython(int appID,const std::string& nodeName);
 void setNodeVariableToPython(const std::string& oldName,const std::string& newName);

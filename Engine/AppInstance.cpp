@@ -317,6 +317,8 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 const CreateNodeArgs::DefaultValuesList& paramValues,
                                 const boost::shared_ptr<NodeCollection>& group)
 {
+    assert(group);
+    
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;
 
@@ -328,7 +330,8 @@ AppInstance::createNodeInternal(const QString & pluginID,
         try {
             plugin = appPTR->getPluginBinaryFromOldID(pluginID, majorVersion, minorVersion);
         } catch (const std::exception& e2) {
-            Natron::errorDialog( "Plugin error", std::string("Cannot load plugin executable") + ": " + e2.what(), false );
+            Natron::errorDialog(tr("Plugin error").toStdString(),
+                                tr("Cannot load plugin executable").toStdString() + ": " + e2.what(), false );
             return node;
         }
         
@@ -337,15 +340,60 @@ AppInstance::createNodeInternal(const QString & pluginID,
     if (pluginID == PLUGINID_NATRON_INPUT) {
         Natron::Project* isProject = dynamic_cast<Natron::Project*>(group.get());
         if (isProject) {
-            Natron::errorDialog("Plugin error", std::string("You can only create an Input node within a Group"));
+            Natron::errorDialog(tr("Plugin error").toStdString(),
+                                tr("You can only create an Input node within a Group").toStdString());
             return node;
         }
     }
     
-    
-    
     if (!plugin) {
         return node;
+    }
+    
+    NodeGroup* isCollectionGroup = dynamic_cast<NodeGroup*>(group.get());
+    if (isCollectionGroup && isCollectionGroup->getPluginID() == pluginID.toStdString()) {
+        Natron::errorDialog(tr("Plugin error").toStdString(),
+                            tr("You cannot nest the same group within an instance of that group, that would create an infinite recursion.").toStdString());
+        return node;
+    }
+
+    const QString& pythonModule = plugin->getPythonModule();
+    if (!pythonModule.isEmpty()) {
+        
+        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                                 "",
+                                 -1,-1,
+                                 -1,
+                                 true, //< autoconnect
+                                 INT_MIN,INT_MIN,
+                                 true, //< push undo/redo command
+                                 true, // add to project
+                                 QString(),
+                                 CreateNodeArgs::DefaultValuesList(),
+                                 group);
+        NodePtr containerNode = createNode(groupArgs);
+        if (!containerNode) {
+            return containerNode;
+        }
+        std::string containerName;
+        group->initNodeName(plugin->getPluginLabel().toStdString(),&containerName);
+        containerNode->setName(containerName.c_str());
+        containerNode->switchInternalPlugin(plugin);
+        
+        std::string containerFullySpecifiedName = containerNode->getFullySpecifiedName();
+        
+        std::string script(pythonModule.toStdString());
+        script.append(".createInstance(");
+        script.append(containerFullySpecifiedName);
+        script.append(")\n");
+        std::string err;
+        if (!Natron::interpretPythonScript(script, &err, NULL)) {
+            Natron::errorDialog(tr("Plugin error").toStdString(), err);
+            containerNode->destroyNode(false);
+            return node;
+        } else {
+            return containerNode;
+        }
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
@@ -748,11 +796,11 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
 std::size_t
 AppInstance::declareCurrentAppVariable_Python(std::string& script)
 {
-    size_t firstLine = ensureScriptHasModuleImport(NATRON_ENGINE_PYTHON_MODULE_NAME,script);
+    size_t firstLine = findNewLineStartAfterImports(script);
     
     ///Now define the app variable
     std::stringstream ss;
-    ss << "app = getInstance(" << getAppID() << ") \n";
+    ss << "app = natron.getInstance(" << getAppID() << ") \n";
     std::string toInsert = ss.str();
     script.insert(firstLine, toInsert);
     

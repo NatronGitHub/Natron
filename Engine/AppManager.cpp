@@ -40,6 +40,7 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/FrameEntry.h"
+#include "Engine/StandardPaths.h"
 #include "Engine/Format.h"
 #include "Engine/Log.h"
 #include "Engine/Cache.h"
@@ -117,6 +118,8 @@ struct AppManagerPrivate
     
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
     std::vector<wchar_t*> args;
+    
+    PyObject* mainModule;
     
     AppManagerPrivate()
     : _appType(AppManager::eAppTypeBackground)
@@ -727,54 +730,7 @@ AppManager::clearAllCaches()
     }
 }
 
-std::vector<LibraryBinary*>
-AppManager::loadPlugins(const QString &where)
-{
-    std::vector<LibraryBinary*> ret;
-    QDir d(where);
 
-    if ( d.isReadable() ) {
-        QStringList filters;
-        filters << QString( QString("*.") + QString(NATRON_LIBRARY_EXT) );
-        d.setNameFilters(filters);
-        QStringList fileList = d.entryList();
-        for (int i = 0; i < fileList.size(); ++i) {
-            QString filename = fileList.at(i);
-            if ( filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so") ) {
-                QString className;
-                int index = filename.lastIndexOf("." NATRON_LIBRARY_EXT);
-                className = filename.left(index);
-                std::string binaryPath = NATRON_PLUGINS_PATH + className.toStdString() + "." + NATRON_LIBRARY_EXT;
-                LibraryBinary* plugin = new LibraryBinary(binaryPath);
-                if ( !plugin->isValid() ) {
-                    delete plugin;
-                } else {
-                    ret.push_back(plugin);
-                }
-            } else {
-                continue;
-            }
-        }
-    }
-
-    return ret;
-}
-
-std::vector<Natron::LibraryBinary*>
-AppManager::loadPluginsAndFindFunctions(const QString & where,
-                                        const std::vector<std::string> & functions)
-{
-    std::vector<LibraryBinary*> ret;
-    std::vector<LibraryBinary*> loadedLibraries = loadPlugins(where);
-
-    for (U32 i = 0; i < loadedLibraries.size(); ++i) {
-        if ( loadedLibraries[i]->loadFunctions(functions) ) {
-            ret.push_back(loadedLibraries[i]);
-        }
-    }
-
-    return ret;
-}
 
 AppInstance*
 AppManager::getTopLevelInstance () const
@@ -904,6 +860,8 @@ AppManager::loadAllPlugins()
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
 
+    loadPythonTemplates();
+    
     std::vector<Natron::Plugin*> ignoredPlugins;
     _imp->_settings->populatePluginsTab(ignoredPlugins);
     
@@ -1049,7 +1007,191 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
 
 }
 
+static void findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
+{
+    for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
+        if (*it == script) {
+            QFile file(path + *it);
+            if (file.open(QIODevice::ReadOnly)) {
+                QTextStream ts(&file);
+                QString content = ts.readAll();
+                PyRun_SimpleString(content.toStdString().c_str());
+            }
+            break;
+        }
+    }
+}
+
 void
+AppManager::loadPythonTemplates()
+{
+    QStringList templatesSearchPath;
+    QString dataLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation);
+    QString mainPath = dataLocation + QDir::separator() + "Plugins";
+    
+    QDir mainPathDir(mainPath);
+    if (!mainPathDir.exists()) {
+        QDir dataDir(dataLocation);
+        if (dataDir.exists()) {
+            dataDir.mkdir("Plugins");
+        }
+    }
+
+    QDir cwd( QCoreApplication::applicationDirPath() );
+    cwd.cdUp();
+    QString natronBundledPluginsPath = QString(cwd.absolutePath() +  "/Plugins");
+
+   
+    QString envvar(qgetenv(NATRON_PATH_ENV_VAR));
+    QStringList splitDirs = envvar.split(QChar(';'));
+       std::list<std::string> userSearchPaths;
+    _imp->_settings->getPythonTemplateSearchPaths(&userSearchPaths);
+    
+    bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
+    
+    if (preferBundleOverSystemWide) {
+        ///look-in the bundled plug-ins
+        templatesSearchPath.push_back(natronBundledPluginsPath);
+    }
+    
+    ///look-in the main system wide plugin path
+    templatesSearchPath.push_back(mainPath);
+    
+    ///look-in the locations indicated by NATRON_PATH
+    for (int i = 0; i < splitDirs.size(); ++i) {
+        templatesSearchPath.push_back(splitDirs[i]);
+    }
+    
+    ///look-in extra search path set in the preferences
+    for (std::list<std::string>::iterator it = userSearchPaths.begin(); it!=userSearchPaths.end(); ++it) {
+        templatesSearchPath.push_back(QString(it->c_str()));
+    }
+    
+    if (!preferBundleOverSystemWide) {
+        ///look-in the bundled plug-ins
+        templatesSearchPath.push_back(natronBundledPluginsPath);
+    }
+    
+    QString script("import sys\n"
+                   "import %1\n"
+                   "ret = True\n"
+                   "if not hasattr(%1,\"createInstance\") or not hasattr(\"createInstance\",\"__call__\"):\n"
+                   "    ret = False\n"
+                   "if not hasattr(%1,\"getLabel\") or not hasattr(\"getLabel\",\"__call__\"):\n"
+                   "    ret = False\n"
+                   "elif ret == True:\n"
+                   "    global templateLabel = getLabel()\n"
+                   "if ret == True and hasattr(%1,\"getID\") and hasattr(\"getID\",\"__call__\"):\n"
+                   "    global templateID = getID()\n"
+                   "if ret == True and hasattr(%1,\"getVersion\") and hasattr(\"getVersion\",\"__call__\"):\n"
+                   "    global templateVersion = getVersion()\n"
+                   "if ret == True and hasattr(%1,\"getIconPath\") and hasattr(\"getIconPath\",\"__call__\"):\n"
+                   "    global templateIcon = getIconPath()\n"
+                   "if ret == True and hasattr(%1,\"getGrouping\") and hasattr(\"getGrouping\",\"__call__\"):\n"
+                   "    global templateGrouping = getGrouping()\n");
+    
+    QStringList filters;
+    filters << "*.py";
+    
+    std::string err;
+    PyObject* mainModule = getMainModule();
+    
+    QStringList allFiles;
+    ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
+    for (int i = 0; i < templatesSearchPath.size(); ++i) {
+        
+        std::string addToPythonPath("import sys\n"
+                                    "sys.path.append(\"");
+        addToPythonPath.append(templatesSearchPath[i].toStdString());
+        addToPythonPath.append("\")\n");
+        
+        bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
+        assert(ok);
+        
+        QDir d(templatesSearchPath[i]);
+        if (d.exists()) {
+            
+            QStringList files = d.entryList(filters,QDir::Files | QDir::NoDotAndDotDot);
+            findAndRunScriptFile(d.absolutePath() + '/', files,"init.py");
+            if (!isBackground()) {
+                findAndRunScriptFile(d.absolutePath() + '/',files,"initGui.py");
+            }
+            for (QStringList::iterator it = files.begin(); it != files.end(); ++it) {
+                if (*it != QString("init.py") && *it != QString("initGui.py")) {
+                    allFiles.push_back(*it);
+                }
+            }
+        }
+    }
+    
+    for (int i = 0; i < allFiles.size(); ++i) {
+        
+        std::string toRun = script.arg(allFiles[i]).toStdString();
+        
+        if (!interpretPythonScript(toRun, &err, NULL)) {
+            qDebug() << "Python template load failure: " << err.c_str();
+        } else {
+            PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
+            assert(retObj);
+            if (PyObject_IsTrue(retObj) == 1) {
+                Py_XDECREF(retObj);
+                
+                std::string deleteScript("del ret\n"
+                                         "del templateLabel\n");
+                
+                int version = 1;
+                QString label,pluginId,iconPath,grouping;
+                
+                PyObject* labelObj = PyObject_GetAttrString(mainModule,"templateLabel"); //new ref
+                PyObject* idObj = PyObject_GetAttrString(mainModule,"templateID"); //new ref
+                PyObject* versionObj = PyObject_GetAttrString(mainModule,"templateVersion"); //new ref
+                PyObject* iconObj = PyObject_GetAttrString(mainModule,"templateIcon"); //new ref
+                PyObject* iconGrouping = PyObject_GetAttrString(mainModule,"templateGrouping"); //new ref
+                assert(labelObj);
+                
+                label = QString(PY3String_asString(labelObj).c_str());
+                Py_XDECREF(labelObj);
+                
+                if (idObj) {
+                    pluginId = QString(PY3String_asString(idObj).c_str());
+                    deleteScript.append("del templateID\n");
+                    Py_XDECREF(idObj);
+                }
+                if (versionObj) {
+                    version = (int)PyLong_AsLong(versionObj);
+                    deleteScript.append("del templateVersion\n");
+                    Py_XDECREF(versionObj);
+                }
+                if (iconObj) {
+                    iconPath = QString(PY3String_asString(iconObj).c_str());
+                    deleteScript.append("del templateIcon\n");
+                    Py_XDECREF(iconObj);
+                }
+                if (iconGrouping) {
+                    grouping = QString(PY3String_asString(iconGrouping).c_str());
+                    deleteScript.append("del templateGrouping\n");
+                    Py_XDECREF(iconGrouping);
+                    
+                }
+                
+                bool ok = interpretPythonScript(deleteScript, &err, NULL);
+                assert(ok);
+                
+                Natron::Plugin* p = registerPlugin(grouping.split(QChar('/')), pluginId, label, iconPath, QString(), QString(), false, false, 0, false, version, 0);
+                
+                QString pythonModule = allFiles[i];
+                int lastdot = allFiles[i].lastIndexOf(".");
+                assert(lastdot != -1);
+                pythonModule = pythonModule.mid(0, lastdot);
+                p->setPythonModule(pythonModule);
+                
+            }
+        }
+    }
+}
+
+
+Natron::Plugin*
 AppManager::registerPlugin(const QStringList & groups,
                            const QString & pluginID,
                            const QString & pluginLabel,
@@ -1080,6 +1222,7 @@ AppManager::registerPlugin(const QStringList & groups,
         _imp->_plugins.insert(std::make_pair(stdID, set));
     }
     onPluginLoaded(plugin);
+    return plugin;
 }
 
 void
@@ -2279,6 +2422,8 @@ AppManager::initPython(int argc,char* argv[])
     initBuiltinPythonModules();
     Py_Initialize();
     
+    _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
+    
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
     
 }
@@ -2286,7 +2431,14 @@ AppManager::initPython(int argc,char* argv[])
 void
 AppManager::tearDownPython()
 {
+    Py_DECREF(_imp->mainModule);
     Py_Finalize();
+}
+
+PyObject*
+AppManager::getMainModule()
+{
+    return _imp->mainModule;
 }
 
 ///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
@@ -2453,12 +2605,8 @@ questionDialog(const std::string & title,
     }
 }
     
-std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
+std::size_t findNewLineStartAfterImports(std::string& script)
 {
-    /// import module
-    script = "from " + moduleName + " import * \n" + script;
-    
-    
     ///Find position of the last import
     size_t foundImport = script.find("import ");
     if (foundImport != std::string::npos) {
@@ -2472,8 +2620,9 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
         }
     }
     
-    ///The script should have imported at least modules compiled into Natron
-    assert(foundImport != std::string::npos);
+    if (foundImport == std::string::npos) {
+        return 0;
+    }
     
     ///find the next end line aftr the import
     size_t endLine = script.find('\n',foundImport + 1);
@@ -2489,63 +2638,81 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
 
 }
     
-bool interpretPythonScript(const std::string& script,std::string* error,std::string* output,PyObject** mainModule)
+PyObject* getMainModule()
 {
-    //this is python code to redirect stdout/stderr
-    std::string stdOutErr =
-    "import sys \n"
-    "class CatchOutErr:\n"
-    "   def __init__(self):\n"
-    "       self.value = ''\n"
-    "   def write(self, txt):\n"
-    "       self.value += txt\n"
-    "catchOut = CatchOutErr()\n"
-    "catchErr = CatchOutErr()\n"
-    "sys.stdout = catchOut\n"
-    "sys.stderr = catchErr\n";
-    *mainModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
-    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
-    PyRun_SimpleString(script.c_str());
-    PyObject *err = PyObject_GetAttrString(*mainModule,"catchErr"); //get our catchOutErr created above, new ref
-    assert(err);
-    
-    PyObject *out = 0;
-    if (output) {
-        out = PyObject_GetAttrString(*mainModule,"catchOut"); //get our catchOutErr created above, new ref
-        assert(out);
-    }
-    
-    PyErr_Print(); //make python print any errors
-    
-    PyObject *errorObj = PyObject_GetAttrString(err,"value"); //get the  stderr from our catchErr object, new ref
-    if (output) {
-        PyObject *outObj = PyObject_GetAttrString(out,"value"); //get the stdout from our catchOut object, new ref
-        *error = std::string(PY3String_asString(errorObj));
-        *output = std::string(PY3String_asString(outObj));
-        Py_DECREF(out);
-        Py_DECREF(outObj);
-    }
-    Py_DECREF(err);
-    Py_DECREF(errorObj);
-    
-    if (!error->empty()) {
-        return false;
-    }
-    return true;
+    return appPTR->getMainModule();
+}
+
+std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
+{
+    /// import module
+    script = "from " + moduleName + " import * \n" + script;
+    return findNewLineStartAfterImports(script);
 }
     
-void runScriptWithEngineImport(std::string& script)
+bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
-    ensureScriptHasModuleImport(NATRON_ENGINE_PYTHON_MODULE_NAME,script);
-    std::string error,output;
-    PyObject* mainModule;
-    interpretPythonScript(script,&error,&output,&mainModule);
-#ifdef DEBUG
-    if (!error.empty()) {
-        qDebug() << error.c_str();
+    PyObject* mainModule = getMainModule();
+    //PyRun_SimpleString(script.c_str());
+    PyObject* dict = PyModule_GetDict(mainModule);
+    
+    ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
+    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
+    if (v) {
+        Py_DECREF(v);
     }
-#endif
+    if (!appPTR->isBackground()) {
+        
+        ///Gui session, do stdout, stderr redirection
+        PyObject *errCatcher = 0;
+        PyObject *outCatcher = 0;
+
+        if (error && PyObject_HasAttrString(mainModule, "catchErr")) {
+            errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
+        }
+        
+        if (output && PyObject_HasAttrString(mainModule, "catchOut")) {
+            outCatcher = PyObject_GetAttrString(mainModule,"catchOut"); //get our catchOutErr created above, new ref
+        }
+        
+        PyErr_Print(); //make python print any errors
+        
+        PyObject *errorObj = 0;
+        if (errCatcher && error) {
+            errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+            assert(errorObj);
+            *error = std::string(PY3String_asString(errorObj));
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(errCatcher, "value", unicode);
+            Py_DECREF(errorObj);
+            Py_DECREF(errCatcher);
+        }
+        PyObject *outObj = 0;
+        if (outCatcher && output) {
+            outObj = PyObject_GetAttrString(outCatcher,"value"); //get the stdout from our catchOut object, new ref
+            assert(outObj);
+            *output = std::string(PY3String_asString(outObj));
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(outCatcher, "value", unicode);
+            Py_DECREF(outObj);
+            Py_DECREF(outCatcher);
+        }
+
+        if (!error->empty()) {
+            return false;
+        }
+        return true;
+    } else {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+            return false;
+        } else {
+            return true;
+        }
+    }
+
 }
+    
     
 void declareNodeVariableToPython(int appID,const std::string& nodeName)
 {
@@ -2555,9 +2722,13 @@ void declareNodeVariableToPython(int appID,const std::string& nodeName)
         return;
     }
     
-    QString str = QString("%1 = getInstance(%2).getNode(\"%1\")").arg(nodeName.c_str()).arg(appID);
+    QString str = QString("%1 = natron.getInstance(%2).getNode(\"%1\")").arg(nodeName.c_str()).arg(appID);
     std::string script = str.toStdString();
-    runScriptWithEngineImport(script);
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+
 }
     
 void setNodeVariableToPython(const std::string& oldName,const std::string& newName)
@@ -2570,7 +2741,11 @@ void setNodeVariableToPython(const std::string& oldName,const std::string& newNa
 
     QString str = QString("%1 = %2 \ndel %2").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
-    runScriptWithEngineImport(script);
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+
 
 }
     
@@ -2578,7 +2753,10 @@ void deleteNodeVariableToPython(const std::string& nodeName)
 {
     QString str = QString("del %1").arg(nodeName.c_str());
     std::string script = str.toStdString();
-    runScriptWithEngineImport(script);
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
     
 }
     
@@ -2602,7 +2780,11 @@ void declareParameterAsNodeField(const std::string& nodeName,const std::string& 
 //    }
     QString str = QString("%1.%2 = %1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
     std::string script = str.toStdString();
-    runScriptWithEngineImport(script);
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+
 }
     
 bool isPluginCreatable(const std::string& pluginID)

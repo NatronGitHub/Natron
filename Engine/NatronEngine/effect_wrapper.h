@@ -1,5 +1,5 @@
-#ifndef SBK_EFFECT_H
-#define SBK_EFFECT_H
+#ifndef SBK_EFFECTWRAPPER_H
+#define SBK_EFFECTWRAPPER_H
 
 #define protected public
 
@@ -7,5 +7,11 @@
 
 #include <NodeWrapper.h>
 
-#endif // SBK_EFFECT_H
+class EffectWrapper : public Effect
+{
+public:
+    ~EffectWrapper();
+};
+
+#endif // SBK_EFFECTWRAPPER_H
 

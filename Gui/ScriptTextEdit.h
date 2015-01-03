@@ -15,7 +15,7 @@
 
 class ScriptTextEdit : public QTextEdit
 {
-    Q_PROPERTY(bool isOutput READ getOuput WRITE setOutput)
+    Q_PROPERTY(bool isOutput READ getOutput WRITE setOutput)
     
 public:
     

@@ -14,9 +14,11 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/EffectInstance.h"
-
+#include "Engine/NodeGroup.h"
 Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
-: _node(node)
+: Group(boost::dynamic_pointer_cast<NodeCollection>(
+                                                               boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this())))
+, _node(node)
 {
 
 }
@@ -24,6 +26,18 @@ Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
 Effect::~Effect()
 {
     
+}
+
+boost::shared_ptr<Natron::Node>
+Effect::getInternalNode() const
+{
+    return _node;
+}
+
+void
+Effect::destroy(bool autoReconnect)
+{
+    _node->destroyNode(autoReconnect);
 }
 
 int

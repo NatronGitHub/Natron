@@ -1365,7 +1365,6 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     // - getDerivativeAtTime
     // - getIntegrateFromTimeToTime
     // - get
-    // - getAt
     // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
     
     std::string expressionCopy;
@@ -1395,14 +1394,10 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
         return;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "getAt", true, dimension)) {
-        return;
-    }
     
     ///This will register the listeners
     std::string error;
-    PyObject* mainModule;
-    bool success = Natron::interpretPythonScript(expressionCopy, &error,NULL, &mainModule);
+    bool success = Natron::interpretPythonScript(expressionCopy, &error,NULL);
     if (!error.empty()) {
         qDebug() << error.c_str();
     }
@@ -1443,12 +1438,11 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
         assert(_expressionsRecursionLevel == 0);
         ++_expressionsRecursionLevel;
         
-        PyObject* mainModule;
-        if (!interpretPythonScript(exprCpy, &error, 0, &mainModule)) {
+        if (!interpretPythonScript(exprCpy, &error, 0)) {
             --_expressionsRecursionLevel;
             throw std::runtime_error(error);
         }
-        PyObject *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
+        PyObject *ret = PyObject_GetAttrString(Natron::getMainModule(),"ret"); //get our ret variable created above
         
         if (!ret || PyErr_Occurred()) {
 #ifdef DEBUG

@@ -349,6 +349,12 @@ Node::getPlugin() const
 }
 
 void
+Node::switchInternalPlugin(Natron::Plugin* plugin)
+{
+    _imp->plugin = plugin;
+}
+
+void
 Node::load(const std::string & pluginID,
            const std::string & parentMultiInstanceName,
            int childIndex,
@@ -461,7 +467,9 @@ Node::load(const std::string & pluginID,
     
     if (!nameSet) {
         if (fixedName.isEmpty()) {
-            getGroup()->initNodeName(this);
+            std::string name;
+            getGroup()->initNodeName(getPluginLabel(),&name);
+            setName(name.c_str());
         } else {
             setName(fixedName);
         }
@@ -1044,6 +1052,7 @@ Node::removeReferences()
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
     Natron::deleteNodeVariableToPython(getFullySpecifiedName());
     _imp->liveInstance.reset();
+    getGroup()->removeNode(shared_from_this());
 }
 
 const std::vector<std::string> &
@@ -2607,6 +2616,23 @@ Node::activate(const std::list< Node* > & outputsToRestore,
 
     Q_EMIT activated(triggerRender);
 } // activate
+
+void
+Node::destroyNode(bool autoReconnect)
+{
+    deactivate(std::list< Node* >(),
+               true,
+               autoReconnect,
+               true,
+               true);
+    
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        isGrp->clearNodes(true);
+    }
+    
+    removeReferences();
+}
 
 boost::shared_ptr<KnobI>
 Node::getKnobByName(const std::string & name) const

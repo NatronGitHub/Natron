@@ -109,6 +109,18 @@ NodeCollection::removeNode(const NodePtr& node)
     }
 }
 
+NodePtr
+NodeCollection::getLastNode(const std::string& pluginID) const
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::const_reverse_iterator it = _imp->nodes.rbegin(); it != _imp->nodes.rend(); ++it ) {
+        if ((*it)->getPluginID() == pluginID) {
+            return *it;
+        }
+    }
+    return NodePtr();
+}
+
 bool
 NodeCollection::hasNodes() const
 {
@@ -301,12 +313,10 @@ NodeCollection::clearNodes(bool emitSignal)
 }
 
 void
-NodeCollection::initNodeName(Natron::Node* n)
+NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeName)
 {
-    assert(n);
-    
     int no = 1;
-    std::string baseName(n->getPluginLabel());
+    std::string baseName(pluginLabel);
     if (baseName.size() > 3 &&
         baseName[baseName.size() - 1] == 'X' &&
         baseName[baseName.size() - 2] == 'F' &&
@@ -315,17 +325,16 @@ NodeCollection::initNodeName(Natron::Node* n)
     }
     bool foundNodeWithName = false;
     
-    std::string name;
     {
         std::stringstream ss;
         ss << baseName << no;
-        name = ss.str();
+        *nodeName = ss.str();
     }
     do {
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ((*it)->getName_mt_safe() == name) {
+            if ((*it)->getName_mt_safe() == *nodeName) {
                 foundNodeWithName = true;
                 break;
             }
@@ -335,11 +344,10 @@ NodeCollection::initNodeName(Natron::Node* n)
             {
                 std::stringstream ss;
                 ss << baseName << no;
-                name = ss.str();
+                *nodeName = ss.str();
             }
         }
     } while (foundNodeWithName);
-    n->setName(name.c_str());
 }
 
 bool

@@ -64,6 +64,11 @@ public:
     void removeNode(const NodePtr& node);
     
     /**
+     * @brief Get the last node added with the given id
+     **/
+    NodePtr getLastNode(const std::string& pluginID) const;
+    
+    /**
      * @brief Removes all nodes within the collection. MT-safe.
      **/
     void clearNodes(bool emitSignal);
@@ -71,7 +76,7 @@ public:
     /**
      * @brief Set the name of the node to be a unique node name within the collection. MT-safe.
      **/
-    void initNodeName(Natron::Node* node);
+    void initNodeName(const std::string& pluginLabel,std::string* nodeName);
     
     /**
      * @brief Returns true if there is one or more nodes in the collection.

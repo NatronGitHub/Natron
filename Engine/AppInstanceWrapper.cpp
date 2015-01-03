@@ -11,12 +11,16 @@
 
 #include "AppInstanceWrapper.h"
 
+#include <QDebug>
+
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
-
+#include "Engine/NodeGroup.h"
+#include "Engine/EffectInstance.h"
 App::App(AppInstance* instance)
-: _instance(instance)
+: Group(instance->getProject())
+, _instance(instance)
 {
     
 }
@@ -28,12 +32,33 @@ App::getAppID() const
 }
 
 Effect*
-App::createNode(const std::string& pluginID,int majorVersion, int minorVersion) const
+App::createNode(const std::string& pluginID,
+                int majorVersion,
+                Effect* group) const
 {
+    boost::shared_ptr<NodeCollection> collection;
+    if (group) {
+        boost::shared_ptr<Natron::Node> node = group->getInternalNode();
+        assert(node);
+        boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
+        if (!isGrp) {
+            qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
+        } else {
+            collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+            assert(collection);
+        }
+    }
+    
+    if (!collection) {
+        collection = boost::dynamic_pointer_cast<NodeCollection>(_instance->getProject());
+    }
+    
+    assert(collection);
+    
     CreateNodeArgs args(pluginID.c_str(),
                         "",
                         majorVersion,
-                        minorVersion,
+                        -1,
                         -1,
                         false,
                         INT_MIN,
@@ -42,7 +67,7 @@ App::createNode(const std::string& pluginID,int majorVersion, int minorVersion) 
                         true,
                         QString(),
                         CreateNodeArgs::DefaultValuesList(),
-                        _instance->getProject());
+                        collection);
     boost::shared_ptr<Natron::Node> node = _instance->createNode(args);
     if (node) {
         return new Effect(node);
@@ -51,27 +76,3 @@ App::createNode(const std::string& pluginID,int majorVersion, int minorVersion) 
     }
 }
 
-Effect*
-App::getNode(const std::string& name) const
-{
-    boost::shared_ptr<Natron::Node> node = _instance->getNodeByFullySpecifiedName(name);
-    if (node && node->isActivated()) {
-        return new Effect(node);
-    } else {
-        return NULL;
-    }
-}
-
-std::list<Effect*>
-App::getNodes() const
-{
-    std::list<Effect*> ret;
-    NodeList nodes = _instance->getProject()->getNodes();
-    
-    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        if ((*it)->isActivated() && (*it)->getParentMultiInstanceName().empty()) {
-            ret.push_back(new Effect(*it));
-        }
-    }
-    return ret;
-}

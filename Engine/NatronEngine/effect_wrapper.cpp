@@ -16,6 +16,13 @@
 #include <list>
 
 
+// Native ---------------------------------------------------------
+
+EffectWrapper::~EffectWrapper()
+{
+    SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
+    Shiboken::Object::destroy(wrapper, this);
+}
 
 // Target ---------------------------------------------------------
 
@@ -141,6 +148,80 @@ static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
     Sbk_EffectFunc_connectInput_TypeError:
         const char* overloads[] = {"int, NatronEngine.Effect", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.connectInput", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_destroy(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.destroy(): too many arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:destroy", &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: destroy(bool)
+    if (numArgs == 0) {
+        overloadId = 0; // destroy(bool)
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0])))) {
+        overloadId = 0; // destroy(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_destroy_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "autoReconnect");
+            if (value && pyArgs[0]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.destroy(): got multiple values for keyword argument 'autoReconnect'.");
+                return 0;
+            } else if (value) {
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0]))))
+                    goto Sbk_EffectFunc_destroy_TypeError;
+            }
+        }
+        bool cppArg0 = true;
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // destroy(bool)
+            // Begin code injection
+
+            cppSelf->destroy(cppArg0);
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_destroy_TypeError:
+        const char* overloads[] = {"bool = true", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.destroy", overloads);
         return 0;
 }
 
@@ -471,6 +552,7 @@ static PyObject* Sbk_EffectFunc_isNull(PyObject* self)
 static PyMethodDef Sbk_Effect_methods[] = {
     {"canSetInput", (PyCFunction)Sbk_EffectFunc_canSetInput, METH_VARARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
+    {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
@@ -527,7 +609,7 @@ static SbkObjectType Sbk_Effect_Type = { { {
     /*tp_methods*/          Sbk_Effect_methods,
     /*tp_members*/          0,
     /*tp_getset*/           0,
-    /*tp_base*/             reinterpret_cast<PyTypeObject*>(&SbkObject_Type),
+    /*tp_base*/             0,
     /*tp_dict*/             0,
     /*tp_descr_get*/        0,
     /*tp_descr_set*/        0,
@@ -546,6 +628,13 @@ static SbkObjectType Sbk_Effect_Type = { { {
     /*priv_data*/           0
 };
 } //extern
+
+static void* Sbk_Effect_typeDiscovery(void* cptr, SbkObjectType* instanceType)
+{
+    if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::Group >()))
+        return dynamic_cast< ::Effect*>(reinterpret_cast< ::Group*>(cptr));
+    return 0;
+}
 
 
 // Type conversion functions.
@@ -578,7 +667,7 @@ void init_Effect(PyObject* module)
     SbkNatronEngineTypes[SBK_EFFECT_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_Effect_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "Effect", "Effect*",
-        &Sbk_Effect_Type, &Shiboken::callCppDestructor< ::Effect >)) {
+        &Sbk_Effect_Type, &Shiboken::callCppDestructor< ::Effect >, (SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX])) {
         return;
     }
 
@@ -592,7 +681,10 @@ void init_Effect(PyObject* module)
     Shiboken::Conversions::registerConverterName(converter, "Effect*");
     Shiboken::Conversions::registerConverterName(converter, "Effect&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Effect).name());
+    Shiboken::Conversions::registerConverterName(converter, typeid(::EffectWrapper).name());
 
+
+    Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Effect_Type, &Sbk_Effect_typeDiscovery);
 
 
 }

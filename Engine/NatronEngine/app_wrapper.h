@@ -1,5 +1,5 @@
-#ifndef SBK_APP_H
-#define SBK_APP_H
+#ifndef SBK_APPWRAPPER_H
+#define SBK_APPWRAPPER_H
 
 #define protected public
 
@@ -7,5 +7,11 @@
 
 #include <AppInstanceWrapper.h>
 
-#endif // SBK_APP_H
+class AppWrapper : public App
+{
+public:
+    ~AppWrapper();
+};
+
+#endif // SBK_APPWRAPPER_H
 

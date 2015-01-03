@@ -75,6 +75,7 @@ SOURCES += \
     MemoryFile.cpp \
     Node.cpp \
     NodeGroup.cpp \
+    NodeGroupWrapper.cpp \
     NodeWrapper.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
@@ -132,7 +133,8 @@ SOURCES += \
     NatronEngine/stringparambase_wrapper.cpp \
     NatronEngine/pathparam_wrapper.cpp \
     NatronEngine/animatedparam_wrapper.cpp \
-    NatronEngine/parametricparam_wrapper.cpp
+    NatronEngine/parametricparam_wrapper.cpp \
+    NatronEngine/group_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -182,6 +184,7 @@ HEADERS += \
     Node.h \
     NodeGroup.h \
     NodeGroupSerialization.h \
+    NodeGroupWrapper.h \
     NodeGraphI.h \
     NodeWrapper.h \
     NodeGuiI.h \
@@ -281,7 +284,8 @@ HEADERS += \
     NatronEngine/stringparambase_wrapper.h \
     NatronEngine/pathparam_wrapper.h \
     NatronEngine/animatedparam_wrapper.h \
-    NatronEngine/parametricparam_wrapper.h
+    NatronEngine/parametricparam_wrapper.h \
+    NatronEngine/group_wrapper.h
 
 
 OTHER_FILES += \

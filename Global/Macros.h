@@ -90,7 +90,7 @@ NATRON_VERSION_MINOR, \
 NATRON_VERSION_REVISION)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define NATRON_ROOT "/"
+#define NATRON_PATH_ENV_VAR "NATRON_PATH"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH "natronIcon256_linux.png"
 
@@ -100,10 +100,6 @@ NATRON_VERSION_REVISION)
 #define NATRON_ICON_SET_BLACK_AND_WHITE "2"
 #define NATRON_ICON_SET_FADED_COLOURS "3"
 #define NATRON_ICON_SET_NUMBER NATRON_ICON_SET_FADED_COLOURS
-
-#define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
-#define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"
-#define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH "Nodes/"
 
 #define NATRON_BACKDROP_NODE_NAME "BackDrop"
 

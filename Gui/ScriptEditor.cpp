@@ -103,6 +103,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->undoB->setFocusPolicy(Qt::NoFocus);
     _imp->undoB->setToolTip(tr("Previous script") +
                                tr("<br>Keyboard shortcut: ") + undoSeq.toString(QKeySequence::NativeText) + "</br>");
+    _imp->undoB->setEnabled(false);
     QObject::connect(_imp->undoB, SIGNAL(clicked(bool)), this, SLOT(onUndoClicked()));
     
     _imp->redoB = new Button(QIcon(redoPix),"",_imp->buttonsContainer);
@@ -111,6 +112,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->redoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->redoB->setToolTip(tr("Next script") +
                             tr("<br>Keyboard shortcut: ") + redoSeq.toString(QKeySequence::NativeText) + "</br>");
+    _imp->redoB->setEnabled(false);
     QObject::connect(_imp->redoB, SIGNAL(clicked(bool)), this, SLOT(onRedoClicked()));
     
     _imp->clearHistoB = new Button(QIcon(clearHistoPix),"",_imp->buttonsContainer);
@@ -183,7 +185,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     
     _imp->outputEdit = new ScriptTextEdit(this);
     _imp->outputEdit->setOutput(true);
-    _imp->outputEdit->setFocusPolicy(Qt::NoFocus);
+    _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
     _imp->outputEdit->setReadOnly(true);
     
     _imp->inputEdit = new ScriptTextEdit(this);
@@ -378,9 +380,8 @@ ScriptEditor::onExecScriptClicked()
 {
     QString script = _imp->inputEdit->toPlainText();
     std::string error,output;
-    PyObject* mainModule;
     
-    if (!Natron::interpretPythonScript(script.toStdString(), &error, &output, &mainModule)) {
+    if (!Natron::interpretPythonScript(script.toStdString(), &error, &output)) {
         _imp->outputEdit->append(Qt::convertFromPlainText(error.c_str(),Qt::WhiteSpaceNormal));
     } else {
         QString toAppend(script);
