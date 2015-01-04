@@ -160,7 +160,6 @@ ToolButton::onTriggered()
     CreateNodeArgs args(_imp->_id,
                         "",
                         _imp->_major,_imp->_minor,
-                        -1,
                         true,
                         INT_MIN,INT_MIN,
                         true,

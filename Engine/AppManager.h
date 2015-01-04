@@ -363,6 +363,8 @@ public:
     
     PyObject* getMainModule();
     
+    QString getSystemNonOFXPluginsPath() const;
+    
 public Q_SLOTS:
 
     void toggleAutoHideGraphInputs();

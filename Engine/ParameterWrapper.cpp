@@ -22,6 +22,17 @@ Param::~Param()
     
 }
 
+Param*
+Param::getParent() const
+{
+    boost::shared_ptr<KnobI> parent = _knob->getParentKnob();
+    if (parent) {
+        return new Param(parent);
+    } else {
+        return 0;
+    }
+}
+
 int
 Param::getNumDimensions() const
 {
@@ -40,6 +51,7 @@ Param::getLabel() const
     return _knob->getDescription();
 }
 
+
 std::string
 Param::getTypeName() const
 {
@@ -50,6 +62,15 @@ std::string
 Param::getHelp() const
 {
     return _knob->getHintToolTip();
+}
+
+void
+Param::setHelp(const std::string& help)
+{
+    if (!_knob->isUserKnob()) {
+        return;
+    }
+    _knob->setHintToolTip(help);
 }
 
 bool
@@ -85,6 +106,9 @@ Param::getIsPersistant() const
 void
 Param::setPersistant(bool persistant)
 {
+    if (!_knob->isUserKnob()) {
+        return;
+    }
     _knob->setIsPersistant(persistant);
 }
 
@@ -97,6 +121,9 @@ Param::getEvaluateOnChange() const
 void
 Param::setEvaluateOnChange(bool eval)
 {
+    if (!_knob->isUserKnob()) {
+        return;
+    }
     _knob->setEvaluateOnChange(eval);
 }
 
@@ -110,6 +137,32 @@ bool
 Param::getIsAnimationEnabled() const
 {
     return _knob->isAnimationEnabled();
+}
+
+void
+Param::setAnimationEnabled(bool e)
+{
+    if (!_knob->isUserKnob()) {
+        return;
+    }
+    _knob->setAnimationEnabled(e);
+}
+
+bool
+Param::getAddNewLine()
+{
+    return !_knob->isNewLineTurnedOff();
+}
+
+void
+Param::setAddNewLine(bool a)
+{
+    if (!_knob->isUserKnob()) {
+        return;
+    }
+    if (!a && !_knob->isNewLineTurnedOff()) {
+        _knob->turnOffNewLine();
+    } 
 }
 
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
@@ -193,7 +246,13 @@ AnimatedParam::setExpression(const std::string& expr,bool hasRetVariable,int dim
     (void)_knob->setExpression(dimension,expr,hasRetVariable);
 }
 
-
+std::string
+AnimatedParam::getExpression(int dimension,bool* hasRetVariable) const
+{
+    std::string ret = _knob->getExpression(dimension);
+    *hasRetVariable = _knob->isExpressionUsingRetVariable(dimension);
+    return ret;
+}
 
 ///////////// IntParam
 
@@ -368,6 +427,9 @@ IntParam::getMinimum(int dimension) const
 void
 IntParam::setMaximum(int maximum,int dimension)
 {
+    if (!_intKnob->isUserKnob()) {
+        return;
+    }
     _intKnob->setMaximum(maximum,dimension);
 }
 
@@ -380,6 +442,9 @@ IntParam::getMaximum(int dimension) const
 void
 IntParam::setDisplayMinimum(int minimum,int dimension)
 {
+    if (!_intKnob->isUserKnob()) {
+        return;
+    }
     return _intKnob->setDisplayMinimum(minimum,dimension);
 }
 
@@ -581,6 +646,9 @@ DoubleParam::getMinimum(int dimension) const
 void
 DoubleParam::setMaximum(double maximum,int dimension)
 {
+    if (!_doubleKnob->isUserKnob()) {
+        return;
+    }
     _doubleKnob->setMaximum(maximum,dimension);
 }
 
@@ -593,7 +661,10 @@ DoubleParam::getMaximum(int dimension) const
 void
 DoubleParam::setDisplayMinimum(double minimum,int dimension)
 {
-    return _doubleKnob->setDisplayMinimum(minimum,dimension);
+    if (!_doubleKnob->isUserKnob()) {
+        return;
+    }
+     _doubleKnob->setDisplayMinimum(minimum,dimension);
 }
 
 double
@@ -754,6 +825,9 @@ ColorParam::getMinimum(int dimension) const
 void
 ColorParam::setMaximum(double maximum,int dimension)
 {
+    if (!_colorKnob->isUserKnob()) {
+        return;
+    }
     _colorKnob->setMaximum(maximum,dimension);
 }
 
@@ -766,7 +840,10 @@ ColorParam::getMaximum(int dimension) const
 void
 ColorParam::setDisplayMinimum(double minimum,int dimension)
 {
-    return _colorKnob->setDisplayMinimum(minimum,dimension);
+    if (!_colorKnob->isUserKnob()) {
+        return;
+    }
+    _colorKnob->setDisplayMinimum(minimum,dimension);
 }
 
 double
@@ -878,6 +955,9 @@ ChoiceParam::restoreDefaultValue(int dimension)
 void
 ChoiceParam::addOption(const std::string& option,const std::string& help)
 {
+    if (!_choiceKnob->isUserKnob()) {
+        return;
+    }
     std::vector<std::string> entries = _choiceKnob->getEntries_mt_safe();
     std::vector<std::string> helps = _choiceKnob->getEntriesHelp_mt_safe();
     entries.push_back(option);
@@ -886,6 +966,31 @@ ChoiceParam::addOption(const std::string& option,const std::string& help)
     }
     _choiceKnob->populateChoices(entries,helps);
     
+}
+
+void
+ChoiceParam::setOptions(const std::list<std::pair<std::string,std::string> >& options)
+{
+    if (!_choiceKnob->isUserKnob()) {
+        return;
+    }
+    
+    std::vector<std::string> entries,helps;
+    for (std::list<std::pair<std::string,std::string> >::const_iterator it = options.begin(); it != options.end(); ++it) {
+        entries.push_back(it->first);
+        helps.push_back(it->second);
+    }
+    _choiceKnob->populateChoices(entries,helps);
+}
+
+std::string
+ChoiceParam::getOption(int index) const
+{
+    std::vector<std::string> entries =  _choiceKnob->getEntries_mt_safe();
+    if (index < 0 || index >= (int)entries.size()) {
+        return std::string();
+    }
+    return entries[index];
 }
 
 int
@@ -1094,6 +1199,9 @@ StringParam::~StringParam()
 void
 StringParam::setType(StringParam::TypeEnum type)
 {
+    if (!_sKnob->isUserKnob()) {
+        return;
+    }
     switch (type) {
         case eStringTypeLabel:
             _sKnob->setAsLabel();
@@ -1131,9 +1239,13 @@ FileParam::~FileParam()
 void
 FileParam::setSequenceEnabled(bool enabled)
 {
+    if (!_sKnob->isUserKnob()) {
+        return;
+    }
     if (enabled) {
         _sKnob->setAsInputImage();
     }
+    
 }
 
 void
@@ -1159,6 +1271,9 @@ OutputFileParam::~OutputFileParam()
 void
 OutputFileParam::setSequenceEnabled(bool enabled)
 {
+    if (!_sKnob->isUserKnob()) {
+        return;
+    }
     if (enabled) {
         _sKnob->setAsOutputImageFile();
     } else {
@@ -1190,6 +1305,9 @@ PathParam::~PathParam()
 void
 PathParam::setAsMultiPathTable()
 {
+    if (!_sKnob->isUserKnob()) {
+        return;
+    }
     _sKnob->setMultiPath(true);
 }
 
@@ -1231,6 +1349,9 @@ GroupParam::~GroupParam()
 void
 GroupParam::addParam(const Param* param)
 {
+    if (!param || !param->getInternalKnob()->isUserKnob() || param->getInternalKnob()->getParentKnob()) {
+        return;
+    }
     _groupKnob->addKnob(param->getInternalKnob());
 }
 
@@ -1238,6 +1359,9 @@ GroupParam::addParam(const Param* param)
 void
 GroupParam::setAsTab()
 {
+    if (!_groupKnob->isUserKnob()) {
+        return;
+    }
     _groupKnob->setAsTab();
 }
 
@@ -1259,6 +1383,9 @@ PageParam::~PageParam()
 void
 PageParam::addParam(const Param* param)
 {
+    if (!param || !param->getInternalKnob()->isUserKnob() || param->getInternalKnob()->getParentKnob()) {
+        return;
+    }
     _pageKnob->addKnob(param->getInternalKnob());
 }
 
@@ -1318,20 +1445,24 @@ ParametricParam::getNControlPoints(int dimension) const
 
 Natron::StatusEnum
 ParametricParam::getNthControlPoint(int dimension,
-                                      int nthCtl,
-                                      double *key,
-                                      double *value) const
+                                    int nthCtl,
+                                    double *key,
+                                    double *value,
+                                    double *leftDerivative,
+                                    double *rightDerivative) const
 {
-    return _parametricKnob->getNthControlPoint(dimension, nthCtl, key, value);
+    return _parametricKnob->getNthControlPoint(dimension, nthCtl, key, value,leftDerivative, rightDerivative);
 }
 
 Natron::StatusEnum
 ParametricParam::setNthControlPoint(int dimension,
-                                      int nthCtl,
-                                      double key,
-                                      double value)
+                                    int nthCtl,
+                                    double key,
+                                    double value,
+                                    double leftDerivative,
+                                    double rightDerivative)
 {
-    return _parametricKnob->setNthControlPoint(dimension, nthCtl, key, value);
+    return _parametricKnob->setNthControlPoint(dimension, nthCtl, key, value,leftDerivative,rightDerivative);
 }
 
 Natron::StatusEnum

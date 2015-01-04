@@ -1022,6 +1022,13 @@ static void findAndRunScriptFile(const QString& path,const QStringList& files,co
     }
 }
 
+QString
+AppManager::getSystemNonOFXPluginsPath() const
+{
+    return  Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) +
+      QDir::separator() + "Plugins";
+}
+
 void
 AppManager::loadPythonTemplates()
 {

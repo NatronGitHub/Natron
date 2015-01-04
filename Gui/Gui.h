@@ -116,7 +116,7 @@ public:
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
     
-    void createGroupGui(const boost::shared_ptr<Natron::Node>& group);
+    void createGroupGui(const boost::shared_ptr<Natron::Node>& group, bool requestedByLoad);
     
     void addGroupGui(NodeGraph* tab,TabWidget* where);
     

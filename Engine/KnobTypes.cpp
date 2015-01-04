@@ -881,16 +881,18 @@ Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
     
     if ( found == _children.end() ) {
         
-        boost::shared_ptr<KnobI> parent = k->getParentKnob();
+        boost::shared_ptr<KnobI> parent= k->getParentKnob();
         if (parent) {
-            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(parent.get());
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
-            if (isGrp) {
-                isGrp->removeKnob(k.get());
-            } else if (isPage) {
-                isPage->removeKnob(k.get());
+            Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+            Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
+            if (isParentGrp) {
+                isParentGrp->removeKnob(k.get());
+            } else if (isParentPage) {
+                isParentPage->removeKnob(k.get());
             }
+            k->setParentKnob(boost::shared_ptr<KnobI>());
         }
+
         
         _children.push_back(k);
         boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
@@ -951,16 +953,18 @@ Group_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         return;
     }
     
-    boost::shared_ptr<KnobI> parent = k->getParentKnob();
+    boost::shared_ptr<KnobI> parent= k->getParentKnob();
     if (parent) {
-        Group_Knob* isGrp = dynamic_cast<Group_Knob*>(parent.get());
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
-        if (isGrp) {
-            isGrp->removeKnob(k.get());
-        } else if (isPage) {
-            isPage->removeKnob(k.get());
+        Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+        Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
+        if (isParentGrp) {
+            isParentGrp->removeKnob(k.get());
+        } else if (isParentPage) {
+            isParentPage->removeKnob(k.get());
         }
+        k->setParentKnob(boost::shared_ptr<KnobI>());
     }
+
     if (index >= (int)_children.size()) {
         _children.push_back(k);
     } else {
@@ -1014,10 +1018,20 @@ Page_Knob::addKnob(const boost::shared_ptr<KnobI> &k)
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     
     if ( found == _children.end() ) {
-        _children.push_back(k);
-        if ( !k->getParentKnob() ) {
-            k->setParentKnob( getHolder()->getKnobByName( getName() ) );
+        
+        boost::shared_ptr<KnobI> parent= k->getParentKnob();
+        if (parent) {
+            Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+            Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
+            if (isParentGrp) {
+                isParentGrp->removeKnob(k.get());
+            } else if (isParentPage) {
+                isParentPage->removeKnob(k.get());
+            }
+            k->setParentKnob(boost::shared_ptr<KnobI>());
         }
+        _children.push_back(k);
+        k->setParentKnob( getHolder()->getKnobByName( getName() ) );
     }
 }
 
@@ -1030,6 +1044,19 @@ Page_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         return;
     }
     
+    boost::shared_ptr<KnobI> parent= k->getParentKnob();
+    if (parent) {
+        Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+        Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
+        if (isParentGrp) {
+            isParentGrp->removeKnob(k.get());
+        } else if (isParentPage) {
+            isParentPage->removeKnob(k.get());
+        }
+        k->setParentKnob(boost::shared_ptr<KnobI>());
+    }
+    
+    
     if (index >= (int)_children.size()) {
         _children.push_back(k);
     } else {
@@ -1037,11 +1064,10 @@ Page_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         std::advance(it, index);
         _children.insert(it, k);
     }
-    if (!k->getParentKnob()) {
-        boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-        assert(thisSharedPtr);
-        k->setParentKnob(thisSharedPtr);
-    }
+    boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
+    assert(thisSharedPtr);
+    k->setParentKnob(thisSharedPtr);
+    
 }
 
 void
@@ -1141,6 +1167,8 @@ Parametric_Knob::setCurveColor(int dimension,
     _curvesColor[dimension].r = r;
     _curvesColor[dimension].g = g;
     _curvesColor[dimension].b = b;
+    
+    Q_EMIT curveColorChanged(dimension);
 }
 
 void
@@ -1265,6 +1293,31 @@ Parametric_Knob::getNthControlPoint(int dimension,
 }
 
 Natron::StatusEnum
+Parametric_Knob::getNthControlPoint(int dimension,
+                                      int nthCtl,
+                                      double *key,
+                                      double *value,
+                                      double *leftDerivative,
+                                      double *rightDerivative) const
+{
+    ///Mt-safe as Curve is MT-safe
+    if ( dimension >= (int)_curves.size() ) {
+        return eStatusFailed;
+    }
+    KeyFrame kf;
+    bool ret = _curves[dimension]->getKeyFrameWithIndex(nthCtl, &kf);
+    if (!ret) {
+        return eStatusFailed;
+    }
+    *key = kf.getTime();
+    *value = kf.getValue();
+    *leftDerivative = kf.getLeftDerivative();
+    *rightDerivative = kf.getRightDerivative();
+    return eStatusOK;
+
+}
+
+Natron::StatusEnum
 Parametric_Knob::setNthControlPoint(int dimension,
                                     int nthCtl,
                                     double key,
@@ -1274,10 +1327,39 @@ Parametric_Knob::setNthControlPoint(int dimension,
     if ( dimension >= (int)_curves.size() ) {
         return eStatusFailed;
     }
-    _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
+    try {
+        _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
+    } catch (...) {
+        return eStatusFailed;
+    }
     Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
+}
+
+Natron::StatusEnum
+Parametric_Knob::setNthControlPoint(int dimension,
+                                      int nthCtl,
+                                      double key,
+                                      double value,
+                                      double leftDerivative,
+                                      double rightDerivative)
+{
+    ///Mt-safe as Curve is MT-safe
+    if ( dimension >= (int)_curves.size() ) {
+        return eStatusFailed;
+    }
+    int newIdx;
+    try {
+        _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl,&newIdx);
+    } catch (...) {
+        return eStatusFailed;
+    }
+    _curves[dimension]->setKeyFrameDerivatives(leftDerivative, rightDerivative, newIdx);
+    Q_EMIT curveChanged(dimension);
+    
+    return eStatusOK;
+
 }
 
 Natron::StatusEnum

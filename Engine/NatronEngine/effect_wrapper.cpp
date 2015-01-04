@@ -13,6 +13,7 @@
 // Extra includes
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
+#include <RotoWrapper.h>
 #include <list>
 
 
@@ -27,6 +28,56 @@ EffectWrapper::~EffectWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_EffectFunc_allowEvaluation(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // allowEvaluation()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->allowEvaluation();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
+static PyObject* Sbk_EffectFunc_blockEvaluation(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // blockEvaluation()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->blockEvaluation();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_EffectFunc_canSetInput(PyObject* self, PyObject* args)
 {
     ::Effect* cppSelf = 0;
@@ -148,6 +199,1114 @@ static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
     Sbk_EffectFunc_connectInput_TypeError:
         const char* overloads[] = {"int, NatronEngine.Effect", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.connectInput", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createBooleanParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createBooleanParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createBooleanParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createBooleanParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createBooleanParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createBooleanParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            BooleanParam * cppResult = cppSelf->createBooleanParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createBooleanParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createBooleanParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createButtonParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createButtonParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createButtonParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createButtonParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createButtonParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createButtonParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            ButtonParam * cppResult = cppSelf->createButtonParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createButtonParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createButtonParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createChild(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // createChild()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Effect * cppResult = cppSelf->createChild();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_EffectFunc_createChoiceParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createChoiceParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createChoiceParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createChoiceParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createChoiceParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createChoiceParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            ChoiceParam * cppResult = cppSelf->createChoiceParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createChoiceParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createChoiceParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createColorParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createColorParam", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createColorParam(std::string,std::string,bool)
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[2])))) {
+        overloadId = 0; // createColorParam(std::string,std::string,bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createColorParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        bool cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // createColorParam(std::string,std::string,bool)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            ColorParam * cppResult = cppSelf->createColorParam(cppArg0, cppArg1, cppArg2);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createColorParam_TypeError:
+        const char* overloads[] = {"std::string, std::string, bool", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createColorParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createDouble2DParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createDouble2DParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createDouble2DParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createDouble2DParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createDouble2DParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createDouble2DParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Double2DParam * cppResult = cppSelf->createDouble2DParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createDouble2DParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createDouble2DParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createDouble3DParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createDouble3DParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createDouble3DParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createDouble3DParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createDouble3DParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createDouble3DParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Double3DParam * cppResult = cppSelf->createDouble3DParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createDouble3DParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createDouble3DParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createDoubleParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createDoubleParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createDoubleParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createDoubleParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createDoubleParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createDoubleParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            DoubleParam * cppResult = cppSelf->createDoubleParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createDoubleParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createDoubleParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createFileParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createFileParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createFileParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createFileParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createFileParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createFileParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            FileParam * cppResult = cppSelf->createFileParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_FILEPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createFileParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createFileParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createGroupParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createGroupParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createGroupParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createGroupParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createGroupParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createGroupParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            GroupParam * cppResult = cppSelf->createGroupParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createGroupParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createGroupParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createInt2DParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createInt2DParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createInt2DParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createInt2DParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createInt2DParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createInt2DParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Int2DParam * cppResult = cppSelf->createInt2DParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createInt2DParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createInt2DParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createInt3DParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createInt3DParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createInt3DParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createInt3DParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createInt3DParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createInt3DParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Int3DParam * cppResult = cppSelf->createInt3DParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createInt3DParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createInt3DParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createIntParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createIntParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createIntParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createIntParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createIntParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createIntParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            IntParam * cppResult = cppSelf->createIntParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INTPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createIntParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createIntParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createOutputFileParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createOutputFileParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createOutputFileParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createOutputFileParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createOutputFileParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createOutputFileParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            OutputFileParam * cppResult = cppSelf->createOutputFileParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createOutputFileParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createOutputFileParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createPageParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createPageParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createPageParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createPageParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createPageParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createPageParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            PageParam * cppResult = cppSelf->createPageParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createPageParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createPageParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createParametricParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createParametricParam", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createParametricParam(std::string,std::string,int)
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+        overloadId = 0; // createParametricParam(std::string,std::string,int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createParametricParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        int cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // createParametricParam(std::string,std::string,int)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            ParametricParam * cppResult = cppSelf->createParametricParam(cppArg0, cppArg1, cppArg2);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createParametricParam_TypeError:
+        const char* overloads[] = {"std::string, std::string, int", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createParametricParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createPathParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createPathParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createPathParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createPathParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createPathParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createPathParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            PathParam * cppResult = cppSelf->createPathParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PATHPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createPathParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createPathParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_createStringParam(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createStringParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createStringParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createStringParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_createStringParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createStringParam(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            StringParam * cppResult = cppSelf->createStringParam(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_STRINGPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_createStringParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.createStringParam", overloads);
         return 0;
 }
 
@@ -521,6 +1680,68 @@ static PyObject* Sbk_EffectFunc_getPluginID(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_getRotoContext(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getRotoContext()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Roto * cppResult = const_cast<const ::Effect*>(cppSelf)->getRotoContext();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ROTO_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_EffectFunc_getUserPageParam(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getUserPageParam()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            PageParam * cppResult = const_cast<const ::Effect*>(cppSelf)->getUserPageParam();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_isNull(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -549,9 +1770,111 @@ static PyObject* Sbk_EffectFunc_isNull(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_refreshUserParamsGUI(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // refreshUserParamsGUI()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->refreshUserParamsGUI();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
+static PyObject* Sbk_EffectFunc_setPosition(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "setPosition", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: setPosition(double,double)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // setPosition(double,double)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_setPosition_TypeError;
+
+    // Call function/method
+    {
+        double cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        double cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // setPosition(double,double)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setPosition(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_setPosition_TypeError:
+        const char* overloads[] = {"float, float", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.setPosition", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_Effect_methods[] = {
+    {"allowEvaluation", (PyCFunction)Sbk_EffectFunc_allowEvaluation, METH_NOARGS},
+    {"blockEvaluation", (PyCFunction)Sbk_EffectFunc_blockEvaluation, METH_NOARGS},
     {"canSetInput", (PyCFunction)Sbk_EffectFunc_canSetInput, METH_VARARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
+    {"createBooleanParam", (PyCFunction)Sbk_EffectFunc_createBooleanParam, METH_VARARGS},
+    {"createButtonParam", (PyCFunction)Sbk_EffectFunc_createButtonParam, METH_VARARGS},
+    {"createChild", (PyCFunction)Sbk_EffectFunc_createChild, METH_NOARGS},
+    {"createChoiceParam", (PyCFunction)Sbk_EffectFunc_createChoiceParam, METH_VARARGS},
+    {"createColorParam", (PyCFunction)Sbk_EffectFunc_createColorParam, METH_VARARGS},
+    {"createDouble2DParam", (PyCFunction)Sbk_EffectFunc_createDouble2DParam, METH_VARARGS},
+    {"createDouble3DParam", (PyCFunction)Sbk_EffectFunc_createDouble3DParam, METH_VARARGS},
+    {"createDoubleParam", (PyCFunction)Sbk_EffectFunc_createDoubleParam, METH_VARARGS},
+    {"createFileParam", (PyCFunction)Sbk_EffectFunc_createFileParam, METH_VARARGS},
+    {"createGroupParam", (PyCFunction)Sbk_EffectFunc_createGroupParam, METH_VARARGS},
+    {"createInt2DParam", (PyCFunction)Sbk_EffectFunc_createInt2DParam, METH_VARARGS},
+    {"createInt3DParam", (PyCFunction)Sbk_EffectFunc_createInt3DParam, METH_VARARGS},
+    {"createIntParam", (PyCFunction)Sbk_EffectFunc_createIntParam, METH_VARARGS},
+    {"createOutputFileParam", (PyCFunction)Sbk_EffectFunc_createOutputFileParam, METH_VARARGS},
+    {"createPageParam", (PyCFunction)Sbk_EffectFunc_createPageParam, METH_VARARGS},
+    {"createParametricParam", (PyCFunction)Sbk_EffectFunc_createParametricParam, METH_VARARGS},
+    {"createPathParam", (PyCFunction)Sbk_EffectFunc_createPathParam, METH_VARARGS},
+    {"createStringParam", (PyCFunction)Sbk_EffectFunc_createStringParam, METH_VARARGS},
     {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
@@ -561,7 +1884,11 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getParam", (PyCFunction)Sbk_EffectFunc_getParam, METH_O},
     {"getParams", (PyCFunction)Sbk_EffectFunc_getParams, METH_NOARGS},
     {"getPluginID", (PyCFunction)Sbk_EffectFunc_getPluginID, METH_NOARGS},
+    {"getRotoContext", (PyCFunction)Sbk_EffectFunc_getRotoContext, METH_NOARGS},
+    {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"isNull", (PyCFunction)Sbk_EffectFunc_isNull, METH_NOARGS},
+    {"refreshUserParamsGUI", (PyCFunction)Sbk_EffectFunc_refreshUserParamsGUI, METH_NOARGS},
+    {"setPosition", (PyCFunction)Sbk_EffectFunc_setPosition, METH_VARARGS},
 
     {0} // Sentinel
 };

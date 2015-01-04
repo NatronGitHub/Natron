@@ -854,7 +854,6 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                                     std::string(),
                                     -1,
                                     -1,
-                                    -1,
                                     false, //< don't autoconnect
                                     INT_MIN,
                                     INT_MIN,
@@ -952,7 +951,6 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 ///Create a dot to make things nicer
                 CreateNodeArgs args(PLUGINID_NATRON_DOT,
                                     std::string(),
-                                    -1,
                                     -1,
                                     -1,
                                     false, //< don't autoconnect
@@ -1063,7 +1061,6 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         CreateNodeArgs args(PLUGINID_NATRON_DOT,
                             std::string(),
-                            -1,
                             -1,
                             -1,
                             false, //< don't autoconnect
@@ -1481,7 +1478,6 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     
                     CreateNodeArgs args(PLUGINID_OFX_MERGE,
                                         "",
-                                        -1,
                                         -1,
                                         -1,
                                         false,
@@ -2045,7 +2041,6 @@ NodeGraph::onNodeCreationDialogFinished()
                                                                "",
                                                                major,
                                                                -1,
-                                                               -1,
                                                                true,
                                                                posHint.x(),
                                                                posHint.y(),
@@ -2233,7 +2228,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                         getGui()->getApp()->createNode( CreateNodeArgs( plugin->getPluginID(),
                                                                        "",
                                                                        -1,-1,
-                                                                       -1,
                                                                        true,
                                                                        hint.x(),hint.y(),
                                                                        true,
@@ -2331,7 +2325,6 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
         _imp->_gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
-                                                          -1,
                                                           true,
                                                           INT_MIN,INT_MIN,
                                                           true,
@@ -3202,7 +3195,6 @@ NodeGraph::dropEvent(QDropEvent* e)
             
             CreateNodeArgs args(found->second.c_str(),
                                 "",
-                                -1,
                                 -1,
                                 -1,
                                 true,

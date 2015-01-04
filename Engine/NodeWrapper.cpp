@@ -13,8 +13,10 @@
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/RotoWrapper.h"
 Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
 : Group(boost::dynamic_pointer_cast<NodeCollection>(
                                                                boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this())))
@@ -197,4 +199,259 @@ int
 Effect::getCurrentTime() const
 {
     return _node->getLiveInstance()->getCurrentTime();
+}
+
+void
+Effect::setPosition(double x,double y)
+{
+    _node->setPosition(x, y);
+}
+
+void
+Effect::blockEvaluation()
+{
+    _node->getLiveInstance()->blockEvaluation();
+}
+
+void
+Effect::allowEvaluation()
+{
+    _node->getLiveInstance()->unblockEvaluation();
+}
+
+IntParam*
+Effect::createIntParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Int_Knob> knob = _node->getLiveInstance()->createIntKnob(name, label, 1);
+    if (knob) {
+        return new IntParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+Int2DParam*
+Effect::createInt2DParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Int_Knob> knob = _node->getLiveInstance()->createIntKnob(name, label, 2);
+    if (knob) {
+        return new Int2DParam(knob);
+    } else {
+        return 0;
+    }
+
+}
+
+Int3DParam*
+Effect::createInt3DParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Int_Knob> knob = _node->getLiveInstance()->createIntKnob(name, label, 3);
+    if (knob) {
+        return new Int3DParam(knob);
+    } else {
+        return 0;
+    }
+
+}
+
+DoubleParam*
+Effect::createDoubleParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Double_Knob> knob = _node->getLiveInstance()->createDoubleKnob(name, label, 1);
+    if (knob) {
+        return new DoubleParam(knob);
+    } else {
+        return 0;
+    }
+   
+}
+
+Double2DParam*
+Effect::createDouble2DParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Double_Knob> knob = _node->getLiveInstance()->createDoubleKnob(name, label, 2);
+    if (knob) {
+        return new Double2DParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+Double3DParam*
+Effect::createDouble3DParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Double_Knob> knob = _node->getLiveInstance()->createDoubleKnob(name, label, 3);
+    if (knob) {
+        return new Double3DParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+BooleanParam*
+Effect::createBooleanParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Bool_Knob> knob = _node->getLiveInstance()->createBoolKnob(name, label);
+    if (knob) {
+        return new BooleanParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+ChoiceParam*
+Effect::createChoiceParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Choice_Knob> knob = _node->getLiveInstance()->createChoiceKnob(name, label);
+    if (knob) {
+        return new ChoiceParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+ColorParam*
+Effect::createColorParam(const std::string& name, const std::string& label, bool useAlpha)
+{
+    boost::shared_ptr<Color_Knob> knob = _node->getLiveInstance()->createColorKnob(name, label, useAlpha ? 4 : 3);
+    if (knob) {
+        return new ColorParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+StringParam*
+Effect::createStringParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<String_Knob> knob = _node->getLiveInstance()->createStringKnob(name, label);
+    if (knob) {
+        return new StringParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+FileParam*
+Effect::createFileParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<File_Knob> knob = _node->getLiveInstance()->createFileKnob(name, label);
+    if (knob) {
+        return new FileParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+OutputFileParam*
+Effect::createOutputFileParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<OutputFile_Knob> knob = _node->getLiveInstance()->createOuptutFileKnob(name, label);
+    if (knob) {
+        return new OutputFileParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+PathParam*
+Effect::createPathParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Path_Knob> knob = _node->getLiveInstance()->createPathKnob(name, label);
+    if (knob) {
+        return new PathParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+ButtonParam*
+Effect::createButtonParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Button_Knob> knob = _node->getLiveInstance()->createButtonKnob(name, label);
+    if (knob) {
+        return new ButtonParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+GroupParam*
+Effect::createGroupParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Group_Knob> knob = _node->getLiveInstance()->createGroupKnob(name, label);
+    if (knob) {
+        return new GroupParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+PageParam*
+Effect::createPageParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<Page_Knob> knob = _node->getLiveInstance()->createPageKnob(name, label);
+    if (knob) {
+        return new PageParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+ParametricParam*
+Effect::createParametricParam(const std::string& name, const std::string& label, int nbCurves)
+{
+    boost::shared_ptr<Parametric_Knob> knob = _node->getLiveInstance()->createParametricKnob(name, label, nbCurves);
+    if (knob) {
+        return new ParametricParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+PageParam*
+Effect::getUserPageParam() const
+{
+    boost::shared_ptr<Page_Knob> page = _node->getLiveInstance()->getOrCreateUserPageKnob();
+    assert(page);
+    return new PageParam(page);
+}
+
+void
+Effect::refreshUserParamsGUI()
+{
+    _node->getLiveInstance()->refreshKnobs();
+}
+
+Effect*
+Effect::createChild()
+{
+    if (!_node->isMultiInstance()) {
+        return 0;
+    }
+    CreateNodeArgs args( _node->getPluginID().c_str(),
+                        _node->getName(),
+                        -1,-1,
+                        true,
+                        INT_MIN,INT_MIN,
+                        false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
+                        true,
+                        QString(),
+                        CreateNodeArgs::DefaultValuesList(),
+                        _node->getGroup());
+    NodePtr child = _node->getApp()->createNode(args);
+    if (child) {
+        return new Effect(child);
+    }
+    return 0;
+}
+
+Roto*
+Effect::getRotoContext() const
+{
+    boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+    if (roto) {
+        return new Roto(roto);
+    }
+    return 0;
 }

@@ -289,8 +289,114 @@
          -->
         <!--<modify-function signature="getNode(std::string)const" remove="all">
         </modify-function>-->
+        <modify-function signature="createIntParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createInt2DParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createInt3DParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createDoubleParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createDouble2DParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createDouble3DParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createBooleanParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createChoiceParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createColorParam(std::string,std::string,bool)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createStringParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createFileParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createOutputFileParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createPathParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createButtonParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createGroupParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createPageParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createParametricParam(std::string,std::string,int)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getUserPageParam()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createChild()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getRotoContext()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
     </object-type>
-    <object-type name="Param"/>
+    <object-type name="Param">
+        <modify-function signature="getParent()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="AnimatedParam">
         <modify-function signature="getKeyTime(int,int,double*)const">
             <modify-argument index="3">
@@ -305,6 +411,22 @@
                 %PYARG_0 = PyTuple_New(2);
                 PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[bool](%0));
                 PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](time));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getExpression(int,bool*)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                bool hasRetVar;
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,&amp;hasRetVar);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[%RETURN_TYPE](%0));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[bool](hasRetVar));
                 return %PYARG_0;
             </inject-code>
         </modify-function>
@@ -443,28 +565,38 @@
     <object-type name="ChoiceParam"/>
     <object-type name="ButtonParam"/>
     <object-type name="StringParamBase"/>
-    <object-type name="StringParam"/>
+    <object-type name="StringParam">
+        <enum-type name="TypeEnum"/>
+    </object-type>
     <object-type name="FileParam"/>
     <object-type name="OutputFileParam"/>
     <object-type name="PathParam"/>
     <object-type name="ParametricParam">
-        <modify-function signature="getNthControlPoint(int,int,double*,double*)const">
+        <modify-function signature="getNthControlPoint(int,int,double*,double*,double*,double*)const">
             <modify-argument index="3">
                 <remove-argument/>
             </modify-argument>
             <modify-argument index="4">
                 <remove-argument/>
             </modify-argument>
+            <modify-argument index="5">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="6">
+                <remove-argument/>
+            </modify-argument>
             <modify-argument index="return">
                 <replace-type modified-type="PyObject"/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                double key,value;
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;key,&amp;value);
-                %PYARG_0 = PyTuple_New(3);
+                double key,value,left,right;
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;key,&amp;value, &amp;left, &amp;right);
+                %PYARG_0 = PyTuple_New(5);
                 PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[Natron::StatusEnum](%0));
-                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](key));
-                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](value));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](key));
+                PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](value));
+                PyTuple_SET_ITEM(%PYARG_0, 3, %CONVERTTOPYTHON[double](left));
+                PyTuple_SET_ITEM(%PYARG_0, 4, %CONVERTTOPYTHON[double](right));
                 return %PYARG_0;
             </inject-code>
         </modify-function>
@@ -481,6 +613,99 @@
                 %PYARG_0 = %CONVERTTOPYTHON[ColorTuple](t);
                 return %PYARG_0;
             </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="GroupParam">
+    </object-type>
+    <object-type name="PageParam">
+    </object-type>
+    
+    <object-type name="ItemBase">
+        <modify-function signature="getParentLayer()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="Layer">
+        <modify-function signature="getChildren()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;ItemBase*&gt; items = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) items.size());
+                int idx = 0;
+                for (std::list&lt;ItemBase*&gt;::iterator it = items.begin(); it!=items.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[ItemBase*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="BezierCurve">
+        <enum-type name="CairoOperatorEnum"/>
+        <modify-function signature="getActivatedParam()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getOpacityParam()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getFeatherDistanceParam()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getFeatherFallOffParam()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getColorParam()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getCompositingOperatorParam()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="Roto">
+        <modify-function signature="getBaseLayer()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getItemByName(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createLayer()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createBezier(double,double)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createEllipse(double,double,double,bool)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createRectangle(double,double,double)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
         </modify-function>
     </object-type>
     

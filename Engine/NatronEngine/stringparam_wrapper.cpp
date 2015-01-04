@@ -25,7 +25,52 @@ StringParamWrapper::~StringParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_StringParamFunc_setType(PyObject* self, PyObject* pyArg)
+{
+    ::StringParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::StringParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setType(StringParam::TypeEnum)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // setType(StringParam::TypeEnum)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_StringParamFunc_setType_TypeError;
+
+    // Call function/method
+    {
+        ::StringParam::TypeEnum cppArg0 = ((::StringParam::TypeEnum)0);
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setType(StringParam::TypeEnum)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setType(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_StringParamFunc_setType_TypeError:
+        const char* overloads[] = {"NatronEngine.StringParam.TypeEnum", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParam.setType", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_StringParam_methods[] = {
+    {"setType", (PyCFunction)Sbk_StringParamFunc_setType, METH_O},
 
     {0} // Sentinel
 };
@@ -103,6 +148,22 @@ static void* Sbk_StringParam_typeDiscovery(void* cptr, SbkObjectType* instanceTy
 
 // Type conversion functions.
 
+// Python to C++ enum conversion.
+static void StringParam_TypeEnum_PythonToCpp_StringParam_TypeEnum(PyObject* pyIn, void* cppOut) {
+    *((::StringParam::TypeEnum*)cppOut) = (::StringParam::TypeEnum) Shiboken::Enum::getValue(pyIn);
+
+}
+static PythonToCppFunc is_StringParam_TypeEnum_PythonToCpp_StringParam_TypeEnum_Convertible(PyObject* pyIn) {
+    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX]))
+        return StringParam_TypeEnum_PythonToCpp_StringParam_TypeEnum;
+    return 0;
+}
+static PyObject* StringParam_TypeEnum_CppToPython_StringParam_TypeEnum(const void* cppIn) {
+    int castCppIn = *((::StringParam::TypeEnum*)cppIn);
+    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX], castCppIn);
+
+}
+
 // Python to C++ pointer conversion - returns the C++ object of the Python wrapper (keeps object identity).
 static void StringParam_PythonToCpp_StringParam_PTR(PyObject* pyIn, void* cppOut) {
     Shiboken::Conversions::pythonToCppPointer(&Sbk_StringParam_Type, pyIn, cppOut);
@@ -149,6 +210,45 @@ void init_StringParam(PyObject* module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_StringParam_Type, &Sbk_StringParam_typeDiscovery);
+
+    // Initialization of enums.
+
+    // Initialization of enum 'TypeEnum'.
+    SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_StringParam_Type,
+        "TypeEnum",
+        "NatronEngine.StringParam.TypeEnum",
+        "StringParam::TypeEnum");
+    if (!SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX])
+        return ;
+
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX],
+        &Sbk_StringParam_Type, "eStringTypeLabel", (long) StringParam::eStringTypeLabel))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX],
+        &Sbk_StringParam_Type, "eStringTypeMultiLine", (long) StringParam::eStringTypeMultiLine))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX],
+        &Sbk_StringParam_Type, "eStringTypeRichTextMultiLine", (long) StringParam::eStringTypeRichTextMultiLine))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX],
+        &Sbk_StringParam_Type, "eStringTypeCustom", (long) StringParam::eStringTypeCustom))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX],
+        &Sbk_StringParam_Type, "eStringTypeDefault", (long) StringParam::eStringTypeDefault))
+        return ;
+    // Register converter for enum 'StringParam::TypeEnum'.
+    {
+        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX],
+            StringParam_TypeEnum_CppToPython_StringParam_TypeEnum);
+        Shiboken::Conversions::addPythonToCppValueConversion(converter,
+            StringParam_TypeEnum_PythonToCpp_StringParam_TypeEnum,
+            is_StringParam_TypeEnum_PythonToCpp_StringParam_TypeEnum_Convertible);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX], converter);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX], converter);
+        Shiboken::Conversions::registerConverterName(converter, "StringParam::TypeEnum");
+        Shiboken::Conversions::registerConverterName(converter, "TypeEnum");
+    }
+    // End of 'TypeEnum' enum.
 
 
 }

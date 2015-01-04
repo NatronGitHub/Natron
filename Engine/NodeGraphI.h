@@ -18,6 +18,7 @@ public:
     NodeGraphI() {}
     
     virtual ~NodeGraphI() {}
+    
 };
 
 #endif // NODEGRAPHI_H

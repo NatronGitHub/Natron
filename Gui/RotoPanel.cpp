@@ -243,6 +243,8 @@ struct RotoPanelPrivate
     void setItemKey(const boost::shared_ptr<RotoItem>& item, int time);
 
     void removeItemKey(const boost::shared_ptr<RotoItem>& item, int time);
+    
+    void removeItemAnimation(const boost::shared_ptr<RotoItem>& item);
 
     void insertItemInternal(int reason, int time, const boost::shared_ptr<RotoItem>& item);
 };
@@ -473,6 +475,7 @@ RotoPanel::onSelectionChangedInternal()
         if (isBezier) {
             QObject::disconnect( isBezier.get(), SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
             QObject::disconnect( isBezier.get(), SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBeizerAnimationRemoved() ) );
             QObject::disconnect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
             QObject::disconnect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
         }
@@ -489,6 +492,7 @@ RotoPanel::onSelectionChangedInternal()
         if (isBezier) {
             QObject::connect( isBezier.get(), SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
             QObject::connect( isBezier.get(), SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+            QObject::connect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBeizerAnimationRemoved() ) );
             QObject::connect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
             QObject::connect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
             ++selectedBeziersCount;
@@ -563,6 +567,21 @@ RotoPanel::onSelectedBezierKeyframeRemoved(int time)
     if (isBezier) {
         _imp->removeItemKey(isBezier, time);
     }
+}
+
+void
+RotoPanel::onSelectedBeizerAnimationRemoved()
+{
+    Bezier* b = qobject_cast<Bezier*>( sender() );
+    boost::shared_ptr<Bezier> isBezier ;
+    if (b) {
+        isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
+    }
+    _imp->updateSplinesInfoGUI(getContext()->getTimelineCurrentTime());
+    if (isBezier) {
+        _imp->removeItemAnimation(isBezier);
+    }
+
 }
 
 void
@@ -652,7 +671,7 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
         assert(w);
         ComboBox* cb = dynamic_cast<ComboBox*>(w);
         assert(cb);
-        cb->setCurrentIndex_no_emit( drawable->getCompositingOperator(time) );
+        cb->setCurrentIndex_no_emit( drawable->getCompositingOperator() );
     }
 }
 
@@ -827,7 +846,6 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     }
 
 
-    int time = _imp->context->getTimelineCurrentTime();
     ComboBox* cb = new ComboBox;
     QObject::connect( cb,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCurrentItemCompOperatorChanged(int) ) );
     std::vector<std::string> compositingOperators,tooltips;
@@ -838,7 +856,7 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     // set the tooltip
     const std::string & tt = item->getCompositingOperatorToolTip();
     cb->setToolTip( Qt::convertFromPlainText(tt.c_str(), Qt::WhiteSpaceNormal) );
-    cb->setCurrentIndex_no_emit( item->getCompositingOperator(time) );
+    cb->setCurrentIndex_no_emit( item->getCompositingOperator() );
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
 }
 
@@ -1015,12 +1033,11 @@ RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
     }
 
     if (item) {
-        int time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             ComboBox* cb = dynamic_cast<ComboBox*>( _imp->tree->itemWidget(it->treeItem, COL_OPERATOR) );
             if (cb) {
-                int compIndex = item->getCompositingOperator(time);
+                int compIndex = item->getCompositingOperator();
                 cb->setCurrentIndex_no_emit(compIndex);
             }
         }
@@ -1166,12 +1183,9 @@ RotoPanel::onItemChanged(QTreeWidgetItem* item,
     TreeItems::iterator it = _imp->findItem(item);
     if ( it != _imp->items.end() ) {
         std::string newName = item->text(column).toStdString();
-        boost::shared_ptr<RotoItem> existingItem = _imp->context->getItemByName(newName);
-        if ( existingItem && (existingItem != it->rotoItem) ) {
+        if (!it->rotoItem->setName(newName)) {
             Natron::warningDialog( "", tr("An item with the name ").toStdString() + newName + tr(" already exists. Please pick something else.").toStdString() );
             item->setText( COL_NAME, _imp->editedItemName.c_str() );
-        } else {
-            it->rotoItem->setName(newName);
         }
     }
 }
@@ -1341,6 +1355,7 @@ RotoPanel::onItemSelectionChanged()
                                 SIGNAL( keyframeRemoved(int) ),
                                 this,
                                 SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBeizerAnimationRemoved() ) );
         }
     }
     _imp->context->deselect(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
@@ -1855,6 +1870,21 @@ RotoPanelPrivate::removeItemKey(const boost::shared_ptr<RotoItem>& item,
             it->second.erase(it2);
             node.lock()->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
         }
+    }
+}
+
+void
+RotoPanelPrivate::removeItemAnimation(const boost::shared_ptr<RotoItem>& item)
+{
+    ItemKeys::iterator it = keyframes.find(item);
+    
+    if ( it != keyframes.end() ) {
+        std::list<SequenceTime> toRemove;
+        for (std::set<int>::iterator it2 = it->second.begin() ;it2 != it->second.end(); ++it2) {
+            toRemove.push_back(*it2);
+        }
+        it->second.clear();
+        node.lock()->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(toRemove, true);
     }
 }
 

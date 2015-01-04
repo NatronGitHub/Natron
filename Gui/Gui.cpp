@@ -1175,7 +1175,7 @@ void Gui::onPropertiesScrolled()
 }
 
 void
-Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group)
+Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group,bool requestedByLoad)
 {
     
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(group->getLiveInstance()->shared_from_this());
@@ -1199,10 +1199,12 @@ Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group)
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this,collection,scene,this);
     nodeGraph->setObjectName(group->getName_mt_safe().c_str());
-    registerTab(nodeGraph);
     _imp->_groups.push_back(nodeGraph);
-
-    where->appendTab(nodeGraph);
+    if (requestedByLoad) {
+        where->appendTab(nodeGraph);
+    } else {
+        nodeGraph->setVisible(false);
+    }
 }
 
 void
@@ -2809,7 +2811,6 @@ Gui::createNewViewer()
     (void)_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                          "",
                                                          -1,-1,
-                                                         -1,
                                                          true,
                                                          INT_MIN,INT_MIN,
                                                          true,
@@ -2853,7 +2854,6 @@ Gui::createReader()
             CreateNodeArgs args(found->second.c_str(),
                                 "",
                                 -1,-1,
-                                -1,
                                 true,
                                 INT_MIN,INT_MIN,
                                 true,
@@ -2904,7 +2904,6 @@ Gui::createWriter()
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
             CreateNodeArgs args(found->second.c_str(),
                                 "",
-                                -1,
                                 -1,
                                 -1,
                                 true,

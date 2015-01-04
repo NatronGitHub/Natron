@@ -412,7 +412,6 @@ TabWidget::addNewViewer()
     _gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                 "",
                                                 -1,-1,
-                                                -1,
                                                 true,
                                                 INT_MIN,INT_MIN,
                                                 true,

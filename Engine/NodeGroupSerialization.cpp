@@ -84,7 +84,6 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                                                                                         "",
                                                                                                         (*it)->getPluginMajorVersion(),
                                                                                                         (*it)->getPluginMinorVersion(),
-                                                                                                        -1,
                                                                                                         true,
                                                                                                         INT_MIN,
                                                                                                         INT_MIN,

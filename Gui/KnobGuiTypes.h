@@ -805,6 +805,8 @@ public Q_SLOTS:
 
     void resetSelectedCurves();
 
+    void onColorChanged(int dimension);
+
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;

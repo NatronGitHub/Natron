@@ -12,6 +12,8 @@
 
 // Extra includes
 #include <ParameterWrapper.h>
+#include <list>
+#include <utility>
 
 
 // Native ---------------------------------------------------------
@@ -290,6 +292,53 @@ static PyObject* Sbk_ChoiceParamFunc_getDefaultValue(PyObject* self, PyObject* a
     Sbk_ChoiceParamFunc_getDefaultValue_TypeError:
         const char* overloads[] = {"int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.getDefaultValue", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ChoiceParamFunc_getOption(PyObject* self, PyObject* pyArg)
+{
+    ::ChoiceParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getOption(int)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // getOption(int)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ChoiceParamFunc_getOption_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getOption(int)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::ChoiceParam*>(cppSelf)->getOption(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ChoiceParamFunc_getOption_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.getOption", overloads);
         return 0;
 }
 
@@ -671,6 +720,50 @@ static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* a
         return 0;
 }
 
+static PyObject* Sbk_ChoiceParamFunc_setOptions(PyObject* self, PyObject* pyArg)
+{
+    ::ChoiceParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setOptions(std::list<std::pair<std::string,std::string> >)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_STD_STRING_STD_STRING_IDX], (pyArg)))) {
+        overloadId = 0; // setOptions(std::list<std::pair<std::string,std::string> >)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ChoiceParamFunc_setOptions_TypeError;
+
+    // Call function/method
+    {
+        ::std::list<std::pair<std::string, std::string > > cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setOptions(std::list<std::pair<std::string,std::string> >)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setOptions(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ChoiceParamFunc_setOptions_TypeError:
+        const char* overloads[] = {"list", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setOptions", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ChoiceParamFunc_setValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::ChoiceParam* cppSelf = 0;
@@ -834,11 +927,13 @@ static PyMethodDef Sbk_ChoiceParam_methods[] = {
     {"addOption", (PyCFunction)Sbk_ChoiceParamFunc_addOption, METH_VARARGS},
     {"get", (PyCFunction)Sbk_ChoiceParamFunc_get, METH_VARARGS},
     {"getDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_getDefaultValue, METH_VARARGS|METH_KEYWORDS},
+    {"getOption", (PyCFunction)Sbk_ChoiceParamFunc_getOption, METH_O},
     {"getValue", (PyCFunction)Sbk_ChoiceParamFunc_getValue, METH_VARARGS|METH_KEYWORDS},
     {"getValueAtTime", (PyCFunction)Sbk_ChoiceParamFunc_getValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"restoreDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_restoreDefaultValue, METH_VARARGS|METH_KEYWORDS},
     {"set", (PyCFunction)Sbk_ChoiceParamFunc_set, METH_VARARGS},
     {"setDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_setDefaultValue, METH_VARARGS|METH_KEYWORDS},
+    {"setOptions", (PyCFunction)Sbk_ChoiceParamFunc_setOptions, METH_O},
     {"setValue", (PyCFunction)Sbk_ChoiceParamFunc_setValue, METH_VARARGS|METH_KEYWORDS},
     {"setValueAtTime", (PyCFunction)Sbk_ChoiceParamFunc_setValueAtTime, METH_VARARGS|METH_KEYWORDS},
 

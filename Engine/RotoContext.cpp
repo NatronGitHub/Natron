@@ -301,6 +301,17 @@ BezierCP::setRightBezierPointAtTime(int time,
 }
 
 void
+BezierCP::removeAnimation()
+{
+    _imp->curveX->clearKeyFrames();
+    _imp->curveY->clearKeyFrames();
+    _imp->curveLeftBezierX->clearKeyFrames();
+    _imp->curveRightBezierX->clearKeyFrames();
+    _imp->curveLeftBezierY->clearKeyFrames();
+    _imp->curveRightBezierY->clearKeyFrames();
+}
+
+void
 BezierCP::removeKeyframe(int time)
 {
     ///only called on the main-thread
@@ -963,11 +974,15 @@ RotoItem::getContext() const
     return _imp->context.lock();
 }
 
-void
+bool
 RotoItem::setName(const std::string & name)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
+    boost::shared_ptr<RotoItem> existingItem = getContext()->getItemByName(name);
+    if ( existingItem && (existingItem.get() != this) ) {
+        return false;
+    }
     {
         QMutexLocker l(&itemMutex);
         _imp->name = name;
@@ -976,6 +991,7 @@ RotoItem::setName(const std::string & name)
     if (c) {
         c->onItemNameChanged(shared_from_this());
     }
+    return true;
 }
 
 std::string
@@ -1137,12 +1153,19 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
 bool
 RotoDrawableItem::isActivated(int time) const
 {
-    bool deactivated = isDeactivatedRecursive();
-    if (deactivated) {
-        return false;
-    } else {
-        return _imp->activated->getValueAtTime(time);
-    }
+//    bool deactivated = isDeactivatedRecursive();
+//    if (deactivated) {
+//        return false;
+//    } else {
+    return _imp->activated->getValueAtTime(time);
+//    }
+}
+
+void
+RotoDrawableItem::setActivated(bool a, int time)
+{
+    _imp->activated->setValueAtTime(time, a, 0);
+    getContext()->onItemKnobChanged();
 }
 
 double
@@ -1152,11 +1175,32 @@ RotoDrawableItem::getOpacity(int time) const
     return _imp->opacity->getValueAtTime(time);
 }
 
+void
+RotoDrawableItem::setOpacity(double o,int time)
+{
+    _imp->opacity->setValueAtTime(time, o, 0);
+    getContext()->onItemKnobChanged();
+}
+
 double
 RotoDrawableItem::getFeatherDistance(int time) const
 {
     ///MT-safe thanks to Knob
     return _imp->feather->getValueAtTime(time);
+}
+
+void
+RotoDrawableItem::setFeatherDistance(double d,int time)
+{
+    _imp->feather->setValueAtTime(time, d, 0);
+    getContext()->onItemKnobChanged();
+}
+
+void
+RotoDrawableItem::setFeatherFallOff(double f,int time)
+{
+    _imp->featherFallOff->setValueAtTime(time, f, 0);
+    getContext()->onItemKnobChanged();
 }
 
 double
@@ -1185,10 +1229,25 @@ RotoDrawableItem::getColor(int time,
     color[2] = _imp->color->getValueAtTime(time,2);
 }
 
-int
-RotoDrawableItem::getCompositingOperator(int time) const
+void
+RotoDrawableItem::setColor(int time,double r,double g,double b)
 {
-    return _imp->compOperator->getValueAtTime(time);
+    _imp->color->setValueAtTime(time, r, 0);
+    _imp->color->setValueAtTime(time, g, 1);
+    _imp->color->setValueAtTime(time, b, 2);
+    getContext()->onItemKnobChanged();
+}
+
+int
+RotoDrawableItem::getCompositingOperator() const
+{
+    return _imp->compOperator->getValue();
+}
+
+void
+RotoDrawableItem::setCompositingOperator(int op)
+{
+    _imp->compOperator->setValue( op, 0);
 }
 
 std::string
@@ -1375,6 +1434,11 @@ RotoLayer::addItem(const boost::shared_ptr<RotoItem> & item)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+    boost::shared_ptr<RotoLayer> parentLayer = item->getParentLayer();
+    if (parentLayer) {
+        parentLayer->removeItem(item);
+    }
+    item->setParentLayer(boost::dynamic_pointer_cast<RotoLayer>(shared_from_this()));
     QMutexLocker l(&itemMutex);
     _imp->items.push_back(item);
 }
@@ -1386,6 +1450,13 @@ RotoLayer::insertItem(const boost::shared_ptr<RotoItem> & item,
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(index >= 0);
+    
+    boost::shared_ptr<RotoLayer> parentLayer = item->getParentLayer();
+    if (parentLayer) {
+        parentLayer->removeItem(item);
+    }
+    
+    item->setParentLayer(boost::dynamic_pointer_cast<RotoLayer>(shared_from_this()));
     QMutexLocker l(&itemMutex);
     RotoItems::iterator it = _imp->items.begin();
     if ( index >= (int)_imp->items.size() ) {
@@ -1405,6 +1476,7 @@ RotoLayer::removeItem(const boost::shared_ptr<RotoItem>& item)
     QMutexLocker l(&itemMutex);
     for (RotoItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if (*it == item) {
+            item->setParentLayer(boost::shared_ptr<RotoLayer>());
             _imp->items.erase(it);
             break;
         }
@@ -1960,8 +2032,13 @@ boost::shared_ptr<BezierCP>
 Bezier::addControlPoint(double x,
                         double y)
 {
+    
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+    
+    if (isCurveFinished()) {
+        return boost::shared_ptr<BezierCP>();
+    }
     boost::shared_ptr<BezierCP> p;
     boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>(shared_from_this());
     assert(this_shared);
@@ -2929,6 +3006,26 @@ Bezier::setKeyframe(int time)
         }
     }
     Q_EMIT keyframeSet(time);
+}
+
+void
+Bezier::removeAnimation()
+{
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    {
+        QMutexLocker l(&itemMutex);
+       
+        assert( _imp->featherPoints.size() == _imp->points.size() );
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+            (*it)->removeAnimation();
+            (*fp)->removeAnimation();
+        }
+    }
+    Q_EMIT animationRemoved();
 }
 
 void
@@ -3945,6 +4042,62 @@ RotoContext::makeBezier(double x,
     return curve;
 } // makeBezier
 
+boost::shared_ptr<Bezier>
+RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter)
+{
+    double half = diameter / 2.;
+    boost::shared_ptr<Bezier> curve = makeBezier(x , fromCenter ? y - half : y ,kRotoEllipseBaseName);
+    if (fromCenter) {
+        curve->addControlPoint(x + half,y);
+        curve->addControlPoint(x,y + half);
+        curve->addControlPoint(x - half,y);
+    } else {
+        curve->addControlPoint(x + diameter,y - diameter);
+        curve->addControlPoint(x,y - diameter);
+        curve->addControlPoint(x - diameter,y - diameter);
+    }
+    
+    boost::shared_ptr<BezierCP> top = curve->getControlPointAtIndex(0);
+    boost::shared_ptr<BezierCP> right = curve->getControlPointAtIndex(1);
+    boost::shared_ptr<BezierCP> bottom = curve->getControlPointAtIndex(2);
+    boost::shared_ptr<BezierCP> left = curve->getControlPointAtIndex(3);
+
+    int time = getTimelineCurrentTime();
+    double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
+    top->getPositionAtTime(time, &topX, &topY);
+    right->getPositionAtTime(time, &rightX, &rightY);
+    bottom->getPositionAtTime(time, &btmX, &btmY);
+    left->getPositionAtTime(time, &leftX, &leftY);
+    
+    curve->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
+    curve->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
+    
+    curve->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
+    curve->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
+    
+    curve->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
+    curve->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
+    
+    curve->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
+    curve->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
+    curve->setCurveFinished(true);
+    
+    return curve;
+}
+
+boost::shared_ptr<Bezier>
+RotoContext::makeSquare(double x,double y,double initialSize)
+{
+    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName);
+    curve->addControlPoint(x + initialSize,y);
+    curve->addControlPoint(x + initialSize,y - initialSize);
+    curve->addControlPoint(x,y - initialSize);
+    curve->setCurveFinished(true);
+    
+    return curve;
+
+}
+
 void
 RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
                                    SelectionReason reason)
@@ -4886,6 +5039,13 @@ RotoContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& item)
     Q_EMIT itemNameChanged(item);
 }
 
+void
+RotoContext::onItemKnobChanged()
+{
+    emitRefreshViewerOverlays();
+    evaluateChange();
+}
+
 std::string
 RotoContext::getRotoNodeName() const
 {
@@ -5152,7 +5312,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 #else
         const bool inverted = false;
 #endif
-        int operatorIndex = (*it2)->getCompositingOperator(time);
+        int operatorIndex = (*it2)->getCompositingOperator();
         double shapeColor[3];
         (*it2)->getColor(time, shapeColor);
 

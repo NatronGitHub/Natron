@@ -29,6 +29,7 @@
 #include <GlobalFunctionsWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <AppInstanceWrapper.h>
+#include <RotoWrapper.h>
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
 

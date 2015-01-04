@@ -1325,23 +1325,6 @@ MakeEllipseUndoCommand::redo()
 
                 //left only moves by y
                 _curve->movePointByIndex(3,_time, -_dx, 0);
-                double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-                top->getPositionAtTime(_time, &topX, &topY);
-                right->getPositionAtTime(_time, &rightX, &rightY);
-                bottom->getPositionAtTime(_time, &btmX, &btmY);
-                left->getPositionAtTime(_time, &leftX, &leftY);
-
-                _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
-                _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);
-
-                _curve->setLeftBezierPoint(1, _time,  rightX, (rightY + topY) / 2.);
-                _curve->setRightBezierPoint(1, _time, rightX, (rightY + btmY) / 2.);
-
-                _curve->setLeftBezierPoint(2, _time,  (rightX + btmX) / 2., btmY);
-                _curve->setRightBezierPoint(2, _time, (leftX + btmX) / 2., btmY);
-
-                _curve->setLeftBezierPoint(3, _time,   leftX, (btmY + leftY) / 2.);
-                _curve->setRightBezierPoint(3, _time, leftX, (topY + leftY) / 2.);
             } else {
                 //top only moves by x
                 _curve->movePointByIndex(0,_time, _dx / 2., 0);
@@ -1355,24 +1338,25 @@ MakeEllipseUndoCommand::redo()
                 //left only moves by y
                 _curve->movePointByIndex(3,_time, 0, _dy / 2.);
 
-                double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-                top->getPositionAtTime(_time, &topX, &topY);
-                right->getPositionAtTime(_time, &rightX, &rightY);
-                bottom->getPositionAtTime(_time, &btmX, &btmY);
-                left->getPositionAtTime(_time, &leftX, &leftY);
-
-                _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
-                _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);
-
-                _curve->setLeftBezierPoint(1, _time,  rightX, (rightY + topY) / 2.);
-                _curve->setRightBezierPoint(1, _time, rightX, (rightY + btmY) / 2.);
-
-                _curve->setLeftBezierPoint(2, _time,  (rightX + btmX) / 2., btmY);
-                _curve->setRightBezierPoint(2, _time, (leftX + btmX) / 2., btmY);
-
-                _curve->setLeftBezierPoint(3, _time,   leftX, (btmY + leftY) / 2.);
-                _curve->setRightBezierPoint(3, _time, leftX, (topY + leftY) / 2.);
             }
+            
+            double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
+            top->getPositionAtTime(_time, &topX, &topY);
+            right->getPositionAtTime(_time, &rightX, &rightY);
+            bottom->getPositionAtTime(_time, &btmX, &btmY);
+            left->getPositionAtTime(_time, &leftX, &leftY);
+            
+            _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
+            _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);
+            
+            _curve->setLeftBezierPoint(1, _time,  rightX, (rightY + topY) / 2.);
+            _curve->setRightBezierPoint(1, _time, rightX, (rightY + btmY) / 2.);
+            
+            _curve->setLeftBezierPoint(2, _time,  (rightX + btmX) / 2., btmY);
+            _curve->setRightBezierPoint(2, _time, (leftX + btmX) / 2., btmY);
+            
+            _curve->setLeftBezierPoint(3, _time,   leftX, (btmY + leftY) / 2.);
+            _curve->setRightBezierPoint(3, _time, leftX, (topY + leftY) / 2.);
         }
         boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName( _curve->getParentLayer()->getName_mt_safe() );
         if (parentItem) {

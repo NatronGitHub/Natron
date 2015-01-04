@@ -99,6 +99,7 @@ SOURCES += \
     ProjectSerialization.cpp \
     RotoContext.cpp \
     RotoSerialization.cpp  \
+    RotoWrapper.cpp \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
@@ -134,7 +135,13 @@ SOURCES += \
     NatronEngine/pathparam_wrapper.cpp \
     NatronEngine/animatedparam_wrapper.cpp \
     NatronEngine/parametricparam_wrapper.cpp \
-    NatronEngine/group_wrapper.cpp
+    NatronEngine/group_wrapper.cpp \
+    NatronEngine/beziercurve_wrapper.cpp \
+    NatronEngine/itembase_wrapper.cpp \
+    NatronEngine/layer_wrapper.cpp \
+    NatronEngine/roto_wrapper.cpp \
+    NatronEngine/groupparam_wrapper.cpp \
+    NatronEngine/pageparam_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -214,6 +221,7 @@ HEADERS += \
     RotoContext.h \
     RotoContextPrivate.h \
     RotoSerialization.h \
+    RotoWrapper.h \
     Settings.h \
     Singleton.h \
     StandardPaths.h \
@@ -285,7 +293,13 @@ HEADERS += \
     NatronEngine/pathparam_wrapper.h \
     NatronEngine/animatedparam_wrapper.h \
     NatronEngine/parametricparam_wrapper.h \
-    NatronEngine/group_wrapper.h
+    NatronEngine/group_wrapper.h \
+    NatronEngine/beziercurve_wrapper.h \
+    NatronEngine/itembase_wrapper.h \
+    NatronEngine/layer_wrapper.h \
+    NatronEngine/roto_wrapper.h \
+    NatronEngine/groupparam_wrapper.h \
+    NatronEngine/pageparam_wrapper.h
 
 
 OTHER_FILES += \

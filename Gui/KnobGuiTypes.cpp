@@ -3659,6 +3659,7 @@ Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
 , _curves()
 {
     _knob = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+    QObject::connect(_knob.get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)));
 }
 
 Parametric_KnobGui::~Parametric_KnobGui()
@@ -3733,6 +3734,20 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     _curveWidget->centerOn(visibleCurves);
     QObject::connect( _tree, SIGNAL( itemSelectionChanged() ),this,SLOT( onItemsSelectionChanged() ) );
 } // createWidget
+
+void
+Parametric_KnobGui::onColorChanged(int dimension)
+{
+    double r, g, b;
+    _knob->getCurveColor(dimension, &r, &g, &b);
+    CurveGuis::iterator found = _curves.find(dimension);
+    if (found != _curves.end()) {
+        QColor c;
+        c.setRgbF(r, g, b);
+        found->second.curve->setColor(c);
+    }
+    _curveWidget->update();
+}
 
 void
 Parametric_KnobGui::_hide()

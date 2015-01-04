@@ -89,9 +89,6 @@ CLANG_DIAG_ON(unused-parameter)
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
-#define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
-#define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
-
 
 #define NATRON_VERTICAL_BAR_WIDTH 4
 using std::make_pair;
@@ -851,31 +848,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
         //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
         boost::shared_ptr<KnobI> parentKnob = knobs[i]->getParentKnob();
         Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(parentKnob.get());
-//        if (knobs[i]->isDynamicallyCreated() && isParentGroup) {
-//            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(knobs[i]->getParentKnob(), false, lastRowWidget));
-//            assert(parentGui);
-//            const std::list<KnobGui*>& children = parentGui->getChildren();
-//            if (!children.empty()) {
-//                if (children.back()->getKnob()->isNewLineTurnedOff()) {
-//                    makeNewLine = false;
-//                    lastRowWidget = children.back()->getFieldContainer();
-//                    
-//                    std::list<KnobGui*>::const_reverse_iterator it = children.rbegin();
-//                    ++it;
-//                    for (; it != children.rend(); ++it) {
-//                        if ((*it)->getKnob()->isNewLineTurnedOff()) {
-//                            if (!dynamic_cast<Page_Knob*>((*it)->getKnob().get()) &&
-//                                !dynamic_cast<Group_Knob*>((*it)->getKnob().get())) {
-//                                knobsOnSameLine.push_back((*it)->getKnob());
-//                            }
-//                        } else {
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-        
+
         
         if (!isPage && !isGroup) {
             if ( (i > 0) && knobs[i - 1]->isNewLineTurnedOff() ) {
@@ -1058,29 +1031,44 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             if (isTopLevelParentAPage) {
                 page = addPage(isTopLevelParentAPage, isTopLevelParentAPage->getDescription().c_str() );
             } else {
-                ///the top level parent is not a page, i.e the plug-in didn't specify any page
-                ///for this param, put it in the first page that is not the default page.
-                ///If there is still no page, put it in the default tab.
-                for (PageMap::iterator it = _pages.begin(); it != _pages.end(); ++it) {
-                    if (it->first != _defaultPageName) {
-                        page = it;
-                        break;
-                    }
-                }
-                if ( page == _pages.end() ) {
-                    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
-                    ///find in all knobs a page param to set this param into
-                    for (U32 i = 0; i < knobs.size(); ++i) {
-                        Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-                        if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
-                            page = addPage(p,  p->getDescription().c_str() );
+                
+                ///the parent cannot be a group and not have a page at this point since we ensured the parent group
+                ///is created so far.
+                assert(!dynamic_cast<Group_Knob*>(parentKnobTmp));
+                
+                ///the top level parent is not a page
+                if (knob->isUserKnob()) {
+                    ///Use the user page as default for user knobs
+                    boost::shared_ptr<Page_Knob> userPage = _holder->getOrCreateUserPageKnob();
+                    page = addPage(userPage.get(), userPage->getDescription().c_str());
+                    userPage->addKnob(knob);
+                
+                } else {
+                    
+                    ///the plug-in didn't specify any page
+                    ///for this param, put it in the first page that is not the default page.
+                    ///If there is still no page, put it in the default tab.
+                    for (PageMap::iterator it = _pages.begin(); it != _pages.end(); ++it) {
+                        if (it->first != _defaultPageName) {
+                            page = it;
                             break;
                         }
                     }
-
-                    ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
                     if ( page == _pages.end() ) {
-                        page = addPage(NULL, _defaultPageName);
+                        const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
+                        ///find in all knobs a page param to set this param into
+                        for (U32 i = 0; i < knobs.size(); ++i) {
+                            Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
+                            if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
+                                page = addPage(p,  p->getDescription().c_str() );
+                                break;
+                            }
+                        }
+                        
+                        ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
+                        if ( page == _pages.end() ) {
+                            page = addPage(NULL, _defaultPageName);
+                        }
                     }
                 }
             }
@@ -2388,18 +2376,7 @@ ManageUserParamsDialogPrivate::initializeKnobs(const std::vector<boost::shared_p
 boost::shared_ptr<Page_Knob>
 DockablePanel::getUserPageKnob() const
 {
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
-    
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ((*it)->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-            return boost::dynamic_pointer_cast<Page_Knob>(*it);
-        }
-    }
-    
-    boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(_imp->_holder,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
-    ret->setAsUserKnob();
-    ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
-    return ret;
+    return _imp->_holder->getOrCreateUserPageKnob();
 }
 
 boost::shared_ptr<Page_Knob>

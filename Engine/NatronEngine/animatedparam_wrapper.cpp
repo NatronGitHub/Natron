@@ -210,6 +210,61 @@ static PyObject* Sbk_AnimatedParamFunc_getDerivativeAtTime(PyObject* self, PyObj
         return 0;
 }
 
+static PyObject* Sbk_AnimatedParamFunc_getExpression(PyObject* self, PyObject* pyArg)
+{
+    ::AnimatedParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getExpression(int,bool*)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // getExpression(int,bool*)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AnimatedParamFunc_getExpression_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getExpression(int,bool*)const
+            // Begin code injection
+
+            bool hasRetVar;
+            std::string cppResult = cppSelf->getExpression(cppArg0,&hasRetVar);
+            pyResult = PyTuple_New(2);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &hasRetVar));
+            return pyResult;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AnimatedParamFunc_getExpression_TypeError:
+        const char* overloads[] = {"int, PySide.QtCore.bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.AnimatedParam.getExpression", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_AnimatedParamFunc_getIntegrateFromTimeToTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::AnimatedParam* cppSelf = 0;
@@ -743,6 +798,7 @@ static PyMethodDef Sbk_AnimatedParam_methods[] = {
     {"deleteValueAtTime", (PyCFunction)Sbk_AnimatedParamFunc_deleteValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"getCurrentTime", (PyCFunction)Sbk_AnimatedParamFunc_getCurrentTime, METH_NOARGS},
     {"getDerivativeAtTime", (PyCFunction)Sbk_AnimatedParamFunc_getDerivativeAtTime, METH_VARARGS|METH_KEYWORDS},
+    {"getExpression", (PyCFunction)Sbk_AnimatedParamFunc_getExpression, METH_O},
     {"getIntegrateFromTimeToTime", (PyCFunction)Sbk_AnimatedParamFunc_getIntegrateFromTimeToTime, METH_VARARGS|METH_KEYWORDS},
     {"getIsAnimated", (PyCFunction)Sbk_AnimatedParamFunc_getIsAnimated, METH_VARARGS|METH_KEYWORDS},
     {"getKeyIndex", (PyCFunction)Sbk_AnimatedParamFunc_getKeyIndex, METH_VARARGS|METH_KEYWORDS},

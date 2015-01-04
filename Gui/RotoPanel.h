@@ -82,6 +82,8 @@ public Q_SLOTS:
     void onSelectedBezierKeyframeSet(int time);
 
     void onSelectedBezierKeyframeRemoved(int time);
+    
+    void onSelectedBeizerAnimationRemoved();
 
     void onSelectedBezierAboutToClone();
 

@@ -53,7 +53,6 @@ struct CreateNodeArgs
     QString pluginID;
     int majorV,minorV;
     std::string multiInstanceParentName;
-    int childIndex;
     bool autoConnect;
     double xPosHint,yPosHint;
     bool pushUndoRedoCommand;
@@ -69,7 +68,6 @@ struct CreateNodeArgs
                             const std::string & multiInstanceParentName, //< no parent by default DEFAULT = empty
                             int majorVersion , //< use greatest version found DEFAULT = - 1
                             int minorVersion , //< use greatest version found DEFAULT = -1
-                            int childIndex ,//< if this is a child of a multi-instance, this is the index DEFAULT = -1
                             bool autoConnect , //< should we attempt to autoconnect ? DEFAULT = true
                             double xPosHint, //< xPosition in the nodegraph DEFAULT = INT_MIN
                             double yPosHint, //< yPosition in the nodegraph DEFAULT = INT_MIN
@@ -82,7 +80,6 @@ struct CreateNodeArgs
     , majorV(majorVersion)
     , minorV(minorVersion)
     , multiInstanceParentName(multiInstanceParentName)
-    , childIndex(childIndex)
     , autoConnect(autoConnect)
     , xPosHint(xPosHint)
     , yPosHint(yPosHint)
@@ -368,7 +365,7 @@ private:
                                                        int majorVersion,int minorVersion,
                                                        bool requestedByLoad,
                                                        const NodeSerialization & serialization,bool dontLoadName,
-                                                       int childIndex,bool autoConnect,double xPosHint,double yPosHint,
+                                                       bool autoConnect,double xPosHint,double yPosHint,
                                                        bool pushUndoRedoCommand,bool addToProject,const QString& fixedName,
                                                        const CreateNodeArgs::DefaultValuesList& paramValues,
                                                        const boost::shared_ptr<NodeCollection>& group);

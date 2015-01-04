@@ -38,6 +38,12 @@ public:
     boost::shared_ptr<KnobI> getInternalKnob() const { return _knob; }
     
     /**
+     * @brief Returns the parent of this parameter if any. If the parameter has no parent it is assumed to be a top-level
+     * param of the effect.
+     **/
+    Param* getParent() const;
+    
+    /**
      * @brief Returns the number of dimensions that the parameter have.
      * For example a size integer parameter could have 2 dimensions: width and height.
      **/
@@ -64,6 +70,7 @@ public:
      * @brief Returns the help that describes the parameter, its effect, etc...
      **/
     std::string getHelp() const;
+    void setHelp(const std::string& help);
     
     /**
      * @brief Returns true if this parameter is visible in the user interface, false if it is hidden.
@@ -117,8 +124,14 @@ public:
      * @brief Returns whether this parameter can animate.
      **/
     bool getIsAnimationEnabled() const;
+    void setAnimationEnabled(bool e);
     
-    
+    /**
+     * @brief Controls whether the next parameter defined after this parameter should add a new line or not.
+     **/
+    bool getAddNewLine();
+    void setAddNewLine(bool a);
+        
 protected:
     
     /**
@@ -194,6 +207,7 @@ public:
      * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
      **/
     void setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
+    std::string getExpression(int dimension,bool* hasRetVariable) const;
 };
 
 /**
@@ -693,6 +707,16 @@ public:
     void addOption(const std::string& option,const std::string& help);
     
     /**
+     * @brief Set all options at once
+     **/
+    void setOptions(const std::list<std::pair<std::string,std::string> >& options);
+    
+    /**
+     * @brief Returns the option at the given index
+     **/
+    std::string getOption(int index) const;
+    
+    /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
@@ -988,7 +1012,6 @@ public:
     
     /**
      * @brief Add a param as a child of this group. All params should belong to a page, otherwise they will end up in the default page.
-     * This is not dynamic and should be call at creation time of all parameters.
      **/
     void addParam(const Param* param);
  
@@ -1018,12 +1041,16 @@ public:
     Natron::StatusEnum getNthControlPoint(int dimension,
                                           int nthCtl,
                                           double *key,
-                                          double *value) const;
+                                          double *value,
+                                          double *leftDerivative,
+                                          double *rightDerivative) const;
     
     Natron::StatusEnum setNthControlPoint(int dimension,
                                           int nthCtl,
                                           double key,
-                                          double value) ;
+                                          double value,
+                                          double leftDerivative,
+                                          double rightDerivative) ;
     
     Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) ;
     

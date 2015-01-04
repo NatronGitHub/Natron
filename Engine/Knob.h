@@ -25,6 +25,9 @@
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
 
+#define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
+#define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
+
 class Curve;
 class KeyFrame;
 class KnobHolder;
@@ -352,6 +355,7 @@ public:
      * @brief Returns true if the knob has had modifications
      **/
     virtual bool hasModifications() const = 0;
+    virtual bool hasModifications(int dimension) const = 0;
 
     /**
      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
@@ -1215,6 +1219,7 @@ public:
 
     
     virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     /**
@@ -1639,43 +1644,38 @@ public:
     void updateHasAnimation();
     
     //////////////////////////////////////////////////////////////////////////////////////////
+    boost::shared_ptr<Page_Knob> getOrCreateUserPageKnob() ;
     /**
      * @brief These functions below are dynamic in a sense that they can be called at any time (on the main-thread)
      * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
      * created, you must call refreshKnobs() that will re-scan for new parameters
      **/
-    boost::shared_ptr<Int_Knob> createIntKnob(const std::string& name, const std::string& label,const std::string& help,
-                                              bool startNewLine,bool persistent, bool evaluateOnChange, bool animates, int dimension,int min,int max);
+    boost::shared_ptr<Int_Knob> createIntKnob(const std::string& name, const std::string& label,int dimension);
     
-    boost::shared_ptr<Double_Knob> createDoubleKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                    bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max);
+    boost::shared_ptr<Double_Knob> createDoubleKnob(const std::string& name, const std::string& label,int dimension);
     
-    boost::shared_ptr<Color_Knob> createColorKnob(const std::string& name, const std::string& label,const std::string& help,
-                         bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,int dimension,double min,double max);
+    boost::shared_ptr<Color_Knob> createColorKnob(const std::string& name, const std::string& label,int dimension);
     
-    boost::shared_ptr<Bool_Knob> createBoolKnob(const std::string& name, const std::string& label,const std::string& help,
-                        bool startNewLine,bool persistent, bool evaluateOnChange  , bool animates);
+    boost::shared_ptr<Bool_Knob> createBoolKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Choice_Knob> createChoiceKnob(const std::string& name, const std::string& label,const std::string& help,
-                          bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,const std::vector<std::string>& entries,
-                          const std::vector<std::string>& entriesHelp);
+    boost::shared_ptr<Choice_Knob> createChoiceKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Button_Knob> createButtonKnob(const std::string& name, const std::string& label,const std::string& help,
-                          bool startNewLine);
+    boost::shared_ptr<Button_Knob> createButtonKnob(const std::string& name, const std::string& label);
     
     //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
-    boost::shared_ptr<String_Knob> createStringKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                    bool startNewLine,bool persistent, bool evaluateOnChange, bool animates,
-                                                    int type);
+    boost::shared_ptr<String_Knob> createStringKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<File_Knob> createFileKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                    bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences);
+    boost::shared_ptr<File_Knob> createFileKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<OutputFile_Knob> createOuptutFileKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                  bool startNewLine,bool persistent, bool evaluateOnChange,bool useSequences);
+    boost::shared_ptr<OutputFile_Knob> createOuptutFileKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Path_Knob> createPathKnob(const std::string& name, const std::string& label,const std::string& help,
-                                                  bool startNewLine,bool persistent, bool evaluateOnChange,bool multiPath);
+    boost::shared_ptr<Path_Knob> createPathKnob(const std::string& name, const std::string& label);
+    
+    boost::shared_ptr<Page_Knob> createPageKnob(const std::string& name, const std::string& label);
+    
+    boost::shared_ptr<Group_Knob> createGroupKnob(const std::string& name, const std::string& label);
+    
+    boost::shared_ptr<Parametric_Knob> createParametricKnob(const std::string& name, const std::string& label,int nbCurves);
     /**
      * @brief Returns whether the onKnobValueChanged can be called by a separate thread
      **/
@@ -1684,12 +1684,6 @@ public:
     bool isEvaluationBlocked() const;
 
 protected:
-
-    boost::shared_ptr<Group_Knob> createGroupKnob(const std::string& name, const std::string& label,const std::string& help,bool setAsTab);
-    
-    boost::shared_ptr<Page_Knob> createPageKnob(const std::string& name, const std::string& label,const std::string& help);
-    
-    boost::shared_ptr<Parametric_Knob> createParametricKnob(const std::string& name, const std::string& label,const std::string& help);
     
     //////////////////////////////////////////////////////////////////////////////////////////
     
@@ -1833,6 +1827,7 @@ public:
      * @brief Returns the local current time of the timeline
      **/
     virtual SequenceTime getCurrentTime() const;
+
 
 protected:
 

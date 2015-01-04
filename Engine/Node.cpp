@@ -98,7 +98,6 @@ struct Node::Implementation
     : _publicInterface(publicInterface)
     , group(collection)
     , app(app_)
-    , pluginID()
     , knobsInitialized(false)
     , inputsInitialized(false)
     , outputsMutex()
@@ -106,7 +105,6 @@ struct Node::Implementation
     , inputsMutex()
     , inputs()
     , liveInstance()
-    , effectCreated(false)
     , inputsComponents()
     , outputComponents()
     , inputLabels()
@@ -147,6 +145,7 @@ struct Node::Implementation
     , supportedDepths()
     , isMultiInstance(false)
     , multiInstanceParent()
+    , children()
     , multiInstanceParentName()
     , duringInputChangedAction(false)
     , keyframesDisplayedOnTimeline(false)
@@ -193,8 +192,8 @@ struct Node::Implementation
     Node* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;
+    
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
-    std::string pluginID; //< the ID of the embedded plug-in
     
     bool knobsInitialized;
     bool inputsInitialized;
@@ -215,33 +214,41 @@ struct Node::Implementation
     
     //to the inputs in a thread-safe manner.
     boost::shared_ptr<Natron::EffectInstance>  liveInstance; //< the effect hosted by this node
-    bool effectCreated;
     
     ///These two are also protected by inputsMutex
     std::vector< std::list<Natron::ImageComponentsEnum> > inputsComponents;
     std::list<Natron::ImageComponentsEnum> outputComponents;
+    
     mutable QMutex nameMutex;
     std::vector<std::string> inputLabels; // inputs name
     std::string name; //node name set by the user
+    
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
+    
     Natron::Plugin* plugin; //< the plugin which stores the function to instantiate the effect
+    
     bool computingPreview;
     mutable QMutex computingPreviewMutex;
+    
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
+    
     bool mustQuitPreview;
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
+    
+    
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the liveInstance has its evaluate() function called.
     mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
     Hash64 hash; //< recomputed everytime knobsAge is changed.
+    
     mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
-    boost::shared_ptr<Node> masterNode; //< this points to the master when the node is a clone
+    boost::weak_ptr<Node> masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
     
     ///For each mask, the input number and the knob
@@ -272,6 +279,7 @@ struct Node::Implementation
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
     boost::weak_ptr<Natron::Node> multiInstanceParent;
+    std::list<boost::weak_ptr<Natron::Node> > children;
     
     ///the name of the parent at the time this node was created
     std::string multiInstanceParentName;
@@ -355,9 +363,7 @@ Node::switchInternalPlugin(Natron::Plugin* plugin)
 }
 
 void
-Node::load(const std::string & pluginID,
-           const std::string & parentMultiInstanceName,
-           int childIndex,
+Node::load(const std::string & parentMultiInstanceName,
            const NodeSerialization & serialization,
            bool dontLoadName,
            const QString& fixedName,
@@ -368,8 +374,6 @@ Node::load(const std::string & pluginID,
     
     ///cannot load twice
     assert(!_imp->liveInstance);
-
-    _imp->pluginID = pluginID;
     
     bool nameSet = false;
     bool isMultiInstanceChild = false;
@@ -379,7 +383,9 @@ Node::load(const std::string & pluginID,
         ///Fetch the parent pointer ONLY when not loading (otherwise parent node might still node be created
         ///at that time)
         if ( serialization.isNull() && fixedName.isEmpty() ) {
-            setName( QString( parentMultiInstanceName.c_str() ) + '_' + QString::number(childIndex) );
+            std::string name;
+            getGroup()->initNodeName(name + "_", &name);
+            setName(name.c_str());
             nameSet = true;
         }
         isMultiInstanceChild = true;
@@ -397,7 +403,7 @@ Node::load(const std::string & pluginID,
     
     boost::shared_ptr<Node> thisShared = shared_from_this();
 
-    int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(pluginID);
+    int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(getPluginID());
 
     LibraryBinary* binary = _imp->plugin->getLibraryBinary();
     std::pair<bool,EffectBuilder> func;
@@ -436,7 +442,7 @@ Node::load(const std::string & pluginID,
         }
     } else { //ofx plugin
                 
-        _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization,paramValues,!isFileDialogPreviewReader,renderScaleSupportPreference == 1);
+        _imp->liveInstance = appPTR->createOFXEffect(getPluginID(),thisShared,&serialization,paramValues,!isFileDialogPreviewReader,renderScaleSupportPreference == 1);
         assert(_imp->liveInstance);
         _imp->liveInstance->initializeOverlayInteract();
     }
@@ -479,7 +485,7 @@ Node::load(const std::string & pluginID,
     }
     if ( isMultiInstanceChild && serialization.isNull() ) {
         assert(nameSet);
-        updateEffectLabelKnob( QString( parentMultiInstanceName.c_str() ) + '_' + QString::number(childIndex) );
+        updateEffectLabelKnob(getName().c_str());
     }
     declarePythonFields();
     
@@ -508,6 +514,7 @@ Node::fetchParentMultiInstancePointer()
             ///no need to store the boost pointer because the main instance lives the same time
             ///as the child
             _imp->multiInstanceParent = *it;
+            (*it)->_imp->children.push_back(shared_from_this());
             QObject::connect(it->get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)));
             break;
         }
@@ -531,6 +538,15 @@ std::string
 Node::getParentMultiInstanceName() const
 {
     return _imp->multiInstanceParentName;
+}
+
+void
+Node::getChildrenMultiInstance(std::list<boost::shared_ptr<Natron::Node> >* children) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        children->push_back(it->lock());
+    }
 }
 
 U64
@@ -1423,9 +1439,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
     
-
-    _imp->liveInstance->initializeKnobsPublic();
-    
     ///If the effect has a mask, add additionnal mask controls
     int inputsCount = getMaxInputCount();
     for (int i = 0; i < inputsCount; ++i) {
@@ -1560,6 +1573,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
     _imp->refreshInfoButton->setEvaluateOnChange(false);
     _imp->infoPage->addKnob(_imp->refreshInfoButton);
     
+    _imp->liveInstance->initializeKnobsPublic();
+
     
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
@@ -1963,6 +1978,10 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     ///No-one is allowed to connect to the other node
     if (!input->canOthersConnectToThisNode()) {
         return eCanConnectInput_givenNodeNotConnectable;
+    }
+    
+    if (getParentMultiInstance() || input->getParentMultiInstance()) {
+        return eCanConnectInput_inputAlreadyConnected;
     }
     
     ///Applying this connection would create cycles in the graph
@@ -2910,7 +2929,10 @@ std::string
 Node::getPluginID() const
 {
     ///MT-safe, never changes
-    return _imp->pluginID;
+    if (!_imp->plugin) {
+        return std::string();
+    }
+    return _imp->plugin->getPluginID().toStdString();
 }
 
 std::string
@@ -3301,9 +3323,10 @@ Node::onAllKnobsSlaved(bool isSlave,
         QObject::connect( masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
         QObject::connect( masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
     } else {
-        QObject::disconnect( _imp->masterNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
-        QObject::disconnect( _imp->masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
-        QObject::disconnect( _imp->masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
+        NodePtr master = getMasterNode();
+        QObject::disconnect( master.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
+        QObject::disconnect( master.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
+        QObject::disconnect( master.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
         {
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode.reset();
@@ -3321,7 +3344,7 @@ Node::onKnobSlaved(KnobI* slave,KnobI* master,
     ///ignore the call if the node is a clone
     {
         QMutexLocker l(&_imp->masterNodeMutex);
-        if (_imp->masterNode) {
+        if (_imp->masterNode.lock()) {
             return;
         }
     }
@@ -3398,7 +3421,7 @@ Node::getMasterNode() const
 {
     QMutexLocker l(&_imp->masterNodeMutex);
     
-    return _imp->masterNode;
+    return _imp->masterNode.lock();
 }
 
 bool
@@ -4143,6 +4166,18 @@ Node::setPosition(double x,double y)
 }
 
 void
+Node::getPosition(double *x,double *y) const
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (gui) {
+        gui->getPosition(x, y);
+    } else {
+        *x = 0.;
+        *y = 0.;
+    }
+}
+
+void
 Node::setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui)
 {
     assert(!_imp->guiPointer.lock());
@@ -4168,9 +4203,9 @@ Node::isSettingsPanelOpened() const
         return parent->isSettingsPanelOpened();
     }
     {
-        QMutexLocker k(&_imp->masterNodeMutex);
-        if (_imp->masterNode) {
-            return _imp->masterNode->isSettingsPanelOpened();
+        NodePtr master = getMasterNode();
+        if (master) {
+            return master->isSettingsPanelOpened();
         }
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
             if (it->masterNode->isSettingsPanelOpened()) {

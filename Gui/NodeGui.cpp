@@ -23,6 +23,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QTextBlockFormat>
 #include <QTextCursor>
+#include <QGridLayout>
+#include <QFile>
+#include <QDialogButtonBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -33,6 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/LineEdit.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGuiSerialization.h"
@@ -40,7 +44,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiTypes.h"
 #include "Gui/SequenceFileDialog.h"
+#include "Gui/SpinBox.h"
+#include "Gui/Button.h"
 #include "Gui/NodeGraphUndoRedo.h"
+#include "Gui/SequenceFileDialog.h"
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
@@ -1582,6 +1589,9 @@ NodeGui::refreshStateIndicator()
     }
     QString message;
     int type;
+    if (!getNode()) {
+        return;
+    }
     getNode()->getPersistentMessage(&message, &type);
     
     bool showIndicator = true;
@@ -2523,4 +2533,202 @@ NodeGui::getSize(double* w, double* h) const
     QSize s = getSize();
     *w = s.width();
     *h = s.height();
+}
+
+struct ExportGroupTemplateDialogPrivate
+{
+    Gui* gui;
+    NodeGroup* group;
+    QGridLayout* mainLayout;
+    
+    QLabel* idLabel;
+    LineEdit* idEdit;
+    
+    QLabel* versionLabel;
+    SpinBox* versionEdit;
+    
+    QLabel* labelLabel;
+    LineEdit* labelEdit;
+    
+    QLabel* groupingLabel;
+    LineEdit* groupingEdit;
+    
+    QLabel* fileLabel;
+    LineEdit* fileEdit;
+    Button* openButton;
+    
+    QLabel* iconPathLabel;
+    LineEdit* iconPath;
+    
+    QDialogButtonBox *buttons;
+    
+    ExportGroupTemplateDialogPrivate(NodeGroup* group,Gui* gui)
+    : gui(gui)
+    , group(group)
+    , mainLayout(0)
+    , idLabel(0)
+    , idEdit(0)
+    , versionLabel(0)
+    , versionEdit(0)
+    , labelLabel(0)
+    , labelEdit(0)
+    , groupingLabel(0)
+    , groupingEdit(0)
+    , fileLabel(0)
+    , fileEdit(0)
+    , openButton(0)
+    , iconPathLabel(0)
+    , iconPath(0)
+    , buttons(0)
+    {
+        
+    }
+};
+
+ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeGroup* group,Gui* gui,QWidget* parent)
+: QDialog(parent)
+, _imp(new ExportGroupTemplateDialogPrivate(group,gui))
+{
+    _imp->mainLayout = new QGridLayout(this);
+    
+    _imp->idLabel = new QLabel(tr("Unique ID"),this);
+    
+    QString idTt = Qt::convertFromPlainText(tr("The ID should uniquely identify this template as a plug-in. For exemple it could be ") + NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".MyBigPackage.template0",Qt::WhiteSpaceNormal);
+    _imp->idLabel->setToolTip(idTt);
+    _imp->idEdit = new LineEdit(this);
+    _imp->idEdit->setToolTip(idTt);
+    
+    _imp->labelLabel = new QLabel(tr("Label"),this);
+    QString labelTt = Qt::convertFromPlainText(tr("Set the label of the template as the user will see it in the user interface"),Qt::WhiteSpaceNormal);
+    _imp->labelLabel->setToolTip(labelTt);
+    _imp->labelEdit = new LineEdit(this);
+    _imp->labelEdit->setToolTip(labelTt);
+    
+    _imp->groupingLabel = new QLabel(tr("Grouping"),this);
+    QString groupingTt = Qt::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
+                                                     "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/' "),Qt::WhiteSpaceNormal);
+    _imp->groupingLabel->setToolTip(groupingTt);
+    
+    _imp->groupingEdit = new LineEdit(this);
+    _imp->groupingEdit->setToolTip(groupingTt);
+    
+    _imp->versionLabel = new QLabel(tr("Version"),this);
+    QString versionTt = Qt::convertFromPlainText(tr("Set here the version of the template script. If several version of the plug-in "
+                                                    "are found, " NATRON_APPLICATION_NAME " will make a separate entry for each version "
+                                                    "of the same plug-in."),Qt::WhiteSpaceNormal);
+    _imp->versionLabel->setToolTip(versionTt);
+    _imp->versionEdit = new SpinBox(this,SpinBox::INT_SPINBOX);
+    _imp->versionEdit->setMinimum(1);
+    _imp->versionEdit->setValue(1);
+    _imp->versionEdit->setToolTip(versionTt);
+    
+    _imp->iconPathLabel = new QLabel(tr("Icon relative path"),this);
+    QString iconTt = Qt::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
+                                                 "The path is relative to the Python script."),Qt::WhiteSpaceNormal);
+    _imp->iconPathLabel->setToolTip(iconTt);
+    _imp->iconPath = new LineEdit(this);
+    _imp->iconPath->setToolTip(iconTt);
+    
+    _imp->fileLabel = new QLabel(tr("File"),this);
+    QString fileTt  = Qt::convertFromPlainText(tr("Specify here the file-path of the Python template script to save"),Qt::WhiteSpaceNormal);
+    _imp->fileLabel->setToolTip(fileTt);
+    _imp->fileEdit = new LineEdit(this);
+    _imp->fileEdit->setToolTip(fileTt);
+    
+    
+    QPixmap openPix;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_OPEN_FILE,&openPix);
+    _imp->openButton = new Button(QIcon(openPix),"",this);
+    _imp->openButton->setFocusPolicy(Qt::NoFocus);
+    _imp->openButton->setFixedSize(17, 17);
+    QObject::connect( _imp->openButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
+    
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+                                         Qt::Horizontal,this);
+    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));
+    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
+    
+    _imp->mainLayout->addWidget(_imp->idLabel, 0, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->idEdit, 0, 1 , 1 , 2);
+    _imp->mainLayout->addWidget(_imp->labelLabel, 1, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->labelEdit, 1, 1,  1 , 2);
+    _imp->mainLayout->addWidget(_imp->groupingLabel, 2, 0,  1 , 1);
+    _imp->mainLayout->addWidget(_imp->groupingEdit, 2, 1,  1 , 2);
+    _imp->mainLayout->addWidget(_imp->versionLabel, 3, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->versionEdit, 3, 1, 1, 2);
+    _imp->mainLayout->addWidget(_imp->iconPathLabel, 4, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->iconPath, 4, 1 , 1 , 2);
+    _imp->mainLayout->addWidget(_imp->fileLabel, 5, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->fileEdit, 5, 1, 1 , 1);
+    _imp->mainLayout->addWidget(_imp->openButton, 5, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->buttons, 6, 0, 1, 3);
+}
+
+ExportGroupTemplateDialog::~ExportGroupTemplateDialog()
+{
+    
+}
+
+void
+ExportGroupTemplateDialog::onButtonClicked()
+{
+    std::vector<std::string> filters;
+    filters.push_back("py");
+    
+    QString path = appPTR->getSystemNonOFXPluginsPath();
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::SAVE_DIALOG,path.toStdString(),_imp->gui,false);
+    if (dialog.exec()) {
+        std::string selection = dialog.selectedFiles();
+        _imp->fileEdit->setText(selection.c_str());
+    }
+}
+
+void
+ExportGroupTemplateDialog::onOkClicked()
+{
+    QString filePath = _imp->fileEdit->text();
+    
+    
+    if (filePath.isEmpty()) {
+        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a file path to save the script").toStdString());
+        return;
+    }
+    QString pluginId = _imp->idEdit->text();
+    QString pluginLabel = _imp->labelEdit->text();
+    int version = (int)_imp->versionEdit->value();
+    if (pluginLabel.isEmpty() || pluginId.isEmpty()) {
+        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a unique ID and a label to identify the script").toStdString());
+        return;
+    }
+    
+    QString iconPath = _imp->iconPath->text();
+    QString grouping = _imp->groupingEdit->text();
+    
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadWrite)) {
+        Natron::errorDialog(tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString());
+        return;
+    }
+    
+    QTextStream ts(&file);
+    QString content;
+    _imp->group->exportGroupToPython(pluginId, pluginLabel, iconPath, grouping, version, content);
+    ts << content;
+    
+}
+
+void
+NodeGui::exportGroupAsPythonScript()
+{
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    if (!isGroup) {
+        qDebug() << "Attempting to export a non-group as a python script.";
+        return;
+    }
+    ExportGroupTemplateDialog dialog(isGroup,getDagGui()->getGui(),getDagGui());
+    dialog.exec();
 }

@@ -317,11 +317,11 @@ static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyOb
 
 
     // Overloaded function decisor
-    // 0: getNthControlPoint(int,int,double*,double*)const
+    // 0: getNthControlPoint(int,int,double*,double*,double*,double*)const
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // getNthControlPoint(int,int,double*,double*)const
+        overloadId = 0; // getNthControlPoint(int,int,double*,double*,double*,double*)const
     }
 
     // Function signature not found.
@@ -335,15 +335,17 @@ static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyOb
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getNthControlPoint(int,int,double*,double*)const
+            // getNthControlPoint(int,int,double*,double*,double*,double*)const
             // Begin code injection
 
-            double key,value;
-            Natron::StatusEnum cppResult = cppSelf->getNthControlPoint(cppArg0, cppArg1,&key,&value);
-            pyResult = PyTuple_New(3);
+            double key,value,left,right;
+            Natron::StatusEnum cppResult = cppSelf->getNthControlPoint(cppArg0, cppArg1,&key,&value, &left, &right);
+            pyResult = PyTuple_New(5);
             PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult));
-            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &key));
-            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &value));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &key));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &value));
+            PyTuple_SET_ITEM(pyResult, 3, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &left));
+            PyTuple_SET_ITEM(pyResult, 4, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &right));
             return pyResult;
 
             // End of code injection
@@ -359,7 +361,7 @@ static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyOb
     return pyResult;
 
     Sbk_ParametricParamFunc_getNthControlPoint_TypeError:
-        const char* overloads[] = {"int, int, PySide.QtCore.double, PySide.QtCore.double", 0};
+        const char* overloads[] = {"int, int, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.getNthControlPoint", overloads);
         return 0;
 }
@@ -496,26 +498,28 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyOb
     cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0, 0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "setNthControlPoint", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_UnpackTuple(args, "setNthControlPoint", 6, 6, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setNthControlPoint(int,int,double,double)
-    if (numArgs == 4
+    // 0: setNthControlPoint(int,int,double,double,double,double)
+    if (numArgs == 6
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
-        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // setNthControlPoint(int,int,double,double)
+        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))
+        && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[4])))
+        && (pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[5])))) {
+        overloadId = 0; // setNthControlPoint(int,int,double,double,double,double)
     }
 
     // Function signature not found.
@@ -531,11 +535,15 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyOb
         pythonToCpp[2](pyArgs[2], &cppArg2);
         double cppArg3;
         pythonToCpp[3](pyArgs[3], &cppArg3);
+        double cppArg4;
+        pythonToCpp[4](pyArgs[4], &cppArg4);
+        double cppArg5;
+        pythonToCpp[5](pyArgs[5], &cppArg5);
 
         if (!PyErr_Occurred()) {
-            // setNthControlPoint(int,int,double,double)
+            // setNthControlPoint(int,int,double,double,double,double)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Natron::StatusEnum cppResult = cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3);
+            Natron::StatusEnum cppResult = cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
         }
@@ -548,7 +556,7 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyOb
     return pyResult;
 
     Sbk_ParametricParamFunc_setNthControlPoint_TypeError:
-        const char* overloads[] = {"int, int, float, float", 0};
+        const char* overloads[] = {"int, int, float, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.setNthControlPoint", overloads);
         return 0;
 }

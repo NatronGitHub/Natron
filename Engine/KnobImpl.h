@@ -1824,6 +1824,12 @@ template <typename T>
 bool Knob<T>::hasModifications() const
 {
     for (int i = 0; i < getDimension(); ++i) {
+        
+        std::string expr = getExpression(i);
+        if (!expr.empty()) {
+            return true;
+        }
+        
         boost::shared_ptr<Curve> c = getCurve(i);
         if (c && c->isAnimated()) {
             return true;
@@ -1836,6 +1842,30 @@ bool Knob<T>::hasModifications() const
             return true;
         }
     }
+    return false;
+}
+
+template <typename T>
+bool Knob<T>::hasModifications(int dimension) const
+{
+    boost::shared_ptr<Curve> c = getCurve(dimension);
+    
+    std::string expr = getExpression(dimension);
+    if (!expr.empty()) {
+        return true;
+    }
+    
+    if (c && c->isAnimated()) {
+        return true;
+    }
+    
+    ///Check expressions too in the future
+    
+    QReadLocker k(&_valueMutex);
+    if (_values[dimension] != _defaultValues[dimension]) {
+        return true;
+    }
+    
     return false;
 }
 

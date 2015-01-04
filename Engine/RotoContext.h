@@ -122,6 +122,8 @@ public:
     void setRightBezierStaticPosition(double x,double y);
 
     void removeKeyframe(int time);
+    
+    void removeAnimation();
 
     ///returns true if a keyframe was set
     bool cuspPoint(int time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
@@ -233,7 +235,7 @@ public:
     virtual void clone(const RotoItem*  other);
 
     ///only callable on the main-thread
-    void setName(const std::string & name);
+    bool setName(const std::string & name);
 
     std::string getName_mt_safe() const;
 
@@ -360,23 +362,26 @@ public:
      * If isGloballyActivated() returns false, this function will return false aswell.
      **/
     bool isActivated(int time) const;
+    void setActivated(bool a, int time);
 
     /**
      * @brief The opacity of the curve
      **/
     double getOpacity(int time) const;
+    void setOpacity(double o,int time);
 
     /**
      * @brief The distance of the feather is the distance from the control point to the feather point plus
      * the feather distance returned by this function.
      **/
     double getFeatherDistance(int time) const;
+    void setFeatherDistance(double d,int time);
 
     /**
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
      **/
     double getFeatherFallOff(int time) const;
-
+    void setFeatherFallOff(double f,int time);
 
     /**
      * @brief The color that the GUI should use to draw the overlay of the shape
@@ -387,8 +392,11 @@ public:
     bool getInverted(int time) const;
 
     void getColor(int time,double* color) const;
-
-    int getCompositingOperator(int time) const;
+    void setColor(int time,double r,double g,double b);
+    
+    int getCompositingOperator() const;
+    
+    void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
@@ -414,6 +422,8 @@ Q_SIGNALS:
     void shapeColorChanged();
 
     void compositingOperatorChanged(int,int);
+
+    
 
 private:
 
@@ -614,7 +624,6 @@ public:
 
     /**
      * @brief This function is a combinaison of setPosition + setLeftBezierPoint / setRightBeziePoint
-     * It only works for feather points!
      **/
     void setPointAtIndex(bool feather,int index,int time,double x,double y,double lx,double ly,double rx,double ry);
 
@@ -654,6 +663,8 @@ public:
      * @brief Removes a keyframe at the given time if any.
      **/
     void removeKeyframe(int time);
+    
+    void removeAnimation();
     
     /**
      * @brief Moves a keyframe
@@ -838,6 +849,8 @@ Q_SIGNALS:
 
     void keyframeRemoved(int time);
     
+    void animationRemoved();
+    
     void controlPointAdded();
     
     void controlPointRemoved();
@@ -913,7 +926,9 @@ public:
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
     boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName);
-
+    boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter);
+    boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize);
+    
     /**
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
@@ -1057,6 +1072,8 @@ public:
     std::string getRotoNodeName() const;
     
     void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
+    
+    void onItemKnobChanged();
 
 Q_SIGNALS:
 

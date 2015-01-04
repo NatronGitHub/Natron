@@ -548,7 +548,6 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
     CreateNodeArgs args( mainInstance->getPluginID().c_str(),
                          mainInstance->getName(),
                          -1,-1,
-                         (int)_imp->instances.size(),
                         true,
                         INT_MIN,INT_MIN,
                         false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
@@ -2103,7 +2102,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
     GuiAppInstance* app = publicInterface->getGui()->getApp();
     boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs("CornerPinOFX  [Transform]",
                                                                                 "",
-                                                                                -1, -1, -1,
+                                                                                -1, -1,
                                                                                 false, //< don't autoconnect
                                                                                 INT_MIN,
                                                                                 INT_MIN,

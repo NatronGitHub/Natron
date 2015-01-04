@@ -28,7 +28,25 @@ namespace Natron {
 class Node;
 }
 
+class Roto;
 class Param;
+class IntParam;
+class Int2DParam;
+class Int3DParam;
+class BooleanParam;
+class DoubleParam;
+class Double2DParam;
+class Double3DParam;
+class ChoiceParam;
+class ColorParam;
+class StringParam;
+class FileParam;
+class OutputFileParam;
+class PathParam;
+class ButtonParam;
+class GroupParam;
+class PageParam;
+class ParametricParam;
 
 class Effect : public Group
 {
@@ -108,12 +126,136 @@ public:
     Param* getParam(const std::string& name) const;
     
     /**
+     * @brief When called, all parameter changes will not call the callback onParamChanged and will not attempt to trigger a new render.
+     * A call to allowEvaluation() should be made to restore the state of the Effect
+     **/
+    void blockEvaluation();
+    
+    void allowEvaluation();
+    
+    /**
      * @brief Get the current time on the timeline or the time of the frame being rendered by the caller thread if a render
      * is ongoing in that thread.
      **/
     int getCurrentTime() const;
     
+    /**
+     * @brief Set the position of the node in the nodegraph. This is ignored in background mode.
+     **/
+    void setPosition(double x,double y);
     
+    /////////////Functions to create custom parameters//////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    //////////// A parameter may have some properties set after creation, though most of them are not dynamic:
+    //////////// they need to be set before calling refreshUserParamsGUI() which will create the GUI for these parameters.
+    //////////// Here's a list of the properties and whether they must be set before refreshUserParamsGUI() or can be set
+    //////////// dynamically after refreshUserParamsGUI() was called. A non-dynamic property can no longer be changed once
+    //////////// refreshUserParamsGUI() has been called.
+    //////////// If a Setter function contains a (*) that means it can only be called for user parameters,
+    //////////// it has no effect on already declared non-user parameters.
+    ////////////
+    //////////// Name:              Type:           Dynamic:            Setter:                 Getter:               Default:
+    ////////////
+    //////////// name               string          no                  None                    getScriptName         ""
+    //////////// label              string          no                  None                    getLabel              ""
+    //////////// help               string          yes                 setHelp(*)              getHelp               ""
+    //////////// addNewLine         bool            no                  setAddNewLine(*)        getAddNewLine         True
+    //////////// persistent         bool            yes                 setPersistant(*)        getIsPersistant       True
+    //////////// evaluatesOnChange  bool            yes                 setEvaluateOnChange(*)  getEvaluateOnChange   True
+    //////////// animates           bool            no                  setAnimationEnabled(*)  getIsAnimationEnabled (1)
+    //////////// visible            bool            yes                 setVisible              getIsVisible          True
+    //////////// enabled            bool            yes                 setEnabled              getIsEnabled          True
+    ////////////
+    //////////// Properties on IntParam, Int2DParam, Int3DParam, DoubleParam, Double2DParam, Double3DParam, ColorParam only:
+    ////////////
+    //////////// min                int/double      yes                 setMinimum(*)            getMinimum            INT_MIN
+    //////////// max                int/double      yes                 setMaximum(*)            getMaximum            INT_MAX
+    //////////// displayMin         int/double      yes                 setDisplayMinimum(*)     getDisplayMinimum     INT_MIN
+    //////////// displayMax         int/double      yes                 setDisplayMaximum(*)     getDisplayMaximum     INT_MAX
+    ////////////
+    //////////// Properties on ChoiceParam only:
+    ////////////
+    //////////// options            list<string>    yes                 setOptions/addOption(*)  getOption             empty list
+    ////////////
+    //////////// Properties on FileParam, OutputFileParam only:
+    ////////////
+    //////////// sequenceDialog     bool            yes                 setSequenceEnabled(*)    None                  False
+    ////////////
+    //////////// Properties on StringParam only:
+    ////////////
+    //////////// type               TypeEnum        no                  setType(*)               None                  eStringTypeDefault
+    ////////////
+    //////////// Properties on PathParam only:
+    ////////////
+    //////////// multiPathTable     bool            no                  setAsMultiPathTable(*)   None                  False
+    ////////////
+    ////////////
+    //////////// Properties on GroupParam only:
+    ////////////
+    //////////// isTab              bool            no                  setAsTab(*)              None                   False
+    ////////////
+    ////////////
+    ////////////  (1): animates is set to True by default only if it is one of the following parameters:
+    ////////////  IntParam Int2DParam Int3DParam
+    ////////////  DoubleParam Double2DParam Double3DParam
+    ////////////  ColorParam
+    ////////////
+    ////////////  Note that ParametricParam , GroupParam, PageParam, ButtonParam, FileParam, OutputFileParam,
+    ////////////  PathParam cannot animate at all.
+    
+    IntParam* createIntParam(const std::string& name, const std::string& label);
+    Int2DParam* createInt2DParam(const std::string& name, const std::string& label);
+    Int3DParam* createInt3DParam(const std::string& name, const std::string& label);
+    
+    DoubleParam* createDoubleParam(const std::string& name, const std::string& label);
+    Double2DParam* createDouble2DParam(const std::string& name, const std::string& label);
+    Double3DParam* createDouble3DParam(const std::string& name, const std::string& label);
+    
+    BooleanParam* createBooleanParam(const std::string& name, const std::string& label);
+    
+    ChoiceParam* createChoiceParam(const std::string& name, const std::string& label);
+    
+    ColorParam* createColorParam(const std::string& name, const std::string& label, bool useAlpha);
+    
+    StringParam* createStringParam(const std::string& name, const std::string& label);
+    
+    FileParam* createFileParam(const std::string& name, const std::string& label);
+    
+    OutputFileParam* createOutputFileParam(const std::string& name, const std::string& label);
+    
+    PathParam* createPathParam(const std::string& name, const std::string& label);
+    
+    ButtonParam* createButtonParam(const std::string& name, const std::string& label);
+    
+    GroupParam* createGroupParam(const std::string& name, const std::string& label);
+    
+    PageParam* createPageParam(const std::string& name, const std::string& label);
+    
+    ParametricParam* createParametricParam(const std::string& name, const std::string& label,int nbCurves);
+    
+    /**
+     * @brief To be called once you have added or removed any user parameter to update the GUI with the changes.
+     * This may be expensive so try to minimize the number of calls to this function.
+     **/
+    void refreshUserParamsGUI();
+    
+    /**
+     * @brief Get the user page param. Note that user created params (with the function above) may only be added to user created pages,
+     * that is, the page returned by getUserPageParam() or in any page created by createPageParam().
+     * This function never returns NULL, it will ensure that the User page exists.
+     **/
+    PageParam* getUserPageParam() const;
+    ////////////////////////////////////////////////////////////////////////////
+    
+    /**
+     * @brief Create a new child node for this node, currently this is only supported by the tracker node.
+     **/
+    Effect* createChild();
+    
+    /**
+     * @brief Get the roto context for this node if it has any. At the time of writing only the Roto node has a roto context.
+     **/
+    Roto* getRotoContext() const;
 };
 
 #endif // NODEWRAPPER_H

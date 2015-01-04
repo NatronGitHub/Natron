@@ -84,6 +84,34 @@ static PyObject* Sbk_ParamFunc__addAsDependencyOf(PyObject* self, PyObject* args
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_getAddNewLine(PyObject* self)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getAddNewLine()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = cppSelf->getAddNewLine();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ParamFunc_getCanAnimate(PyObject* self)
 {
     ::Param* cppSelf = 0;
@@ -381,6 +409,37 @@ static PyObject* Sbk_ParamFunc_getNumDimensions(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_ParamFunc_getParent(PyObject* self)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getParent()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Param * cppResult = const_cast<const ::Param*>(cppSelf)->getParent();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ParamFunc_getScriptName(PyObject* self)
 {
     ::Param* cppSelf = 0;
@@ -435,6 +494,94 @@ static PyObject* Sbk_ParamFunc_getTypeName(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_setAddNewLine(PyObject* self, PyObject* pyArg)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setAddNewLine(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setAddNewLine(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setAddNewLine_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setAddNewLine(bool)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setAddNewLine(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setAddNewLine_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setAddNewLine", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_setAnimationEnabled(PyObject* self, PyObject* pyArg)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setAnimationEnabled(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setAnimationEnabled(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setAnimationEnabled_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setAnimationEnabled(bool)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setAnimationEnabled(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setAnimationEnabled_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setAnimationEnabled", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_ParamFunc_setEnabled(PyObject* self, PyObject* args, PyObject* kwds)
@@ -558,6 +705,50 @@ static PyObject* Sbk_ParamFunc_setEvaluateOnChange(PyObject* self, PyObject* pyA
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_setHelp(PyObject* self, PyObject* pyArg)
+{
+    ::Param* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setHelp(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // setHelp(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setHelp_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setHelp(std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setHelp(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setHelp_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setHelp", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParamFunc_setPersistant(PyObject* self, PyObject* pyArg)
 {
     ::Param* cppSelf = 0;
@@ -648,6 +839,7 @@ static PyObject* Sbk_ParamFunc_setVisible(PyObject* self, PyObject* pyArg)
 
 static PyMethodDef Sbk_Param_methods[] = {
     {"_addAsDependencyOf", (PyCFunction)Sbk_ParamFunc__addAsDependencyOf, METH_VARARGS},
+    {"getAddNewLine", (PyCFunction)Sbk_ParamFunc_getAddNewLine, METH_NOARGS},
     {"getCanAnimate", (PyCFunction)Sbk_ParamFunc_getCanAnimate, METH_NOARGS},
     {"getEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_getEvaluateOnChange, METH_NOARGS},
     {"getHelp", (PyCFunction)Sbk_ParamFunc_getHelp, METH_NOARGS},
@@ -657,10 +849,14 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getIsVisible", (PyCFunction)Sbk_ParamFunc_getIsVisible, METH_NOARGS},
     {"getLabel", (PyCFunction)Sbk_ParamFunc_getLabel, METH_NOARGS},
     {"getNumDimensions", (PyCFunction)Sbk_ParamFunc_getNumDimensions, METH_NOARGS},
+    {"getParent", (PyCFunction)Sbk_ParamFunc_getParent, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_ParamFunc_getScriptName, METH_NOARGS},
     {"getTypeName", (PyCFunction)Sbk_ParamFunc_getTypeName, METH_NOARGS},
+    {"setAddNewLine", (PyCFunction)Sbk_ParamFunc_setAddNewLine, METH_O},
+    {"setAnimationEnabled", (PyCFunction)Sbk_ParamFunc_setAnimationEnabled, METH_O},
     {"setEnabled", (PyCFunction)Sbk_ParamFunc_setEnabled, METH_VARARGS|METH_KEYWORDS},
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
+    {"setHelp", (PyCFunction)Sbk_ParamFunc_setHelp, METH_O},
     {"setPersistant", (PyCFunction)Sbk_ParamFunc_setPersistant, METH_O},
     {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
 

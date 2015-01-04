@@ -307,7 +307,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 bool requestedByLoad,
                                 const NodeSerialization & serialization,
                                 bool dontLoadName,
-                                int childIndex,
                                 bool autoConnect,
                                 double xPosHint,
                                 double yPosHint,
@@ -363,7 +362,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
         CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
                                  "",
                                  -1,-1,
-                                 -1,
                                  true, //< autoconnect
                                  INT_MIN,INT_MIN,
                                  true, //< push undo/redo command
@@ -426,7 +424,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     assert(node);
     try {
-        node->load(foundPluginID,multiInstanceParentName,childIndex, serialization,dontLoadName,fixedName,paramValues);
+        node->load(multiInstanceParentName, serialization,dontLoadName,fixedName,paramValues);
     } catch (const std::exception & e) {
         group->removeNode(node);
         std::string title = std::string("Error while creating node");
@@ -468,7 +466,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 std::string(),
                                 -1,
                                 -1,
-                                -1,
                                 false, //< don't autoconnect
                                 INT_MIN,
                                 INT_MIN,
@@ -484,7 +481,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
         {
             CreateNodeArgs args(PLUGINID_NATRON_INPUT,
                                 std::string(),
-                                -1,
                                 -1,
                                 -1,
                                 true, // autoconnect
@@ -521,7 +517,6 @@ AppInstance::createNode(const CreateNodeArgs & args)
                               false,
                               NodeSerialization( boost::shared_ptr<Natron::Node>() ),
                               !args.fixedName.isEmpty(),
-                              args.childIndex,
                               args.autoConnect,
                               args.xPosHint,args.yPosHint,
                               args.pushUndoRedoCommand,
@@ -540,7 +535,6 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               true,
                               *args.serialization,
                               args.dontLoadName,
-                              -1,
                               false,
                               INT_MIN,INT_MIN,
                               false,

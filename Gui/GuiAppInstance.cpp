@@ -225,7 +225,6 @@ GuiAppInstance::load(const QString & projectName,
         createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                    "",
                                    -1,-1,
-                                   -1,
                                    true,
                                    INT_MIN,INT_MIN,
                                    true,
@@ -300,7 +299,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
     if (isGroup) {
-        _imp->_gui->createGroupGui(node);
+        _imp->_gui->createGroupGui(node, loadRequest);
     }
     
     ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph

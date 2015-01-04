@@ -303,9 +303,21 @@ public:
     void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const;
     
     void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
+    
+    void exportGroupToPython(const QString& pluginID,
+                             const QString& pluginLabel,
+                             const QString& pluginIconPath,
+                             const QString& pluginGrouping,
+                             int version,
+                             QString& output);
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
+    
+    virtual void knobChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,
+                             int /*view*/,
+                             SequenceTime /*time*/,
+                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };

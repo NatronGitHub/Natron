@@ -774,10 +774,25 @@ public:
                                       int nthCtl,
                                       double *key,
                                       double *value) const WARN_UNUSED_RETURN;
+    Natron::StatusEnum getNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double *key,
+                                          double *value,
+                                          double *leftDerivative,
+                                          double *rightDerivative) const WARN_UNUSED_RETURN;
     Natron::StatusEnum setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
                                       double value) WARN_UNUSED_RETURN;
+    
+    Natron::StatusEnum setNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double key,
+                                          double value,
+                                          double leftDerivative,
+                                          double rightDerivative) WARN_UNUSED_RETURN;
+
+    
     Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
     Natron::StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
@@ -816,6 +831,7 @@ Q_SIGNALS:
 
     void mustResetToDefault(QVector<int>);
 
+    void curveColorChanged(int);
 private:
 
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;

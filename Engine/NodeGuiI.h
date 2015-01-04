@@ -43,6 +43,8 @@ public :
      * @brief Get the size of the bounding box of the node in the nodegraph
      **/
     virtual void getSize(double* w, double* h) const = 0;
+    
+    virtual void exportGroupAsPythonScript() = 0;
 };
 
 #endif // NODEGUII_H

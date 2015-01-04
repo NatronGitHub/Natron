@@ -25,7 +25,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QRectF>
 #include <QtCore/QMutex>
 #include <QGraphicsItem>
-#include <QGradient>
+#include <QDialog>
 #include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -46,10 +46,12 @@ class KnobI;
 class NodeGuiSerialization;
 class NodeSerialization;
 class KnobGui;
+class Gui;
 class QUndoStack;
 class LinkArrow;
 class MultiInstancePanel;
 class QMenu;
+class NodeGroup;
 namespace Natron {
 class ChannelSet;
 class Node;
@@ -310,7 +312,8 @@ public:
     void setVisibleDetails(bool visible);
     
     virtual void refreshStateIndicator();
-        
+    
+    virtual void exportGroupAsPythonScript() OVERRIDE FINAL;
 public Q_SLOTS:
 
     void onSettingsPanelClosed(bool closed);
@@ -542,6 +545,27 @@ private:
     virtual QPainterPath shape() const OVERRIDE FINAL;
     QGraphicsEllipseItem* diskShape;
     QGraphicsEllipseItem* ellipseIndicator;
+};
+
+struct ExportGroupTemplateDialogPrivate;
+class ExportGroupTemplateDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    ExportGroupTemplateDialog(NodeGroup* group,Gui* gui,QWidget* parent);
+    
+    virtual ~ExportGroupTemplateDialog();
+    
+public Q_SLOTS:
+
+    void onButtonClicked();
+    
+    void onOkClicked();
+private:
+    
+    boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_
