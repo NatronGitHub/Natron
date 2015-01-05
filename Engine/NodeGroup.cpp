@@ -1607,9 +1607,10 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
         
         QString nodeNameInScript = groupName + "." + QString((*it)->getName_mt_safe().c_str());
         WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");
-        WRITE_INDENT(1); WRITE_STRING("del lastNode");
         WRITE_STATIC_LINE("");
         exportAllNodeKnobs(*it,ts);
+        WRITE_INDENT(1); WRITE_STRING("del lastNode");
+        WRITE_STATIC_LINE("");
         
         
         std::list< NodePtr > children;
@@ -1667,11 +1668,9 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
 }
 
 void
-NodeGroup::exportGroupToPython(const QString& pluginID,
-                               const QString& pluginLabel,
+NodeGroup::exportGroupToPython(const QString& pluginLabel,
                                const QString& pluginIconPath,
                                const QString& pluginGrouping,
-                               int version,
                                QString& output)
 {
     QTextStream ts(&output);
@@ -1681,19 +1680,11 @@ NodeGroup::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("");
     WRITE_STATIC_LINE("from natron import *");
     WRITE_STATIC_LINE("");
-    
-    WRITE_STATIC_LINE("def getID():");
-    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginID + "\"");
-    WRITE_STATIC_LINE("");
-    
+   
     WRITE_STATIC_LINE("def getLabel():");
     WRITE_INDENT(1);WRITE_STRING("return \"" + pluginLabel + "\"");
     WRITE_STATIC_LINE("");
-    
-    WRITE_STATIC_LINE("def getVersion():");
-    WRITE_INDENT(1);WRITE_STRING("return " + NUM(version));
-    WRITE_STATIC_LINE("");
-    
+  
     if (!pluginIconPath.isEmpty()) {
         WRITE_STATIC_LINE("def getIconPath():");
         WRITE_INDENT(1);WRITE_STRING("return \"" + pluginIconPath + "\"");
@@ -1705,7 +1696,7 @@ NodeGroup::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("");
 
     
-    WRITE_STATIC_LINE("def createInstance(group):");
+    WRITE_STATIC_LINE("def createInstance(app,group):");
     WRITE_STATIC_LINE("");
     exportGroupInternal(this, "group", ts);
 }

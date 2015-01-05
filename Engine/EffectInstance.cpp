@@ -4407,13 +4407,13 @@ EffectInstance::Implementation::executeKnobChangedCallback(KnobI* k)
         QMutexLocker k(&knobChangedCallbackMutex);
         script = knobChangedCallback.expression;
     }
-    std::size_t firstLine =  _publicInterface->getNode()->declareCurrentNodeVariable_Python(script);
+   // std::size_t firstLine =  _publicInterface->getNode()->declareCurrentNodeVariable_Python(script);
 
     std::stringstream ss;
     ss << "thisParam = thisNode.getParam(\"" << k->getName() << "\") \n";
     ss << "frame = thisNode.getCurrentTime() \n";
     std::string toInsert = ss.str();
-    script.insert(firstLine, toInsert);
+    //script.insert(firstLine, toInsert);
     
     ///Try to interpret the script, throw an exception upon failure
     std::string error;

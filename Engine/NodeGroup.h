@@ -304,11 +304,9 @@ public:
     
     void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
     
-    void exportGroupToPython(const QString& pluginID,
-                             const QString& pluginLabel,
+    void exportGroupToPython(const QString& pluginLabel,
                              const QString& pluginIconPath,
                              const QString& pluginGrouping,
-                             int version,
                              QString& output);
 private:
     

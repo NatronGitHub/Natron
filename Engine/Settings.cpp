@@ -734,10 +734,11 @@ Settings::initializeKnobs()
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
     
-    _templatesPluginPaths = Natron::createKnob<Path_Knob>(this, "Template plugins search path");
-    _templatesPluginPaths->setName("templatePluginsSearchPath");
-    _templatesPluginPaths->setHintToolTip("Search path where " NATRON_APPLICATION_NAME " should scan for Python templates scripts. "
-                                          "The search paths for templates can also be specified using the NATRON_PATH environment variable.");
+    _templatesPluginPaths = Natron::createKnob<Path_Knob>(this, "Group plugins search path");
+    _templatesPluginPaths->setName("groupPluginsSearchPath");
+    _templatesPluginPaths->setHintToolTip("Search path where " NATRON_APPLICATION_NAME " should scan for Python group scripts. "
+                                          "The search paths for groups can also be specified using the "
+                                          "NATRON_PATH environment variable.");
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
     
@@ -2167,13 +2168,15 @@ Settings::areOptionalInputsAutoHidden() const
 }
 
 void
-Settings::getPythonTemplateSearchPaths(std::list<std::string>* templates) const
+Settings::getPythonGroupsSearchPaths(std::list<std::string>* templates) const
 {
     _templatesPluginPaths->getPaths(templates);
 }
 
 void
-Settings::appendPythonTemplatePath(const std::string& path)
+Settings::appendPythonGroupsPath(const std::string& path)
 {
     _templatesPluginPaths->appendPath(path);
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    settings.setValue(_templatesPluginPaths->getName().c_str(), QVariant(_templatesPluginPaths->getValue(0).c_str()));
 }

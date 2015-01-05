@@ -1202,6 +1202,7 @@ Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group,bool requestedB
     _imp->_groups.push_back(nodeGraph);
     if (!requestedByLoad) {
         where->appendTab(nodeGraph);
+        QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()));
     } else {
         nodeGraph->setVisible(false);
     }

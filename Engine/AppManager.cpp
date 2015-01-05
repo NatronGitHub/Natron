@@ -860,7 +860,7 @@ AppManager::loadAllPlugins()
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
 
-    loadPythonTemplates();
+    loadPythonGroups();
     
     std::vector<Natron::Plugin*> ignoredPlugins;
     _imp->_settings->populatePluginsTab(ignoredPlugins);
@@ -1029,10 +1029,11 @@ AppManager::getSystemNonOFXPluginsPath() const
       QDir::separator() + "Plugins";
 }
 
-void
-AppManager::loadPythonTemplates()
+QStringList
+AppManager::getAllNonOFXPluginsPaths() const
 {
     QStringList templatesSearchPath;
+    
     QString dataLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation);
     QString mainPath = dataLocation + QDir::separator() + "Plugins";
     
@@ -1043,17 +1044,16 @@ AppManager::loadPythonTemplates()
             dataDir.mkdir("Plugins");
         }
     }
-
+    
+    QString envvar(qgetenv(NATRON_PATH_ENV_VAR));
+    QStringList splitDirs = envvar.split(QChar(';'));
+    std::list<std::string> userSearchPaths;
+    _imp->_settings->getPythonGroupsSearchPaths(&userSearchPaths);
+    
     QDir cwd( QCoreApplication::applicationDirPath() );
     cwd.cdUp();
     QString natronBundledPluginsPath = QString(cwd.absolutePath() +  "/Plugins");
 
-   
-    QString envvar(qgetenv(NATRON_PATH_ENV_VAR));
-    QStringList splitDirs = envvar.split(QChar(';'));
-       std::list<std::string> userSearchPaths;
-    _imp->_settings->getPythonTemplateSearchPaths(&userSearchPaths);
-    
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
     
     if (preferBundleOverSystemWide) {
@@ -1066,18 +1066,29 @@ AppManager::loadPythonTemplates()
     
     ///look-in the locations indicated by NATRON_PATH
     for (int i = 0; i < splitDirs.size(); ++i) {
-        templatesSearchPath.push_back(splitDirs[i]);
+        if (!splitDirs[i].isEmpty()) {
+            templatesSearchPath.push_back(splitDirs[i]);
+        }
     }
     
     ///look-in extra search path set in the preferences
     for (std::list<std::string>::iterator it = userSearchPaths.begin(); it!=userSearchPaths.end(); ++it) {
-        templatesSearchPath.push_back(QString(it->c_str()));
+        if (!it->empty()) {
+            templatesSearchPath.push_back(QString(it->c_str()));
+        }
     }
     
     if (!preferBundleOverSystemWide) {
         ///look-in the bundled plug-ins
         templatesSearchPath.push_back(natronBundledPluginsPath);
     }
+    return templatesSearchPath;
+}
+
+void
+AppManager::loadPythonGroups()
+{
+    QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
     
     QString script("import sys\n"
                    "import %1\n"
@@ -1089,12 +1100,6 @@ AppManager::loadPythonTemplates()
                    "if ret == True:\n"
                    "    global templateLabel\n"
                    "    templateLabel = %1.getLabel()\n"
-                   "if ret == True and hasattr(%1,\"getID\") and hasattr(%1.getID,\"__call__\"):\n"
-                   "    global templateID\n"
-                   "    templateID = %1.getID()\n"
-                   "if ret == True and hasattr(%1,\"getVersion\") and hasattr(%1.getVersion,\"__call__\"):\n"
-                   "    global templateVersion\n"
-                   "    templateVersion = %1.getVersion()\n"
                    "if ret == True and hasattr(%1,\"getIconPath\") and hasattr(%1.getIconPath,\"__call__\"):\n"
                    "    global templateIcon\n"
                    "    templateIcon = %1.getIconPath()\n"
@@ -1129,16 +1134,11 @@ AppManager::loadPythonTemplates()
                 findAndRunScriptFile(d.absolutePath() + '/',files,"initGui.py");
             }
             
-            QStringList directories = d.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+            QStringList scripts = d.entryList(QStringList(QString("*.py")),QDir::Files | QDir::NoDotAndDotDot);
 
-            for (QStringList::iterator it = directories.begin(); it != directories.end(); ++it) {
-                QString subDirPath = d.absolutePath() + "/" + *it;
-                QDir subDir(subDirPath);
-                assert(subDir.exists());
-                
-                QStringList initFiles = subDir.entryList(QStringList("__init__.py"),QDir::Files | QDir::NoDotAndDotDot);
-                if (initFiles.size() == 1) {
-                    allPlugins.push_back(subDirPath);
+            for (QStringList::iterator it = scripts.begin(); it != scripts.end(); ++it) {
+                if (it->endsWith(".py") && *it != QString("init.py") && *it != QString("initGui.py")) {
+                    allPlugins.push_back(d.absolutePath() + "/" + *it);
                 }
             }
         }
@@ -1147,13 +1147,19 @@ AppManager::loadPythonTemplates()
     for (int i = 0; i < allPlugins.size(); ++i) {
         
         QString moduleName = allPlugins[i];
+        int lastDot = moduleName.lastIndexOf('.');
+        if (lastDot != -1) {
+            moduleName = moduleName.left(lastDot);
+        }
         int lastSlash = moduleName.lastIndexOf('/');
-        moduleName = moduleName.mid(lastSlash + 1);
+        if (lastSlash != -1) {
+            moduleName = moduleName.remove(0,lastSlash + 1);
+        }
         
         std::string toRun = script.arg(moduleName).toStdString();
         
         if (!interpretPythonScript(toRun, &err, 0)) {
-            qDebug() << "Python template load failure: " << err.c_str();
+            qDebug() << "Python group load failure: " << err.c_str();
             continue;
         }
         PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
@@ -1167,19 +1173,11 @@ AppManager::loadPythonTemplates()
                                      "del templateLabel\n");
             
             int version = 1;
-            QString label,pluginId,iconPath,grouping;
+            QString label,iconPath,grouping;
             
             PyObject* labelObj = 0;
             labelObj = PyObject_GetAttrString(mainModule,"templateLabel"); //new ref
-            
-            PyObject* idObj = 0;
-            if (PyObject_HasAttrString(mainModule, "templateID")) {
-                idObj = PyObject_GetAttrString(mainModule,"templateID"); //new ref
-            }
-            PyObject* versionObj = 0;
-            if (PyObject_HasAttrString(mainModule, "templateVersion")) {
-                versionObj = PyObject_GetAttrString(mainModule,"templateVersion"); //new ref
-            }
+        
             PyObject* iconObj = 0;
             if (PyObject_HasAttrString(mainModule, "templateIcon")) {
                 iconObj = PyObject_GetAttrString(mainModule,"templateIcon"); //new ref
@@ -1193,16 +1191,6 @@ AppManager::loadPythonTemplates()
             label = QString(PY3String_asString(labelObj).c_str());
             Py_XDECREF(labelObj);
             
-            if (idObj) {
-                pluginId = QString(PY3String_asString(idObj).c_str());
-                deleteScript.append("del templateID\n");
-                Py_XDECREF(idObj);
-            }
-            if (versionObj) {
-                version = (int)PyLong_AsLong(versionObj);
-                deleteScript.append("del templateVersion\n");
-                Py_XDECREF(versionObj);
-            }
             if (iconObj) {
                 iconPath = QString(PY3String_asString(iconObj).c_str());
                 deleteScript.append("del templateIcon\n");
@@ -1215,6 +1203,11 @@ AppManager::loadPythonTemplates()
                 
             }
             
+            if (grouping.isEmpty()) {
+                grouping = PLUGIN_GROUP_OTHER;
+            }
+            
+            setLoadingStatus("Python: Loading " + label);
             
             QFileInfo iconInfo(allPlugins[i] + "/" + iconPath);
             QString iconFullPath =  iconInfo.canonicalFilePath();
@@ -1222,7 +1215,7 @@ AppManager::loadPythonTemplates()
             bool ok = interpretPythonScript(deleteScript, &err, NULL);
             assert(ok);
             
-            Natron::Plugin* p = registerPlugin(grouping.split(QChar('/')), pluginId, label, iconFullPath, QString(), QString(), false, false, 0, false, version, 0);
+            Natron::Plugin* p = registerPlugin(grouping.split(QChar('/')), label, label, iconFullPath, QString(), QString(), false, false, 0, false, version, 0);
             
             p->setPythonModule(moduleName);
             
@@ -2774,6 +2767,23 @@ void compilePyScript(const std::string& script,PyObject** code,PyObject** global
 #endif
         throw std::runtime_error("failed to compile the script");
     }
+}
+    
+std::list<std::string>
+getNatronPath()
+{
+    std::list<std::string> ret;
+    QStringList p = appPTR->getAllNonOFXPluginsPaths();
+    for (QStringList::iterator it = p.begin(); it != p.end(); ++it) {
+        ret.push_back(it->toStdString());
+    }
+    return ret;
+}
+    
+void
+appendToNatronPath(const std::string& path)
+{
+    appPTR->getCurrentSettings()->appendPythonGroupsPath(path);
 }
     
 } //Namespace Natron

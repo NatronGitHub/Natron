@@ -801,7 +801,12 @@ public:
     /**
      * @brief Returns a script defining the variable thisNode
      **/
-    std::string declareCurrentNodeVariable_Python();
+    std::string declareCurrentNodeVariable_Python() const;
+    
+    /**
+     * @brief Return a script defining all nodes variables that could be accessed through expressions by this node.
+     **/
+    std::string declareAllNodesVariableInScope_Python() const;
 
     bool isForceCachingEnabled() const;
     

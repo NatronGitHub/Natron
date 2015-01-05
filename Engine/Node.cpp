@@ -4074,14 +4074,48 @@ Node::dequeueActions()
 }
 
 std::string
-Node::declareCurrentNodeVariable_Python()
+Node::declareCurrentNodeVariable_Python() const
 {
     if (!getGroup()) {
         return std::string();
     }
         ///Now define the thisNode variable
     std::stringstream ss;
-    ss << "thisNode = " << "app" << getApp()->getAppID() << "." << getFullySpecifiedName() <<  "\n";
+    ss << "thisNode = " << "app" << getApp()->getAppID() + 1 << "." << getFullySpecifiedName() <<  "\n";
+    return ss.str();
+}
+
+std::string
+Node::declareAllNodesVariableInScope_Python() const
+{
+    if (!getGroup()) {
+        return std::string();
+    }
+    
+    int appID = getApp()->getAppID() + 1;
+    
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeGroup* isContainerGrp = dynamic_cast<NodeGroup*>(collection.get());
+    std::stringstream ss;
+    if (isContainerGrp) {
+        ss << isContainerGrp->getNode()->getFullySpecifiedName() << " = app" << appID << "." <<
+        isContainerGrp->getNode()->getFullySpecifiedName() << "\n";
+    }
+    
+    NodeList siblings = collection->getNodes();
+    for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
+        ss << (*it)->getFullySpecifiedName() << " = app" << appID << "." <<
+        (*it)->getFullySpecifiedName() << "\n";
+    }
+    
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        NodeList children = isGrp->getNodes();
+        for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
+            ss << (*it)->getFullySpecifiedName() << " = app" << appID << "." <<
+            (*it)->getFullySpecifiedName() << "\n";
+        }
+    }
     return ss.str();
 }
 
@@ -4243,7 +4277,7 @@ void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
    
-    QString str = QString("app%1.%2 = app%1.getNode(\"%2\")").arg(getApp()->getAppID()).arg(nodeName.c_str());
+    QString str = QString("app%1.%2 = app%1.getNode(\"%2\")").arg(getApp()->getAppID() + 1).arg(nodeName.c_str());
     std::string script = str.toStdString();
     std::string err;
     if (!interpretPythonScript(script, &err, 0)) {
@@ -4254,7 +4288,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
 void
 Node::setNodeVariableToPython(const std::string& oldName,const std::string& newName)
 {
-    QString appID = QString("app%1").arg(getApp()->getAppID());
+    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
     QString str = QString(appID + ".%1 = " + appID + ".%2 \ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
     std::string err;
@@ -4267,7 +4301,7 @@ Node::setNodeVariableToPython(const std::string& oldName,const std::string& newN
 void
 Node::deleteNodeVariableToPython(const std::string& nodeName)
 {
-    QString appID = QString("app%1").arg(getApp()->getAppID());
+    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
     QString str = QString("del " + appID + ".%1").arg(nodeName.c_str());
     std::string script = str.toStdString();
     std::string err;
@@ -4279,7 +4313,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
 void
 Node::declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName)
 {
-    QString appID = QString("app%1").arg(getApp()->getAppID());
+    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
     QString str = QString(appID + ".%1.%2 = " + appID + ".%1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
     std::string script = str.toStdString();
     std::string err;

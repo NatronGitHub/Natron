@@ -109,6 +109,8 @@ public:
      **/
     std::string getName() const;
     
+    bool setName(const std::string& name);
+    
     /**
      * @brief Returns the ID of the plug-in embedded into the Effect
      **/

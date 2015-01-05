@@ -365,6 +365,8 @@ public:
     
     QString getSystemNonOFXPluginsPath() const;
     
+    QStringList getAllNonOFXPluginsPaths() const;
+    
 public Q_SLOTS:
 
     void toggleAutoHideGraphInputs();
@@ -442,7 +444,7 @@ private:
                       const std::list<std::pair<int,int> >& frameRanges,
                       const QString & mainProcessServerName);
     
-    void loadPythonTemplates();
+    void loadPythonGroups();
 
     void registerEngineMetaTypes() const;
 
@@ -568,6 +570,22 @@ getNumInstances()
 {
     return appPTR->getNumInstances();
 }
+
+/**
+ * @brief Return the concatenation of all search paths of Natron, i.e:
+ - The bundled plug-ins path: ../Plugin relative to the binary
+ - The system wide data for Natron (architecture dependent), this is the same location as autosaves
+ - The content of the NATRON_PATH environment variable
+ - The content of the search paths defined in the Preferences-->Plugins--> Group plugins search path
+ *
+ * This does not apply for OpenFX plug-ins which have their own search path.
+ **/
+std::list<std::string> getNatronPath();
+
+/**
+ * @brief Add a new path to the Natron search path
+ **/
+void appendToNatronPath(const std::string& path);
 
 /**
  * @brief Returns true if the plug-in ID can be instantiated by the GUI

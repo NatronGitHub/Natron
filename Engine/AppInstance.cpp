@@ -41,11 +41,14 @@ struct AppInstancePrivate
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
     
+    bool _createNextGroupInitialInputOutput;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
     : _currentProject( new Natron::Project(app) )
     , _appID(appID)
     , _projectCreatedWithLowerCaseIDs(false)
+    , _createNextGroupInitialInputOutput(true)
     {
     }
     
@@ -64,6 +67,9 @@ AppInstance::AppInstance(int appID)
 
     ///initialize the knobs of the project before loading anything else.
     _imp->_currentProject->initializeKnobsPublic();
+    
+    _imp->declareCurrentAppVariable_Python();
+
 }
 
 AppInstance::~AppInstance()
@@ -257,7 +263,6 @@ void
 AppInstance::load(const QString & projectName,
                   const std::list<RenderRequest>& writersWork)
 {
-    _imp->declareCurrentAppVariable_Python();
     if ( (getAppID() == 0) && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled() ) {
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
         settings.beginGroup("General");
@@ -302,6 +307,23 @@ AppInstance::load(const QString & projectName,
         startWritersRendering(writersWork);
     }
 }
+
+class FlagSetter {
+    
+    AppInstancePrivate* p;
+public:
+    
+    FlagSetter(AppInstancePrivate* p)
+    : p(p)
+    {
+        p->_createNextGroupInitialInputOutput = false;
+    }
+    
+    ~FlagSetter()
+    {
+        p->_createNextGroupInitialInputOutput = true;
+    }
+};
 
 
 boost::shared_ptr<Natron::Node>
@@ -364,6 +386,8 @@ AppInstance::createNodeInternal(const QString & pluginID,
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
         
+        FlagSetter fs(_imp.get());
+        
         CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
                                  "",
                                  -1,-1,
@@ -385,13 +409,16 @@ AppInstance::createNodeInternal(const QString & pluginID,
         
         std::string containerFullySpecifiedName = containerNode->getFullySpecifiedName();
         
-        std::string script(pythonModule.toStdString());
-        script.append(".createInstance(");
-        script.append(containerFullySpecifiedName);
-        script.append(")\n");
+        int appID = getAppID() + 1;
+        
+        std::stringstream ss;
+        ss << pythonModule.toStdString();
+        ss << ".createInstance(app" << appID;
+        ss << ", app" << appID << "." << containerFullySpecifiedName;
+        ss << ")\n";
         std::string err;
-        if (!Natron::interpretPythonScript(script, &err, NULL)) {
-            Natron::errorDialog(tr("Plugin error").toStdString(), err);
+        if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
+            Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
             containerNode->destroyNode(false);
             return node;
         } else {
@@ -461,7 +488,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
 
-    if (isGrp && !requestedByLoad) {
+    if (isGrp && !requestedByLoad && _imp->_createNextGroupInitialInputOutput) {
         
         //if the node is a group and we're not loading the project, create one input and one output
         NodePtr input,output;

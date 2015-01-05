@@ -284,6 +284,12 @@
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
+        <modify-function signature="setName(std::string)">
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 =  %CPPSELF.%FUNCTION_NAME(%1);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
         <!-- It doesn't seem that Shiboken allows to remove an overload:
          signature 'getNode(std::string)const' for function modification in 'Effect' not found. Possible candidates: getNode(std::string)const in Group
          -->
@@ -717,7 +723,7 @@
     <function signature="getPluginIDs()"/>
     <function signature="getNumInstances()"/>
     <function signature="getInstance(int)"/>
-        
+    <function signature="getNatronPath()"/>
     
 
 </typesystem>

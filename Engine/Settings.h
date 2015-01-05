@@ -226,8 +226,8 @@ public:
     void setOptionalInputsAutoHidden(bool hidden);
     bool areOptionalInputsAutoHidden() const;
     
-    void getPythonTemplateSearchPaths(std::list<std::string>* templates) const;
-    void appendPythonTemplatePath(const std::string& path);
+    void getPythonGroupsSearchPaths(std::list<std::string>* templates) const;
+    void appendPythonGroupsPath(const std::string& path);
     
 private:
 

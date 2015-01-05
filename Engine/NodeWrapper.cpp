@@ -103,6 +103,11 @@ Effect::getName() const
     return _node->getName_mt_safe();
 }
 
+bool
+Effect::setName(const std::string& name)
+{
+    return _node->setName(name.c_str());
+}
 
 std::string
 Effect::getPluginID() const
