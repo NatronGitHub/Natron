@@ -48,6 +48,10 @@ struct AppInstancePrivate
     , _projectCreatedWithLowerCaseIDs(false)
     {
     }
+    
+    void declareCurrentAppVariable_Python();
+
+    
 };
 
 AppInstance::AppInstance(int appID)
@@ -253,6 +257,7 @@ void
 AppInstance::load(const QString & projectName,
                   const std::list<RenderRequest>& writersWork)
 {
+    _imp->declareCurrentAppVariable_Python();
     if ( (getAppID() == 0) && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled() ) {
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
         settings.beginGroup("General");
@@ -787,19 +792,16 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
     _imp->_currentProject->onOCIOConfigPathChanged(path,false);
 }
 
-std::size_t
-AppInstance::declareCurrentAppVariable_Python(std::string& script)
+void
+AppInstancePrivate::declareCurrentAppVariable_Python()
 {
-    size_t firstLine = findNewLineStartAfterImports(script);
-    
-    ///Now define the app variable
+    /// define the app variable
     std::stringstream ss;
-    ss << "app = natron.getInstance(" << getAppID() << ") \n";
-    std::string toInsert = ss.str();
-    script.insert(firstLine, toInsert);
-    
-    return firstLine + toInsert.size();
-
+    ss << "app" << _appID + 1 << " = natron.getInstance(" << _appID << ") \n";
+    std::string script = ss.str();
+    std::string err;
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    assert(ok);
 }
 
 double

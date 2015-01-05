@@ -1066,7 +1066,7 @@ Node::removeReferences()
         isOutput->getRenderEngine()->quitEngine();
     }
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
-    Natron::deleteNodeVariableToPython(getFullySpecifiedName());
+    deleteNodeVariableToPython(getFullySpecifiedName());
     _imp->liveInstance.reset();
     getGroup()->removeNode(shared_from_this());
 }
@@ -1284,7 +1284,7 @@ Node::setNameInternal(const QString& name)
     if (!oldName.empty() && getGroup()) {
         
         try {
-            Natron::setNodeVariableToPython(fullOldName,fullySpecifiedName);
+             setNodeVariableToPython(fullOldName,fullySpecifiedName);
         } catch (const std::exception& e) {
             qDebug() << e.what();
         }
@@ -4073,21 +4073,16 @@ Node::dequeueActions()
     _imp->nodeIsDequeuingCond.wakeAll();
 }
 
-std::size_t
-Node::declareCurrentNodeVariable_Python(std::string& script)
+std::string
+Node::declareCurrentNodeVariable_Python()
 {
     if (!getGroup()) {
-        return std::string::npos;
+        return std::string();
     }
-    
-    size_t startLine = getApp()->declareCurrentAppVariable_Python(script);
-    
-    ///Now define the thisNode variable
+        ///Now define the thisNode variable
     std::stringstream ss;
-    ss << "thisNode = " << getFullySpecifiedName() <<  "\n";
-    std::string toInsert = ss.str();
-    script.insert(startLine, toInsert);
-    return startLine + toInsert.size();
+    ss << "thisNode = " << "app" << getApp()->getAppID() << "." << getFullySpecifiedName() <<  "\n";
+    return ss.str();
 }
 
 void
@@ -4099,12 +4094,12 @@ Node::declarePythonFields()
     
     std::locale locale;
     std::string fullName = getFullySpecifiedName();
-    Natron::declareNodeVariableToPython(getApp()->getAppID(), fullName);
+    declareNodeVariableToPython(fullName);
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         const std::string& knobName = knobs[i]->getName();
         if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
-            Natron::declareParameterAsNodeField(fullName, knobName);
+            declareParameterAsNodeField(fullName, knobName);
         }
     }
 }
@@ -4242,6 +4237,56 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
     _imp->liveInstance->restoreClipPreferences();
     markedNodes.push_back(this);
     
+}
+
+void
+Node::declareNodeVariableToPython(const std::string& nodeName)
+{
+   
+    QString str = QString("app%1.%2 = app%1.getNode(\"%2\")").arg(getApp()->getAppID()).arg(nodeName.c_str());
+    std::string script = str.toStdString();
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+}
+
+void
+Node::setNodeVariableToPython(const std::string& oldName,const std::string& newName)
+{
+    QString appID = QString("app%1").arg(getApp()->getAppID());
+    QString str = QString(appID + ".%1 = " + appID + ".%2 \ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
+    std::string script = str.toStdString();
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+
+}
+
+void
+Node::deleteNodeVariableToPython(const std::string& nodeName)
+{
+    QString appID = QString("app%1").arg(getApp()->getAppID());
+    QString str = QString("del " + appID + ".%1").arg(nodeName.c_str());
+    std::string script = str.toStdString();
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+}
+
+void
+Node::declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName)
+{
+    QString appID = QString("app%1").arg(getApp()->getAppID());
+    QString str = QString(appID + ".%1.%2 = " + appID + ".%1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
+    std::string script = str.toStdString();
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+
 }
 
 //////////////////////////////////

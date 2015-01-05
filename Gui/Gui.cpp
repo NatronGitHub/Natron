@@ -1200,7 +1200,7 @@ Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group,bool requestedB
     NodeGraph* nodeGraph = new NodeGraph(this,collection,scene,this);
     nodeGraph->setObjectName(group->getName_mt_safe().c_str());
     _imp->_groups.push_back(nodeGraph);
-    if (requestedByLoad) {
+    if (!requestedByLoad) {
         where->appendTab(nodeGraph);
     } else {
         nodeGraph->setVisible(false);
@@ -4713,7 +4713,8 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(item->widget());
         if (panel) {
             boost::shared_ptr<NodeGui> node = panel->getNode();
-            if (node) {
+            boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+            if (node && internalNode) {
                 boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
                 if (multiInstance) {
                     const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
@@ -4723,12 +4724,10 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                             nodes.push_back(instance);
                         }
                     }
-                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
                     if (!internalNode->isNodeDisabled() && node->isSettingsPanelVisible()) {
                         nodes.push_back(node->getNode());
                     }
                 } else {
-                    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
                     if (!internalNode->isNodeDisabled() && internalNode->isActivated() && node->isSettingsPanelVisible()) {
                         nodes.push_back(node->getNode());
                     }

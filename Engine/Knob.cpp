@@ -1220,18 +1220,20 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         //import the math module
         Natron::ensureScriptHasModuleImport("math", script);
         
-        std::size_t firstLine = effect->getNode()->declareCurrentNodeVariable_Python(script);
+        std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
         
+        std::string thisNodeStr = effect->getNode()->declareCurrentNodeVariable_Python();
         ///Now define the variables in the scope
         std::stringstream ss;
-        ss << "thisParam = thisNode.getParam(\"" << knob->getName() << "\") \n";
+        ss << thisNodeStr;
+        ss << "thisParam = thisNode." << knob->getName() << "\n";
         ss << "frame = thisParam.getCurrentTime() \n";
         if (dimension != -1) {
             ss << "dimension = " << dimension << "\n";
         }
         std::string toInsert = ss.str();
-        script.insert(firstLine, toInsert);
-        return firstLine + toInsert.size();
+        script.insert(firstLineAfterImport, toInsert);
+        return firstLineAfterImport + toInsert.size();
     } else {
         return std::string::npos;
     }

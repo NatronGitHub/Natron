@@ -2750,7 +2750,14 @@ void
 ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
-    EffectInstance* inp = _imp->viewerNode->getInput(inputNb);
+    EffectInstance* inp = 0;
+    std::vector<boost::shared_ptr<Natron::Node> > inputs  = _imp->viewerNode->getNode()->getInputs_mt_safe();
+    if (inputNb >= 0 && inputNb < (int)inputs.size()) {
+        if (inputs[inputNb]) {
+            inp = inputs[inputNb]->getLiveInstance();
+        }
+    }
+    
 
     if (inp) {
         InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);

@@ -602,10 +602,6 @@ PyObject* getMainModule();
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output);
 
     
-void declareNodeVariableToPython(int appID,const std::string& nodeName);
-void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
-void deleteNodeVariableToPython(const std::string& nodeName);
-void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName);
 void compilePyScript(const std::string& script,PyObject** code,PyObject** globalDict);
 
 std::string PY3String_asString(PyObject* obj);

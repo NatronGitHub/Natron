@@ -975,14 +975,46 @@ NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
     }
 }
 
+static bool isCharToEscape(const QChar& c)
+{
+    return c == '\\' || c == '"' || c == '\'';
+}
+
+static QString escapeString(const QString& str)
+{
+    QString ret = str;
+    for (int i = 0; i < ret.size(); ++i) {
+        if ((i == 0 && isCharToEscape(ret[i])) ||
+            (i > 0 && isCharToEscape(ret[i]) && ret[i - 1] != '\\')) {
+            ret.insert(i, QChar('\\'));
+        }
+    }
+    ret.prepend('"');
+    ret.append('"');
+    return ret;
+}
+
+static QString escapeString(const std::string& str)
+{
+    QString s(str.c_str());
+    return escapeString(s);
+}
+
+#define ESC(s) escapeString(s)
+
 #define WRITE_STATIC_LINE(line) ts << line "\n"
 #define WRITE_INDENT(x) \
         for (int _i = 0; _i < x; ++_i) ts << "    ";
 #define WRITE_STRING(str) ts << str << "\n"
+#define NUM(n) QString::number(n)
 
-static void exportKnobValues(const QString& nodeFullyQualifiedName, const boost::shared_ptr<KnobI> knob,QTextStream& ts)
+static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
+                             const QString& paramFullName,
+                             bool mustDefineParam,
+                             QTextStream& ts)
 {
-    QString paramName = nodeFullyQualifiedName + "." + QString(knob->getName().c_str());
+    
+    bool hasExportedValue = false;
     
     Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(knob.get());
     AnimatingString_KnobHelper* isAnimatedStr = dynamic_cast<AnimatingString_KnobHelper*>(knob.get());
@@ -994,19 +1026,26 @@ static void exportKnobValues(const QString& nodeFullyQualifiedName, const boost:
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (isParametric) {
+            
+            if (!hasExportedValue) {
+                hasExportedValue = true;
+                if (mustDefineParam) {
+                    WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                }
+            }
             boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
             double r,g,b;
             isParametric->getCurveColor(i, &r, &g, &b);
-            WRITE_INDENT(1); WRITE_STRING(paramName + ".setCurveColor(" + QString::number(i) + ", " +
-                                          QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + ")");
+            WRITE_INDENT(1); WRITE_STRING("param.setCurveColor(" + NUM(i) + ", " +
+                                          NUM(r) + ", " + NUM(g) + ", " + NUM(b) + ")");
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 int c = 0;
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
-                    WRITE_INDENT(1); WRITE_STRING(paramName + ".setNthControlPoint(" + QString::number(i) + ", " +
-                                                  QString::number(c) + ", " + QString::number(it3->getTime()) + ", " +
-                                                  QString::number(it3->getValue()) + ", " + QString::number(it3->getLeftDerivative())
-                                                  + ", " + QString::number(it3->getRightDerivative()) + ")");
+                    WRITE_INDENT(1); WRITE_STRING("param.setNthControlPoint(" + NUM(i) + ", " +
+                                                  NUM(c) + ", " + NUM(it3->getTime()) + ", " +
+                                                  NUM(it3->getValue()) + ", " + NUM(it3->getLeftDerivative())
+                                                  + ", " + NUM(it3->getRightDerivative()) + ")");
                 }
                 
             }
@@ -1014,52 +1053,65 @@ static void exportKnobValues(const QString& nodeFullyQualifiedName, const boost:
             boost::shared_ptr<Curve> curve = knob->getCurve(i, true);
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+                
+                if (!keys.empty()) {
+                    if (!hasExportedValue) {
+                        hasExportedValue = true;
+                        if (mustDefineParam) {
+                            WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                        }
+                    }
+                }
+                
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     if (isAnimatedStr) {
                         std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, true);
-                        WRITE_INDENT(1); WRITE_STRING(paramName + ".setValueAtTime(" + QString(value.c_str()) + ", "
-                                                      + QString::number(it3->getTime()) + ", " + QString::number(i) + ")");
+                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
+                                                      + NUM(it3->getTime()) + ", " + NUM(i) + ")");
                         
                     } else if (isBool) {
                         int v = std::min(1., std::max(0.,std::floor(it3->getValue() + 0.5)));
                         QString vStr = v ? "True" : "False";
-                        WRITE_INDENT(1); WRITE_STRING(paramName + ".setValueAtTime(" + vStr + ", "
-                                                      + QString::number(it3->getTime()) + ", " + QString::number(i) + ")");
+                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
+                                                      + NUM(it3->getTime()) + ", " + NUM(i) + ")");
                     } else {
-                        WRITE_INDENT(1); WRITE_STRING(paramName + ".setValueAtTime(" + QString::number(it3->getValue()) + ", "
-                                                      + QString::number(it3->getTime()) + ", " + QString::number(i) + ")");
+                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
+                                                      + NUM(it3->getTime()) + ", " + NUM(i) + ")");
                     }
                 }
             }
-            std::string expr = knob->getExpression(i);
-            if (!expr.empty()) {
-                QString hasRetVarStr = knob->isExpressionUsingRetVariable(i) ? "True" : "False";
-                
-                WRITE_INDENT(1); WRITE_STRING(paramName + ".setExpression(" + QString(expr.c_str()) + ", " +
-                                              hasRetVarStr + ", " + QString::number(i) + ")");
-            }
             
-            if (expr.empty() && (!curve || curve->getKeyFramesCount() == 0) && knob->hasModifications(i)) {
+            if ((!curve || curve->getKeyFramesCount() == 0) && knob->hasModifications(i)) {
+                if (!hasExportedValue) {
+                    hasExportedValue = true;
+                    if (mustDefineParam) {
+                        WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                    }
+                }
+                
                 if (isStr) {
                     std::string v = isStr->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING(paramName + ".setValue(" + QString(v.c_str()) + ", " + QString::number(i) + ")");
+                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + ESC(v) + ", " + NUM(i) + ")");
                 } else if (isDouble) {
                     double v = isDouble->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING(paramName + ".setValue(" + QString::number(v) + ", " + QString::number(i) + ")");
+                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isInt) {
                     int v = isInt->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING(paramName + ".setValue(" + QString::number(v) + ", " + QString::number(i) + ")");
+                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isBool) {
                     int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, true) + 0.5)));
                     QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(1); WRITE_STRING(paramName + ".setValue(" + vStr + ", " + QString::number(i) + ")");
+                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + vStr + ", " + NUM(i) + ")");
                 }
             }
         }
-        WRITE_STATIC_LINE("");
         
     } // for (int i = 0; i < (*it2)->getDimension(); ++i)
+    if (mustDefineParam && hasExportedValue) {
+        WRITE_INDENT(1); WRITE_STRING("del param");
+    }
     
+    return hasExportedValue;
 }
 
 static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& fullyQualifiedNodeName,Group_Knob* group,Page_Knob* page,QTextStream& ts)
@@ -1094,28 +1146,28 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
                 createToken = ".createIntParam(";
                 break;
         }
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + QString(isInt->getName().c_str()) +
-                                      ", " + QString(isInt->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isInt->getName()) +
+                                      ", " + ESC(isInt->getDescription()) + ")");
         for (int i = 0; i < isInt->getDimension() ; ++i) {
             int min = isInt->getMinimum(i);
             int max = isInt->getMaximum(i);
             int dMin = isInt->getDisplayMinimum(i);
             int dMax = isInt->getDisplayMaximum(i);
             if (min != INT_MIN) {
-                WRITE_INDENT(1); WRITE_STRING("param.setMinimum(" + QString::number(min) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                                              NUM(i) + ")");
             }
             if (max != INT_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setMaximum(" + QString::number(max) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                                              NUM(i) + ")");
             }
             if (dMin != INT_MIN) {
-                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMinimum(" + QString::number(dMin) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                                              NUM(i) + ")");
             }
             if (dMax != INT_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + QString::number(dMax) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                                              NUM(i) + ")");
             }
             
         }
@@ -1136,38 +1188,39 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
                 createToken = ".createDoubleParam(";
                 break;
         }
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + QString(isDouble->getName().c_str()) +
-                                      ", " + QString(isDouble->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
+                                      ", " + ESC(isDouble->getDescription()) + ")");
         for (int i = 0; i < isDouble->getDimension() ; ++i) {
             double min = isDouble->getMinimum(i);
             double max = isDouble->getMaximum(i);
             double dMin = isDouble->getDisplayMinimum(i);
             double dMax = isDouble->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setMinimum(" + QString::number(min) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                                              NUM(i) + ")");
             }
             if (max != DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setMaximum(" + QString::number(max) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                                              NUM(i) + ")");
             }
             if (dMin != -DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMinimum(" + QString::number(dMin) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                                              NUM(i) + ")");
             }
             if (dMax != DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + QString::number(dMax) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                                              NUM(i) + ")");
             }
             
         }
 
     } else if (isBool) {
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + QString(isBool->getName().c_str()) +
-                                      ", " + QString(isBool->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + ESC(isBool->getName()) +
+                                      ", " + ESC(isBool->getDescription()) + ")");
     } else if (isChoice) {
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" + QString(isChoice->getName().c_str()) +
-                                      ", " + QString(isChoice->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" +
+                                      ESC(isChoice->getName()) +
+                                      ", " + ESC(isChoice->getDescription()) + ")");
         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
         std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
         if (entries.size() > 0) {
@@ -1176,48 +1229,50 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
                     helps.push_back("");
                 }
             }
-            WRITE_INDENT(1); ts << "entries = [ (" << entries[0].c_str() << ", " << helps[0].c_str() << "),\n";
+            WRITE_INDENT(1); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
             for (U32 i = 1; i < entries.size(); ++i) {
                 QString endToken = (i == entries.size() - 1) ? ")]" : "),";
-                WRITE_INDENT(1); WRITE_STRING("(" + QString(entries[0].c_str()) + ", " + QString(helps[0].c_str()) + endToken);
+                WRITE_INDENT(1); WRITE_STRING("(" + ESC(entries[0]) + ", " + ESC(helps[0]) + endToken);
             }
             WRITE_INDENT(1); WRITE_STATIC_LINE("param.setOptions(entries)");
             WRITE_INDENT(1); WRITE_STATIC_LINE("del entries");
         }
     } else if (isColor) {
         QString hasAlphaStr = (isColor->getDimension() == 4) ? "True" : "False";
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createColorParam(" + QString(isColor->getName().c_str()) +
-                                      ", " + QString(isColor->getDescription().c_str()) + ", " + hasAlphaStr +  ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createColorParam(" + ESC(isColor->getName()) +
+                                      ", " + ESC(isColor->getDescription()) + ", " + hasAlphaStr +  ")");
         for (int i = 0; i < isColor->getDimension() ; ++i) {
             double min = isColor->getMinimum(i);
             double max = isColor->getMaximum(i);
             double dMin = isColor->getDisplayMinimum(i);
             double dMax = isColor->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setMinimum(" + QString::number(min) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                                              NUM(i) + ")");
             }
             if (max != DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setMaximum(" + QString::number(max) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                                              NUM(i) + ")");
             }
             if (dMin != -DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMinimum(" + QString::number(dMin) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                                              NUM(i) + ")");
             }
             if (dMax != DBL_MAX) {
-                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + QString::number(dMax) + ", " +
-                                              QString::number(i) + ")");
+                WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                                              NUM(i) + ")");
             }
             
         }
 
     } else if (isButton) {
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createButtonParam(" + QString(isButton->getName().c_str()) +
-                                      ", " + QString(isButton->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createButtonParam(" +
+                                      ESC(isButton->getName()) +
+                                      ", " + ESC(isButton->getDescription()) + ")");
     } else if (isStr) {
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createStringParam(" + QString(isStr->getName().c_str()) +
-                                      ", " + QString(isStr->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createStringParam(" +
+                                      ESC(isStr->getName()) +
+                                      ", " + ESC(isStr->getDescription()) + ")");
         QString typeStr;
         if (isStr->isLabel()) {
             typeStr = "eStringTypeLabel";
@@ -1234,55 +1289,55 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         }
         WRITE_INDENT(1); WRITE_STRING("param.setType(StringParam." + typeStr + ")");
     } else if (isFile) {
-        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createFileParam(" + QString(isFile->getName().c_str()) +
-                                      ", " + QString(isFile->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createFileParam(" + ESC(isFile->getName()) +
+                                      ", " + ESC(isFile->getDescription()) + ")");
         QString seqStr = isFile->isInputImageFile() ? "True" : "False";
         WRITE_INDENT(1); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
     } else if (isOutFile) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createOutputFileParam(" +
-                                      QString(isOutFile->getName().c_str()) +
-                                      ", " + QString(isOutFile->getDescription().c_str()) + ")");
+                                      ESC(isOutFile->getName()) +
+                                      ", " + ESC(isOutFile->getDescription()) + ")");
         QString seqStr = isFile->isInputImageFile() ? "True" : "False";
         WRITE_INDENT(1); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
     } else if (isPath) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createPathParam(" +
-                                      QString(isPath->getName().c_str()) +
-                                      ", " + QString(isPath->getDescription().c_str()) + ")");
+                                      ESC(isPath->getName()) +
+                                      ", " + ESC(isPath->getDescription()) + ")");
         if (isPath->isMultiPath()) {
             WRITE_INDENT(1); WRITE_STRING("param.setAsMultiPathTable()");
         }
     } else if (isGrp) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createGroupParam(" +
-                                      QString(isGrp->getName().c_str()) +
-                                      ", " + QString(isGrp->getDescription().c_str()) + ")");
+                                      ESC(isGrp->getName()) +
+                                      ", " + ESC(isGrp->getDescription()) + ")");
         if (isGrp->isTab()) {
             WRITE_INDENT(1); WRITE_STRING("param.setAsTab()");
         }
 
     } else if (isParametric) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createParametricParam(" +
-                                      QString(isParametric->getName().c_str()) +
-                                      ", " + QString(isParametric->getDescription().c_str()) +  ", " +
-                                      QString::number(isParametric->getDimension()) + ")");
+                                      ESC(isParametric->getName()) +
+                                      ", " + ESC(isParametric->getDescription()) +  ", " +
+                                      NUM(isParametric->getDimension()) + ")");
     }
     
     WRITE_STATIC_LINE("");
     if (group) {
         QString grpFullName = fullyQualifiedNodeName + "." + QString(group->getName().c_str());
         WRITE_INDENT(1); WRITE_STATIC_LINE("#Add the param to the group, no need to add it to the page");
-        WRITE_INDENT(1); WRITE_STRING(grpFullName + ".addParam(" + fullyQualifiedNodeName + QString(knob->getName().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING(grpFullName + ".addParam(param)");
     } else {
         assert(page);
         QString pageFullName = fullyQualifiedNodeName + "." + QString(page->getName().c_str());
         WRITE_INDENT(1); WRITE_STATIC_LINE("#Add the param to the page");
-        WRITE_INDENT(1); WRITE_STRING(pageFullName + ".addParam(" + fullyQualifiedNodeName + QString(knob->getName().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING(pageFullName + ".addParam(param)");
     }
     
     WRITE_STATIC_LINE("");
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Set param properties");
 
     QString help(knob->getHintToolTip().c_str());
-    WRITE_INDENT(1); WRITE_STRING("param.setHelp(" + help + ")");
+    WRITE_INDENT(1); WRITE_STRING("param.setHelp(\"" + help + "\")");
     if (knob->isNewLineTurnedOff()) {
         WRITE_INDENT(1); WRITE_STRING("param.setAddNewLine(False)");
     }
@@ -1306,13 +1361,15 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
     
     for (int i = 0; i < knob->getDimension(); ++i) {
         if (!knob->isEnabled(i)) {
-            WRITE_INDENT(1); WRITE_STRING("param.setEnabled(False, " +  QString::number(i) + ")");
+            WRITE_INDENT(1); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
         }
     }
     
+    exportKnobValues(knob,"", false, ts);
+    WRITE_INDENT(1); WRITE_STRING(fullyQualifiedNodeName + "." + QString(knob->getName().c_str()) + " = param");
     WRITE_INDENT(1); WRITE_STATIC_LINE("del param");
     
-    exportKnobValues(fullyQualifiedNodeName, knob, ts);
+    WRITE_STATIC_LINE("");
     
     if (isGrp) {
         const std::vector<boost::shared_ptr<KnobI> >& children =  isGrp->getChildren();
@@ -1320,6 +1377,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
             exportUserKnob(*it3, fullyQualifiedNodeName, isGrp, page, ts);
         }
     }
+    
 }
 
 static void exportBezierPointAtTime(const boost::shared_ptr<BezierCP>& point,
@@ -1335,11 +1393,11 @@ static void exportBezierPointAtTime(const boost::shared_ptr<BezierCP>& point,
     point->getLeftBezierPointAtTime(time, &lx, &ly);
     point->getRightBezierPointAtTime(time, &rx, &ry);
     
-    WRITE_INDENT(1); WRITE_STATIC_LINE(token + QString::number(idx) + ", " +
-                                       QString::number(time) + ", " + QString::number(x) + ", " +
-                                       QString::number(y) + ", " + QString::number(lx) + ", " +
-                                       QString::number(ly) + ", " + QString::number(rx) + ", " +
-                                       QString::number(ry) + ")");
+    WRITE_INDENT(1); WRITE_STATIC_LINE(token + NUM(idx) + ", " +
+                                       NUM(time) + ", " + NUM(x) + ", " +
+                                       NUM(y) + ", " + NUM(lx) + ", " +
+                                       NUM(ly) + ", " + NUM(rx) + ", " +
+                                       NUM(ry) + ")");
    
 }
 
@@ -1357,43 +1415,30 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             int time = isBezier->getContext()->getTimelineCurrentTime();
 
             WRITE_INDENT(1); WRITE_STATIC_LINE("bezier = roto.createBezier(0,0)");
-            WRITE_INDENT(1); WRITE_STATIC_LINE("bezier.setName(" + QString(isBezier->getName_mt_safe().c_str()) + ")");
+            WRITE_INDENT(1); WRITE_STATIC_LINE("bezier.setName(" + ESC(isBezier->getName_mt_safe()) + ")");
             QString lockedStr = isBezier->getLocked() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING("bezier.setLocked(" + lockedStr + ")");
             QString visibleStr = isBezier->isGloballyActivated() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING("bezier.setVisible(" + visibleStr + ")");
             
             boost::shared_ptr<Bool_Knob> activatedKnob = isBezier->getActivatedKnob();
-            WRITE_INDENT(1); WRITE_STRING("bezier."+ QString(activatedKnob->getName().c_str()) +
-                                          " = bezier.getActivatedParam()");
-            exportKnobValues("bezier", activatedKnob, ts);
+            exportKnobValues(activatedKnob, "bezier.getActivatedParam()", true, ts);
             
             boost::shared_ptr<Double_Knob> featherDist = isBezier->getFeatherKnob();
-            WRITE_INDENT(1); WRITE_STRING("bezier."+ QString(featherDist->getName().c_str()) +
-                                          " = bezier.getFeatherDistanceParam()");
-            exportKnobValues("bezier", featherDist, ts);
+            exportKnobValues(featherDist,"bezier.getFeatherDistanceParam()", true, ts);
             
             boost::shared_ptr<Double_Knob> opacityKnob = isBezier->getOpacityKnob();
-            WRITE_INDENT(1); WRITE_STRING("bezier."+ QString(opacityKnob->getName().c_str()) +
-                                          " = bezier.getOpacityParam()");
-            exportKnobValues("bezier", opacityKnob, ts);
+            exportKnobValues(opacityKnob,"bezier.getOpacityParam()", true, ts);
             
             boost::shared_ptr<Double_Knob> fallOffKnob = isBezier->getFeatherFallOffKnob();
-            WRITE_INDENT(1); WRITE_STRING("bezier."+ QString(fallOffKnob->getName().c_str()) +
-                                          " = bezier.getFeatherFallOffParam()");
-            exportKnobValues("bezier", fallOffKnob, ts);
+            exportKnobValues(fallOffKnob,"bezier.getFeatherFallOffParam()", true, ts);
             
             boost::shared_ptr<Color_Knob> colorKnob = isBezier->getColorKnob();
-            WRITE_INDENT(1); WRITE_STRING("bezier."+ QString(colorKnob->getName().c_str()) +
-                                          " = bezier.getActivatedParam()");
-            exportKnobValues("bezier", colorKnob, ts);
+            exportKnobValues(colorKnob, "bezier.getActivatedParam()", true, ts);
             
             boost::shared_ptr<Choice_Knob> compositing = isBezier->getOperatorKnob();
-            WRITE_INDENT(1); WRITE_STRING("bezier."+ QString(compositing->getName().c_str()) +
-                                          " = bezier.getCompositingOperatorParam()");
-            exportKnobValues("bezier", compositing, ts);
-            
-            
+            exportKnobValues(compositing, "bezier.getCompositingOperatorParam()", true, ts);
+
             
             WRITE_INDENT(1); WRITE_STRING(parentLayerName + ".addItem(bezier)");
             WRITE_INDENT(1); WRITE_STATIC_LINE("");
@@ -1406,7 +1451,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             
             //the last python call already registered the first control point
             int nbPts = cps.size() - 1;
-            WRITE_INDENT(1); WRITE_STATIC_LINE("for i in range(0, " + QString::number(nbPts) +"):");
+            WRITE_INDENT(1); WRITE_STATIC_LINE("for i in range(0, " + NUM(nbPts) +"):");
             WRITE_INDENT(2); WRITE_STATIC_LINE("bezier.addControlPoint(0,0)");
           
             ///Now that all points are created position them
@@ -1431,7 +1476,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             QString name =  QString(isLayer->getName_mt_safe().c_str());
             QString layerName = name + "_layer";
             WRITE_INDENT(1); WRITE_STATIC_LINE(name + " = roto.createLayer()");
-            WRITE_INDENT(1); WRITE_STATIC_LINE(layerName +  ".setName(" + name + ")");
+            WRITE_INDENT(1); WRITE_STATIC_LINE(layerName +  ".setName(" + ESC(name) + ")");
             QString lockedStr = isLayer->getLocked() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING(layerName + ".setLocked(" + lockedStr + ")");
             QString visibleStr = isLayer->isGloballyActivated() ? "True" : "False";
@@ -1449,15 +1494,16 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
 
 static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QTextStream& ts)
 {
-    QString nodeQualifiedName(node->getFullySpecifiedName().c_str());
-    WRITE_INDENT(1); WRITE_STATIC_LINE("#Set the values of the non-user parameters of the node");
-    WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".blockEvaluation()");
-    WRITE_STATIC_LINE("");
+    
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getKnobs();
     std::list<Page_Knob*> userPages;
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        exportKnobValues(nodeQualifiedName,*it2,ts);
-        WRITE_STATIC_LINE("");
+        if ((*it2)->getIsPersistant() && !(*it2)->isUserKnob()) {
+            if (exportKnobValues(*it2,"lastNode." + QString((*it2)->getName().c_str()), true, ts)) {
+                WRITE_STATIC_LINE("");
+            }
+            
+        }
         
         if ((*it2)->isUserKnob()) {
             Page_Knob* isPage = dynamic_cast<Page_Knob*>(it2->get());
@@ -1466,31 +1512,33 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
             }
         }
     }// for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2)
-    WRITE_INDENT(1); WRITE_STATIC_LINE("#Create the user-parameters");
-    WRITE_STATIC_LINE("");
+    if (!userPages.empty()) {
+        WRITE_STATIC_LINE("");
+        WRITE_INDENT(1); WRITE_STATIC_LINE("#Create the user-parameters");
+    }
     for (std::list<Page_Knob*>::iterator it2 = userPages.begin(); it2!= userPages.end(); ++it2) {
-        WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".createPageParam(" + QString((*it2)->getName().c_str()) + ", " +
-                                      QString((*it2)->getDescription().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("lastNode." + QString((*it2)->getName().c_str()) +
+                                      " = lastNode.createPageParam(" + ESC((*it2)->getName()) + ", " +
+                                      ESC((*it2)->getDescription()) + ")");
         const std::vector<boost::shared_ptr<KnobI> >& children =  (*it2)->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
-            exportUserKnob(*it3, nodeQualifiedName, 0, *it2, ts);
+            exportUserKnob(*it3, "lastNode", 0, *it2, ts);
         }
     }
     
-    WRITE_STATIC_LINE("");
     boost::shared_ptr<RotoContext> roto = node->getRotoContext();
     if (roto) {
         const std::list<boost::shared_ptr<RotoLayer> >& layers = roto->getLayers();
         
         if (!layers.empty()) {
             WRITE_INDENT(1); WRITE_STATIC_LINE("#For the roto node, create all layers and beziers");
-            WRITE_INDENT(1); WRITE_STRING("roto = " + nodeQualifiedName + ".getRotoContext()");
+            WRITE_INDENT(1); WRITE_STRING("roto = lastNode.getRotoContext()");
             boost::shared_ptr<RotoLayer> baseLayer = layers.front();
             QString baseLayerName = QString(baseLayer->getName_mt_safe().c_str());
             QString baseLayerToken = baseLayerName +"_layer";
             WRITE_INDENT(1); WRITE_STATIC_LINE(baseLayerToken + " = roto.getBaseLayer()");
             
-            WRITE_INDENT(1); WRITE_STRING(baseLayerToken + ".setName(" + baseLayerName + ")");
+            WRITE_INDENT(1); WRITE_STRING(baseLayerToken + ".setName(" + ESC(baseLayerName) + ")");
             QString lockedStr = baseLayer->getLocked() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING(baseLayerToken + ".setLocked(" + lockedStr + ")");
             QString visibleStr = baseLayer->isGloballyActivated() ? "True" : "False";
@@ -1500,36 +1548,33 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
             WRITE_INDENT(1); WRITE_STRING("del roto");
         }
     }
-    
-    WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".allowEvaluation()");
 }
 
-void exportKnobLinks(const boost::shared_ptr<Natron::Node>& node,QTextStream& ts)
+static bool exportKnobLinks(const boost::shared_ptr<Natron::Node>& node,
+                     const QString& nodeName,
+                     QTextStream& ts)
 {
-    QString nodeQualifiedName(node->getFullySpecifiedName().c_str());
-    WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".blockEvaluation()");
-    WRITE_STATIC_LINE("");
+    bool hasExportedLink = false;
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        QString paramName = nodeQualifiedName + "." + QString((*it2)->getName().c_str());
+        QString paramName = nodeName + "." + QString((*it2)->getName().c_str());
         for (int i = 0; i < (*it2)->getDimension(); ++i) {
             std::string expr = (*it2)->getExpression(i);
             QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? "True" : "False";
-            WRITE_INDENT(1); WRITE_STRING(paramName + ".setExpression(\"" + QString(expr.c_str()) + "\", " +
-                                          hasRetVar + ", " + QString::number(i) + ")");
-            
-            std::pair<int,boost::shared_ptr<KnobI> > master = (*it2)->getMaster(i);
+            if (!expr.empty()) {
+                hasExportedLink = true;
+                WRITE_INDENT(1); WRITE_STRING(paramName + ".setExpression(" + ESC(expr) + ", " +
+                                              hasRetVar + ", " + NUM(i) + ")");
+            }
             
         }
     }
-
-    WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".allowEvaluation()");
+    return hasExportedLink;
 }
 
-void exportGroupInternal(NodeGroup* group,QTextStream& ts)
+static void exportGroupInternal(NodeGroup* group,const QString& groupName, QTextStream& ts)
 {
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Create all nodes in the group");
-    WRITE_STATIC_LINE("");
     
     NodeList nodes = group->getNodes();
     NodeList exportedNodes;
@@ -1548,22 +1593,21 @@ void exportGroupInternal(NodeGroup* group,QTextStream& ts)
         if ((*it)->getParentMultiInstance()) {
             continue;
         }
+    
         
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGrp) {
-            
-        }
+        QString nodeName((*it)->getPluginID().c_str());
         
-        WRITE_INDENT(1); WRITE_STRING("lastNode = app.createNode(" + QString((*it)->getPluginID().c_str()) + ", " +
-                                      QString::number((*it)->getPlugin()->getMajorVersion()) + ", " +
-                                      "group)");
-        WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + QString((*it)->getName_mt_safe().c_str()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("lastNode = app.createNode(" + ESC(nodeName) + ", " +
+                                      NUM((*it)->getPlugin()->getMajorVersion()) + ", " + groupName +
+                                      ")");
+        WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + ESC((*it)->getName_mt_safe()) + ")");
         double x,y;
         (*it)->getPosition(&x,&y);
-        WRITE_INDENT(1); WRITE_STRING("lastNode.setPosition(" + QString::number(x) + ", " + QString::number(y) + ")");
-        WRITE_STATIC_LINE("");
-        WRITE_INDENT(1); WRITE_STATIC_LINE("#lastNode can be accessed by its fully qualified name because setName() has been called");
+        WRITE_INDENT(1); WRITE_STRING("lastNode.setPosition(" + NUM(x) + ", " + NUM(y) + ")");
         
+        QString nodeNameInScript = groupName + "." + QString((*it)->getName_mt_safe().c_str());
+        WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");
+        WRITE_INDENT(1); WRITE_STRING("del lastNode");
         WRITE_STATIC_LINE("");
         exportAllNodeKnobs(*it,ts);
         
@@ -1573,44 +1617,51 @@ void exportGroupInternal(NodeGroup* group,QTextStream& ts)
         if (!children.empty()) {
             WRITE_INDENT(1); WRITE_STATIC_LINE("#Create children if the node is a multi-instance such as a tracker");
             for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it) {
-                WRITE_INDENT(1); WRITE_STRING("child = lastNode.createChild()");
-                WRITE_INDENT(1); WRITE_STRING("child.setName(" + QString((*it2)->getName_mt_safe().c_str()) + ")");
+                WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
+                WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + QString((*it2)->getName_mt_safe().c_str()) + ")");
                 exportAllNodeKnobs(*it2,ts);
-                WRITE_INDENT(1); WRITE_STATIC_LINE("del child");
+                WRITE_INDENT(1); WRITE_STRING(groupName + "." + QString((*it2)->getName_mt_safe().c_str()) + " = lastNode");
+                WRITE_INDENT(1); WRITE_STRING("del lastNode");
             }
         }
         
-        WRITE_INDENT(1); WRITE_STATIC_LINE("del lastNode");
+        
         WRITE_STATIC_LINE("");
         
-        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        if (isGrp) {
+            WRITE_INDENT(1); WRITE_STRING(groupName + ".group = " + nodeNameInScript);
+            exportGroupInternal(isGrp, groupName + ".group", ts);
+        }
         WRITE_STATIC_LINE("");
         
     }
     WRITE_STATIC_LINE("");
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Create the parameters of the group node the same way we did for all internal nodes");
-    WRITE_STATIC_LINE("");
+    WRITE_INDENT(1); WRITE_STRING("lastNode = " + groupName);
     exportAllNodeKnobs(group->getNode(),ts);
-    
+    WRITE_INDENT(1); WRITE_STATIC_LINE("del lastNode");
     WRITE_STATIC_LINE("");
-    WRITE_INDENT(1); WRITE_STATIC_LINE("#Now that all nodes are created we can connect them together, restore expressions and links");
+    
+    WRITE_INDENT(1); WRITE_STATIC_LINE("#Now that all nodes are created we can connect them together, restore expressions");
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         
-        QString nodeQualifiedName((*it)->getFullySpecifiedName().c_str());
-        
+        QString nodeQualifiedName(groupName + "." + (*it)->getName_mt_safe().c_str());
+        bool hasConnected = false;
         if (!(*it)->getParentMultiInstance()) {
             for (int i = 0; i < (*it)->getMaxInputCount(); ++i) {
                 NodePtr inputNode = (*it)->getInput(i);
                 if (inputNode) {
-                    
-                    QString inputQualifiedName(inputNode->getFullySpecifiedName().c_str());
-                    WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".connectInput(" + QString::number(i) +
+                    hasConnected = true;
+                    QString inputQualifiedName(groupName + "." + inputNode->getName_mt_safe().c_str());
+                    WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".connectInput(" + NUM(i) +
                                                   ", " + inputQualifiedName + ")");
                 }
             }
         }
-        exportKnobLinks(*it,ts);
-        WRITE_STATIC_LINE("");
+        if (exportKnobLinks(*it,nodeQualifiedName, ts) || hasConnected) {
+            WRITE_STATIC_LINE("");
+        }
     }
     
 }
@@ -1628,32 +1679,33 @@ NodeGroup::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("#Note that Viewers are never exported");
     WRITE_STATIC_LINE("# -*- coding: utf-8 -*-");
     WRITE_STATIC_LINE("");
-    WRITE_STATIC_LINE("import natron");
+    WRITE_STATIC_LINE("from natron import *");
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getID():");
-    WRITE_INDENT(1);WRITE_STRING("return " + pluginID);
+    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginID + "\"");
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getLabel():");
-    WRITE_INDENT(1);WRITE_STRING("return " + pluginLabel);
+    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginLabel + "\"");
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getVersion():");
-    WRITE_INDENT(1);WRITE_STRING("return " + QString::number(version));
+    WRITE_INDENT(1);WRITE_STRING("return " + NUM(version));
     WRITE_STATIC_LINE("");
     
     if (!pluginIconPath.isEmpty()) {
         WRITE_STATIC_LINE("def getIconPath():");
-        WRITE_INDENT(1);WRITE_STRING("return " + pluginIconPath);
+        WRITE_INDENT(1);WRITE_STRING("return \"" + pluginIconPath + "\"");
         WRITE_STATIC_LINE("");
     }
     
     WRITE_STATIC_LINE("def getGrouping():");
-    WRITE_INDENT(1);WRITE_STRING("return " + pluginGrouping);
+    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginGrouping + "\"");
     WRITE_STATIC_LINE("");
 
     
     WRITE_STATIC_LINE("def createInstance(group):");
-    exportGroupInternal(this,ts);
+    WRITE_STATIC_LINE("");
+    exportGroupInternal(this, "group", ts);
 }

@@ -1391,7 +1391,6 @@ NodeGui::deactivate(bool triggerRender)
         }
     }
     
-    
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
@@ -2629,8 +2628,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeGroup* group,Gui* gui,Q
     _imp->iconPath = new LineEdit(this);
     _imp->iconPath->setToolTip(iconTt);
     
-    _imp->fileLabel = new QLabel(tr("File"),this);
-    QString fileTt  = Qt::convertFromPlainText(tr("Specify here the file-path of the Python template script to save"),Qt::WhiteSpaceNormal);
+    _imp->fileLabel = new QLabel(tr("Directory"),this);
+    QString fileTt  = Qt::convertFromPlainText(tr("Specify here the directory of the Python template script to save"),Qt::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
     _imp->fileEdit->setToolTip(fileTt);
@@ -2673,10 +2672,9 @@ void
 ExportGroupTemplateDialog::onButtonClicked()
 {
     std::vector<std::string> filters;
-    filters.push_back("py");
     
     QString path = appPTR->getSystemNonOFXPluginsPath();
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::SAVE_DIALOG,path.toStdString(),_imp->gui,false);
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::DIR_DIALOG,path.toStdString(),_imp->gui,false);
     if (dialog.exec()) {
         std::string selection = dialog.selectedFiles();
         _imp->fileEdit->setText(selection.c_str());
@@ -2686,11 +2684,14 @@ ExportGroupTemplateDialog::onButtonClicked()
 void
 ExportGroupTemplateDialog::onOkClicked()
 {
-    QString filePath = _imp->fileEdit->text();
+    QString dirPath = _imp->fileEdit->text();
+    if (dirPath[dirPath.size() - 1] == QChar('/')) {
+        dirPath.remove(dirPath.size() - 1, 1);
+    }
+    QDir d(dirPath);
     
-    
-    if (filePath.isEmpty()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a file path to save the script").toStdString());
+    if (!d.exists()) {
+        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString());
         return;
     }
     QString pluginId = _imp->idEdit->text();
@@ -2704,8 +2705,18 @@ ExportGroupTemplateDialog::onOkClicked()
     QString iconPath = _imp->iconPath->text();
     QString grouping = _imp->groupingEdit->text();
     
+    if (!d.mkdir(pluginLabel)) {
+        Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Existing plug-in").toStdString(),
+                                                                tr("A plug-in with the same name already exists would you like to "
+                                                                   "override it?").toStdString(), false);
+        if  (rep == Natron::eStandardButtonNo) {
+            return;
+        }
+    }
+    
+    QString filePath = d.absolutePath() + "/" + pluginLabel + "/__init__.py";
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadWrite)) {
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
         Natron::errorDialog(tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString());
         return;
     }
@@ -2715,6 +2726,7 @@ ExportGroupTemplateDialog::onOkClicked()
     _imp->group->exportGroupToPython(pluginId, pluginLabel, iconPath, grouping, version, content);
     ts << content;
     
+    accept();
 }
 
 void

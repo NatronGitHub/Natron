@@ -2866,6 +2866,15 @@ void
 NodeGraph::moveToTrash(NodeGui* node)
 {
     assert(node);
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
+         it != _imp->_selection.nodes.end(); ++it) {
+        if (it->get() == node) {
+            _imp->_selection.nodes.erase(it);
+            (*it)->setUserSelected(false);
+            break;
+        }
+    }
+    
     QMutexLocker l(&_imp->_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it).get() == node ) {

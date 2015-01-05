@@ -1082,20 +1082,25 @@ AppManager::loadPythonTemplates()
     QString script("import sys\n"
                    "import %1\n"
                    "ret = True\n"
-                   "if not hasattr(%1,\"createInstance\") or not hasattr(\"createInstance\",\"__call__\"):\n"
+                   "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
                    "    ret = False\n"
-                   "if not hasattr(%1,\"getLabel\") or not hasattr(\"getLabel\",\"__call__\"):\n"
+                   "if not hasattr(%1,\"getLabel\") or not hasattr(%1.getLabel,\"__call__\"):\n"
                    "    ret = False\n"
-                   "elif ret == True:\n"
-                   "    global templateLabel = getLabel()\n"
-                   "if ret == True and hasattr(%1,\"getID\") and hasattr(\"getID\",\"__call__\"):\n"
-                   "    global templateID = getID()\n"
-                   "if ret == True and hasattr(%1,\"getVersion\") and hasattr(\"getVersion\",\"__call__\"):\n"
-                   "    global templateVersion = getVersion()\n"
-                   "if ret == True and hasattr(%1,\"getIconPath\") and hasattr(\"getIconPath\",\"__call__\"):\n"
-                   "    global templateIcon = getIconPath()\n"
-                   "if ret == True and hasattr(%1,\"getGrouping\") and hasattr(\"getGrouping\",\"__call__\"):\n"
-                   "    global templateGrouping = getGrouping()\n");
+                   "if ret == True:\n"
+                   "    global templateLabel\n"
+                   "    templateLabel = %1.getLabel()\n"
+                   "if ret == True and hasattr(%1,\"getID\") and hasattr(%1.getID,\"__call__\"):\n"
+                   "    global templateID\n"
+                   "    templateID = %1.getID()\n"
+                   "if ret == True and hasattr(%1,\"getVersion\") and hasattr(%1.getVersion,\"__call__\"):\n"
+                   "    global templateVersion\n"
+                   "    templateVersion = %1.getVersion()\n"
+                   "if ret == True and hasattr(%1,\"getIconPath\") and hasattr(%1.getIconPath,\"__call__\"):\n"
+                   "    global templateIcon\n"
+                   "    templateIcon = %1.getIconPath()\n"
+                   "if ret == True and hasattr(%1,\"getGrouping\") and hasattr(%1.getGrouping,\"__call__\"):\n"
+                   "    global templateGrouping\n"
+                   "    templateGrouping =  %1.getGrouping()\n");
     
     QStringList filters;
     filters << "*.py";
@@ -1103,7 +1108,7 @@ AppManager::loadPythonTemplates()
     std::string err;
     PyObject* mainModule = getMainModule();
     
-    QStringList allFiles;
+    QStringList allPlugins;
     ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
     for (int i = 0; i < templatesSearchPath.size(); ++i) {
         
@@ -1123,77 +1128,106 @@ AppManager::loadPythonTemplates()
             if (!isBackground()) {
                 findAndRunScriptFile(d.absolutePath() + '/',files,"initGui.py");
             }
-            for (QStringList::iterator it = files.begin(); it != files.end(); ++it) {
-                if (*it != QString("init.py") && *it != QString("initGui.py")) {
-                    allFiles.push_back(*it);
+            
+            QStringList directories = d.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+
+            for (QStringList::iterator it = directories.begin(); it != directories.end(); ++it) {
+                QString subDirPath = d.absolutePath() + "/" + *it;
+                QDir subDir(subDirPath);
+                assert(subDir.exists());
+                
+                QStringList initFiles = subDir.entryList(QStringList("__init__.py"),QDir::Files | QDir::NoDotAndDotDot);
+                if (initFiles.size() == 1) {
+                    allPlugins.push_back(subDirPath);
                 }
             }
         }
     }
     
-    for (int i = 0; i < allFiles.size(); ++i) {
+    for (int i = 0; i < allPlugins.size(); ++i) {
         
-        std::string toRun = script.arg(allFiles[i]).toStdString();
+        QString moduleName = allPlugins[i];
+        int lastSlash = moduleName.lastIndexOf('/');
+        moduleName = moduleName.mid(lastSlash + 1);
         
-        if (!interpretPythonScript(toRun, &err, NULL)) {
+        std::string toRun = script.arg(moduleName).toStdString();
+        
+        if (!interpretPythonScript(toRun, &err, 0)) {
             qDebug() << "Python template load failure: " << err.c_str();
+            continue;
+        }
+        PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
+        assert(retObj);
+        if (PyObject_IsTrue(retObj) == 0) {
+            Py_XDECREF(retObj);
         } else {
-            PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
-            assert(retObj);
-            if (PyObject_IsTrue(retObj) == 1) {
-                Py_XDECREF(retObj);
-                
-                std::string deleteScript("del ret\n"
-                                         "del templateLabel\n");
-                
-                int version = 1;
-                QString label,pluginId,iconPath,grouping;
-                
-                PyObject* labelObj = PyObject_GetAttrString(mainModule,"templateLabel"); //new ref
-                PyObject* idObj = PyObject_GetAttrString(mainModule,"templateID"); //new ref
-                PyObject* versionObj = PyObject_GetAttrString(mainModule,"templateVersion"); //new ref
-                PyObject* iconObj = PyObject_GetAttrString(mainModule,"templateIcon"); //new ref
-                PyObject* iconGrouping = PyObject_GetAttrString(mainModule,"templateGrouping"); //new ref
-                assert(labelObj);
-                
-                label = QString(PY3String_asString(labelObj).c_str());
-                Py_XDECREF(labelObj);
-                
-                if (idObj) {
-                    pluginId = QString(PY3String_asString(idObj).c_str());
-                    deleteScript.append("del templateID\n");
-                    Py_XDECREF(idObj);
-                }
-                if (versionObj) {
-                    version = (int)PyLong_AsLong(versionObj);
-                    deleteScript.append("del templateVersion\n");
-                    Py_XDECREF(versionObj);
-                }
-                if (iconObj) {
-                    iconPath = QString(PY3String_asString(iconObj).c_str());
-                    deleteScript.append("del templateIcon\n");
-                    Py_XDECREF(iconObj);
-                }
-                if (iconGrouping) {
-                    grouping = QString(PY3String_asString(iconGrouping).c_str());
-                    deleteScript.append("del templateGrouping\n");
-                    Py_XDECREF(iconGrouping);
-                    
-                }
-                
-                bool ok = interpretPythonScript(deleteScript, &err, NULL);
-                assert(ok);
-                
-                Natron::Plugin* p = registerPlugin(grouping.split(QChar('/')), pluginId, label, iconPath, QString(), QString(), false, false, 0, false, version, 0);
-                
-                QString pythonModule = allFiles[i];
-                int lastdot = allFiles[i].lastIndexOf(".");
-                assert(lastdot != -1);
-                pythonModule = pythonModule.mid(0, lastdot);
-                p->setPythonModule(pythonModule);
+            Py_XDECREF(retObj);
+            
+            std::string deleteScript("del ret\n"
+                                     "del templateLabel\n");
+            
+            int version = 1;
+            QString label,pluginId,iconPath,grouping;
+            
+            PyObject* labelObj = 0;
+            labelObj = PyObject_GetAttrString(mainModule,"templateLabel"); //new ref
+            
+            PyObject* idObj = 0;
+            if (PyObject_HasAttrString(mainModule, "templateID")) {
+                idObj = PyObject_GetAttrString(mainModule,"templateID"); //new ref
+            }
+            PyObject* versionObj = 0;
+            if (PyObject_HasAttrString(mainModule, "templateVersion")) {
+                versionObj = PyObject_GetAttrString(mainModule,"templateVersion"); //new ref
+            }
+            PyObject* iconObj = 0;
+            if (PyObject_HasAttrString(mainModule, "templateIcon")) {
+                iconObj = PyObject_GetAttrString(mainModule,"templateIcon"); //new ref
+            }
+            PyObject* iconGrouping = 0;
+            if (PyObject_HasAttrString(mainModule, "templateGrouping")) {
+                iconGrouping = PyObject_GetAttrString(mainModule,"templateGrouping"); //new ref
+            }
+            assert(labelObj);
+            
+            label = QString(PY3String_asString(labelObj).c_str());
+            Py_XDECREF(labelObj);
+            
+            if (idObj) {
+                pluginId = QString(PY3String_asString(idObj).c_str());
+                deleteScript.append("del templateID\n");
+                Py_XDECREF(idObj);
+            }
+            if (versionObj) {
+                version = (int)PyLong_AsLong(versionObj);
+                deleteScript.append("del templateVersion\n");
+                Py_XDECREF(versionObj);
+            }
+            if (iconObj) {
+                iconPath = QString(PY3String_asString(iconObj).c_str());
+                deleteScript.append("del templateIcon\n");
+                Py_XDECREF(iconObj);
+            }
+            if (iconGrouping) {
+                grouping = QString(PY3String_asString(iconGrouping).c_str());
+                deleteScript.append("del templateGrouping\n");
+                Py_XDECREF(iconGrouping);
                 
             }
+            
+            
+            QFileInfo iconInfo(allPlugins[i] + "/" + iconPath);
+            QString iconFullPath =  iconInfo.canonicalFilePath();
+            
+            bool ok = interpretPythonScript(deleteScript, &err, NULL);
+            assert(ok);
+            
+            Natron::Plugin* p = registerPlugin(grouping.split(QChar('/')), pluginId, label, iconFullPath, QString(), QString(), false, false, 0, false, version, 0);
+            
+            p->setPythonModule(moduleName);
+            
         }
+        
     }
 }
 
@@ -2426,7 +2460,10 @@ AppManager::initPython(int argc,char* argv[])
     }
  
     Py_SetProgramName(_imp->args[0]);
+    
+    ///Must be called prior to Py_Initialize
     initBuiltinPythonModules();
+    
     Py_Initialize();
     
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
@@ -2660,7 +2697,6 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
     PyObject* mainModule = getMainModule();
-    //PyRun_SimpleString(script.c_str());
     PyObject* dict = PyModule_GetDict(mainModule);
     
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
@@ -2719,81 +2755,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
     }
 
 }
-    
-    
-void declareNodeVariableToPython(int appID,const std::string& nodeName)
-{
-    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
-    int hasVar = PyObject_HasAttrString(pModule,nodeName.c_str()); //find out if it already exists
-    if (hasVar) {
-        return;
-    }
-    
-    QString str = QString("%1 = natron.getInstance(%2).getNode(\"%1\")").arg(nodeName.c_str()).arg(appID);
-    std::string script = str.toStdString();
-    std::string err;
-    if (!interpretPythonScript(script, &err, 0)) {
-        qDebug() << err.c_str();
-    }
-
-}
-    
-void setNodeVariableToPython(const std::string& oldName,const std::string& newName)
-{
-//    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
-//    int hasOldVar = PyObject_HasAttrString(pModule,oldName.c_str()); //find out if it already exists
-//    if (!hasOldVar) {
-//        throw std::invalid_argument("Python: Trying to rename an unexisting node");
-//    }
-
-    QString str = QString("%1 = %2 \ndel %2").arg(newName.c_str()).arg(oldName.c_str());
-    std::string script = str.toStdString();
-    std::string err;
-    if (!interpretPythonScript(script, &err, 0)) {
-        qDebug() << err.c_str();
-    }
-
-
-}
-    
-void deleteNodeVariableToPython(const std::string& nodeName)
-{
-    QString str = QString("del %1").arg(nodeName.c_str());
-    std::string script = str.toStdString();
-    std::string err;
-    if (!interpretPythonScript(script, &err, 0)) {
-        qDebug() << err.c_str();
-    }
-    
-}
-    
-void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName)
-{
-//    PyObject *pModule = PyImport_AddModule("__main__"); //create main module , borrowed ref
-//    PyObject *node = PyObject_GetAttrString(pModule,nodeName.c_str()); //find out if it already exists
-//    if (node) {
-//        
-//        int hasParam = PyObject_HasAttrString(pModule,parameterName.c_str()); //find out if it already exists
-//        
-//        Py_DECREF(node);
-//        
-//        if (hasParam) {
-//            ///the param is already defined
-//            return;
-//        }
-//        
-//    } else {
-//        throw std::invalid_argument("Python: Unexisting node name");
-//    }
-    QString str = QString("%1.%2 = %1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
-    std::string script = str.toStdString();
-    std::string err;
-    if (!interpretPythonScript(script, &err, 0)) {
-        qDebug() << err.c_str();
-    }
-
-}
-    
+      
 bool isPluginCreatable(const std::string& pluginID)
 {
     if (pluginID == PLUGINID_NATRON_OUTPUT) {

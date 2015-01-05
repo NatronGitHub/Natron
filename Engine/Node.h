@@ -799,11 +799,9 @@ public:
 
     
     /**
-     * @brief Inserts in the given script after the import lines the declaration of the variable "thisNode" which is in fact a pointer
-     * to this node.
-     * Returns the index of the start of the next line after the  variable declaration
+     * @brief Returns a script defining the variable thisNode
      **/
-    std::size_t declareCurrentNodeVariable_Python(std::string& script);
+    std::string declareCurrentNodeVariable_Python();
 
     bool isForceCachingEnabled() const;
     
@@ -957,6 +955,11 @@ private:
      * calls this function recursively on all inputs.
      **/
     void isNodeUpstream(const Natron::Node* input,bool* ok) const;
+    
+    void declareNodeVariableToPython(const std::string& nodeName);
+    void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
+    void deleteNodeVariableToPython(const std::string& nodeName);
+    void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName);
 
     boost::scoped_ptr<Implementation> _imp;
 };
